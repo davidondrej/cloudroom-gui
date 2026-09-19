@@ -1,7 +1,13 @@
 {
   "_comment": "Provider-literal ratchet (G1). Per-file occurrence count of provider-ID references in core. May only go DOWN. Regenerate: node scripts/check-provider-literal-ratchet.mjs --write. Every counted file must have an `allowlist` entry (count, reason, owner, diesAt); the entries are authored by hand and survive --write. Delete this file and the guard when empty.",
-  "total": 14,
+  "total": 44,
   "files": {
+    "apps/app/src/components/promptbox/NewThreadComposer.tsx": 2,
+    "apps/app/src/hooks/queries/cloudroom-queries.ts": 1,
+    "apps/cli/src/commands/thread/spawn.ts": 1,
+    "apps/server/src/services/cloudroom/client.ts": 7,
+    "apps/server/src/services/cloudroom/commands.ts": 14,
+    "apps/server/src/services/cloudroom/events.ts": 5,
     "apps/demo-server/src/fixtures/providers.ts": 3,
     "apps/demo-server/src/fixtures/world.ts": 2,
     "apps/server/src/services/threads/thread-edit-message.ts": 1,
@@ -10,6 +16,42 @@
     "packages/scripts/src/lib/seed-perf-fixture.ts": 3
   },
   "allowlist": {
+    "apps/app/src/components/promptbox/NewThreadComposer.tsx": {
+      "count": 2,
+      "reason": "Cloud-only composer gate for the supported core harnesses; local provider selection remains unchanged.",
+      "owner": "Cloudroom GUI",
+      "diesAt": "when the Cloudroom capability response replaces this explicit harness gate"
+    },
+    "apps/app/src/hooks/queries/cloudroom-queries.ts": {
+      "count": 1,
+      "reason": "Translate Pi provider/model selections to the core model identifier when reading remote reasoning capabilities.",
+      "owner": "Cloudroom GUI",
+      "diesAt": "when the remote model contract no longer needs this Pi-specific translation"
+    },
+    "apps/cli/src/commands/thread/spawn.ts": {
+      "count": 1,
+      "reason": "Existing Codex default for Cloudroom-targeted CLI starts only; local provider defaults are unaffected.",
+      "owner": "Cloudroom GUI",
+      "diesAt": "when the Cloudroom API supplies the default harness"
+    },
+    "apps/server/src/services/cloudroom/client.ts": {
+      "count": 7,
+      "reason": "Vendored canonical Cloudroom API client: wire types, default harness, and response validation.",
+      "owner": "Cloudroom core integration client",
+      "diesAt": "when the canonical core API client no longer requires these harness discriminators"
+    },
+    "apps/server/src/services/cloudroom/commands.ts": {
+      "count": 14,
+      "reason": "Cloudroom adapter translates remote model/skill requests and rejects unsupported cloud harnesses instead of falling back to local execution.",
+      "owner": "Cloudroom GUI",
+      "diesAt": "when the Cloudroom wire contract no longer needs these harness-specific translations"
+    },
+    "apps/server/src/services/cloudroom/events.ts": {
+      "count": 5,
+      "reason": "Translate the core's Codex and Pi event payloads into the existing GUI timeline.",
+      "owner": "Cloudroom GUI",
+      "diesAt": "when core events no longer require harness-specific timeline translation"
+    },
     "apps/demo-server/src/fixtures/providers.ts": {
       "count": 3,
       "reason": "demo fixtures: the demo server's static provider roster.",

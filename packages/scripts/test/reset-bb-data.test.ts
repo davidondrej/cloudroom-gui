@@ -54,13 +54,15 @@ describe("reset-bb-data", () => {
     const targets = resolveResetTargets(new Set(["--all"]));
 
     expect(targets).toEqual([
-      join(os.homedir(), ".bb"),
+      join(os.homedir(), ".gui-cloudroom"),
       expectedDevDataDir({
         homeDir: os.homedir(),
         repoRoot,
       }),
     ]);
+    expect(targets).not.toContain(join(os.homedir(), ".bb"));
     expect(targets).not.toContain(join(os.homedir(), ".bb-dev"));
+    expect(targets).not.toContain(join(os.homedir(), ".gui-cloudroom-dev"));
   });
 
   it("lets BB_DATA_DIR override the production target for --all", () => {

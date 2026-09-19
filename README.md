@@ -37,7 +37,7 @@ Cloud execution requires a compatible running core, not its source files. Use **
 
 ## Checks
 
-The initial developer-alpha snapshot passes its standalone build, typechecks, helper tests, and configuration tests. The scripts suite still has **18 known failures** involving inherited BB profile, port, skill, and migration expectations, plus the provider-literal baseline. This is not a fully passing test release.
+The 18 script-suite failures from the initial alpha are fixed. The standalone build, typechecks, configuration and scripts suites, and bundled-helper tests pass.
 
 ```sh
 pnpm exec turbo run test --filter=@bb/scripts --filter=@bb/config --concurrency=2

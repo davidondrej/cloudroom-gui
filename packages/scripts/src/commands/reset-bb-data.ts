@@ -82,7 +82,7 @@ export function renderHelpText(): string {
     --yes   Skip the interactive confirmation prompt
 
   ${dim("Notes")}
-    Removes bb-managed state directories (${dim("~/.bb")}, ${dim("~/.bb-dev/<checkout-instance>")}).
+    Removes Cloudroom-managed state directories (${dim("~/.gui-cloudroom")}, ${dim("~/.gui-cloudroom-dev/<checkout-instance>")}).
     Does not touch external provider config managed by other tools.
     Production resets respect BB_DATA_DIR. Development resets always target this checkout's dev data directory.
 \n`;

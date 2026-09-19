@@ -145,6 +145,8 @@ function resolvePortOffset(repoRootPath: string): number {
 function reservePackagedAppPorts(port: number): number {
   if (port === BB_PROD_SERVER_PORT) return 59_000;
   if (port === BB_PROD_HOST_DAEMON_PORT) return 59_001;
+  if (port === 38_886) return 59_002;
+  if (port === 38_887) return 59_003;
   return port;
 }
 

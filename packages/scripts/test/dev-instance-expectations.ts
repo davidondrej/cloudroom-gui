@@ -29,8 +29,10 @@ function expectedPortOffset(repoRoot: string): number {
 }
 
 function reservePackagedAppPorts(port: number): number {
-  if (port === 38_886) return 59_000;
-  if (port === 38_887) return 59_001;
+  if (port === 39_886) return 59_000;
+  if (port === 39_887) return 59_001;
+  if (port === 38_886) return 59_002;
+  if (port === 38_887) return 59_003;
   return port;
 }
 
@@ -75,7 +77,7 @@ export function expectedDevInstanceId(args: ExpectedDevInstanceArgs): string {
 }
 
 export function expectedDevDataDir(args: ExpectedDevInstanceArgs): string {
-  return join(args.homeDir, ".bb-dev", expectedDevInstanceId(args));
+  return join(args.homeDir, ".gui-cloudroom-dev", expectedDevInstanceId(args));
 }
 
 export function expectedDevServerUrl(repoRoot: string): string {

@@ -85,7 +85,8 @@ describe("run-dev", () => {
 
   it("derives stable data and ports from a managed checkout", () => {
     const homeDir = "/Users/tester";
-    const repoRoot = "/Users/tester/.bb-dev/projects/env_q7e5i54kxt/bb";
+    const repoRoot =
+      "/Users/tester/.gui-cloudroom-dev/projects/env_q7e5i54kxt/bb";
     const config = resolveDevInstanceConfig({ homeDir, repoRoot });
 
     expect(config.instanceId).toBe(
@@ -100,6 +101,8 @@ describe("run-dev", () => {
     expect(Object.values(config.ports)).not.toContain(3002);
     expect(Object.values(config.ports)).not.toContain(38886);
     expect(Object.values(config.ports)).not.toContain(38887);
+    expect(Object.values(config.ports)).not.toContain(39886);
+    expect(Object.values(config.ports)).not.toContain(39887);
   });
 
   it("keeps Cloud gateway ports out of the worker band and packaged ports", () => {
@@ -108,6 +111,8 @@ describe("run-dev", () => {
       [1, "/repo/port-3079"],
       [3886, "/repo/port-3186"],
       [3887, "/repo/port-6427"],
+      [4886, "/repo/port-8460"],
+      [4887, "/repo/port-7923"],
       [7998, "/repo/port-57923"],
       [7999, "/repo/port-7517"],
     ]);
@@ -118,8 +123,10 @@ describe("run-dev", () => {
       ]),
     );
 
-    expect(portsByOffset.get(3886)?.cloudPort).toBe(59000);
-    expect(portsByOffset.get(3887)?.cloudPort).toBe(59001);
+    expect(portsByOffset.get(3886)?.cloudPort).toBe(59002);
+    expect(portsByOffset.get(3887)?.cloudPort).toBe(59003);
+    expect(portsByOffset.get(4886)?.cloudPort).toBe(59000);
+    expect(portsByOffset.get(4887)?.cloudPort).toBe(59001);
     expect(portsByOffset.get(7998)?.cloudPort).toBe(42998);
     expect(portsByOffset.get(7999)?.cloudPort).toBe(42999);
     expect(portsByOffset.get(0)?.cloudWorkerPort).toBe(43000);
@@ -147,10 +154,10 @@ describe("run-dev", () => {
   it("overrides instance selectors while preserving unrelated environment", () => {
     const config = resolveDevInstanceConfig({
       homeDir: "/Users/tester",
-      repoRoot: "/Users/tester/.bb-dev/projects/env_q7e5i54kxt/bb",
+      repoRoot: "/Users/tester/.gui-cloudroom-dev/projects/env_q7e5i54kxt/bb",
     });
     const baseEnv: NodeJS.ProcessEnv = {
-      BB_DATA_DIR: "/Users/tester/.bb-dev",
+      BB_DATA_DIR: "/Users/tester/.gui-cloudroom-dev",
       BB_SERVER_PORT: "3334",
       NODE_ENV: "production",
       OPENAI_API_KEY: "test-key",
@@ -173,15 +180,15 @@ describe("run-dev", () => {
   it("inherits parent bb skills for managed worktree dev apps", () => {
     const homeDir = "/Users/tester";
     const repoRoot =
-      "/Users/tester/.bb-dev/code-bb-abc123/worktrees/env_feature/bb";
+      "/Users/tester/.gui-cloudroom-dev/code-bb-abc123/worktrees/env_feature/bb";
     const config = resolveDevInstanceConfig({
       homeDir,
       repoRoot,
     });
 
     const inheritedSkillsRootPaths = [
-      "/Users/tester/.bb-dev/code-bb-abc123/skills",
-      "/Users/tester/.bb/skills",
+      "/Users/tester/.gui-cloudroom-dev/code-bb-abc123/skills",
+      "/Users/tester/.gui-cloudroom/skills",
     ];
     expect(resolveInheritedDevSkillsRootPaths({ homeDir, repoRoot })).toEqual(
       inheritedSkillsRootPaths,
@@ -193,17 +200,17 @@ describe("run-dev", () => {
 
   it("dedupes inherited bb skills for prod-managed worktree dev apps", () => {
     const homeDir = "/Users/tester";
-    const repoRoot = "/Users/tester/.bb/worktrees/env_feature/bb";
+    const repoRoot = "/Users/tester/.gui-cloudroom/worktrees/env_feature/bb";
     const config = resolveDevInstanceConfig({
       homeDir,
       repoRoot,
     });
 
     expect(resolveInheritedDevSkillsRootPaths({ homeDir, repoRoot })).toEqual([
-      "/Users/tester/.bb/skills",
+      "/Users/tester/.gui-cloudroom/skills",
     ]);
     expect(toDevProcessEnv({ baseEnv: {}, config })).toMatchObject({
-      BB_INHERITED_SKILLS_ROOTS: "/Users/tester/.bb/skills",
+      BB_INHERITED_SKILLS_ROOTS: "/Users/tester/.gui-cloudroom/skills",
     });
   });
 
@@ -216,10 +223,10 @@ describe("run-dev", () => {
     });
 
     expect(resolveInheritedDevSkillsRootPaths({ homeDir, repoRoot })).toEqual([
-      "/Users/tester/.bb/skills",
+      "/Users/tester/.gui-cloudroom/skills",
     ]);
     expect(toDevProcessEnv({ baseEnv: {}, config })).toMatchObject({
-      BB_INHERITED_SKILLS_ROOTS: "/Users/tester/.bb/skills",
+      BB_INHERITED_SKILLS_ROOTS: "/Users/tester/.gui-cloudroom/skills",
     });
   });
 
@@ -232,7 +239,8 @@ describe("run-dev", () => {
       BB_ENVIRONMENT_ID: "env_parent",
       BB_PROJECT_ID: "proj_parent",
       BB_THREAD_ID: "thr_parent",
-      BB_THREAD_STORAGE: "/Users/tester/.bb/thread-storage/thr_parent",
+      BB_THREAD_STORAGE:
+        "/Users/tester/.gui-cloudroom/thread-storage/thr_parent",
     };
 
     const env = toDevProcessEnv({ baseEnv, config });
@@ -340,7 +348,7 @@ describe("run-dev", () => {
 
   it("migrates legacy flat dev data into the checkout instance", async () => {
     const homeDir = await makeTempDir("bb-dev-home-");
-    const legacyDataDir = path.join(homeDir, ".bb-dev");
+    const legacyDataDir = path.join(homeDir, ".gui-cloudroom-dev");
     const config = resolveDevInstanceConfig({
       homeDir,
       repoRoot: path.join(homeDir, "src", "bb"),
@@ -420,7 +428,7 @@ describe("run-dev", () => {
 
   it("skips migration when the target instance already has data", async () => {
     const homeDir = await makeTempDir("bb-dev-home-");
-    const legacyDataDir = path.join(homeDir, ".bb-dev");
+    const legacyDataDir = path.join(homeDir, ".gui-cloudroom-dev");
     const config = resolveDevInstanceConfig({
       homeDir,
       repoRoot: path.join(homeDir, "src", "bb"),
@@ -442,23 +450,38 @@ describe("run-dev", () => {
     ).resolves.toBe("target");
   });
 
-  it("skips migration when legacy dev data is absent", async () => {
-    const homeDir = await makeTempDir("bb-dev-home-");
-    const config = resolveDevInstanceConfig({
-      homeDir,
-      repoRoot: path.join(homeDir, "src", "bb"),
-    });
+  it.each([null, ".bb", ".bb-dev"])(
+    "skips absent Cloudroom legacy data without touching %s",
+    async (otherProfile) => {
+      const homeDir = await makeTempDir("bb-dev-home-");
+      const config = resolveDevInstanceConfig({
+        homeDir,
+        repoRoot: path.join(homeDir, "src", "bb"),
+      });
+      const otherFile = otherProfile
+        ? path.join(homeDir, otherProfile, "bb.db")
+        : null;
+      if (otherFile) {
+        await fs.mkdir(path.dirname(otherFile), { recursive: true });
+        await fs.writeFile(otherFile, "unrelated profile", "utf8");
+      }
 
-    await expect(migrateLegacyDevData({ config })).resolves.toEqual({
-      migratedEntries: [],
-      skippedReason: "legacy-data-not-found",
-    });
-    expect(await pathExists(config.dataDir)).toBe(false);
-  });
+      await expect(migrateLegacyDevData({ config })).resolves.toEqual({
+        migratedEntries: [],
+        skippedReason: "legacy-data-not-found",
+      });
+      expect(await pathExists(config.dataDir)).toBe(false);
+      if (otherFile) {
+        await expect(fs.readFile(otherFile, "utf8")).resolves.toBe(
+          "unrelated profile",
+        );
+      }
+    },
+  );
 
   it("skips migration when legacy dev data has no migratable entries", async () => {
     const homeDir = await makeTempDir("bb-dev-home-");
-    const legacyDataDir = path.join(homeDir, ".bb-dev");
+    const legacyDataDir = path.join(homeDir, ".gui-cloudroom-dev");
     const config = resolveDevInstanceConfig({
       homeDir,
       repoRoot: path.join(homeDir, "src", "bb"),
@@ -475,7 +498,7 @@ describe("run-dev", () => {
 
   it("rolls back already moved entries when migration rename fails", async () => {
     const homeDir = await makeTempDir("bb-dev-home-");
-    const legacyDataDir = path.join(homeDir, ".bb-dev");
+    const legacyDataDir = path.join(homeDir, ".gui-cloudroom-dev");
     const config = resolveDevInstanceConfig({
       homeDir,
       repoRoot: path.join(homeDir, "src", "bb"),
@@ -521,7 +544,7 @@ describe("run-dev", () => {
 
   it("does not migrate legacy data while a legacy dev supervisor is running", async () => {
     const homeDir = await makeTempDir("bb-dev-home-");
-    const legacyDataDir = path.join(homeDir, ".bb-dev");
+    const legacyDataDir = path.join(homeDir, ".gui-cloudroom-dev");
     const config = resolveDevInstanceConfig({
       homeDir,
       repoRoot: path.join(homeDir, "src", "bb"),
