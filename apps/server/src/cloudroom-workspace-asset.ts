@@ -1,0 +1,9 @@
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+const bundledPython = new URL("./assets/python/bin/python3", import.meta.url);
+export const CLOUDROOM_PYTHON_PATH = existsSync(bundledPython) ? fileURLToPath(bundledPython) : "python3";
+
+export const CLOUDROOM_SYNC_SCRIPT_PATH = fileURLToPath(
+  new URL("./assets/cloudroom-sync/client.py", import.meta.url),
+);

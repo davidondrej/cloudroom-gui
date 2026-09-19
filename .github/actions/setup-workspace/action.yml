@@ -1,0 +1,81 @@
+name: Setup workspace
+description: Set up pnpm + Node, restore the Turbo cache, and install dependencies.
+
+inputs:
+  node-version:
+    description: Node version to install
+    required: true
+  pnpm-version:
+    description: pnpm version to install. Must match the root packageManager and have a pnpm-<version>.sha256 file beside this action.
+    required: true
+  cache-prefix:
+    description: Names this job's Turbo cache entry (e.g. checks, test-server). Every job reads every prefix; this only decides which entry the job writes back.
+    required: true
+  working-directory:
+    description: Workspace directory relative to the checkout root.
+    required: false
+    default: "."
+  turbo-cache:
+    description: Restore and save the Turbo cache. Set to "false" on runners where the cache costs more to move than the tasks cost to run.
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    # A pinned release binary instead of pnpm/action-setup: the action
+    # bootstraps through `npm ci` and `pnpm self-update`, two npm registry
+    # round trips that cost 30 s at best and stalled for 7 minutes on every
+    # job of a run when the registry was slow. See install-pnpm.sh.
+    - name: Set up pnpm
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        PNPM_VERSION: ${{ inputs.pnpm-version }}
+      run: bash "${GITHUB_ACTION_PATH}/install-pnpm.sh"
+
+    - name: Set up Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+        cache-dependency-path: ${{ inputs.working-directory }}/pnpm-lock.yaml
+
+    # Writes to a prefix-scoped key but reads from every prefix: Turbo cache
+    # entries are content-addressed by task hash, so an entry another job saved
+    # is either a hit or absent, never wrong. Without the shared read the test
+    # shards could not see the builds the checks job had already done.
+    - name: Cache Turbo task outputs
+      if: inputs.turbo-cache == 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ inputs.working-directory }}/.turbo/cache
+        key: ${{ runner.os }}-node-${{ inputs.node-version }}-turbo-${{ hashFiles(format('{0}/pnpm-lock.yaml', inputs.working-directory)) }}-${{ inputs.cache-prefix }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-node-${{ inputs.node-version }}-turbo-${{ hashFiles(format('{0}/pnpm-lock.yaml', inputs.working-directory)) }}-${{ inputs.cache-prefix }}-
+          ${{ runner.os }}-node-${{ inputs.node-version }}-turbo-${{ hashFiles(format('{0}/pnpm-lock.yaml', inputs.working-directory)) }}-
+          ${{ runner.os }}-node-${{ inputs.node-version }}-turbo-
+
+    # The restored directory is what this job saves back, so pruning here is
+    # what bounds it. Nothing else evicts entries, and an unbounded cache costs
+    # more to restore than the tasks it skips.
+    - name: Prune the Turbo cache
+      if: inputs.turbo-cache == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: node scripts/prune-turbo-cache.mjs --dir .turbo/cache --max-size-mb 1024
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        for attempt in 1 2 3; do
+          if pnpm install --frozen-lockfile --prefer-offline; then
+            exit 0
+          fi
+          if [ "$attempt" -eq 3 ]; then
+            exit 1
+          fi
+          echo "::warning::pnpm install failed on attempt $attempt; retrying"
+          sleep $((attempt * 5))
+        done
