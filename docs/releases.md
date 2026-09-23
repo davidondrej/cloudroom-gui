@@ -14,7 +14,7 @@ Source update only. This release does not include a new macOS installer or updat
 ### Compatibility and limits
 
 - Building is account-free. The GUI currently requires an invite-enabled Cloudroom account, even for local work. Manual self-hosted core configuration does not bypass that gate. The core remains independently usable without the GUI.
-- New cloud sessions require `direct_workspaces` and, with the default safety setting, `command_guard` in `GET /v1/capabilities`. The public core snapshot `7eb9ade` from September 21 lacks `command_guard`; use a matching newer core. Do not disable the guard merely to bypass this requirement.
+- New cloud sessions require `direct_workspaces` and, with the default safety setting, `command_guard` in `GET /v1/capabilities`. Use public core [`source-2026-09-23`](https://github.com/davidondrej/cloudroom-core/releases/tag/source-2026-09-23) or newer. Do not disable the guard merely to bypass this requirement.
 - Teleport, previews, and guided login require their corresponding core capabilities. Update GUI and host daemon together; unsupported operations fail rather than fall back to Local.
 - Cursor remains experimental. Its ACP transport does not enforce Command Guard, so guarded starts are rejected. An intermittent shutdown timeout remains under investigation.
 - This source release is not fresh installed-app or laptop-sleep acceptance. No desktop-launching tests were run for publication.

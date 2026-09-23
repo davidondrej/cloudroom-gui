@@ -33,7 +33,7 @@ pnpm exec turbo run dev --filter=@bb/desktop
 
 Development uses checkout-specific ports and a separate profile. The launcher prints both. Stop each command with Ctrl-C. Local agents require their own installed, authenticated provider CLIs.
 
-Use **Sign in** for hosted access. Cloud execution requires a matching core with `direct_workspaces` and `command_guard` capabilities; the September 21 public core snapshot is too old for default guarded starts. Manual connections use `POST /api/v1/cloudroom` with `url` and `token`, but do not bypass the GUI account requirement. Remote URLs require HTTPS. Keep tokens out of browser code, URLs, and Git.
+Use **Sign in** for hosted access. Cloud execution requires a matching core with `direct_workspaces` and `command_guard` capabilities; use public core [`source-2026-09-23`](https://github.com/davidondrej/cloudroom-core/releases/tag/source-2026-09-23) or newer. Manual connections use `POST /api/v1/cloudroom` with `url` and `token`, but do not bypass the GUI account requirement. Remote URLs require HTTPS. Keep tokens out of browser code, URLs, and Git.
 
 ## Checks
 
