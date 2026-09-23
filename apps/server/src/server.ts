@@ -106,6 +106,11 @@ import {
 const PLUGIN_WIRE_HTTP_PATH = /^\/api\/v1\/plugins\/[^/]+\/http(?:\/|$)/u;
 import { rankAcceptedAssetEncodings } from "./asset-content-encoding.js";
 import { apiJsonCompression } from "./api-response-compression.js";
+import {
+  loadOrCreatePublicApiCapability,
+  presentedCapability,
+  type PublicApiCapabilityService,
+} from "./services/public-api-capability.js";
 
 type CloseWebSockets = () => Promise<void>;
 type NodeWebSocketServer = ReturnType<typeof createNodeWebSocket>["wss"];
@@ -650,10 +655,26 @@ export function createApp(
   });
   // Bridge runtime-config assembly to plugin skills + context (§4.4).
   setPluginAgentContributions(pluginService);
+  const publicApiCapability: PublicApiCapabilityService | null =
+    deps.config.requirePublicApiCapability === true
+      ? loadOrCreatePublicApiCapability({ dataDir: deps.config.dataDir })
+      : null;
   const publicApi = new Hono();
   publicApi.use("*", async (context, next) => {
     if (PLUGIN_WIRE_HTTP_PATH.test(context.req.path)) {
       return next();
+    }
+    if (
+      publicApiCapability !== null &&
+      !publicApiCapability.verify(
+        presentedCapability((name) => context.req.header(name)),
+      )
+    ) {
+      throw new ApiError(
+        401,
+        "missing_or_invalid_capability",
+        "Provide the per-install capability token in the x-bb-capability header or as a Bearer token",
+      );
     }
     const problem = browserRequestProblem(context, deps);
     if (problem !== null) {
@@ -703,6 +724,19 @@ export function createApp(
   const assertBrowserWebSocketAllowed = (
     context: Parameters<typeof browserRequestProblem>[0],
   ): void => {
+    if (
+      publicApiCapability !== null &&
+      !publicApiCapability.verify(
+        presentedCapability((name) => context.req.header(name)),
+      )
+    ) {
+      throw new ApiError(
+        401,
+        "missing_or_invalid_capability",
+        "Provide the per-install capability token in the x-bb-capability header or as a Bearer token",
+        false,
+      );
+    }
     const problem = browserRequestProblem(context, deps);
     if (problem !== null) {
       throw new ApiError(

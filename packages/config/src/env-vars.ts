@@ -158,6 +158,20 @@ export const BB_SERVER_BIND_HOST_ENV = defineEnvVar<ServerBindHost>({
   parse: parseServerBindHostEnvValue,
 });
 
+export const BB_SERVER_ALLOW_NON_LOOPBACK_ENV = defineEnvVar<boolean>({
+  description:
+    "Explicitly allow binding the server to a non-loopback host even though the public API is unauthenticated (development only)",
+  name: "BB_SERVER_ALLOW_NON_LOOPBACK",
+  parse: parseBooleanEnvValue,
+});
+
+export const BB_REQUIRE_PUBLIC_API_CAPABILITY_ENV = defineEnvVar<boolean>({
+  description:
+    "Require the per-install capability token on every /api/v1 request and browser WebSocket (hardens against untrusted local processes)",
+  name: "BB_REQUIRE_PUBLIC_API_CAPABILITY",
+  parse: parseBooleanEnvValue,
+});
+
 export const BB_HOST_DAEMON_PORT_ENV = defineEnvVar<number>({
   description: "Port the host daemon listens on for local API requests",
   name: "BB_HOST_DAEMON_PORT",
@@ -355,6 +369,8 @@ export const DEFAULT_BB_APP_VERSION = DEFAULTS.appVersion;
 export const DEFAULT_BB_APP_SURFACE = APP_SURFACE_WEB;
 export const DEFAULT_BB_APP_URL = "";
 export const DEFAULT_BB_SERVER_BIND_HOST: ServerBindHost = BB_LOOPBACK_HOST;
+export const DEFAULT_BB_SERVER_ALLOW_NON_LOOPBACK = false;
+export const DEFAULT_BB_REQUIRE_PUBLIC_API_CAPABILITY = false;
 export const DEFAULT_BB_EXTERNAL_URL = "";
 export const DEFAULT_OPENAI_API_KEY = "";
 export const DEFAULT_BB_POSTHOG_API_KEY =

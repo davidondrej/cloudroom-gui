@@ -24,3 +24,16 @@ export function isLoopbackHostname(value: string): boolean {
   const normalized = normalizeHostname(value);
   return normalized === "localhost" || isLoopbackAddress(normalized);
 }
+
+export function nonLoopbackBindRefusal(args: {
+  bindHost: string;
+  allowUnauthenticatedRemote: boolean;
+}): string | null {
+  if (isLoopbackHostname(args.bindHost)) {
+    return null;
+  }
+  if (args.allowUnauthenticatedRemote) {
+    return null;
+  }
+  return `Refusing to bind the server to non-loopback host "${args.bindHost}": the /api/v1 public API is unauthenticated and permits command execution and file reads, so a non-loopback bind exposes this host to remote control. Use the Connect gateway for remote access, or set BB_SERVER_ALLOW_NON_LOOPBACK=1 to accept the risk explicitly.`;
+}

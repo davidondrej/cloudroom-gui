@@ -75,6 +75,9 @@ output.txt
 .hermes/plans/
 .otto/
 
+# Orion-OS / local agent workflow state (memory bank, specs, framework copies)
+.agents/
+
 # turborepo
 .turbo
 .claude/*

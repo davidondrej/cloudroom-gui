@@ -22,6 +22,8 @@ import {
   BB_INFERENCE_ENV,
   BB_MARKETPLACE_URL_ENV,
   BB_POSTHOG_API_KEY_ENV,
+  BB_REQUIRE_PUBLIC_API_CAPABILITY_ENV,
+  BB_SERVER_ALLOW_NON_LOOPBACK_ENV,
   BB_SERVER_BIND_HOST_ENV,
   BB_SERVER_LAUNCH_ID_ENV,
   BB_TELEMETRY_ENV,
@@ -34,6 +36,8 @@ import {
   DEFAULT_BB_INFERENCE,
   DEFAULT_BB_MARKETPLACE_URL,
   DEFAULT_BB_POSTHOG_API_KEY,
+  DEFAULT_BB_REQUIRE_PUBLIC_API_CAPABILITY,
+  DEFAULT_BB_SERVER_ALLOW_NON_LOOPBACK,
   DEFAULT_BB_SERVER_BIND_HOST,
   DEFAULT_BB_TELEMETRY,
   DEFAULT_BB_TRANSCRIPTION,
@@ -60,6 +64,8 @@ export interface ServerConfig
   BB_INFERENCE_FALLBACK: string;
   BB_POSTHOG_API_KEY: string;
   BB_MARKETPLACE_URL: string;
+  BB_REQUIRE_PUBLIC_API_CAPABILITY: boolean;
+  BB_SERVER_ALLOW_NON_LOOPBACK: boolean;
   BB_SERVER_BIND_HOST: ServerBindHost;
   BB_SERVER_LAUNCH_ID?: string;
   BB_TELEMETRY: boolean;
@@ -163,6 +169,18 @@ export function loadServerConfig(
       context: loader.context,
       defaultValue: DEFAULT_BB_POSTHOG_API_KEY,
       definition: BB_POSTHOG_API_KEY_ENV,
+      env: loader.env,
+    }),
+    BB_REQUIRE_PUBLIC_API_CAPABILITY: readEnvVarWithDefault({
+      context: loader.context,
+      defaultValue: DEFAULT_BB_REQUIRE_PUBLIC_API_CAPABILITY,
+      definition: BB_REQUIRE_PUBLIC_API_CAPABILITY_ENV,
+      env: loader.env,
+    }),
+    BB_SERVER_ALLOW_NON_LOOPBACK: readEnvVarWithDefault({
+      context: loader.context,
+      defaultValue: DEFAULT_BB_SERVER_ALLOW_NON_LOOPBACK,
+      definition: BB_SERVER_ALLOW_NON_LOOPBACK_ENV,
       env: loader.env,
     }),
     BB_SERVER_BIND_HOST: readEnvVarWithDefault({

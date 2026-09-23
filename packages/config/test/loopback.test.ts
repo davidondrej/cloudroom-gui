@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isLoopbackAddress, isLoopbackHostname } from "../src/loopback.js";
+import {
+  isLoopbackAddress,
+  isLoopbackHostname,
+  nonLoopbackBindRefusal,
+} from "../src/loopback.js";
 
 describe("loopback helpers", () => {
   it.each([
@@ -39,4 +43,37 @@ describe("loopback helpers", () => {
       expect(isLoopbackHostname(hostname)).toBe(false);
     },
   );
+});
+
+describe("nonLoopbackBindRefusal", () => {
+  it.each(["127.0.0.1", "localhost", "[::1]"])(
+    "permits loopback bind host %s without any override",
+    (bindHost) => {
+      expect(
+        nonLoopbackBindRefusal({
+          bindHost,
+          allowUnauthenticatedRemote: false,
+        }),
+      ).toBeNull();
+    },
+  );
+
+  it("refuses non-loopback bind hosts by default and names the override", () => {
+    const refusal = nonLoopbackBindRefusal({
+      bindHost: "0.0.0.0",
+      allowUnauthenticatedRemote: false,
+    });
+    expect(refusal).toContain("0.0.0.0");
+    expect(refusal).toContain("unauthenticated");
+    expect(refusal).toContain("BB_SERVER_ALLOW_NON_LOOPBACK");
+  });
+
+  it("permits non-loopback binding when explicitly allowed", () => {
+    expect(
+      nonLoopbackBindRefusal({
+        bindHost: "0.0.0.0",
+        allowUnauthenticatedRemote: true,
+      }),
+    ).toBeNull();
+  });
 });

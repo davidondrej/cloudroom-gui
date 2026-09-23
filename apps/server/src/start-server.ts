@@ -4,7 +4,10 @@ import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ServerConfig } from "@bb/config/server";
-import { isLoopbackHostname } from "@bb/config/loopback";
+import {
+  isLoopbackHostname,
+  nonLoopbackBindRefusal,
+} from "@bb/config/loopback";
 import { toOptionalString } from "@bb/config/strings";
 import { createLogger } from "@bb/logger";
 import { getAppSettings } from "@bb/db";
@@ -49,6 +52,13 @@ export function startHttpListener(args: StartHttpListenerArgs) {
 }
 
 export async function runServer(serverConfig: ServerConfig): Promise<void> {
+  const bindRefusal = nonLoopbackBindRefusal({
+    bindHost: serverConfig.BB_SERVER_BIND_HOST,
+    allowUnauthenticatedRemote: serverConfig.BB_SERVER_ALLOW_NON_LOOPBACK,
+  });
+  if (bindRefusal !== null) {
+    throw new Error(bindRefusal);
+  }
   const logger = createLogger({
     component: "server",
     dataDir: serverConfig.BB_DATA_DIR,
@@ -83,6 +93,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
     inferenceModel: serverConfig.BB_INFERENCE,
     isDevelopment: !isProduction,
     openAiApiKey: serverConfig.OPENAI_API_KEY,
+    requirePublicApiCapability: serverConfig.BB_REQUIRE_PUBLIC_API_CAPABILITY,
     serverPort: serverConfig.BB_SERVER_PORT,
     sharedSkillRoots: { user: [], project: [] },
     transcriptionModel: serverConfig.BB_TRANSCRIPTION,
@@ -193,8 +204,17 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
   );
   const eventLoopStallMonitor = startEventLoopStallMonitor({ logger });
   const cloud = cloudroom({
-    db, hub, config: runtimeConfig, providerRegistry, logger, lifecycleDedupers,
-    machineAuth, pluginHostArtifacts, aiServices, skillTreeRegistry, telemetry,
+    db,
+    hub,
+    config: runtimeConfig,
+    providerRegistry,
+    logger,
+    lifecycleDedupers,
+    machineAuth,
+    pluginHostArtifacts,
+    aiServices,
+    skillTreeRegistry,
+    telemetry,
   });
   cloud.start();
 

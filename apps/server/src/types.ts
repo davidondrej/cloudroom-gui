@@ -40,6 +40,7 @@ export interface ServerRuntimeConfig {
   appUrl?: string;
   devAppPort?: number;
   launchId?: string;
+  requirePublicApiCapability?: boolean;
 }
 
 export interface AppDeps {
