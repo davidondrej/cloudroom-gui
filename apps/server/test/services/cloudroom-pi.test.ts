@@ -4,6 +4,8 @@ import { expect, it } from "vitest";
 import { events, getThread } from "@bb/db";
 import { command } from "../../src/services/cloudroom/store.js";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
+import { runThreadLifecycleSweep } from "../../src/services/system/periodic-sweeps.js";
+import { advanceThreadProvisioning } from "../../src/services/threads/thread-provisioning.js";
 import { createTestAppHarness } from "../helpers/test-app.js";
 import { seedHostSession, seedProjectWithSource } from "../helpers/seed.js";
 
@@ -18,6 +20,8 @@ it.each([false, true])("routes Pi through the core and replays messages without 
   const records: object[] = [];
   const streams = new Set<ServerResponse>();
   let starts = 0;
+  let finishStartup!: () => void;
+  const startupReady = new Promise<void>(resolve => { finishStartup = resolve; });
   const prompts: object[] = [];
   const sid = "cr_pi-start";
   const record = (kind: string, data: object, native?: object) => {
@@ -27,7 +31,8 @@ it.each([false, true])("routes Pi through the core and replays messages without 
   };
   const core = createServer(async (req, res) => {
     const json = (body: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(body)); };
-    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, prompt_reasoning: true, harnesses: [{ id: "pi", provider: "openrouter", provider_selection: providerSelection, model: "test-model" }] });
+    if (req.url === "/v1/health") return json({});
+    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, command_guard: true, prompt_reasoning: true, harnesses: [{ id: "pi", provider: "openrouter", provider_selection: providerSelection, model: "test-model" }] });
     if (req.url === "/v1/ready") return json({ ready: true });
     if (req.url?.includes("/stream?")) {
       res.writeHead(200, { "Content-Type": "text/event-stream" });
@@ -40,13 +45,14 @@ it.each([false, true])("routes Pi through the core and replays messages without 
     if (req.url !== "/v1/sessions") prompts.push(body);
     if (req.url === "/v1/sessions") {
       starts++;
-      expect(body).toEqual({ request_id: "pi-start", harness: "pi", model: selectedModel, reasoning: "high", workspace: `bb_${project.id}`, workspace_name: "Test-Project", ...(providerSelection ? { provider: selectedProvider } : {}) });
+      expect(body).toEqual({ request_id: "pi-start", harness: "pi", model: selectedModel, reasoning: "high", command_guard_enabled: true, workspace: `bb_${project.id}`, workspace_name: "Test-Project", ...(providerSelection ? { provider: selectedProvider } : {}) });
       record("native_identity", { id: "pi-native" });
-      record("state", { state: "idle" });
+      record("state", { state: "starting" });
       return json({ session_id: sid, receipt: { request_id: body.request_id, command: "start", state: "completed", input: {} }, saving: {} }, 202);
     }
     const receipt = { request_id: body.request_id, command: "prompt", state: "accepted", input: { text: body.text } };
     record("receipt", receipt);
+    await startupReady;
     record("state", { state: "starting_turn", request_id: body.request_id });
     record("native_event", { harness: "pi", type: "message_start" }, { type: "message_start", message: { role: "assistant", content: [], timestamp: 10 } });
     record("text_delta", { harness: "pi" }, { type: "message_update", assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "Cloud Pi result" } });
@@ -69,6 +75,13 @@ it.each([false, true])("routes Pi through the core and replays messages without 
     expect(response.status, await response.clone().text()).toBe(201);
     const thread = await response.json();
     expect(JSON.parse(command(app.db, `first_${thread.id}`)!.input).provider).toBe(providerSelection ? selectedProvider : undefined);
+    await expect.poll(() => getThread(app.db, thread.id)?.status).toBe("starting");
+    await runThreadLifecycleSweep(app.deps);
+    expect(getThread(app.db, thread.id)?.status).toBe("starting");
+    await advanceThreadProvisioning(app.deps, { threadId: thread.id });
+    expect(getThread(app.db, thread.id)?.status).toBe("starting");
+    expect(app.db.select().from(events).all().filter(e => e.type === "system/error")).toEqual([]);
+    finishStartup();
     await expect.poll(() => getThread(app.db, thread.id)?.status).toBe("idle");
     expect(getThread(app.db, thread.id)?.providerId).toBe("pi");
     expect(getThread(app.db, thread.id)?.environmentId).toBeNull();
@@ -82,6 +95,11 @@ it.each([false, true])("routes Pi through the core and replays messages without 
     expect(projected.find(e => e.type === "item/completed" && e.item.type === "agentMessage").item.text).toBe("Cloud Pi result");
     expect(projected.filter(e => e.type === "item/toolCall/progress").map(e => e.message)).toEqual(["/code", "/code/test"]);
     expect(projected.find(e => e.type === "item/completed" && e.item.type === "toolCall").item.result.content[0].text).toBe("/code/test");
+    const timeline = await app.app.request(`/api/v1/threads/${thread.id}/timeline`);
+    expect(timeline.status).toBe(200);
+    const conversation = JSON.stringify(await timeline.json());
+    expect(conversation).toContain("Cloud Pi result");
+    expect(conversation).not.toContain("Provisioning thread failed");
     const follow = await app.app.request(`/api/v1/threads/${thread.id}/send`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestId: "pi-follow", mode: "auto", model, reasoningLevel: "xhigh", input: [{ type: "text", text: "again", mentions: [] }] }) });
     expect(follow.status, await follow.clone().text()).toBe(200);
     await expect.poll(() => app.db.select().from(events).all().filter(e => e.type === "client/turn/requested").length).toBe(2);
@@ -102,7 +120,7 @@ it.each([false, true])("routes Pi through the core and replays messages without 
     await expect.poll(() => app.db.select().from(events).all().filter(e => e.type === "item/delegation/completed").map(e => JSON.parse(e.data).item)).toEqual([expect.objectContaining({ childRef: "cr_child_example", status: "completed", summary: "Child result" })]);
     record("usage", { contextUsage: { tokens: null, contextWindow: 100000 } });
     await expect.poll(() => app.db.select().from(events).all().filter(e => e.type === "thread/contextWindowUsage/updated").map(e => JSON.parse(e.data).contextWindowUsage).at(-1)).toEqual({ usedTokens: null, modelContextWindow: 100000, estimated: true });
-  } finally { service.stop(); core.closeAllConnections(); await new Promise<void>(resolve => core.close(() => resolve())); await app.cleanup(); }
+  } finally { finishStartup(); service.stop(); core.closeAllConnections(); await new Promise<void>(resolve => core.close(() => resolve())); await app.cleanup(); }
 }, 15000);
 
 it.each(["pi", "codex"])("sends selected skills in Cloud %s starts and follow-ups without enabling other mentions", async (providerId) => {
@@ -114,7 +132,8 @@ it.each(["pi", "codex"])("sends selected skills in Cloud %s starts and follow-up
   const sid = "cr_skill-test";
   const core = createServer(async (req, res) => {
     const json = (body: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(body)); };
-    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, harnesses: [{ id: providerId, provider: "fixture", model: "test-model" }] });
+    if (req.url === "/v1/health") return json({});
+    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: providerId, provider: "fixture", model: "test-model" }] });
     if (req.url === "/v1/ready") return json({ ready: true });
     if (req.url?.includes("/stream?")) { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.end(); return; }
     let text = ""; for await (const chunk of req) text += chunk;

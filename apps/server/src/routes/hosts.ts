@@ -96,7 +96,7 @@ async function revokeConnectMachineCredential(
   } catch (error) {
     deps.logger.error(
       { err: error, machineId },
-      "Host was removed locally, but its bb connect machine credential could not be revoked. Revoke this machine manually from the getbb.app dashboard.",
+      "Host was removed locally, but its Cloudroom Connect machine credential could not be revoked. Revoke this machine manually from the getbb.app dashboard.",
     );
   }
 }

@@ -18,7 +18,7 @@ const localViewTestCases: LocalViewTestCase[] = [
     viewModel: {
       kind: "loading",
       message: "Starting local services.",
-      title: "Opening bb",
+      title: "Opening Room",
     },
   },
   {
@@ -28,7 +28,7 @@ const localViewTestCases: LocalViewTestCase[] = [
       kind: "error",
       logText: "Failed to bind port",
       retryable: false,
-      title: "Could not open bb",
+      title: "Could not open Room",
     },
   },
 ];
@@ -67,7 +67,7 @@ describe("local desktop views", () => {
         logText:
           "\x1b[2K  \x1b[2m○\x1b[0m  Starting server\r\x1b[2K  \x1b[32m✓\x1b[0m  Server listening\nError: listen EADDRINUSE",
         retryable: false,
-        title: "Could not open bb",
+        title: "Could not open Room",
       },
     });
 
@@ -95,7 +95,7 @@ describe("local desktop views", () => {
         kind: "error",
         logText: "",
         retryable: false,
-        title: "Could not open bb",
+        title: "Could not open Room",
       },
     });
 

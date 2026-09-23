@@ -28,9 +28,9 @@ Write an App Store listing, not a README line. A user who never heard of the
 plugin decides here. Do not copy the style of the current entries. Many of them
 read as release notes.
 
-An App Store listing has two parts. BB holds both in one field.
+An App Store listing has two parts. Room holds both in one field.
 
-**The hook is the first sentence.** BB clamps the description to two lines in a
+**The hook is the first sentence.** Room clamps the description to two lines in a
 browse card, and to one line in a compact row. The hook must stand alone there.
 State the outcome the user gets. Do not state the mechanism. Keep it under
 about 140 characters. Start with a verb. Do not start with the display name.
@@ -92,7 +92,7 @@ Use this shape only as a guide:
 {
   "id": "notes",
   "displayName": "Notes",
-  "description": "Keeps project notes beside each BB thread.",
+  "description": "Keeps project notes beside each Room thread.",
   "icon": { "url": "./icons/notes-1234abcd.svg" },
   "screenshots": ["./screenshots/notes/overview.png"],
   "overview": "./overview/notes.md",
@@ -127,12 +127,12 @@ Vendor the icon in the marketplace icons/ directory. Do not use a remote URL,
 a CDN, raw.githubusercontent.com, or a path in the plugin repository.
 
 Use an existing brand icon when it meets the current marketplace rules. The
-entry can also use a supported BB host icon name.
+entry can also use a supported Room host icon name.
 
 Use SVG, PNG, or WebP for a file icon. Keep it at or below 256 KB. Prefer a
 simple square image with clear contrast at small sizes.
 
-BB masks SVG icons with the surrounding text color. Use a single-color SVG for
+Room masks SVG icons with the surrounding text color. Use a single-color SVG for
 theme-aware artwork. Use PNG or WebP for multicolor artwork. Do not include
 scripts, remote resources, or private data in an SVG.
 
@@ -172,12 +172,12 @@ result. Do not repeat one surface. Do not show a splash screen or a logo.
 
 ### Capture the images
 
-Install the plugin in BB first. Capture the real plugin surface. Do not draw a
+Install the plugin in Room first. Capture the real plugin surface. Do not draw a
 mockup. Do not reuse marketing artwork.
 
 Use a browser or computer automation tool that the current harness supplies.
 Look for a browser control skill, a computer use tool, or a screenshot tool in
-the session. Drive BB with that tool. Open the plugin surface. Capture the
+the session. Drive Room with that tool. Open the plugin surface. Capture the
 image.
 
 If the harness supplies no such tool, ask the user for the images. Name each

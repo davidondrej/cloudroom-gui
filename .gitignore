@@ -25,6 +25,7 @@ out
 /packages/bb-app/host-daemon/
 /packages/bb-app/host-package/
 /apps/desktop/release/
+/apps/desktop/release.noindex/
 /apps/desktop/.electron-builder.generated.json
 /apps/desktop/.cloudroom-version
 /apps/desktop/.bundled-runtimes/

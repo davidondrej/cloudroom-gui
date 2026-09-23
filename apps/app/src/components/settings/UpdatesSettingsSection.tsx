@@ -52,6 +52,7 @@ import {
   subscribeAppUpdateCheck,
 } from "@/components/settings/app-update-check-store";
 import {
+  CHANGELOG_LINKS,
   fetchLatestChangelogEntry,
   LATEST_CHANGELOG_ENTRY,
   RELEASE_META,
@@ -94,7 +95,6 @@ const EMPTY_PROVIDER_CLI_FAILURES: ReadonlyMap<
   string,
   ProviderCliInstallFailure
 > = new Map();
-const CHANGELOG_URL = "https://getbb.app/changelog";
 const CHANGELOG_STALE_TIME_MS = 5 * 60_000;
 const CHANGELOG_DISMISSED_VERSION_STORAGE_KEY =
   "bb.settings.updates.dismissed-changelog-version";
@@ -482,8 +482,9 @@ function ChangelogBlocks({
 
 export function ChangelogPreviewCard() {
   const changelogQuery = useQuery({
-    queryKey: ["updates", "changelog", "latest"],
+    queryKey: ["updates", "changelog", "latest", CHANGELOG_LINKS.source],
     queryFn: ({ signal }) => fetchLatestChangelogEntry(fetch, signal),
+    enabled: CHANGELOG_LINKS.source !== null && CHANGELOG_LINKS.page !== null,
     placeholderData: LATEST_CHANGELOG_ENTRY ?? undefined,
     retry: false,
     staleTime: CHANGELOG_STALE_TIME_MS,
@@ -534,7 +535,11 @@ export function ChangelogPreviewCard() {
     );
     return () => window.clearTimeout(timeoutId);
   }, [dismissal, prefersReducedMotion]);
-  if (entry === null) {
+  if (
+    entry === null ||
+    CHANGELOG_LINKS.source === null ||
+    CHANGELOG_LINKS.page === null
+  ) {
     return null;
   }
   if (
@@ -593,7 +598,7 @@ export function ChangelogPreviewCard() {
                         variant="ghost"
                         size="icon"
                         className="size-7 text-muted-foreground hover:text-foreground"
-                        aria-label={`Dismiss bb ${entry.version} changelog preview`}
+                        aria-label={`Dismiss Room ${entry.version} changelog preview`}
                         onClick={() => {
                           rawStringLocalStorage.setItem(
                             CHANGELOG_DISMISSED_VERSION_STORAGE_KEY,
@@ -665,10 +670,10 @@ export function ChangelogPreviewCard() {
               <button
                 type="button"
                 disabled={!releaseVisible}
-                aria-label={`Open the full bb ${entry.version} changelog`}
+                aria-label={`Open the full Room ${entry.version} changelog`}
                 onClick={() =>
                   openUrlInExternalBrowser(
-                    `${CHANGELOG_URL}#${entry.version.replaceAll(".", "-")}`,
+                    `${CHANGELOG_LINKS.page}#${entry.version.replaceAll(".", "-")}`,
                   )
                 }
                 className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm text-xs font-semibold text-background underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-background"
@@ -708,7 +713,7 @@ export function ChangelogPreviewCard() {
                   You're all caught up
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                  We'll show the next bb release here.
+                  We'll show the next Room release here.
                 </p>
               </div>
             </div>
@@ -758,7 +763,7 @@ export function BbAppUpdateRows({
   );
   if (isDesktop && desktopInfo === null) {
     return row(
-      <RowName name="bb app" current={null} latest={null} />,
+      <RowName name="Room app" current={null} latest={null} />,
       <RowStateControl live state="in-progress" />,
     );
   }
@@ -768,7 +773,7 @@ export function BbAppUpdateRows({
       desktopInfo.pendingVersion ?? desktopInfo.latestVersion;
     const latest = desktopInfo.updateAvailable ? pendingVersion : null;
     const name = (
-      <RowName name="bb app" current={desktopInfo.version} latest={latest} />
+      <RowName name="Room app" current={desktopInfo.version} latest={latest} />
     );
 
     if (desktopInfo.updateDownloaded) {
@@ -778,7 +783,7 @@ export function BbAppUpdateRows({
           state="restart-required"
           buttonLeading={<BbLogo className="size-3" />}
           buttonLabel="Relaunch"
-          actionLabel="Relaunch bb to finish updating"
+          actionLabel="Relaunch Room to finish updating"
           onClick={() => onRelaunchDesktop?.()}
         />,
       );
@@ -806,14 +811,14 @@ export function BbAppUpdateRows({
 
   if (systemVersion === undefined) {
     return row(
-      <RowName name="bb app" current={null} latest={null} />,
+      <RowName name="Room app" current={null} latest={null} />,
       <RowStateControl state="in-progress" />,
     );
   }
 
   const name = (
     <RowName
-      name="bb app"
+      name="Room app"
       detail={
         systemVersion.updateAvailable ? (
           <span className="hidden truncate font-mono text-2xs text-muted-foreground sm:inline">
@@ -939,7 +944,7 @@ export function BbDaemonUpdateRow({
           <BbLogo className="size-4" />
         </span>
       }
-      title="bb daemon"
+      title="Room daemon"
       state={daemonCaption}
       trailingMeta={null}
       actions={
@@ -1194,7 +1199,7 @@ export function MachineUpdatesFleetSection({
     <SettingsSection
       action={action}
       bodyClassName="border-0 bg-transparent p-0"
-      description="Manage bb and provider CLI updates across all machines."
+      description="Manage Room and provider CLI updates across all machines."
       title="Machine updates"
     >
       <div className="space-y-6 pt-1.5">{children}</div>

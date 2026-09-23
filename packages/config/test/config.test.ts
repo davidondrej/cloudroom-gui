@@ -14,6 +14,7 @@ import {
 import { parseProviderModelConfig } from "../src/inference-model.js";
 import { loadLoggerConfig } from "../src/logger.js";
 import {
+  applyPackagedDesktopRuntimeEnv,
   resolveConfiguredDataDir,
   parsePortValue,
   resolvePortFromEnv,
@@ -68,6 +69,77 @@ function createHostDaemonRuntimeEnv(
 describe("config module boundaries", () => {
   it("does not validate environment at import time", async () => {
     await expect(importConfigModules()).resolves.toBeUndefined();
+  });
+});
+
+describe("packaged Cloudroom runtime", () => {
+  it("ignores BB connection settings without changing provider settings", () => {
+    const env: NodeJS.ProcessEnv = {
+      BB_DATA_DIR: "/Users/tester/.bb",
+      BB_SERVER_PORT: "38886",
+      BB_HOST_DAEMON_PORT: "38887",
+      BB_SERVER_URL: "http://127.0.0.1:38886",
+      BB_SERVER_BIND_HOST: "0.0.0.0",
+      BB_HOST_ID: "host_bb",
+      BB_HOST_ENROLL_KEY: "bb-key",
+      BB_SERVER_HEADERS: '{"authorization":"bb-key"}',
+      BB_THREAD_ID: "thr_bb",
+      OPENAI_API_KEY: "provider-key",
+      BB_LOG_LEVEL: "debug",
+    };
+    applyPackagedDesktopRuntimeEnv({ env, homeDir: "/Users/tester" });
+    expect(env).toMatchObject({
+      BB_DATA_DIR: "/Users/tester/.gui-cloudroom",
+      ROOM_DATA_DIR: "/Users/tester/.gui-cloudroom",
+      BB_SERVER_PORT: "39886",
+      BB_HOST_DAEMON_PORT: "39887",
+      ROOM_HOST_DAEMON_PORT: "39887",
+      BB_SERVER_URL: "http://127.0.0.1:39886",
+      ROOM_SERVER_URL: "http://127.0.0.1:39886",
+      BB_SERVER_BIND_HOST: "127.0.0.1",
+      OPENAI_API_KEY: "provider-key",
+      BB_LOG_LEVEL: "debug",
+    });
+    for (const key of [
+      "BB_HOST_ID",
+      "BB_HOST_ENROLL_KEY",
+      "BB_SERVER_HEADERS",
+      "BB_THREAD_ID",
+    ]) {
+      expect(env[key]).toBeUndefined();
+    }
+  });
+
+  it("uses explicit Cloudroom settings consistently across desktop and child services", () => {
+    const env: NodeJS.ProcessEnv = {
+      ROOM_DATA_DIR: "~/cloudroom-test",
+      ROOM_SERVER_URL: "http://localhost:49886",
+      ROOM_HOST_DAEMON_PORT: "49887",
+      BB_HOST_DAEMON_PORT: "38887",
+    };
+    applyPackagedDesktopRuntimeEnv({ env, homeDir: "/Users/tester" });
+    const first = { ...env };
+    applyPackagedDesktopRuntimeEnv({ env, homeDir: "/Users/tester" });
+    expect(env).toEqual(first);
+    expect(env).toMatchObject({
+      BB_DATA_DIR: "/Users/tester/cloudroom-test",
+      BB_SERVER_PORT: "49886",
+      BB_HOST_DAEMON_PORT: "49887",
+      BB_SERVER_URL: "http://127.0.0.1:49886",
+    });
+  });
+
+  it.each([
+    "https://remote.example",
+    "http://localhost:1234/path",
+    "http://user:password@localhost:1234",
+  ])("rejects a non-local runtime URL: %s", (url) => {
+    expect(() =>
+      applyPackagedDesktopRuntimeEnv({
+        env: { ROOM_SERVER_URL: url },
+        homeDir: "/Users/tester",
+      }),
+    ).toThrow("ROOM_SERVER_URL must be a local");
   });
 });
 
@@ -540,9 +612,9 @@ describe("consumer-specific config", () => {
     expect(hostDaemonConfig.BB_SERVER_URL).toBe("http://localhost:9999");
     expect(cliConfig.ROOM_SERVER_URL).toBe("http://localhost:9999");
 
-    expect(() =>
-      loadCliConfig({ env: { ROOM_SERVER_URL: "   " } }),
-    ).toThrow("ROOM_SERVER_URL must not be empty");
+    expect(() => loadCliConfig({ env: { ROOM_SERVER_URL: "   " } })).toThrow(
+      "ROOM_SERVER_URL must not be empty",
+    );
   });
 
   it("validates host-daemon connection config without requiring data dir", () => {

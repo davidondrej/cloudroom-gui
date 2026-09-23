@@ -1,6 +1,6 @@
 ---
 kind: instruction
-title: bb Guide — Providers
+title: Room Guide — Providers
 summary: Command reference for discovering providers and models.
 intent: Provide complete provider command documentation for agents.
 editingNotes: Keep flags accurate against the CLI implementation.
@@ -11,8 +11,10 @@ Providers are agent backends (e.g., codex, claude-code). Each supports different
 
   room provider list [--machine <id-or-name> | --environment <id>]
                                           List available providers
-  room provider models [providerId] [--machine <id-or-name> | --environment <id>]
+  room provider models [providerId] [--machine <id-or-name> | --environment <id>] [--restart]
                                           List models for a provider
+
+Cloud Codex uses a separate VM login. Check it with `room cloudroom codex status --json`; start official device-code sign-in with `room cloudroom codex login --request-id ID`, or cancel that attempt with `room cloudroom codex cancel ID`. Keep the temporary code private. Verify `connected` before retrying a saved task. This does not authenticate Pi or switch local accounts.
 
 Use these before spawning threads if you are unsure which provider or model to use.
 `--host` is an alias for `--machine`. Machine and environment selectors are
@@ -24,6 +26,11 @@ the explicitly requested provider or Codex, then resolves the model marked
 default by that provider on the target machine (falling back to the first
 catalog model when none is marked).
 
+`room provider models acp-cursor --restart` restarts Cursor's model-discovery
+process and reloads its models. It preserves conversation threads, credentials,
+and project files. Use it when model loading fails; it does not repair login
+or installation problems. Other providers must explicitly support this action.
+
 Model lists answer from the machine's last stored list while a background
 refresh runs, so a list can be hours old. A provider whose refresh keeps
 failing or timing out keeps answering from its last stored list.
@@ -34,12 +41,12 @@ both recall (`memories.use_memories`) and future generation
 (`memories.generate_memories`). Claude Code memory controls native auto-memory
 reads and writes (`autoMemoryEnabled`). Both preferences default on and apply
 when a provider thread is started, resumed, or forked; they do not interrupt
-an active turn. These settings are separate from bb's optional Memory plugin,
+an active turn. These settings are separate from Room's optional Memory plugin,
 an official plugin bundled with the app.
 
 Provider-native subagents can also be disabled on those provider pages. For
 Codex, room turns off the native multi-agent feature and caps V2 sessions at the
-root thread so remote session policy cannot start a child. For Claude Code, bb
+root thread so remote session policy cannot start a child. For Claude Code, Room
 removes the native Task tool. The preferences default off and apply
 when a provider thread is started, resumed, or forked; they do not modify the
 provider's global configuration.
@@ -148,7 +155,7 @@ room hides the /compact command for agents that do not declare it. The plugin
 re-registers its providers as soon as the setting changes, so no restart or
 config refresh is needed.
 
-The old customAcpAgents array in the app data-dir config.json is deprecated. bb
+The old customAcpAgents array in the app data-dir config.json is deprecated. Room
 still reads it and logs a warning for each agent it finds, until 0.41. Move each
 entry into the customAgents setting. The shapes match except for logo, which the
 setting does not accept: room drops that field when it reads the old array, and a

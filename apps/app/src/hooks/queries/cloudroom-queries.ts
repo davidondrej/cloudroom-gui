@@ -1,15 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { reasoningLevelSchema } from "@bb/domain";
+import { reasoningLevelSchema, serviceTierSchema } from "@bb/domain";
 import { fetchWithAppSurface } from "@/lib/app-surface";
 import { sdk } from "@/lib/sdk";
 
 export const cloudroomStatusSchema = z.object({
   ready: z.boolean(),
+  storage: z.object({
+    enabled: z.boolean(), level: z.enum(["normal", "low_space", "blocked"]),
+    reason: z.enum(["disk_capacity", "measurement_unavailable", "unprotected_test_mode"]),
+    workspace_available_bytes: z.number().nullable(), history_available_bytes: z.number().nullable(),
+    workspace_total_bytes: z.number().nullable(), history_total_bytes: z.number().nullable(), sampled_at: z.number().nullable(),
+  }).nullable().optional(),
   projectId: z.string().nullable(),
   repository: z.string().nullable(),
   model: z.string().nullable(),
   workspaces: z.boolean().default(false),
+  teleport: z.boolean().default(false),
   error: z.string().nullable(),
   steer: z.boolean().default(false),
   rewind: z.boolean().default(false),
@@ -23,20 +30,27 @@ export const cloudroomStatusSchema = z.object({
     reasoning_levels: z.array(z.string()),
     models: z.array(z.object({ model: z.string(), reasoning_levels: z.array(z.string()) })).nullable().optional(),
     service_tier: z.boolean().default(false),
+    steer: z.boolean().optional(),
+    compact: z.boolean().optional(),
+    rewind: z.boolean().optional(),
   })).default([]),
 });
 
 export function cloudServiceTierSupported(status: z.infer<typeof cloudroomStatusSchema> | undefined, harness: string | undefined): boolean {
-  return status?.harnesses.find((item) => item.id === harness)?.service_tier === true;
+  return status?.harnesses.find((item) => item.id === (harness === "acp-cursor" ? "cursor" : harness))?.service_tier === true;
 }
 
 export function cloudReasoningLevels(status: z.infer<typeof cloudroomStatusSchema> | undefined, harness: string | undefined, model: string | undefined): string[] {
-  const profile = status?.harnesses.find((item) => item.id === harness);
+  const profile = status?.harnesses.find((item) => item.id === (harness === "acp-cursor" ? "cursor" : harness));
   if (profile?.models === null) return [];
   const remoteModel = harness === "pi" && model ? model.slice(model.indexOf("/") + 1) : model;
   return (profile?.models ? profile.models.find((item) => item.model === remoteModel)?.reasoning_levels : profile?.reasoning_levels) ?? [];
 }
-const threadStatusSchema = z.object({ starting: z.boolean().default(false), sessionId: z.string().nullable(), paused: z.boolean(), failedStart: z.boolean().default(false), model: z.string(), reasoning: reasoningLevelSchema, error: z.string().nullable(), pendingDelivery: z.number() }).nullable();
+export function cloudFeatureSupported(status: z.infer<typeof cloudroomStatusSchema> | undefined, harness: string, feature: "steer" | "compact" | "rewind"): boolean {
+  const profile = status?.harnesses.find((item) => item.id === (harness === "acp-cursor" ? "cursor" : harness));
+  return status?.[feature] === true && profile?.[feature] !== false;
+}
+const threadStatusSchema = z.object({ authRequired: z.boolean().default(false), starting: z.boolean().default(false), sessionId: z.string().nullable(), paused: z.boolean(), failedStart: z.boolean().default(false), model: z.string(), reasoning: reasoningLevelSchema, serviceTier: serviceTierSchema.default("default"), error: z.string().nullable(), reconnecting: z.boolean().default(false), pendingDelivery: z.number() }).nullable();
 
 export function useCloudroomAccount() {
   return useQuery({ queryKey: ["cloudroom-account"], queryFn: ({ signal }) => sdk.cloudroom.status(signal), refetchInterval: (query) => query.state.data?.signingIn ? 1500 : 10000 });
@@ -59,6 +73,14 @@ export function useCloudroomThreadWorkspace(threadId: string, enabled: boolean) 
     queryFn: async ({ signal }) => {
       return z.object({ path: z.string(), branch: z.string().nullable(), head: z.string().nullable() }).nullable().parse(await sdk.cloudroom.threadWorkspace(threadId, signal));
     },
+  });
+}
+
+export function useTeleportThread(threadId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (action: "start" | "cancel") => sdk.cloudroom.teleport(threadId, action),
+    onSettled: () => client.invalidateQueries(),
   });
 }
 

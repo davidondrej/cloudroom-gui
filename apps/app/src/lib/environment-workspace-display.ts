@@ -6,6 +6,7 @@ import type {
 import { resolveEnvironmentDisplayProvider } from "@bb/core-ui";
 import type { SystemEnvironmentProvider } from "@bb/server-contract";
 import type { IconName } from "@bb/shared-ui/icon";
+import { cloudroomEnvironmentPresentation } from "@/lib/cloudroom-environment-label";
 import { pluginIconName } from "@/components/plugin/PluginIcon";
 import { PersistentHostIconName } from "@/lib/host-display";
 import type { MachineLabelHost } from "@/components/machines/MachineLabel";
@@ -91,6 +92,15 @@ export function getEnvironmentProviderDisplayName(
     : `${providerLookup.environmentProviderId} (not installed)`;
 }
 
+function localCloudroomPresentation(
+  providerLookup: EnvironmentWorkspaceDisplayProviderLookup,
+) {
+  if (providerLookup.status !== "loaded" || providerLookup.provider === null) {
+    return null;
+  }
+  return cloudroomEnvironmentPresentation(providerLookup.provider.id, "local");
+}
+
 function getEnvironmentWorkspaceLabel({
   display,
   providerLookup,
@@ -100,6 +110,7 @@ function getEnvironmentWorkspaceLabel({
   if (display.lifecycle === "destroyed") return "Destroyed";
   if (environmentName !== null) return environmentName;
   return (
+    localCloudroomPresentation(providerLookup)?.label ??
     getEnvironmentProviderDisplayName(providerLookup) ??
     display.compactModeLabel
   );
@@ -149,13 +160,15 @@ export function getEnvironmentWorkspaceSummaryDisplay({
     };
   }
   const providerDisplayName = getEnvironmentProviderDisplayName(providerLookup);
-  return providerDisplayName === null
+  const canonical = localCloudroomPresentation(providerLookup);
+  const label = canonical?.label ?? providerDisplayName;
+  return label === null
     ? null
     : {
-        label: providerDisplayName,
-        compactLabel: providerDisplayName,
-        icon: getEnvironmentLabelIconName(providerLookup),
-        providerName: getEnvironmentProviderDisplayName(providerLookup),
+        label,
+        compactLabel: label,
+        icon: canonical?.icon ?? getEnvironmentLabelIconName(providerLookup),
+        providerName: label,
       };
 }
 
@@ -171,7 +184,9 @@ export function getEnvironmentWorkspaceInfoDisplay({
       providerLookup,
       environmentName,
     }),
-    icon: getEnvironmentLabelIconName(providerLookup),
+    icon:
+      localCloudroomPresentation(providerLookup)?.icon ??
+      getEnvironmentLabelIconName(providerLookup),
     machineName: hostName,
   };
 }

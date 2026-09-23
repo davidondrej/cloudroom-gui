@@ -2304,7 +2304,23 @@ export function createAgentRuntime(options: AgentRuntimeOptions): AgentRuntime {
       });
     },
 
-    async listModels({ providerId, bridgeLaunch, cwd }) {
+    async listModels({ providerId, bridgeLaunch, cwd, restart }) {
+      if (restart) {
+        const processKey = resolveProviderProcessKey({
+          bridgeLaunch,
+          providerId,
+        });
+        if (
+          [...threadRuntimeConfigs.values()].some(
+            (config) => config.processKey === processKey,
+          )
+        ) {
+          throw new Error(
+            "Cannot restart model discovery on a runtime hosting threads",
+          );
+        }
+        await providerProcesses.shutdownProvider({ processKey, providerId });
+      }
       await runtime.ensureProvider({ providerId, bridgeLaunch });
       const proc = providerProcesses.requireProviderProcess({
         processKey: resolveProviderProcessKey({ bridgeLaunch, providerId }),

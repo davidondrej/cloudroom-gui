@@ -2,7 +2,7 @@
 
 Cloudroom's desktop app, based on [BB](https://github.com/get-bb/bb). Run agents locally or connect to a compatible [Cloudroom core](https://github.com/davidondrej/cloudroom-core) for cloud execution.
 
-This is an experimental developer build. Hosted cloud access is invite-only. Building the GUI does not require the core checkout, a Cloudroom account, or cloud credentials.
+This is an experimental source release. Building needs no Cloudroom account or core checkout. Using the GUI currently requires an invite-enabled Cloudroom account, including for local agents. See [release notes and compatibility](docs/releases.md).
 
 ## Build from source
 
@@ -33,18 +33,18 @@ pnpm exec turbo run dev --filter=@bb/desktop
 
 Development uses checkout-specific ports and a separate profile. The launcher prints both. Stop each command with Ctrl-C. Local agents require their own installed, authenticated provider CLIs.
 
-Cloud execution requires a compatible running core, not its source files. Use **Sign in** for hosted access. Self-hosted connections use `POST /api/v1/cloudroom` with `url` and `token`; remote URLs require HTTPS. Keep tokens out of browser code, URLs, and Git. Public core releases may lag GUI development, so confirm API compatibility before connecting.
+Use **Sign in** for hosted access. Cloud execution requires a matching core with `direct_workspaces` and `command_guard` capabilities; the September 21 public core snapshot is too old for default guarded starts. Manual connections use `POST /api/v1/cloudroom` with `url` and `token`, but do not bypass the GUI account requirement. Remote URLs require HTTPS. Keep tokens out of browser code, URLs, and Git.
 
 ## Checks
 
-The 18 script-suite failures from the initial alpha are fixed. The standalone build, typechecks, configuration and scripts suites, and bundled-helper tests pass.
+Use the non-interactive checks below. Desktop integration tests can launch real apps; run them only in a dedicated test environment.
 
 ```sh
 pnpm exec turbo run test --filter=@bb/scripts --filter=@bb/config --concurrency=2
 pnpm exec turbo run test --filter=@bb/server -- test/app/cloudroom-assets.test.ts
 ```
 
-The sync helper ships in `apps/server/src/assets/cloudroom-sync/`. Both source and bundled builds use that copy. Maintainers update it from the core; the development repository checks that the copies match. It needs no third-party Python packages.
+Sync and preview helpers ship in `apps/server/src/assets/cloudroom-{sync,preview}/`. Maintainers copy them from the core and verify byte-for-byte parity. They use Python's standard library.
 
 The desktop build above creates runnable bundles, not a signed installer. Installer signing, notarization, and publication are separate steps.
 

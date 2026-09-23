@@ -9,9 +9,10 @@ This index lists every command path that the core CLI registers. Read the task-s
 - `room cloudroom sign-in`
 - `room cloudroom cancel`
 - `room cloudroom logout`
+- `room cloudroom codex status [--json]`
+- `room cloudroom codex login --request-id ID [--json]`
+- `room cloudroom codex cancel ID [--json]`
 - `room cloudroom retry-start`
-- `room cloudroom workspace`
-- `room cloudroom prepare`
 - `room cloudroom thread-workspace`
 
 `sign-in --project ID` prints the browser link for connecting the account's existing VM. `--website-url http://127.0.0.1:PORT` is for local website development. All commands accept `--json`. Logout removes this app's VM credentials, not remote jobs or local history. Existing cloud bindings block switching to another account/core. `retry-start` retries a rejected launch with its saved prompt and original request ID; it never reruns an existing cloud session.

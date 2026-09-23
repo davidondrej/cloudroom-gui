@@ -7,40 +7,40 @@ export const commands = [
     summary:
       "Open an isolated desktop or local headless session; --tab explicitly hands off an existing tab",
     usage:
-      "bb browser-automation open --backend desktop --machine <host-id> --desktop <instance-id> [--tab <tab-id>] [--thread <id>] [--json] | open --backend local --headless --machine <host-id> [--thread <id>] [--json]",
+      "room browser-automation open --backend desktop --machine <host-id> --desktop <instance-id> [--tab <tab-id>] [--thread <id>] [--json] | open --backend local --headless --machine <host-id> [--thread <id>] [--json]",
   },
   {
     name: "list",
     summary: "List this thread's browser sessions",
-    usage: "bb browser-automation list [--thread <id>] [--json]",
+    usage: "room browser-automation list [--thread <id>] [--json]",
   },
   {
     name: "run",
     summary: "Run a trusted DevBrowser script; runs serialize per session",
     usage:
-      "bb browser-automation run <session-id> (--script <code> | --script-file <path> --script-host <host-id>) [--timeout-ms <1000..120000>] [--thread <id>] [--json]",
+      "room browser-automation run <session-id> (--script <code> | --script-file <path> --script-host <host-id>) [--timeout-ms <1000..120000>] [--thread <id>] [--json]",
   },
   {
     name: "pages",
     summary: "Inspect persistent named pages",
-    usage: "bb browser-automation pages <session-id> [--thread <id>] [--json]",
+    usage: "room browser-automation pages <session-id> [--thread <id>] [--json]",
   },
   {
     name: "screenshot",
     summary: "Save a bounded JPEG in session tmp; return its path and host ID",
     usage:
-      "bb browser-automation screenshot <session-id> [--page <name>] [--thread <id>] [--json]",
+      "room browser-automation screenshot <session-id> [--page <name>] [--thread <id>] [--json]",
   },
   {
     name: "stop",
     summary:
       "Cancel queued and running work and release control; open a new session to resume",
-    usage: "bb browser-automation stop <session-id> [--thread <id>] [--json]",
+    usage: "room browser-automation stop <session-id> [--thread <id>] [--json]",
   },
   {
     name: "close",
     summary: "Dispose owned browsers and tabs, preserving handed-off tabs",
-    usage: "bb browser-automation close <session-id> [--thread <id>] [--json]",
+    usage: "room browser-automation close <session-id> [--thread <id>] [--json]",
   },
 ];
 const methodSchema = z.enum([
@@ -85,7 +85,7 @@ export function parseCli(argv: string[], contextThreadId?: string) {
     }
   }
   const threadId = flags.get("--thread") ?? contextThreadId;
-  if (!threadId) throw new Error("Run from a BB thread or pass --thread <id>");
+  if (!threadId) throw new Error("Run from a Room thread or pass --thread <id>");
   if (contextThreadId && threadId !== contextThreadId)
     throw new Error(
       "CLI calls from a thread cannot access another thread's browser session",

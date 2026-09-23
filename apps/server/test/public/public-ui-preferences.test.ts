@@ -116,11 +116,11 @@ describe("public ui preferences", () => {
     });
   });
 
-  it("defaults unset organization to Custom without persisting a choice", async () => {
+  it("defaults unset organization to By project without persisting a choice", async () => {
     await withTestHarness(async (harness) => {
       expect(await readJson(await listPreferences(harness))).toMatchObject({
         preferences: {
-          "sidebar.organizationMode": { revision: 0, value: "chronological" },
+          "sidebar.organizationMode": { revision: 0, value: "project" },
         },
       });
       expect(
@@ -267,7 +267,7 @@ describe("public ui preferences", () => {
       };
       expect(listed.preferences["sidebar.organizationMode"]).toEqual({
         revision: 4,
-        value: "chronological",
+        value: "project",
       });
       expect(listed.preferences["sidebar.unknownKey"]).toBeUndefined();
     });

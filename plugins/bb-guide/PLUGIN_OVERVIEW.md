@@ -1,9 +1,9 @@
-# BB guide
+# Room guide
 
-Control the BB introduction and bundled agent skills in Settings → Installed
-plugins → BB guide. The plugin and all six settings default to enabled.
+Control the Room introduction and bundled agent skills in Settings → Installed
+plugins → Room guide. The plugin and all six settings default to enabled.
 
-- `introduction`: send the BB CLI, thread, and link instructions.
+- `introduction`: send the Room CLI, thread, and link instructions.
 - `skills`: make the selected bundled skills available.
 - `bbCli`: include `room-cli`.
 - `pluginAuthoring`: include `bb-plugin-authoring`.

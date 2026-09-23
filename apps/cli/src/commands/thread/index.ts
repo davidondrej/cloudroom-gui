@@ -21,7 +21,7 @@ export function registerThreadCommands(
     .description("Manage Local and Cloud threads");
   thread.addHelpText(
     "after",
-    "\nCloud: plain-text messages queue automatically. Forks, child launches, steering, scheduling, attachments, message editing, and compaction are not enabled. Local behavior is unchanged.",
+    "\nCloud messages queue automatically. Check `room cloudroom status --json` for core/harness support for steering, attachments, compaction, message editing, and queue changes. Forks, child launches, and scheduling are not enabled. Verify actual output; idle alone does not prove queued work completed.",
   );
   registerWaitCommand(thread, getUrl);
   registerSpawnCommand(thread, getUrl);

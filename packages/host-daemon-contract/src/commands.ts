@@ -353,8 +353,25 @@ export const threadStopCommandSchema = hostDaemonThreadTargetSchema
   .extend({
     type: z.literal("thread.stop"),
     intent: threadStopIntentSchema,
+    immediate: z.boolean().optional(),
   })
   .strict();
+
+const teleportFileSchema = z.object({ path: z.string(), size: z.number().int().nonnegative(), sha256: z.string(), kind: z.enum(["native", "context", "project", "attachment"]), executable: z.boolean(), symlink: z.boolean().optional(), origin: z.string().optional() });
+const threadTeleportCommandSchema = hostDaemonThreadWorkspaceTargetSchema.extend({
+  type: z.literal("thread.teleport"),
+  transferId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/),
+  action: z.enum(["capture", "read"]),
+  sessions: z.array(z.object({ threadId: z.string().regex(/^[a-zA-Z0-9_-]+$/), nativeId: z.string().regex(/^[a-zA-Z0-9_-]+$/), harness: z.enum(["codex", "pi"]) })).optional(),
+  attachments: z.array(z.string()).optional(),
+  extraText: z.string().max(HOST_ARTIFACT_MAX_BYTES).optional(),
+  index: z.number().int().nonnegative().optional(),
+  offset: z.number().int().nonnegative().optional(),
+}).strict();
+const threadTeleportResultSchema = z.object({
+  nativeId: z.string().optional(), files: z.array(teleportFileSchema).optional(), omitted: z.array(z.string()).optional(),
+  data: z.string().optional(), sha256: z.string().optional(), size: z.number().int().nonnegative().optional(), pending: z.boolean().optional(),
+}).strict();
 
 const threadStorageDeleteCommandSchema = hostDaemonThreadTargetSchema.extend({
   type: z.literal("thread.storage.delete"),
@@ -838,6 +855,7 @@ const providerListModelsCommandSchema = z.object({
   providerId: z.string().min(1),
   bridgeLaunch: hostDaemonBridgeLaunchSchema,
   cwd: z.string().min(1).optional(),
+  restart: z.boolean().optional(),
 });
 
 const providerHealthCommandSchema = z
@@ -1448,6 +1466,10 @@ export const hostDaemonCommandRegistry = {
     retryable: false,
     flushEventsBeforeResult: true,
     envLane: null,
+  }),
+  "thread.teleport": defineHostDaemonCommandDescriptor({
+    type: "thread.teleport", schema: threadTeleportCommandSchema, resultSchema: threadTeleportResultSchema,
+    transport: "settled", retryable: true, flushEventsBeforeResult: true, envLane: "read",
   }),
   "thread.storage.delete": defineHostDaemonCommandDescriptor({
     type: "thread.storage.delete",

@@ -13,6 +13,7 @@ import {
 } from "./cloudroom-version.mjs";
 
 import { prepareRuntimes } from "./prepare-runtimes.mjs";
+import { unregisterBundle } from "./macos-bundle.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const desktopPackageRoot = resolve(scriptDirectory, "..");
@@ -311,6 +312,9 @@ async function main() {
   await writeGeneratedConfig(config);
   try {
     await runElectronBuilder(electronBuilderArgs, signingPlan);
+    if (process.platform === "darwin") {
+      await unregisterBundle(resolve(desktopPackageRoot, config.directories.output));
+    }
   } finally {
     await removeGeneratedConfig();
   }

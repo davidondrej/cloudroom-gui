@@ -44,7 +44,7 @@ function parseAddArguments(
     return {
       ok: false,
       message:
-        "Usage: bb push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>",
+        "Usage: room push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>",
     };
   }
   const values = new Map<string, string>();
@@ -60,7 +60,7 @@ function parseAddArguments(
       return {
         ok: false,
         message:
-          "Usage: bb push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>",
+          "Usage: room push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>",
       };
     }
     values.set(key, value);
@@ -142,14 +142,14 @@ export function createPushNotificationsPlugin(
         type: "boolean",
         label: "Web notifications",
         description:
-          "Show system notifications while bb is open in a browser. Each browser needs notification permission.",
+          "Show system notifications while Room is open in a browser. Each browser needs notification permission.",
         default: true,
       },
       desktopEnabled: {
         type: "boolean",
         label: "Desktop notifications",
         description:
-          "Show system notifications while the bb desktop app is running.",
+          "Show system notifications while the Room desktop app is running.",
         default: true,
       },
       expoPushUrl: {
@@ -197,7 +197,7 @@ export function createPushNotificationsPlugin(
       }
       bb.realtime.publish(CLIENT_NOTIFICATION_CHANNEL, {
         id: randomUUID(),
-        title: "bb notifications are working",
+        title: "Room notifications are working",
         body: "You’ll be notified when a thread needs your attention.",
         threadId: null,
         channels: [channel],
@@ -227,28 +227,28 @@ export function createPushNotificationsPlugin(
           name: "test",
           summary:
             "Send a test to connected web or desktop clients with permission",
-          usage: "bb push-notifications test <web|desktop>",
+          usage: "room push-notifications test <web|desktop>",
         },
         {
           name: "list",
           summary: "List registered push devices",
-          usage: "bb push-notifications list [--json]",
+          usage: "room push-notifications list [--json]",
         },
         {
           name: "add",
           summary: "Register or refresh an Expo push device",
           usage:
-            "bb push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>",
+            "room push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>",
         },
         {
           name: "remove",
           summary: "Remove a registered push device",
-          usage: "bb push-notifications remove <id>",
+          usage: "room push-notifications remove <id>",
         },
         {
           name: "status",
           summary: "Show push delivery status",
-          usage: "bb push-notifications status [--json]",
+          usage: "room push-notifications status [--json]",
         },
       ],
       async run(argv) {
@@ -316,7 +316,7 @@ export function createPushNotificationsPlugin(
         return {
           exitCode: 1,
           stderr:
-            "Usage: bb push-notifications <list|add|remove|status|test> [options]",
+            "Usage: room push-notifications <list|add|remove|status|test> [options]",
         };
       },
     });

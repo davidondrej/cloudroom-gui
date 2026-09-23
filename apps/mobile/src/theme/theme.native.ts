@@ -65,6 +65,7 @@ export interface NativeThemeTokens {
   prMerged: string;
   primary: string;
   primaryForeground: string;
+  primaryText: string;
   readbackForeground: string;
   ring: string;
   secondary: string;
@@ -174,6 +175,7 @@ export const nativeThemes: Record<BuiltInThemeId, NativeThemeModes> = {
       prMerged: "#8839ef",
       primary: "#8839ef",
       primaryForeground: "#eff1f5",
+      primaryText: "#8839ef",
       readbackForeground: "#6c6f85",
       ring: "#8839ef",
       secondary: "#e2e3e9",
@@ -275,6 +277,7 @@ export const nativeThemes: Record<BuiltInThemeId, NativeThemeModes> = {
       prMerged: "#cba6f7",
       primary: "#cba6f7",
       primaryForeground: "#1e1e2e",
+      primaryText: "#cba6f7",
       readbackForeground: "#a6adc8",
       ring: "#cba6f7",
       secondary: "#4b4d62",
@@ -378,6 +381,7 @@ export const nativeThemes: Record<BuiltInThemeId, NativeThemeModes> = {
       prMerged: "#7847d0",
       primary: "#007aff",
       primaryForeground: "#ffffff",
+      primaryText: "#007aff",
       readbackForeground: "#747474",
       ring: "#007aff",
       secondary: "#e4e4e4",
@@ -479,6 +483,7 @@ export const nativeThemes: Record<BuiltInThemeId, NativeThemeModes> = {
       prMerged: "#a27dfa",
       primary: "#0a84ff",
       primaryForeground: "#ffffff",
+      primaryText: "#0a84ff",
       readbackForeground: "#808080",
       ring: "#0a84ff",
       secondary: "#2b2b2b",
@@ -582,6 +587,7 @@ export const nativeThemes: Record<BuiltInThemeId, NativeThemeModes> = {
       prMerged: "#7d5bbe",
       primary: "#7d5bbe",
       primaryForeground: "#ffffff",
+      primaryText: "#7d5bbe",
       readbackForeground: "#6b6d78",
       ring: "#7d5bbe",
       secondary: "#e4e5eb",
@@ -683,6 +689,7 @@ export const nativeThemes: Record<BuiltInThemeId, NativeThemeModes> = {
       prMerged: "#bd93f9",
       primary: "#bd93f9",
       primaryForeground: "#282a36",
+      primaryText: "#bd93f9",
       readbackForeground: "#a5a7b0",
       ring: "#bd93f9",
       secondary: "#5d5f6a",
@@ -786,6 +793,7 @@ export const nativeThemes: Record<BuiltInThemeId, NativeThemeModes> = {
       prMerged: "#8f3f71",
       primary: "#076678",
       primaryForeground: "#fbf1c7",
+      primaryText: "#076678",
       readbackForeground: "#7a7666",
       ring: "#076678",
       secondary: "#eae1ba",
@@ -887,6 +895,7 @@ export const nativeThemes: Record<BuiltInThemeId, NativeThemeModes> = {
       prMerged: "#d3869b",
       primary: "#83a598",
       primaryForeground: "#282828",
+      primaryText: "#83a598",
       readbackForeground: "#9f957d",
       ring: "#83a598",
       secondary: "#5a574d",
@@ -990,6 +999,7 @@ export const nativeThemes: Record<BuiltInThemeId, NativeThemeModes> = {
       prMerged: "#9d7cb8",
       primary: "#5e81ac",
       primaryForeground: "#eceff4",
+      primaryText: "#5e81ac",
       readbackForeground: "#6c727c",
       ring: "#5e81ac",
       secondary: "#dbdee4",
@@ -1091,6 +1101,7 @@ export const nativeThemes: Record<BuiltInThemeId, NativeThemeModes> = {
       prMerged: "#b48ead",
       primary: "#88c0d0",
       primaryForeground: "#2e3440",
+      primaryText: "#88c0d0",
       readbackForeground: "#969ca8",
       ring: "#88c0d0",
       secondary: "#5b616d",
@@ -1194,6 +1205,7 @@ export const nativeThemes: Record<BuiltInThemeId, NativeThemeModes> = {
       prMerged: "#6c71c4",
       primary: "#268bd2",
       primaryForeground: "#fdf6e3",
+      primaryText: "#268bd2",
       readbackForeground: "#577a6f",
       ring: "#268bd2",
       secondary: "#e9e6d1",
@@ -1295,6 +1307,7 @@ export const nativeThemes: Record<BuiltInThemeId, NativeThemeModes> = {
       prMerged: "#6c71c4",
       primary: "#268bd2",
       primaryForeground: "#002b36",
+      primaryText: "#268bd2",
       readbackForeground: "#5e747b",
       ring: "#268bd2",
       secondary: "#2d4b54",

@@ -116,7 +116,7 @@ bb.agents.configure((context) => {
 ```
 
 Metadata uses ordinary thread access rules. Do not store secrets in it or use
-it for authorization. BB does not automatically add it to thread DTOs,
+it for authorization. Room does not automatically add it to thread DTOs,
 prompts, provider or host payloads, or model input.
 
 `threads.spawn` takes `prompt` (a string) or `input` (structured prompt

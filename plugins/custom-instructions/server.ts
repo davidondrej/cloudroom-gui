@@ -16,7 +16,7 @@ export default async function plugin(bb: BbPluginApi) {
       type: "string",
       label: "Custom instructions",
       description:
-        "Give agents extra instructions and context for tasks on this bb host.",
+        "Give agents extra instructions and context for tasks on this Room host.",
       experimental_multiline: true,
       experimental_schema: customInstructionsSchema,
       default: "",
@@ -48,17 +48,17 @@ export default async function plugin(bb: BbPluginApi) {
       {
         name: "get",
         summary: "Print the current custom instructions",
-        usage: "bb instructions get [--json]",
+        usage: "room instructions get [--json]",
       },
       {
         name: "set",
         summary: "Replace the custom instructions",
-        usage: "bb instructions set <text...> [--json]",
+        usage: "room instructions set <text...> [--json]",
       },
       {
         name: "clear",
         summary: "Clear the custom instructions",
-        usage: "bb instructions clear [--json]",
+        usage: "room instructions clear [--json]",
       },
     ],
     async run(argv) {
@@ -103,7 +103,7 @@ export default async function plugin(bb: BbPluginApi) {
       }
       return {
         exitCode: 1,
-        stderr: "Usage: bb instructions get|set <text...>|clear [--json]",
+        stderr: "Usage: room instructions get|set <text...>|clear [--json]",
       };
     },
   });

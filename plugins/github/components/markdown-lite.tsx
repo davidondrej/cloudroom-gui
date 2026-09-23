@@ -83,7 +83,7 @@ function renderInline(text: string): React.ReactNode[] {
           href={href}
           target="_blank"
           rel="noreferrer"
-          className="text-primary underline underline-offset-2"
+          className="text-primary-text underline underline-offset-2"
         >
           {renderInline(label)}
         </UrlLink>,

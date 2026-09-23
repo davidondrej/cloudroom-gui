@@ -19,7 +19,7 @@ const SCRIPT_OUTPUT_MAX_BYTES = 1024 * 1024;
 let resolvedBbPath: string | null = null;
 
 const BB_NOT_INJECTED_WARNING =
-  "[bb] warning: could not locate the room CLI, so `room` is not on PATH for this script.";
+  "[Room] warning: could not locate the room CLI, so `room` is not on PATH for this script.";
 
 async function commandWorks(command: string, args: string[]): Promise<boolean> {
   try {

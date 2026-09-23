@@ -9,7 +9,10 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { spawnLoggedProcess } from "../src/logged-process.js";
+import {
+  readProcessLogTail,
+  spawnLoggedProcess,
+} from "../src/logged-process.js";
 
 const scratchDirs: string[] = [];
 
@@ -41,6 +44,32 @@ function waitForExit(child: ChildProcess): Promise<number | null> {
     });
   });
 }
+
+describe("startup log diagnostics", () => {
+  it("includes the actual child failure in the bounded log tail", async () => {
+    const logDir = scratchDir();
+    const logPath = join(logDir, "host-daemon-stdio.log");
+    writeFileSync(logPath, `${"old output\n".repeat(10_000)}`);
+    const message =
+      "Error: Host daemon local API port 39887 is already in use on 127.0.0.1.";
+    const child = spawnLoggedProcess({
+      command: process.execPath,
+      args: [
+        "-e",
+        `console.error(${JSON.stringify(message)}); process.exit(1);`,
+      ],
+      env: process.env,
+      logDir,
+      logName: "host-daemon",
+    });
+    expect(await waitForExit(child)).toBe(1);
+    const tail = readProcessLogTail(logPath);
+    expect(tail).toContain(message);
+    expect(tail.split("\n")).toHaveLength(40);
+    expect(Buffer.byteLength(tail)).toBeLessThanOrEqual(16_384);
+    expect(readProcessLogTail(join(logDir, "missing.log"))).toBe("");
+  });
+});
 
 describe("spawnLoggedProcess", () => {
   it.each(["server", "host-daemon"] as const)(

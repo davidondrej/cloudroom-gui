@@ -16,7 +16,6 @@ import {
   PromptStackCardChevron,
   PROMPT_STACK_CARD_HEADER_BUTTON_CLASS,
   PROMPT_STACK_CARD_ROW_HEIGHT,
-  PROMPT_STACK_INLAY_INSET_CLASS,
   PROMPT_STACK_INLAY_SEGMENT_CLASS,
 } from "@/components/promptbox/banner/PromptStackCard";
 import {
@@ -175,6 +174,12 @@ const SECTION_IDS = {
 } as const;
 
 const SEGMENT_SHRINK_CLASS = "min-w-0 overflow-hidden";
+const CONTEXT_BANNER_CARD_CLASS = cn(
+  "relative z-10 ml-auto mr-3 w-fit overflow-hidden sm:mr-4",
+  "[[data-app-composer]_&:last-child]:-mb-5 [[data-app-composer]_&:last-child]:rounded-b-none [[data-app-composer]_&:last-child]:border-b-0 [[data-app-composer]_&:last-child]:pb-3",
+);
+const CONTEXT_BANNER_ROW_CLASS =
+  "flex items-center gap-0.5 p-0.5 text-xs text-muted-foreground";
 
 function ChildThreadIcon({ className }: { className?: string }) {
   return (
@@ -700,15 +705,9 @@ function ReadOnlyContextBanner({
   return (
     <PromptStackCard
       ariaLabel="Thread context before sending"
-      className="overflow-hidden"
-      style={{ minHeight: PROMPT_STACK_CARD_ROW_HEIGHT }}
+      className={CONTEXT_BANNER_CARD_CLASS}
     >
-      <div
-        className={cn(
-          "flex items-center gap-0.5 text-xs text-muted-foreground",
-          PROMPT_STACK_INLAY_INSET_CLASS,
-        )}
-      >
+      <div className={CONTEXT_BANNER_ROW_CLASS}>
         {parentThreadSection ? (
           <ParentThreadSectionToggle
             section={parentThreadSection}
@@ -899,15 +898,9 @@ export function ThreadPromptContextBanner({
     visibleSegmentCount > 0 ? (
       <PromptStackCard
         ariaLabel="Thread context before sending"
-        className="overflow-hidden"
-        style={{ minHeight: PROMPT_STACK_CARD_ROW_HEIGHT }}
+        className={CONTEXT_BANNER_CARD_CLASS}
       >
-        <div
-          className={cn(
-            "flex items-center gap-0.5 text-xs text-muted-foreground",
-            PROMPT_STACK_INLAY_INSET_CLASS,
-          )}
-        >
+        <div className={CONTEXT_BANNER_ROW_CLASS}>
           {showParentThread && parentThreadSection && isParentThreadOnly ? (
             <div
               className={cn(
@@ -999,7 +992,7 @@ export function ThreadPromptContextBanner({
 
   if (activeChildThreadsCard && compactContextBanner) {
     return (
-      <div className="min-w-0 space-y-2">
+      <div className="contents">
         {activeChildThreadsCard}
         {compactContextBanner}
       </div>

@@ -1,7 +1,7 @@
 {
   "name": "bb-plugin-tasks",
   "version": "0.1.2",
-  "description": "Plan and track work in BB, delegate tasks to agents, and keep task context connected to worker threads.",
+  "description": "Plan and track work in Room, delegate tasks to agents, and keep task context connected to worker threads.",
   "private": true,
   "license": "MIT",
   "homepage": "https://github.com/get-bb/bb#readme",
@@ -27,7 +27,7 @@
   },
   "bb": {
     "name": "Tasks",
-    "description": "Plan and track work in BB, delegate tasks to agents, and keep task context connected to worker threads.",
+    "description": "Plan and track work in Room, delegate tasks to agents, and keep task context connected to worker threads.",
     "branding": {
       "icon": "ListTodo"
     },

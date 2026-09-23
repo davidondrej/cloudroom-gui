@@ -264,7 +264,7 @@ export function validatePluginArtifactMeta(args: {
   }
   const meta = parsed.meta;
   if (meta.sdkMajor !== PLUGIN_SDK_MAJOR) {
-    return `${args.artifact} artifact for plugin "${args.pluginId}" was built for SDK major ${meta.sdkMajor}, running SDK major is ${PLUGIN_SDK_MAJOR}; rebuild the ${args.artifact} artifact with this bb version`;
+    return `${args.artifact} artifact for plugin "${args.pluginId}" was built for SDK major ${meta.sdkMajor}, running SDK major is ${PLUGIN_SDK_MAJOR}; rebuild the ${args.artifact} artifact with this Room version`;
   }
   if (meta.artifactFormatVersion !== 1) return null;
   if (meta.pluginId !== args.pluginId) {

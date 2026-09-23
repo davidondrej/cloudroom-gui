@@ -301,7 +301,7 @@ published `@get-bb/plugin-sdk/host` contract such as
 `experimental_nativeRootsHostContract` is bundled from the plugin's own SDK
 install, so that plugin lists the SDK under `dependencies` (see
 "bb.providers.register — agent providers" below; every provider plugin in
-room does this). Either way the daemon never resolves the SDK or private BB
+room does this). Either way the daemon never resolves the SDK or private Room
 packages from the plugin at runtime.
 
 Pure JavaScript dependencies are bundled. For external tools, use

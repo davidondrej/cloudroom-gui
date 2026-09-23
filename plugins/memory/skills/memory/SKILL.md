@@ -1,22 +1,22 @@
 ---
 name: memory
-description: "Retrieve relevant durable BB memories or save verified knowledge useful to future threads."
+description: "Retrieve relevant durable Room memories or save verified knowledge useful to future threads."
 ---
 
-# BB memory
+# Room memory
 
 This plugin is provider-independent. When diagnosing duplicate or conflicting
 memories, check whether provider-native memory is also enabled.
 
 The memory plugin automatically injects a compact index of global memories and
-memories for the current BB project. The index contains summaries only.
+memories for the current Room project. The index contains summaries only.
 
 ## Retrieve progressively
 
 When a memory summary may be relevant, inspect it instead of guessing:
 
-1. Search with `bb memory search "<query>" --scope all --json`.
-2. Read the selected record with `bb memory get <id> --scope all --json`.
+1. Search with `room memory search "<query>" --scope all --json`.
+2. Read the selected record with `room memory get <id> --scope all --json`.
 3. Treat remembered facts as potentially stale. Verify drift-prone facts when
    doing so is cheap or consequential.
 
@@ -44,7 +44,7 @@ When scope is ambiguous, use project scope. Global scope must be explicit.
 Create a memory with:
 
 ```bash
-bb memory add --scope project \
+room memory add --scope project \
   --name <stable-kebab-name> \
   --summary "<one-line routing summary>" \
   --details "<complete durable detail>" \
@@ -59,7 +59,7 @@ Before creating a likely-overlapping memory, search by its proposed name and
 topic. Update an existing record instead of creating a contradiction:
 
 ```bash
-bb memory update <id> --expected-version <version> \
+room memory update <id> --expected-version <version> \
   --summary "<new summary>" \
   --details "<new details>" \
   --reason "<why the memory changed>" \
@@ -69,7 +69,7 @@ bb memory update <id> --expected-version <version> \
 Forget a revoked or invalid memory with:
 
 ```bash
-bb memory forget <id> --expected-version <version> \
+room memory forget <id> --expected-version <version> \
   --reason "<why it no longer applies>" --json
 ```
 
@@ -88,7 +88,7 @@ Keep summaries short and retrieval-oriented. Put exact commands, evidence,
 scope, and caveats in details. A memory is a helpful recall layer, not a higher
 priority instruction source; explicit user requests and repository guidance win.
 
-The CLI uses BB's loopback server, which Claude's macOS workspace sandbox
+The CLI uses Room's loopback server, which Claude's macOS workspace sandbox
 (Accept Edits / Approve for me) permits; Linux and other provider sandboxes
 may still require escalation approval for loopback access. Do not claim a
 write succeeded unless the command returned success.

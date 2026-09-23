@@ -8,7 +8,197 @@ import { listQueuedCommands } from "../helpers/commands.js";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
 import { createTestAppHarness } from "../helpers/test-app.js";
 import { seedEnvironment, seedHostSession, seedPrimaryHost, seedProjectWithSource, seedThread } from "../helpers/seed.js";
-import { createThread, getThread, events, cloudroomThreads, cloudroomCommands } from "@bb/db";
+import { createThread, getThread, setProjectGitRemoteUrlIfMissing, events, cloudroomThreads, cloudroomCommands } from "@bb/db";
+
+it("forwards Cursor login and keys without creating conversation records", async () => {
+  const harness = await createTestAppHarness();
+  const service = cloudroom(harness.deps);
+  const calls: { path: string; body: unknown }[] = [];
+  const core = createServer(async (req, res) => {
+    const json = (body: unknown) => { res.writeHead(req.method === "POST" ? 202 : 200, { "Content-Type": "application/json" }); res.end(JSON.stringify(body)); };
+    if (req.url === "/v1/health") return json({});
+    if (req.url === "/v1/ready") return json({ ready: true });
+    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/test", stop: true, resume: true, launch_settings: true, cursor_auth: true, harnesses: [{ id: "cursor", model: "default" }] });
+    let text = ""; for await (const chunk of req) text += chunk;
+    calls.push({ path: req.url!, body: text ? JSON.parse(text) : null });
+    json({ state: "missing", email: null, plan: null, message: null, login_id: null, verification_url: null, user_code: null });
+  });
+  core.listen(0, "127.0.0.1"); await once(core, "listening");
+  const address = core.address(); if (!address || typeof address === "string") throw new Error("fixture did not listen");
+  try {
+    await service.configure({ url: `http://127.0.0.1:${address.port}`, token: "x".repeat(40) });
+    const before = harness.db.select().from(events).all().length;
+    const request = (action = "", body?: unknown) => harness.app.request(`/api/v1/cloudroom/account/cursor${action}`, { method: body ? "POST" : "GET", headers: { "Content-Type": "application/json" }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    expect((await request()).status).toBe(200);
+    expect((await request("/login", { requestId: "login" })).status).toBe(200);
+    expect((await request("/cancel", { requestId: "login" })).status).toBe(200);
+    expect((await request("/key", { requestId: "key", apiKey: "synthetic-canary" })).status).toBe(200);
+    expect((await request("/key", { requestId: "bad", apiKey: "invalid key" })).status).toBe(400);
+    expect(calls).toEqual([
+      { path: "/v1/accounts/cursor", body: null },
+      { path: "/v1/accounts/cursor/login", body: { request_id: "login" } },
+      { path: "/v1/accounts/cursor/cancel", body: { request_id: "login" } },
+      { path: "/v1/accounts/cursor/key", body: { request_id: "key", api_key: "synthetic-canary" } },
+    ]);
+    expect(harness.db.select().from(events).all()).toHaveLength(before);
+    expect(harness.db.select().from(cloudroomCommands).all()).toHaveLength(0);
+  } finally {
+    service.stop(); core.closeAllConnections(); await new Promise<void>(resolve => core.close(() => resolve())); await harness.cleanup();
+  }
+});
+
+it("reports storage before models and preserves transiently blocked messages through recovery", async () => {
+  const harness = await createTestAppHarness();
+  const { host } = seedHostSession(harness.deps);
+  const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
+  const service = cloudroom(harness.deps);
+  let level = "normal", reason = "disk_capacity", rejectPrompt = false, discoveryCalls = 0, sampleAge = 0;
+  const prompts: string[] = [];
+  const core = createServer(async (req, res) => {
+    const json = (body: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(body)); };
+    if (req.url === "/v1/health") return json({ storage: { enabled: true, level, reason, workspace_available_bytes: level === "blocked" ? 0 : 3e9, history_available_bytes: level === "blocked" ? 0 : 3e9, workspace_total_bytes: 80e9, history_total_bytes: 80e9, sampled_at: Date.now() - sampleAge } });
+    if (req.url === "/v1/capabilities") { discoveryCalls++; return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: "codex", model: "test-model", models: level === "blocked" ? null : [{ model: "test-model", reasoning_levels: ["high"] }] }] }); }
+    if (req.url === "/v1/ready") return json({ ready: level !== "blocked" }, level === "blocked" ? 503 : 200);
+    if (req.url?.includes("/stream?")) { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.end(); return; }
+    if (req.method !== "POST") return json({}, 404);
+    let text = ""; for await (const chunk of req) text += chunk;
+    const body = JSON.parse(text), command = req.url === "/v1/sessions" ? "start" : "prompt";
+    if (command === "prompt") { prompts.push(body.request_id); if (rejectPrompt) return json({ code: "storage_blocked" }, 409); }
+    json({ session_id: "cr_storage", receipt: { request_id: body.request_id, command, state: "accepted", input: {} }, saving: {} }, 202);
+  });
+  core.listen(0, "127.0.0.1"); await once(core, "listening");
+  const address = core.address(); if (!address || typeof address === "string") throw new Error("fixture did not listen");
+  const request = (path: string, body?: unknown) => harness.app.request(`/api/v1${path}`, { method: body === undefined ? "GET" : "POST", headers: { "Content-Type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+  try {
+    await service.configure({ url: `http://127.0.0.1:${address.port}`, token: "x".repeat(40) });
+    await service.status();
+    level = "blocked";
+    const before = discoveryCalls;
+    const status = await (await request("/cloudroom")).json();
+    expect(status).toMatchObject({ ready: false, storage: { level: "blocked" }, error: expect.stringContaining("disk space") });
+    expect(discoveryCalls).toBe(before);
+    const input = { executionTarget: "cloud", requestId: "storage-start", projectId: project.id, providerId: "codex", origin: "app", model: "test-model", reasoningLevel: "high", environment: { type: "project-default" }, input: [{ type: "text", text: "Keep this prompt", mentions: [] }] };
+    const blockedStart = await request("/threads", input);
+    expect(blockedStart.status).toBe(503);
+    expect(await blockedStart.json()).toMatchObject({ code: "storage_blocked", message: expect.stringContaining("disk space") });
+    expect(prompts).toHaveLength(0);
+    reason = "measurement_unavailable";
+    expect(await (await request("/cloudroom")).json()).toMatchObject({ error: expect.stringContaining("measured") });
+    reason = "disk_capacity"; level = "normal"; sampleAge = 60_000;
+    expect(await (await request("/cloudroom")).json()).toMatchObject({ ready: false, storage: { workspace_available_bytes: null }, error: expect.stringContaining("measured") });
+    sampleAge = 0; level = "low_space";
+    expect(await (await request("/cloudroom")).json()).toMatchObject({ ready: true, storage: { level: "low_space" } });
+    const response = await request("/threads", input);
+    expect(response.status).toBe(201);
+    const thread = await response.json();
+    await expect.poll(() => prompts.length).toBe(1);
+    rejectPrompt = true;
+    await request(`/threads/${thread.id}/send`, { requestId: "storage-follow", mode: "auto", input: [{ type: "text", text: "Keep this follow-up", mentions: [] }] });
+    expect(harness.db.select().from(cloudroomCommands).all().find(c => c.id === "storage-follow")?.state).toBe("sending");
+    level = "blocked";
+    expect((await request(`/threads/${thread.id}/timeline`)).status).toBe(200);
+    const blockedFollow = await request(`/threads/${thread.id}/send`, { requestId: "blocked-follow", mode: "auto", input: [{ type: "text", text: "Stay in draft", mentions: [] }] });
+    expect(blockedFollow.status).toBe(503);
+    expect(await blockedFollow.json()).toMatchObject({ code: "storage_blocked", message: expect.stringContaining("disk space") });
+    rejectPrompt = false; level = "normal";
+    await expect.poll(() => harness.db.select().from(cloudroomCommands).all().find(c => c.id === "storage-follow")?.state, { timeout: 5000 }).toBe("accepted");
+    expect(prompts.filter(id => id === "storage-follow").length).toBeGreaterThanOrEqual(2);
+    expect(await (await request("/cloudroom")).json()).toMatchObject({ ready: true, error: null, storage: { level: "normal" } });
+  } finally {
+    service.stop(); core.closeAllConnections(); await new Promise<void>(resolve => core.close(() => resolve())); await harness.cleanup();
+  }
+}, 15000);
+
+it.each(["pi", "codex"])("recovers an idle %s stream without sending messages or hiding real errors", async (providerId) => {
+  const harness = await createTestAppHarness();
+  const { host } = seedHostSession(harness.deps);
+  const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
+  const service = cloudroom(harness.deps);
+  const streams: ServerResponse[] = [];
+  const cursors: number[] = [];
+  const rejectionMessage = providerId === "pi" ? "model" : "HTTP 409";
+  const warn = vi.spyOn(harness.deps.logger, "warn");
+  let streamStatus = 200;
+  let posts = 0;
+  let discoveryCalls = 0;
+  const core = createServer((req, res) => {
+    const json = (value: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(value)); };
+    if (req.method === "POST") { posts++; return providerId === "pi" ? json({ code: "invalid_model" }, 400) : json({ error: "SECRET-CANARY" }, 409); }
+    if (req.url === "/v1/capabilities") { discoveryCalls++; return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, harnesses: [{ id: providerId, model: "test-model" }] }); }
+    if (req.url === "/v1/ready") return json({ ready: true });
+    if (req.url === "/v1/sessions/cr_idle") return json({ session: { session_id: "cr_idle", harness: providerId, state: "idle", native_id: null, current_request: null, last_sequence: 0, queue: [], receipts: {} } });
+    if (req.url?.includes("/stream?")) {
+      cursors.push(Number(new URL(req.url, "http://localhost").searchParams.get("after")));
+      if (streamStatus !== 200) return json({ error: "SECRET-CANARY" }, streamStatus);
+      res.writeHead(200, { "Content-Type": "text/event-stream" });
+      res.write(": connected\n\n");
+      streams.push(res);
+      return;
+    }
+    json({}, 404);
+  });
+  core.listen(0, "127.0.0.1"); await once(core, "listening");
+  const address = core.address();
+  if (!address || typeof address === "string") throw new Error("fixture did not listen");
+  try {
+    const url = `http://127.0.0.1:${address.port}`;
+    await service.configure({ url, token: "x".repeat(40) });
+    const thread = createThread(harness.db, harness.hub, { executionTarget: "cloud", projectId: project.id, providerId, status: "idle" });
+    harness.db.insert(cloudroomThreads).values({ threadId: thread.id, coreUrl: url, startRequestId: "idle", sessionId: "cr_idle", model: providerId === "pi" ? "test/test-model" : "test-model", reasoning: "medium", error: "Cloudroom connection or replay failed" }).run();
+    const status = async () => (await harness.app.request(`/api/v1/cloudroom/threads/${thread.id}`)).json();
+    const poll = () => expect.poll(status, { timeout: 5000 });
+    const record = (sequence: number, data: object = { state: "idle" }) => streams.at(-1)!.write(`id: ${sequence}\nevent: record\ndata: ${JSON.stringify({ sequence, session_id: "cr_idle", kind: "state", data })}\n\n`);
+    await expect.poll(() => streams.length, { timeout: 5000 }).toBe(1);
+    const discoveryBeforeIdle = discoveryCalls;
+    await poll().toMatchObject({ error: null, reconnecting: false });
+    streamStatus = 503;
+    streams.at(-1)!.destroy();
+    await poll().toMatchObject({ error: null, reconnecting: true });
+    await expect.poll(() => cursors.length, { timeout: 5000 }).toBeGreaterThan(1);
+    expect(await status()).toMatchObject({ error: null, reconnecting: true });
+    streamStatus = 200;
+    await poll().toMatchObject({ error: null, reconnecting: false });
+    expect(posts).toBe(0);
+    expect(harness.db.select().from(events).all()).toHaveLength(0);
+    expect(cursors.every(cursor => cursor === 0)).toBe(true);
+    expect(discoveryCalls).toBe(discoveryBeforeIdle);
+
+    streamStatus = 401;
+    streams.at(-1)!.end();
+    await poll().toMatchObject({ error: "Cloudroom authentication failed", reconnecting: false });
+    streamStatus = 200;
+    await poll().toMatchObject({ error: null, reconnecting: false });
+    record(1, { state: 123 });
+    await poll().toMatchObject({ error: expect.stringContaining("history"), reconnecting: false });
+    const beforeReplay = streams.length;
+    await expect.poll(() => streams.length, { timeout: 5000 }).toBeGreaterThan(beforeReplay);
+    expect(await status()).toMatchObject({ error: expect.stringContaining("history") });
+    record(1);
+    await poll().toMatchObject({ error: null, reconnecting: false });
+    expect(harness.db.select().from(cloudroomThreads).get()?.cursor).toBe(1);
+    record(1);
+    expect(harness.db.select().from(cloudroomThreads).get()?.cursor).toBe(1);
+
+    const response = await harness.app.request(`/api/v1/threads/${thread.id}/send`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "auto", requestId: "rejected-prompt", input: [{ type: "text", text: "Rejected message", mentions: [] }] }) });
+    expect(response.ok).toBe(false);
+    await poll().toMatchObject({ error: expect.stringContaining(rejectionMessage) });
+    const beforeReconnect = streams.length;
+    streams.at(-1)!.destroy();
+    await expect.poll(() => streams.length, { timeout: 5000 }).toBeGreaterThan(beforeReconnect);
+    expect(await status()).toMatchObject({ error: expect.stringContaining(rejectionMessage), reconnecting: false });
+    expect(cursors.at(-1)).toBe(1);
+    expect(posts).toBe(1);
+    service.stop(); service.start();
+    await expect.poll(() => streams.length, { timeout: 5000 }).toBeGreaterThan(beforeReconnect + 1);
+    expect(await status()).toMatchObject({ error: expect.stringContaining(rejectionMessage), reconnecting: false });
+    expect(posts).toBe(1);
+    expect(warn).toHaveBeenCalledWith(expect.objectContaining({ threadId: thread.id, phase: "stream", networkCode: "UND_ERR_SOCKET" }), "Cloudroom connection state changed");
+    expect(warn).toHaveBeenCalledWith(expect.objectContaining({ phase: "replay", errorType: "ZodError" }), "Cloudroom connection state changed");
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("SECRET-CANARY");
+  } finally {
+    service.stop(); core.closeAllConnections(); await new Promise<void>(resolve => core.close(() => resolve())); await harness.cleanup();
+  }
+}, 30000);
 
 it("reads checkout metadata from the thread's cloud session, never its local project", async () => {
   const harness = await createTestAppHarness();
@@ -45,7 +235,7 @@ it("reads checkout metadata from the thread's cloud session, never its local pro
   }
 });
 
-it("validates cloud reasoning, holds rejected starts across restart, and retries only on request", async () => {
+it.each(["invalid_reasoning_effort", "codex_auth_required"])("holds rejected cloud starts (%s) across restart and retries the saved prompt once", async rejectCode => {
   const harness = await createTestAppHarness();
   const { host } = seedHostSession(harness.deps);
   const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
@@ -55,7 +245,8 @@ it("validates cloud reasoning, holds rejected starts across restart, and retries
   let reject = true;
   const core = createServer(async (req, res) => {
     const json = (body: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(body)); };
-    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, harnesses: [{ id: "codex", model: "test-model", models: [{ model: "test-model", reasoning_levels: ["high", "xhigh", "max"] }] }] });
+    if (req.url === "/v1/health") return json({});
+    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: "codex", model: "test-model", models: [{ model: "test-model", reasoning_levels: ["high", "xhigh", "max"] }] }] });
     if (req.url === "/v1/ready") return json({ ready: true });
     if (req.url?.includes("/stream?")) { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.end(); return; }
     let text = "";
@@ -66,7 +257,7 @@ it("validates cloud reasoning, holds rejected starts across restart, and retries
       expect(body.reasoning).toBe("max");
       if (body.request_id === "temporary" && attempts.temporary === 1) return json({ code: "storage_blocked" }, 409);
       if (body.request_id === "lost-reply" && attempts["lost-reply"] === 1) { req.socket.destroy(); return; }
-      if (reject) return json({ code: "invalid_reasoning_effort", error: "SECRET-CANARY" }, 409);
+      if (reject) return json({ code: rejectCode, error: "SECRET-CANARY" }, 409);
       return json({ session_id: `cr_${body.request_id}`, receipt: { request_id: body.request_id, command: "start", state: "accepted", input: {} }, saving: {} }, 202);
     }
     prompts.push(body);
@@ -87,6 +278,11 @@ it("validates cloud reasoning, holds rejected starts across restart, and retries
     const saved = harness.deps.db.select().from(cloudroomThreads).get()!;
     await expect.poll(() => service.threadStatus(saved.threadId)).toMatchObject({ failedStart: true, sessionId: null, pendingDelivery: 0 });
     expect(getThread(harness.deps.db, saved.threadId)?.status).toBe("error");
+    expect(service.threadStatus(saved.threadId)?.authRequired).toBe(rejectCode === "codex_auth_required");
+    const firstMessages = (threadId: string) => harness.db.select().from(events).all().filter(event => event.threadId === threadId && event.type === "client/turn/requested");
+    const originalMessage = firstMessages(saved.threadId);
+    expect(originalMessage).toHaveLength(1);
+    expect(await (await request(`/threads/${saved.threadId}/queued-messages`)).json()).toEqual([]);
     expect(service.threadStatus(saved.threadId)?.error).not.toContain("SECRET-CANARY");
     expect((await request(`/threads/${saved.threadId}/send`, { mode: "auto", input: [{ type: "text", text: "Must not be accepted", mentions: [] }] })).status).toBe(409);
     reject = false;
@@ -100,6 +296,7 @@ it("validates cloud reasoning, holds rejected starts across restart, and retries
     expect((await request("/threads", input)).status).toBe(201);
     expect(attempts["max-start"]).toBe(2);
     expect(prompts).toHaveLength(1);
+    expect(firstMessages(saved.threadId)).toEqual(originalMessage);
     expect((await request("/threads", { ...input, requestId: "temporary" })).status).toBe(201);
     await expect.poll(() => attempts.temporary, { timeout: 4000 }).toBe(2);
     expect((await request("/threads", { ...input, requestId: "lost-reply" })).status).toBe(201);
@@ -112,9 +309,12 @@ it("validates cloud reasoning, holds rejected starts across restart, and retries
     await new Promise(resolve => setTimeout(resolve, 1700));
     expect(attempts.legacy).toBeUndefined();
     expect(service.threadStatus(legacy.id)).toMatchObject({ failedStart: true, pendingDelivery: 0 });
+    expect(firstMessages(legacy.id)).toHaveLength(1);
+    expect(JSON.parse(firstMessages(legacy.id)[0]!.data).input[0].text).toBe("Saved old prompt");
     expect((await request(`/cloudroom/threads/${legacy.id}/retry-start`, {})).status).toBe(200);
     expect(attempts.legacy).toBe(1);
     expect(prompts).toContainEqual(expect.objectContaining({ text: "Saved old prompt" }));
+    expect(firstMessages(legacy.id)).toHaveLength(1);
   } finally {
     service.stop(); core.closeAllConnections(); await new Promise<void>(resolve => core.close(() => resolve())); await harness.cleanup();
   }
@@ -173,7 +373,8 @@ it("routes Cloud through the core, projects conversations, pauses queues, and re
     const json = (body: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(body)); };
     if (req.headers.cookie !== `_port_auth=${gateToken}`) return json({}, 403);
     if (req.headers.authorization !== `Bearer ${token}`) return json({}, 401);
-    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, harnesses: [{ id: "codex", model: "test-model" }] });
+    if (req.url === "/v1/health") return json({});
+    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: "codex", model: "test-model" }] });
     if (req.url === "/v1/ready") return json({ ready: true });
     if (req.url?.includes("/stream?")) {
       res.writeHead(200, { "Content-Type": "text/event-stream" });
@@ -242,12 +443,16 @@ it("routes Cloud through the core, projects conversations, pauses queues, and re
     expect((await request(`/threads/${thread.id}/send`, followUp)).status).toBe(200);
     expect(pending).toEqual(["follow"]);
     await expect.poll(() => service.queue(thread.id).length).toBe(1);
+    expect(await (await request(`/threads/${thread.id}`)).json()).toMatchObject({ queuedMessageCount: 1 });
     await expect.poll(() => harness.db.select().from(cloudroomThreads).get()?.cursor).toBe(records.length);
     expect(harness.db.select().from(events).all().filter((event) => JSON.parse(event.data).input?.[0]?.text === "follow up")).toHaveLength(0);
     expect((await request(`/threads/${thread.id}/stop`, {})).status).toBe(200);
     await expect.poll(() => service.threadStatus(thread.id)?.paused).toBe(true);
     expect(service.queue(thread.id)).toHaveLength(1);
     await expect.poll(() => harness.db.select().from(cloudroomThreads).get()?.cursor).toBe(records.length);
+    for (const kind of ["storage_warning", "storage_pause", "storage_recovered"]) record(kind, { text: `Storage notice: ${kind}` });
+    await expect.poll(() => harness.db.select().from(events).all().filter(e => JSON.parse(e.data).operation?.startsWith("storage_")).length).toBe(3);
+    expect(harness.db.select().from(events).all().filter(e => JSON.parse(e.data).operation?.startsWith("storage_")).map(e => JSON.parse(e.data).message)).toEqual(["Storage notice: storage_warning", "Storage notice: storage_pause", "Storage notice: storage_recovered"]);
     const count = harness.db.select().from(events).all().length;
     service.stop();
     service.start();
@@ -316,7 +521,7 @@ it("routes Cloud through the core, projects conversations, pauses queues, and re
   }
 }, 20000);
 
-it.each([true, false])("starts without copying local files or waiting for sync (external target exists: %s)", async (targetExists) => {
+it.each([true, false, null])("starts without copying local files or waiting for sync (external target exists: %s)", async (targetExists) => {
   const harness = await createTestAppHarness();
   const service = cloudroom(harness.deps);
   const { host } = seedHostSession(harness.deps);
@@ -327,7 +532,8 @@ it.each([true, false])("starts without copying local files or waiting for sync (
   const target = join(harness.config.dataDir, "private-target");
   if (targetExists) await writeFile(target, "synthetic-secret");
   await symlink(target, join(root, "runtime/workspace"));
-  const { project } = seedProjectWithSource(harness.deps, { hostId: host.id, path: root });
+  const { project } = seedProjectWithSource(harness.deps, { hostId: host.id, path: targetExists === null ? join(root, "missing") : root });
+  setProjectGitRemoteUrlIfMissing(harness.db, harness.deps.hub, project.id, targetExists ? "git@github.com:example/project.git" : "https://SECRET-URL-CANARY@github.com/example/project.git");
   const workspace = { id: `bb_${project.id}`, path: "/code/project" };
   let available = true;
   let direct = false;
@@ -339,7 +545,8 @@ it.each([true, false])("starts without copying local files or waiting for sync (
     const json = (body: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(body)); };
     if (!available) return json({}, 503);
     paths.push(req.url ?? "");
-    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, workspaces: true, direct_workspaces: direct, sync: true, harnesses: [{ id:"codex", model:"test-model" }] });
+    if (req.url === "/v1/health") return json({});
+    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, workspaces: true, direct_workspaces: direct, command_guard: true, sync: true, harnesses: [{ id:"codex", model:"test-model" }] });
     if (req.url === "/v1/ready") return json({ ready: true });
     if (req.url?.includes("/stream?")) { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.write(": connected\n\n"); return; }
     let body = "";
@@ -371,7 +578,7 @@ it.each([true, false])("starts without copying local files or waiting for sync (
     expect(firstMessages()).toHaveLength(1);
     expect(JSON.stringify(await (await harness.app.request(`/api/v1/threads/${thread.id}/timeline`)).json())).toContain("Keep my message");
     const originalMessage = firstMessages()[0];
-    await expect.poll(() => service.threadStatus(thread.id)?.error).toBeTruthy();
+    await expect.poll(() => service.threadStatus(thread.id)).toMatchObject({ error: null, reconnecting: true, starting: true, pendingDelivery: 1 });
     service.stop();
     available = true;
     service.start();
@@ -384,6 +591,7 @@ it.each([true, false])("starts without copying local files or waiting for sync (
     await expect.poll(() => service.threadStatus(thread.id)?.pendingDelivery).toBe(0);
     const state = await (await harness.app.request(`/api/v1/cloudroom/threads/${thread.id}`)).json();
     expect(state).toMatchObject({ sessionId: "cr_waiting", error: null, starting: true });
+    expect(await (await harness.app.request(`/api/v1/threads/${thread.id}`)).json()).toMatchObject({ queuedMessageCount: 0 });
     service.stop(); service.start();
     expect(firstMessages()).toEqual([originalMessage]);
     expect(service.queue(thread.id)).toEqual([]);
@@ -391,6 +599,9 @@ it.each([true, false])("starts without copying local files or waiting for sync (
     expect(paths.some(path => path.startsWith("/v1/workspaces"))).toBe(false);
     expect(requestText).toContain("Keep my message");
     expect(requestText).not.toContain("project contents");
+    expect(requestText).not.toContain("SECRET-URL-CANARY");
+    expect(requestText.includes("https://github.com/example/project.git")).toBe(Boolean(targetExists));
+    expect(JSON.parse(originalMessage!.data).input[0].text).toBe("Keep my message");
     expect(setup).toHaveBeenCalled();
     expect(listQueuedCommands(harness, "workspace.status")).toHaveLength(0);
   } finally {
@@ -465,7 +676,8 @@ it("keeps each queued follow-up's reasoning and rejects locked or conflicting ch
   };
   const core = createServer(async (req, res) => {
     const json = (body: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(body)); };
-    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, ...(promptReasoning ? { prompt_reasoning: true } : {}), harnesses: [{ id: "codex", model: "test-model", models: [{ model: "test-model", reasoning_levels: ["medium", "high", "xhigh", "max"] }] }] });
+    if (req.url === "/v1/health") return json({});
+    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, command_guard: true, ...(promptReasoning ? { prompt_reasoning: true } : {}), harnesses: [{ id: "codex", model: "test-model", models: [{ model: "test-model", reasoning_levels: ["medium", "high", "xhigh", "max"] }] }] });
     if (req.url === "/v1/ready") return json({ ready: true });
     if (req.url?.includes("/stream?")) {
       res.writeHead(200, { "Content-Type": "text/event-stream" });
@@ -533,7 +745,7 @@ it("keeps each queued follow-up's reasoning and rejects locked or conflicting ch
   }
 });
 
-it("edits and cancels queued Cloud prompts, then steers, compacts, and rewinds through core", async () => {
+it.each(["codex", "pi"])("edits and cancels queued Cloud %s prompts, then steers, compacts, and rewinds through core", async (providerId) => {
   const harness = await createTestAppHarness();
   const { host } = seedHostSession(harness.deps);
   const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
@@ -542,6 +754,11 @@ it("edits and cancels queued Cloud prompts, then steers, compacts, and rewinds t
   const streams = new Set<ServerResponse>();
   const commands: object[] = [];
   const sid = "cr_features";
+  const input = (text: string) => [{ type: "text", text, mentions: [] }, { type: "localImage", path: "image.png" }, { type: "localFile", path: "note.txt" }];
+  const attachmentRoot = join(harness.config.dataDir, "attachments", project.id);
+  await mkdir(attachmentRoot, { recursive: true });
+  await writeFile(join(attachmentRoot, "image.png"), "image bytes");
+  await writeFile(join(attachmentRoot, "note.txt"), "file bytes");
   const record = (kind: string, data: object) => {
     const value = { sequence: records.length + 1, timestamp_ms: 1700000000000 + records.length, session_id: sid, kind, data };
     records.push(value);
@@ -549,10 +766,11 @@ it("edits and cancels queued Cloud prompts, then steers, compacts, and rewinds t
   };
   const core = createServer(async (req, res) => {
     const json = (body: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(body)); };
+    if (req.url === "/v1/health") return json({});
     if (req.url === "/v1/capabilities") return json({
-      version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true,
-      structured_prompt: true, queue_edit: true, queue_cancel: true, steer: true, rewind: true, compact: true,
-      harnesses: [{ id: "codex", model: "test-model", service_tier: true, steer: true, compact: true, rewind: true }],
+      version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, command_guard: true,
+      structured_prompt: true, attachments: true, queue_edit: true, queue_cancel: true, steer: true, rewind: true, compact: true,
+      harnesses: [{ id: providerId, provider: "fixture", model: "test-model", service_tier: true, steer: true, compact: true, rewind: true }],
     });
     if (req.url === "/v1/ready") return json({ ready: true });
     if (req.url?.includes("/stream?")) {
@@ -562,6 +780,12 @@ it("edits and cancels queued Cloud prompts, then steers, compacts, and rewinds t
       res.flushHeaders(); streams.add(res); res.on("close", () => streams.delete(res)); return;
     }
     let text = ""; for await (const chunk of req) text += chunk;
+    if (req.url?.includes("/attachments?")) {
+      const query = new URL(req.url, "http://fixture").searchParams;
+      const id = query.get("request_id");
+      expect(text).toBe(query.get("kind") === "image" ? "image bytes" : "file bytes");
+      return json({ session_id: sid, receipt: { request_id: id, command: "attach", state: "completed", input: { id, path: `/code/test/.cloudroom/attachments/${id}/${query.get("name")}` } }, saving: {} }, 202);
+    }
     const body = text ? JSON.parse(text) : {};
     commands.push({ url: req.url, ...body });
     if (req.url === "/v1/sessions") {
@@ -587,23 +811,24 @@ it("edits and cancels queued Cloud prompts, then steers, compacts, and rewinds t
   const request = (path: string, body?: unknown, method = "POST") => harness.app.request(`/api/v1${path}`, { method, headers: { "Content-Type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
   try {
     await service.configure({ url: `http://127.0.0.1:${address.port}`, token: "x".repeat(40), projectId: project.id });
-    const created = await request("/threads", { executionTarget: "cloud", requestId: "feature-start", projectId: project.id, providerId: "codex", origin: "app", model: "test-model", reasoningLevel: "medium", environment: { type: "project-default" }, input: [{ type: "text", text: "start", mentions: [] }] });
+    const created = await request("/threads", { executionTarget: "cloud", requestId: "feature-start", projectId: project.id, providerId, origin: "app", model: providerId === "pi" ? "fixture/test-model" : "test-model", reasoningLevel: "medium", environment: { type: "project-default" }, input: input("start") });
     expect(created.status, await created.clone().text()).toBe(201);
     const thread = await created.json();
     await expect.poll(() => getThread(harness.db, thread.id)?.status).toBe("active");
-    expect((await request(`/threads/${thread.id}/send`, { requestId: "queued-1", mode: "auto", input: [{ type: "text", text: "old", mentions: [] }] })).status).toBe(200);
-    await expect.poll(() => service.queue(thread.id)).toEqual([expect.objectContaining({ id: "queued-1", content: [{ type: "text", text: "old", mentions: [] }] })]);
+    expect((await request(`/threads/${thread.id}/send`, { requestId: "queued-1", mode: "auto", input: input("old") })).status).toBe(200);
+    await expect.poll(() => service.queue(thread.id)).toEqual([expect.objectContaining({ id: "queued-1", content: input("old") })]);
     const queued = service.queue(thread.id)[0]!;
-    expect((await request(`/threads/${thread.id}/queued-messages/${queued.id}`, { input: [{ type: "text", text: "rejected edit", mentions: [] }], expectedUpdatedAt: queued.updatedAt }, "PATCH")).status).toBeGreaterThanOrEqual(400);
+    expect((await request(`/threads/${thread.id}/queued-messages/${queued.id}`, { input: input("rejected edit"), expectedUpdatedAt: queued.updatedAt }, "PATCH")).status).toBeGreaterThanOrEqual(400);
     expect(service.queue(thread.id)[0]).toMatchObject({ content: queued.content, updatedAt: queued.updatedAt });
-    expect((await request(`/threads/${thread.id}/queued-messages/${queued.id}`, { input: [{ type: "text", text: "new", mentions: [] }], expectedUpdatedAt: queued.updatedAt - 1 }, "PATCH")).status).toBe(409);
-    expect((await request(`/threads/${thread.id}/queued-messages/${queued.id}`, { input: [{ type: "text", text: "new", mentions: [] }], expectedUpdatedAt: queued.updatedAt }, "PATCH")).status).toBe(200);
-    expect(service.queue(thread.id)[0]?.content).toEqual([{ type: "text", text: "new", mentions: [] }]);
+    expect((await request(`/threads/${thread.id}/queued-messages/${queued.id}`, { input: input("new"), expectedUpdatedAt: queued.updatedAt - 1 }, "PATCH")).status).toBe(409);
+    const edited = await request(`/threads/${thread.id}/queued-messages/${queued.id}`, { input: input("new"), expectedUpdatedAt: queued.updatedAt }, "PATCH");
+    expect(edited.status, await edited.clone().text()).toBe(200);
+    expect(service.queue(thread.id)[0]?.content).toEqual(input("new"));
     const confirmedRevision = service.queue(thread.id)[0]!.updatedAt;
-    expect((await request(`/threads/${thread.id}/queued-messages/${queued.id}`, { input: [{ type: "text", text: "new", mentions: [] }], expectedUpdatedAt: queued.updatedAt }, "PATCH")).status).toBe(200);
+    expect((await request(`/threads/${thread.id}/queued-messages/${queued.id}`, { input: input("new"), expectedUpdatedAt: queued.updatedAt }, "PATCH")).status).toBe(200);
     expect(service.queue(thread.id)[0]!.updatedAt).toBe(confirmedRevision);
     expect((await request(`/threads/${thread.id}/send`, { requestId: "queued-1", mode: "auto", input: queued.content })).status).toBe(200);
-    expect(service.queue(thread.id)[0]?.content).toEqual([{ type: "text", text: "new", mentions: [] }]);
+    expect(service.queue(thread.id)[0]?.content).toEqual(input("new"));
     expect((await request(`/threads/${thread.id}/queued-messages/${queued.id}`, undefined, "DELETE")).status).toBe(200);
     await expect.poll(() => commands.some((item) => (item as { url?: string }).url?.endsWith("/cancel"))).toBe(true);
     await expect.poll(() => service.queue(thread.id)).toEqual([]);
@@ -614,7 +839,7 @@ it("edits and cancels queued Cloud prompts, then steers, compacts, and rewinds t
     expect((await request(`/threads/${thread.id}/compact`, {})).status).toBe(200);
     await expect.poll(() => commands.some((item) => (item as { url?: string }).url?.endsWith("/compact"))).toBe(true);
     const requested = harness.db.select().from(events).all().find((event) => event.type === "client/turn/requested");
-    expect((await request(`/threads/${thread.id}/edit-message`, { operationId: "edit-1", input: [{ type: "text", text: "rewritten", mentions: [] }], expectedRequestSequence: requested?.sequence })).status).toBe(200);
+    expect((await request(`/threads/${thread.id}/edit-message`, { operationId: "edit-1", input: input("rewritten"), expectedRequestSequence: requested?.sequence })).status).toBe(200);
     await expect.poll(() => commands.some((item) => (item as { url?: string }).url?.endsWith("/rewind"))).toBe(true);
     expect(commands.some((item) => (item as { url?: string; text?: string }).url?.endsWith("/prompts") && (item as { text?: string }).text === "rewritten")).toBe(false);
     const rewind = commands.find((item) => (item as { url?: string }).url?.endsWith("/rewind")) as { request_id: string; before: string; replacement: { request_id: string; text: string; content: unknown } };
@@ -622,8 +847,16 @@ it("edits and cancels queued Cloud prompts, then steers, compacts, and rewinds t
     record("rewind", { id: "corrected-native", request_id: rewind.request_id, before: rewind.before, replacement: { request_id: rewind.replacement.request_id, input: rewind.replacement } });
     record("state", { state: "starting_turn", request_id: rewind.replacement.request_id });
     await expect.poll(() => harness.db.select().from(events).all().filter((event) => event.type === "client/turn/requested").map((event) => JSON.parse(event.data).input[0].text)).toEqual(["rewritten"]);
-    expect((await request(`/threads/${thread.id}/edit-message`, { operationId: "edit-1", input: [{ type: "text", text: "rewritten", mentions: [] }], expectedRequestSequence: requested?.sequence })).status).toBe(200);
+    expect((await request(`/threads/${thread.id}/edit-message`, { operationId: "edit-1", input: input("rewritten"), expectedRequestSequence: requested?.sequence })).status).toBe(200);
     expect(commands.filter((item) => (item as { url?: string }).url?.endsWith("/rewind"))).toHaveLength(1);
+    for (const sent of commands) {
+      const command = sent as { url: string; content?: unknown; attachments?: { kind: string; path: string }[]; replacement?: { content?: unknown; attachments?: { kind: string; path: string }[] } };
+      const payload = command.replacement ?? command;
+      if (!payload.attachments?.length) continue;
+      expect(payload.content).toEqual([expect.objectContaining({ type: "text" })]);
+      expect(payload.attachments.map(part => part.kind)).toEqual(["image", "file"]);
+      expect(payload.attachments.every(part => part.path.startsWith("/code/test/.cloudroom/attachments/"))).toBe(true);
+    }
   } finally {
     service.stop(); core.closeAllConnections(); await new Promise<void>((resolve) => core.close(() => resolve())); await harness.cleanup();
   }

@@ -1,6 +1,6 @@
 ---
 kind: instruction
-title: bb Guide — Customization
+title: Room Guide — Customization
 summary: Command reference for customizing the room app color palette, typography, keyboard shortcuts, and mobile push notifications.
 intent: Explain the CLI theme surface, server-backed app customization, and push-notification device registration.
 editingNotes: Keep flags accurate against the CLI implementation. Theme details live in the room-cli skill's references/theming.md.
@@ -76,7 +76,7 @@ Server-backed General settings
 Settings → General includes app-wide preferences stored server-side so every
 window and restart sees the same value. Keep Awake is instead owned by its
 builtin plugin: use its autosaving page under Settings → Installed plugins or run
-`room keep-awake enable` or `room keep-awake disable`. Choose every host with `bb
+`room keep-awake enable` or `room keep-awake disable`. Choose every host with `Room
 keep-awake hosts all`, or name individual host ids after `room keep-awake hosts`.
 On macOS it prevents system idle sleep while room is running; closing the lid or
 choosing Sleep still sleeps the Mac.
@@ -84,13 +84,18 @@ choosing Sleep still sleeps the Mac.
 Concurrency limit is also owned by its builtin plugin. Its autosaving page
 under Settings → Installed plugins leaves the overall limit unlimited by default and
 uses an automatic per-host limit of one thread per available processor. Use
-`room concurrency-limit global [unlimited|<limit>]` and `bb
+`room concurrency-limit global [unlimited|<limit>]` and `Room
 concurrency-limit host <host-id> [auto|<limit>]`; 0 pauses new work.
 
 Settings → Keyboard also includes `showKeyboardHints`, which defaults to true.
 Turn it off to hide the delayed shortcut badges shown while holding Command or
 Control on macOS, or Control on Windows/Linux. Shortcut commands continue to
 work.
+
+Settings → Advanced includes **Command Guard**, enabled by default for new Local
+and Cloud sessions. Use `room settings general commandGuardEnabled <true|false>`.
+Start a new session after changing it. Personal guards remain independent. It
+blocks common catastrophic shell commands, not every destructive action.
 
 Settings → General includes `showDiagnosticEvents`, which defaults to false
 in all builds. Turn it on to show provider environment resolution and unhandled
@@ -112,8 +117,8 @@ lists (pickers, `room provider models`, and the SDK) during a screen share. The
 entries stay in the config file.
 
 Settings → General includes `managedBranchPrefix`, which defaults to
-`bb/`. room puts it in front of every branch name it creates for a worktree, so
-the default gives `bb/fix-login-flow-thr_ab12cd34ef`. Set `sawyer/wt-` to get
+`room/`. Room puts it in front of every branch name it creates for a worktree, so
+the default gives `room/fix-login-flow-thr_ab12cd34ef`. Set `sawyer/wt-` to get
 `sawyer/wt-fix-login-flow-thr_ab12cd34ef`, or clear it for no prefix. room rejects
 a prefix that cannot start a valid git branch name. The new prefix applies to
 branches room creates after the change.
@@ -153,7 +158,7 @@ client-local; submitting stops and settles a running thread, then replaces the
 selected turn and all later conversation history while retaining workspace side
 effects. Grouped multi-message requests are not yet editable.
 
-BB releases restorable provider sessions after 30 idle minutes. The daemon
+Room releases restorable provider sessions after 30 idle minutes. The daemon
 checks for these sessions every five minutes. Active turns, commands, agents,
 workflows, and monitors keep their sessions loaded.
 
@@ -185,7 +190,7 @@ Server-backed keyboard shortcuts
 
 Settings → Keyboard records per-command shortcut overrides. They are persisted
 server-side, applied live to every connected window, and survive restarts.
-Reset removes an override and returns to bb's current default; Clear explicitly
+Reset removes an override and returns to Room's current default; Clear explicitly
 disables a command. `Mod` means Command on macOS and Control on Windows/Linux.
 Bindings for non-native actions apply in browser and desktop clients. Command
 contexts and native-only availability remain server-owned, and desktop menu
@@ -273,7 +278,7 @@ lists and `null`; it reads the current revision, writes with it, and retries
 once on a conflict. `reset` writes the default. The SDK offers
 `sdk.system.uiPreferences.list()`, `.set()`, and `.reset()`.
 
-Custom (`chronological`) is the default for `sidebar.organizationMode` when no
+By project (`project`) is the default for `sidebar.organizationMode` when no
 value is saved. Existing server and legacy browser choices are preserved.
 
 Every thread-list header's actions menu offers New project, New section,

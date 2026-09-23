@@ -12,7 +12,7 @@ import { createPackagedAppLaunchArguments } from "./packaged-app-launch.mjs";
 const execFileAsync = promisify(execFile);
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const desktopPackageRoot = resolve(scriptDirectory, "..");
-const releaseDir = join(desktopPackageRoot, "release");
+const releaseDir = join(desktopPackageRoot, "release.noindex");
 const startupTimeoutMs = 60_000;
 const exitTimeoutMs = 10_000;
 const outputFlushTimeoutMs = 2_000;
@@ -470,12 +470,12 @@ async function smokeLinuxAppImageLifecycle() {
 
     const childEnv = {
       ...process.env,
-      BB_DATA_DIR: dataDir,
+      ROOM_DATA_DIR: dataDir,
       BB_DESKTOP_AUTO_UPDATE: "0",
       BB_DESKTOP_OPEN_DEVTOOLS: "0",
       BB_DESKTOP_VERSION_CHECK: "0",
-      BB_HOST_DAEMON_PORT: String(daemonPort),
-      BB_SERVER_PORT: String(serverPort),
+      ROOM_HOST_DAEMON_PORT: String(daemonPort),
+      ROOM_SERVER_URL: `http://127.0.0.1:${serverPort}`,
     };
     delete childEnv.APPIMAGE_EXTRACT_AND_RUN;
     delete childEnv.BB_DESKTOP_APP_URL;

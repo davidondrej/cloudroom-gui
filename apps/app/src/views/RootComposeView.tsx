@@ -686,7 +686,6 @@ function RootComposeSurface({
     setEnvironmentSelectionValue,
     setProviderModelReasoning,
     setPermissionMode,
-    setServiceTier,
     renderPromptBox,
   } = composer;
   const rootPanelEnvironmentId =
@@ -768,7 +767,6 @@ function RootComposeSurface({
       setRootComposeProjectId(nextForkSeed.projectId);
       setProviderModelReasoning(nextForkSeed);
       setPermissionMode(nextForkSeed.permissionMode);
-      setServiceTier(nextForkSeed.serviceTier);
       seedEnvironmentSelectionValue(
         encodeReuseValue(nextForkSeed.environmentId),
       );
@@ -787,7 +785,6 @@ function RootComposeSurface({
     setProviderModelReasoning,
     setRootComposeProjectId,
     setRootComposeSectionId,
-    setServiceTier,
     setStartedComposing,
   ]);
   useEffect(() => {

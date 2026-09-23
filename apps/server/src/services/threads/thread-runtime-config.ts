@@ -230,7 +230,7 @@ export async function resolveThreadRuntimeCommandConfig(
       instructionSections.push(contribution.instructions);
     } else {
       instructionSections.push(
-        `The following instructions come from the BB plugin "${contribution.pluginId}" for its tool "${contribution.tool.name}":`,
+        `The following instructions come from the Room plugin "${contribution.pluginId}" for its tool "${contribution.tool.name}":`,
         contribution.instructions,
       );
     }
@@ -258,13 +258,13 @@ export async function resolveThreadRuntimeCommandConfig(
       text = text.slice(0, PLUGIN_INSTRUCTION_CONTRIBUTION_MAX_CHARS);
     }
     instructionSections.push(
-      `The following instructions come from the BB plugin "${contribution.pluginId}":`,
+      `The following instructions come from the Room plugin "${contribution.pluginId}":`,
       text,
     );
   }
   for (const contribution of conditionalConfiguration.dynamicInstructions) {
     instructionSections.push(
-      `The following dynamic instructions come from the BB plugin "${contribution.pluginId}":`,
+      `The following dynamic instructions come from the Room plugin "${contribution.pluginId}":`,
       contribution.text,
     );
   }

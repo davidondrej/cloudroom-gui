@@ -366,6 +366,8 @@ async function openTerminal(
     requestId: "open-1",
     terminalId: "term-1",
     threadId: "thr-1",
+    projectId: "proj-1",
+    threadStoragePath: "/tmp/thread-storage/thr-1",
     target: {
       kind: "workspace",
       environmentId: "env-1",
@@ -405,6 +407,10 @@ describe("TerminalManager", () => {
     expect(harness.adapter.spawned[0]?.args.env).toMatchObject({
       BB_BASE_ENV: "1",
       BB_TERMINAL_SESSION_ID: "term-1",
+      ROOM_THREAD_ID: "thr-1",
+      ROOM_PROJECT_ID: "proj-1",
+      ROOM_ENVIRONMENT_ID: "env-1",
+      ROOM_THREAD_STORAGE: "/tmp/thread-storage/thr-1",
       COLORTERM: "truecolor",
       DISABLE_AUTO_TITLE: "true",
       FORCE_HYPERLINK: "1",
@@ -426,6 +432,51 @@ describe("TerminalManager", () => {
     expect(harness.runtimeManager.get("env-1")).toBeDefined();
     expect(harness.runtime.shutdown).not.toHaveBeenCalled();
   });
+
+  it.each(["workspace", "host_path"] as const)(
+    "does not leak thread context into a threadless %s terminal",
+    async (kind) => {
+      const harness = createHarness();
+      await harness.runtimeManager.replaceBaseShellEnv({
+        ROOM_CLI: "/bin/room",
+        ROOM_SERVER_URL: "http://127.0.0.1:39886",
+        ROOM_THREAD_ID: "wrong-thread",
+        ROOM_PROJECT_ID: "wrong-project",
+        ROOM_ENVIRONMENT_ID: "wrong-environment",
+        ROOM_THREAD_STORAGE: "/wrong/storage",
+      });
+      await harness.manager.handleMessage({
+        type: "terminal.open",
+        contributedEnv: [],
+        requestId: "scope-check",
+        terminalId: "term-scope",
+        target:
+          kind === "workspace"
+            ? {
+                kind,
+                environmentId: "env-1",
+                workspaceContext: { workspacePath: "/tmp/terminal-workspace" },
+              }
+            : { kind, cwd: null },
+        cols: 100,
+        rows: 30,
+        start: DEFAULT_TERMINAL_START,
+      });
+      expect(harness.adapter.spawned).toHaveLength(1);
+      const env = harness.adapter.spawned[0]!.args.env;
+      expect(env.ROOM_SERVER_URL).toBe("http://127.0.0.1:39886");
+      expect(env.ROOM_CLI).toBe("/bin/room");
+      for (const key of [
+        "ROOM_THREAD_ID",
+        "ROOM_PROJECT_ID",
+        "ROOM_ENVIRONMENT_ID",
+        "ROOM_THREAD_STORAGE",
+      ]) {
+        expect(env[key]).toBeUndefined();
+      }
+      await harness.manager.shutdownAll();
+    },
+  );
 
   it("injects host credentials into a PTY and forwards terminal output as-is", async () => {
     const harness = createHarness();

@@ -1,6 +1,6 @@
 # Built-in browser automation
 
-`room browser` is the experimental core API for automation integrations controlling BB desktop tabs. The Browser Automation plugin adds its own script/session commands; another plugin can use the same core connection independently.
+`room browser` is the experimental core API for automation integrations controlling Room desktop tabs. The Browser Automation plugin adds its own script/session commands; another plugin can use the same core connection independently.
 
 Start with `room browser instances --host <host-id> --json`. For every tab/control operation provide `--host <host-id> --instance <instance-id> --generation <generation> --thread <thread-id>`. The browser host can differ from the agent host. Never infer an active desktop window.
 
@@ -14,10 +14,10 @@ Start with `room browser instances --host <host-id> --json`. For every tab/contr
 - `close <tab-id>`: explicitly close that native tab.
 - `watch`: print changed tab snapshots every two seconds until interrupted. Disconnects report errors; this is not a lossless event log.
 
-Cookie import copies signed-in sessions from a browser installed on the desktop host into a BB browser profile. These two commands take `--host`, `--instance`, and `--generation` but no `--thread`:
+Cookie import copies signed-in sessions from a browser installed on the desktop host into a Room browser profile. These two commands take `--host`, `--instance`, and `--generation` but no `--thread`:
 
 - `import-sources`: list importable browsers (Chrome, Chromium, Edge, Brave, Vivaldi, Opera, Arc, Firefox, Safari), their profiles with cookie counts, and why one is unavailable (`notInstalled`, `browserRunning`, `needsFullDiskAccess`, `needsKeychainApproval`, `unsupportedPlatform`).
-- `import-cookies --from <source-id> --profile <directory> [--into personal|automation:<profile-id>]`: read that profile's cookie store and write it into the personal BB browser (default) or a named automation profile. The source browser must be quit first. macOS prompts for Keychain access for Chromium browsers and needs Full Disk Access for Safari. The result reports imported and skipped counts plus skipped hosts; `ok: false` carries a reason. A one-time copy, never a sync; partitioned cookies and non-default Firefox containers are skipped. Desktop only (macOS and Linux).
+- `import-cookies --from <source-id> --profile <directory> [--into personal|automation:<profile-id>]`: read that profile's cookie store and write it into the personal Room browser (default) or a named automation profile. The source browser must be quit first. macOS prompts for Keychain access for Chromium browsers and needs Full Disk Access for Safari. The result reports imported and skipped counts plus skipped hosts; `ok: false` carries a reason. A one-time copy, never a sync; partitioned cookies and non-default Firefox containers are skipped. Desktop only (macOS and Linux).
 
 All commands support JSON output. In plugin code use `bb.sdk.experimental_desktopBrowsers`; the Plugin Guide documents the typed surface. Stop/Take over revokes native control; stopping the owning thread also releases its server control leases. Old connection generations cannot control replacement windows.
 

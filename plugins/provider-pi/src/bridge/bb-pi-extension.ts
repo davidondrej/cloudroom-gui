@@ -1,4 +1,7 @@
+import { checkCommand } from "@get-bb/plugin-sdk/internal/command-guard";
+
 export const BB_PI_EXTENSION_SOURCE = String.raw`
+const inspectCloudroomCommand = (${checkCommand.toString()});
 import { readFileSync, renameSync, writeSync } from "node:fs";
 import { Socket } from "node:net";
 import { StringDecoder } from "node:string_decoder";
@@ -47,7 +50,7 @@ function readLines(input, onLine) {
   });
 }
 
-// ---- JSON Schema → TypeBox (the bb tool definitions carry JSON Schema) ----
+// ---- JSON Schema → TypeBox (the Room tool definitions carry JSON Schema) ----
 
 function toJsonSchemaObject(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : null;
@@ -167,7 +170,14 @@ function buildParameters(inputSchema) {
 
 export default function bbExtension(pi) {
   const toolsFile = process.env.PI_BB_TOOLS_FILE;
-  const tools = toolsFile ? JSON.parse(readFileSync(toolsFile, "utf8")) : [];
+  const config = toolsFile ? JSON.parse(readFileSync(toolsFile, "utf8")) : { tools: [], commandGuardEnabled: true };
+  const tools = config.tools;
+  const guardEnabled = config.commandGuardEnabled !== false;
+  if (guardEnabled) pi.on("tool_call", event => {
+    if (event.toolName !== "bash") return;
+    const reason = inspectCloudroomCommand(event.input.command);
+    if (reason) return { block: true, reason };
+  });
   const pendingToolCalls = new Map();
   let nextId = 0;
   let sessionContext = null;
@@ -339,7 +349,7 @@ export default function bbExtension(pi) {
       ...currentModelScope(),
     });
     // Pi's active-tool set is session state; a resumed or forked session can
-    // predate the bb tools, so make sure every injected tool is active.
+    // predate the Room tools, so make sure every injected tool is active.
     if (tools.length > 0 && typeof pi.setActiveTools === "function") {
       const active = new Set(pi.getActiveTools?.() ?? []);
       let missing = false;

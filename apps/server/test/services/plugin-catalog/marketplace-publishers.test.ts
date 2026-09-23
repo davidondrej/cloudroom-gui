@@ -30,7 +30,7 @@ describe("marketplace publisher labels", () => {
         catalogMarketplaceName: "bb-community",
         labels,
       }),
-    ).toBe("BB Community");
+    ).toBe("BB Marketplace");
     expect(
       pluginPublisherLabel({
         sourceKind: "npm",
@@ -65,7 +65,15 @@ describe("marketplace publisher labels", () => {
         marketplaceName: "bb-community",
         displayName: "BB Community",
       }),
-    ).toBe("BB Community");
+    ).toBe("BB Marketplace");
+    for (const marketplaceName of ["acme", "bb-community"]) {
+      expect(
+        marketplacePublisherLabel({
+          marketplaceName,
+          displayName: "BB Marketplace",
+        }),
+      ).toBe(marketplaceName === "bb-community" ? "BB Marketplace" : "acme");
+    }
   });
 
   it("keeps a store-installed bundled plugin on BB Official", () => {
@@ -105,6 +113,6 @@ describe("marketplace publisher labels", () => {
   });
 
   it("does not reuse BB Official for the marketplace bb curates", () => {
-    expect(BUNDLED_CURATED_MARKETPLACE.displayName).toBe("BB Community");
+    expect(BUNDLED_CURATED_MARKETPLACE.displayName).toBe("BB Marketplace");
   });
 });

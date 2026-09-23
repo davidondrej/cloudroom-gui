@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Control the BB introduction and bundled agent skills.",
+  "description": "Control the Room introduction and bundled agent skills.",
   "engines": {
     "bb": ">=0.0"
   },
   "bb": {
-    "name": "BB guide",
-    "description": "Control the BB introduction and bundled agent skills.",
+    "name": "Room guide",
+    "description": "Control the Room introduction and bundled agent skills.",
     "branding": {
       "icon": "Explore"
     },

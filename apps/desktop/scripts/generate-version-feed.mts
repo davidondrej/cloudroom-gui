@@ -22,12 +22,12 @@ const updateMetadataFileName =
   releaseConfig.updateMetadataFileNames[buildPlatform];
 const updateMetadataPath = resolve(
   packageRoot,
-  "release",
+  "release.noindex",
   updateMetadataFileName,
 );
 const desktopVersionFeedPath = resolve(
   packageRoot,
-  "release",
+  "release.noindex",
   createBbDesktopVersionFeedFileName(buildPlatform),
 );
 

@@ -17,31 +17,31 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
-    <meta name="apple-mobile-web-app-title" content="bb" />
-    <title>bb</title>
+    <meta name="apple-mobile-web-app-title" content="Cloudroom" />
+    <title>Room</title>
     <link
       rel="icon"
       type="image/png"
       sizes="32x32"
-      href="/favicon-32x32.png"
+      href="/favicon-32x32.png?v=room"
       id="favicon-32"
     />
     <link
       rel="icon"
       type="image/png"
       sizes="16x16"
-      href="/favicon-16x16.png"
+      href="/favicon-16x16.png?v=room"
       id="favicon-16"
     />
     <link
       rel="apple-touch-icon"
       sizes="180x180"
-      href="/apple-touch-icon.png"
+      href="/apple-touch-icon.png?v=room"
       id="apple-touch-icon"
     />
     <link
       rel="manifest"
-      href="/manifest.webmanifest"
+      href="/manifest.webmanifest?v=room"
       id="app-manifest"
       crossorigin="use-credentials"
     />
@@ -51,9 +51,9 @@
         function setFavicon(dark) {
           var s = dev ? "-dev" : dark ? "-dark" : "";
           document.getElementById("favicon-32").href =
-            "/favicon-32x32" + s + ".png";
+            "/favicon-32x32" + s + ".png?v=room";
           document.getElementById("favicon-16").href =
-            "/favicon-16x16" + s + ".png";
+            "/favicon-16x16" + s + ".png?v=room";
         }
         var mq = window.matchMedia("(prefers-color-scheme: dark)");
         setFavicon(mq.matches);
@@ -75,9 +75,9 @@
         }
         var faviconColorSuffix = getFaviconColorSuffix();
         document.getElementById("app-manifest").href =
-          "/manifest" + faviconColorSuffix + ".webmanifest";
+          "/manifest" + faviconColorSuffix + ".webmanifest?v=room";
         document.getElementById("apple-touch-icon").href =
-          "/apple-touch-icon" + faviconColorSuffix + ".png";
+          "/apple-touch-icon" + faviconColorSuffix + ".png?v=room";
         // Pre-paint browser-chrome color so PWA/status-bar chrome doesn't
         // flash the wrong shade before the app boots; useTheme.ts owns the
         // meta tag afterwards. Mirrors the bb.theme preference resolution and

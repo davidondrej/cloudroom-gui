@@ -248,7 +248,7 @@ export class HostSharedPortCoordinator {
       throw new ApiError(
         409,
         "connect_host_unenrolled",
-        `cannot share ports from host "${host.name}" (${host.id}) because it has no bb connect machine credential; enroll it via Connect in Settings > Machines`,
+        `cannot share ports from host "${host.name}" (${host.id}) because it has no Cloudroom Connect machine credential; enroll it via Connect in Settings > Machines`,
         false,
       );
     }
@@ -305,7 +305,7 @@ export class HostSharedPortCoordinator {
     throw new ApiError(
       409,
       "connect_host_unenrolled",
-      `cannot share ports from host "${host.name}" (${host.id}) because it has no bb connect machine credential; enroll it via Connect in Settings > Machines`,
+      `cannot share ports from host "${host.name}" (${host.id}) because it has no Cloudroom Connect machine credential; enroll it via Connect in Settings > Machines`,
       false,
     );
   }

@@ -16,14 +16,14 @@ export default function plugin(bb: BbPluginApi) {
       type: "boolean",
       label: "Codex memory",
       description:
-        "Allow Codex to recall existing memories and generate new memories from bb threads.",
+        "Allow Codex to recall existing memories and generate new memories from Room threads.",
       default: true,
     },
     subagentsDisabled: {
       type: "boolean",
       label: "Disable provider subagents",
       description:
-        "Prevent Codex from starting native subagents so agents use bb for delegation.",
+        "Prevent Codex from starting native subagents so agents use Room for delegation.",
       default: false,
     },
   });

@@ -16,7 +16,7 @@ describe("custom instructions plugin", () => {
         type: "string",
         label: "Custom instructions",
         description:
-          "Give agents extra instructions and context for tasks on this bb host.",
+          "Give agents extra instructions and context for tasks on this Room host.",
         experimental_multiline: true,
         experimental_schema: expect.any(Object),
         default: "",

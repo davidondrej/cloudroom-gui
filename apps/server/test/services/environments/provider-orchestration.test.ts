@@ -660,6 +660,90 @@ describe("core environment orchestration", () => {
       }),
   );
 
+  it("waits for a competing preparation after a starting thread already bound the shared workspace", async () =>
+    withTestHarness(async (harness) => {
+      let release = () => {};
+      let notifyClaim = () => {};
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const claimed = new Promise<void>((resolve) => {
+        notifyClaim = resolve;
+      });
+      const fixture = setup(harness, {
+        create: async (context) => {
+          await context.experimental_claimPath("/tmp/project");
+          notifyClaim();
+          await gate;
+          return { status: "created", path: "/tmp/project", ownsPath: false };
+        },
+      });
+      fixture.ask();
+      await claimed;
+      const target = createEnvironment(harness.db, harness.hub, {
+        projectId: fixture.context.project.id,
+        hostId: fixture.host.id,
+        path: "/tmp/project",
+        status: "ready",
+        providerOwnsPath: false,
+      });
+      const thread = seedThread(harness.deps, {
+        projectId: fixture.context.project.id,
+        environmentId: target.id,
+        status: "starting",
+      });
+      const context = createThreadStartup({
+        clientRequestId: encodeClientTurnRequestIdNumber({ value: 1 }),
+        environmentIntent: { type: "reuse", environmentId: target.id },
+        execution: {
+          model: "gpt-5",
+          serviceTier: "default",
+          reasoningLevel: "medium",
+          permissionMode: "full",
+          source: "client/turn/requested",
+        },
+        fork: null,
+        input: [],
+        titleProvided: true,
+        seedWithoutRun: false,
+      });
+      context.state.environmentId = target.id;
+      saveThreadProvisionContext({
+        db: harness.db,
+        replace: true,
+        threadId: thread.id,
+        context,
+      });
+      try {
+        await expect(
+          ensureThreadProvisionEnvironmentReady(harness.deps, {
+            thread,
+            context,
+          }),
+        ).resolves.toBeNull();
+      } finally {
+        release();
+      }
+      await fixture.settled();
+      await expect(
+        ensureThreadProvisionEnvironmentReady(harness.deps, {
+          thread,
+          context,
+        }),
+      ).resolves.toBeNull();
+      expect(getThread(harness.db, thread.id)?.status).toBe("starting");
+      fixture.attach();
+      await expect(
+        ensureThreadProvisionEnvironmentReady(harness.deps, {
+          thread,
+          context,
+        }),
+      ).resolves.toMatchObject({
+        environment: { id: target.id, status: "ready" },
+        thread: { id: thread.id },
+      });
+    }));
+
   it("retains a failed claim through cleanup and releases it only after removal", async () =>
     withTestHarness(async (harness) => {
       let release = () => {};

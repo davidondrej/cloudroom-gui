@@ -307,7 +307,7 @@ if (
       releaseDir: resolve(
         dirname(fileURLToPath(import.meta.url)),
         "..",
-        "release",
+        "release.noindex",
       ),
     }));
   await smokePackagedNpm(appBinary);

@@ -411,6 +411,10 @@ export const REALTIME_THREAD_CHANGE_REGISTRY = {
       dirtyThreadStorageQueriesForThread,
     ],
   },
+  "execution-options-changed": {
+    flush: "immediate",
+    dirty: [dirtyThreadDetailQueries, dirtyThreadDefaultExecutionOptionsQueries],
+  },
   "read-state-changed": {
     flush: "debounced",
     dirty: [markThreadDetailQueryStale, markThreadListQueriesStale],
@@ -821,7 +825,12 @@ function dirtyThreadDetailQueries({
 function dirtyThreadDefaultExecutionOptionsQueries({
   threadId,
 }: ThreadRealtimeDirtyContext): QueryKey[] {
-  return threadId ? [threadDefaultExecutionOptionsQueryKey(threadId)] : [];
+  return threadId
+    ? [
+        threadDefaultExecutionOptionsQueryKey(threadId),
+        ["cloudroom-thread", threadId],
+      ]
+    : [];
 }
 
 function dirtyThreadTabsQueries({

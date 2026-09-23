@@ -31,6 +31,7 @@ interface PiSessionOptions {
   reasoningLevel?: ReasoningLevel | undefined;
   instructions?: string | undefined;
   envVars?: Record<string, string> | undefined;
+  providerOptions?: Record<string, unknown>;
 }
 
 interface BuildPiSessionParamsArgs {
@@ -43,6 +44,7 @@ interface BuildPiSessionParamsArgs {
 }
 
 export interface PiSessionParams {
+  commandGuardEnabled?: boolean;
   additionalSkillPaths?: readonly string[];
   appendSystemPrompt?: string;
   baseInstructions?: string;
@@ -72,6 +74,9 @@ export function buildPiSessionParams(
   const thinkingLevel = toPiThinkingLevel(args.options.reasoningLevel);
   return {
     cwd: args.cwd,
+    ...(args.options.providerOptions?.commandGuardEnabled === false
+      ? { commandGuardEnabled: false }
+      : {}),
     shellEnvOverrides: {
       ROOM_THREAD_ID: args.threadId,
       ...buildShellEnvOverrides(args.options.envVars),

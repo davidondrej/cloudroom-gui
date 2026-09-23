@@ -93,7 +93,7 @@ export function buildReadonlyDenialMessage(): string {
 }
 
 export function buildWorkspaceWriteDenialMessage(): string {
-  return "bb's workspace sandbox allows work inside the current workspace only. Stay inside the workspace or explain why extra access is needed.";
+  return "Room's workspace sandbox allows work inside the current workspace only. Stay inside the workspace or explain why extra access is needed.";
 }
 
 function usesWorkspaceSandbox(params: BuildSessionOptionsArgs): boolean {

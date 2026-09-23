@@ -3,7 +3,7 @@ import type { ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { spawnLoggedProcess } from "./logged-process.js";
+import { readProcessLogTail, spawnLoggedProcess } from "./logged-process.js";
 import { mutateManagedJsonFile } from "@bb/config/managed-json-file";
 import { access, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -25,6 +25,7 @@ import {
   type ChildProcessExitResult,
 } from "@bb/config/child-process-exit";
 import {
+  APP_SURFACE_DESKTOP,
   APP_SURFACE_ENV_NAME,
   APP_SURFACE_WEB,
   parseAppSurface,
@@ -62,6 +63,7 @@ import {
   BB_PROD_HOST_DAEMON_PORT,
   BB_LOOPBACK_HOST,
   BB_PROD_SERVER_PORT,
+  applyPackagedDesktopRuntimeEnv,
   parseDataDirEnvValue,
   parsePortValue,
   resolveConfiguredDataDir,
@@ -1193,10 +1195,29 @@ export function resolveBbAppStartContext(
 export async function resolveBbAppRuntimeState(
   args: ResolveBbAppRuntimeStateArgs,
 ): Promise<BbAppRuntimeState> {
+  const packagedDesktop =
+    args.worktreePolicy === undefined &&
+    args.serverUrlMode === "local" &&
+    args.env.ELECTRON_RUN_AS_NODE === "1" &&
+    args.env[APP_SURFACE_ENV_NAME] === APP_SURFACE_DESKTOP;
+  const applyRuntimePolicy = (env: NodeJS.ProcessEnv): NodeJS.ProcessEnv => {
+    if (args.worktreePolicy !== undefined) {
+      return applyWorktreeRuntimePolicy(env, args.worktreePolicy);
+    }
+    if (packagedDesktop) {
+      applyPackagedDesktopRuntimeEnv({
+        env,
+        homeDir: args.homeDir,
+        settingsEnv: args.env,
+      });
+    }
+    return env;
+  };
   const initialEnv = createEnvFromOptions({
     env: args.env,
     options: args.options,
   });
+  if (packagedDesktop) applyRuntimePolicy(initialEnv);
   const initialContext = resolveBbAppStartContext({
     entrypointUrl: args.entrypointUrl,
     env: initialEnv,
@@ -1209,10 +1230,6 @@ export async function resolveBbAppRuntimeState(
     envFile,
     env: initialEnv,
   });
-  const applyRuntimePolicy = (env: NodeJS.ProcessEnv): NodeJS.ProcessEnv =>
-    args.worktreePolicy === undefined
-      ? env
-      : applyWorktreeRuntimePolicy(env, args.worktreePolicy);
   const managedEnv = applyRuntimePolicy(persistedEnv);
 
   if (args.serverUrlMode === "local") {
@@ -2636,10 +2653,13 @@ async function runHostDaemonOnly(args: RunHostDaemonOnlyArgs): Promise<void> {
         expectedServerUrl: serverUrl,
         port: args.context.daemonPort,
       });
-    } catch {
+    } catch (error) {
       endStep(red("✗"), "Host daemon failed to start");
-      log(" ", dim(`lock: ${args.context.daemonLockDir}`));
-      log(" ", dim(`logs: ${args.context.logDir}/`));
+      log(" ", error instanceof Error ? error.message : String(error));
+      logManagedProcessStartupFailureContext({
+        context: args.context,
+        processName: "daemon",
+      });
       process.exitCode = 1;
       await shutdown("SIGTERM");
       return;
@@ -2736,13 +2756,14 @@ CLI:
 function logManagedProcessStartupFailureContext(
   args: LogManagedProcessStartupFailureContextArgs,
 ): void {
-  if (args.processName === "server") {
-    log(" ", dim(`Check logs: ${args.context.logDir}/`));
-    return;
+  const logName = args.processName === "server" ? "server" : "host-daemon";
+  const logPath = join(args.context.logDir, `${logName}-stdio.log`);
+  log(" ", dim(`logs: ${logPath}`));
+  const tail = readProcessLogTail(logPath);
+  if (tail) {
+    log(" ", "Recent service output:");
+    process.stdout.write(`${tail}\n`);
   }
-
-  log(" ", dim(`lock: ${args.context.daemonLockDir}`));
-  log(" ", dim(`logs: ${args.context.logDir}/`));
 }
 
 export async function startFullStackServerProcess(
@@ -2810,7 +2831,7 @@ async function startFullStackDaemonProcess(
       port: args.context.daemonPort,
     });
     return daemonRun;
-  } catch {
+  } catch (error) {
     await terminateProcessIfRunning({
       childProcess: daemonRun.childProcess,
       processName: "daemon",
@@ -2819,7 +2840,9 @@ async function startFullStackDaemonProcess(
     if (args.processes.daemonRun === daemonRun) {
       args.processes.daemonRun = null;
     }
-    throw new Error("Host daemon failed to become healthy");
+    throw new Error(
+      `Host daemon failed to become healthy: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -3243,8 +3266,9 @@ export async function runBbApp(
 
     try {
       await startDaemon();
-    } catch {
+    } catch (error) {
       endStep(red("✗"), "Host daemon failed to start");
+      log(" ", error instanceof Error ? error.message : String(error));
       logManagedProcessStartupFailureContext({
         context,
         processName: "daemon",

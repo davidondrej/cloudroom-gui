@@ -7,6 +7,8 @@ import { ApiError } from "../../errors.js";
 import { cloudroom } from "./commands.js";
 
 const website = "https://www.cloudroom.dev";
+// Keep the loopback listener open while a VM is provisioned. The one-use pairing code expires separately after five minutes.
+export const pendingLoginTimeoutMs = 30 * 60_000;
 const signInSchema = z.object({ projectId: z.string().min(1).optional(), websiteUrl: z.string().url().optional() }).strict();
 const handoffSchema = z.object({
   account: z.object({ id: z.string().uuid(), email: z.string().email() }).strict(),
@@ -22,9 +24,9 @@ function callbackPage(success: boolean, message: string, nonce: string): string 
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark"><title>${title} | Cloudroom</title>
 <style nonce="${nonce}">
-*{box-sizing:border-box}body{margin:0;min-height:100vh;min-height:100svh;display:grid;place-items:center;padding:24px;background:#0a0a0a;color:#fafafa;font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased}
-main{width:100%;max-width:560px;padding:48px;border:1px solid #303030;background:#141414}.brand{color:inherit;text-decoration:none;font-size:28px;font-weight:700;letter-spacing:-1px}.brand span{color:#fd360e}.brand:focus-visible{outline:2px solid #fd360e;outline-offset:8px}
-.status{display:flex;align-items:center;gap:12px;margin:44px 0 24px;color:#b5b5b5;font-size:12px;letter-spacing:1.5px;text-transform:uppercase}.symbol{display:grid;place-items:center;width:36px;height:36px;background:#fd360e;color:#0a0a0a}.symbol svg{width:22px;height:22px}
+:root{--accent:#bfff00}*{box-sizing:border-box}body{margin:0;min-height:100vh;min-height:100svh;display:grid;place-items:center;padding:24px;background:#0a0a0a;color:#fafafa;font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased}
+main{width:100%;max-width:560px;padding:48px;border:1px solid #303030;background:#141414}.brand{color:inherit;text-decoration:none;font-size:28px;font-weight:700;letter-spacing:-1px}.brand span{color:var(--accent)}.brand:focus-visible{outline:2px solid var(--accent);outline-offset:8px}
+.status{display:flex;align-items:center;gap:12px;margin:44px 0 24px;color:#b5b5b5;font-size:12px;letter-spacing:1.5px;text-transform:uppercase}.symbol{display:grid;place-items:center;width:36px;height:36px;background:var(--accent);color:#0a0a0a}.symbol svg{width:22px;height:22px}
 h1{margin:0 0 20px;font-size:clamp(28px,5vw,40px);font-weight:500;letter-spacing:-1.5px;line-height:1.15}p{margin:0;color:#b5b5b5;font-size:17px;line-height:1.65;overflow-wrap:anywhere}.next{margin-top:32px;padding-top:28px;border-top:1px solid #303030}.next strong{display:block;margin-bottom:8px;font-size:16px;font-weight:500}.next p{font-size:14px}.local{margin-top:32px;font-size:12px;color:#999}
 @media(max-width:480px){main{padding:32px 24px}.status{margin-top:32px}}
 </style></head><body><main>
@@ -126,7 +128,7 @@ export class CloudroomAccountService {
         } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
         const handoff = handoffSchema.parse(JSON.parse(Buffer.concat(chunks).toString("utf8")));
         abort.signal.throwIfAborted();
-        await cloudroom(this.deps).configure({ ...handoff.connection, projectId: input.projectId }, handoff.account, abort.signal);
+        await cloudroom(this.deps).configure({ ...handoff.connection, projectId: input.projectId }, handoff.account, abort.signal, origin.origin);
         reply(200, "Your account is connected. Check your cloud connection in the app to continue.");
       } catch (error) {
         if (!abort.signal.aborted) {
@@ -151,7 +153,7 @@ export class CloudroomAccountService {
     const address = server.address();
     if (!address || typeof address === "string") { server.close(); throw new Error("Sign-in callback unavailable"); }
     callback = `http://127.0.0.1:${address.port}/cloudroom/callback`;
-    const timer = setTimeout(() => { if (this.pending?.server === server) { this.cancel(); this.error = "Sign-in expired. Try again."; } }, 5 * 60_000);
+    const timer = setTimeout(() => { if (this.pending?.server === server) { this.cancel(); this.error = "Sign-in expired. Try again."; } }, pendingLoginTimeoutMs);
     timer.unref();
     this.pending = { server, abort, timer, claimed: false };
     return { url: `${origin.origin}/desktop?${new URLSearchParams({ callback, state, challenge })}` };

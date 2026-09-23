@@ -335,7 +335,7 @@ export function ThreadsSection({
         title="Detach thread?"
         description={
           confirm
-            ? `"${confirm.title}" will no longer be listed on this task. The thread itself is not deleted; re-attach it with bb tasks attach.`
+            ? `"${confirm.title}" will no longer be listed on this task. The thread itself is not deleted; re-attach it with room tasks attach.`
             : ""
         }
         confirmLabel="Detach"

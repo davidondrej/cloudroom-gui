@@ -2,8 +2,7 @@ import { sleep, waitForChildExit } from "./child-process-helpers.mjs";
 import { appendOutput, formatProcessOutput } from "./smoke-output.mjs";
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -13,10 +12,11 @@ import {
 import { createPackagedAppLaunchArguments } from "./packaged-app-launch.mjs";
 import { resolvePackagedAppBinary } from "./packaged-app-paths.mjs";
 import { smokePackagedNpm } from "./smoke-packaged-npm.mjs";
+import { withPackagedAppFixture, run } from "./macos-bundle.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const desktopPackageRoot = resolve(scriptDirectory, "..");
-const releaseDir = join(desktopPackageRoot, "release");
+const releaseDir = join(desktopPackageRoot, "release.noindex");
 const releaseChannel = resolveDesktopReleaseChannel(process.env);
 const releaseConfig = createDesktopReleaseConfig(releaseChannel);
 const startupTimeoutMs = 20_000;
@@ -105,7 +105,19 @@ function renderSmokePage(expectedDesktopPlatform, expectedDesktopVersion) {
 </script>`;
 }
 
-async function readDesktopPackageVersion() {
+async function readDesktopPackageVersion(appBinary) {
+  if (process.platform === "darwin") {
+    const { stdout } = await run("/usr/bin/plutil", [
+      "-extract",
+      "CFBundleShortVersionString",
+      "raw",
+      "-o",
+      "-",
+      resolve(dirname(appBinary), "../Info.plist"),
+    ]);
+    const version = stdout.trim();
+    return /^\d+\.0\.0$/.test(version) ? `v${version.split(".")[0]}` : version;
+  }
   const packageJsonText = await readFile(
     join(desktopPackageRoot, "package.json"),
     "utf8",
@@ -302,7 +314,9 @@ async function stopPackagedApp(child) {
   }
 
   child.kill("SIGKILL");
-  await waitForChildExit(child, exitTimeoutMs);
+  if (!(await waitForChildExit(child, exitTimeoutMs))) {
+    throw new Error("Packaged app did not stop; preserving its test bundle.");
+  }
 }
 
 async function smokePackagedApp() {
@@ -310,16 +324,19 @@ async function smokePackagedApp() {
     throw new Error("Packaged desktop smoke only runs on macOS or Linux.");
   }
 
-  const desktopVersion = await readDesktopPackageVersion();
-  const desktopPlatform = process.platform === "darwin" ? "macos" : "linux";
   const appBinary = await resolvePackagedAppBinary({
     executableName: releaseConfig.linuxExecutableName,
     platform: process.platform,
     productName: releaseConfig.applicationName,
     releaseDir,
   });
+  await withPackagedAppFixture(appBinary, runPackagedSmoke);
+}
+
+async function runPackagedSmoke(appBinary, smokeRoot) {
+  const desktopVersion = await readDesktopPackageVersion(appBinary);
+  const desktopPlatform = process.platform === "darwin" ? "macos" : "linux";
   await smokePackagedNpm(appBinary);
-  const smokeRoot = await mkdtemp(join(tmpdir(), "bb-desktop-packaged-smoke-"));
   const dataDir = join(smokeRoot, "data");
   const userDataDir = join(smokeRoot, "user-data");
   const smokeServer = await startSmokeServer({
@@ -332,14 +349,14 @@ async function smokePackagedApp() {
   const stderr = [];
   const childEnv = {
     ...process.env,
-    BB_DATA_DIR: dataDir,
+    ROOM_DATA_DIR: dataDir,
     // The smoke server answers the bb probe, so a packaged build treats it as a
     // foreign bb and asks before attaching. No one is here to click, so opt out
     // and keep exercising the real attach path.
     BB_DESKTOP_ATTACH_WITHOUT_PROMPT: "1",
     BB_DESKTOP_OPEN_DEVTOOLS: "0",
     BB_DESKTOP_VERSION_FEED_URL: `${serverUrl}/desktop-version.json`,
-    BB_SERVER_PORT: String(smokeServer.port),
+    ROOM_SERVER_URL: serverUrl,
   };
   delete childEnv.BB_DESKTOP_APP_URL;
   delete childEnv.BB_DESKTOP_NODE_EXEC_PATH;
@@ -389,9 +406,16 @@ async function smokePackagedApp() {
 
     console.log(`Packaged desktop smoke passed: ${appBinary}`);
   } finally {
-    await stopPackagedApp(child);
-    await smokeServer.close();
-    await rm(smokeRoot, { force: true, recursive: true });
+    await writeFile(
+      join(smokeRoot, "electron.log"),
+      formatProcessOutput({ stdout, stderr }),
+    );
+    try {
+      await stopPackagedApp(child);
+    } finally {
+      await smokeServer.close();
+      console.log(`Smoke logs: ${smokeRoot}`);
+    }
   }
 }
 

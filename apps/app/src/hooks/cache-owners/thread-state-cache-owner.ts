@@ -10,6 +10,7 @@ import {
   projectsQueryKey,
   sidebarNavigationQueryKey,
   threadQueryKey,
+  threadDefaultExecutionOptionsQueryKey,
   threadSearchQueryKeyPrefix,
   threadsQueryKey,
 } from "../queries/query-keys";
@@ -251,15 +252,24 @@ function applyOptimisticPinnedRootOrder({
   );
 }
 
-export function applyThreadUpdateResult({
+export async function applyThreadUpdateResult({
   queryClient,
   thread,
-}: ThreadRuntimeCacheArgs): void {
+  executionOptionsChanged = false,
+}: ThreadRuntimeCacheArgs & { executionOptionsChanged?: boolean }): Promise<void> {
   queryClient.setQueryData<ThreadWithRuntime>(
     threadQueryKey(thread.id),
     thread,
   );
   invalidateThreadListQueries({ queryClient });
+  if (executionOptionsChanged) {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: threadDefaultExecutionOptionsQueryKey(thread.id),
+      }),
+      queryClient.invalidateQueries({ queryKey: ["cloudroom-thread", thread.id] }),
+    ]);
+  }
 }
 
 interface OptimisticThreadFieldTransactionArgs extends ThreadIdCacheArgs {

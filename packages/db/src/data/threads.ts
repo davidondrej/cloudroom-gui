@@ -948,9 +948,13 @@ function listThreadSearchMatchRows(
       SELECT
         s.thread_id AS threadId,
         ${tokenIndex} AS tokenIndex,
-        MIN(thread_search_segments_fts.rank) AS tokenRank
+        MIN(thread_search_segments_fts.rank) AS tokenRank,
+        MAX(s.source_kind = CASE
+          WHEN trim(COALESCE(t.title, ''), char(9) || char(10) || char(13) || ' ') = ''
+          THEN 'title_fallback' ELSE 'title' END) AS titleMatch
       FROM thread_search_segments_fts
       JOIN thread_search_segments AS s ON s.rowid = thread_search_segments_fts.rowid
+      JOIN threads AS t ON t.id = s.thread_id
       WHERE thread_search_segments_fts MATCH ${matchQuery}
       GROUP BY s.thread_id
     `,
@@ -965,6 +969,7 @@ function listThreadSearchMatchRows(
       SELECT
         token_matches.threadId AS threadId,
         MIN(token_matches.tokenRank) AS bestRank,
+        MIN(token_matches.titleMatch) AS titleMatch,
         MAX(t.updated_at) AS threadUpdatedAt,
         MAX(t.archived_at IS NOT NULL) AS archived
       FROM token_matches
@@ -980,7 +985,7 @@ function listThreadSearchMatchRows(
         archived,
         ROW_NUMBER() OVER (
           PARTITION BY archived
-          ORDER BY bestRank ASC, threadUpdatedAt DESC, threadId DESC
+          ORDER BY titleMatch DESC, bestRank ASC, threadUpdatedAt DESC, threadId DESC
         ) AS threadOrder,
         COUNT(*) OVER (PARTITION BY archived) AS total
       FROM ranked_threads

@@ -17,4 +17,11 @@ export const defaultThemeCss = `
   --timeline-accent: var(--primary);
   --file-accent: var(--timeline-accent);
 }
+:root:not(.dark) {
+  --primary-text: var(--ink);
+  --ring: var(--ink);
+  --sidebar-ring: var(--ring);
+  --input: color-mix(in oklab, var(--ink) 55%, var(--canvas));
+  --timeline-accent: var(--ink);
+}
 `;

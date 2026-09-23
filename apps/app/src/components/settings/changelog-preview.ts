@@ -1,15 +1,16 @@
-import changelogSource from "../../../../../CHANGELOG.md?raw";
 import {
   parseChangelog,
   type ChangelogEntry,
 } from "../../../../../changelog-parser";
-export { RELEASE_META } from "../../../../../changelog-metadata";
 export type { ChangelogBlock } from "../../../../../changelog-parser";
 
-const LATEST_CHANGELOG_SOURCE_URL =
-  "https://raw.githubusercontent.com/get-bb/bb/main/CHANGELOG.md";
-
-export const CHANGELOG_ENTRIES = parseChangelog(changelogSource);
+export const CHANGELOG_LINKS: { page: string | null; source: string | null } = {
+  page: "https://www.cloudroom.dev/changelog",
+  source: "https://www.cloudroom.dev/changelog/feed",
+};
+export const RELEASE_META: Record<string, { date: string; headline: string }> =
+  {};
+export const CHANGELOG_ENTRIES: ChangelogEntry[] = [];
 
 export const LATEST_CHANGELOG_ENTRY: ChangelogEntry | null =
   CHANGELOG_ENTRIES[0] ?? null;
@@ -17,8 +18,9 @@ export const LATEST_CHANGELOG_ENTRY: ChangelogEntry | null =
 export async function fetchLatestChangelogEntry(
   fetchFn: typeof fetch,
   signal?: AbortSignal,
-): Promise<ChangelogEntry> {
-  const response = await fetchFn(LATEST_CHANGELOG_SOURCE_URL, { signal });
+): Promise<ChangelogEntry | null> {
+  if (CHANGELOG_LINKS.source === null) return null;
+  const response = await fetchFn(CHANGELOG_LINKS.source, { signal });
   if (!response.ok) {
     throw new Error(`Changelog request failed (${response.status})`);
   }

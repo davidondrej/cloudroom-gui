@@ -109,7 +109,7 @@ const UNAVAILABLE_COPY: Readonly<
   keychainItemMissing:
     "No encryption key found in your Keychain. Sign in to that browser once, then try again.",
   needsFullDiskAccess:
-    "Give BB Full Disk Access in System Settings → Privacy & Security, then try again.",
+    "Give Cloudroom Full Disk Access in System Settings → Privacy & Security, then try again.",
   browserRunning: "Quit the browser first so its cookie database can be read.",
   unsupportedPlatform:
     "Importing from this browser isn't possible on this platform.",

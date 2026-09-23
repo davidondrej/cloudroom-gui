@@ -1,5 +1,4 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
@@ -7,8 +6,17 @@ import sharp from "sharp";
 const appDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const publicDir = join(appDir, "public");
 const checkOnly = process.argv.includes("--check");
-
-const faviconColorValues = {
+const source = await sharp(join(appDir, "../../assets/room-logo.png"))
+  .ensureAlpha()
+  .raw()
+  .toBuffer({ resolveWithObject: true });
+const raw = {
+  width: source.info.width,
+  height: source.info.height,
+  channels: 4,
+};
+const colors = {
+  default: "#BFFF00",
   red: "#e5484d",
   orange: "#f76b15",
   yellow: "#ffba18",
@@ -18,181 +26,119 @@ const faviconColorValues = {
   purple: "#8e4ec6",
   pink: "#d6409f",
 };
-
-const icons = [
-  "icon-192.png",
-  "icon-512.png",
-  "icon-192-maskable.png",
-  "icon-512-maskable.png",
-  // Opaque white tile: iOS renders transparency in touch icons as black,
-  // and the system's dark/tinted home-screen treatments need a full-bleed
-  // opaque source.
-  "apple-touch-icon.png",
-];
-
-// Monochrome manifest icons (purpose: "monochrome") are alpha masks — the
-// platform supplies the fill color when tinting (Android themed icons,
-// notification badges) — so a single color-independent asset serves every
-// manifest variant.
-const monochromeIcons = [
-  { source: "icon-192.png", target: "icon-monochrome-192.png" },
-  { source: "icon-512.png", target: "icon-monochrome-512.png" },
-];
-
 const mismatches = [];
 
-function parseHex(hex) {
-  return [1, 3, 5].map((index) =>
-    Number.parseInt(hex.slice(index, index + 2), 16),
+async function writeOrCheck(name, content) {
+  const target = join(publicDir, name);
+  if (!checkOnly) return writeFile(target, content);
+  const existing = await readFile(target).catch((error) => {
+    if (error.code !== "ENOENT") throw error;
+    return null;
+  });
+  if (!existing?.equals(content)) mismatches.push(name);
+}
+
+function imagePixels(color, monochrome = false) {
+  const pixels = Buffer.from(source.data);
+  const rgb = [1, 3, 5].map((index) =>
+    Number.parseInt(color.slice(index, index + 2), 16),
   );
-}
-
-function outputFileName(file, color) {
-  return file.replace(/\.png$/u, `-${color}.png`);
-}
-
-function tintTileIcon(data, colorRgb) {
-  const output = Buffer.from(data);
-  for (let index = 0; index < output.length; index += 4) {
-    const red = data[index];
-    const green = data[index + 1];
-    const blue = data[index + 2];
-    const alpha = data[index + 3];
-    if (alpha === 0) continue;
-
-    const luma = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-    if (luma >= 245) continue;
-
-    const maskAlpha = Math.round(
-      255 * Math.sqrt((245 - luma) / 245) * (alpha / 255),
-    );
-    if (maskAlpha <= 0) continue;
-
-    const ratio = maskAlpha / 255;
-    output[index] = Math.round(colorRgb[0] * ratio + 255 * (1 - ratio));
-    output[index + 1] = Math.round(colorRgb[1] * ratio + 255 * (1 - ratio));
-    output[index + 2] = Math.round(colorRgb[2] * ratio + 255 * (1 - ratio));
-    output[index + 3] = alpha;
+  for (let i = 0; i < pixels.length; i += 4) {
+    const [r, g, b] = pixels.subarray(i, i + 3);
+    if (monochrome) {
+      pixels[i + 3] = Math.round(
+        pixels[i + 3] * Math.max(0, 1 - Math.max(r, g, b) / 160),
+      );
+      pixels.set(rgb, i);
+    } else if (g > r && r > b + 60) {
+      pixels.set(rgb, i);
+    }
   }
-  return output;
-}
-
-async function generatedPng(file, hex) {
-  const { data, info } = await sharp(join(publicDir, file))
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  const output = tintTileIcon(data, parseHex(hex));
-
-  return sharp(output, {
-    raw: { width: info.width, height: info.height, channels: 4 },
-  })
-    .png()
-    .toBuffer();
-}
-
-function generatedManifest(baseManifest, color) {
-  return Buffer.from(
-    `${JSON.stringify(
-      {
-        ...baseManifest,
-        icons: baseManifest.icons.map((icon) =>
-          icon.purpose === "monochrome"
-            ? icon
-            : {
-                ...icon,
-                src: icon.src.replace(/\.png$/u, `-${color}.png`),
-              },
-        ),
-      },
-      null,
-      2,
-    )}\n`,
-  );
-}
-
-// Platforms use only the alpha channel of a monochrome icon as the tint
-// mask, so the glyph's darkness (against the tile's white backing) becomes
-// alpha — the same luma mask tintTileIcon uses to find glyph pixels.
-async function generatedMonochromePng(sourceFile) {
-  const { data, info } = await sharp(join(publicDir, sourceFile))
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  const output = Buffer.from(data);
-  for (let index = 0; index < output.length; index += 4) {
-    const luma =
-      0.2126 * data[index] +
-      0.7152 * data[index + 1] +
-      0.0722 * data[index + 2];
-    const maskAlpha =
-      luma >= 245
-        ? 0
-        : Math.round(
-            255 * Math.sqrt((245 - luma) / 245) * (data[index + 3] / 255),
-          );
-    output[index] = 255;
-    output[index + 1] = 255;
-    output[index + 2] = 255;
-    output[index + 3] = maskAlpha;
-  }
-  return sharp(output, {
-    raw: { width: info.width, height: info.height, channels: 4 },
-  })
-    .png()
-    .toBuffer();
-}
-
-async function writeOrCheck(fileName, content) {
-  const filePath = join(publicDir, fileName);
-  if (!checkOnly) {
-    await writeFile(filePath, content);
-    return;
-  }
-
-  if (!existsSync(filePath)) {
-    mismatches.push(fileName);
-    return;
-  }
-
-  const existing = await readFile(filePath);
-  if (!existing.equals(content)) {
-    mismatches.push(fileName);
-  }
+  return pixels;
 }
 
 const baseManifest = JSON.parse(
   await readFile(join(publicDir, "manifest.webmanifest"), "utf8"),
 );
-
-for (const monochromeIcon of monochromeIcons) {
-  await writeOrCheck(
-    monochromeIcon.target,
-    await generatedMonochromePng(monochromeIcon.source),
-  );
-}
-
-for (const [color, hex] of Object.entries(faviconColorValues)) {
-  for (const file of icons) {
+for (const [color, hex] of Object.entries(colors)) {
+  const suffix = color === "default" ? "" : `-${color}`;
+  const pixels = color === "default" ? source.data : imagePixels(hex);
+  for (const size of [192, 512]) {
     await writeOrCheck(
-      outputFileName(file, color),
-      await generatedPng(file, hex),
+      `icon-${size}${suffix}.png`,
+      await sharp(pixels, { raw }).resize(size, size).png().toBuffer(),
+    );
+    const inset = Math.round(size * 0.14);
+    await writeOrCheck(
+      `icon-${size}-maskable${suffix}.png`,
+      await sharp(pixels, { raw })
+        .resize(size - inset * 2, size - inset * 2)
+        .extend({
+          top: inset,
+          bottom: inset,
+          left: inset,
+          right: inset,
+          background: hex,
+        })
+        .png()
+        .toBuffer(),
     );
   }
-
   await writeOrCheck(
-    `manifest-${color}.webmanifest`,
-    generatedManifest(baseManifest, color),
+    `apple-touch-icon${suffix}.png`,
+    await sharp(pixels, { raw }).resize(180, 180).png().toBuffer(),
   );
+  if (suffix) {
+    await writeOrCheck(
+      `manifest${suffix}.webmanifest`,
+      Buffer.from(
+        `${JSON.stringify(
+          {
+            ...baseManifest,
+            icons: baseManifest.icons.map((icon) =>
+              icon.purpose === "monochrome"
+                ? icon
+                : {
+                    ...icon,
+                    src: icon.src.replace(/\.png(?=\?|$)/u, `${suffix}.png`),
+                  },
+            ),
+          },
+          null,
+          2,
+        )}\n`,
+      ),
+    );
+  }
 }
 
-if (mismatches.length > 0) {
+for (const size of [192, 512]) {
+  await writeOrCheck(
+    `icon-monochrome-${size}.png`,
+    await sharp(imagePixels("#ffffff", true), { raw })
+      .resize(size, size)
+      .png()
+      .toBuffer(),
+  );
+}
+for (const [suffix, color] of [
+  ["", "#151515"],
+  ["-dark", "#f8f4e2"],
+  ["-dev", "#626262"],
+]) {
+  for (const size of [16, 32]) {
+    await writeOrCheck(
+      `favicon-${size}x${size}${suffix}.png`,
+      await sharp(imagePixels(color, true), { raw })
+        .resize(size, size)
+        .png()
+        .toBuffer(),
+    );
+  }
+}
+if (mismatches.length) {
   console.error(
-    [
-      "Generated PWA icon assets are out of date:",
-      ...mismatches.map((fileName) => `  ${fileName}`),
-      "Run `pnpm --filter @bb/app generate:pwa-icons`.",
-    ].join("\n"),
+    `Generated Room icons are out of date:\n${mismatches.join("\n")}\nRun pnpm --filter @bb/app generate:pwa-icons.`,
   );
   process.exitCode = 1;
 }

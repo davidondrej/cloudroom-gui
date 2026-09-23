@@ -22,7 +22,7 @@ experimental_openFilePreview(options), experimental_openFileExternally(options) 
   opener opens one of the current plugin's registered `threadPanelAction` tabs
   in the current thread surface and returns whether the host accepted it; it
   returns false on surfaces without a thread side panel.
-  `openUrl` owns HTTP(S) only and returns false for schemes BB
+  `openUrl` owns HTTP(S) only and returns false for schemes Room
   leaves to normal anchor behavior. The two file methods accept an
   `ExperimentalFileOpenOptions` live-file target.
 - `useComposer()` → programmatic access to the chat composer draft (the
@@ -57,7 +57,7 @@ experimental_data })` submits now and carries plugin-owned JSON to dispatch
   is currently rendering with. `mode` is `"light" | "dark"`, `name` is the
   registered theme name for that mode, and `theme` is the resolved **VS Code
   theme document** behind it: `{ name, type, fg, bg, colors, tokenColors }`,
-  the same document bb's own highlighter paints from. Reach for it ONLY when
+  the same document Room's own highlighter paints from. Reach for it ONLY when
   your plugin renders code with an engine of its own (Monaco, CodeMirror) and
   has to build that engine's theme; for ordinary code and diffs use
   `experimental_SourceCode` / `experimental_Diff`, which are already themed.
@@ -65,7 +65,7 @@ experimental_data })` submits now and carries plugin-owned JSON to dispatch
   previous document while a palette switch is in flight — compare `theme.name`
   with `name` to tell a settled state from one still resolving — so a consumer
   that repaints on every change never paints an unthemed frame. Do NOT
-  approximate the palette by reading bb's CSS variables: `--canvas` / `--ink`
+  approximate the palette by reading Room's CSS variables: `--canvas` / `--ink`
   carry the app chrome, not the syntax colors, and a custom palette that
   declares its own code theme would not follow.
 
@@ -93,13 +93,13 @@ banners?, richText? })`. Omitted `scopes` means all thread, queued-message,
   name from plugin CSS. Decorations are paint-only and never mutate the draft.
   `richText.onDraftChange(draft, view)` observes the debounced
   `ComposerStructuredDraft`, including mention ranges.
-- Use a vendored BB prompt icon-button recipe for native-matching action chrome
+- Use a vendored Room prompt icon-button recipe for native-matching action chrome
   and provide an accessible label. Each component/callback is isolated so one
   failing customization does not degrade the native composer. Complete
   reference: `examples/plugins/composer-customization`.
 
 UI components use vendored shadcn source that you own. The former general host
-component kit is removed. The app module still exports focused BB capability
+component kit is removed. The app module still exports focused Room capability
 components such as `ThreadChat`, `Markdown`, file links, pickers, source and
 diff viewers, and the new-thread composer.
 
@@ -110,13 +110,13 @@ diff viewers, and the new-thread composer.
   their support files: `lib/utils`, `lib/portal-scope`, icon,
   responsive-overlay, drawer, hooks) into `components/ui/` etc., and writes a `components.json`
   whose `@room` registry is pinned to the release tag matching the running
-  BB. Import via the `@/*` alias: `import { Button } from
+  Room. Import via the `@/*` alias: `import { Button } from
 "@/components/ui/button"` (tsconfig maps it; `room plugin build` reads it).
 - Add more with stock shadcn tooling: `npx shadcn add @bb/select
 @bb/table` — the BB registry carries the full stock set (~44 items:
   accordion, alert-dialog, calendar, chart, command, form, sheet, table,
-  …), generated from the BB app's own component source, so vendored code is
-  version-matched to your BB by construction. Edit the copies freely; they
+  …), generated from the Room app's own component source, so vendored code is
+  version-matched to your Room by construction. Edit the copies freely; they
   never change out from under you. Re-running `shadcn add` is the manual
   update path.
 - `toast`: `import { toast } from "sonner"` — runtime-shimmed to the host's
@@ -161,7 +161,7 @@ Compatibility aliases remain for one release and warn once. Use `UrlLink`
 instead of `experimental_UrlLink`. Use `BbNavigate.openUrl` instead of
 `experimental_openUrl`. Use `Original` instead of `experimental_Original` in
 thread-list, file-opener, source-renderer, and diff-renderer props. Timeline
-renderers never had the `experimental_Original` alias. BB removes these aliases
+renderers never had the `experimental_Original` alias. Room removes these aliases
 in bb 0.42.
 
 One deviation from stock shadcn: `Dialog` renders as a bottom drawer on

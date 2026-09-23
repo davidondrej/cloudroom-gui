@@ -183,6 +183,67 @@ export function resolveProdDataDir(args: ResolveProdDataDirArgs): string {
   return join(args.homeDir, BB_PROD_DATA_DIR_NAME);
 }
 
+export function applyPackagedDesktopRuntimeEnv(args: {
+  env: NodeJS.ProcessEnv;
+  homeDir: string;
+  settingsEnv?: NodeJS.ProcessEnv;
+}): void {
+  const settings = args.settingsEnv ?? args.env;
+  const serverUrl = new URL(
+    settings.ROOM_SERVER_URL ??
+      `http://${BB_LOOPBACK_HOST}:${BB_PROD_SERVER_PORT}`,
+  );
+  if (
+    serverUrl.protocol !== "http:" ||
+    ![BB_LOOPBACK_HOST, "localhost"].includes(serverUrl.hostname) ||
+    serverUrl.username ||
+    serverUrl.password ||
+    serverUrl.pathname !== "/" ||
+    serverUrl.search ||
+    serverUrl.hash
+  ) {
+    throw new Error(
+      "ROOM_SERVER_URL must be a local http://localhost:<port> URL for the desktop runtime",
+    );
+  }
+  const serverPort = serverUrl.port || "80";
+  const daemonPort = resolvePortFromEnv({
+    defaultPort: BB_PROD_HOST_DAEMON_PORT,
+    env: settings,
+    name: "ROOM_HOST_DAEMON_PORT",
+  });
+  const dataDir =
+    settings.ROOM_DATA_DIR === undefined
+      ? resolveProdDataDir(args)
+      : parseDataDirEnvValue({
+          homeDir: args.homeDir,
+          rawDataDir: settings.ROOM_DATA_DIR,
+        });
+  for (const key of [
+    "BB_HOST_ID",
+    "BB_HOST_NAME",
+    "BB_HOST_ENROLL_KEY",
+    "BB_SERVER_HEADERS",
+    "BB_CLI_DIR",
+    "BB_BRIDGE_DIR",
+    "BB_APP_URL",
+    "BB_EXTERNAL_URL",
+    "BB_DEV_APP_PORT",
+    ...THREAD_CONTEXT_ENV_KEYS,
+  ])
+    delete args.env[key];
+  Object.assign(args.env, {
+    BB_DATA_DIR: dataDir,
+    ROOM_DATA_DIR: dataDir,
+    BB_SERVER_PORT: serverPort,
+    BB_SERVER_URL: `http://${BB_LOOPBACK_HOST}:${serverPort}`,
+    ROOM_SERVER_URL: `http://${BB_LOOPBACK_HOST}:${serverPort}`,
+    BB_SERVER_BIND_HOST: BB_LOOPBACK_HOST,
+    BB_HOST_DAEMON_PORT: String(daemonPort),
+    ROOM_HOST_DAEMON_PORT: String(daemonPort),
+  });
+}
+
 export function parseDataDirEnvValue(args: ParseDataDirEnvValueArgs): string {
   const trimmedDataDir = args.rawDataDir.trim();
   if (trimmedDataDir.length === 0) {

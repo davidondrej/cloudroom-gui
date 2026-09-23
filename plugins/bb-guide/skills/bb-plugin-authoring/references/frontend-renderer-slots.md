@@ -1,14 +1,14 @@
 # Renderer and action slots
 
 - `experimental_sourceCodeRenderer` / `experimental_diffRenderer` →
-  replace bb's source or diff renderer everywhere it draws supplied content:
+  replace Room's source or diff renderer everywhere it draws supplied content:
   the native file preview, timeline file diffs, the environment diff panel's
   file bodies, and every plugin calling the host components. Registration:
   `{ id, title, description?, component }`. Like `experimental_threadList`
   each slot is **exclusive** — one renderer at a time, first in slot order
-  wins, and a missing, disabled, or crashing replacement falls back to bb's
+  wins, and a missing, disabled, or crashing replacement falls back to Room's
   renderer. Installing and enabling the plugin activates it, and the user can
-  pin bb's renderer or a specific provider under
+  pin Room's renderer or a specific provider under
   **Settings → Appearance** ("Source code" / "Diffs"), per client. There are no
   scope or extension filters on the registration, so conditional behavior
   belongs in the component. Source props:
@@ -18,7 +18,7 @@
 Original }`. `experimental_fullFileContents` is either
   `{ old: { path, content }, new: { path, content } }` or `null`; a replacement
   can use those complete UTF-8 sides to implement context expansion.
-  Every value is already resolved. Render `Original` (bb's
+  Every value is already resolved. Render `Original` (Room's
   renderer, bound to this call) to delegate without re-entering resolution —
   behind a plugin setting, by language, over a size threshold:
   A bundle compiled against an SDK before 0.4.16 may still read
@@ -85,8 +85,8 @@ openWorkspaceFile }` — register a leaf
   `useBbNavigate().openThreadPanel`. Errors from `run` (sync or
   async) are contained and
   logged, never breaking the timeline.
-- `app.commands.register` → a row in bb's quick palette (Mod+Shift+P), listed
-  under "Plugins" beside bb's own commands. Host-rendered chrome, no plugin
+- `app.commands.register` → a row in Room's quick palette (Mod+Shift+P), listed
+  under "Plugins" beside Room's own commands. Host-rendered chrome, no plugin
   component — registration: `{ id, title, defaultShortcut?, isAvailable?, run }`. Both callbacks
   receive `{ threadId, projectId, openPanel }`, where `threadId` and
   `projectId` are null on surfaces without one and `openPanel` matches
@@ -118,7 +118,7 @@ openWorkspaceFile }` — register a leaf
   declared in `bb.providers.register({ extensionKinds })`) or
   `"tool"` for the generic tool items of the providers this plugin
   registered. Core kinds (messages, commands, file changes, reads, searches,
-  delegations, plan steps) always use bb's renderers and are customized only
+  delegations, plan steps) always use Room's renderers and are customized only
   through the bridge's presentation. The component receives `row` (id,
   threadId, turnId, kind, toolName, status, startedAt, completedAt),
   `payload` (the extension item's validated payload, or `{ arguments,

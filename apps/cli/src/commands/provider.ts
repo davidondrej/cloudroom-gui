@@ -20,6 +20,7 @@ interface ProviderModelsCommandOptions {
   json?: boolean;
   machine?: string;
   selectedModel?: string;
+  restart?: boolean;
 }
 
 interface IncludeSelectedOnlyModelArgs {
@@ -69,6 +70,10 @@ export function registerProviderCommands(
     .description("List available models for a provider")
     .option("--json", "Print machine-readable JSON output")
     .option(
+      "--restart",
+      "Restart this provider's model discovery without stopping threads",
+    )
+    .option(
       "--selected-model <model>",
       "Include a selected-only model if it matches",
     )
@@ -80,10 +85,27 @@ export function registerProviderCommands(
         ) => {
           const serverUrl = getUrl();
           const sdk = createCliBbSdk(serverUrl);
-          const executionOptions = await sdk.providers.models({
-            ...(await resolveMachineEnvironmentRouting(opts, serverUrl)),
-            ...(providerId ? { providerId } : {}),
-          });
+          if (opts.restart && !providerId)
+            throw new Error("--restart requires a provider ID");
+          const routing = await resolveMachineEnvironmentRouting(
+            opts,
+            serverUrl,
+          );
+          const executionOptions =
+            opts.restart && providerId
+              ? await sdk.providers.restartModelDiscovery({
+                  ...routing,
+                  providerId,
+                })
+              : await sdk.providers.models({
+                  ...routing,
+                  ...(providerId ? { providerId } : {}),
+                });
+          if (opts.restart && executionOptions.modelLoadError) {
+            throw new Error(
+              `Model discovery still failed for ${providerId}: ${executionOptions.modelLoadError.code}`,
+            );
+          }
           const models = includeSelectedOnlyModel({
             models: executionOptions.models,
             selectedOnlyModels: executionOptions.selectedOnlyModels,

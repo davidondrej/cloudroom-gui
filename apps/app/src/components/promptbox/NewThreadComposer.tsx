@@ -5,6 +5,7 @@ import {
   cloudroomRequestId,
   clearCloudroomRequestId,
 } from "@/hooks/queries/cloudroom-queries";
+import { fetchWithAppSurface } from "@/lib/app-surface";
 import { ProviderRequirementBanner } from "./banner/ProviderRequirementBanner";
 import { Button } from "@bb/shared-ui/button";
 import {
@@ -183,6 +184,7 @@ export interface NewThreadComposerState {
     providerId: string;
     model: string;
     reasoningLevel: ReasoningLevel;
+    serviceTier?: ServiceTier;
   }) => void;
   setPermissionMode: (value: PermissionMode) => void;
   setServiceTier: (value: ServiceTier | undefined) => void;
@@ -454,6 +456,12 @@ export function NewThreadComposer({
   }, [candidateKnown, projects, replayKnowsCandidate, requestedCandidate]);
   const isProjectless = isProjectlessProjectId(projectId);
   const executionTarget = isProjectless ? "local" : storedExecutionTarget;
+  useEffect(() => {
+    if (executionTarget !== "cloud" || !cloudConnection.data?.ready) return;
+    void fetchWithAppSurface("/api/v1/cloudroom/account/project", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ projectId }),
+    }).catch(() => {});
+  }, [executionTarget, projectId, cloudConnection.data?.ready]);
   const currentProject = useMemo(() => {
     if (isProjectless) {
       const personalProject = sidebarNavigationQuery.data?.personalProject;
@@ -1431,14 +1439,22 @@ export function NewThreadComposer({
       supportsServiceTier,
     ],
   );
-  const submissionEnvironment =
-    executionTarget === "cloud"
+  const submissionEnvironment = useMemo(
+    () => executionTarget === "cloud"
       ? { type: "project-default" as const }
       : selectedProviderMachineUnavailable
         ? null
         : (selectedEnvironment ??
           (selectionScope === "new-thread" ? seed?.environment : undefined) ??
-          null);
+          null),
+    [
+      executionTarget,
+      selectedProviderMachineUnavailable,
+      selectedEnvironment,
+      selectionScope,
+      seed?.environment,
+    ],
+  );
   const localSubmitDisabledReason = resolveNewThreadSubmitDisabledReason({
     environmentProviderInputsBlocker:
       machineProviderInputs.blockedReason ?? environmentProviderInputsBlocker,
@@ -1459,8 +1475,10 @@ export function NewThreadComposer({
   });
   const submitDisabledReason =
     executionTarget === "cloud"
-      ? (selectedProviderId !== "codex" && selectedProviderId !== "pi"
-          ? "Select Codex or Pi for Cloud"
+      ? (selectedProviderId !== "codex" && selectedProviderId !== "pi" && selectedProviderId !== "claude-code"
+          ? "Select a harness supported by your Cloud VM"
+          : selectedProviderId === "claude-code" && cloudConnection.data?.ready && !cloudConnection.data.harnesses.some(harness => harness.id === "claude-code")
+            ? "Claude Code is not configured on this Cloud VM"
           : !selectedThreadModel || isLoadingModels
             ? "Select a model"
             : cloudConnection.data?.ready && !cloudLevels.includes(reasoningLevel)
@@ -1815,7 +1833,6 @@ export function NewThreadComposer({
     },
     [
       executionTarget,
-      cloudConnection.data,
       snapshotDraftBeforeOptionChange,
       activeModel,
       attachmentError,

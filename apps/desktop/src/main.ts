@@ -23,6 +23,7 @@ import {
   APP_SURFACE_DESKTOP,
   APP_SURFACE_ENV_NAME,
 } from "@bb/config/app-surface";
+import { applyPackagedDesktopRuntimeEnv } from "@bb/config/runtime";
 import type { ConnectCredential } from "@bb/connect-client";
 import type { AppKeybindings } from "@bb/domain";
 import {
@@ -745,6 +746,16 @@ function refreshApplicationMenu(): void {
         );
       }
     },
+    archiveThread() {
+      const browserWindow = getFocusedApplicationWindow();
+      if (browserWindow !== null) {
+        sendToApplicationRenderer(
+          browserWindow,
+          BB_DESKTOP_APP_COMMAND_CHANNEL,
+          "thread.archive",
+        );
+      }
+    },
     reopenClosedTab() {
       const browserWindow = getFocusedApplicationWindow();
       if (browserWindow !== null) {
@@ -1067,7 +1078,7 @@ async function authenticateConnectTarget(
     }
     if (cachedResult.code === "unauthorized") {
       desktopLogger.info(
-        "[desktop] bb Connect refused the cached machine credential — dropping it",
+        "[desktop] Cloudroom Connect refused the cached machine credential — dropping it",
       );
       await clearCachedConnectCredential();
     } else if (cachedResult.code === "network") {
@@ -1091,7 +1102,7 @@ async function authenticateConnectTarget(
       cachedFailure ?? {
         code: "network",
         detail:
-          "the local bb server is unavailable, and this app has no stored bb Connect credential",
+          "the local Room server is unavailable, and this app has no stored Cloudroom Connect credential",
         ok: false,
       }
     );
@@ -1127,7 +1138,7 @@ function ensureDesktopMachineEnrolled(): void {
   }
   if (!cache.canPersist()) {
     desktopLogger.info(
-      "[desktop] no OS keychain available — keeping the local bb server for bb Connect sessions",
+      "[desktop] no OS keychain available — keeping the local Room server for Cloudroom Connect sessions",
     );
     return;
   }
@@ -1135,13 +1146,13 @@ function ensureDesktopMachineEnrolled(): void {
     const result = await enrollDesktopMachine({ localServerUrl });
     if (!result.ok) {
       desktopLogger.info(
-        `[desktop] could not enroll this app with bb Connect (${result.code}): ${result.detail}`,
+        `[desktop] could not enroll this app with Cloudroom Connect (${result.code}): ${result.detail}`,
       );
       return;
     }
     cachedConnectCredential = result.credential;
     await cache.write(result.credential);
-    desktopLogger.info("[desktop] enrolled this app as a bb Connect machine");
+    desktopLogger.info("[desktop] enrolled this app as a Cloudroom Connect machine");
   })().finally(() => {
     enrollingDesktopMachine = null;
   });
@@ -1161,7 +1172,7 @@ async function retryStartup(): Promise<void> {
       details: error instanceof Error ? error.message : String(error),
       logs: "",
       retryable: false,
-      title: "Could not open bb",
+      title: "Could not open Room",
     });
   } finally {
     startupRetryPending = false;
@@ -1188,7 +1199,7 @@ async function applyServerTarget(): Promise<void> {
     if (!attached) {
       await loadStartupError({
         details:
-          "Could not connect to the local bb server on this Mac. Check that the port is free or that a compatible bb server is running.",
+          "Could not connect to the local Room server on this Mac. Check that the port is free or that a compatible Room server is running.",
         logs: "",
         retryable: true,
         title: "Could not connect",
@@ -1222,7 +1233,7 @@ async function applyServerTarget(): Promise<void> {
           `Try switching servers again. (${result.code}: ${result.detail})`,
         logs: "",
         retryable: true,
-        title: "Could not authenticate with bb Connect",
+        title: "Could not authenticate with Cloudroom Connect",
       });
       refreshApplicationMenu();
       return;
@@ -1380,7 +1391,7 @@ async function loadLogViewerWindow(
     minHeight: 520,
     minWidth: 840,
     show: false,
-    title: "bb - Server & Daemon Logs",
+    title: "Room - Server & Daemon Logs",
     titleBarStyle: "default",
     webPreferences: {
       contextIsolation: true,
@@ -1472,8 +1483,8 @@ async function loadLoadingView(): Promise<void> {
     url: createLocalViewUrl({
       viewModel: {
         kind: "loading",
-        message: "Starting local services and opening the bb workspace.",
-        title: "Opening bb",
+        message: "Starting local services and opening the Room workspace.",
+        title: "Opening Room",
       },
     }),
   });
@@ -1754,7 +1765,7 @@ async function startOwnedRuntime(
       )}.`,
       logs: bbProcess.logs.text(),
       retryable: false,
-      title: "bb stopped",
+      title: "Room stopped",
     });
   });
 
@@ -1780,7 +1791,7 @@ async function startOwnedRuntime(
       )}.`,
       logs: bbProcess.logs.text(),
       retryable: false,
-      title: "Could not start bb",
+      title: "Could not start Room",
     });
     setCurrentRuntime(null);
     return null;
@@ -1793,11 +1804,11 @@ async function startOwnedRuntime(
   await loadStartupError({
     details:
       raceResult.result.kind === "incompatible"
-        ? `Port ${args.serverUrl} is responding, but it does not look like bb: ${raceResult.result.reason}.`
-        : `Timed out waiting for bb at ${args.serverUrl}: ${raceResult.result.reason}.`,
+        ? `Port ${args.serverUrl} is responding, but it does not look like Room: ${raceResult.result.reason}.`
+        : `Timed out waiting for Room at ${args.serverUrl}: ${raceResult.result.reason}.`,
     logs: bbProcess.logs.text(),
     retryable: false,
-    title: "Could not start bb",
+    title: "Could not start Room",
   });
   await stopOwnedRuntime();
   return null;
@@ -1880,40 +1891,40 @@ async function decideOnExistingServer(
   if (stopResult.kind === "unverified") {
     await loadStartupError({
       details:
-        `The bb at ${probe.serverUrl} records process ${String(stopResult.pid)}, but that ` +
-        "process no longer matches the record. bb did not stop it. Stop it yourself, then open bb again.",
+        `The Room at ${probe.serverUrl} records process ${String(stopResult.pid)}, but that ` +
+        "process no longer matches the record. Room did not stop it. Stop it yourself, then open Room again.",
       logs: "",
       retryable: false,
-      title: "Could not stop the running bb",
+      title: "Could not stop the running Room",
     });
     return "quit";
   }
   if (stopResult.kind === "still-running") {
     await loadStartupError({
-      details: `bb could not stop process ${String(stopResult.pid)}, even after SIGKILL.`,
+      details: `Room could not stop process ${String(stopResult.pid)}, even after SIGKILL.`,
       logs: "",
       retryable: false,
-      title: "Could not stop the running bb",
+      title: "Could not stop the running Room",
     });
     return "quit";
   }
   if (stopResult.kind === "replaced") {
     await loadStartupError({
       details:
-        `Another bb started at ${probe.serverUrl} while the question was open, so bb stopped nothing. ` +
-        "Open bb again to see the copy that runs now.",
+        `Another Room started at ${probe.serverUrl} while the question was open, so Room stopped nothing. ` +
+        "Open Room again to see the copy that runs now.",
       logs: "",
       retryable: false,
-      title: "Could not stop the running bb",
+      title: "Could not stop the running Room",
     });
     return "quit";
   }
   if (!(await waitForServerToStop(probe.serverUrl))) {
     await loadStartupError({
-      details: `The bb at ${probe.serverUrl} stopped, but the address is still in use.`,
+      details: `The Room at ${probe.serverUrl} stopped, but the address is still in use.`,
       logs: "",
       retryable: false,
-      title: "Could not stop the running bb",
+      title: "Could not stop the running Room",
     });
     return "quit";
   }
@@ -1966,7 +1977,7 @@ async function initializeRuntime(args: InitializeRuntimeArgs): Promise<void> {
 
   if (existingProbe.kind === "incompatible") {
     await loadStartupError({
-      details: `Port ${args.serverUrl} is already in use, but it is not a compatible bb server: ${existingProbe.reason}.`,
+      details: `Port ${args.serverUrl} is already in use, but it is not a compatible Room server: ${existingProbe.reason}.`,
       logs: "",
       retryable: false,
       title: "Port conflict",
@@ -1987,6 +1998,9 @@ async function initializeRuntime(args: InitializeRuntimeArgs): Promise<void> {
 }
 
 async function runDesktopApp(): Promise<void> {
+  if (app.isPackaged) {
+    applyPackagedDesktopRuntimeEnv({ env: process.env, homeDir: homedir() });
+  }
   ensurePackagedUserShellPath({
     env: process.env,
     isPackaged: app.isPackaged,
@@ -2412,6 +2426,6 @@ void runDesktopApp().catch((error) => {
     details: message,
     logs: "",
     retryable: false,
-    title: "Could not open bb",
+    title: "Could not open Room",
   });
 });

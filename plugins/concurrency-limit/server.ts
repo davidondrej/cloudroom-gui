@@ -256,17 +256,17 @@ export default async function concurrencyLimitPlugin(
       {
         name: "status",
         summary: "Show effective concurrency limits",
-        usage: "bb concurrency-limit status [--json]",
+        usage: "room concurrency-limit status [--json]",
       },
       {
         name: "global",
         summary: "Show or set the overall limit",
-        usage: "bb concurrency-limit global [unlimited|<limit>] [--json]",
+        usage: "room concurrency-limit global [unlimited|<limit>] [--json]",
       },
       {
         name: "host",
         summary: "Show or set one host limit",
-        usage: "bb concurrency-limit host <host-id> [auto|<limit>] [--json]",
+        usage: "room concurrency-limit host <host-id> [auto|<limit>] [--json]",
       },
     ],
     async run(argv) {
@@ -339,7 +339,7 @@ export default async function concurrencyLimitPlugin(
       return {
         exitCode: 1,
         stderr:
-          "Usage: bb concurrency-limit <status|global|host> [arguments] [--json]",
+          "Usage: room concurrency-limit <status|global|host> [arguments] [--json]",
       };
     },
   });

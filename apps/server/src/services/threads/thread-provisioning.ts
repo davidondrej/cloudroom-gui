@@ -370,6 +370,7 @@ async function advanceThreadProvisioningOnce(
   const thread = getThread(deps.db, args.threadId);
   if (
     !thread ||
+    thread.executionTarget === "cloud" ||
     thread.deletedAt !== null ||
     hasLiveThreadStartInFlight(thread.id)
   ) {

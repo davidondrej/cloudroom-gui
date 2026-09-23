@@ -55,6 +55,7 @@ interface MoveThreadToSectionRequest {
 }
 
 interface UpdateThreadMutationOptions {
+  threadId?: string;
   errorMessage?: string | undefined;
   lifecycleOperation?: LifecycleErrorOperation | undefined;
 }
@@ -82,6 +83,10 @@ export function useUpdateThread(options?: UpdateThreadMutationOptions) {
     UpdateThreadMutationRequest,
     ThreadListMutationTransaction | undefined
   >({
+    mutationKey: ["thread-update", options?.threadId],
+    ...(options?.threadId
+      ? { scope: { id: `thread-update:${options.threadId}` } }
+      : {}),
     meta: {
       errorMessage: options?.errorMessage ?? "Failed to update thread.",
       ...(options?.lifecycleOperation
@@ -119,9 +124,13 @@ export function useUpdateThread(options?: UpdateThreadMutationOptions) {
         transaction: context,
       });
     },
-    onSuccess: (thread) => {
-      applyThreadUpdateResult({ queryClient, thread });
-    },
+    onSuccess: (thread, request) =>
+      applyThreadUpdateResult({
+        queryClient,
+        thread,
+        executionOptionsChanged:
+          "model" in request || "reasoningLevel" in request,
+      }),
   });
 }
 

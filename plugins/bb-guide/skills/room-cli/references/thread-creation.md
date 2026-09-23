@@ -1,14 +1,15 @@
 # Thread, project, environment, and machine creation
 
-For Cloud, use `room thread spawn --project PROJECT --machine cloud --provider codex --model MODEL --request-id UNIQUE_ID --prompt "Task"` (or `--provider pi`). Reuse the request ID after an unconfirmed submission. Cloud forks, children, native-machine/worktree options, attachments, and scheduling are not enabled. The native environment workflows below apply to Local threads.
+For Cloud, use `room thread spawn --project PROJECT --machine cloud --provider codex --model MODEL --request-id UNIQUE_ID --prompt "Task"` (or `--provider pi`). Reuse the request ID after an unconfirmed submission. Cloud forks, children, native-machine/worktree options, and scheduling are not enabled. Attachment support depends on the connected core/harness; inspect `room cloudroom status --json` and verify the agent reads the file. The native environment workflows below apply to Local threads.
 
 ## Spawning Threads
 
 - In the Cloudroom fork, `--machine cloud --provider codex --model MODEL` uses
   the configured Rust core and prepared repository. `--machine local` selects
   the local machine. Cloud creation accepts `--request-id ID`; reuse it after
-  an unconfirmed submission. Cloud supports plain text, full permissions, and
-  the default service tier, not native environment options or forks.
+  an unconfirmed submission. Cloud uses full permissions, not native environment
+  options or forks. Attachments and fast service tier require the corresponding
+  connected-core/harness capability.
 
 - Use `room thread spawn --project <project-id> --prompt "..."` to create another
   thread. Pass the intended project explicitly; the CLI does not infer it from
@@ -32,7 +33,7 @@ For Cloud, use `room thread spawn --project PROJECT --machine cloud --provider c
   `{"preset":"Large","image":"Node 22"}`. These inputs are persisted and
   readable by plugins, so keep credentials in plugin settings and send only
   non-secret configuration or references.
-- Omit `--base-branch` for bb's default. Explicit values are exact; use
+- Omit `--base-branch` for Room's default. Explicit values are exact; use
   `origin/<branch>` for a remote ref. It applies to `--new-environment
 worktree` only; a provider takes its branch through `--environment-inputs`.
 - Spawn also accepts `--title`, `--origin-kind`, `--source-thread`,
@@ -105,7 +106,7 @@ worktree` only; a provider takes its branch through `--environment-inputs`.
   `suspend`, `resume`, `retry-cleanup`, and `remove` cover the Settings →
   Machines lifecycle. Use `room machine provider-cli status|install` to inspect
   or install provider CLIs on a selected machine.
-- `room updates` runs the default `room updates status` action. It aggregates BB and provider
+- `room updates` runs the default `room updates status` action. It aggregates Room and provider
   CLI update state across every machine — the CLI counterpart of Settings →
   Updates. `room updates apply [--machine <id-or-name>]` runs every available
   provider CLI install/update sequentially; update bb-app itself with the
@@ -178,11 +179,16 @@ environment pull-request show <id>`. Diff commands require an explicit target
   intentionally inspect the primary machine. Model lists answer from the
   machine's last stored list while a background refresh runs, so a list can be
   hours old. A provider whose refresh keeps failing or timing out keeps
-  answering from its last stored list.
+  answering from its last stored list. Check `room machine provider-cli status MACHINE
+--json` for installed executables. Installed does not mean authenticated; a Claude
+  login error requires the user to run `claude` and `/login`.
+- If Cursor's model list fails, `room provider models acp-cursor --restart`
+  restarts model discovery and reloads the list on the selected machine. It
+  does not stop threads, reinstall the CLI, or change credentials.
 - Top-level `customModels` in the same `config.json` registers extra picker
   models. Use a provider ID returned by the target host's catalog. Acceptance
   of unlisted models is provider-specific; consult that provider's skill.
-  This list has no set/unset CLI surface. Edit the JSON and restart BB.
+  This list has no set/unset CLI surface. Edit the JSON and restart Room.
   The `streamerMode` General preference hides every entry from model lists.
 - Top-level `sharedSkillRoots` uses the same relative `user` and `project`
   paths. room lists these skills as read-only. room injects them into each provider,

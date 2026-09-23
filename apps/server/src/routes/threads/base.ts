@@ -58,7 +58,7 @@ import {
 import { assertValidParentThread } from "../../services/threads/thread-parent.js";
 import { handleThreadOwnershipChange } from "../../services/threads/thread-ownership.js";
 import { applyThreadExecutionOverride } from "../../services/threads/thread-execution-override.js";
-import { isCloudThread } from "../../services/cloudroom/commands.js";
+import { cloudroom, isCloudThread } from "../../services/cloudroom/commands.js";
 import { emitPluginThreadDeleted } from "../../services/plugins/plugin-thread-events.js";
 
 function parseThreadIncludes(query: ThreadGetQuery): Set<ThreadIncludeOption> {
@@ -387,14 +387,24 @@ export function registerThreadBaseRoutes(app: Hono, deps: AppDeps): void {
     }
 
     if ("model" in payload || "reasoningLevel" in payload) {
-      await applyThreadExecutionOverride(deps, {
-        thread,
-        patch: {
-          ...("model" in payload ? { model: payload.model } : {}),
-          ...("reasoningLevel" in payload
-            ? { reasoningLevel: payload.reasoningLevel }
-            : {}),
-        },
+      if (isCloudThread(thread)) {
+        await cloudroom(deps).updateReasoningOverride(
+          thread,
+          payload.reasoningLevel ?? null,
+        );
+      } else {
+        await applyThreadExecutionOverride(deps, {
+          thread,
+          patch: {
+            ...("model" in payload ? { model: payload.model } : {}),
+            ...("reasoningLevel" in payload
+              ? { reasoningLevel: payload.reasoningLevel }
+              : {}),
+          },
+        });
+      }
+      deps.hub.notifyThread(thread.id, ["execution-options-changed"], {
+        projectId: thread.projectId,
       });
     }
 

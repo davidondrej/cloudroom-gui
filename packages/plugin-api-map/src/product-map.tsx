@@ -399,7 +399,7 @@ function Slide({ group }: { group: SurfaceGroup }) {
 }
 
 function SlideTitle({ title }: { title: string }) {
-  const parts = title.split(/\bbb\b/);
+  const parts = title.split(/\bRoom\b/);
   if (parts.length === 1) {
     return <>{title}</>;
   }
@@ -407,7 +407,7 @@ function SlideTitle({ title }: { title: string }) {
     <>
       {parts.map((part, index) => (
         <Fragment key={index}>
-          {index > 0 ? <span className="font-bold italic">bb</span> : null}
+          {index > 0 ? <span className="font-bold italic">Room</span> : null}
           {part}
         </Fragment>
       ))}
@@ -602,7 +602,7 @@ export function ProductMap({
         <div data-map-column className="mx-auto w-full max-w-[100rem]">
           <section
             aria-roledescription="carousel"
-            aria-label="bb surfaces a plugin can extend"
+            aria-label="Room surfaces a plugin can extend"
             onKeyDown={onKeyDown}
             className="mt-2"
           >

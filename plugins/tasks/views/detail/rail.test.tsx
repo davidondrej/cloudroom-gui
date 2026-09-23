@@ -91,7 +91,7 @@ describe("dispatch target rail control", () => {
       },
     });
     fireEvent.click(slot.getByRole("button", { name: "Edit dispatch target" }));
-    fireEvent.click(await slot.findByLabelText("Linked bb project"));
+    fireEvent.click(await slot.findByLabelText("Linked Room project"));
     fireEvent.click(await slot.findByRole("option", { name: "bb monorepo" }));
     fireEvent.click(slot.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(updateCalls).toHaveLength(1));

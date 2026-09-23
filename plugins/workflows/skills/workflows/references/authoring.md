@@ -44,7 +44,7 @@ and per-agent result schemas; rejection errors identify the unsafe schema path.
 
 ## Script body hooks
 
-- `agent(prompt: string, opts?)`: spawn a BB worker. Without `schema`, returns
+- `agent(prompt: string, opts?)`: spawn a Room worker. Without `schema`, returns
   its final text as a string. With `schema` (a JSON Schema), the worker is forced
   to call `bb_workflow_result` and `agent()` returns the validated value — no
   parsing needed. `opts.label` overrides the display label. `opts.phase`
@@ -95,8 +95,8 @@ stamp results after the workflow returns, and for randomness vary the agent
 prompt/label by index. No filesystem, shell, network, imports, or Node.js API
 access.
 
-Workers spawned by `agent()` are normal BB threads and retain the tools and
-workspace access allowed by their BB permission mode. The QuickJS script itself
+Workers spawned by `agent()` are normal Room threads and retain the tools and
+workspace access allowed by their Room permission mode. The QuickJS script itself
 never receives that access.
 
 ## Agent selection
@@ -118,7 +118,7 @@ await agent("Inspect the implementation", {
 });
 ```
 
-BB validates the tuple against the live provider/model catalog immediately
+Room validates the tuple against the live provider/model catalog immediately
 before spawning the worker. A provider disappearing between authoring and
 execution fails the call instead of silently substituting another model.
 
@@ -151,8 +151,8 @@ const review = await agent("Return a severity-ranked review", {
 });
 ```
 
-Native `label` is an alias for BB's existing `title`, and native `schema` is an
-alias for BB's existing `outputSchema`. Either spelling remains supported.
+Native `label` is an alias for Room's existing `title`, and native `schema` is an
+alias for Room's existing `outputSchema`. Either spelling remains supported.
 `label` and `title` must match exactly when both are present; `schema` and
 `outputSchema` must be structurally identical, with object key order ignored.
 The canonical structured-result field is `outputSchema`. `phase`, `label`, and
@@ -160,6 +160,6 @@ The canonical structured-result field is `outputSchema`. `phase`, `label`, and
 
 That worker receives only the `bb_workflow_result` plugin tool. It MUST call the
 tool exactly once at the end of its response with `{ value: ... }` to provide
-the structured output. BB validates the value with Ajv. The initial invalid
+the structured output. Room validates the value with Ajv. The initial invalid
 attempt gets at most two corrective retries; a third invalid submission fails
 the call. There is no hidden normalization-agent pass.

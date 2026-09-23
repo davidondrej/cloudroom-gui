@@ -537,7 +537,7 @@ describe("plugin install flows", () => {
         }),
       ).rejects.toThrow(
         new RegExp(
-          `install refused.*requires bb plugin SDK >=99\\.0\\.0, running SDK is ${PLUGIN_SDK_VERSION.replaceAll(".", "\\.")}`,
+          `install refused.*requires Room plugin SDK >=99\\.0\\.0, running SDK is ${PLUGIN_SDK_VERSION.replaceAll(".", "\\.")}`,
           "u",
         ),
       );
@@ -985,7 +985,7 @@ describe("plugin install flows", () => {
         service.install(`git:${repoDir}@main`, { kind: "root" }),
       ).rejects.toThrowError(
         new RegExp(
-          `install refused.*requires bb plugin SDK >=99\\.0\\.0, running SDK is ${PLUGIN_SDK_VERSION.replaceAll(".", "\\.")}`,
+          `install refused.*requires Room plugin SDK >=99\\.0\\.0, running SDK is ${PLUGIN_SDK_VERSION.replaceAll(".", "\\.")}`,
         ),
       );
     });
@@ -1608,7 +1608,7 @@ describe("plugin install flows", () => {
     const entry = await service.installPath(rootDir);
     expect(entry.status).toBe("incompatible");
     expect(entry.statusDetail).toContain(
-      `requires bb plugin SDK >=99.0.0, running SDK is ${PLUGIN_SDK_VERSION}`,
+      `requires Room plugin SDK >=99.0.0, running SDK is ${PLUGIN_SDK_VERSION}`,
     );
   });
 
@@ -1809,7 +1809,7 @@ describe("plugin install flows", () => {
 
     const entry = await service.install(`path:${targetDir}`, { kind: "root" });
     expect(entry.id).toBe("scaffolded");
-    expect(entry.status).toBe("running");
+    expect(entry.status, entry.statusDetail ?? undefined).toBe("running");
     expect(entry.statusDetail).toBeNull();
 
     await expect(

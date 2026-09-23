@@ -396,7 +396,7 @@ describe("ThreadPromptContextBanner", () => {
     });
 
     expect(childCard.parentElement).toBe(contextCard.parentElement);
-    expect(childCard.parentElement?.classList.contains("min-w-0")).toBe(true);
+    expect(childCard.parentElement?.classList.contains("contents")).toBe(true);
   });
 
   it("uses neutral active copy for a child waiting for a host", () => {

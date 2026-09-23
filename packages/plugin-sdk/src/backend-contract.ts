@@ -1444,6 +1444,8 @@ export interface PluginProviderDeclaration {
   extensionKinds?: Readonly<
     Record<string, PluginProviderExtensionKindDeclaration>
   >;
+  /** Opt in to restarting the model-discovery process without stopping threads. */
+  experimental_modelDiscoveryRestart?: boolean;
   /**
    * Cold-cache fallback models ({@link PluginProviderFallbackModel}). The
    * server offers them only while a model probe has not completed or failed

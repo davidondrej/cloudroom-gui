@@ -420,6 +420,11 @@ describe("public terminal routes", () => {
           },
         );
         const pending = await startPendingTerminalOpen(fixture);
+        expect(pending.openMessage).toMatchObject({
+          threadId: fixture.thread.id,
+          projectId: fixture.thread.projectId,
+          threadStoragePath: `${fixture.session.dataDir}/thread-storage/${fixture.thread.id}`,
+        });
         expect(pending.openMessage.contributedEnv).toEqual(
           enrolled
             ? [
@@ -574,6 +579,8 @@ describe("public terminal routes", () => {
     const pending = await startPendingEnvironmentTerminalOpen(fixture);
 
     expect(pending.openMessage).not.toHaveProperty("threadId");
+    expect(pending.openMessage).not.toHaveProperty("projectId");
+    expect(pending.openMessage).not.toHaveProperty("threadStoragePath");
     expect(pending.openMessage.target).toMatchObject({
       kind: "workspace",
       environmentId: fixture.environment.id,
@@ -686,6 +693,8 @@ describe("public terminal routes", () => {
       throw new Error(`Expected terminal.open, received ${openMessage.type}`);
     }
     expect(openMessage).not.toHaveProperty("threadId");
+    expect(openMessage).not.toHaveProperty("projectId");
+    expect(openMessage).not.toHaveProperty("threadStoragePath");
     expect(openMessage.target).toEqual({
       kind: "host_path",
       cwd: null,

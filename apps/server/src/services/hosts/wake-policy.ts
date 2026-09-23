@@ -6,6 +6,7 @@ const hostCommandWakePolicy = {
   "thread.start": "work",
   "turn.submit": "work",
   "thread.stop": "never",
+  "thread.teleport": "work",
   "thread.storage.delete": "never",
   "thread.goal.clear": "never",
   "thread.plan.cancel": "never",

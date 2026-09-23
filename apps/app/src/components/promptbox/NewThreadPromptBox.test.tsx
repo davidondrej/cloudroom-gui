@@ -351,7 +351,7 @@ describe("EnvironmentSlot", () => {
       if (selected) {
         expect(
           screen.getByRole("button", { name: "Environment" }).textContent,
-        ).toContain("Cloud · Primary checkout");
+        ).toContain("Cloud Primary");
       }
     },
   );

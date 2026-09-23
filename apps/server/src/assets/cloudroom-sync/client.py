@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent two-way skills, settings, and Codex-login sync. Project files never sync."""
+"""Skills/settings sync and one-way Codex login import. Project files never sync."""
 import argparse
 import fcntl
 import hashlib
@@ -9,6 +9,7 @@ from pathlib import Path
 import plistlib
 import shutil
 import ssl
+import stat
 import subprocess
 import sys
 import time
@@ -79,11 +80,63 @@ class Remote:
 
 
 def configuration_roots(roots):
-    return [r for r in roots if r['tree']['kind'] in {'skills', 'codex', 'pi', 'claude', 'auth'}]
+    return [r for r in roots if r['tree']['kind'] in {'skills', 'codex', 'pi', 'claude', 'cursor'}]
+
+
+def import_codex(config, connection, folder):
+    folder = Path(folder)
+    folder.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with (folder / 'codex-import.lock').open('a') as lock:
+        os.chmod(folder / 'codex-import.lock', 0o600)
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        remote = Remote(connection, config.get('device', ''))
+        capabilities = remote.json('/v1/capabilities')
+        if not capabilities.get('codex_auth_import'):
+            return None
+        status = remote.json('/v1/accounts/codex')
+        if status['state'] != 'missing':
+            return status
+        home = config.get('codexHome') or os.environ.get('CODEX_HOME') or Path.home() / '.codex'
+        path = Path(home).expanduser() / 'auth.json'
+        try:
+            fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+            with os.fdopen(fd, 'rb') as source:
+                info = os.fstat(source.fileno())
+                if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077 or info.st_uid != os.getuid():
+                    return status
+                raw = source.read(64 * 1024 + 1)
+            if len(raw) > 64 * 1024:
+                return status
+            value = json.loads(raw)
+            if (not isinstance(value, dict) or value.get('auth_mode', 'chatgpt') != 'chatgpt'
+                    or value.get('OPENAI_API_KEY') is not None or not isinstance(value.get('tokens'), dict)):
+                return status
+            keys = ['id_token', 'access_token', 'refresh_token', 'account_id']
+            if any(not isinstance(value['tokens'].get(key), str) or not value['tokens'][key] for key in keys):
+                return status
+            credentials = {'auth_mode': 'chatgpt', 'OPENAI_API_KEY': None,
+                           'tokens': {key: value['tokens'][key] for key in keys}}
+            if isinstance(value.get('last_refresh'), str):
+                credentials['last_refresh'] = value['last_refresh']
+        except (OSError, ValueError):
+            return status
+        attempt = {'binding': [connection['url'].rstrip('/'), (connection.get('account') or {}).get('id')],
+                   'fingerprint': hashlib.sha256(raw).hexdigest()}
+        receipt = folder / 'codex-import.json'
+        if receipt.exists() and private_json(receipt) == attempt:
+            return status
+        status = remote.json('/v1/accounts/codex/import', credentials)
+        if status['state'] in {'connected', 'limited', 'missing'}:
+            atomic_json(receipt, attempt)
+        return status
 
 
 def cycle(config, connection, state_dir):
     remote = Remote(connection, config['device'])
+    try:
+        import_codex(config, connection, state_dir)
+    except (OSError, Conflict, ValueError, KeyError, TypeError):
+        pass  # Login recovery must not stop independent skills/settings sync.
     roots = configuration_roots(config['roots'])
     remote.json('/v1/sync', {'device': config['device']})
     details = {}
@@ -107,11 +160,8 @@ def cycle(config, connection, state_dir):
                     base[path] = a
                     continue
                 if a != old and b != old:
-                    if tree.kind == 'auth' and path not in base and a:
-                        old = b  # Initial Codex setup uses the main Mac's current account.
-                    else:
-                        conflicts.append(path)
-                        continue
+                    conflicts.append(path)
+                    continue
                 try:
                     if b == old:
                         if left:
@@ -174,14 +224,14 @@ def discover(home):
     pi = Path(os.environ.get('PI_CODING_AGENT_DIR') or home / '.pi/agent').expanduser()
     claude = home / '.claude'
     roots = []
-    for identity, path in [('shared', home / '.agents'), ('codex', codex), ('pi', pi), ('claude', claude)]:
+    for identity, path in [('shared', home / '.agents'), ('codex', codex), ('pi', pi), ('claude', claude), ('cursor', home / '.cursor')]:
         if (path / 'skills').is_dir():
             roots.append({'id': 'skills-' + identity, 'tree': {'root': str((path / 'skills').resolve()), 'kind': 'skills'}})
-        filename = 'config.toml' if identity == 'codex' else 'settings.json'
+        filename = 'config.toml' if identity == 'codex' else 'cli-config.json' if identity == 'cursor' else 'settings.json'
+        if identity == 'cursor' and (path / 'rules').is_dir():
+            roots.append({'id': 'rules-cursor', 'tree': {'root': str((path / 'rules').resolve()), 'kind': 'skills'}})
         if identity != 'shared' and (path / filename).is_file():
             roots.append({'id': 'settings-' + identity, 'tree': {'root': str(path.resolve()), 'kind': identity, 'filename': filename}})
-    if (codex / 'auth.json').is_file():
-        roots.append({'id': 'auth-codex', 'tree': {'root': str(codex.resolve()), 'kind': 'auth', 'filename': 'auth.json'}})
     return roots
 
 
@@ -197,8 +247,20 @@ def launch(folder, stop=False):
     path = Path.home() / 'Library/LaunchAgents' / (label + '.plist')
     if stop:
         subprocess.run(['launchctl', 'bootout', domain + '/' + label], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if subprocess.run(['launchctl', 'print', domain + '/' + label], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
-            raise OSError('old sync worker could not be stopped')
+        deadline = time.monotonic() + 10
+        while subprocess.run(['launchctl', 'print', domain + '/' + label], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+            if time.monotonic() >= deadline:
+                raise OSError('Sync helper did not stop within 10 seconds')
+            time.sleep(.1)
+        with (folder / 'lock').open('a') as lock:
+            while True:
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if time.monotonic() >= deadline:
+                        raise OSError('Previous sync helper is still shutting down')
+                    time.sleep(.1)
         path.unlink(missing_ok=True)
         return
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -228,7 +290,9 @@ def configure(folder, connection_file, activate=True):
             if source.resolve() != target.resolve():
                 temporary = folder / ('.sync-' + name)
                 shutil.copyfile(source, temporary); temporary.chmod(0o600); temporary.replace(target)
-        config = {'device': old['device'] if old else uuid.uuid4().hex, 'connectionFile': str(connection_file), 'binding': binding, 'roots': roots}
+        legacy_home = next((r['tree']['root'] for r in (old or {}).get('roots', []) if r['id'] == 'auth-codex'), None)
+        codex_home = os.environ.get('CODEX_HOME') or (old or {}).get('codexHome') or legacy_home or Path.home() / '.codex'
+        config = {'device': old['device'] if old else uuid.uuid4().hex, 'connectionFile': str(connection_file), 'binding': binding, 'roots': roots, 'codexHome': str(Path(codex_home).expanduser().resolve())}
         atomic_json(folder / 'config.json', config)
         if activate:
             launch(folder)
@@ -237,7 +301,7 @@ def configure(folder, connection_file, activate=True):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['configure', 'run', 'once', 'status', 'stop'])
+    parser.add_argument('command', choices=['configure', 'run', 'once', 'auth', 'status', 'stop'])
     parser.add_argument('directory', type=Path)
     parser.add_argument('--connection', type=Path)
     parser.add_argument('--no-start', action='store_true', help='Prepare configuration without installing a background job')
@@ -246,6 +310,11 @@ def main():
         result = configure(args.directory, args.connection, not args.no_start)
     elif args.command in {'run', 'once'}:
         result = run(args.directory, args.command == 'once')
+    elif args.command == 'auth':
+        config_path = args.directory / 'config.json'
+        config = private_json(config_path) if config_path.exists() else {}
+        connection = load_connection(config) if config else private_json(args.connection)
+        result = import_codex(config, connection, args.directory)
     elif args.command == 'stop':
         launch(args.directory.resolve(), stop=True)
         result = {'state': 'offline'}
@@ -258,6 +327,7 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
-        print('Sync setup failed. Check Python 3.11+, private connection settings, folder permissions, and macOS background-job access.', file=sys.stderr)
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
+        message = f'Sync shutdown failed: {error}' if sys.argv[1:2] == ['stop'] else 'Sync setup failed. Check Python 3.11+, private connection settings, folder permissions, and macOS background-job access.'
+        print(message, file=sys.stderr)
         sys.exit(1)

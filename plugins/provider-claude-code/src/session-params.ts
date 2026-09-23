@@ -74,6 +74,7 @@ export type ClaudeSessionExecutionOptions = RuntimePermissionPolicy & {
   envVars?: Record<string, string> | undefined;
   claudeCodePermissionMode?: "plan" | undefined;
   workflowsEnabled: boolean;
+  commandGuardEnabled?: boolean;
   chromeEnabled: boolean;
   memoryEnabled?: boolean | undefined;
   providerSubagentsEnabled?: boolean | undefined;
@@ -116,6 +117,7 @@ function buildInternalSessionParams(
   const skillConfig = buildClaudeSkillConfigParams(args.options.skillRoots);
   return {
     baseInstructions,
+    ...(args.options.commandGuardEnabled === false ? { commandGuardEnabled: false } : {}),
     threadId: args.threadId,
     cwd: args.cwd,
     instructionMode: args.instructionMode,
@@ -146,6 +148,7 @@ function buildInternalSessionParams(
 const claudeProviderOptionsSchema = z
   .object({
     claudeCodePermissionMode: z.literal("plan").optional(),
+    commandGuardEnabled: z.boolean().optional(),
     workflowsEnabled: z.boolean().optional(),
     chromeEnabled: z.boolean().optional(),
     memoryEnabled: z.boolean().optional(),
@@ -192,6 +195,7 @@ export function buildClaudeSessionParams(
       skillRoots: args.skillRoots,
       claudeCodePermissionMode: providerOptions.claudeCodePermissionMode,
       workflowsEnabled: providerOptions.workflowsEnabled ?? false,
+      commandGuardEnabled: providerOptions.commandGuardEnabled,
       chromeEnabled: providerOptions.chromeEnabled ?? false,
       memoryEnabled: providerOptions.memoryEnabled,
       providerSubagentsEnabled: providerOptions.providerSubagentsEnabled,

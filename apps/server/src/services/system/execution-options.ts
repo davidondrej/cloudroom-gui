@@ -3,6 +3,7 @@ import type {
   SystemExecutionOptionsModelLoadError,
   SystemExecutionOptionsQuery,
   SystemExecutionOptionsResponse,
+  SystemRestartModelDiscoveryRequest,
   SystemProvidersQuery,
 } from "@bb/server-contract";
 import { type CustomProviderModel } from "@bb/config/bb-app-managed-config";
@@ -399,6 +400,23 @@ export function resolveSystemExecutionOptions(
   return resolveExecutionOptions(deps, query, { kind: "picker" });
 }
 
+export async function restartSystemModelDiscovery(
+  deps: LoggedWorkSessionDeps,
+  query: SystemRestartModelDiscoveryRequest,
+): Promise<SystemExecutionOptionsResponse> {
+  await deps.providerRegistry.whenProviderRegistered(query.providerId);
+  if (!deps.providerRegistry.get(query.providerId)?.modelDiscoveryRestart) {
+    throw new ApiError(
+      400,
+      "invalid_request",
+      "This provider does not support restarting model discovery.",
+    );
+  }
+  const hostId = resolveSystemLookupHostId(deps, query);
+  requireConnectedHostSession(deps, hostId);
+  return resolveExecutionOptions(deps, query, { kind: "restart" });
+}
+
 export function resolveSystemExecutionOptionsForValidation(
   deps: LoggedWorkSessionDeps,
   query: SystemExecutionOptionsRequest,
@@ -565,7 +583,14 @@ async function loadSystemProviderModels(
       providerId: args.provider.id,
     }),
     selectedOnlyModels: [],
-    modelLoadError: { providerId: args.provider.id, code: result.code },
+    modelLoadError: {
+      providerId: args.provider.id,
+      code: result.code,
+      ...((result.code === "timeout" || result.code === "failed") &&
+      deps.providerRegistry.get(args.provider.id)?.modelDiscoveryRestart
+        ? { canRestart: true }
+        : {}),
+    },
   };
 }
 

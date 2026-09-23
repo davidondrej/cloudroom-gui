@@ -63,6 +63,7 @@ import {
 import {
   INERT_TYPEAHEAD_COMMAND_CONFIG,
   PromptBoxInternal,
+  promptFastModeCommand,
   arePromptEditorValuesEqual,
   suppressPromptEditorAnchorActivation,
   type PromptBoxAction,
@@ -276,6 +277,7 @@ function renderPromptBox(
     mentionSuggestions?: readonly PromptMentionSuggestion[];
     commandSuggestions?: TypeaheadConfig["command"]["suggestions"];
     reasoning?: PromptBoxProps["reasoning"];
+    fastMode?: PromptBoxProps["fastMode"];
     commandOverrides?: Partial<TypeaheadConfig["command"]>;
     onAttachFiles?: (files: File[]) => Promise<void> | void;
   } = {},
@@ -313,6 +315,7 @@ function renderPromptBox(
           command: { ...typeahead.command, ...options.commandOverrides },
         }}
         reasoning={options.reasoning}
+        fastMode={options.fastMode}
         mentionMenuPlacement="bottom"
         attachments={{ onAttachFiles: options.onAttachFiles }}
         promptActions={promptActions}
@@ -4752,6 +4755,108 @@ describe("PromptBoxInternal reasoning commands", () => {
     rerender(<PromptBoxInternal {...props} />);
     await waitFor(() => expect(screen.queryByText("Reasoning")).toBeNull());
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("PromptBoxInternal fast mode command", () => {
+  it("hides the command unless fast mode is supported", () => {
+    expect(
+      promptFastModeCommand({
+        value: "fast",
+        onChange: vi.fn(),
+        supported: false,
+      }),
+    ).toBeUndefined();
+    expect(promptFastModeCommand(undefined)).toBeUndefined();
+  });
+
+  it("toggles the existing fast mode switch", () => {
+    const onChange = vi.fn();
+    const off = promptFastModeCommand({
+      value: "default",
+      onChange,
+      supported: true,
+      fastLabel: " Fast ",
+    });
+    off?.onToggle();
+    expect(off?.label).toBe("Fast");
+    expect(onChange).toHaveBeenCalledWith("fast");
+
+    const on = promptFastModeCommand({
+      value: "fast",
+      onChange,
+      supported: true,
+    });
+    on?.onToggle();
+    expect(on?.label).toBe("Fast");
+    expect(onChange).toHaveBeenLastCalledWith("default");
+  });
+
+  it("turns fast mode on with Enter without sending or losing the draft", async () => {
+    const onToggle = vi.fn();
+    const { changes, onSubmit, promptBoxRef } = renderPromptBox(
+      "Review this /fast",
+      { fastMode: { enabled: false, label: "Fast", onToggle } },
+    );
+    await focusPromptEnd(promptBoxRef);
+    fireEvent.keyDown(getPromptEditorElement(), { key: "Enter" });
+
+    await waitFor(() => expect(onToggle).toHaveBeenCalledTimes(1));
+    expect(latestValue(changes)).toBe("Review this ");
+    expect(screen.queryByText("Fast mode")).toBeNull();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("turns fast mode off when it is already on", async () => {
+    const onToggle = vi.fn();
+    const { changes, onSubmit, promptBoxRef } = renderPromptBox("/fast", {
+      fastMode: { enabled: true, label: "Fast", onToggle },
+    });
+    await focusPromptEnd(promptBoxRef);
+    const button = await screen.findByRole("button", {
+      name: /^fast\s*Turn off Fast mode$/,
+    });
+    fireEvent.mouseDown(button, { button: 0 });
+
+    await waitFor(() => expect(onToggle).toHaveBeenCalledTimes(1));
+    expect(latestValue(changes)).toBe("");
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("shows no row when fast mode is unsupported", async () => {
+    const { onSubmit, promptBoxRef } = renderPromptBox("/fast");
+    await focusPromptEnd(promptBoxRef);
+    await waitFor(() => expect(screen.queryByText("Fast mode")).toBeNull());
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("keeps a same-named skill separate and selectable", async () => {
+    const onToggle = vi.fn();
+    const { changes, promptBoxRef } = renderPromptBox("/fast", {
+      fastMode: { enabled: false, label: "Fast", onToggle },
+      commandSuggestions: [
+        {
+          kind: "command",
+          name: "fast",
+          source: "skill",
+          origin: "user",
+          description: "A skill",
+          argumentHint: null,
+        },
+      ],
+    });
+    await focusPromptEnd(promptBoxRef);
+    await screen.findByText("Fast mode");
+    expect(screen.getByText("Skills")).not.toBeNull();
+    fireEvent.keyDown(getPromptEditorElement(), { key: "ArrowDown" });
+    fireEvent.keyDown(getPromptEditorElement(), { key: "Enter" });
+    await waitFor(() => expect(latestValue(changes)).toBe("/fast "));
+    expect(latestChange(changes)?.mentions[0]?.resource).toMatchObject({
+      kind: "command",
+      source: "skill",
+      name: "fast",
+    });
+    expect(onToggle).not.toHaveBeenCalled();
   });
 });
 

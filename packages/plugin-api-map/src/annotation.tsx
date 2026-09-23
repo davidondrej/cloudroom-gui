@@ -42,7 +42,7 @@ export function ExperimentalBadge() {
   return (
     <span
       className="inline-flex items-center rounded border border-warning/40 bg-warning/10 px-1.5 py-px font-mono text-xs text-warning-text"
-      title="Experimental: audited before stabilizing — see docs/api_to_audit.md in the bb repository."
+      title="Experimental: audited before stabilizing — see docs/api_to_audit.md in the Room repository."
     >
       experimental
     </span>

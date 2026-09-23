@@ -74,12 +74,12 @@ Slot props contracts (versioned, additive-only):
   settings sections.
 - `experimental_appOverlay` → `{}` (deliberately no props). An additive,
   app-wide React owner for floating plugin UI. Registration:
-  `{ id, component }`. BB mounts every registration once per app window
+  `{ id, component }`. Room mounts every registration once per app window
   through `PluginSlotMount`, outside route-owned layout regions. The component
   can therefore call app-level SDK hooks, including the sidebar thread data and
   action hooks, and keep their React contexts through a portal. Hooks whose
   contract requires a particular surface, including `useComposer` and
-  `useComposerView`, remain limited to that surface. BB supplies no chrome,
+  `useComposerView`, remain limited to that surface. Room supplies no chrome,
   positioning, visibility, focus, or responsive behavior; render fixed UI
   directly or use the vendored responsive overlay primitives. A crash hides
   only that overlay. Use a content script instead for DOM enhancement that does
@@ -94,10 +94,10 @@ Slot props contracts (versioned, additive-only):
   routing).
   Registration:
   `{ id, title, icon, path, component, fixedTabs?, experimental_sidebarAccessory?, headerContent? }`.
-  BB automatically wraps every plugin page in the same host-owned App panel
+  Room automatically wraps every plugin page in the same host-owned App panel
   used by New thread and thread pages. The page component supplies only its
   main body; it must not mount a second panel layout or register Browser and
-  Terminal itself. BB owns the desktop split, compact drawer, header/panel
+  Terminal itself. Room owns the desktop split, compact drawer, header/panel
   toggle, resizing, tab strip, persistence, and the shared `panel.toggle`,
   `panel.newTab`, `panel.reopenClosedTab`, and `terminal.open` keyboard
   commands.
@@ -112,14 +112,14 @@ Slot props contracts (versioned, additive-only):
   is page-session UI state, not plugin storage.
 
   Browser and Terminal tabs are normal host content tabs. Closing the final
-  content tab closes an otherwise empty panel; if fixed tabs remain, BB falls
+  content tab closes an otherwise empty panel; if fixed tabs remain, Room falls
   back to the first one instead. Hydration closes an open panel when no durable
   tab survived.
 
   `fixedTabs` declares ordered, non-closable page views in that
   same host tab strip:
   `{ id, panelId, title, icon, component, layout?, experimental_target? }`.
-  BB opens the
+  Room opens the
   first fixed tab on the page's first wide-layout visit, but remembers a later
   user close. One tab is active per visible split pane, so multiple fixed-tab
   components can be mounted concurrently. A component mounts only while its
@@ -133,7 +133,7 @@ Slot props contracts (versioned, additive-only):
   Every registration's `panelId` must exactly match its containing nav panel's
   `id`; the registration is also the stable reference for selecting that
   plugin-owned tab. A targetable tab declares
-  `experimental_target: { validate(value): value is Target }`; BB checks JSON
+  `experimental_target: { validate(value): value is Target }`; Room checks JSON
   safety before calling the owner validator. From any component of the same
   plugin on that page, call
   `experimental_useAppPanel().openFixedTab({ surface: { kind: "current" }, tab,
@@ -222,7 +222,7 @@ target? })`. Inside the fixed-tab component,
   `{ kind: "disclosure", component }`; room toggles that component above the
   row and passes it only `{ dismiss }`. A disclosure registration returns a
   controller that requests `open`, `close`, or `toggle`; an action registration
-  returns nothing. BB keeps only one disclosure open across all plugins.
+  returns nothing. Room keeps only one disclosure open across all plugins.
   The component owns everything inside, including tabs and navigation.
   Experimental: see `docs/api_to_audit.md`.
 - `sidebarFooterAction` → compatibility API for a host-rendered footer action.
@@ -235,12 +235,12 @@ target? })`. Inside the fixed-tab component,
   `{ id, title, description?, component }`. The component receives semantic
   host items, the active item id, the compact-viewport state,
   `experimental_activate`, and `experimental_Original`. Search activation opens
-  the quick palette. No inline search field or query state exists. BB keeps the
+  the quick palette. No inline search field or query state exists. Room keeps the
   drawer, thread list, footer, resize handle, and shortcut ownership.
 - `fileOpener` → `{ path: string, source, experimental_lineRange?, Original }` — register as a viewer/editor
   for file extensions: `{ id, title, extensions: ["md"], component }`.
   Matching files use the first applicable opener in deterministic slot order
-  by default. Users can pin BB's preview or a specific opener per extension
+  by default. Users can pin Room's preview or a specific opener per extension
   under Settings → "File openers", and
   right-clicking a file link in rendered markdown offers a one-off
   "Open with …" choice; matching files opened in the right panel then
@@ -258,7 +258,7 @@ projectId, experimental_hostId? }` (nullable fields). The optional host ID
   identical range in the active tab. Apply the latest target after loading
   and on subsequent requests without replacing the editor model; null means
   no requested navigation.
-  `Original` is BB's preview bound to this file; render it to
+  `Original` is Room's preview bound to this file; render it to
   delegate conditionally without re-entering plugin replacement resolution.
   Applies only to live file content — git-ref snapshots and deleted files
   always use the built-in preview, and a removed/disabled opener degrades

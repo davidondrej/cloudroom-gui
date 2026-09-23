@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@bb/shared-ui/button";
+import { Icon } from "@bb/shared-ui/icon";
 import { SidebarMenuItem } from "@/components/ui/sidebar";
 import { appToast } from "@/components/ui/app-toast";
 import { useCloudroomAccount } from "@/hooks/queries/cloudroom-queries";
@@ -30,11 +31,12 @@ export function CloudroomSignInButton() {
   const accountId = status.data?.account?.id;
   useEffect(() => { if (signInError) appToast.error(signInError); }, [signInError]);
   useEffect(() => { void queryClient.invalidateQueries({ queryKey: ["cloudroom-connection"] }); }, [queryClient, accountId]);
-  const label = status.data?.account ? "Account" : status.data?.signingIn ? "Cancel sign-in" : "Sign in";
+  const checking = status.isPending;
+  const label = checking || status.data?.account ? "Account" : status.data?.signingIn ? "Cancel sign-in" : "Sign in";
   return <SidebarMenuItem className="min-w-0" data-footer-item="cloudroom-account">
-    <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-muted-foreground hover:text-sidebar-foreground" aria-description={status.data?.account?.email ?? "Sign in to Cloudroom"} disabled={action.isPending || status.isPending} onClick={() => {
+    <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-muted-foreground hover:text-sidebar-foreground [&_[data-icon-root]]:size-3" aria-description={checking ? "Checking your account" : status.data?.account?.email ?? "Sign in to Cloudroom"} disabled={action.isPending || checking} onClick={() => {
       if (status.data?.account) void navigate(getSettingsRoutePath("machines"));
       else action.mutate();
-    }}>{action.isPending ? "Connecting…" : label}</Button>
+    }}>{action.isPending ? "Connecting…" : label}{checking && <Icon name="Loading" className="animate-spin" aria-hidden />}</Button>
   </SidebarMenuItem>;
 }

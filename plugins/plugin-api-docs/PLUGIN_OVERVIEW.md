@@ -1,4 +1,4 @@
-Find out where a plugin can add to bb before you write one. The Plugin Guide is a page in the sidebar that shows the bb product as a set of annotated wireframes.
+Find out where a plugin can add to Room before you write one. The Plugin Guide is a page in the sidebar that shows the Room product as a set of annotated wireframes.
 
 ## What you get
 

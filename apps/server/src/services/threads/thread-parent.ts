@@ -3,6 +3,9 @@ import type { Thread } from "@bb/domain";
 import type { AppDeps } from "../../types.js";
 import { throwParentThreadInvalid } from "../lib/lifecycle-api-errors.js";
 
+import { teleportBlocked } from "../cloudroom/store.js";
+import { ApiError } from "../../errors.js";
+
 const MAX_THREAD_HIERARCHY_DEPTH = 4;
 
 export function isAgentDelegatedChildThread<
@@ -118,6 +121,7 @@ export function canThreadSpawnChild(
   deps: Pick<AppDeps, "db">,
   args: CanThreadSpawnChildArgs,
 ): boolean {
+  if (teleportBlocked(deps.db, args.thread.id)) return false;
   const depth = resolveParentDepth(deps, {
     parentThread: args.thread,
   });
@@ -129,6 +133,7 @@ export function assertValidParentThread(
   args: AssertValidParentThreadArgs,
 ): Thread {
   const parentThread = getThread(deps.db, args.parentThreadId);
+  if (teleportBlocked(deps.db, args.parentThreadId) || parentThread?.executionTarget === "cloud") throw new ApiError(409, "teleport_in_progress", "Local children cannot start during or after Teleport.");
   if (parentThread === null) {
     throwParentThreadInvalid("not_found");
   }

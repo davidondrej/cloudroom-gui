@@ -27,6 +27,7 @@ DIRECTORY = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
 PORTABLE = {
     'pi': {'defaultProvider', 'defaultModel', 'defaultThinkingLevel', 'hideThinkingBlock', 'quietStartup'},
     'claude': {'model', 'effortLevel', 'language'},
+    'cursor': {'notifications', 'hints', 'suggestNextPrompt'},
     'codex': {'model', 'model_reasoning_effort', 'model_verbosity', 'personality'},
 }
 
@@ -99,11 +100,11 @@ def transfer(data, kind, executable, output=None, limit=MAX_FILE_BYTES):
     return {'tag': digest.hexdigest(), 'kind': kind, 'executable': executable, 'size': size}
 
 
-def swap(fd, first, second):
+def swap(fd, first, second, second_fd=None):
     # Exchange preserves the displaced inode, including writes through an already-open fd.
     libc = ctypes.CDLL(None, use_errno=True)
     function = getattr(libc, 'renameatx_np' if sys.platform == 'darwin' else 'renameat2')
-    if function(fd, os.fsencode(first), fd, os.fsencode(second), 2) != 0:
+    if function(fd, os.fsencode(first), fd if second_fd is None else second_fd, os.fsencode(second), 2) != 0:
         raise OSError(ctypes.get_errno(), 'atomic exchange failed')
 
 
@@ -134,6 +135,119 @@ class Tree:
                 yield fd, parts[-1]
             finally:
                 os.close(fd)
+
+    def attach(self, relative, stream, limit, size):
+        with self.parent(relative, create=True) as (fd, name):
+            try:
+                info = os.stat(name, dir_fd=fd, follow_symlinks=False)
+                if not stat.S_ISREG(info.st_mode):
+                    raise ValueError('attachment must be a regular file')
+                return {'size': info.st_size}
+            except FileNotFoundError:
+                pass
+            temporary = '.attachment-' + uuid.uuid4().hex
+            try:
+                flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+                with os.fdopen(os.open(temporary, flags, 0o600, dir_fd=fd), 'wb') as output:
+                    entry = transfer(stream, 'file', False, output, limit)
+                    if entry['size'] != size:
+                        raise ValueError('incomplete attachment')
+                    output.flush()
+                    os.fsync(output.fileno())
+                try:
+                    os.link(temporary, name, src_dir_fd=fd, dst_dir_fd=fd, follow_symlinks=False)
+                except FileExistsError:
+                    info = os.stat(name, dir_fd=fd, follow_symlinks=False)
+                    if not stat.S_ISREG(info.st_mode):
+                        raise ValueError('attachment must be a regular file')
+                    return {'size': info.st_size}
+                os.fsync(fd)
+                return {'size': entry['size']}
+            finally:
+                try:
+                    os.unlink(temporary, dir_fd=fd)
+                except FileNotFoundError:
+                    pass
+
+    def install_transfer(self, request, stream):
+        relative = request['path']
+        native = request.get('native')
+        digest = hashlib.sha256()
+        count = 0
+        with self.parent(relative, create=True) as (fd, name):
+            temporary = '.teleport-' + uuid.uuid4().hex
+            try:
+                out = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=fd)
+                with os.fdopen(out, 'wb') as output:
+                    if native:
+                        line = stream.readline(16 * 1024 * 1024 + 1)
+                        if len(line) > 16 * 1024 * 1024 or not line.endswith(b'\n'):
+                            raise ValueError('invalid native header')
+                        digest.update(line); count += len(line)
+                        header = json.loads(line)
+                        metadata = header if native['harness'] == 'pi' else header.get('payload', {})
+                        if metadata.get('id') != native['id']:
+                            raise ValueError('native identity mismatch')
+                        if native['harness'] == 'pi':
+                            if header.get('type') != 'session' or header.get('version') != 3:
+                                raise ValueError('unsupported Pi session')
+                        elif header.get('type') != 'session_meta':
+                            raise ValueError('unsupported Codex session')
+                        metadata['cwd'] = native['cwd']
+                        metadata.pop('dynamic_tools', None)
+                        output.write((json.dumps(header, separators=(',', ':')) + '\n').encode())
+                    while chunk := stream.read(CHUNK):
+                        count += len(chunk)
+                        if count > request['size']:
+                            raise Conflict('upload exceeds manifest size')
+                        digest.update(chunk); output.write(chunk)
+                    if count != request['size'] or digest.hexdigest() != request['sha256']:
+                        raise Conflict('upload checksum mismatch')
+                    output.flush(); os.fsync(output.fileno())
+                    os.fchmod(output.fileno(), 0o700 if request.get('executable') else 0o600)
+                try:
+                    os.link(temporary, name, src_dir_fd=fd, dst_dir_fd=fd, follow_symlinks=False)
+                except FileExistsError:
+                    def checksum(filename):
+                        with os.fdopen(os.open(filename, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=fd), 'rb') as existing:
+                            if not stat.S_ISREG(os.fstat(existing.fileno()).st_mode):
+                                raise ValueError('expected regular transfer file')
+                            checksum = hashlib.sha256()
+                            while chunk := existing.read(CHUNK): checksum.update(chunk)
+                            return checksum.digest()
+                    if checksum(name) != checksum(temporary):
+                        raise Conflict('transfer destination changed')
+                os.fsync(fd)
+            finally:
+                try: os.unlink(temporary, dir_fd=fd)
+                except FileNotFoundError: pass
+            project_path = request.get('project_path')
+            if project_path:
+                # Incoming bytes are durable. A conflicting directory or unwritable
+                # checkout must not prevent the agent from using the preserved copy.
+                with contextlib.suppress(OSError):
+                    with self.parent(project_path, create=True) as (target_fd, target_name):
+                        staged = '.teleport-' + uuid.uuid4().hex
+                        try:
+                            with os.fdopen(os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=fd), 'rb') as incoming:
+                                if request.get('symlink'):
+                                    target = incoming.read(os.pathconf(self.root, 'PC_PATH_MAX') + 1).decode()
+                                    self.check_link(project_path, target)
+                                    os.symlink(target, staged, dir_fd=target_fd)
+                                else:
+                                    output_fd = os.open(staged, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o700 if request.get('executable') else 0o600, dir_fd=target_fd)
+                                    with os.fdopen(output_fd, 'wb') as output:
+                                        shutil.copyfileobj(incoming, output, CHUNK)
+                                        output.flush(); os.fsync(output.fileno())
+                            try:
+                                os.link(staged, target_name, src_dir_fd=target_fd, dst_dir_fd=target_fd, follow_symlinks=False)
+                            except FileExistsError:
+                                pass
+                            os.fsync(target_fd)
+                        finally:
+                            try: os.unlink(staged, dir_fd=target_fd)
+                            except FileNotFoundError: pass
+        return {'path': str(self.root / relative)}
 
     def projected(self, data):
         if self.kind == 'auth':
@@ -212,7 +326,7 @@ class Tree:
         safe_path(resolved)
 
     def settle(self):
-        # Only this version's pending area is collected. Existing recovery archives stay intact.
+        # Retain the original inode: an idle open writer may still modify it later.
         if not (self.root / PENDING).exists():
             return
         with directory(self.root / PENDING) as fd:
@@ -224,15 +338,14 @@ class Tree:
                 safe_path(saved['path'])
                 backup = name[:-5]
                 try:
+                    info = os.stat(backup, dir_fd=fd, follow_symlinks=False)
+                    if saved.get('incoming_inode') == [info.st_dev, info.st_ino]:
+                        continue  # Interrupted before exchange; this is input, not a displaced original.
                     entry = self.inspect(fd, backup, saved['path'], project=False)
                 except FileNotFoundError:
                     entry = None
-                if entry is not None:
-                    if entry['tag'] != saved['fingerprint']:
-                        raise Conflict('concurrent edit preserved in pending recovery')
-                    os.unlink(backup, dir_fd=fd)
-                os.unlink(name, dir_fd=fd)
-            os.fsync(fd)
+                if entry is not None and entry['tag'] != saved['fingerprint']:
+                    raise Conflict('concurrent edit preserved in pending recovery')
 
     def scan(self, cache=None):
         self.settle()
@@ -307,8 +420,8 @@ class Tree:
         with self.parent(relative, create=entry is not None) as (fd, name):
             if any(other != name and unicodedata.normalize('NFC', other).casefold() == unicodedata.normalize('NFC', name).casefold() for other in os.listdir(fd)):
                 raise Conflict('case-colliding filenames')
-            temporary = '.cloudroom-sync-' + uuid.uuid4().hex
             backup = uuid.uuid4().hex
+            temporary = backup
             with directory(self.root / PENDING, create=True) as recovery:
                 if self.tag(relative) != expected:
                     raise Conflict('destination changed')
@@ -317,20 +430,24 @@ class Tree:
                     exists = True
                 except FileNotFoundError:
                     exists = False
-                if exists:
-                    info = os.open(backup + '.json', os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=recovery)
+                fingerprint = self.inspect(fd, name, relative, project=False)['tag'] if exists else None
+                def save_recovery(incoming_inode=None):
+                    info = os.open(backup + '.json', os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=recovery)
                     with os.fdopen(info, 'w') as metadata:
-                        json.dump({'path': relative, 'fingerprint': self.inspect(fd, name, relative, project=False)['tag']}, metadata)
+                        json.dump({'path': relative, 'fingerprint': fingerprint, 'incoming_inode': incoming_inode}, metadata)
                         metadata.flush(); os.fsync(metadata.fileno())
                 if entry is None:
                     if expected is None:
                         return
+                    save_recovery()
+                    os.fsync(recovery)
                     os.rename(name, backup, src_dir_fd=fd, dst_dir_fd=recovery)
                     os.fsync(fd); os.fsync(recovery)
                     if self.logical_tag(self.inspect(recovery, backup, relative)) != expected:
                         raise Conflict('concurrent edit preserved in recovery')
                     return
                 original_signature = None
+                preserve_recovery = False
                 try:
                     if entry['kind'] == 'symlink':
                         if entry['size'] > os.pathconf(self.root, 'PC_PATH_MAX'):
@@ -339,9 +456,9 @@ class Tree:
                         if len(target.encode()) != entry['size']:
                             raise Conflict('incomplete symlink')
                         self.check_link(relative, target)
-                        os.symlink(target, temporary, dir_fd=fd)
+                        os.symlink(target, temporary, dir_fd=recovery)
                     elif entry['kind'] == 'file':
-                        output_fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=fd)
+                        output_fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=recovery)
                         with os.fdopen(output_fd, 'wb') as output:
                             if self.kind in PORTABLE or self.kind == 'auth':
                                 try:
@@ -365,25 +482,32 @@ class Tree:
                             os.fchmod(output.fileno(), 0o600 if self.filename else 0o755 if entry['executable'] else 0o644)
                     else:
                         raise ValueError('unsupported entry')
-                    if (self.filename or entry['kind'] == 'symlink') and self.inspect(fd, temporary, relative)['tag'] != entry['tag']:
+                    if (self.filename or entry['kind'] == 'symlink') and self.inspect(recovery, temporary, relative)['tag'] != entry['tag']:
                         raise Conflict('incomplete or changed transfer')
                     if (self.tag(relative) != expected or (original_signature is not None
                             and self.signature(os.stat(name, dir_fd=fd, follow_symlinks=False)) != original_signature)):
                         raise Conflict('destination changed during transfer')
+                    if exists:
+                        incoming = os.stat(temporary, dir_fd=recovery, follow_symlinks=False)
+                        save_recovery([incoming.st_dev, incoming.st_ino])
+                    os.fsync(recovery)
                     if not exists:
-                        os.link(temporary, name, src_dir_fd=fd, dst_dir_fd=fd, follow_symlinks=False)
+                        os.link(temporary, name, src_dir_fd=recovery, dst_dir_fd=fd, follow_symlinks=False)
                     else:
-                        swap(fd, temporary, name)
-                        os.rename(temporary, backup, src_dir_fd=fd, dst_dir_fd=recovery)
+                        # Exchange directly into recovery: no fallible move can strand
+                        # the displaced original in a temporary-file cleanup path.
+                        preserve_recovery = True
+                        swap(recovery, temporary, name, fd)
                         os.fsync(recovery)
-                        if self.logical_tag(self.inspect(recovery, backup, relative)) != expected:
-                            raise Conflict('concurrent edit preserved in recovery')
                     os.fsync(fd)
+                    if exists and self.logical_tag(self.inspect(recovery, backup, relative)) != expected:
+                        raise Conflict('concurrent edit preserved in recovery')
                 finally:
-                    try:
-                        os.unlink(temporary, dir_fd=fd)
-                    except FileNotFoundError:
-                        pass
+                    if not preserve_recovery:
+                        try:
+                            os.unlink(temporary, dir_fd=recovery)
+                        except FileNotFoundError:
+                            pass
 
 
 def worker():
@@ -394,6 +518,32 @@ def worker():
         with directory(tree.root, create=True):
             pass
         result = {}
+    elif op == 'open':
+        import array
+        import socket
+        def send_file(fd):
+            with socket.socket(fileno=os.dup(1)) as channel:
+                channel.sendmsg([b'F'], [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array('i', [fd]))])
+        if request.get('directory'):
+            parts = safe_path(request['path']) if request['path'] else []
+            with directory(tree.root.joinpath(*parts)) as fd:
+                send_file(fd)
+        else:
+            with tree.parent(request['path']) as (fd, name):
+                opened = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)
+                with os.fdopen(opened, 'rb') as file:
+                    if not stat.S_ISREG(os.fstat(file.fileno()).st_mode):
+                        raise ValueError('expected a regular file')
+                    send_file(file.fileno())
+        return
+    elif op == 'attach':
+        try:
+            result = tree.attach(request['path'], sys.stdin.buffer, request['limit'], request['size'])
+        except Conflict:
+            print(json.dumps({'ok': False, 'error': 'attachment_too_large'}), flush=True)
+            return
+    elif op == 'teleport':
+        result = tree.install_transfer(request, sys.stdin.buffer)
     elif op == 'scan':
         result = tree.scan(request.get('cache'))
     elif op == 'read':
@@ -403,6 +553,27 @@ def worker():
             print(json.dumps({'ok': True, **entry}), flush=True)
             shutil.copyfileobj(data, sys.stdout.buffer, CHUNK)
         return
+    elif op == 'cursor_key':
+        if tree.filename != 'cloudroom-api-key' or not isinstance(request['key'], str):
+            raise ValueError('invalid Cursor key destination')
+        data = request['key'].encode()
+        if not data or len(data) > 4096 or any(byte < 33 or byte > 126 for byte in data):
+            raise ValueError('invalid Cursor key')
+        try:
+            with tree.snapshot(tree.filename) as (previous, _):
+                expected = previous['tag']
+        except FileNotFoundError:
+            expected = None
+        tree.apply(tree.filename, expected, transfer(io.BytesIO(data), 'file', False), io.BytesIO(data))
+        result = {}
+    elif op == 'import_auth':
+        data = json.dumps(request['credentials'], separators=(',', ':')).encode()
+        entry = transfer(io.BytesIO(data), 'file', False)
+        try:
+            tree.apply('auth.json', None, entry, io.BytesIO(data))
+        except (Conflict, FileExistsError):
+            pass  # An existing login always wins, including a concurrent native sign-in.
+        result = {}
     elif op == 'apply':
         tree.apply(request['path'], request['expected'], request.get('entry'), sys.stdin.buffer)
         result = {}
@@ -416,5 +587,5 @@ if __name__ == '__main__':
         worker()
     except Conflict:
         print(json.dumps({'ok': False, 'error': 'conflict'}), flush=True)
-    except (OSError, ValueError, KeyError, TypeError):
-        print(json.dumps({'ok': False, 'error': 'files_unavailable'}), flush=True)
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        print(json.dumps({'ok': False, 'error': 'files_unavailable', 'errno': getattr(error, 'errno', None)}), flush=True)

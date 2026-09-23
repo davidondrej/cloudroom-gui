@@ -46,6 +46,7 @@ type ProviderModelCatalogFailureCode = Exclude<
 
 export type ProviderModelCatalogAccess =
   | { kind: "picker" }
+  | { kind: "restart" }
   | { kind: "validation"; requiredModel: string | null };
 
 type ProviderModelCatalogReadResult =
@@ -95,6 +96,7 @@ interface CatalogRefresh {
   sessionId: string | null;
   startedAt: number;
   markedStale: boolean;
+  restart: boolean;
   promise: Promise<void>;
 }
 
@@ -441,6 +443,7 @@ export function createProviderModelCatalogStore(options: {
     entry: CatalogEntry,
     fingerprint: string,
     bridgeLaunch: HostDaemonBridgeLaunch,
+    restart = false,
   ): Promise<void> {
     const { hostId, providerId, scopeKey } = entry.key;
     const refresh: CatalogRefresh = {
@@ -448,6 +451,7 @@ export function createProviderModelCatalogStore(options: {
       sessionId: deps.hub.getDaemonSessionIdForHost(hostId),
       startedAt: options.now(),
       markedStale: false,
+      restart,
       promise: Promise.resolve(),
     };
     entry.refresh = refresh;
@@ -458,6 +462,7 @@ export function createProviderModelCatalogStore(options: {
         type: "provider.list_models",
         providerId,
         ...(scopeKey === "" ? {} : { cwd: scopeKey }),
+        ...(restart ? { restart: true } : {}),
         bridgeLaunch,
       },
     }).then(
@@ -501,6 +506,26 @@ export function createProviderModelCatalogStore(options: {
             ? args.cwd
             : "",
       });
+      if (args.access.kind === "restart") {
+        const previousGood = entry.good;
+        await (entry.refresh?.restart &&
+        entry.refresh.fingerprint === fingerprint
+          ? entry.refresh.promise
+          : startRefresh(deps, entry, fingerprint, bridgeLaunch, true));
+        if (
+          entry.failure ||
+          !entry.good ||
+          entry.good === previousGood ||
+          entry.good.fingerprint !== fingerprint
+        ) {
+          return { kind: "error", code: entry.failure?.code ?? "failed" };
+        }
+        return {
+          kind: "catalog",
+          models: entry.good.models,
+          selectedOnlyModels: entry.good.selectedOnlyModels,
+        };
+      }
       for (let refreshed = false; ; refreshed = true) {
         const decision = evaluate(
           entry,

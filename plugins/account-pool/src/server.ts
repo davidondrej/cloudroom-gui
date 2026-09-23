@@ -228,7 +228,7 @@ export function createAccountPoolPlugin(
     });
     if ((await accounts.list()).every((account) => !account.enabled)) {
       bb.status.needsConfiguration(
-        "Add and enable a Claude or Codex account with `bb pool account add`.",
+        "Add and enable a Claude or Codex account with `room pool account add`.",
       );
     }
     const cacheMissReports: CacheMissController = {
@@ -280,7 +280,7 @@ export function createAccountPoolPlugin(
       {
         name: PARENT_URL_ENV,
         value: { serverPath: HUB_BASE_PATH },
-        reason: "Account Pooler hub for nested bb servers on this machine",
+        reason: "Account Pooler hub for nested Room servers on this machine",
       },
       {
         name: PARENT_TOKEN_ENV,
@@ -293,7 +293,7 @@ export function createAccountPoolPlugin(
         name,
         value: "",
         reason:
-          "Account Pooler is isolated from the parent bb server's pool on this instance",
+          "Account Pooler is isolated from the parent Room server's pool on this instance",
       }));
     const contributeFor =
       (provider: PoolProvider, serving: (token: string) => PoolEnvEntry[]) =>
@@ -315,7 +315,7 @@ export function createAccountPoolPlugin(
             statusMessage:
               proxyingParent() === null
                 ? "Credentials are provided by the Account Pooler hub."
-                : "Credentials are proxied to the parent bb server's Account Pooler.",
+                : "Credentials are proxied to the parent Room server's Account Pooler.",
           }
         : null;
     bb.providers.experimental_contributeEnv(
@@ -451,7 +451,7 @@ async function inspectDisableState(
   if (!disabled) return null;
   const warnings = await operations.routedThreadsWithoutLocalLogin();
   if (warnings.length === 0) return null;
-  return `Account Pooler disabled with ${warnings.length} recently routed thread${warnings.length === 1 ? "" : "s"} on machines without a local Claude login. Run bb pool status before disabling to inspect them.`;
+  return `Account Pooler disabled with ${warnings.length} recently routed thread${warnings.length === 1 ? "" : "s"} on machines without a local Claude login. Run room pool status before disabling to inspect them.`;
 }
 
 function cacheMissLogMessage(report: CacheMissReport): string {

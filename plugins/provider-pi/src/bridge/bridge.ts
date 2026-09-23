@@ -748,6 +748,7 @@ async function buildSessionOptions(args: {
     systemPrompt: args.params.baseInstructions,
     appendSystemPrompt: args.params.appendSystemPrompt,
     shellEnvOverrides: args.params.shellEnvOverrides,
+    commandGuardEnabled: args.params.commandGuardEnabled,
     ...(args.params.additionalSkillPaths
       ? { additionalSkillPaths: [...args.params.additionalSkillPaths] }
       : {}),

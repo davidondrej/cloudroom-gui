@@ -297,7 +297,7 @@ export function createDesktopBrowserBroker(args: {
       const descriptor = {
         instanceId: randomUUID(),
         generation: randomUUID(),
-        label: `BB window ${window.webContents.id}`,
+        label: `Room window ${window.webContents.id}`,
       };
       instances.set(descriptor.instanceId, {
         window,

@@ -35,7 +35,7 @@ export interface ThreadPaletteNavigationItem {
   id: string;
   optionId: string;
   projectId: string;
-  threadId: string;
+  threadId: string | null;
   messageSeq: number | null;
 }
 
@@ -51,20 +51,38 @@ interface ThreadPaletteResultsProps {
 }
 
 interface ThreadSearchRenderableRow {
+  kind: "thread";
   id: string;
   matches: readonly ThreadSearchMatch[];
   thread: ThreadListEntry;
 }
 
+interface ProjectSearchRenderableRow {
+  kind: "project";
+  id: string;
+  project: { id: string; name: string };
+}
+
 interface ThreadSearchSection {
-  id: "active" | "archived";
+  id: "recent" | "projects" | "titles" | "contents";
   label: string;
-  rows: readonly ThreadSearchRenderableRow[];
-  total: number;
+  rows: readonly (ThreadSearchRenderableRow | ProjectSearchRenderableRow)[];
 }
 
 const RECENT_THREAD_LIMIT = 20;
 const EMPTY_MATCHES: readonly ThreadSearchMatch[] = [];
+const RESULT_ROW_CLASS =
+  "flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none";
+
+function searchWords(text: string): string[] {
+  return (
+    text
+      .normalize("NFD")
+      .replace(/\p{Mark}/gu, "")
+      .toLocaleLowerCase()
+      .match(/[\p{L}\p{N}_]+/gu) ?? []
+  );
+}
 
 function isThreadTitleMatch(match: ThreadSearchMatch): boolean {
   return match.sourceKind === "title" || match.sourceKind === "title_fallback";
@@ -82,15 +100,15 @@ function getMessageMatchSeq(
 }
 
 function toNavigationItem(
-  row: ThreadSearchRenderableRow,
+  row: ThreadSearchRenderableRow | ProjectSearchRenderableRow,
   optionIdPrefix: string,
 ): ThreadPaletteNavigationItem {
   return {
     id: row.id,
     optionId: `${optionIdPrefix}-${row.id}`,
-    projectId: row.thread.projectId,
-    threadId: row.thread.id,
-    messageSeq: getMessageMatchSeq(row.matches),
+    projectId: row.kind === "project" ? row.project.id : row.thread.projectId,
+    threadId: row.kind === "project" ? null : row.thread.id,
+    messageSeq: row.kind === "project" ? null : getMessageMatchSeq(row.matches),
   };
 }
 
@@ -155,52 +173,80 @@ export function ThreadPaletteResults({
     if (!liveQueryIsSearchable) {
       const rows = recentThreads
         .slice(0, RECENT_THREAD_LIMIT)
-        .map((thread) => ({
+        .map((thread): ThreadSearchRenderableRow => ({
+          kind: "thread",
           id: `recent:${thread.id}`,
           matches: EMPTY_MATCHES,
           thread,
         }));
-      return [{ id: "active", label: "Recent", rows, total: rows.length }];
+      return [{ id: "recent", label: "Recent", rows }];
     }
 
-    if (!searchResultsAreCurrent) {
-      return [
-        { id: "active", label: "Threads", rows: [], total: 0 },
-        { id: "archived", label: "Archived", rows: [], total: 0 },
-      ];
+    const projects = navigationQuery.data
+      ? [...navigationQuery.data.projects, navigationQuery.data.personalProject]
+      : [];
+    const queryWords = searchWords(trimmedQuery);
+    const projectRows = projects
+      .filter((project) => {
+        const nameWords = searchWords(project.name);
+        return (
+          queryWords.length > 0 &&
+          queryWords.every((word) =>
+            nameWords.some((nameWord) => nameWord.includes(word)),
+          )
+        );
+      })
+      .map((project): ProjectSearchRenderableRow => ({
+        kind: "project",
+        id: `project:${project.id}`,
+        project,
+      }));
+    const titleRows: ThreadSearchRenderableRow[] = [];
+    const contentRows: ThreadSearchRenderableRow[] = [];
+    if (searchResultsAreCurrent && threadSearch.data) {
+      for (const { thread, matches } of [
+        ...threadSearch.data.active.results,
+        ...threadSearch.data.archived.results,
+      ]) {
+        const title = getThreadDisplayTitle(thread);
+        const titleMatch = getTitleMatch(title, matches);
+        const nameWords = searchWords(title);
+        const fullNameMatch =
+          queryWords.length > 0 &&
+          queryWords.every((word) =>
+            nameWords.some((nameWord) => nameWord.startsWith(word)),
+          );
+        const snippetMatch = getSnippetMatch(matches);
+        if (fullNameMatch && (titleMatch || !snippetMatch)) {
+          titleRows.push({
+            kind: "thread",
+            id: `title:${thread.id}`,
+            thread,
+            matches: titleMatch ? [titleMatch] : EMPTY_MATCHES,
+          });
+        }
+        if (snippetMatch) {
+          contentRows.push({
+            kind: "thread",
+            id: `content:${thread.id}`,
+            thread,
+            matches,
+          });
+        }
+      }
     }
-
-    const activeRows =
-      threadSearch.data?.active.results.map((result) => ({
-        id: `active:${result.thread.id}`,
-        matches: result.matches,
-        thread: result.thread,
-      })) ?? [];
-    const archivedRows =
-      threadSearch.data?.archived.results.map((result) => ({
-        id: `archived:${result.thread.id}`,
-        matches: result.matches,
-        thread: result.thread,
-      })) ?? [];
     return [
-      {
-        id: "active",
-        label: "Threads",
-        rows: activeRows,
-        total: threadSearch.data?.active.total ?? 0,
-      },
-      {
-        id: "archived",
-        label: "Archived",
-        rows: archivedRows,
-        total: threadSearch.data?.archived.total ?? 0,
-      },
+      { id: "projects", label: "Projects", rows: projectRows },
+      { id: "titles", label: "Thread names", rows: titleRows },
+      { id: "contents", label: "Conversation content", rows: contentRows },
     ];
   }, [
     liveQueryIsSearchable,
+    navigationQuery.data,
     recentThreads,
     searchResultsAreCurrent,
     threadSearch.data,
+    trimmedQuery,
   ]);
   const rows = useMemo(
     () => sections.flatMap((section) => section.rows),
@@ -222,12 +268,22 @@ export function ThreadPaletteResults({
       (threadSearch.isLoading && threadSearch.data === undefined));
   const hasRows = rows.length > 0;
   const showRecentLoading = !liveQueryIsSearchable && navigationQuery.isLoading;
-  const showError =
-    liveQueryIsSearchable && threadSearch.isError && !isLoading && !hasRows;
+  const showError = liveQueryIsSearchable && threadSearch.isError && !isLoading;
   const showNoSearchResults =
     liveQueryIsSearchable && !isLoading && !showError && !hasRows;
   const showTypeToSearch =
     !liveQueryIsSearchable && !showRecentLoading && recentThreads.length === 0;
+  const searchGroups = threadSearch.data
+    ? [threadSearch.data.active, threadSearch.data.archived]
+    : [];
+  const shownThreadCount = searchGroups.reduce(
+    (count, group) => count + group.results.length,
+    0,
+  );
+  const totalThreadCount = searchGroups.reduce(
+    (count, group) => count + group.total,
+    0,
+  );
   let startIndex = 0;
 
   return (
@@ -252,11 +308,14 @@ export function ThreadPaletteResults({
       {showNoSearchResults ? (
         <ThreadSearchMessage
           iconName="MessageQuestion"
-          text="No matching threads"
+          text="No matching results"
         />
       ) : null}
       {showTypeToSearch ? (
-        <ThreadSearchMessage iconName="Search" text="Type to search threads." />
+        <ThreadSearchMessage
+          iconName="Search"
+          text="Search projects, thread names, and conversations."
+        />
       ) : null}
       {sections.map((section) => {
         const sectionStartIndex = startIndex;
@@ -276,17 +335,40 @@ export function ThreadPaletteResults({
               )}
             >
               <span className="min-w-0 truncate">{section.label}</span>
-              {section.total > section.rows.length ? (
-                <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                  {section.rows.length}/{section.total}
-                </span>
-              ) : null}
             </div>
             <div className="space-y-0.5">
               {section.rows.map((row, rowIndex) => {
                 const index = sectionStartIndex + rowIndex;
                 const item = navigationItems[index];
                 if (!item) return null;
+                if (row.kind === "project") {
+                  return (
+                    <button
+                      key={row.id}
+                      id={item.optionId}
+                      type="button"
+                      role="option"
+                      aria-selected={activeIndex === index}
+                      className={cn(
+                        RESULT_ROW_CLASS,
+                        activeIndex === index &&
+                          "bg-state-hover text-foreground",
+                      )}
+                      onMouseEnter={() => onActiveIndexChange(index)}
+                      onFocus={() => onActiveIndexChange(index)}
+                      onClick={() => onSelect(item)}
+                    >
+                      <Icon
+                        name="Folder"
+                        className="size-4 shrink-0 text-muted-foreground"
+                        aria-hidden
+                      />
+                      <span className="min-w-0 truncate font-medium">
+                        {row.project.name}
+                      </span>
+                    </button>
+                  );
+                }
                 return (
                   <ThreadPaletteResultRow
                     key={row.id}
@@ -304,6 +386,14 @@ export function ThreadPaletteResults({
           </section>
         );
       })}
+      {liveQueryIsSearchable &&
+      searchResultsAreCurrent &&
+      shownThreadCount < totalThreadCount ? (
+        <p className="px-2 text-xs text-muted-foreground">
+          Showing {shownThreadCount} of {totalThreadCount} threads. Refine your
+          search.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -320,9 +410,11 @@ function clampRange(
 function HighlightedText({
   ranges,
   text,
+  isTitle = false,
 }: {
   ranges: ThreadSearchMatch["highlightRanges"];
   text: string;
+  isTitle?: boolean;
 }) {
   if (ranges.length === 0 || text.length === 0) return text;
   const nodes: ReactNode[] = [];
@@ -338,7 +430,12 @@ function HighlightedText({
     nodes.push(
       <mark
         key={`${range.start}:${range.end}`}
-        className="rounded-sm bg-state-selected px-0 text-foreground"
+        className={cn(
+          "rounded-sm px-0",
+          isTitle
+            ? "bg-destructive text-destructive-foreground"
+            : "bg-state-selected text-foreground",
+        )}
       >
         {text.slice(range.start, range.end)}
       </mark>,
@@ -353,8 +450,10 @@ function getTitleMatch(
   title: string,
   matches: readonly ThreadSearchMatch[],
 ): ThreadSearchMatch | undefined {
+  const normalize = (text: string) => text.trim().replace(/\s+/gu, " ");
   return matches.find(
-    (match) => isThreadTitleMatch(match) && match.text === title,
+    (match) =>
+      isThreadTitleMatch(match) && normalize(match.text) === normalize(title),
   );
 }
 
@@ -409,11 +508,14 @@ function ThreadPaletteResultRowComponent({
     timestamp: thread.updatedAt,
     now: Date.now(),
   });
-  const metadataText = [
-    snippetMatch ? title : null,
+  const metadataSuffix = [
     projectMetadata,
+    thread.archivedAt !== null ? "Archived" : null,
     relativeTime,
   ]
+    .filter(isNonEmptyMetadataPart)
+    .join(" · ");
+  const metadataText = [snippetMatch ? title : null, metadataSuffix]
     .filter(isNonEmptyMetadataPart)
     .join(" · ");
   const handleMouseEnter = useCallback<MouseEventHandler<HTMLButtonElement>>(
@@ -428,7 +530,7 @@ function ThreadPaletteResultRowComponent({
       role="option"
       aria-selected={isActive}
       className={cn(
-        "flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none",
+        RESULT_ROW_CLASS,
         isActive && "bg-state-hover text-foreground",
       )}
       onMouseEnter={handleMouseEnter}
@@ -437,7 +539,11 @@ function ThreadPaletteResultRowComponent({
     >
       <span className="min-w-0 flex-1 space-y-0.5">
         <span className="block min-w-0 truncate">
-          <HighlightedText text={primaryText} ranges={primaryHighlightRanges} />
+          <HighlightedText
+            text={primaryText}
+            ranges={primaryHighlightRanges}
+            isTitle={!snippetMatch}
+          />
         </span>
         <span
           className="flex min-w-0 items-center gap-1.5 text-xs leading-4 text-muted-foreground"
@@ -452,7 +558,19 @@ function ThreadPaletteResultRowComponent({
           ) : projectMetadata ? (
             <Icon name="Folder" className="size-3.5 shrink-0" aria-hidden />
           ) : null}
-          <span className="min-w-0 truncate">{metadataText}</span>
+          <span className="min-w-0 truncate">
+            {snippetMatch ? (
+              <>
+                <HighlightedText
+                  text={titleMatch?.text ?? title}
+                  ranges={titleMatch?.highlightRanges ?? []}
+                  isTitle
+                />
+                {metadataSuffix ? " · " : null}
+              </>
+            ) : null}
+            {metadataSuffix}
+          </span>
         </span>
       </span>
       {indicatorKind !== "none" ? (

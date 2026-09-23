@@ -1,6 +1,6 @@
 ---
 kind: instruction
-title: bb Guide — Threads
+title: Room Guide — Threads
 summary: Command reference for thread spawning, inspecting, messaging, and lifecycle.
 intent: Provide complete thread command documentation for agents.
 editingNotes: Keep flags accurate against the CLI implementation. Run the json-flag-enforcement and command-output tests after changes.
@@ -53,11 +53,13 @@ Spawning:
     --source-thread <id>           Source thread for a fork
     --source-seq-end <seq>         Fork after the source turn containing this event sequence
 
-  Cloud requires the configured project, --provider codex, and --model. It uses
-  the prepared repository, full permissions, and the default service tier.
-  Plain-text sends queue in the core. Stop pauses the queue; sending its first
-  queued message explicitly resumes it. Native environment options, worktrees,
-  scheduling, steering, attachments, and forks are not supported for Cloud.
+  Cloud requires --provider codex or pi and --model. It uses the project's
+  cloud folder and full permissions. Sends queue in the core. Stop pauses the
+  queue; sending its first queued message explicitly resumes it. Inspect
+  room cloudroom status --json for core/harness support for steering,
+  attachments, compaction, message editing, queue changes, and fast service tier.
+  Native environment options, worktrees, scheduling, and forks remain unsupported.
+  An idle status does not prove a queued message completed; verify its output.
 
   Execution defaults resolve from explicit flags, live parent execution, and
   remembered project defaults. With no remembered model, room uses the explicitly
@@ -82,7 +84,7 @@ Spawning:
   workspace. It cannot be combined with an existing environment ID because that
   environment already selects its machine. Without the flag, local/primary
   machine resolution is unchanged.
-  Omit --base-branch for bb's default. Explicit values are exact; use
+  Omit --base-branch for Room's default. Explicit values are exact; use
   origin/<branch> for a remote ref.
   Before selecting a provider, run `room environment providers --project <id>
   --machine <id-or-name>` to see whether it is available, needs setup, or is
@@ -223,27 +225,27 @@ Inspecting:
 Opening threads and files in the app:
 
   In chat, reference a thread as @thread:thr_abc123, substituting its actual ID.
-  BB renders the correct project-aware link; do not construct thread URLs manually.
+  Room renders the correct project-aware link; do not construct thread URLs manually.
 
-  room thread open <path>                    Open a file in the current BB thread panel
+  room thread open <path>                    Open a file in the current Room thread panel
   room thread open <thread-id> [path]        Open a thread, optionally with a panel file
     --line <number>                        Line number to focus
     --split <placement>                    right, down, left, top, or replace
   room thread pane <action> [thread-id]      Maximize, restore, toggle, spotlight, or clear spotlight
 
-  Inside a BB thread, ROOM_THREAD_ID selects the current thread automatically and
+  Inside a Room thread, ROOM_THREAD_ID selects the current thread automatically and
   the thread ID argument is omitted for file-only opens. Pass an explicit thread
-  ID with --split to open another thread. Outside a BB thread, pass the thread ID
+  ID with --split to open another thread. Outside a Room thread, pass the thread ID
   as the first argument. A thread already open in a pane is focused instead of
   duplicated. Edge placement creates panes through the eighth pane; at eight
   panes, it replaces the focused pane.
-  Pane actions broadcast to connected BB app windows and affect the matching
+  Pane actions broadcast to connected Room app windows and affect the matching
   already-open pane without changing its split tree. Spotlight focuses that
   pane and dims the others; clear-spotlight focuses it and removes split dimming.
   Paths can be thread-relative workspace paths, or absolute paths inside the
   target thread workspace. Absolute paths under ROOM_THREAD_STORAGE open as
   thread-storage files for the current thread. Use this for Markdown or HTML
-  artifacts you create for the user so they open in the BB IDE.
+  artifacts you create for the user so they open in the Room IDE.
 
 Messaging:
 
@@ -287,7 +289,7 @@ Messaging:
 
   `thread compact` enqueues the same structured /compact turn used by the
   composer. Follow the thread timeline for the eventual compaction result.
-  `thread clear` keeps the BB thread, workspace, durable event history, and
+  `thread clear` keeps the Room thread, workspace, durable event history, and
   sticky execution settings. Its active timeline starts at one visible
   `Context cleared` boundary, and its next prompt starts a fresh provider
   conversation in the same thread.
@@ -309,7 +311,7 @@ Ownership:
   --clear-section is also supplied. Children released by environment archiving
   also inherit their former parent's section.
 
-  Model and reasoning updates stay within the thread's current provider. BB
+  Model and reasoning updates stay within the thread's current provider. Room
   validates them against that provider's current model catalog, applies them on
   the next turn, and keeps using them on later turns until changed.
 

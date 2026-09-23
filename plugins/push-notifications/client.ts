@@ -41,7 +41,7 @@ export function createClientDelivery(navigate: (threadId: string) => void) {
       body: message.body,
       ...(isMacDesktop
         ? {}
-        : { icon: new URL("/icon-192.png", window.location.origin).href }),
+        : { icon: new URL("/icon-192.png?v=room", window.location.origin).href }),
       tag: `bb-${message.threadId ?? message.id}`,
     });
     active.add(notification);

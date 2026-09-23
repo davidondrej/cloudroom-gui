@@ -5,7 +5,6 @@ import {
   fireEvent,
   render,
   screen,
-  within,
 } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { MemoryRouter } from "react-router-dom";
@@ -166,68 +165,78 @@ describe("EnvironmentPickerUI Cloudroom checkout menu", () => {
     return { onSelectProvider, onSelectCloud };
   }
 
-  it("groups primary checkout and worktree under the machine and Cloud in one menu", () => {
+  it("lists local and cloud primary and work tree choices without the machine name", () => {
     mount();
-    const local = screen.getByRole("group", { name: host.name });
-    const cloud = screen.getByRole("group", { name: "Cloud" });
+    expect(screen.queryByText(host.name)).toBeNull();
     expect(
-      within(local)
+      screen
         .getAllByRole("option")
         .map((item) => item.textContent),
-    ).toEqual(["Primary checkout", "Worktree"]);
+    ).toEqual([
+      "Local Primary",
+      "Local Worktree",
+      "Cloud Primary",
+      "Cloud WorktreeCloud worktrees are not supported yet",
+    ]);
     expect(
-      within(cloud).getByRole("option", { name: "Primary checkout" }),
+      screen.getByRole("option", { name: "Local Primary" }).querySelector(
+        '[data-icon="Laptop"]',
+      ),
     ).toBeTruthy();
     expect(
-      within(cloud).getByRole("option", { name: /Worktree/ }),
+      screen.getByRole("option", { name: "Local Worktree" }).querySelector(
+        '[data-icon="Laptop"]',
+      ),
     ).toBeTruthy();
+    expect(
+      screen.getByRole("option", { name: "Cloud Primary" }).querySelector(
+        '[data-icon="Cloud"]',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("option", { name: /Cloud Worktree/ }).querySelector(
+        '[data-icon="Cloud"]',
+      ),
+    ).toBeTruthy();
+    expect(document.querySelector('[data-icon="FolderGit"]')).toBeNull();
     expect(screen.queryByText("Docker container")).toBeNull();
-    expect(
-      screen.getByRole("button", { name: "Environment" }).textContent,
-    ).toContain("Local host · Primary checkout");
+    const trigger = screen.getByRole("button", { name: "Environment" });
+    expect(trigger.textContent).toContain("Local Primary");
+    expect(trigger.querySelector('[data-icon="Laptop"]')).toBeTruthy();
   });
 
   it("selects Cloud without dispatching a native environment selection", () => {
     const { onSelectProvider, onSelectCloud } = mount();
-    fireEvent.click(
-      within(screen.getByRole("group", { name: "Cloud" })).getByRole("option", {
-        name: "Primary checkout",
-      }),
-    );
+    fireEvent.click(screen.getByRole("option", { name: "Cloud Primary" }));
     expect(onSelectCloud).toHaveBeenCalledOnce();
     expect(onSelectProvider).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog", { name: "Environment" })).toBeNull();
   });
 
-  it.each(["Primary checkout", "Worktree"])(
-    "can switch back from Cloud to local %s",
-    (label) => {
-      const { onSelectProvider, onSelectCloud } = mount({ selected: true });
-      expect(
-        screen.getByRole("button", { name: "Environment" }).textContent,
-      ).toContain("Cloud · Primary checkout");
-      const local = screen.getByRole("group", { name: host.name });
-      expect(
-        within(local)
-          .getAllByRole("option")
-          .every((item) => item.getAttribute("aria-current") !== "true"),
-      ).toBe(true);
-      fireEvent.click(within(local).getByRole("option", { name: label }));
-      expect(onSelectProvider).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: label === "Worktree" ? "git-worktree" : "project-checkout",
-        }),
-        host.id,
-      );
-      expect(onSelectCloud).not.toHaveBeenCalled();
-    },
-  );
+  it.each([
+    ["Local Primary", "project-checkout"],
+    ["Local Worktree", "git-worktree"],
+  ])("can switch back from Cloud to %s", (label, providerId) => {
+    const { onSelectProvider, onSelectCloud } = mount({ selected: true });
+    const trigger = screen.getByRole("button", { name: "Environment" });
+    expect(trigger.textContent).toContain("Cloud Primary");
+    expect(trigger.querySelector('[data-icon="Cloud"]')).toBeTruthy();
+    expect(
+      screen
+        .getAllByRole("option", { name: /^Local / })
+        .every((item) => item.getAttribute("aria-current") !== "true"),
+    ).toBe(true);
+    fireEvent.click(screen.getByRole("option", { name: label }));
+    expect(onSelectProvider).toHaveBeenCalledWith(
+      expect.objectContaining({ id: providerId }),
+      host.id,
+    );
+    expect(onSelectCloud).not.toHaveBeenCalled();
+  });
 
   it("does not pretend unsupported cloud worktrees are primary checkouts", () => {
     const { onSelectProvider, onSelectCloud } = mount();
-    const worktree = within(
-      screen.getByRole("group", { name: "Cloud" }),
-    ).getByRole("option", { name: /Worktree/ });
+    const worktree = screen.getByRole("option", { name: /Cloud Worktree/ });
     expect(worktree.getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(worktree);
     expect(onSelectCloud).not.toHaveBeenCalled();
@@ -238,18 +247,14 @@ describe("EnvironmentPickerUI Cloudroom checkout menu", () => {
     const { onSelectCloud } = mount({
       unavailableReason: "Cloud is configured for another project",
     });
-    const cloud = within(
-      screen.getByRole("group", { name: "Cloud" }),
-    ).getByRole("option", { name: /Primary checkout/ });
+    const cloud = screen.getByRole("option", { name: /Cloud Primary/ });
     expect(cloud.getAttribute("aria-disabled")).toBe("true");
     expect(cloud.textContent).toContain(
       "Cloud is configured for another project",
     );
     fireEvent.click(cloud);
     expect(onSelectCloud).not.toHaveBeenCalled();
-    const local = within(
-      screen.getByRole("group", { name: host.name }),
-    ).getByRole("option", { name: "Primary checkout" });
+    const local = screen.getByRole("option", { name: "Local Primary" });
     expect(local.getAttribute("aria-disabled")).not.toBe("true");
   });
 });

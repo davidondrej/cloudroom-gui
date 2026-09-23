@@ -75,17 +75,13 @@ describe("LocalOpenTargetSettingsSection", () => {
     ).not.toBeNull();
   });
 
-  it("opens the remote-browser setup guide", () => {
+  it("hides the setup guide until a Cloudroom replacement is available", () => {
     const openWindow = vi.spyOn(window, "open").mockImplementation(() => null);
     renderSection({ accessState: "available" });
 
-    fireEvent.click(screen.getByRole("link", { name: "Setup guide" }));
-
-    expect(openWindow).toHaveBeenCalledExactlyOnceWith(
-      "https://github.com/get-bb/bb/blob/main/docs/multiple-devices.md#open-bb-from-another-browser",
-      "_blank",
-      "noopener,noreferrer",
-    );
+    expect(screen.queryByRole("link", { name: "Setup guide" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeDefined();
+    expect(openWindow).not.toHaveBeenCalled();
   });
 
   it("shows editor preferences when the helper is reachable", () => {

@@ -12,6 +12,7 @@ const OPEN_NEW_TAB_MENU_LABEL = "New Tab";
 const REOPEN_CLOSED_TAB_MENU_LABEL = "Reopen Closed Tab";
 const NEW_THREAD_MENU_LABEL = "New Thread";
 const NEW_WINDOW_MENU_LABEL = "New Window";
+const ARCHIVE_THREAD_MENU_LABEL = "Archive Thread";
 const CLOSE_WINDOW_MENU_LABEL = "Close Window";
 const OPEN_SETTINGS_MENU_LABEL = "Settings…";
 const TOGGLE_DEVELOPER_TOOLS_MENU_LABEL = "Toggle Developer Tools";
@@ -25,11 +26,11 @@ export const CONNECT_SERVERS_SKIPPED_MENU_LABELS: Record<
   ConnectServerSyncSkipReason,
   string
 > = {
-  "no-credential": "No Connect servers — sign in to bb Connect",
+  "no-credential": "No Connect servers — sign in to Cloudroom Connect",
   "not-paired": "No Connect servers — Connect not paired on This Mac",
   "plugin-disabled": "No Connect servers — Connect plugin disabled",
-  unauthorized: "No Connect servers — sign in to bb Connect again",
-  unavailable: "No Connect servers — could not reach bb Connect",
+  unauthorized: "No Connect servers — sign in to Cloudroom Connect again",
+  unavailable: "No Connect servers — could not reach Cloudroom Connect",
 };
 
 interface ApplicationMenuServerItem {
@@ -50,6 +51,7 @@ export interface InstallApplicationMenuArgs {
     browserWindow: BaseWindow | undefined,
     ignoreCache: boolean,
   ): void;
+  archiveThread(): void;
   closeWindowOrSideTab(browserWindow: BaseWindow | undefined): void;
   createNewWindow(): void;
   openServerDaemonLogs(): void;
@@ -177,6 +179,13 @@ export function buildApplicationMenuTemplate(
           label: NEW_WINDOW_MENU_LABEL,
         },
         { type: "separator" },
+        {
+          accelerator: args.accelerators.archiveThread,
+          click() {
+            args.archiveThread();
+          },
+          label: ARCHIVE_THREAD_MENU_LABEL,
+        },
         {
           accelerator: args.accelerators.closeWindowOrSideTab,
           click(_menuItem, browserWindow) {

@@ -1,5 +1,6 @@
 export { AgentRuntimeRecoveryError, createAgentRuntime } from "./runtime.js";
 export { bridgeLaunchProcessKey } from "./bridge-launch-process-key.js";
+export { buildThreadShellEnvironment } from "./thread-shell-environment.js";
 export type {
   AgentRuntime,
   AgentRuntimeBridgeLaunch,

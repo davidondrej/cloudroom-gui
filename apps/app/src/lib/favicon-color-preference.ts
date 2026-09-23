@@ -156,7 +156,9 @@ interface UnreadBadgeDot {
 }
 
 export function getFaviconGlyphHref(): string {
-  return import.meta.env.DEV ? "/favicon-32x32-dev.png" : "/favicon-32x32.png";
+  return import.meta.env.DEV
+    ? "/favicon-32x32-dev.png?v=room"
+    : "/favicon-32x32.png?v=room";
 }
 
 function getFaviconVariantSuffix(): string {
@@ -179,13 +181,13 @@ function getTintedAssetSuffix(colorPreference: FaviconColorPreference): string {
 }
 
 function getPwaManifestHref(colorPreference: FaviconColorPreference): string {
-  return `/manifest${getTintedAssetSuffix(colorPreference)}.webmanifest`;
+  return `/manifest${getTintedAssetSuffix(colorPreference)}.webmanifest?v=room`;
 }
 
 function getAppleTouchIconHref(
   colorPreference: FaviconColorPreference,
 ): string {
-  return `/apple-touch-icon${getTintedAssetSuffix(colorPreference)}.png`;
+  return `/apple-touch-icon${getTintedAssetSuffix(colorPreference)}.png?v=room`;
 }
 
 function applyInstallIconState(colorPreference: FaviconColorPreference): void {
@@ -286,7 +288,7 @@ async function applyFaviconState(state: FaviconRenderState): Promise<void> {
   const suffix = getFaviconVariantSuffix();
   const links = await Promise.all(
     FAVICON_SIZES.map(async (size): Promise<RenderedFaviconLink> => {
-      const baseHref = `/favicon-${size}x${size}${suffix}.png`;
+      const baseHref = `/favicon-${size}x${size}${suffix}.png?v=room`;
       const href = await createFaviconHref({
         badge: state.badge,
         baseHref,

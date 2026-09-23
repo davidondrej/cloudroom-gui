@@ -236,7 +236,7 @@ function ProjectMachineSetupDialogContent({
       into <span className="text-foreground">{clonePath ?? "…"}</span>{" "}
       <button
         type="button"
-        className="text-primary hover:underline disabled:opacity-50"
+        className="text-primary-text hover:underline disabled:opacity-50"
         disabled={pending}
         onClick={() => {
           setClonePathDraft(clonePath ?? "");

@@ -1,15 +1,15 @@
 ---
 name: bb-plugin-authoring
-description: "Create or change BB plugins and Plugin SDK extensions, including CLI commands, agent tools, providers, and UI surfaces."
+description: "Create or change Room plugins and Plugin SDK extensions, including CLI commands, agent tools, providers, and UI surfaces."
 ---
 
-# Author BB plugins
+# Author Room plugins
 
-A BB plugin is a TypeScript package that can add server behavior, agent
+A Room plugin is a TypeScript package that can add server behavior, agent
 capabilities, host-rendered UI, or a frontend bundle.
 
 Use the current SDK types and repository source as the contract. This skill
-routes to detailed references, but the installed BB version decides the exact
+routes to detailed references, but the installed Room version decides the exact
 API.
 
 ## Implement and verify

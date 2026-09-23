@@ -88,6 +88,8 @@ import {
 } from "./workspace-resolution.js";
 import { userExecutableProcessOptions } from "./user-executable-env.js";
 
+import { captureTeleport } from "./command-handlers/teleport.js";
+
 const THREAD_STOP_ACTIVE_TURN_WAIT_MS = 5_000;
 
 type RuntimeStopCommand =
@@ -119,7 +121,7 @@ async function stopThreadRuntime(
       await options.eventSink.flush();
       return { providerCheckpointId };
     }
-    if (command.type !== "thread.stop" || command.intent !== "release") {
+    if (command.type !== "thread.stop" || (command.intent !== "release" && !command.immediate)) {
       await entry.runtime.waitForActiveTurn(command.threadId, {
         timeoutMs: THREAD_STOP_ACTIVE_TURN_WAIT_MS,
       });
@@ -455,6 +457,7 @@ const commandHandlers: CommandHandlerMap = {
       return submitTurn(command, entry, options);
     }),
   "thread.stop": stopThreadRuntime,
+  "thread.teleport": captureTeleport,
   "thread.storage.delete": async (command, options) => {
     const result = await stopThreadRuntime(command, options);
     await deleteThreadStorage(command, options);
@@ -654,7 +657,10 @@ const onlineRpcHandlers: OnlineRpcHandlerMap = {
   "host.write_file": writeHostFile,
   "provider.list_models": (command, options) =>
     withResolvedBridgeLaunch(command, options, (args) =>
-      options.listModels(args),
+      options.listModels({
+        ...args,
+        ...(command.restart ? { restart: true } : {}),
+      }),
     ),
   "provider.health": (command, options) =>
     withResolvedBridgeLaunch(command, options, (args) =>

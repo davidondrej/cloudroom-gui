@@ -1,5 +1,6 @@
 import { getEnvironment, getThread } from "@bb/db";
 import { requireNativeThread } from "../cloudroom/commands.js";
+import { command as savedCloudCommand, teleportProgress } from "../cloudroom/store.js";
 import { resolveHostEnvironment } from "./host-environment.js";
 import { randomUUID } from "node:crypto";
 import {
@@ -230,7 +231,18 @@ export async function runLiveHostCommand<
 ): Promise<HostDaemonCommandResult<TType>> {
   if ("threadId" in args.command && typeof args.command.threadId === "string") {
     const thread = getThread(deps.db, args.command.threadId);
-    if (thread) requireNativeThread(thread);
+    if (thread) {
+      const transfer = teleportProgress(deps.db, thread.id);
+      const requested: HostDaemonCommand = args.command;
+      const stored = transfer ? savedCloudCommand(deps.db, transfer.id) : null;
+      const source = stored?.command === "teleport" ? JSON.parse(stored.input) : null;
+      const stagedRead = requested.type === "thread.teleport" && requested.action === "read"
+        && transfer?.id === requested.transferId && transfer.owner === thread.id
+        && !["complete", "cancelled"].includes(transfer.phase)
+        && source?.hostId === args.hostId && source.environmentId === requested.environmentId
+        && source.workspacePath === requested.workspaceContext.workspacePath;
+      if (!stagedRead) requireNativeThread(thread);
+    }
   }
   const execution =
     args.execution ?? createLiveHostCommandExecution(args.hostId);

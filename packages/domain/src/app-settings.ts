@@ -4,7 +4,7 @@ import { isValidGitBranchName } from "./git-checkout.js";
 
 export const MANAGED_BRANCH_PREFIX_MAX_LENGTH = 64;
 
-export const DEFAULT_MANAGED_BRANCH_PREFIX = "bb/";
+export const DEFAULT_MANAGED_BRANCH_PREFIX = "room/";
 
 export const managedBranchPrefixSchema = z
   .string()
@@ -26,6 +26,7 @@ export const appSettingsSchema = z
     ),
     streamerMode: z.boolean(),
     telemetryEnabled: z.boolean(),
+    commandGuardEnabled: z.boolean().default(true),
     managedBranchPrefix: managedBranchPrefixSchema,
     machineServerUrl: z
       .string()
@@ -54,6 +55,7 @@ export const defaultAppSettings: AppSettings = {
   providerCompletedTurnDisplay: {},
   streamerMode: false,
   telemetryEnabled: true,
+  commandGuardEnabled: true,
   managedBranchPrefix: DEFAULT_MANAGED_BRANCH_PREFIX,
   machineServerUrl: null,
   defaultMachineAccess: null,
@@ -62,10 +64,12 @@ export const defaultAppSettings: AppSettings = {
 
 export const appSettingsUpdateSchema = z.union([
   appSettingsSchema.extend({
+    commandGuardEnabled: z.boolean().optional(),
     telemetryEnabled: z.boolean().optional(),
     showUnhandledProviderEvents: z.boolean().optional(),
   }),
   appSettingsSchema.omit({ showDiagnosticEvents: true }).extend({
+    commandGuardEnabled: z.boolean().optional(),
     telemetryEnabled: z.boolean().optional(),
     showUnhandledProviderEvents: z.boolean(),
   }),

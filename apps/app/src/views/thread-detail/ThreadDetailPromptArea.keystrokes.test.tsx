@@ -26,6 +26,7 @@ import {
 } from "@/components/plugin/plugin-composer-host";
 import { getPromptDraftAccessor } from "@/hooks/usePromptDraftStorage";
 import { ThreadDetailPromptArea } from "./ThreadDetailPromptArea";
+import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
 
 const mocks = vi.hoisted(() => ({
   sendMessageMutateAsync: vi.fn(),
@@ -241,6 +242,7 @@ vi.mock("@/hooks/mutations/thread-runtime-mutations", () => {
 });
 
 vi.mock("@/hooks/mutations/thread-state-mutations", () => ({
+  useUpdateThread: () => ({ mutate: vi.fn() }),
   useUnarchiveThread: () => ({
     isPending: false,
     mutate: vi.fn(),
@@ -400,7 +402,9 @@ function buildPromptArea({
 }
 
 function renderPromptArea(args: RenderPromptAreaArgs) {
-  return render(buildPromptArea(args));
+  return render(buildPromptArea(args), {
+    wrapper: createQueryClientTestHarness().wrapper,
+  });
 }
 
 function getBottomComposerInput(): HTMLInputElement {

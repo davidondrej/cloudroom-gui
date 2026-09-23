@@ -10,7 +10,7 @@
   "asarUnpack": ["dist/bb-app-bridge.mjs", "node_modules/**"],
   "directories": {
     "buildResources": "assets",
-    "output": "release"
+    "output": "release.noindex"
   },
   "files": [
     "assets/**",

@@ -59,6 +59,7 @@ export type SystemExecutionOptionsModelLoadErrorCode = z.infer<
 export const systemExecutionOptionsModelLoadErrorSchema = z.object({
   providerId: z.string().min(1),
   code: systemExecutionOptionsModelLoadErrorCodeSchema,
+  canRestart: z.boolean().optional(),
 });
 export type SystemExecutionOptionsModelLoadError = z.infer<
   typeof systemExecutionOptionsModelLoadErrorSchema
@@ -98,6 +99,18 @@ export const systemExecutionOptionsQuerySchema = z
   .superRefine(rejectMultipleWorkspaceSelectors);
 export type SystemExecutionOptionsQuery = z.infer<
   typeof systemExecutionOptionsQuerySchema
+>;
+
+export const systemRestartModelDiscoveryRequestSchema = z
+  .object({
+    hostId: z.string().min(1).optional(),
+    environmentId: z.string().min(1).optional(),
+    providerId: z.string().min(1),
+  })
+  .strict()
+  .superRefine(rejectMultipleWorkspaceSelectors);
+export type SystemRestartModelDiscoveryRequest = z.infer<
+  typeof systemRestartModelDiscoveryRequestSchema
 >;
 
 export const systemUsageLimitsQuerySchema = z.object({

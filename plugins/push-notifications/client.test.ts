@@ -39,8 +39,8 @@ afterEach(() => {
 describe("client system notifications", () => {
   it.each([
     { platform: "macos", icon: undefined },
-    { platform: "linux", icon: "http://localhost:3000/icon-192.png" },
-    { platform: "web", icon: "http://localhost:3000/icon-192.png" },
+    { platform: "linux", icon: "http://localhost:3000/icon-192.png?v=room" },
+    { platform: "web", icon: "http://localhost:3000/icon-192.png?v=room" },
   ])(
     "uses the appropriate notification icon on $platform",
     async ({ platform, icon }) => {

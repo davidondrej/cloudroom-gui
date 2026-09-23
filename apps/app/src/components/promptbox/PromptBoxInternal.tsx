@@ -125,6 +125,7 @@ import {
   typeaheadSuggestionKey,
   type ComposerCommandMenuState,
   type ComposerTypeaheadMenuState,
+  type FastModeCommandSuggestion,
   type ReasoningCommandSuggestion,
   type TypeaheadSuggestion,
 } from "./mentions/MentionMenu";
@@ -440,11 +441,30 @@ export interface PromptBoxHandle {
   focusEnd: () => void;
   captureHeightForLayoutChange: () => void;
   insertTextAtCursor: (text: string) => void;
+  submit: () => void;
   getTextBeforeCursor: () => string | undefined;
   playVoiceCompletionTransition: () => Promise<void>;
 }
 
 export type { PromptBoxAction } from "./PromptBoxActionsMenu";
+
+export interface PromptFastMode {
+  enabled: boolean;
+  label: string;
+  onToggle: () => void;
+}
+
+export function promptFastModeCommand(
+  serviceTier: ExecutionControlsProps["serviceTier"],
+): PromptFastMode | undefined {
+  if (!serviceTier?.supported) return undefined;
+  const enabled = serviceTier.value === "fast";
+  return {
+    enabled,
+    label: serviceTier.fastLabel?.trim() || "Fast",
+    onToggle: () => serviceTier.onChange(enabled ? "default" : "fast"),
+  };
+}
 
 type MentionMenuPlacement = "top" | "bottom";
 
@@ -469,6 +489,7 @@ interface PromptBoxInternalProps {
   minHeight?: number;
   typeahead: TypeaheadConfig;
   reasoning?: ExecutionControlsProps["reasoning"];
+  fastMode?: PromptFastMode;
   mentionMenuPlacement: MentionMenuPlacement;
   attachments?: AttachmentsConfig;
   promptActions?: readonly PromptBoxAction[];
@@ -1189,6 +1210,7 @@ export function PromptBoxInternal({
   minHeight = PROMPTBOX_MIN_HEIGHT,
   typeahead,
   reasoning,
+  fastMode,
   mentionMenuPlacement,
   attachments: attachmentConfig = {},
   promptActions,
@@ -1232,7 +1254,8 @@ export function PromptBoxInternal({
     onEditorFocus: onCommandEditorFocus,
   } = typeahead.command;
   const commandTriggerChar =
-    providerCommandTrigger ?? (reasoning?.options.length ? "/" : null);
+    providerCommandTrigger ??
+    (reasoning?.options.length || fastMode ? "/" : null);
   const onCommandEditorFocusRef = useRef(onCommandEditorFocus);
   useEffect(() => {
     onCommandEditorFocusRef.current = onCommandEditorFocus;
@@ -1251,6 +1274,7 @@ export function PromptBoxInternal({
   const shouldAvoidSoftKeyboardAutofocus =
     isPointerCoarse && !allowSoftKeyboardAutoFocus;
   const formRef = useRef<HTMLFormElement>(null);
+  const [pendingSubmit, setPendingSubmit] = useState(false);
   const typeaheadMenuRef = useRef<HTMLDivElement>(null);
   const reportQueuedEditorTypeaheadLayout = useContext(
     QueuedEditorTypeaheadLayoutContext,
@@ -2122,6 +2146,25 @@ export function PromptBoxInternal({
     });
   const activeCommandQuery =
     activeTrigger?.kind === "command" ? activeTrigger.query : "";
+  const fastModeSuggestions = useMemo<FastModeCommandSuggestion[]>(() => {
+    if (!fastMode) return [];
+    const query = activeCommandQuery.trim().toLowerCase();
+    if (
+      query.length > 0 &&
+      !`fast ${fastMode.label}`.toLowerCase().includes(query)
+    ) {
+      return [];
+    }
+    return [
+      {
+        kind: "fast-mode",
+        name: "fast",
+        description: fastMode.enabled
+          ? `Turn off ${fastMode.label} mode`
+          : `Turn on ${fastMode.label} mode`,
+      },
+    ];
+  }, [activeCommandQuery, fastMode]);
   const reasoningSuggestions = useMemo<ReasoningCommandSuggestion[]>(() => {
     const query = activeCommandQuery.trim().toLowerCase();
     return (reasoning?.options ?? [])
@@ -2136,10 +2179,16 @@ export function PromptBoxInternal({
   }, [activeCommandQuery, reasoning?.options]);
   const orderedCommandSuggestions = useMemo(
     () => [
+      ...fastModeSuggestions,
       ...reasoningSuggestions,
       ...orderCommandSuggestions(commandSuggestions, activeCommandQuery),
     ],
-    [activeCommandQuery, commandSuggestions, reasoningSuggestions],
+    [
+      activeCommandQuery,
+      commandSuggestions,
+      fastModeSuggestions,
+      reasoningSuggestions,
+    ],
   );
   const activeSuggestions = useMemo<readonly TypeaheadSuggestion[]>(
     () =>
@@ -2171,7 +2220,7 @@ export function PromptBoxInternal({
           : { kind: "results", results: mentionResults };
 
   const commandMenuState: ComposerCommandMenuState =
-    reasoningSuggestions.length > 0
+    fastModeSuggestions.length > 0 || reasoningSuggestions.length > 0
       ? { kind: "results", suggestions: orderedCommandSuggestions }
       : commandLoading
         ? { kind: "loading" }
@@ -2404,8 +2453,34 @@ export function PromptBoxInternal({
     [activeTrigger, reasoning, scheduleRevealEditorSelection],
   );
 
+  const applyFastModeSuggestion = useCallback(
+    (item: FastModeCommandSuggestion) => {
+      const currentEditor = editorRef.current;
+      if (
+        !currentEditor?.isEditable ||
+        activeTrigger?.kind !== "command" ||
+        item.name !== "fast" ||
+        !fastMode
+      )
+        return;
+
+      currentEditor
+        .chain()
+        .focus()
+        .deleteRange({ from: activeTrigger.from, to: activeTrigger.to })
+        .run();
+      fastMode.onToggle();
+      scheduleRevealEditorSelection();
+    },
+    [activeTrigger, fastMode, scheduleRevealEditorSelection],
+  );
+
   const applyTrigger = useCallback(
     (item: TypeaheadSuggestion) => {
+      if (item.kind === "fast-mode") {
+        applyFastModeSuggestion(item);
+        return;
+      }
       if (item.kind === "reasoning") {
         applyReasoningSuggestion(item);
         return;
@@ -2416,7 +2491,12 @@ export function PromptBoxInternal({
       }
       applyMentionSuggestion(item);
     },
-    [applyCommandSuggestion, applyMentionSuggestion, applyReasoningSuggestion],
+    [
+      applyCommandSuggestion,
+      applyFastModeSuggestion,
+      applyMentionSuggestion,
+      applyReasoningSuggestion,
+    ],
   );
 
   const dismissActiveTrigger = useCallback(() => {
@@ -2615,6 +2695,7 @@ export function PromptBoxInternal({
       captureHeightForLayoutChange: capturePromptBoxHeight,
       focusEnd,
       insertTextAtCursor,
+      submit: () => setPendingSubmit(true),
       getTextBeforeCursor,
       playVoiceCompletionTransition,
     }),
@@ -2768,12 +2849,11 @@ export function PromptBoxInternal({
     [isPointerCoarse],
   );
 
-  const [pendingCommandSubmit, setPendingCommandSubmit] = useState(false);
   useEffect(() => {
-    if (!pendingCommandSubmit) return;
-    setPendingCommandSubmit(false);
+    if (!pendingSubmit) return;
+    setPendingSubmit(false);
     submitPrompt();
-  }, [pendingCommandSubmit, submitPrompt]);
+  }, [pendingSubmit, submitPrompt]);
 
   const submitModifierPrompt = useCallback(() => {
     if (!canModifierSubmit || !onModifierSubmit) return;
@@ -2934,7 +3014,7 @@ export function PromptBoxInternal({
               selected.kind === "command" &&
               selected.origin === "builtin"
             ) {
-              setPendingCommandSubmit(true);
+              setPendingSubmit(true);
             }
           }
           return true;
@@ -3079,7 +3159,7 @@ export function PromptBoxInternal({
       postCompositionKeyDownEvents,
       resetHistorySession,
       selectedIndex,
-      setPendingCommandSubmit,
+      setPendingSubmit,
       showTypeaheadMenu,
       submitModifierPrompt,
       submitPrompt,

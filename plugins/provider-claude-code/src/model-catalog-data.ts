@@ -37,6 +37,12 @@ export const DEFAULT_CLAUDE_CODE_MODEL = "claude-opus-5[1m]";
 export const CLAUDE_CODE_ACTIVE_CATALOG_DATA: readonly ClaudeCodeCatalogEntryData[] =
   [
     {
+      model: "claude-opus-5-5[1m]",
+      displayName: "Opus 5.5 (1M)",
+      description: "Opus 5.5 with 1M context for complex long coding sessions",
+      defaultReasoningEffort: "high",
+    },
+    {
       model: "claude-fable-5-1",
       displayName: "Fable 5.1",
       description:

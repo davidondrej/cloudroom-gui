@@ -39,6 +39,7 @@ import {
 import {
   DEFAULT_COMPOSER_SCOPE,
   PromptBoxInternal,
+  promptFastModeCommand,
   type AttachmentsConfig,
   type HistoryConfig,
   type PromptBoxAction,
@@ -762,6 +763,15 @@ function FollowUpPromptBoxWithComposer({
           execution.model.loadFailed
             ? undefined
             : execution.reasoning
+        }
+        fastMode={
+          execution.disabled ||
+          executionControlsDisabled ||
+          isLoadingExecutionOptions ||
+          execution.model.isLoading ||
+          execution.model.loadFailed
+            ? undefined
+            : promptFastModeCommand(execution.serviceTier)
         }
         attachments={attachments}
         promptActions={promptActions}

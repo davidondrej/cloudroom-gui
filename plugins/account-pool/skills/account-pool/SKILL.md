@@ -1,13 +1,13 @@
 ---
 name: account-pool
-description: "Configure or diagnose Account Pooler accounts, authentication, quota routing, and failover through bb pool."
+description: "Configure or diagnose Account Pooler accounts, authentication, quota routing, and failover through room pool."
 ---
 
 # Account Pooler
 
-Use `bb pool` for this plugin's accounts and routes. Inspect current state with
-`bb pool status --json` and `bb pool account list --json` before changing routing.
-Use `bb pool --help` for available commands.
+Use `room pool` for this plugin's accounts and routes. Inspect current state with
+`room pool status --json` and `room pool account list --json` before changing routing.
+Use `room pool --help` for available commands.
 
 For account login/import, secret handling, quota refresh, routing settings,
 ordering, failover, or cache miss debugging, read

@@ -352,7 +352,7 @@ describe("connect settings section", () => {
     await slot.findByText(/this bb is not connected to getbb.app/);
   });
 
-  it("hides mobile pairing unless the mobileApp experiment is on", async () => {
+  it("offers the PWA without enabling native mobile pairing", async () => {
     const slot = renderSlot(
       app.settingsSections[0]!,
       {},
@@ -365,21 +365,18 @@ describe("connect settings section", () => {
     );
 
     await slot.findByText("Connected");
-    await waitFor(() =>
-      expect(slot.rpcCalls).toContainEqual({
-        method: "mobilePairing",
-        input: null,
-      }),
+    slot.getByText("Cloudroom mobile app");
+    slot.getByText("Powered by BB Connect");
+    expect(slot.rpcCalls.some((call) => call.method === "mobilePairing")).toBe(
+      false,
     );
-    expect(slot.queryByText("Mobile app")).toBeNull();
     expect(
       slot.queryByRole("button", { name: "Add mobile device" }),
     ).toBeNull();
     slot.getByRole("button", { name: "Re-pair" });
   });
 
-  it("add mobile device mints a machine code and shows the QR payload, the code, and a countdown", async () => {
-    const expiresAt = Date.now() + 600_000;
+  it("shows a browser QR and installation instructions, not a native pairing code", async () => {
     const slot = renderSlot(
       app.settingsSections[0]!,
       {},
@@ -387,76 +384,47 @@ describe("connect settings section", () => {
         rpc: {
           status: () => connected(),
           mobilePairing: () => ({ enabled: true }),
-          createMachineCode: () => ({
-            code: "K7QP-2M4X",
-            expiresAt,
-            serverUrl: "https://workstation.getbb.app",
-          }),
         },
       },
     );
-
-    await slot.findByText("Connected");
-    expect(slot.queryByText("K7QP-2M4X")).toBeNull();
-    fireEvent.click(
-      await slot.findByRole("button", { name: "Add mobile device" }),
-    );
-
-    await waitFor(() =>
-      expect(slot.rpcCalls).toContainEqual({
-        method: "createMachineCode",
-        input: null,
-      }),
-    );
-    await slot.findByText("K7QP-2M4X");
-    slot.getByRole("button", { name: "Copy pairing code" });
-    slot.getByText(/Code expires in 9:5\d/);
     const qr = (await slot.findByRole("img", {
-      name: "QR code to pair the bb mobile app",
+      name: "QR code to open Cloudroom on your phone",
     })) as HTMLImageElement;
     expect(qr.src.startsWith("data:image/png")).toBe(true);
-    slot.getByText(/bb connect machine-code/);
+    slot.getByText(/Safari.*Share menu/);
+    slot.getByText(/On Android/);
+    expect(
+      slot.queryByRole("button", { name: "Add mobile device" }),
+    ).toBeNull();
+    expect(slot.queryByLabelText("Mobile pairing code")).toBeNull();
+    expect(
+      slot.rpcCalls.some((call) => call.method === "createMachineCode"),
+    ).toBe(false);
   });
 
-  it("an expired mobile pairing code offers a fresh one", async () => {
-    let minted = 0;
+  it("hides PWA setup while reconnecting and restores it after recovery", async () => {
     const slot = renderSlot(
       app.settingsSections[0]!,
       {},
       {
-        rpc: {
-          status: () => connected(),
-          mobilePairing: () => ({ enabled: true }),
-          createMachineCode: () => {
-            minted += 1;
-            return {
-              code: minted === 1 ? "AAAA-1111" : "BBBB-2222",
-              expiresAt: Date.now() + (minted === 1 ? 1_200 : 600_000),
-              serverUrl: "https://workstation.getbb.app",
-            };
-          },
-        },
+        rpc: { status: () => connected() },
       },
     );
-
-    await slot.findByText("Connected");
-    fireEvent.click(
-      await slot.findByRole("button", { name: "Add mobile device" }),
+    await slot.findByText("Cloudroom mobile app");
+    await slot.emitRealtime(
+      CONNECT_REALTIME_CHANNEL,
+      connected({ state: "reconnecting" }),
     );
-    await slot.findByText("AAAA-1111");
-
-    await slot.findByText("Code expired", undefined, { timeout: 4_000 });
+    await slot.findByText("Reconnecting…");
+    expect(slot.queryByText("Cloudroom mobile app")).toBeNull();
+    await slot.emitRealtime(CONNECT_REALTIME_CHANNEL, connected());
+    await slot.findByText("Cloudroom mobile app");
     expect(
-      slot.queryByRole("button", { name: "Copy pairing code" }),
-    ).toBeNull();
-    fireEvent.click(slot.getByRole("button", { name: "Generate a new code" }));
-
-    await slot.findByText("BBBB-2222");
-    expect(slot.queryByText("AAAA-1111")).toBeNull();
-    slot.getByText(/Code expires in/);
+      slot.rpcCalls.some((call) => call.method === "createMachineCode"),
+    ).toBe(false);
   });
 
-  it("explains the account machine limit with a dashboard link", async () => {
+  it("does not request native machine credentials to set up the PWA", async () => {
     const slot = renderSlot(
       app.settingsSections[0]!,
       {},
@@ -470,19 +438,15 @@ describe("connect settings section", () => {
         },
       },
     );
-
-    await slot.findByText("Connected");
-    fireEvent.click(
-      await slot.findByRole("button", { name: "Add mobile device" }),
-    );
-
-    await slot.findByText(/reached its machine limit/);
-    const link = slot.getByRole("link", {
-      name: "Revoke a device you no longer use",
-    }) as HTMLAnchorElement;
-    expect(link.href).toBe("https://getbb.app/dashboard");
+    await slot.findByText("Cloudroom mobile app");
+    slot.getByText(/sign in to your BB Connect account/);
+    expect(
+      slot.rpcCalls.some((call) => call.method === "createMachineCode"),
+    ).toBe(false);
     expect(slot.queryByText("machine_limit")).toBeNull();
-    slot.getByRole("button", { name: "Add mobile device" });
+    await slot.emitRealtime(CONNECT_REALTIME_CHANNEL, status());
+    await slot.findByText("Get a connect code");
+    expect(slot.queryByText("Cloudroom mobile app")).toBeNull();
   });
 
   it("disconnect confirms, then lands on the unpaired card with a receipt", async () => {

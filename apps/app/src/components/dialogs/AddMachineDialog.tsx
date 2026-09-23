@@ -271,7 +271,7 @@ export function ManualMachineSetupView({
           }
         >
           {errorMessage ??
-            "Run this command on the machine you want to add. It installs bb and keeps the machine connected to this server."}
+            "Run this command on the machine you want to add. It installs Room and keeps the machine connected to this server."}
         </DialogDescription>
       </DialogHeader>
       {errorMessage === null ? null : (

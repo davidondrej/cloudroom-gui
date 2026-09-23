@@ -491,7 +491,7 @@ describe("BrowsePluginsTab", () => {
       await screen.findByRole("button", { name: "Create a plugin" }),
     );
     expect((await screen.findByTestId("inline-composer")).textContent).toBe(
-      "Create a new bb plugin that ",
+      "Create a new Room plugin that ",
     );
     fireEvent.click(
       screen.getByText(

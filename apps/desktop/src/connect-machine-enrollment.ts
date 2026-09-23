@@ -89,7 +89,7 @@ export async function enrollDesktopMachine(
     const rejected = rpcFailureSchema.safeParse(body);
     const wireError = rejected.success ? rejected.data.error.message : "";
     if (wireError === "not_paired") {
-      return failure("not_paired", "this bb is not paired with bb Connect");
+      return failure("not_paired", "this Room instance is not paired with Cloudroom Connect");
     }
     if (wireError === "machine_limit") {
       return failure("machine_limit", "the account is at its machine limit");

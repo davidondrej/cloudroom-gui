@@ -4,7 +4,7 @@ import { CURATED_PLUGIN_MARKETPLACE_NAME } from "@bb/server-contract";
 export const BUNDLED_CURATED_MARKETPLACE: MarketplaceManifest = {
   schemaVersion: 1,
   name: CURATED_PLUGIN_MARKETPLACE_NAME,
-  displayName: "BB Community",
+  displayName: "BB Marketplace",
   description:
     "Plugins published to the BB registry and reviewed by the BB team.",
   plugins: [

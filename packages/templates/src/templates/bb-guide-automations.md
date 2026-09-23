@@ -1,6 +1,6 @@
 ---
 kind: instruction
-title: bb Guide Automations
+title: Room Guide Automations
 summary: Command reference for scheduled agent and script work.
 intent: Help agents create, edit, inspect, and run automations through the CLI.
 ---

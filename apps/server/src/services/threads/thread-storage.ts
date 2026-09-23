@@ -26,7 +26,7 @@ export async function requireThreadStoragePath(
 }
 
 export async function requireLiveThreadStoragePath(
-  deps: WorkSessionDeps,
+  deps: Pick<WorkSessionDeps, "db" | "hub">,
   args: RequireThreadStoragePathArgs,
 ): Promise<string> {
   const session = requireConnectedHostSession(deps, args.hostId);

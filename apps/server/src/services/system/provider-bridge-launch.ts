@@ -1,10 +1,11 @@
+import { getAppSettings } from "@bb/db";
 import { type HostDaemonBridgeLaunch } from "@bb/host-daemon-contract";
 import { ApiError } from "../../errors.js";
 import type { ProviderRegistration } from "../providers/provider-registry.js";
 import type { AppDeps } from "../../types.js";
 
 export function resolveBridgeLaunchForProviderId(
-  deps: Pick<AppDeps, "providerRegistry" | "pluginHostArtifacts">,
+  deps: Pick<AppDeps, "providerRegistry" | "pluginHostArtifacts"> & Partial<Pick<AppDeps, "db">>,
   providerId: string,
 ): HostDaemonBridgeLaunch | null {
   const registration = deps.providerRegistry.get(providerId);
@@ -26,7 +27,10 @@ export function resolveBridgeLaunchForProviderId(
   return {
     pluginId,
     source,
-    providerOptions: { ...registration.bridgeOptions },
+    providerOptions: {
+      ...registration.bridgeOptions,
+      commandGuardEnabled: deps.db ? getAppSettings(deps.db).commandGuardEnabled : true,
+    },
     envPassthrough: [...registration.envPassthrough],
     capabilities: {
       providerInstallation: registration.info.maintenance.installation,
@@ -40,7 +44,7 @@ export function resolveBridgeLaunchForProviderId(
 }
 
 export function requireBridgeLaunchForProviderId(
-  deps: Pick<AppDeps, "providerRegistry" | "pluginHostArtifacts">,
+  deps: Pick<AppDeps, "providerRegistry" | "pluginHostArtifacts"> & Partial<Pick<AppDeps, "db">>,
   providerId: string,
 ): HostDaemonBridgeLaunch {
   const bridgeLaunch = resolveBridgeLaunchForProviderId(deps, providerId);

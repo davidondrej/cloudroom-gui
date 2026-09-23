@@ -43,6 +43,7 @@ export interface ProviderRegistration {
   visibility: "always" | "installed";
   pluginId: string;
   fallbackModels: readonly AvailableModel[];
+  modelDiscoveryRestart?: boolean;
   envPassthrough: readonly string[];
   nativeSkillRoots: ProviderNativeRoots;
   nativeCommandRoots: ProviderNativeRoots;

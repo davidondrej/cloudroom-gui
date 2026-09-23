@@ -332,7 +332,7 @@ async function resolveScriptFileHostId(
       );
     }
     throw new Error(
-      `Unknown host "${query}"; run \`bb machine list\` to list hosts.`,
+      `Unknown host "${query}"; run \`room machine list\` to list hosts.`,
     );
   }
   if (ctx.threadId === undefined) return undefined;
@@ -804,15 +804,15 @@ function printRunTable(runs: AutomationRunResponse[]): string {
 function helpText(): string {
   return `Automation commands
 
-bb automation list --project <id>
-bb automation create --project <id> --name <name> (--cron <expr> --timezone <tz> | --at <datetime> | --in <duration>) (--prompt <text> --provider <id> --model <model> [--reasoning <level>] [--service-tier default|fast] | --script <inline> | --script-file <path> [--host <name-or-id>])
-bb automation show <automationId> --project <id>
-bb automation update <automationId> --project <id> [--name <name>] [schedule flags] [complete agent/script execution flags | --provider <id> --model <model> --reasoning <level> --service-tier default|fast|none]
-bb automation pause <automationId> --project <id>
-bb automation resume <automationId> --project <id>
-bb automation run <automationId> --project <id> [--idempotency-key <key>]
-bb automation runs <automationId> --project <id> [--limit <count>] [--output <runId>]
-bb automation delete <automationId> --project <id> --yes
+room automation list --project <id>
+room automation create --project <id> --name <name> (--cron <expr> --timezone <tz> | --at <datetime> | --in <duration>) (--prompt <text> --provider <id> --model <model> [--reasoning <level>] [--service-tier default|fast] | --script <inline> | --script-file <path> [--host <name-or-id>])
+room automation show <automationId> --project <id>
+room automation update <automationId> --project <id> [--name <name>] [schedule flags] [complete agent/script execution flags | --provider <id> --model <model> --reasoning <level> --service-tier default|fast|none]
+room automation pause <automationId> --project <id>
+room automation resume <automationId> --project <id>
+room automation run <automationId> --project <id> [--idempotency-key <key>]
+room automation runs <automationId> --project <id> [--limit <count>] [--output <runId>]
+room automation delete <automationId> --project <id> --yes
 `;
 }
 
@@ -828,51 +828,51 @@ export function registerAutomationCli(args: {
       {
         name: "list",
         summary: "List automations for a project",
-        usage: "bb automation list --project <id> [--json]",
+        usage: "room automation list --project <id> [--json]",
       },
       {
         name: "create",
         summary: "Create an automation",
         usage:
-          "bb automation create --project <id> --name <name> [schedule flags] [mode flags]",
+          "room automation create --project <id> --name <name> [schedule flags] [mode flags]",
       },
       {
         name: "show",
         summary: "Show automation details",
-        usage: "bb automation show <automationId> --project <id> [--json]",
+        usage: "room automation show <automationId> --project <id> [--json]",
       },
       {
         name: "update",
         summary: "Update automation configuration",
-        usage: "bb automation update <automationId> --project <id> [flags]",
+        usage: "room automation update <automationId> --project <id> [flags]",
       },
       {
         name: "pause",
         summary: "Pause an automation",
-        usage: "bb automation pause <automationId> --project <id> [--json]",
+        usage: "room automation pause <automationId> --project <id> [--json]",
       },
       {
         name: "resume",
         summary: "Resume an automation",
-        usage: "bb automation resume <automationId> --project <id> [--json]",
+        usage: "room automation resume <automationId> --project <id> [--json]",
       },
       {
         name: "run",
         summary: "Run an automation now",
         usage:
-          "bb automation run <automationId> --project <id> [--idempotency-key <key>] [--json]",
+          "room automation run <automationId> --project <id> [--idempotency-key <key>] [--json]",
       },
       {
         name: "runs",
         summary: "List automation runs",
         usage:
-          "bb automation runs <automationId> --project <id> [--limit <count>] [--output <runId>] [--json]",
+          "room automation runs <automationId> --project <id> [--limit <count>] [--output <runId>] [--json]",
       },
       {
         name: "delete",
         summary: "Delete an automation",
         usage:
-          "bb automation delete <automationId> --project <id> --yes [--json]",
+          "room automation delete <automationId> --project <id> --yes [--json]",
       },
     ],
     async run(argv: string[], ctx: PluginCliContext): Promise<PluginCliResult> {

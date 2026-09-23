@@ -37,33 +37,33 @@ interface ParsedFlags {
 
 const HELP = [
   "Usage:",
-  "  bb pool account add --provider claude --import [--label <text>] [--priority <n>]",
-  "  bb pool account add --provider codex --import [--label <text>] [--priority <n>]",
-  "  bb pool account add --provider claude --login",
-  "  bb pool account add --provider codex --login",
-  "  bb pool account login-poll --session <id>",
-  "  printf '%s\\n' \"$CLAUDE_AUTH_CODE\" | bb pool account login-complete --session <id> --code-stdin",
-  "  bb pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]",
-  "  bb pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]  Unsafe: exposes the key in process arguments.",
-  "  bb pool account list [--json]",
-  "  bb pool account remove <id>",
-  "  bb pool account enable <id>",
-  "  bb pool account disable <id>",
-  "  bb pool account priority <id> <n>",
-  "  bb pool account reorder <claude|codex> <id>...",
-  "  bb pool account refresh <id>",
-  "  bb pool status [--json]",
-  "  bb pool routing <claude|codex> [--off]",
-  "  bb pool config",
-  "  bb pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>",
-  "  bb pool cache-miss list [--json]",
-  "  bb pool cache-miss clear",
-  "  bb pool parent [proxy|isolate]",
-  "  bb pool token rotate --machine <id-or-name>",
-  "  bb pool bypass <thread-id> [--off]",
+  "  room pool account add --provider claude --import [--label <text>] [--priority <n>]",
+  "  room pool account add --provider codex --import [--label <text>] [--priority <n>]",
+  "  room pool account add --provider claude --login",
+  "  room pool account add --provider codex --login",
+  "  room pool account login-poll --session <id>",
+  "  printf '%s\\n' \"$CLAUDE_AUTH_CODE\" | room pool account login-complete --session <id> --code-stdin",
+  "  room pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]",
+  "  room pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]  Unsafe: exposes the key in process arguments.",
+  "  room pool account list [--json]",
+  "  room pool account remove <id>",
+  "  room pool account enable <id>",
+  "  room pool account disable <id>",
+  "  room pool account priority <id> <n>",
+  "  room pool account reorder <claude|codex> <id>...",
+  "  room pool account refresh <id>",
+  "  room pool status [--json]",
+  "  room pool routing <claude|codex> [--off]",
+  "  room pool config",
+  "  room pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>",
+  "  room pool cache-miss list [--json]",
+  "  room pool cache-miss clear",
+  "  room pool parent [proxy|isolate]",
+  "  room pool token rotate --machine <id-or-name>",
+  "  room pool bypass <thread-id> [--off]",
   "",
   "Accounts run sequentially by priority, then order added. The current fallback stays active until unavailable.",
-  "When this bb server runs inside another bb server's thread, parent proxy routes its pooled traffic through that parent; isolate neutralises the inherited routing.",
+  "When this Room server runs inside another Room server's thread, parent proxy routes its pooled traffic through that parent; isolate neutralises the inherited routing.",
   "Reorder includes every account for the provider and changes the next failover sequence; existing conversations stay pinned.",
   "cacheMissDebug true|false|on|off records large prompt cache misses in memory; cacheMissMinTokens sets the smallest missed token count reported.",
 ].join("\n");
@@ -257,17 +257,17 @@ function formatCacheMissReports(
 ): string {
   if (reports.length === 0) {
     if (forwardsToParent)
-      return "No cache miss reports. This bb server forwards pooled traffic to its parent Account Pooler, which does the analysis; enable cacheMissDebug on the parent.";
+      return "No cache miss reports. This Room server forwards pooled traffic to its parent Account Pooler, which does the analysis; enable cacheMissDebug on the parent.";
     return enabled
       ? "No large cache misses observed yet."
-      : "No cache miss reports. Enable reporting with bb pool config set cacheMissDebug true.";
+      : "No cache miss reports. Enable reporting with room pool config set cacheMissDebug true.";
   }
   return reports.map(formatCacheMissReport).join("\n\n");
 }
 
 function formatParent(parent: PoolStatus["parent"]): string {
   if (parent === null) {
-    return "No parent bb server Account Pooler was detected for this instance.";
+    return "No parent Room server Account Pooler was detected for this instance.";
   }
   return [
     `parent: ${parent.baseUrl}`,
@@ -339,101 +339,101 @@ export function registerPoolCli(
         summary:
           "Sign in to Claude or Codex, import credentials, or add an Anthropic API key",
         usage:
-          "bb pool account add --provider <claude|codex> --login\nbb pool account add --provider <claude|codex> --import [--label <text>] [--priority <n>]\nbb pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]\nUnsafe compatibility form: bb pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]",
+          "room pool account add --provider <claude|codex> --login\nroom pool account add --provider <claude|codex> --import [--label <text>] [--priority <n>]\nroom pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]\nUnsafe compatibility form: room pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]",
       },
       {
         name: "account-login-poll",
         summary: "Wait for a Codex device-code login to complete",
-        usage: "bb pool account login-poll --session <id>",
+        usage: "room pool account login-poll --session <id>",
       },
       {
         name: "account-login-complete",
         summary: "Complete a Claude browser login with its manual code",
         usage:
-          "printf '%s\\n' \"$CLAUDE_AUTH_CODE\" | bb pool account login-complete --session <id> --code-stdin",
+          "printf '%s\\n' \"$CLAUDE_AUTH_CODE\" | room pool account login-complete --session <id> --code-stdin",
       },
       {
         name: "account-list",
         summary: "List pool accounts and observed quota",
-        usage: "bb pool account list [--json]",
+        usage: "room pool account list [--json]",
       },
       {
         name: "account-remove",
         summary: "Remove an account and its secret token file",
-        usage: "bb pool account remove <id>",
+        usage: "room pool account remove <id>",
       },
       {
         name: "account-enable",
         summary: "Enable an account",
-        usage: "bb pool account enable <id>",
+        usage: "room pool account enable <id>",
       },
       {
         name: "account-disable",
         summary: "Disable an account",
-        usage: "bb pool account disable <id>",
+        usage: "room pool account disable <id>",
       },
       {
         name: "account-priority",
         summary: "Set an account's position in the failover priority order",
-        usage: "bb pool account priority <id> <n>",
+        usage: "room pool account priority <id> <n>",
       },
       {
         name: "account-reorder",
         summary: "Set the complete failover order for one provider",
-        usage: "bb pool account reorder <claude|codex> <id>...",
+        usage: "room pool account reorder <claude|codex> <id>...",
       },
       {
         name: "account-refresh",
         summary: "Refresh one account's observed usage",
-        usage: "bb pool account refresh <id>",
+        usage: "room pool account refresh <id>",
       },
       {
         name: "status",
         summary: "Show hub, machine token, routing, and account status",
-        usage: "bb pool status [--json]",
+        usage: "room pool status [--json]",
       },
       {
         name: "routing",
         summary: "Enable or disable pooled routing for one provider",
-        usage: "bb pool routing <claude|codex> [--off]",
+        usage: "room pool routing <claude|codex> [--off]",
       },
       {
         name: "config",
         summary: "Show Account Pooler configuration",
-        usage: "bb pool config",
+        usage: "room pool config",
       },
       {
         name: "config-set",
         summary: "Update one Account Pooler configuration value",
         usage:
-          "bb pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>",
+          "room pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>",
       },
       {
         name: "cache-miss-list",
         summary:
           "List recent large prompt cache misses and their likely causes",
-        usage: "bb pool cache-miss list [--json]",
+        usage: "room pool cache-miss list [--json]",
       },
       {
         name: "cache-miss-clear",
         summary: "Clear recorded prompt cache miss reports",
-        usage: "bb pool cache-miss clear",
+        usage: "room pool cache-miss clear",
       },
       {
         name: "parent",
         summary:
-          "Show or set how this instance uses a parent bb server's Account Pooler",
-        usage: "bb pool parent [proxy|isolate]",
+          "Show or set how this instance uses a parent Room server's Account Pooler",
+        usage: "room pool parent [proxy|isolate]",
       },
       {
         name: "token-rotate",
         summary: "Rotate one machine's Account Pooler bearer token",
-        usage: "bb pool token rotate --machine <id-or-name>",
+        usage: "room pool token rotate --machine <id-or-name>",
       },
       {
         name: "bypass",
         summary: "Bypass Account Pooler routing for one thread",
-        usage: "bb pool bypass <thread-id> [--off]",
+        usage: "room pool bypass <thread-id> [--off]",
       },
     ],
     async run(argv, ctx): Promise<PluginCliResult> {
@@ -517,7 +517,7 @@ export function registerPoolCli(
                   `Session ID: ${started.sessionId}`,
                   "",
                   "After authorizing, wait for the account to be added with:",
-                  `bb pool account login-poll --session ${started.sessionId}`,
+                  `room pool account login-poll --session ${started.sessionId}`,
                 ].join("\n")}\n`,
               };
             }
@@ -531,13 +531,13 @@ export function registerPoolCli(
                 `Session ID: ${started.sessionId}`,
                 "",
                 "After signing in, pipe the code shown on the final page into:",
-                `printf '%s\\n' \"$CLAUDE_AUTH_CODE\" | bb pool account login-complete --session ${started.sessionId} --code-stdin`,
+                `printf '%s\\n' \"$CLAUDE_AUTH_CODE\" | room pool account login-complete --session ${started.sessionId} --code-stdin`,
               ].join("\n")}\n`,
             };
           }
           if (apiKeyStdin) {
             throw new Error(
-              "--api-key-stdin must be invoked through the bb CLI so it can read stdin safely.",
+              "--api-key-stdin must be invoked through the Room CLI so it can read stdin safely.",
             );
           }
           if (!imported && flags.values.get("provider") !== "claude") {
@@ -604,7 +604,7 @@ export function registerPoolCli(
           );
           if (flags.booleans.has("code-stdin")) {
             throw new Error(
-              "--code-stdin requires the current bb CLI so it can read stdin safely.",
+              "--code-stdin requires the current Room CLI so it can read stdin safely.",
             );
           }
           const input = loginCompleteInputSchema.parse({

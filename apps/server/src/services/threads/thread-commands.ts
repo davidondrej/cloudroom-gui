@@ -48,6 +48,7 @@ import {
 type ExecutionOptionsRequest = ExistingThreadExecutionInputRequest;
 
 export interface ThreadStopCommandArgs {
+  immediate?: boolean;
   environmentId: string;
   hostId: string;
   intent: ThreadStopIntent;
@@ -596,6 +597,7 @@ export function buildThreadStopCommand(
     environmentId: args.environmentId,
     intent: args.intent,
     threadId: args.threadId,
+    ...(args.immediate ? { immediate: true } : {}),
   };
 }
 

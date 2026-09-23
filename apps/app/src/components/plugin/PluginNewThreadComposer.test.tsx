@@ -268,7 +268,7 @@ vi.mock("@/hooks/queries/system-queries", () => ({
         providers: [
           {
             id: "connect",
-            displayName: "bb connect",
+            displayName: "room connect",
             description: "Use a private getbb.app address.",
             pluginId: "connect",
             availability: mocks.serverAccessReady

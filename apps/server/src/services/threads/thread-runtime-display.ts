@@ -341,7 +341,7 @@ function toThreadResponseWithHost(
   };
 }
 
-import { commands as cloudCommands } from "../cloudroom/store.js";
+import { queuedPrompts as cloudQueuedPrompts, teleportProgress } from "../cloudroom/store.js";
 
 export function toThreadResponseFromThread(
   deps: ThreadRuntimeDisplayDeps,
@@ -353,13 +353,14 @@ export function toThreadResponseFromThread(
   });
   return {
     ...threadWithRuntime,
+    ...(teleportProgress(deps.db, args.thread.id) ? { teleport: teleportProgress(deps.db, args.thread.id)! } : {}),
     activeBackgroundAgentCount:
       listActiveBackgroundTaskCountsByThreadIds(deps.db, {
         threadIds: [args.thread.id],
       })[0]?.activeBackgroundAgentCount ?? 0,
     canSpawnChild: args.thread.executionTarget !== "cloud" && canThreadSpawnChild(deps, { thread: args.thread }),
     queuedMessageCount: args.thread.executionTarget === "cloud"
-      ? cloudCommands(deps.db, args.thread.id).filter((c) => c.command === "prompt" && c.state === "accepted").length
+      ? cloudQueuedPrompts(deps.db, args.thread.id).length
       : listQueuedThreadMessageCountsByThreadIds(deps.db, {
         threadIds: [args.thread.id],
       })[0]?.queuedMessageCount ?? 0,
@@ -571,7 +572,7 @@ export function toThreadListEntryResponses(
     args.threads,
   );
   return args.threads.map((thread) => {
-    return toThreadListEntryResponseFromLatestSession({
+    const response = toThreadListEntryResponseFromLatestSession({
       activity: activityByThreadId.get(thread.id) ?? EMPTY_THREAD_ACTIVITY,
       queuedWork: queuedWorkByThreadId.get(thread.id) ?? "none",
       hostConnected:
@@ -584,6 +585,8 @@ export function toThreadListEntryResponses(
       now: args.now,
       thread,
     });
+    const teleport = teleportProgress(deps.db, thread.id);
+    return teleport ? { ...response, teleport } : response;
   });
 }
 

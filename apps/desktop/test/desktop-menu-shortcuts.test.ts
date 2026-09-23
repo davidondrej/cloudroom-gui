@@ -29,7 +29,8 @@ function binding(
 describe("desktop menu shortcuts", () => {
   it("keeps native defaults available before server config loads", () => {
     expect(DEFAULT_APPLICATION_MENU_ACCELERATORS).toEqual({
-      closeWindowOrSideTab: "CommandOrControl+W",
+      archiveThread: "CommandOrControl+W",
+      closeWindowOrSideTab: undefined,
       createNewWindow: "CommandOrControl+Shift+N",
       openNewTab: "CommandOrControl+T",
       openNewThread: "CommandOrControl+N",
@@ -62,5 +63,15 @@ describe("desktop menu shortcuts", () => {
     expect(accelerators.openSettings).toBe("CommandOrControl+,");
     expect(accelerators.reopenClosedTab).toBe("CommandOrControl+Shift+T");
     expect(accelerators.openNewTab).toBeUndefined();
+    expect(accelerators.archiveThread).toBeUndefined();
+    expect(accelerators.closeWindowOrSideTab).toBeUndefined();
+  });
+
+  it("binds Command+W to archive thread when that command owns the shortcut", () => {
+    const accelerators = resolveApplicationMenuAccelerators([
+      binding("thread.archive", "w", { mod: true }),
+    ]);
+    expect(accelerators.archiveThread).toBe("CommandOrControl+W");
+    expect(accelerators.closeWindowOrSideTab).toBeUndefined();
   });
 });

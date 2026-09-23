@@ -187,6 +187,7 @@ import type {
   SystemInstallCliSkillsResponse,
   SystemExecutionOptionsQuery,
   SystemExecutionOptionsResponse,
+  SystemRestartModelDiscoveryRequest,
   SystemEnvironmentProvidersQuery,
   SystemEnvironmentProvidersResponse,
   SystemMachineProvidersResponse,
@@ -338,6 +339,7 @@ import {
   setQueuedMessageGroupBoundaryRequestSchema,
   sendQueuedMessageRequestSchema,
   systemExecutionOptionsQuerySchema,
+  systemRestartModelDiscoveryRequestSchema,
   systemEnvironmentProvidersQuerySchema,
   systemProvidersQuerySchema,
   systemUsageLimitsQuerySchema,
@@ -1730,6 +1732,14 @@ export const publicApiRoutes = {
       method: "get",
       request: optionalQueryRequest<EmptyInput, SystemExecutionOptionsQuery>(
         systemExecutionOptionsQuerySchema,
+      ),
+      response: jsonResponse<SystemExecutionOptionsResponse>(),
+    }),
+    restartModelDiscovery: defineRoute({
+      path: "/system/execution-options/restart",
+      method: "post",
+      request: jsonRequest<EmptyInput, SystemRestartModelDiscoveryRequest>(
+        systemRestartModelDiscoveryRequestSchema,
       ),
       response: jsonResponse<SystemExecutionOptionsResponse>(),
     }),

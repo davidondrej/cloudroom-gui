@@ -1,5 +1,30 @@
 import { and, eq, sql } from "drizzle-orm";
-import { cloudroomCommands, cloudroomThreads, threads, type DbQueryConnection } from "@bb/db";
+import { cloudroomCommands, cloudroomThreads, threads, threadPluginMetadata, type DbQueryConnection } from "@bb/db";
+
+export type TeleportProgress = {
+  id: string; owner: string; phase: "stopping" | "uploading" | "running" | "complete" | "cancelled" | "error" | "cancelling";
+  completed: number; total: number; error?: string; cloudStarted?: boolean;
+};
+const teleportNamespace = "cloudroom.teleport";
+export function teleportProgress(db: DbQueryConnection, threadId: string): TeleportProgress | null {
+  const row = db.select({ value: threadPluginMetadata.metadataJson }).from(threadPluginMetadata)
+    .where(and(eq(threadPluginMetadata.threadId, threadId), eq(threadPluginMetadata.pluginId, teleportNamespace))).get();
+  return row ? JSON.parse(row.value) as TeleportProgress : null;
+}
+export function teleportBlocked(db: DbQueryConnection, threadId: string): boolean {
+  const progress = teleportProgress(db, threadId);
+  return Boolean(progress && !["complete", "cancelled"].includes(progress.phase));
+}
+export function saveTeleportProgress(db: DbQueryConnection, threadId: string, value: TeleportProgress): void {
+  db.insert(threadPluginMetadata).values({ threadId, pluginId: teleportNamespace, metadataJson: JSON.stringify(value) })
+    .onConflictDoUpdate({ target: [threadPluginMetadata.threadId, threadPluginMetadata.pluginId], set: { metadataJson: JSON.stringify(value) } }).run();
+}
+export function pendingTeleports(db: DbQueryConnection): { threadId: string; progress: TeleportProgress }[] {
+  return db.select({ threadId: threadPluginMetadata.threadId, value: threadPluginMetadata.metadataJson }).from(threadPluginMetadata)
+    .where(eq(threadPluginMetadata.pluginId, teleportNamespace)).all()
+    .map(row => ({ threadId: row.threadId, progress: JSON.parse(row.value) as TeleportProgress }))
+    .filter(row => row.threadId === row.progress.owner && !["complete", "cancelled", "error"].includes(row.progress.phase));
+}
 
 export type Binding = typeof cloudroomThreads.$inferSelect;
 export type Command = typeof cloudroomCommands.$inferSelect;
@@ -18,6 +43,10 @@ export function saveBinding(db: DbQueryConnection, threadId: string, values: Par
 
 export function commands(db: DbQueryConnection, threadId: string): Command[] {
   return db.select().from(cloudroomCommands).where(eq(cloudroomCommands.threadId, threadId)).orderBy(cloudroomCommands.createdAt, cloudroomCommands.id).all();
+}
+
+export function queuedPrompts(db: DbQueryConnection, threadId: string): Command[] {
+  return commands(db, threadId).filter(item => item.command === "prompt" && item.id !== `first_${threadId}` && item.state === "accepted" && !JSON.parse(item.input).teleport_handoff);
 }
 
 export function command(db: DbQueryConnection, id: string): Command | null {

@@ -25,7 +25,7 @@ sendAt?, reason? })`.
   command is idempotent and preserves thread history.
 - Use `room thread compact <id>` to send the built-in `/compact` command to an idle or errored thread. Completion or failure appears in the timeline. Provider support varies; consult its skill and reported capabilities.
 - Use `room thread clear <id>` on an idle or failed thread to reset its active
-  timeline and model context in place while keeping the same BB thread,
+  timeline and model context in place while keeping the same Room thread,
   workspace, durable event history, and sticky execution settings.
 - Use `room thread cancel-plan <id>` to exit an active Plan turn without
   optimistically clearing its banner. Use `room thread clear-goal <id>` to clear

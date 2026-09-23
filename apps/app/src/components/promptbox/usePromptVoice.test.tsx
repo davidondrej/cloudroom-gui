@@ -54,6 +54,7 @@ describe("usePromptVoice", () => {
         focusEnd: vi.fn(),
         getTextBeforeCursor: vi.fn(),
         insertTextAtCursor,
+        submit: vi.fn(),
         playVoiceCompletionTransition,
       } satisfies PromptBoxHandle,
     };

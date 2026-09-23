@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { cloudroomCommands, deleteThreadEventSuffixInTransaction, events, threadConversationOutlines, threadSearchSegments, getThread, type DbConnection, type DbQueryConnection, type DbTransaction, type AppendStoredThreadEventArgs } from "@bb/db";
+import { commandGuardBlockReason } from "@get-bb/plugin-sdk/internal/command-guard";
+import { cloudroomCommands, cloudroomThreads, deleteThreadEventSuffixInTransaction, events, threadConversationOutlines, threadSearchSegments, getThread, type DbConnection, type DbQueryConnection, type DbTransaction, type AppendStoredThreadEventArgs } from "@bb/db";
 import { and, desc, eq } from "drizzle-orm";
 import { appendThreadEventsInTransaction } from "../threads/thread-events.js";
 import { reasoningLevelSchema, threadEventSchema, threadScope, turnScope, encodeClientTurnRequestIdNumber, type ThreadEvent } from "@bb/domain";
@@ -84,6 +85,18 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
       if (!parsed.success) throw new CloudroomError(`Invalid cloud event fields: ${parsed.error.issues.map((issue) => issue.path.join(".") || issue.message).join(", ")}`);
       projected.push(parsed.data);
     };
+    if (["storage_warning", "storage_pause", "storage_recovered"].includes(record.kind)) {
+      emit({ type: "system/operation", scope: threadScope(), threadId, operation: record.kind,
+        operationId: `cloud-storage:${record.sequence}`, status: "completed", message: z.string().parse(data.text) });
+    }
+    if (record.kind === "teleport") {
+      const imported = z.array(z.object({ request_id: z.string(), input: object, state: z.string() })).parse(data.prompts);
+      for (const [index, prompt] of imported.entries()) {
+        if (!command(tx, prompt.request_id)) tx.insert(cloudroomCommands).values({ id: prompt.request_id, threadId, command: "prompt", input: JSON.stringify(prompt.input), state: prompt.state, createdAt: (record.timestamp_ms ?? 0) + index }).run();
+      }
+      if (typeof data.native_id === "string") saveBinding(tx, threadId, { nativeId: data.native_id });
+      emit({ type: "system/operation", scope: threadScope(), threadId, operation: "teleport", operationId: `teleport:${record.sequence}`, status: "completed", message: "Conversation continued in cloud; files may still be uploading." });
+    }
     if (record.kind === "receipt") {
       const receipt = z.object({ request_id: z.string(), command: z.string(), state: z.string(), error: z.string().optional() }).parse(data);
       const previous = command(tx, receipt.request_id);
@@ -92,7 +105,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
       }
       saveCommandState(tx, threadId, receipt.request_id, receipt.state);
       if (receipt.command === "start" && receipt.state === "accepted" && object.parse(data.input).workspace) saveStatus(tx, threadId, "pending");
-      if (harness === "pi" && previous && receipt.command === "prompt" && ["completed", "failed", "interrupted", "unknown", "unknown_after_restart"].includes(receipt.state) && saved.nativeId) {
+      if ((harness === "pi" || harness === "acp-cursor" || harness === "claude-code") && previous && receipt.command === "prompt" && ["completed", "failed", "interrupted", "unknown", "unknown_after_restart"].includes(receipt.state) && saved.nativeId) {
         emit({ threadId, providerThreadId: saved.nativeId, scope: turnScope(receipt.request_id), type: "turn/completed", status: receipt.state === "completed" ? "completed" : receipt.state === "interrupted" ? "interrupted" : "failed" });
       }
       if (receipt.state === "failed" && receipt.error) {
@@ -139,8 +152,9 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
     if (record.kind === "child" && saved.nativeId && typeof data.id === "string" && typeof data.request_id === "string") {
       const completed = data.state !== "started";
       const result = data.result && typeof data.result === "object" ? object.parse(data.result) : {};
+      const child = tx.select({ threadId: cloudroomThreads.threadId }).from(cloudroomThreads).where(and(eq(cloudroomThreads.coreUrl, saved.coreUrl), eq(cloudroomThreads.sessionId, data.id))).get();
       emit({ type: completed ? "item/delegation/completed" : "item/delegation/progress", scope: threadScope(), threadId, providerThreadId: saved.nativeId,
-        item: { type: "delegation", id: `child:${data.id}`, childRef: data.id, label: "Cloud child", background: true,
+        item: { type: "delegation", id: `child:${data.id}`, childRef: child?.threadId ?? data.id, label: "Cloud child", background: true,
           status: !completed ? "pending" : data.state === "completed" ? "completed" : "failed",
           ...(typeof result.result === "string" ? { summary: result.result } : {}) } });
     }
@@ -171,10 +185,10 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
         saveBinding(tx, threadId, { turnId: data.request_id });
         const request = command(tx, data.request_id);
         saveCommandState(tx, threadId, data.request_id, "running");
-        if (request?.command === "prompt" && !requestedTurns(tx, threadId).has(bbRequestId(data.request_id))) {
+        if (request?.command === "prompt" && !JSON.parse(request.input).teleport_handoff && !requestedTurns(tx, threadId).has(bbRequestId(data.request_id))) {
           emit(promptRequestedEvent(tx, saved, request));
         }
-        if (harness === "pi" && saved.nativeId) {
+        if ((harness === "pi" || harness === "acp-cursor" || harness === "claude-code") && saved.nativeId) {
           const base = { threadId, providerThreadId: saved.nativeId, scope: turnScope(data.request_id) };
           emit({ ...base, type: "turn/started" });
           emit({ ...base, type: "turn/input/accepted", clientRequestId: bbRequestId(data.request_id) });
@@ -190,6 +204,21 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
         type: "system/error", scope: threadScope(), threadId,
         message: typeof data.reason === "string" ? data.reason : "Cloudroom execution failed",
       });
+    }
+    if (harness === "claude-code" && data.harness === "claude-code" && saved.nativeId && typeof data.request_id === "string") {
+      const base = { threadId, providerThreadId: saved.nativeId, scope: turnScope(data.request_id) };
+      const id = typeof data.item_id === "string" ? `${data.request_id}:${data.item_id}` : null;
+      if (id && (record.kind === "text_delta" || record.kind === "thinking_delta")) {
+        emit({ ...base, type: record.kind === "text_delta" ? "item/agentMessage/delta" : "item/reasoning/textDelta", itemId: id, delta: z.string().parse(data.delta) });
+      } else if (id && ["item_started", "item_completed"].includes(record.kind)) {
+        const type = record.kind === "item_started" ? "item/started" : "item/completed";
+        if (data.item_type === "text") emit({ ...base, type, item: { type: "agentMessage", id, text: typeof data.text === "string" ? data.text : "" } });
+        else if (data.item_type === "thinking") emit({ ...base, type, item: { type: "reasoning", id, summary: [], content: typeof data.text === "string" && data.text ? [data.text] : [] } });
+        else if (data.item_type === "tool_use") emit({ ...base, type, item: {
+          type: "toolCall", id, tool: typeof data.tool_name === "string" ? data.tool_name : "Claude tool", status: record.kind === "item_started" ? "pending" : data.is_error === true ? "failed" : "completed",
+          ...(data.input && typeof data.input === "object" ? { arguments: data.input } : {}), ...(data.result !== undefined ? { result: data.result } : {}),
+        } });
+      }
     }
     if (harness === "pi" && record.native && record.kind !== "native_record" && saved.nativeId && saved.turnId) {
       const frame = object.parse(JSON.parse(record.native));
@@ -244,6 +273,27 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
         } });
       }
     }
+    if (harness === "acp-cursor" && saved.nativeId && saved.turnId && data.harness === "cursor") {
+      const base = { threadId, providerThreadId: saved.nativeId, scope: turnScope(saved.turnId) };
+      const itemId = `${saved.turnId}:${String(data.item_id)}`;
+      if (record.kind === "text_delta" || record.kind === "thinking_delta") {
+        emit({ ...base, type: record.kind === "text_delta" ? "item/agentMessage/delta" : "item/reasoning/textDelta", itemId, delta: z.string().parse(data.delta) });
+      } else if (["item_started", "item_completed", "tool_snapshot"].includes(record.kind)) {
+        const completed = record.kind === "item_completed";
+        const type = completed ? "item/completed" : "item/started";
+        if (data.item_type === "agentMessage") emit({ ...base, type, item: { type: "agentMessage", id: itemId, text: String(data.text ?? "") } });
+        else if (data.item_type === "reasoning") emit({ ...base, type, item: { type: "reasoning", id: itemId, summary: [], content: data.text ? [String(data.text)] : [] } });
+        else if (data.tool) {
+          const tool = object.parse(data.tool);
+          const argumentsValue = object.safeParse(tool.rawInput);
+          if (record.kind === "tool_snapshot") emit({ ...base, type: "item/toolCall/progress", itemId, message: JSON.stringify(tool.content ?? []) });
+          else emit({ ...base, type, item: { type: "toolCall", id: itemId, tool: String(tool.title ?? tool.kind ?? "Cursor tool"),
+            status: !completed ? "pending" : tool.status === "completed" ? "completed" : "failed",
+            ...(argumentsValue.success ? { arguments: argumentsValue.data } : {}),
+            ...(completed ? { result: tool.rawOutput ?? tool.content ?? null } : {}) } });
+        }
+      } else if (record.kind === "warning") emit({ ...base, type: "provider/warning", category: "general", summary: z.string().parse(data.message) });
+    }
     if (harness === "codex" && record.native && record.kind !== "native_record") {
       const parsed = nativeFrame.safeParse(JSON.parse(record.native));
       if (parsed.success && saved.nativeId && saved.turnId) {
@@ -294,6 +344,9 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
             emit({ ...base, type: method, itemId: itemId(params.itemId), delta: z.string().parse(params.delta) });
           } else if (method === "thread/compacted") {
             emit({ ...base, type: "thread/compacted" });
+          } else if (method === "hook/completed") {
+            const reason = commandGuardBlockReason(params);
+            if (reason) emit({ ...base, type: "provider/warning", category: "general", summary: reason });
           } else if (method === "error") {
             const error = object.parse(params.error);
             emit({ type: "system/error", scope: threadScope(), threadId, message: z.string().parse(error.message) });

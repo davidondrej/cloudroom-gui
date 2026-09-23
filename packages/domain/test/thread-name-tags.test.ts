@@ -11,11 +11,20 @@ describe("thread name tags", () => {
   it("round-trips user-provided literal bb-prefixed titles", () => {
     const providerName = toProviderExternalThreadName("[bb] Literal");
 
-    expect(providerName).toBe("[bb] [bb] Literal");
+    expect(providerName).toBe("[room] [bb] Literal");
     expect(fromProviderExternalThreadName(providerName)).toBe("[bb] Literal");
+    expect(fromProviderExternalThreadName("[bb] [bb] Literal")).toBe(
+      "[bb] Literal",
+    );
+    expect(
+      fromProviderExternalThreadName(
+        toProviderExternalThreadName("[room] Literal"),
+      ),
+    ).toBe("[room] Literal");
+    expect(fromProviderExternalThreadName("Plain title")).toBe("Plain title");
   });
 
-  it("normalizes provider title events by stripping one bb tag", () => {
+  it("normalizes current and legacy provider title events by stripping one tag", () => {
     const event = {
       type: "thread/name/updated",
       threadId: "t1",
@@ -24,9 +33,13 @@ describe("thread name tags", () => {
       threadName: toProviderExternalThreadName("[bb] Literal"),
     } satisfies ThreadEvent;
 
-    expect(normalizeProviderThreadNameEvent(event)).toEqual({
-      ...event,
-      threadName: "[bb] Literal",
-    });
+    for (const threadName of [event.threadName, "[bb] [bb] Literal"]) {
+      expect(
+        normalizeProviderThreadNameEvent({ ...event, threadName }),
+      ).toEqual({
+        ...event,
+        threadName: "[bb] Literal",
+      });
+    }
   });
 });

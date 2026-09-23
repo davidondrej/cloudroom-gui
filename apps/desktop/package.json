@@ -2,7 +2,7 @@
   "name": "@bb/desktop",
   "version": "0.43.1",
   "private": true,
-  "description": "macOS and Linux Electron shell for bb",
+  "description": "macOS and Linux Electron shell for Room",
   "main": "dist/main.js",
   "os": [
     "darwin",
@@ -10,7 +10,8 @@
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
-    "clean": "rimraf dist release",
+    "clean": "rimraf dist release.noindex",
+    "install:macos": "node scripts/install-macos.mjs",
     "desktop:build": "node scripts/cloudroom-version.mjs && BB_CLOUDROOM_STAMP=1 pnpm run build && BB_CLOUDROOM_STAMP=1 node scripts/run-electron-builder.mjs --mac --arm64 --publish never",
     "desktop:build:linux": "node scripts/cloudroom-version.mjs && BB_CLOUDROOM_STAMP=1 pnpm run build && BB_CLOUDROOM_STAMP=1 node scripts/run-electron-builder.mjs --linux --x64 --publish never",
     "desktop:version-feed": "tsx scripts/generate-version-feed.mts",

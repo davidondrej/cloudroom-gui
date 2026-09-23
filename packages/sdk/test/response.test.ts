@@ -10,10 +10,10 @@ import { createNodeTransport } from "../src/node.js";
 
 const REQUEST_TIMEOUT_ERROR_NAME = "BbRequestTimeoutError";
 const REQUEST_TIMEOUT_VALIDATION_MESSAGE =
-  "BB request timeout must be a non-negative finite number.";
+  "Room request timeout must be a non-negative finite number.";
 
 function requestTimeoutMessage(duration: string): string {
-  return `BB request timed out after ${duration}.`;
+  return `Room request timed out after ${duration}.`;
 }
 
 const IMMEDIATE_TIMEOUT_MS = 0;

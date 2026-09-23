@@ -35,9 +35,16 @@ export interface ReasoningCommandSuggestion {
   description: string;
 }
 
+export interface FastModeCommandSuggestion {
+  kind: "fast-mode";
+  name: "fast";
+  description: string;
+}
+
 type ComposerCommandSuggestion =
   | ProviderCommandSuggestion
-  | ReasoningCommandSuggestion;
+  | ReasoningCommandSuggestion
+  | FastModeCommandSuggestion;
 
 export type ComposerCommandMenuState =
   | Exclude<CommandMenuState, { kind: "results" }>
@@ -162,9 +169,12 @@ function getMentionKey(item: PromptMentionSuggestion): string {
   return JSON.stringify([item.kind, item.sectionId]);
 }
 
-type CommandSectionKind = ProviderCommandSection | "reasoning";
+type CommandSectionKind = ProviderCommandSection | "reasoning" | "fast-mode";
 
 function getCommandSectionLabel(kind: CommandSectionKind): string {
+  if (kind === "fast-mode") {
+    return "Fast mode";
+  }
   if (kind === "reasoning") {
     return "Reasoning";
   }
@@ -180,6 +190,9 @@ function getCommandSectionLabel(kind: CommandSectionKind): string {
 const ROW_ICON_CLASS = "size-3.5 shrink-0 text-muted-foreground";
 
 function getCommandIcon(item: ComposerCommandSuggestion): ReactNode {
+  if (item.kind === "fast-mode") {
+    return <Icon name="Zap" className={ROW_ICON_CLASS} aria-hidden />;
+  }
   if (item.kind === "reasoning") {
     return <Icon name="Brain" className={ROW_ICON_CLASS} aria-hidden />;
   }
@@ -212,7 +225,9 @@ function getCommandKey(item: ProviderCommandSuggestion): string {
 }
 
 export function typeaheadSuggestionKey(item: TypeaheadSuggestion): string {
-  if (item.kind === "reasoning") return JSON.stringify([item.kind, item.name]);
+  if (item.kind === "reasoning" || item.kind === "fast-mode") {
+    return JSON.stringify([item.kind, item.name]);
+  }
   return item.kind === "command" ? getCommandKey(item) : getMentionKey(item);
 }
 
@@ -436,9 +451,11 @@ function CommandResults({
       groupSections({
         suggestions,
         sectionKind: (item): CommandSectionKind =>
-          item.kind === "reasoning"
-            ? "reasoning"
-            : providerCommandSection(item),
+          item.kind === "fast-mode"
+            ? "fast-mode"
+            : item.kind === "reasoning"
+              ? "reasoning"
+              : providerCommandSection(item),
         sectionLabel: getCommandSectionLabel,
       }),
     [suggestions],

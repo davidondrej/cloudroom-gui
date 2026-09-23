@@ -1,11 +1,11 @@
 ---
 name: bb-theme-authoring
-description: "Create or edit BB color themes and inspect them in the Theme Preview panel."
+description: "Create or edit Room color themes and inspect them in the Theme Preview panel."
 ---
 
-# Authoring a bb theme
+# Authoring a Room theme
 
-A bb theme is one CSS file that overrides the app's CSS custom properties. bb
+A room theme is one CSS file that overrides the app's CSS custom properties. bb
 discovers custom themes on disk and the **Theme Preview** panel shows every
 resolved token, its validation state, and an app mock that repaints as you
 edit. Work in a split: your agent thread on one side, Theme Preview on the
@@ -13,14 +13,14 @@ other. Nothing needs a restart.
 
 Theme Preview is visualization and validation only. It never creates, writes,
 forks, repairs, or deletes a theme resource. Create and update `theme.css` from
-the separate agent thread; use the existing `bb theme` commands to locate,
+the separate agent thread; use the existing `room theme` commands to locate,
 inspect, and activate themes. Validation reports inconsistent or inaccessible
 results, but it never changes authored values.
 
 ## Where themes live
 
 ```sh
-bb theme dir          # the custom-theme directory, e.g. ~/.bb/theme
+room theme dir          # the custom-theme directory, e.g. ~/.bb/theme
 ```
 
 One directory per theme, one file inside it:
@@ -32,7 +32,7 @@ One directory per theme, one file inside it:
 `<name>` is the theme id: lowercase, letters, digits and dashes, a single path
 segment. Create the directory and the file and it is listed immediately — the
 Theme Preview dropdown picks it up on its next catalog refresh while the panel
-is open, and `bb theme list` shows it at once.
+is open, and `room theme list` shows it at once.
 
 ## File shape
 
@@ -55,7 +55,7 @@ Every declaration is a `--token: value;` custom property.
 }
 ```
 
-You only need to declare what you change; everything else derives from bb's
+You only need to declare what you change; everything else derives from Room's
 base theme. The anchors that drive the most are `--canvas`, `--ink`,
 `--primary` and `--sidebar`.
 
@@ -70,7 +70,7 @@ base theme. The anchors that drive the most are `--canvas`, `--ink`,
 | Lines | `--border` `--border-hairline` `--border-seam` `--sidebar-border` `--input` `--ring` |
 | Type | `--font-sans` `--font-mono` `--font-terminal` (declare once in `:root`) |
 
-How bb uses them (from bb's own components, so you can predict the result):
+How bb uses them (from Room's own components, so you can predict the result):
 sidebar rows hover with `--sidebar-accent`, the open thread's row is
 `--state-active`, the default button is `--foreground` on `--background`
 (bb has no primary-filled button; `--primary` is links, focus and accents),
@@ -86,8 +86,8 @@ two top-level blocks so tooling can read them.
 ## Apply and iterate
 
 ```sh
-bb theme set <name>   # activate it app-wide
-bb theme show         # what is active now
+room theme set <name>   # activate it app-wide
+room theme show         # what is active now
 ```
 
 Or activate it from the Theme Preview dropdown and use the adjacent mode

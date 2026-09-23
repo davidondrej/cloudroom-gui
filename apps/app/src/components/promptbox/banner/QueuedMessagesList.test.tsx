@@ -232,11 +232,11 @@ describe("QueuedMessagesList", () => {
   });
 
   it.each([
-    { initiator: "system" as const, senderThreadId: null, height: "104px" },
+    { initiator: "system" as const, senderThreadId: null, height: "61px" },
     {
       initiator: "agent" as const,
       senderThreadId: "thr_sender",
-      height: "110px",
+      height: "67px",
     },
   ])(
     "reserves the metadata height for $initiator senders",
@@ -268,7 +268,7 @@ describe("QueuedMessagesList", () => {
   });
 
   it("toggles a few messages between the fitted drawer and collapsed modes", () => {
-    const { container, getByRole, getByText } = renderQueuedMessages([
+    const { container, getByRole, queryByText } = renderQueuedMessages([
       makeQueuedMessage("q_one", "First queued message"),
       makeQueuedMessage("q_two", "Second queued message"),
     ]);
@@ -279,9 +279,14 @@ describe("QueuedMessagesList", () => {
       'section[aria-label="Queued messages"]',
     );
 
-    expect(getByText("Queue")).not.toBeNull();
+    expect(queryByText("Queue")).toBeNull();
+    expect(container.querySelector("header")).toBeNull();
+    const scrollFrame = container.querySelector<HTMLElement>(
+      "[data-queued-messages-scroll-frame]",
+    );
+    expect(scrollFrame?.hidden).toBe(false);
     expect(header?.getAttribute("data-queued-messages-mode")).toBe("drawer");
-    expect(surface?.style.height).toBe("121px");
+    expect(surface?.style.height).toBe("74px");
     expect(
       getByRole("button", { name: "Collapse queued messages" }).querySelector(
         '[data-icon="ChevronDown"]',
@@ -295,11 +300,13 @@ describe("QueuedMessagesList", () => {
         '[data-icon="ChevronUp"]',
       ),
     ).not.toBeNull();
-    expect(surface?.style.height).toBe("44px");
+    expect(surface?.style.height).toBe("36px");
+    expect(scrollFrame?.hidden).toBe(true);
 
     fireEvent.click(getByRole("button", { name: "Show queued messages" }));
     expect(header?.getAttribute("data-queued-messages-mode")).toBe("drawer");
-    expect(surface?.style.height).toBe("121px");
+    expect(surface?.style.height).toBe("74px");
+    expect(scrollFrame?.hidden).toBe(false);
   });
 
   it("gives a row that renders a wait line room for it", () => {
@@ -309,6 +316,12 @@ describe("QueuedMessagesList", () => {
     const plainHeight = plain.container.querySelector<HTMLElement>(
       'section[aria-label="Queued messages"]',
     )?.style.height;
+    expect(
+      plain.container.querySelector("[data-queued-message-group-boundary-row]"),
+    ).toBeNull();
+    expect(
+      plain.container.querySelector("[data-queued-message-group-divider]"),
+    ).toBeNull();
     cleanup();
 
     const waiting = renderQueuedMessages([
@@ -326,8 +339,8 @@ describe("QueuedMessagesList", () => {
       'section[aria-label="Queued messages"]',
     )?.style.height;
 
-    expect(plainHeight).toBe("88px");
-    expect(waitingHeight).toBe("104px");
+    expect(plainHeight).toBe("45px");
+    expect(waitingHeight).toBe("61px");
   });
 
   it("toggles an overflowing queue between the workspace and collapsed modes", () => {
@@ -728,7 +741,7 @@ describe("QueuedMessagesList", () => {
           .querySelector("[data-queued-messages-mode]")
           ?.getAttribute("data-queued-messages-mode"),
       ).toBe("drawer");
-      expect(surface?.style.height).toBe("174px");
+      expect(surface?.style.height).toBe("123px");
     });
   });
 
@@ -845,7 +858,7 @@ describe("QueuedMessagesList", () => {
     rerender(renderSurface(false));
 
     await waitFor(() => {
-      expect(surface?.style.height).toBe("121px");
+      expect(surface?.style.height).toBe("74px");
       expect(
         container
           .querySelector("[data-queued-messages-mode]")
@@ -1144,7 +1157,7 @@ describe("QueuedMessagesList", () => {
         surfaceHeight: 240,
         viewportHeight: 200,
       }),
-    ).toBe(44);
+    ).toBe(36);
   });
 
   it("renders queued blockquote markdown as a compact quote preview", () => {

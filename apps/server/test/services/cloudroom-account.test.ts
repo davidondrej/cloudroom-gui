@@ -7,7 +7,7 @@ import { expect, it } from "vitest";
 import { cloudroomThreads, threads } from "@bb/db";
 import { eq } from "drizzle-orm";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
-import { cloudroomAccount, CloudroomAccountService } from "../../src/services/cloudroom/account.js";
+import { cloudroomAccount, CloudroomAccountService, pendingLoginTimeoutMs } from "../../src/services/cloudroom/account.js";
 import { createTestAppHarness } from "../helpers/test-app.js";
 import { seedHostSession, seedProjectWithSource, seedThread } from "../helpers/seed.js";
 
@@ -41,6 +41,17 @@ it("pairs through a loopback callback, keeps secrets out of status, persists/rec
   let redemptionDelay: Promise<void> | null = null;
   let redeemed = 0;
   const website = createServer(async (req, res) => {
+    if (req.url === "/api/desktop/onboarding") {
+      expect(req.headers.origin).toBeUndefined();
+      expect(req.headers.cookie).toBeUndefined();
+      expect(req.headers.authorization).toBe(`Basic ${Buffer.from(`${owners[0]!.id}:${token}`).toString("base64")}`);
+      let text = ""; for await (const chunk of req) text += chunk;
+      const progress = JSON.parse(text);
+      expect(progress.connected).toBe(true);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ macConnectedAt: "2026-09-20T12:00:00Z", projectSelectedAt: progress.projectSelected ? "2026-09-20T12:00:00Z" : null, firstMessageAt: null }));
+      return;
+    }
     expect(req.url).toBe("/api/desktop/redeem");
     expect(req.headers.origin).toBeUndefined();
     expect(req.headers.cookie).toBeUndefined();
@@ -85,6 +96,8 @@ it("pairs through a loopback callback, keeps secrets out of status, persists/rec
     expect(callbackResponse.headers.get("content-type")).toContain("text/html");
     const confirmation = await callbackResponse.text();
     expect(confirmation).toContain("<h1>Account connected</h1>");
+    expect(confirmation).toContain("--accent:#bfff00");
+    expect(confirmation).not.toContain("#fd360e");
     for (const secret of [token, gateToken, url.searchParams.get("state")!, "c".repeat(64)]) expect(confirmation).not.toContain(secret);
     expect(callbackResponse.headers.get("cache-control")).toBe("no-store");
     expect(callbackResponse.headers.get("referrer-policy")).toBe("no-referrer");
@@ -146,3 +159,45 @@ it("pairs through a loopback callback, keeps secrets out of status, persists/rec
     account.cancel(); cloudroom(harness.deps).stop(); await close(website); await close(core); await harness.cleanup();
   }
 }, 15000);
+
+it("keeps browser sign-in open while a VM is provisioned and does not call the website or Boat when it expires", async () => {
+  const harness = await createTestAppHarness();
+  const account = cloudroomAccount(harness.deps);
+  const calls: string[] = [];
+  const realFetch = globalThis.fetch;
+  const realTimeout = globalThis.setTimeout;
+  let expire: (() => void) | undefined;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    calls.push(String(input));
+    return realFetch(input, init);
+  }) as typeof fetch;
+  globalThis.setTimeout = ((fn: TimerHandler, ms?: number, ...args: unknown[]) => {
+    if (ms === pendingLoginTimeoutMs) {
+      expire = () => { (fn as () => void)(); };
+      return realTimeout(() => {}, 0);
+    }
+    return realTimeout(fn as never, ms as never, ...(args as []));
+  }) as unknown as typeof setTimeout;
+  try {
+    expect(pendingLoginTimeoutMs).toBe(30 * 60_000);
+    expect(pendingLoginTimeoutMs).not.toBe(5 * 60_000);
+    const started = await account.signIn({ websiteUrl: "http://127.0.0.1:9" });
+    expect(started.url).toContain("/desktop?");
+    expect(expire).toBeTypeOf("function");
+    expect((await account.status()).signingIn).toBe(true);
+    account.cancel();
+    expect((await account.status()).signingIn).toBe(false);
+    expect((await account.status()).signInError).toBeNull();
+    await account.signIn({ websiteUrl: "http://127.0.0.1:9" });
+    expect((await account.status()).signingIn).toBe(true);
+    expire?.();
+    expect((await account.status()).signInError).toBe("Sign-in expired. Try again.");
+    expect((await account.status()).signingIn).toBe(false);
+    expect(calls.filter(url => /ascii\.dev|boat\.dev|\/api\/setup/.test(url))).toEqual([]);
+  } finally {
+    globalThis.fetch = realFetch;
+    globalThis.setTimeout = realTimeout;
+    account.cancel();
+    await harness.cleanup();
+  }
+});

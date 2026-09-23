@@ -1356,6 +1356,7 @@ const READ_EXPERIMENTAL_PROVIDER_DECLARATION_FIELDS: ReadonlySet<string> =
   new Set([
     "experimental_bridgeOptions",
     "experimental_visibility",
+    "experimental_modelDiscoveryRestart",
     "experimental_nativeSkillRoots",
     "experimental_nativeCommandRoots",
     "experimental_resolvesNativeRoots",
@@ -1628,6 +1629,15 @@ export function validatePluginProviderDeclaration(
           "experimental_nativeCommandRoots",
           declaration.experimental_nativeCommandRoots,
         );
+  const modelDiscoveryRestart = declaration.experimental_modelDiscoveryRestart;
+  if (
+    modelDiscoveryRestart !== undefined &&
+    typeof modelDiscoveryRestart !== "boolean"
+  ) {
+    throw new Error(
+      `provider "${id}" experimental_modelDiscoveryRestart must be a boolean`,
+    );
+  }
   const resolvesNativeRoots = declaration.experimental_resolvesNativeRoots;
   if (
     resolvesNativeRoots !== undefined &&
@@ -1655,6 +1665,9 @@ export function validatePluginProviderDeclaration(
       ? {}
       : { experimental_bridgeOptions: bridgeOptions }),
     experimental_visibility: visibility,
+    ...(modelDiscoveryRestart === undefined
+      ? {}
+      : { experimental_modelDiscoveryRestart: modelDiscoveryRestart }),
     maintenance: normalizedMaintenance,
     capabilities: normalizedCapabilities,
     composerActions,

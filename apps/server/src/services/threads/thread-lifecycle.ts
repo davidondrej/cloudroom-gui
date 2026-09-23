@@ -1458,10 +1458,20 @@ export async function stopThreadForCurrentState(
   deps: RequestThreadStopForCurrentStateDeps,
   thread: RequestThreadStopForCurrentStateThread,
   environment: RequestThreadStopForCurrentStateEnvironment | null,
-  options?: { requireStopped: true },
+  options?: { requireStopped: true; immediate?: boolean },
 ): Promise<void> {
   const target = getThread(deps.db, thread.id);
   if (target && isCloudThread(target)) return cloudroom(deps).control(thread.id, "stop");
+  if (options?.immediate) {
+    if (!environment) throw new Error("Cannot confirm local stop without its environment");
+    const args: RequestThreadStopArgs = { threadId: thread.id, environmentId: environment.id, hostId: environment.hostId, interruptionReason: "manual-stop", immediate: true };
+    markThreadStopRequested(deps, args);
+    await Promise.all([
+      runAwaitedThreadStopCommand(deps, { threadId: thread.id, hostId: environment.hostId, requireStopped: true, command: buildThreadStopCommand({ ...args, intent: "interrupt" }) }),
+      revokeThreadDesktopBrowserControl(deps, thread.id),
+    ]);
+    return;
+  }
   await revokeThreadDesktopBrowserControl(deps, thread.id);
   if (hasLiveThreadRuntime(deps, thread)) {
     if (environment === null) {

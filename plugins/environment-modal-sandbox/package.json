@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Run bb threads in on-demand, isolated sandboxes",
+  "description": "Run Room threads in on-demand, isolated sandboxes",
   "engines": {
     "bb": ">=0.0"
   },
   "bb": {
     "name": "Modal Sandbox [Experimental]",
-    "description": "Run bb threads in on-demand, isolated sandboxes",
+    "description": "Run Room threads in on-demand, isolated sandboxes",
     "branding": {
       "icon": "./modal-logo.svg"
     },

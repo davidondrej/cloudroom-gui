@@ -79,8 +79,13 @@ vi.mock("@/hooks/queries/system-queries", () => ({
   }),
 }));
 
-vi.mock("@/components/promptbox/PromptBoxInternal", () => ({
+vi.mock("@/components/promptbox/PromptBoxInternal", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/components/promptbox/PromptBoxInternal")
+  >("@/components/promptbox/PromptBoxInternal");
+  return {
   DEFAULT_COMPOSER_SCOPE: { kind: "new-thread", projectId: null },
+  promptFastModeCommand: actual.promptFastModeCommand,
   PromptBoxInternal: ({
     footerStart,
     modeHeader,
@@ -180,7 +185,8 @@ vi.mock("@/components/promptbox/PromptBoxInternal", () => ({
       ) : null}
     </div>
   ),
-}));
+  };
+});
 
 vi.mock("@/components/promptbox/usePromptVoice", () => ({
   usePromptVoice: () => ({

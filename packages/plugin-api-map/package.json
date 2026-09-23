@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "type": "module",
   "private": true,
-  "description": "The bb plugin-surface map: annotated surface fixtures plus the cards that explain each pluggable surface.",
+  "description": "The Room plugin-surface map: annotated surface fixtures plus the cards that explain each pluggable surface.",
   "exports": {
     ".": {
       "source": "./src/index.ts",

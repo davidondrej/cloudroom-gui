@@ -17,6 +17,10 @@ const contextEnvKeys: string[] = [
   "BB_PROJECT_ID",
   "BB_THREAD_ID",
   "BB_THREAD_STORAGE",
+  "ROOM_ENVIRONMENT_ID",
+  "ROOM_PROJECT_ID",
+  "ROOM_THREAD_ID",
+  "ROOM_THREAD_STORAGE",
 ];
 const spawnedChildren: ChildProcessWithoutNullStreams[] = [];
 
@@ -25,13 +29,13 @@ function buildCleanEnv(): NodeJS.ProcessEnv {
   for (const key of contextEnvKeys) {
     delete env[key];
   }
-  env.BB_SERVER_URL = "http://127.0.0.1:9";
+  env.ROOM_SERVER_URL = "http://127.0.0.1:9";
   return env;
 }
 
-function runSourceBb(args: string[]): Promise<SourceCliResult> {
+function runSourceRoom(args: string[]): Promise<SourceCliResult> {
   return new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn("pnpm", ["--silent", "bb", ...args], {
+    const child = spawn("pnpm", ["--silent", "room", ...args], {
       cwd: repoRoot,
       env: buildCleanEnv(),
     });
@@ -70,7 +74,7 @@ afterEach(() => {
 
 describe("source CLI wrapper", () => {
   it("keeps --json stdout parseable when the prepare build writes progress", async () => {
-    const result = await runSourceBb(["status", "--json"]);
+    const result = await runSourceRoom(["status", "--json"]);
 
     if (result.code !== 0 || result.signal !== null) {
       throw new Error(

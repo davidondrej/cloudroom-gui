@@ -24,20 +24,20 @@ output returns it as `execution.storedScriptPath`.
 The plugin injects these variables:
 
 ```text
-BB_SERVER_URL          The BB server API base URL
-BB_PROJECT_ID          The automation project
+ROOM_SERVER_URL        The Room server API base URL
+ROOM_PROJECT_ID        The automation project
 BB_AUTOMATION_ID       The automation ID
 BB_AUTOMATION_RUN_ID   The run ID
-BB_CLI                 The absolute BB CLI path, when available
+ROOM_CLI               The absolute Room CLI path, when available
 ```
 
 The plugin does not inject `BB_ENVIRONMENT_ID` or `BB_HOST_DAEMON_PORT`.
 
-The plugin resolves `bb` from `BB_CLI`, `BB_CLI_DIR`, `PATH`, and common macOS
-install paths. It adds the selected directory to `PATH`.
+The plugin resolves `room` from `ROOM_CLI`, the internal `BB_CLI_DIR`, `PATH`, and
+common macOS install paths. It adds the selected directory to `PATH`.
 
-If the plugin cannot find `bb`, the script still starts. Its output starts with
-a `[bb] warning:` line. A later `bb` call then fails normally.
+If it cannot find `room`, the script still starts with a warning. A later
+`room` call then fails normally.
 
 ## Execution safety
 

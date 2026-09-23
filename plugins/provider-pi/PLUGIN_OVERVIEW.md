@@ -1,15 +1,15 @@
-Start a thread, pick Pi, and let the Pi coding agent work in your repository from bb. The plugin drives the Pi CLI on the host machine. It streams the agent's work into the bb timeline.
+Start a thread, pick Pi, and let the Pi coding agent work in your repository from Room. The plugin drives the Pi CLI on the host machine. It streams the agent's work into the Room timeline.
 
 ## What you get
 
 - Reasoning levels from None to Max.
 - Checkpoint forks and manual compaction.
-- Pi skills from your home directory and project, listed next to bb skills.
+- Pi skills from your home directory and project, listed next to Room skills.
 - Health and install status on each host, with an install or update action.
 
 ## How it works
 
-The plugin starts `pi` in RPC mode on the host and loads a small bb extension into it. Pi runs with full permissions in bb threads. bb checks the installed version before each session and shows an update action when it is too old.
+The plugin starts `pi` in RPC mode on the host and loads a small Room extension into it. Pi runs with full permissions in Room threads. Room checks the installed version before each session and shows an update action when it is too old.
 
 ## Requirements
 

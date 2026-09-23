@@ -1,4 +1,6 @@
 import { operationEnvironment } from "../operation-environment.js";
+import { buildThreadShellEnvironment } from "@bb/agent-runtime";
+import { stripThreadContextEnv } from "@bb/config/runtime";
 import { accessSync, chmodSync, constants, existsSync } from "node:fs";
 import { access, stat } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -146,6 +148,10 @@ interface ShutdownTerminalArgs {
 interface BuildTerminalEnvArgs {
   shellEnv: NodeJS.ProcessEnv;
   terminalId: string;
+  environmentId: string | null;
+  threadId?: string;
+  projectId?: string;
+  threadStoragePath?: string;
 }
 
 interface ResizeTerminalArgs {
@@ -340,9 +346,24 @@ async function resolveDefaultTerminalShell(): Promise<string> {
 }
 
 function buildTerminalEnv(args: BuildTerminalEnvArgs): NodeJS.ProcessEnv {
+  const baseShellEnv = Object.fromEntries(
+    Object.entries(stripThreadContextEnv(args.shellEnv)).filter(
+      (entry): entry is [string, string] => entry[1] !== undefined,
+    ),
+  );
+  const shellEnv =
+    args.threadId !== undefined && args.environmentId !== null
+      ? buildThreadShellEnvironment({
+          baseShellEnv,
+          environmentId: args.environmentId,
+          threadId: args.threadId,
+          projectId: args.projectId,
+          threadStoragePath: args.threadStoragePath,
+        })
+      : baseShellEnv;
   return {
     ...sanitizeInheritedChildProcessEnv({ env: process.env }),
-    ...args.shellEnv,
+    ...shellEnv,
     BB_TERMINAL_SESSION_ID: args.terminalId,
     COLORTERM: "truecolor",
     DISABLE_AUTO_TITLE: "true",
@@ -536,13 +557,17 @@ export class TerminalManager {
         args: terminalSpawnArgsForStart(message),
         cols: message.cols,
         cwd: target.cwd,
-        env: operationEnvironment(
-          message.contributedEnv,
-          buildTerminalEnv({
-            shellEnv: this.options.runtimeManager.getShellEnv(),
-            terminalId: message.terminalId,
-          }),
-        ),
+        env: buildTerminalEnv({
+          shellEnv: operationEnvironment(
+            message.contributedEnv,
+            this.options.runtimeManager.getShellEnv(),
+          ),
+          terminalId: message.terminalId,
+          environmentId: target.environmentId,
+          threadId: message.threadId,
+          projectId: message.projectId,
+          threadStoragePath: message.threadStoragePath,
+        }),
         file: shell,
         logger: this.options.logger,
         rows: message.rows,

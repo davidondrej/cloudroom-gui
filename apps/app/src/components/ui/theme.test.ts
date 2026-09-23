@@ -162,8 +162,9 @@ describe("theme.css neutral ramp", () => {
         return value;
       };
 
-      it("uses Cloudroom orange for the primary accent and focus rings", () => {
-        expect(variableValue(block, "primary")).toBe("#fd360e");
+      it("uses electric lime for primary fills and theme-derived details", () => {
+        expect(variableValue(block, "primary")).toBe("#bfff00");
+        expect(variableValue(block, "primary-text")).toBe("var(--primary)");
         expect(variableValue(block, "ring")).toBe("var(--primary)");
         expect(variableValue(block, "sidebar-ring")).toBe("var(--primary)");
       });

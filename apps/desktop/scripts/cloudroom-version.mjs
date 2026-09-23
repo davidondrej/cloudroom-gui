@@ -35,11 +35,14 @@ export function cloudroomBundleVersion(version) {
   return `${match[1]}.0.0`;
 }
 
-export async function readCloudroomVersion() {
+export async function readCloudroomVersion({ allowMissing = false } = {}) {
   let text;
   try {
     text = await readFile(cloudroomVersionPath, "utf8");
-  } catch {
+  } catch (error) {
+    if (allowMissing && error.code === "ENOENT") {
+      return "dev";
+    }
     throw new Error(
       `Missing ${cloudroomVersionPath}. Run node scripts/cloudroom-version.mjs first.`,
     );

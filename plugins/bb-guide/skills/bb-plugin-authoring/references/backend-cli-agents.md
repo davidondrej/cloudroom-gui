@@ -4,7 +4,7 @@
 
 One top-level command per plugin; a second `register` in one factory
 execution is rejected.
-Users and agents run `bb <name> …` like any core command; the bb CLI
+Users and agents run `room <name> …` like any core command; the Room CLI
 proxies it to the server, where `run` executes. Core collisions log an
 activation warning and appear in `room plugin list` as `room plugin run <id>`.
 
@@ -77,7 +77,7 @@ bb.agents.registerTool({
   name: "docs_search", // [a-zA-Z0-9_-]+, unique ACROSS plugins
   description: "Search the bundled docs.",
   instructions: "Prefer docs_search over guessing conventions.", // optional, appended to thread instructions
-  // Optional row presentation (grammar v3). Without it, BB shows its normal
+  // Optional row presentation (grammar v3). Without it, Room shows its normal
   // tool name and the plugin's branding glyph. Errors/interruptions keep
   // that standard rendering so the failing tool remains identifiable.
   presentation: {
@@ -93,7 +93,7 @@ bb.agents.registerTool({
 });
 
 // All tools and manifest skills are static registrations. configure() only
-// selects this plugin's own ids when BB resolves a thread/session config.
+// selects this plugin's own ids when Room resolves a thread/session config.
 bb.agents.configure((context) => ({
   tools: context.provider.id === "codex" ? ["docs_search"] : [],
   skills: context.project.kind === "standard" ? ["repo-conventions"] : [],
@@ -129,14 +129,14 @@ provider bridge stamps it on every call's timeline row (the row's glyph is
 checked at ingest against this plugin's declared icons, whichever plugin
 provides the thread); it is not a frontend
 bundle hook. A state with no label — error, interrupted, or awaiting
-approval — falls back to BB's standard `Running tool …` / `Ran tool …`
+approval — falls back to Room's standard `Running tool …` / `Ran tool …`
 wording, as does omitting the field entirely.
 
 `contributeInstructions` is synchronous. It runs on `thread.start` and
 `turn.submit`, so keep it fast. Prefer `skills/` for standing knowledge. Use
 this callback only when the text must reflect live plugin state.
 
-Ordering is standard BB instructions, selected tools' static snippets,
+Ordering is standard Room instructions, selected tools' static snippets,
 `contributeInstructions` output, `configure` dynamic instructions, data-dir
 user instructions, then workspace instructions. Tool snippets are rejected at
 registration above 4096 characters; each legacy/dynamic callback contribution
@@ -160,7 +160,7 @@ throwing callback fail closed for that plugin only. Dynamic `instructions` are
 truncated to 4096 characters.
 
 Resolution happens for `thread.start` and `turn.submit`. A selected tool set
-takes effect only when the provider session is next started/resumed; BB never
+takes effect only when the provider session is next started/resumed; Room never
 hot-mutates a running provider session. Instructions follow the same rule: a
 live provider session keeps the instructions it was constructed with, and
 changed instructions apply when the session is next constructed.
@@ -174,7 +174,7 @@ inspect the side-chat origin.
 
 ### bb.experimental_aiServices — helper inference and voice transcription
 
-bb's own AI services — the server-side helper completions behind thread
+Room's own AI services — the server-side helper completions behind thread
 titles and commit messages, and voice transcription — are served by plugins.
 Register a service in `server.ts` and implement the shared contract in the
 plugin's `bb.host` entry; the user selects it with `BB_INFERENCE` /

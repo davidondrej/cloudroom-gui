@@ -43,7 +43,7 @@ function removeLink(link: HTMLLinkElement | null): void {
 }
 
 function warnLoadFailure(pluginId: string, url: string): void {
-  console.warn(`bb plugin "${pluginId}": failed to load stylesheet ${url}`);
+  console.warn(`Room plugin "${pluginId}": failed to load stylesheet ${url}`);
 }
 
 function startPreload(

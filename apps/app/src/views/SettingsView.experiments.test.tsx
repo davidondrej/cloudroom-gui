@@ -32,11 +32,11 @@ describe("ExperimentsSettingsSection", () => {
     expect(onChange).toHaveBeenCalledWith("changelogPreview", true);
   });
 
-  it("reports mobile app changes", () => {
+  it("does not offer native BB mobile pairing as a Room experiment", () => {
     const onChange = vi.fn();
     renderSection(onChange);
-    fireEvent.click(screen.getByLabelText("Mobile app"));
-    expect(onChange).toHaveBeenCalledWith("mobileApp", true);
+    expect(screen.queryByLabelText("Mobile app")).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("reports multi-machine picker changes", () => {

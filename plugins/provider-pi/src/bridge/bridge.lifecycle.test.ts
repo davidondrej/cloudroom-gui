@@ -360,7 +360,7 @@ it("release_resume_preserves_pi_session_and_replaces_configuration", async () =>
   const initialFiles = scratchFiles();
   expect(initialFiles).toHaveLength(2);
   expect(readFileSync(join(experimental_scratchDirForTests(), initialFiles.find((name) => name.endsWith(".md"))!), "utf8")).toContain(oldInstructions);
-  expect(JSON.parse(readFileSync(join(experimental_scratchDirForTests(), initialFiles.find((name) => name.endsWith(".json"))!), "utf8")).map((tool: { name: string }) => tool.name)).toContain(oldTool.name);
+  expect(JSON.parse(readFileSync(join(experimental_scratchDirForTests(), initialFiles.find((name) => name.endsWith(".json"))!), "utf8")).tools.map((tool: { name: string }) => tool.name)).toContain(oldTool.name);
 
   const turn = await harness.request((nextId += 1), "turn/start", {
     threadId,
@@ -418,7 +418,7 @@ it("release_resume_preserves_pi_session_and_replaces_configuration", async () =>
   const resumedFiles = scratchFiles();
   expect(resumedFiles).toHaveLength(2);
   const resumedPrompt = readFileSync(join(experimental_scratchDirForTests(), resumedFiles.find((name) => name.endsWith(".md"))!), "utf8");
-  const resumedTools = JSON.parse(readFileSync(join(experimental_scratchDirForTests(), resumedFiles.find((name) => name.endsWith(".json"))!), "utf8"));
+  const resumedTools = JSON.parse(readFileSync(join(experimental_scratchDirForTests(), resumedFiles.find((name) => name.endsWith(".json"))!), "utf8")).tools;
   expect(resumedPrompt).toContain(newInstructions);
   expect(resumedPrompt).not.toContain(oldInstructions);
   expect(resumedTools.map((tool: { name: string }) => tool.name)).toContain(newTool.name);

@@ -66,7 +66,7 @@ export function MarketplacesSettingsSection() {
         return;
       }
       appToast.error("Refreshing the marketplace failed", {
-        description: `${failed[0]?.error ?? "Unknown error"}. The last catalog bb validated is still in use.`,
+        description: `${failed[0]?.error ?? "Unknown error"}. The last catalog Room validated is still in use.`,
       });
     },
     onError: (error) => {
@@ -99,7 +99,7 @@ export function MarketplacesSettingsSection() {
   return (
     <SettingsSection
       title="Plugin marketplaces"
-      description="bb reads plugin catalogs from these marketplaces. Adding one validates and caches its catalog; it never installs, updates, or runs plugin code."
+      description="Room reads plugin catalogs from these marketplaces. Adding one validates and caches its catalog; it never installs, updates, or runs plugin code."
       bodyClassName="border-0 bg-transparent p-0"
     >
       <div className="space-y-1.5">
@@ -122,7 +122,7 @@ export function MarketplacesSettingsSection() {
         </div>
         <p className="text-2xs text-subtle-foreground">
           An https manifest URL, <code>git:&lt;url&gt;[@&lt;ref&gt;]</code>, or{" "}
-          <code>path:&lt;directory&gt;</code> on the bb server&rsquo;s machine.
+          <code>path:&lt;directory&gt;</code> on the Room server&rsquo;s machine.
         </p>
       </div>
 

@@ -295,7 +295,10 @@ export function createPluginCatalogService(deps: {
     const catalog = catalogOf(row);
     return {
       name: row.name,
-      displayName: catalog?.displayName ?? row.name,
+      displayName: marketplacePublisherLabel({
+        marketplaceName: row.name,
+        displayName: catalog?.displayName ?? row.name,
+      }),
       description: catalog?.description ?? null,
       official: isReservedMarketplace(row.name),
       sourceKind: row.sourceKind,
@@ -489,7 +492,10 @@ export function createPluginCatalogService(deps: {
       source: entrySourceDisplay(entry),
       repositoryUrl: entryRepositoryUrl(entry),
       marketplace: row.name,
-      marketplaceDisplayName: catalog.displayName,
+      marketplaceDisplayName: marketplacePublisherLabel({
+        marketplaceName: row.name,
+        displayName: catalog.displayName,
+      }),
       publisherKey: row.name,
       publisherLabel: marketplacePublisherLabel({
         marketplaceName: row.name,

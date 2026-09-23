@@ -1,3 +1,4 @@
+import { commandGuardBlockReason } from "@get-bb/plugin-sdk/internal/command-guard";
 import {
   type ProviderErrorCategory,
   type ProviderErrorInfo,
@@ -1000,6 +1001,11 @@ export function translateCodexEventToDeltas(
   const envelope = codexBridgeEnvelopeSchema.safeParse(event);
   if (!envelope.success) {
     return [];
+  }
+
+  if (envelope.data.method === "hook/completed") {
+    const reason = commandGuardBlockReason(envelope.data.params);
+    if (reason) return [{ kind: "provider.warning", category: "general", summary: reason }];
   }
 
   const rawEvent: JsonRpcMessage = {

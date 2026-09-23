@@ -13,7 +13,6 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { access, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { promisify } from "node:util";
-import { z } from "zod";
 import { describe, expect, it } from "vitest";
 
 const execFileAsync = promisify(execFile);
@@ -23,10 +22,6 @@ const desktopPackageRoot = process.cwd();
 const ELECTRON_STARTUP_TIMEOUT_MS = 15_000;
 const ELECTRON_EXIT_TIMEOUT_MS = 5_000;
 const ELECTRON_POST_READY_SETTLE_MS = 300;
-
-const desktopPackageJsonSchema = z.object({
-  version: z.string().min(1),
-});
 
 interface DesktopSmokeServer {
   close(): Promise<void>;
@@ -307,21 +302,29 @@ async function stopElectron(
   await waitForProcessExit(child, ELECTRON_EXIT_TIMEOUT_MS);
 }
 
-async function readDesktopPackageVersion(): Promise<string> {
-  const packageJsonText = await readFile(
-    resolve(desktopPackageRoot, "package.json"),
-    "utf8",
-  );
-  return desktopPackageJsonSchema.parse(JSON.parse(packageJsonText)).version;
+async function readExpectedDesktopVersion(): Promise<string> {
+  try {
+    return (await readFile(
+      resolve(desktopPackageRoot, ".cloudroom-version"),
+      "utf8",
+    )).trim();
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return "dev";
+    }
+    throw error;
+  }
 }
 
 describe("desktop build", () => {
   it("emits package-compatible Electron entries", async () => {
-    const desktopVersion = await readDesktopPackageVersion();
+    const desktopVersion = await readExpectedDesktopVersion();
+    expect(desktopVersion).toMatch(/^(v[1-9]\d*|dev)$/);
 
     await execFileAsync(process.execPath, ["scripts/build.mjs"], {
       cwd: desktopPackageRoot,
     });
+    expect(await readExpectedDesktopVersion()).toBe(desktopVersion);
 
     const mainSource = await readFile(
       resolve(desktopPackageRoot, "dist", "main.js"),
@@ -338,8 +341,9 @@ describe("desktop build", () => {
 
     expect(mainSource).toContain('"use strict";');
     expect(mainSource).not.toMatch(/^import\s/mu);
+    expect(mainSource).toContain(`version: getDesktopVersion("${desktopVersion}")`);
 
-    expect(preloadSource).toContain(desktopVersion);
+    expect(preloadSource).toContain(`version: getDesktopVersion("${desktopVersion}")`);
     expect(preloadSource).not.toContain("BB_DESKTOP_VERSION");
     expect(preloadSource).not.toContain("getDesktopVersion(process.env");
 

@@ -11,5 +11,5 @@ export function isPluginSdkRangeSatisfied(range: string): boolean {
 }
 
 export function pluginSdkRangeProblem(range: string): string {
-  return `requires bb plugin SDK ${range}, running SDK is ${PLUGIN_SDK_VERSION}`;
+  return `requires Room plugin SDK ${range}, running SDK is ${PLUGIN_SDK_VERSION}`;
 }

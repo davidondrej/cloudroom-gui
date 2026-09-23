@@ -1,5 +1,7 @@
 import {
+  findEnvironmentPathClaim,
   getEnvironment,
+  getPreparingEnvironment,
   getThread,
   type EnvironmentRow,
   type DbTransaction,
@@ -262,6 +264,18 @@ export async function ensureThreadProvisionEnvironmentReady(
   }
   if (environment === null)
     throw new ApiError(404, "environment_not_found", "Environment not found");
+  if (
+    context.state.environmentId === environment.id &&
+    thread.environmentId === environment.id &&
+    environment.path !== null &&
+    findEnvironmentPathClaim(
+      deps.db,
+      environment.hostId,
+      environment.path.replace(/\/+$/u, "") || "/",
+      getPreparingEnvironment(deps.db, thread.id),
+    ) !== null
+  )
+    return null;
   await advanceEnvironmentProvisioning(deps, {
     environmentId: environment.id,
     threadId: thread.id,

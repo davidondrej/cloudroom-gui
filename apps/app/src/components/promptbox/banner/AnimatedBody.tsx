@@ -33,7 +33,7 @@ export function AnimatedBody({
         isExpanded
           ? "grid-rows-[1fr] border-t border-border opacity-100"
           : cn(
-              "pointer-events-none grid-rows-[0fr] opacity-0",
+              "pointer-events-none w-0 min-w-full grid-rows-[0fr] opacity-0",
               collapsedBorder === "reserve" && "border-t border-transparent",
             ),
       )}

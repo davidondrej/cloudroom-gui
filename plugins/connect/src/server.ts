@@ -26,7 +26,7 @@ export default async function plugin(bb: BbPluginApi) {
       type: "boolean",
       label: "Tell agents about remote access",
       description:
-        "When you use BB remotely, tell agents to share servers through Connect. Applies to new agent sessions.",
+        "When you use Room remotely, tell agents to share servers through Cloudroom Connect. Applies to new agent sessions.",
       default: true,
     },
   });
@@ -91,8 +91,8 @@ export default async function plugin(bb: BbPluginApi) {
           REMOTE_ACTIVITY_INSTRUCTIONS_MS);
     if (!recent) return null;
     return (
-      `The user is currently viewing this bb remotely at ${status.url}. ` +
-      "Port shares work from a thread on any enrolled host: when you start an HTTP server they should see, run `bb connect expose <port>` from that thread. " +
+      `The user is currently viewing this Room remotely at ${status.url}. ` +
+      "Port shares work from a thread on any enrolled host: when you start an HTTP server they should see, run `room connect expose <port>` from that thread. " +
       "The command returns the correct public URL for the thread's host; give it to them as a markdown link because a localhost URL will not work remotely."
     );
   });

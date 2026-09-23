@@ -25,20 +25,20 @@ export default async function plugin(bb: BbPluginApi) {
     pluginAuthoring: {
       type: "boolean",
       label: "Plugin authoring skill",
-      description: "Create and change BB plugins and SDK extensions.",
+      description: "Create and change Room plugins and SDK extensions.",
       default: true,
     },
     skillCreator: {
       type: "boolean",
       label: "Skill creator skill",
-      description: "Create and improve BB skills.",
+      description: "Create and improve Room skills.",
       default: true,
     },
     submitPlugin: {
       type: "boolean",
       label: "Plugin submission skill",
       description:
-        "Prepare and submit a BB plugin to the Community marketplace.",
+        "Prepare and submit a plugin to the Community marketplace.",
       default: true,
     },
   });

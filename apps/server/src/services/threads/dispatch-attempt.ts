@@ -291,12 +291,15 @@ export function attemptDispatch(
   return runDispatchAttempt(deps, args, false);
 }
 
+import { teleportBlocked } from "../cloudroom/store.js";
+
 async function runDispatchAttempt(
   deps: LoggedPendingInteractionWorkSessionDeps,
   args: DispatchAttemptArgs,
   reattempted: boolean,
 ): Promise<DispatchAttemptOutcome> {
   const { payload, thread } = args;
+  if (teleportBlocked(deps.db, thread.id) || getThread(deps.db, thread.id)?.executionTarget === "cloud") throw new ApiError(409, "teleport_in_progress", "Local dispatch is blocked during or after Teleport.");
   // A stopping thread is writable HERE and nowhere upstream: the checkpoint
   // below turns it into a core wait, which is a truthful "not yet" the row can
   // recover from, rather than the 409 that used to make a stop a dead end for

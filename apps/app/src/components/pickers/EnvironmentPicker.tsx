@@ -24,6 +24,11 @@ import {
 } from "@bb/shared-ui/coarse-pointer-sizing";
 import { LIST_HOVER_TRANSITION } from "@bb/shared-ui/motion";
 import { MachineStatusDot } from "@/components/machines/MachineStatusDot";
+import {
+  CLOUDROOM_CLOUD_PRIMARY,
+  CLOUDROOM_CLOUD_WORKTREE,
+  cloudroomEnvironmentPresentation,
+} from "@/lib/cloudroom-environment-label";
 import { REUSE_ENVIRONMENT_ICON_NAME } from "@/lib/environment-workspace-display";
 import { formatRelativeTime } from "@/lib/relative-time";
 import { formatHostUpdateStatus } from "@/lib/host-update-status";
@@ -50,6 +55,7 @@ interface SelectedEnvironment {
   modeLabel: string;
   compactModeLabel: string;
   icon: IconName;
+  usePlaceIcon?: boolean;
 }
 
 const MACHINE_CONTEXTUAL_MENU_MIN_OPTIONS = 3;
@@ -267,20 +273,30 @@ export function EnvironmentPickerUI({
   const selected = useMemo((): SelectedEnvironment => {
     if (cloud?.selected) {
       return {
-        modeLabel: "Cloud · Primary checkout",
-        compactModeLabel: "Cloud",
+        modeLabel: CLOUDROOM_CLOUD_PRIMARY,
+        compactModeLabel: CLOUDROOM_CLOUD_PRIMARY,
         icon: "Cloud",
+        usePlaceIcon: true,
       };
     }
     if (cloud && selectedProvider) {
-      const label =
-        selectedProvider.id === "project-checkout"
-          ? "Primary checkout"
-          : selectedProvider.displayName;
+      const localPresentation = cloudroomEnvironmentPresentation(
+        selectedProvider.id,
+        "local",
+      );
+      if (localPresentation !== null) {
+        return {
+          modeLabel: localPresentation.label,
+          compactModeLabel: localPresentation.label,
+          icon: localPresentation.icon,
+          usePlaceIcon: true,
+        };
+      }
       return {
-        modeLabel: `${availableHost?.name ?? "Local"} · ${label}`,
-        compactModeLabel: label,
-        icon: pluginIconName(selectedProvider.icon),
+        modeLabel: `Local · ${selectedProvider.displayName}`,
+        compactModeLabel: selectedProvider.displayName,
+        icon: "Laptop",
+        usePlaceIcon: true,
       };
     }
     if (
@@ -368,7 +384,9 @@ export function EnvironmentPickerUI({
           )}
         >
           <span className={OPTION_TRIGGER_CONTENT_CLASS_NAME}>
-            {cloud?.selected || selectedProvider === undefined ? (
+            {cloud?.selected ||
+            selected.usePlaceIcon ||
+            selectedProvider === undefined ? (
               <Icon
                 name={isLoading ? "Spinner" : selected.icon}
                 className={cn(
@@ -460,37 +478,68 @@ export function EnvironmentPickerUI({
             >
               {cloud ? (
                 <>
-                  <EnvironmentOptionsSection
-                    hostId={hostId}
-                    hostName={availableHost?.name ?? "Local"}
-                    hostUnavailableReason={hostUnavailableReason}
-                    value={cloud.selected ? "" : value}
-                    environmentProviders={scopedProviders(
-                      environmentProviders,
-                      providersByHostId,
-                      hostId,
-                      { value, selectedProviderHostId },
-                    )
-                      .filter((provider) =>
-                        ["project-checkout", "git-worktree"].includes(
-                          provider.id,
-                        ),
+                  <CommandGroup>
+                    {hostUnavailableReason !== null ? (
+                      <CommandItem
+                        value="host-unavailable"
+                        disabled
+                        className="whitespace-normal break-words text-xs text-muted-foreground"
+                      >
+                        {hostUnavailableReason}
+                      </CommandItem>
+                    ) : onSelectProvider !== undefined && hostId !== null ? (
+                      scopedProviders(
+                        environmentProviders,
+                        providersByHostId,
+                        hostId,
+                        { value, selectedProviderHostId },
                       )
-                      .map((provider) =>
-                        provider.id === "project-checkout"
-                          ? { ...provider, displayName: "Primary checkout" }
-                          : provider,
-                      )}
-                    selectedProviderHostId={selectedProviderHostId}
-                    inputsControlProviderIds={inputsControlProviderIds}
-                    onSelectProvider={
-                      onSelectProvider ? selectProvider : undefined
-                    }
-                  />
-                  <CommandGroup heading="Cloud">
+                        .flatMap((provider) => {
+                          const presentation = cloudroomEnvironmentPresentation(
+                            provider.id,
+                            "local",
+                          );
+                          return presentation === null
+                            ? []
+                            : [{ provider, presentation }];
+                        })
+                        .sort(
+                          (left, right) =>
+                            Number(left.provider.id !== "project-checkout") -
+                            Number(right.provider.id !== "project-checkout"),
+                        )
+                        .map(({ provider, presentation }) => {
+                          const disabledReason = providerDisabledReason(
+                            provider,
+                            inputsControlProviderIds,
+                          );
+                          return (
+                            <EnvironmentMenuItem
+                              key={provider.id}
+                              value={`provider:${hostId}:${provider.id}`}
+                              label={presentation.label}
+                              description={providerDescription(
+                                provider,
+                                inputsControlProviderIds,
+                              )}
+                              icon={presentation.icon}
+                              selected={
+                                !cloud.selected &&
+                                providerValueSelected(value, provider) &&
+                                selectedProviderHostId === hostId
+                              }
+                              disabled={disabledReason !== null}
+                              onSelect={() => selectProvider(provider, hostId)}
+                            />
+                          );
+                        })
+                    ) : null}
+                  </CommandGroup>
+                  <CommandSeparator className="mx-0 shrink-0" />
+                  <CommandGroup>
                     <EnvironmentMenuItem
                       value="cloud:primary-checkout"
-                      label="Primary checkout"
+                      label={CLOUDROOM_CLOUD_PRIMARY}
                       icon="Cloud"
                       selected={cloud.selected}
                       description={cloud.unavailableReason ?? undefined}
@@ -502,8 +551,8 @@ export function EnvironmentPickerUI({
                     />
                     <EnvironmentMenuItem
                       value="cloud:worktree"
-                      label="Worktree"
-                      icon="FolderGit"
+                      label={CLOUDROOM_CLOUD_WORKTREE}
+                      icon="Cloud"
                       selected={false}
                       description="Cloud worktrees are not supported yet"
                       disabled

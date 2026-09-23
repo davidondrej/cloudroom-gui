@@ -28,6 +28,7 @@ import {
   experimental_defineProviderBridge,
 } from "@get-bb/plugin-sdk/provider-bridge";
 import { randomUUID } from "node:crypto";
+import { checkCommand } from "@get-bb/plugin-sdk/internal/command-guard";
 import { join as joinPath, resolve as resolvePath } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import {
@@ -1203,6 +1204,21 @@ function buildTrackedSessionOptions(
     env,
   );
   sessionOptions.hooks = buildSessionTrackingHooks(threadIdRef);
+  if (params.commandGuardEnabled !== false) {
+    sessionOptions.hooks.PreToolUse!.unshift({
+      matcher: "Bash",
+      hooks: [async (input) => {
+        if (input.hook_event_name !== "PreToolUse" || input.tool_name !== "Bash") return {};
+        const command = (input.tool_input as { command?: unknown }).command;
+        const reason = typeof command === "string" ? checkCommand(command) : "Cloudroom Command Guard could not inspect this command. Execution blocked.";
+        return reason ? { hookSpecificOutput: {
+          hookEventName: "PreToolUse",
+          permissionDecision: "deny",
+          permissionDecisionReason: reason,
+        } } : {};
+      }],
+    });
+  }
   sessionOptions.recordThreadId = () => threadIdRef.current;
   return sessionOptions;
 }

@@ -13,6 +13,7 @@ export const SETTINGS_NAV_SECTIONS = [
   { icon: "PackageReceive", id: "updates", label: "Updates" },
   { icon: "ElectricPlugs", id: "plugins", label: "Installed plugins" },
   { icon: "Puzzle", id: "marketplaces", label: "Plugin marketplaces" },
+  { icon: "Lock", id: "command-guard", label: "Command Guard" },
   { icon: "Beaker", id: "experiments", label: "Experiments" },
   { icon: "MessageSquare", id: "community", label: "Community" },
   { icon: "Archive", id: "archived", label: "Archived threads" },

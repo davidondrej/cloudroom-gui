@@ -349,7 +349,7 @@ describe("task delegation", () => {
       harness.callRpc("delegate", { taskId: task.id, presetId: preset.id }),
     ).rejects.toMatchObject({
       code: "handler_error",
-      message: 'Task project "Unlinked" is not linked to a bb project',
+      message: 'Task project "Unlinked" is not linked to a Room project',
     });
     expect(harness.sdk.callsTo("threads.spawn")).toEqual([]);
 
@@ -588,7 +588,7 @@ describe("delegation seed prompt", () => {
       ## Attachments
 
       - delegation-notes.md · 01J00000000000000000000006
-        Fetch with: bb tasks attachment get 01J00000000000000000000006 --out <path>
+        Fetch with: room tasks attachment get 01J00000000000000000000006 --out <path>
 
       ## Recent comments
 
@@ -602,7 +602,7 @@ describe("delegation seed prompt", () => {
 
       ## Report-back contract
 
-      You are working on task TASK-1. Use the bb tasks CLI: comment substantive updates (bb tasks comment TASK-1 --body ...), attach result artifacts, set status when done (bb tasks update TASK-1 --status in_review) or explain blockage in a comment. Your thread is already attached to the task.
+      You are working on task TASK-1. Use the room tasks CLI: comment substantive updates (room tasks comment TASK-1 --body ...), attach result artifacts, set status when done (room tasks update TASK-1 --status in_review) or explain blockage in a comment. Your thread is already attached to the task.
 
       ## Preset instructions
 

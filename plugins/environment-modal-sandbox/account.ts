@@ -111,7 +111,7 @@ export function registerRpcAndCli(
     return dockerfileSchema.parse(result.content);
   }
   const usage =
-    "Usage: bb modal machine inspect HOST_ID [--json] | bb modal account inspect [--json] | bb modal image show [--json] | bb modal image set --file PATH [--json] | bb modal image reset [--json] | bb modal image build [--json] | bb modal sandbox run [--json] | bb modal sandbox exec ID [--json] -- COMMAND... | bb modal sandbox stop ID [--json]";
+    "Usage: room modal machine inspect HOST_ID [--json] | room modal account inspect [--json] | room modal image show [--json] | room modal image set --file PATH [--json] | room modal image reset [--json] | room modal image build [--json] | room modal sandbox run [--json] | room modal sandbox exec ID [--json] -- COMMAND... | room modal sandbox stop ID [--json]";
   type CliResult = {
     exitCode: number;
     stdout?: string;
@@ -252,47 +252,47 @@ export function registerRpcAndCli(
       {
         name: "machine-inspect",
         summary: "Inspect Modal compute and the last saved snapshot",
-        usage: "bb modal machine inspect HOST_ID [--json]",
+        usage: "room modal machine inspect HOST_ID [--json]",
       },
       {
         name: "image-build",
         summary: "Build or reuse the saved image",
-        usage: "bb modal image build [--json]",
+        usage: "room modal image build [--json]",
       },
       {
         name: "sandbox-run",
         summary: "Run the saved image in a 30-minute debug sandbox",
-        usage: "bb modal sandbox run [--json]",
+        usage: "room modal sandbox run [--json]",
       },
       {
         name: "sandbox-exec",
         summary: "Execute a command in a debug sandbox",
-        usage: "bb modal sandbox exec ID [--json] -- COMMAND...",
+        usage: "room modal sandbox exec ID [--json] -- COMMAND...",
       },
       {
         name: "sandbox-stop",
         summary: "Stop a debug sandbox",
-        usage: "bb modal sandbox stop ID [--json]",
+        usage: "room modal sandbox stop ID [--json]",
       },
       {
         name: "image-show",
         summary: "Show the Dockerfile used for new machines",
-        usage: "bb modal image show [--json]",
+        usage: "room modal image show [--json]",
       },
       {
         name: "image-set",
         summary: "Save a Dockerfile for future machines",
-        usage: "bb modal image set --file PATH [--json]",
+        usage: "room modal image set --file PATH [--json]",
       },
       {
         name: "image-reset",
         summary: "Restore the bundled Dockerfile",
-        usage: "bb modal image reset [--json]",
+        usage: "room modal image reset [--json]",
       },
       {
         name: "account-inspect",
         summary: "Test the configured Modal account",
-        usage: "bb modal account inspect [--json]",
+        usage: "room modal account inspect [--json]",
       },
     ],
     async run(argv, context) {

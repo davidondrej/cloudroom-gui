@@ -223,6 +223,24 @@ afterEach(() => {
 });
 
 describe("ThreadRow", () => {
+  it.each([
+    { executionTarget: "local", icon: "Laptop", label: "Local thread" },
+    { executionTarget: "cloud", icon: "Cloud", label: "Cloud thread" },
+    { executionTarget: undefined, icon: "Laptop", label: "Local thread" },
+  ] as const)(
+    "shows a muted $icon before the title for executionTarget=$executionTarget",
+    ({ executionTarget, icon, label }) => {
+      renderThreadRow({ thread: createThread({ executionTarget }) });
+
+      const locationIcon = screen.getByLabelText(label);
+      expect(locationIcon.getAttribute("data-icon")).toBe(icon);
+      expect(locationIcon.classList.contains("text-muted-foreground")).toBe(true);
+      expect(locationIcon.classList.contains("opacity-50")).toBe(true);
+      expect(locationIcon.nextElementSibling).toBe(screen.getByTitle("Thread"));
+      expect(screen.getByLabelText("Unread thread succeeded")).not.toBeNull();
+    },
+  );
+
   const splitWorkingCases: Array<{
     label: string;
     pluginStatus?: PluginComposerThreadRowStatus;

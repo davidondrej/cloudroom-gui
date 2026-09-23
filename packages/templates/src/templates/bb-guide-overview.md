@@ -1,7 +1,7 @@
 ---
 kind: instruction
-title: bb Guide Overview
-summary: System overview and chapter index for the bb CLI guide.
+title: Room Guide Overview
+summary: System overview and chapter index for the Room CLI guide.
 intent: Orient agents to room core concepts and help them find the right guide chapter.
 editingNotes: Keep this concise. Concepts only — command details belong in chapter files.
 ---
@@ -26,7 +26,7 @@ Context variables set automatically inside a thread environment:
 - ROOM_CLI — absolute path to Cloudroom's daemon-managed `room` executable; `room` re-execs to this path when needed. Official BB is separate.
 
 Run `room status` to see your current context (resolved project and thread IDs).
-It also warns when an enabled plugin is not running (incompatible after a bb
+It also warns when an enabled plugin is not running (incompatible after a Room
 upgrade, failed to load, or missing); run `room plugin list` for the detail.
 
 All commands support --json for machine-readable output.

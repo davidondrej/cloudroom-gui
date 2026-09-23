@@ -96,7 +96,10 @@ export function applyCachedAppThemeCss(): void {
   } catch {
     cached = null;
   }
-  if (!cached) return;
+  if (!cached) {
+    applyAppThemeCss(defaultThemeCss);
+    return;
+  }
   const style = getOrCreateStyleElement();
   if (style && style !== document.head.lastElementChild) {
     document.head.appendChild(style);

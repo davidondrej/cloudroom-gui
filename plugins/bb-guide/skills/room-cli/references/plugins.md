@@ -6,14 +6,14 @@
   it with services, schedules, HTTP/RPC endpoints, settings — and `room` CLI
   subcommands that agents run through bash like any other command.
 - Use `room plugin list` to inspect installed plugins and their current state.
-- **BB plugin catalog** (store under `/api/v1/plugin-catalog`):
+- **Room plugin catalog** (store under `/api/v1/plugin-catalog`):
   - The reserved **BB Official marketplace** has the name `bb-official`. It
     describes all plugins in the app bundle with a generated v2 document.
     Its source is a local path. It never uses the network. It appears first in
     `room marketplace list`. Its plugins appear in the first Browse shelf, BB
     Official, and in their category shelves. It can be neither added nor
     removed.
-  - The store lists the **BB Community marketplace** catalog: a manifest
+  - The store lists the **BB Marketplace** catalog: a manifest
     the server re-reads at startup and every two hours from
     `https://getbb.app/marketplace/v2/marketplace.json`. A 404 response causes
     one fallback request to `https://getbb.app/marketplace/v1/marketplace.json`
@@ -36,14 +36,14 @@
   - `room marketplace add <source>` — add a marketplace from an https manifest
     URL, `git:<url>[@<ref>]` (room reads `marketplace.json` from the checkout),
     or `path:<directory>`. The CLI resolves a relative path from its current
-    directory before it sends the request. BB validates the
+    directory before it sends the request. Room validates the
     manifest, caches the catalog, and fetches its icons. **Adding a
     marketplace installs nothing.** The manifest's own `name` is the
     marketplace's identity, so a name collision is refused. The `bb-official`
     and `bb-community` names are reserved. You can add or remove neither one.
     A third-party manifest can use v1 or v2. The server serves its icons.
     The detail page loads screenshots from the declared URLs.
-    BB ignores unknown v2 fields, except in npm and git source objects. BB
+    Room ignores unknown v2 fields, except in npm and git source objects. Room
     rejects unknown source keys because a source key changes the installed
     code.
   - `room marketplace list [--json]` — name, source, entry count, last refresh.
@@ -71,7 +71,7 @@
   - `room plugin install <src>` — `<entry-id>@<marketplace>`, an HTTP(S) Git
     repository URL, a local path,
     `git:<url>[@<ref|semver-range>]`, or `npm:<package>[@<version|tag|range>]`
-    (using BB's shipped npm). Repository URLs and prefixes `path:` /
+    (using Room's shipped npm). Repository URLs and prefixes `path:` /
     `npm:` / `git:` skip catalog resolution. To pin or
     range an npm package, install with `npm:<package>@…`.
     Omit the npm spec to track compatible stable releases; ranges and dist-tags
@@ -143,10 +143,10 @@
   - `room plugin run <id> [args...]` — explicit form; collisions log an activation
     warning and are annotated by `room plugin list`.
   - `room plugin new <name>` — scaffold a todo-list plugin (`server.ts`,
-    `app.tsx` with a sidebar page, a `bb <name>` CLI command, a skill, and
+    `app.tsx` with a sidebar page, a `room <name>` CLI command, a skill, and
     vendored UI components) and install its npm dependencies (scaffold sets
     `engines.bbPluginSdk` to `>=0.4.3`). The
-    scaffold depends on `@get-bb/plugin-sdk`, pinned to this bb's exact SDK
+    scaffold depends on `@get-bb/plugin-sdk`, pinned to this Room's exact SDK
     version in `devDependencies`, so the API declarations arrive with
     `npm install` at `node_modules/@get-bb/plugin-sdk/bundled-types/*.d.ts`
     (no vendored `types/`). If that version is not on npm yet, it warns and
@@ -163,11 +163,11 @@
     by that digest, and run it as a host RPC worker, a provider bridge, or
     both). None of it needs the server.
   - `room plugin types [path]` — sync the plugin's `@get-bb/plugin-sdk` surface
-    to the running bb (default: cwd). For a plugin that depends on the npm
-    package it rewrites the exact `devDependencies` pin to this bb's SDK
+    to the running Room (default: cwd). For a plugin that depends on the npm
+    package it rewrites the exact `devDependencies` pin to this Room's SDK
     version and brings the type-only devDependencies of the packages room shims
     at runtime (sonner, vaul, the portal radix families, @pierre/diffs, clsx,
-    tailwind-merge, class-variance-authority) to this bb's versions — adding
+    tailwind-merge, class-variance-authority) to this Room's versions — adding
     any an app plugin is missing and moving one out of `dependencies`
     (reporting old → new, and reminding you to `npm install`); for a
     plugin that still vendors declarations it rewrites `types/*.d.ts`, creating
@@ -178,7 +178,7 @@
     server.
   - `room plugin migrate [path] [--yes]` — convert a plugin that still vendors
     `types/` to the `@get-bb/plugin-sdk` npm package (default: cwd): add the
-    exact `devDependencies` pin, raise `engines.bbPluginSdk` when this bb's SDK
+    exact `devDependencies` pin, raise `engines.bbPluginSdk` when this Room's SDK
     is newer than the declared floor, move an SDK entry declared in
     `dependencies` into `devDependencies`, drop the `@get-bb/plugin-sdk` (and
     pre-rename `@bb/plugin-sdk`) entries from `compilerOptions.paths` (other

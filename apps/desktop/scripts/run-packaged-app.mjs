@@ -6,9 +6,10 @@ import {
   resolveDesktopReleaseChannel,
 } from "./desktop-release-channel.mjs";
 import { resolvePackagedAppBinary } from "./packaged-app-paths.mjs";
+import { unregisterBundle } from "./macos-bundle.mjs";
 
 const packageRoot = process.cwd();
-const releaseDir = join(packageRoot, "release");
+const releaseDir = join(packageRoot, "release.noindex");
 const releaseConfig = createDesktopReleaseConfig(
   resolveDesktopReleaseChannel(process.env),
 );
@@ -36,4 +37,8 @@ const child = spawn(
   },
 );
 
-await forwardSignalsAndMirrorExit(child);
+try {
+  await forwardSignalsAndMirrorExit(child);
+} finally {
+  if (process.platform === "darwin") await unregisterBundle(releaseDir);
+}

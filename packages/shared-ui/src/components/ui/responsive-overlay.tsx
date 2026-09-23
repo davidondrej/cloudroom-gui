@@ -374,6 +374,7 @@ interface PersistentResponsiveDrawerShellProps {
   srLabel?: string;
   labelledBy?: string;
   describedBy?: string;
+  backdropClassName?: string;
   contentClassName?: string;
   motionDurationMs?: number;
   onContentAnimationEnd?: (open: boolean) => void;
@@ -603,6 +604,7 @@ export function PersistentResponsiveDrawerShell({
   srLabel,
   labelledBy,
   describedBy,
+  backdropClassName,
   contentClassName,
   motionDurationMs = 220,
   onContentAnimationEnd,
@@ -758,7 +760,7 @@ export function PersistentResponsiveDrawerShell({
         aria-hidden="true"
         data-persistent-drawer-backdrop=""
         data-state={open ? "open" : "closed"}
-        className="fixed inset-0 z-50 bg-black/40"
+        className={cn("fixed inset-0 z-50 bg-black/40", backdropClassName)}
         style={{
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",

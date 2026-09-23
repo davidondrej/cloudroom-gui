@@ -10,7 +10,7 @@ interface GuideCommandOptions {
 export function registerGuideCommand(program: Command): void {
   program
     .command("guide [chapter]")
-    .description("Show the BB system overview and CLI guide")
+    .description("Show the Room system overview and CLI guide")
     .option("--json", "Print machine-readable JSON output")
     .action(
       action(async (chapter: string | undefined, opts: GuideCommandOptions) => {

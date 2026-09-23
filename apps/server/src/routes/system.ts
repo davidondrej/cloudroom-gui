@@ -57,6 +57,7 @@ import {
 import {
   listSystemProviderInfos,
   resolveSystemExecutionOptions,
+  restartSystemModelDiscovery,
 } from "../services/system/execution-options.js";
 import { getProviderStates } from "../services/system/provider-states.js";
 import { getProviderUsageLimits } from "../services/system/usage-limits.js";
@@ -268,6 +269,7 @@ export function registerSystemRoutes(
     const updatedSettings = appSettingsSchema.parse({
       ...settings,
       telemetryEnabled: settings.telemetryEnabled ?? current.telemetryEnabled,
+      commandGuardEnabled: settings.commandGuardEnabled ?? current.commandGuardEnabled,
       showDiagnosticEvents:
         diagnosticValue === undefined ||
         (showUnhandledProviderEvents !== undefined &&
@@ -575,6 +577,10 @@ export function registerSystemRoutes(
 
   get(routes.executionOptions, async (context, query) =>
     context.json(await resolveSystemExecutionOptions(deps, query)),
+  );
+
+  post(routes.restartModelDiscovery, async (context, body) =>
+    context.json(await restartSystemModelDiscovery(deps, body)),
   );
 
   post(routes.voiceTranscription, async (context) => {

@@ -7,20 +7,28 @@ contains `url`, `token`, and `projectId`, with permissions `0600`. Configure it
 through `POST /api/v1/cloudroom`; remote core URLs require HTTPS. See
 [Cloudroom](cloudroom.md) for the pilot's setup, supported operations, and limits.
 
+Cloud Codex first reuses an existing local file-backed login when the VM has none. **Connect Codex** is the fallback; ongoing two-way token-file sync remains disabled. Use `room cloudroom codex status --json`, `login --request-id ID`, or `cancel ID`; see [the login flow](cloudroom.md#connect-codex). No environment variable or API key is required.
+
 ## Cloudroom CLI
 
 Use `room`, not official BB's `bb`. Standalone `room` defaults to `http://127.0.0.1:39886` and daemon port `39887`. `room status --json` reports the selected server and profile. The same backend controls Local and Cloud threads.
 
-Cloudroom supplies these automatically to Local agent shells:
+Cloudroom supplies these automatically to Local agent shells and thread-scoped terminals:
 
 - `ROOM_SERVER_URL`, `ROOM_HOST_DAEMON_PORT`: GUI backend and local daemon addresses; not the cloud VM.
 - `ROOM_CLI`, `ROOM_CLI_REEXEC`: runtime-matched executable and internal re-execution guard. Do not set the guard manually.
-- `ROOM_PROJECT_ID`, `ROOM_THREAD_ID`, `ROOM_ENVIRONMENT_ID`, `ROOM_THREAD_STORAGE`: current Local thread context. Explicit thread IDs can target either Local or Cloud threads.
+- `ROOM_PROJECT_ID`, `ROOM_THREAD_ID`, `ROOM_ENVIRONMENT_ID`, `ROOM_THREAD_STORAGE`: current Local thread context. Explicit thread IDs can target either Local or Cloud threads. Machine-only and environment-only terminals do not inherit thread context.
 - `ROOM_DATA_DIR`: the selected Cloudroom profile for CLI-local files.
 
 The CLI ignores the corresponding `BB_*` variables. Service launchers still use their existing `BB_*` configuration below; package names, database files, and workspace hooks have not been renamed. No new credentials or cloud VM permissions are involved.
 
 From `gui/`, use `pnpm room -- status --json` for the installed app or `pnpm room:dev -- status --json` for this checkout's development instance. For a custom instance, set `ROOM_SERVER_URL`, `ROOM_HOST_DAEMON_PORT`, and `ROOM_DATA_DIR` together. Clear old `ROOM_*` thread context when intentionally switching instances.
+
+## Packaged Cloudroom desktop
+
+The installed app uses server `39886`, daemon `39887`, and `~/.gui-cloudroom/`. It ignores inherited BB connection settings and saved BB port/profile overrides, without changing those files or provider settings. For an isolated desktop instance, set the existing `ROOM_SERVER_URL` (local HTTP only), `ROOM_HOST_DAEMON_PORT`, and `ROOM_DATA_DIR` together. Source/dev launchers retain their `BB_*` configuration.
+
+Startup failures show the service log path and recent output. An occupied Cloudroom port is reported; the app does not kill its owner or silently pick another port.
 
 ## BB configuration
 
@@ -163,21 +171,21 @@ signal it, so a stale file left by a crash cannot stop an unrelated process.
 
 ## Common Keys
 
-| Key                     | Command                                            | When to set             | Used for                                                                                                                                                                                                                                                                                                                                                                                                       |
-| ----------------------- | -------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BB_APP_URL`            | `bb-app config`                                    | Optional for remote use | Human-facing app URL used for generated links and allowed browser origins. Leave empty for local-only use.                                                                                                                                                                                                                                                                                                     |
-| `BB_INFERENCE`          | `bb-app config`                                    | Optional                | Primary server-side helper model in `<service>/<model>` format, where `<service>` is an AI service a loaded plugin registers (`bb settings ai-services` lists them; `codex` comes with the codex plugin and uses the codex CLI's credentials with no reasoning) or a pi-ai provider the server calls directly with its API key. Defaults to `codex/gpt-5.6-luna`.                                              |
-| `BB_INFERENCE_FALLBACK` | `bb-app config`                                    | Optional                | Helper model used after a transient primary timeout, rate limit, or service-unavailable failure. Defaults to `codex/gpt-5.4-mini`.                                                                                                                                                                                                                                                                             |
-| `BB_TRANSCRIPTION`      | `bb-app config`                                    | Optional                | Voice transcription model in `<service>/<model>` format: a plugin-registered AI service (`codex` with the codex plugin; audio up to 5MB) or `openai/<model>` with `OPENAI_API_KEY`. Defaults to `codex/gpt-transcribe`.                                                                                                                                                                                        |
-| `BB_MARKETPLACE_URL`    | `bb-app env`, or environment                       | Startup-only testing    | Manifest URL of the reserved `bb-community` plugin marketplace. It defaults to `https://getbb.app/marketplace/v2/marketplace.json`. If the default v2 request returns 404, the server requests v1. Set another URL to test catalog refreshes. The server requests that URL without fallback. It changes only `bb-community`. Add other marketplaces with `bb marketplace add`. Restart the app after a change. |
-| `BB_SERVER_URL`         | `bb-app config`                                    | Remote CLI/host use     | Server URL for standalone `bb` CLI and `host-daemon` commands on the current machine. The CLI defaults to `http://127.0.0.1:38886` when unset.                                                                                                                                                                                                                                                                 |
-| `BB_SERVER_BIND_HOST`   | `bb-app env`, environment, or `--server-bind-host` | Startup-only            | Server listener host. Defaults to `127.0.0.1`; accepts only `127.0.0.1` or `0.0.0.0`. A full launcher or desktop app restart is required; until then, a previous `0.0.0.0` listener remains exposed. This is not a `bb-app config` key.                                                                                                                                                                        |
-| `BB_SERVER_PORT`        | `bb-app env`, environment, or `--server-port`      | Startup-only            | HTTP listener port. Defaults to `38886`. A full launcher or desktop app restart is required after a persistent set or unset.                                                                                                                                                                                                                                                                                   |
-| `BB_HOST_DAEMON_PORT`   | `bb-app env`, environment, or `--host-daemon-port` | Startup-only            | Local host-daemon API port. Defaults to `38887`. A full launcher or desktop app restart is required after a persistent set or unset.                                                                                                                                                                                                                                                                           |
-| `BB_LOG_LEVEL`          | `bb-app config`                                    | Startup-only debugging  | Log level: `trace`, `debug`, `info`, `warn`, `error`, or `fatal`. A full launcher or desktop app restart is required.                                                                                                                                                                                                                                                                                          |
-| `BB_ACCOUNT_POOL_PARENT_URL` | Set automatically by a parent bb server       | Nested bb servers       | Account Pooler hub of the bb server whose thread launched this one. When present the Account Pooler plugin is enabled on first run and defaults to proxying to that parent; `bb pool parent isolate` opts out. Not a `bb-app config` key.                                                                                                                                                                  |
-| `BB_ACCOUNT_POOL_PARENT_TOKEN` | Set automatically by a parent bb server     | Nested bb servers       | Machine token this nested server presents to the parent Account Pooler hub. Paired with `BB_ACCOUNT_POOL_PARENT_URL`; both must be well formed or proxying stays off. Not a `bb-app config` key.                                                                                                                                                                                                           |
-| `OPENAI_API_KEY`        | `bb-app env`                                       | OpenAI opt-in routes    | Required only when selecting explicit OpenAI provider routes such as `openai/gpt-4o-mini` or `openai/gpt-transcribe`.                                                                                                                                                                                                                                                                                          |
+| Key                            | Command                                            | When to set             | Used for                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------ | -------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BB_APP_URL`                   | `bb-app config`                                    | Optional for remote use | Human-facing app URL used for generated links and allowed browser origins. Leave empty for local-only use.                                                                                                                                                                                                                                                                                                     |
+| `BB_INFERENCE`                 | `bb-app config`                                    | Optional                | Primary server-side helper model in `<service>/<model>` format, where `<service>` is an AI service a loaded plugin registers (`bb settings ai-services` lists them; `codex` comes with the codex plugin and uses the codex CLI's credentials with no reasoning) or a pi-ai provider the server calls directly with its API key. Defaults to `codex/gpt-5.6-luna`.                                              |
+| `BB_INFERENCE_FALLBACK`        | `bb-app config`                                    | Optional                | Helper model used after a transient primary timeout, rate limit, or service-unavailable failure. Defaults to `codex/gpt-5.4-mini`.                                                                                                                                                                                                                                                                             |
+| `BB_TRANSCRIPTION`             | `bb-app config`                                    | Optional                | Voice transcription model in `<service>/<model>` format: a plugin-registered AI service (`codex` with the codex plugin; audio up to 5MB) or `openai/<model>` with `OPENAI_API_KEY`. Defaults to `codex/gpt-transcribe`.                                                                                                                                                                                        |
+| `BB_MARKETPLACE_URL`           | `bb-app env`, or environment                       | Startup-only testing    | Manifest URL of the reserved `bb-community` plugin marketplace. It defaults to `https://getbb.app/marketplace/v2/marketplace.json`. If the default v2 request returns 404, the server requests v1. Set another URL to test catalog refreshes. The server requests that URL without fallback. It changes only `bb-community`. Add other marketplaces with `bb marketplace add`. Restart the app after a change. |
+| `BB_SERVER_URL`                | `bb-app config`                                    | Remote CLI/host use     | Server URL for standalone `bb` CLI and `host-daemon` commands on the current machine. The CLI defaults to `http://127.0.0.1:38886` when unset.                                                                                                                                                                                                                                                                 |
+| `BB_SERVER_BIND_HOST`          | `bb-app env`, environment, or `--server-bind-host` | Startup-only            | Server listener host. Defaults to `127.0.0.1`; accepts only `127.0.0.1` or `0.0.0.0`. A full launcher or desktop app restart is required; until then, a previous `0.0.0.0` listener remains exposed. This is not a `bb-app config` key.                                                                                                                                                                        |
+| `BB_SERVER_PORT`               | `bb-app env`, environment, or `--server-port`      | Startup-only            | HTTP listener port. Defaults to `38886`. A full launcher or desktop app restart is required after a persistent set or unset.                                                                                                                                                                                                                                                                                   |
+| `BB_HOST_DAEMON_PORT`          | `bb-app env`, environment, or `--host-daemon-port` | Startup-only            | Local host-daemon API port. Defaults to `38887`. A full launcher or desktop app restart is required after a persistent set or unset.                                                                                                                                                                                                                                                                           |
+| `BB_LOG_LEVEL`                 | `bb-app config`                                    | Startup-only debugging  | Log level: `trace`, `debug`, `info`, `warn`, `error`, or `fatal`. A full launcher or desktop app restart is required.                                                                                                                                                                                                                                                                                          |
+| `BB_ACCOUNT_POOL_PARENT_URL`   | Set automatically by a parent bb server            | Nested bb servers       | Account Pooler hub of the bb server whose thread launched this one. When present the Account Pooler plugin is enabled on first run and defaults to proxying to that parent; `bb pool parent isolate` opts out. Not a `bb-app config` key.                                                                                                                                                                      |
+| `BB_ACCOUNT_POOL_PARENT_TOKEN` | Set automatically by a parent bb server            | Nested bb servers       | Machine token this nested server presents to the parent Account Pooler hub. Paired with `BB_ACCOUNT_POOL_PARENT_URL`; both must be well formed or proxying stays off. Not a `bb-app config` key.                                                                                                                                                                                                               |
+| `OPENAI_API_KEY`               | `bb-app env`                                       | OpenAI opt-in routes    | Required only when selecting explicit OpenAI provider routes such as `openai/gpt-4o-mini` or `openai/gpt-transcribe`.                                                                                                                                                                                                                                                                                          |
 
 By default, helper inference and voice transcription use Codex credentials from
 the host daemon. Run `codex login` on the host for the default path. Set
@@ -234,6 +242,15 @@ bb concurrency-limit status [--json]
 bb concurrency-limit global [unlimited|<limit>] [--json]
 bb concurrency-limit host <host-id> [auto|<limit>] [--json]
 ```
+
+The **Command Guard** toggle in Settings → Advanced → Command Guard defaults to on. It blocks a
+small set of catastrophic shell-command patterns in new Local Codex/Pi/Claude
+Code sessions and Cloud Codex/Pi sessions. Use
+`room settings general commandGuardEnabled <true|false>` or the existing
+`system.updateGeneralSettings` API. Start a new session after changing it.
+Personal guards and running commands are unchanged. Cloud starts require a core
+with `command_guard` support when enabled. This is accident prevention, not a
+sandbox; scripts, alternate tools, and obfuscated commands can bypass it.
 
 The "Show diagnostic events" toggle in Settings → General → Privacy & diagnostics shows provider
 environment resolution and raw provider events that bb does not yet understand.
@@ -364,7 +381,6 @@ uses `Mod+1…9`. The web aliases leave native browser `Mod+1…9` tab switching
 untouched. Previous and next thread use `Mod+Shift+[/]` on desktop and
 `Control+Shift+[/]` on the web.
 
-
 Plugin commands use `plugin:<plugin-id>/<command-id>` as their stable binding
 ID. For example: `bb settings keyboard set plugin:example/open-issue Mod+Shift+I`.
 `bb settings keyboard reset plugin:example/open-issue` restores the plugin's
@@ -390,7 +406,7 @@ delayed shortcut badges without disabling any shortcuts.
 | Threads   | New thread                                | `Mod+N` / `Mod+Shift+O`           | Desktop / web            |
 | Threads   | Search threads                            | `Mod+K`                           | All clients              |
 | Threads   | Rename focused thread                     | Unassigned                        | Thread view              |
-| Threads   | Archive focused thread                    | Unassigned                        | Thread view              |
+| Threads   | Archive focused thread                    | `Mod+W`                           | Thread view              |
 | Threads   | Previous / next thread                    | Surface defaults above            | Desktop / web            |
 | Threads   | Open visible thread 1–9                   | Platform defaults above           | Web / desktop            |
 | Layout    | Previous / next chat pane                 | Unassigned                        | While split              |
@@ -400,7 +416,7 @@ delayed shortcut badges without disabling any shortcuts.
 | Window    | New window                                | `Mod+Shift+N`                     | Desktop                  |
 | Window    | Settings                                  | `Mod+,`                           | All clients              |
 | Layout    | Toggle sidebar                            | `Mod+\`                           | All clients              |
-| Panel     | New tab / close tab / toggle              | `Mod+T` / `Mod+W` / `Mod+J`       | All clients              |
+| Panel     | New tab / close tab / toggle              | `Mod+T` / Unassigned / `Mod+J`    | All clients              |
 | Workspace | Quick open file / toggle diff             | `Mod+P` / `Mod+D`                 | All clients              |
 | Workspace | Open terminal                             | `Mod+Shift+Enter` / `Mod+Shift+T` | Web / desktop            |
 | Workspace | Open in preferred app                     | `Mod+O`                           | All clients              |
@@ -421,8 +437,8 @@ controls; when no matching command handles a chord, the control retains its
 native behavior.
 
 The desktop application menu uses the same resolved bindings for New Thread,
-New Window, New Tab, Close, and Settings. There is no separate menu shortcut
-configuration.
+New Window, New Tab, Archive Thread, Close, and Settings. There is no separate
+menu shortcut configuration.
 
 `BB_SERVER_URL` does not change where full `npx bb-app` startup binds locally.
 It is for commands that need to target an already-running server, such as the
@@ -712,7 +728,7 @@ client wrote first, so a stale window cannot silently clobber a newer value.
 | `sidebar.navigationProvider`      | Plugin key, `__automatic__`, or `__builtin__`       |
 | `sidebar.threadListProvider`      | Plugin key, `__automatic__`, or `__builtin__`       |
 
-Custom (`chronological`) is the default for `sidebar.organizationMode` when no
+By project (`project`) is the default for `sidebar.organizationMode` when no
 value is saved. Existing server and legacy browser choices are preserved.
 
 Read and write them with:

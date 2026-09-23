@@ -301,7 +301,7 @@ export function createProtocolSelfUpdater(
           if (response.status === 304 && installedDigest !== null) {
             options.logger.info(
               { artifactDigest: installedDigest },
-              "The server-matched bb host artifact is already installed; restarting the daemon.",
+              "The server-matched Room host artifact is already installed; restarting the daemon.",
             );
             return "updated";
           }
@@ -340,7 +340,7 @@ export function createProtocolSelfUpdater(
             serverProtocolVersion: server.protocolVersion,
             serverVersion: server.version,
           },
-          "Installed the server-matched bb host package; restarting the daemon.",
+          "Installed the server-matched Room host package; restarting the daemon.",
         );
         return "updated";
       } catch (error) {

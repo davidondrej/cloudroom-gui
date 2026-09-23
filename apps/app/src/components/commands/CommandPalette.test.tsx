@@ -85,6 +85,7 @@ const testState = vi.hoisted(() => ({
   overrides: [] as AppKeybindingOverrides,
   calls: [] as string[],
   filesAvailable: false,
+  searchProject: false,
   plugins: [] as Array<{
     enabled: boolean;
     hasSettings: boolean;
@@ -145,7 +146,7 @@ vi.mock("./ThreadPaletteResults", () => ({
       id: string;
       optionId: string;
       projectId: string;
-      threadId: string;
+      threadId: string | null;
       messageSeq: number | null;
     }) => void;
     query: string;
@@ -159,8 +160,8 @@ vi.mock("./ThreadPaletteResults", () => ({
           id: "active:thr_message",
           optionId: "thread-option",
           projectId: "proj_search",
-          threadId: "thr_message",
-          messageSeq: 7,
+          threadId: testState.searchProject ? null : "thr_message",
+          messageSeq: testState.searchProject ? null : 7,
         })
       }
     >
@@ -255,6 +256,7 @@ afterEach(() => {
   removePluginSlotRegistrations("automations");
   testState.calls.length = 0;
   testState.filesAvailable = false;
+  testState.searchProject = false;
   testState.plugins.length = 0;
   window.localStorage.clear();
 });
@@ -602,13 +604,13 @@ describe("CommandPalette", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByRole("combobox", { name: "Search threads" }),
+        screen.getByRole("combobox", { name: "Search projects and threads" }),
       ).toBeTruthy(),
     );
     expect(event.defaultPrevented).toBe(true);
     expect((searchField() as HTMLInputElement).value).toBe("");
     expect(screen.getByRole("listbox").getAttribute("aria-label")).toBe(
-      "Thread search results",
+      "Search results",
     );
   });
 
@@ -626,7 +628,7 @@ describe("CommandPalette", () => {
     expect(
       (
         screen.getByRole("combobox", {
-          name: "Search threads",
+          name: "Search projects and threads",
         }) as HTMLInputElement
       ).value,
     ).toBe("");
@@ -771,6 +773,23 @@ describe("CommandPalette", () => {
     await waitFor(() =>
       expect(screen.getByTestId("location").textContent).toContain(
         "/plugins/automations/automations",
+      ),
+    );
+  });
+
+  it("opens a matching project without a message jump", async () => {
+    testState.searchProject = true;
+    renderPalette();
+    openThreadSearch();
+    await waitFor(() => expect(screen.getByRole("option")).toBeTruthy());
+    fireEvent.click(screen.getByRole("option"));
+    await waitFor(() =>
+      expect(screen.getByTestId("location").textContent).toBe(
+        JSON.stringify({
+          pathname: "/projects/proj_search",
+          search: "",
+          state: null,
+        }),
       ),
     );
   });

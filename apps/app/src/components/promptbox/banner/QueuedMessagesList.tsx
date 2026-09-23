@@ -165,17 +165,17 @@ interface QueuedMessageRowProps {
 }
 
 const GROUP_DIVIDER_ID = "__queued_message_group_divider__";
-const COLLAPSED_HEIGHT = 44;
-const DRAWER_HEIGHT = 174;
+const COLLAPSED_HEIGHT = 36;
+const DRAWER_HEIGHT = 123;
 const DRAWER_MAX_VISIBLE_MESSAGES = 3;
-const DRAWER_CHROME_HEIGHT = 1 + 32 + 12 + 2;
-const DRAWER_LIST_PADDING = 8;
-const DRAWER_ROW_HEIGHT = 33;
+const DRAWER_CHROME_HEIGHT = 1 + 12 + 1;
+const DRAWER_LIST_PADDING = 2;
+const DRAWER_ROW_HEIGHT = 29;
 const DRAWER_SECOND_LINE_HEIGHT = 16;
 const DRAWER_SENDER_PILL_LINE_HEIGHT = 22;
 const WORKSPACE_MIN_HEIGHT = 240;
 const WORKSPACE_MAX_HEIGHT = 360;
-const WORKSPACE_CHROME_HEIGHT = 56;
+const WORKSPACE_CHROME_HEIGHT = 29;
 const WORKSPACE_ROW_HEIGHT = 40;
 const TYPEAHEAD_MENU_GAP = 8;
 const SURFACE_DRAG_THRESHOLD = 72;
@@ -818,8 +818,8 @@ const QueuedMessageRow = memo(function QueuedMessageRow({
       data-queued-message-id={queuedMessage.id}
       data-queued-message-group-boundary-row={isGroupBoundary ? "" : undefined}
       className={cn(
-        "group/dispatch-row relative border-b border-border/35 px-2.5 py-0.5",
-        !isGroupBoundary && "last:border-b-0",
+        "group/dispatch-row relative border-b border-transparent px-2.5",
+        isGroupBoundary && "border-muted-foreground/15",
         isDragging &&
           "z-20 rounded-lg border border-border bg-background opacity-90 shadow-lift",
       )}
@@ -841,7 +841,7 @@ const QueuedMessageRow = memo(function QueuedMessageRow({
           <Icon
             name="DragDropVertical"
             className={cn(
-              "size-3.5 shrink-0 opacity-0 transition-opacity",
+              "size-3.5 shrink-0 opacity-35 transition-opacity",
               !dragDisabled &&
                 "group-hover/dispatch-row:opacity-100 group-focus-within/dispatch-row:opacity-100 [@media(hover:none)]:opacity-100",
               isDragging && "opacity-100",
@@ -1186,16 +1186,8 @@ export function QueuedMessagesPendingCard({
     <PromptStackCard
       ariaLabel="Queued messages"
       style={{ height: getPendingDrawerHeight(queuedMessageCount) }}
-      className="relative z-10 -mb-5 flex min-h-0 flex-col overflow-hidden rounded-xl rounded-b-none border-b-0 bg-surface-raised-solid pb-3 shadow-lift"
+      className="relative z-10 mx-3 -mb-5 flex min-h-0 flex-col overflow-hidden rounded-xl rounded-b-none border-muted-foreground/15 border-b-0 bg-surface-raised-solid pb-3 sm:mx-4"
     >
-      <header className="flex h-8 shrink-0 items-center gap-2 border-b border-border/35 px-2">
-        <div className="flex min-w-16 items-baseline gap-1.5 pl-1">
-          <span className="text-xs font-medium text-foreground">Queue</span>
-          <span className="text-2xs tabular-nums text-subtle-foreground">
-            {queuedMessageCount}
-          </span>
-        </div>
-      </header>
       <div
         role="status"
         className="flex min-h-0 flex-1 items-center gap-2 px-3 text-xs text-subtle-foreground"
@@ -1721,7 +1713,9 @@ export function QueuedMessagesList({
           mobileActionsExpanded={expandedMobileActionsId === queuedMessage.id}
           onExpandMobileActions={setExpandedMobileActionsId}
           compact={mode !== "workspace"}
-          isGroupBoundary={messageIndex === groupBoundaryIndex}
+          isGroupBoundary={
+            orderedMessages.length > 1 && messageIndex === groupBoundaryIndex
+          }
           onSend={onSend}
           onEdit={handleEdit}
           onDelete={onDelete}
@@ -1765,7 +1759,7 @@ export function QueuedMessagesList({
       ariaLabel="Queued messages"
       style={{ height: surfaceHeight }}
       className={cn(
-        "relative z-10 flex min-h-0 flex-col overflow-hidden bg-surface-raised-solid shadow-lift",
+        "relative z-10 mx-3 flex min-h-0 flex-col border-muted-foreground/15 bg-surface-raised-solid sm:mx-4",
         inlineEditor || !attachedToComposer
           ? "mb-0 rounded-xl pb-4"
           : "-mb-5 rounded-xl rounded-b-none border-b-0 pb-3",
@@ -1773,23 +1767,17 @@ export function QueuedMessagesList({
           "transition-[height,margin,border-radius,padding] duration-[260ms] ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
       )}
     >
-      <header
+      <div
         className={cn(
-          "group/queue-header flex h-8 shrink-0 items-center gap-2 px-2",
-          mode !== "collapsed" && "border-b border-border/35",
+          "pointer-events-none absolute inset-x-2 top-0 z-30 flex h-5 -translate-y-1/2 items-center justify-center opacity-0 transition-opacity hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-60",
+          (mode === "collapsed" || surfaceDragging) && "opacity-100",
         )}
         data-queued-messages-mode={mode}
       >
-        <div className="flex min-w-16 items-baseline gap-1.5 pl-1">
-          <span className="text-xs font-medium text-foreground">Queue</span>
-          <span className="text-2xs tabular-nums text-subtle-foreground">
-            {queuedMessages.length}
-          </span>
-        </div>
         <button
           type="button"
           className={cn(
-            "group/handle flex h-full min-w-16 flex-1 touch-none select-none items-center justify-center focus-visible:rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+            "group/handle pointer-events-auto flex h-full w-16 touch-none select-none items-center justify-center rounded-full bg-surface-raised-solid focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
             surfaceDragging ? "cursor-grabbing" : "cursor-grab",
           )}
           aria-label={
@@ -1805,7 +1793,12 @@ export function QueuedMessagesList({
         >
           <span className="h-px w-7 rounded-full bg-muted-foreground opacity-30 transition-opacity group-hover/handle:opacity-50 group-focus-visible/handle:opacity-50" />
         </button>
-        <div className="flex min-w-16 items-center justify-end">
+        <div className="pointer-events-auto absolute right-0 flex items-center gap-1 rounded-full bg-surface-raised-solid">
+          {mode === "collapsed" ? (
+            <span className="pl-2 text-2xs tabular-nums text-subtle-foreground">
+              {queuedMessages.length}
+            </span>
+          ) : null}
           <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -1814,7 +1807,7 @@ export function QueuedMessagesList({
                   size="icon"
                   variant="ghost"
                   className={cn(
-                    "h-6 text-muted-foreground hover:bg-surface-recessed",
+                    "h-5 rounded-full text-muted-foreground hover:bg-surface-recessed",
                     PROMPT_STACK_EDGE_CARET_BUTTON_WIDTH_CLASS,
                   )}
                   onClick={handleCaretClick}
@@ -1823,7 +1816,7 @@ export function QueuedMessagesList({
                 >
                   <Icon
                     name={caretWillCollapse ? "ChevronDown" : "ChevronUp"}
-                    className="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover/queue-header:opacity-65 group-focus-within/queue-header:opacity-65 [@media(hover:none)]:opacity-45"
+                    className="size-3.5 text-muted-foreground"
                     aria-hidden
                   />
                 </Button>
@@ -1834,10 +1827,11 @@ export function QueuedMessagesList({
             </Tooltip>
           </TooltipProvider>
         </div>
-      </header>
+      </div>
       <div
-        className="relative min-h-0 flex-1"
+        className="relative min-h-0 flex-1 overflow-hidden rounded-t-[inherit]"
         data-queued-messages-scroll-frame=""
+        hidden={mode === "collapsed"}
         aria-hidden={mode === "collapsed"}
         inert={mode === "collapsed" ? true : undefined}
       >
@@ -1855,12 +1849,16 @@ export function QueuedMessagesList({
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={sortableIds} strategy={sortingStrategy}>
-              <ul ref={listRef} className="group/queue py-1">
+              <ul ref={listRef} className="group/queue pt-0.5">
                 {queueItems}
               </ul>
             </SortableContext>
           </DndContext>
-          <div ref={bottomSentinelRef} aria-hidden className="h-px w-full" />
+          <div
+            ref={bottomSentinelRef}
+            aria-hidden
+            className="-mt-px h-px w-full"
+          />
         </div>
         {aboveOverflow && mode !== "collapsed" ? (
           <OverflowFade

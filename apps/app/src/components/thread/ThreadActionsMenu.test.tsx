@@ -92,22 +92,19 @@ afterEach(() => {
 });
 
 describe("ThreadActionsMenu", () => {
-  it("copies the canonical thread URL from every menu instance", () => {
+  it("copies the thread name from every menu instance", () => {
     renderWide(<ThreadActionsMenu thread={thread} />);
 
     fireEvent.pointerDown(
       screen.getByRole("button", { name: "Thread actions" }),
       { button: 0 },
     );
-    fireEvent.click(screen.getByRole("menuitem", { name: "Copy thread link" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Copy thread name" }));
 
-    expect(copyToClipboardWithToast).toHaveBeenCalledWith(
-      `${window.location.origin}/projects/${thread.projectId}/threads/${thread.id}`,
-      {
-        successMessage: "Thread link copied",
-        errorMessage: "Failed to copy thread link",
-      },
-    );
+    expect(copyToClipboardWithToast).toHaveBeenCalledWith(thread.title, {
+      successMessage: "Thread name copied",
+      errorMessage: "Failed to copy thread name",
+    });
   });
 });
 

@@ -8,7 +8,7 @@ import {
 } from "react";
 import { nanoid } from "nanoid";
 import { useSystemProviderInfo } from "@/hooks/queries/system-queries";
-import { useCloudroomConnection } from "@/hooks/queries/cloudroom-queries";
+import { useCloudroomConnection, cloudFeatureSupported } from "@/hooks/queries/cloudroom-queries";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { useDesktopBrowserReveal } from "@/lib/use-desktop-browser-reveal";
@@ -1029,7 +1029,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
   const canEditSentMessages =
     thread !== undefined &&
     (thread.executionTarget === "cloud"
-      ? cloudConnection.data?.rewind === true
+      ? cloudFeatureSupported(cloudConnection.data, thread.providerId, "rewind")
       : (threadProviderInfo?.capabilities.supportsSessionRewind ?? false)) &&
     thread.archivedAt === null &&
     thread.deletedAt === null &&

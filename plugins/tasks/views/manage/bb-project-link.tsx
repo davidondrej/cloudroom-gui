@@ -29,7 +29,7 @@ export function BbProjectLinkPicker({
       value={value ?? NO_LINK}
       onValueChange={(next) => onChange(next === NO_LINK ? null : next)}
     >
-      <SelectTrigger aria-label="Linked bb project" className="h-8">
+      <SelectTrigger aria-label="Linked Room project" className="h-8">
         <SelectValue>
           {bbProjects.find((project) => project.id === value)?.name ??
             unavailableSelection ??

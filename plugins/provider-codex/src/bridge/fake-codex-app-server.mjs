@@ -325,6 +325,9 @@ async function handleRequest(message) {
     case "initialize":
       respond(id, {});
       return;
+    case "config/read":
+      respond(id, { config: { features: { hooks: true } } });
+      return;
     case "account/rateLimits/read":
       respond(id, { rateLimits: {} });
       return;

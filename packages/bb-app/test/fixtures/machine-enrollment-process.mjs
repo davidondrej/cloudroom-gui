@@ -1,7 +1,7 @@
 import { enrollMachine } from "../../../../apps/cli/src/commands/machine-enrollment.ts";
 
 const env = {
-  BB_DATA_DIR: process.env.BB_DATA_DIR,
+  ROOM_DATA_DIR: process.env.BB_DATA_DIR,
   BB_ENROLLMENT: process.env.BB_ENROLLMENT,
   PATH: "/nonexistent",
 };

@@ -2336,6 +2336,11 @@ async function handleModelList(
     sendModels(sessionDiscoveredModels);
     return;
   }
+  if (dialectId === "cursor") {
+    throw new Error(
+      "Cursor model discovery returned no models. Restart Cursor and try again.",
+    );
+  }
   sendResult(id, {
     models: [
       applyConfiguredReasoningToModel(ACP_DEFAULT_MODEL, {

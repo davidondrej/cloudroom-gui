@@ -571,13 +571,16 @@ export function parseOperationMessage(
   if (decoded.type === "system/operation") {
     if (
       decoded.operation === "plugin_interaction" ||
-      decoded.operation === "edit_message"
+      decoded.operation === "edit_message" ||
+      decoded.operation === "checkpoint"
     ) {
       return null;
     }
 
     const threadOperation = createThreadOperationMetadata(decoded);
-    const title = threadOperationTitle(threadOperation, threadName);
+    const title = ["storage_warning", "storage_pause", "storage_recovered"].includes(decoded.operation)
+      ? decoded.message
+      : threadOperationTitle(threadOperation, threadName);
 
     const branch =
       typeof decoded.metadata?.branch === "string"

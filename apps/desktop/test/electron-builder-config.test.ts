@@ -92,6 +92,7 @@ const electronBuilderFilePatternSchema = z.union([
 
 const electronBuilderConfigSchema = z
   .object({
+    directories: z.object({ output: z.literal("release.noindex") }).passthrough(),
     afterPack: z.string().min(1),
     asarUnpack: z.array(z.string().min(1)),
     dmg: z

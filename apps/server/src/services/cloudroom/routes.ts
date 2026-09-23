@@ -1,19 +1,54 @@
 import { randomUUID } from "node:crypto";
 import type { Hono, MiddlewareHandler } from "hono";
 import type { AppDeps } from "../../types.js";
+import { ApiError } from "../../errors.js";
 import { getThread } from "@bb/db";
 import { z } from "zod";
 import { cloudroom, isCloudThread } from "./commands.js";
 import { cloudroomAccount } from "./account.js";
+import { teleports } from "./teleport.js";
+import { teleportBlocked, teleportProgress } from "./store.js";
 import { browserRequestProblem } from "../../browser-request-guard.js";
 
 export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
+  cloudroom(deps).teleportRecovery = () => teleports(deps).recover();
+  app.get("/api/v1/cloudroom/threads/:id/teleport", context => context.json(teleportProgress(deps.db, context.req.param("id"))));
+  app.post("/api/v1/cloudroom/threads/:id/teleport", async context => {
+    const problem = browserRequestProblem(context, deps, { requireJsonForMutation: true });
+    if (problem) return context.json({ message: "Use the local Cloudroom app or CLI." }, problem.status);
+    const body = z.object({ action: z.enum(["start", "cancel"]).default("start") }).strict().parse(await context.req.json());
+    const id = context.req.param("id");
+    if (body.action === "cancel") { await teleports(deps).cancel(id); return context.json(teleportProgress(deps.db, id), 202); }
+    return context.json(await teleports(deps).begin(id), 202);
+  });
   app.use("/api/v1/cloudroom/account/*", async (context, next) => {
     const problem = browserRequestProblem(context, deps, { requireJsonForMutation: true });
     if (problem) return context.json({ message: "Use the local Cloudroom app or CLI." }, problem.status);
     return next();
   });
+  app.post("/api/v1/cloudroom/account/project", async (context) => {
+    const input = z.object({ projectId: z.string().min(1) }).strict().parse(await context.req.json());
+    await cloudroom(deps).selectOnboardingProject(input.projectId);
+    return context.json({ ok: true });
+  });
   app.get("/api/v1/cloudroom/account", async (context) => context.json(await cloudroomAccount(deps).status()));
+  app.get("/api/v1/cloudroom/account/cursor", async context => context.json(await cloudroom(deps).cursorAuth()));
+  for (const action of ["login", "cancel", "key"] as const) {
+    app.post(`/api/v1/cloudroom/account/cursor/${action}`, async context => {
+      const schema = z.object({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/), ...(action === "key" ? { apiKey: z.string().min(1).max(4096).regex(/^[!-~]+$/) } : {}) }).strict();
+      const parsed = schema.safeParse(await context.req.json().catch(() => null));
+      if (!parsed.success) throw new ApiError(400, "invalid_cursor_auth", "Invalid Cursor account request.");
+      const input = parsed.data;
+      return context.json(await cloudroom(deps).cursorAuth(action, input.requestId, "apiKey" in input ? String(input.apiKey) : undefined));
+    });
+  }
+  app.get("/api/v1/cloudroom/account/codex", async context => context.json(await cloudroom(deps).codexAuth()));
+  for (const action of ["login", "cancel"] as const) {
+    app.post(`/api/v1/cloudroom/account/codex/${action}`, async context => {
+      const input = z.object({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/) }).strict().parse(await context.req.json());
+      return context.json(await cloudroom(deps).codexAuth(action, input.requestId));
+    });
+  }
   app.post("/api/v1/cloudroom/account/sign-in", async (context) => context.json(await cloudroomAccount(deps).signIn(await context.req.json())));
   app.post("/api/v1/cloudroom/account/cancel", (context) => { cloudroomAccount(deps).cancel(); return context.json({ ok: true }); });
   app.post("/api/v1/cloudroom/account/logout", async (context) => { await cloudroomAccount(deps).logout(); return context.json({ ok: true }); });
@@ -49,11 +84,15 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     const id = context.req.param("id");
     if (!id) return next();
     const thread = getThread(deps.db, id);
+    if (teleportBlocked(deps.db, id)) {
+      const suffix = context.req.path.slice(`/api/v1/threads/${id}`.length);
+      if (!["/read", "/unread"].includes(suffix) && !(suffix === "/stop" && teleportProgress(deps.db, id)?.cloudStarted)) return context.json({ message: "Teleport is in progress. Wait for completion, or use Cancel before cloud execution starts.", code: "teleport_in_progress" }, 409);
+    }
     if (!thread || !isCloudThread(thread)) return next();
     const path = context.req.path.slice(`/api/v1/threads/${thread.id}`.length);
     if (context.req.method === "PATCH" && path === "") {
       const body = await context.req.json<unknown>();
-      if (body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).every((key) => key === "title")) return next();
+      if (body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).every((key) => key === "title" || key === "reasoningLevel")) return next();
     }
     if (["/tabs", "/read", "/unread", "/pin", "/unpin", "/pin-order"].includes(path)) return next();
     if (context.req.method === "POST" && ["/archive-all", "/unarchive"].includes(path)) return next();

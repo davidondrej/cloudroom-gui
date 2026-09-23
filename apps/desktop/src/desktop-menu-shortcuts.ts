@@ -5,6 +5,7 @@ import {
 } from "@bb/domain";
 
 export interface ApplicationMenuAccelerators {
+  archiveThread: string | undefined;
   closeWindowOrSideTab: string | undefined;
   createNewWindow: string | undefined;
   openNewTab: string | undefined;
@@ -15,7 +16,8 @@ export interface ApplicationMenuAccelerators {
 
 export const DEFAULT_APPLICATION_MENU_ACCELERATORS: ApplicationMenuAccelerators =
   {
-    closeWindowOrSideTab: "CommandOrControl+W",
+    archiveThread: "CommandOrControl+W",
+    closeWindowOrSideTab: undefined,
     createNewWindow: "CommandOrControl+Shift+N",
     openNewTab: "CommandOrControl+T",
     openNewThread: "CommandOrControl+N",
@@ -89,6 +91,7 @@ export function resolveApplicationMenuAccelerators(
   keybindings: AppKeybindings,
 ): ApplicationMenuAccelerators {
   return {
+    archiveThread: acceleratorForCommand(keybindings, "thread.archive"),
     closeWindowOrSideTab: acceleratorForCommand(keybindings, "panel.close"),
     createNewWindow: acceleratorForCommand(keybindings, "window.new"),
     openNewTab: acceleratorForCommand(keybindings, "panel.newTab"),

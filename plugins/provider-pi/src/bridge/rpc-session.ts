@@ -11,6 +11,7 @@ import {
 } from "./rpc-child.js";
 
 export interface PiRpcSessionOptions {
+  commandGuardEnabled?: boolean;
   cwd: string;
   model?: { provider: string; id: string };
   thinkingLevel?: string;
@@ -200,7 +201,7 @@ export class PiRpcSession {
     mkdirSync(dirname(toolsFilePath), { recursive: true });
     writeFileSync(
       toolsFilePath,
-      JSON.stringify(this.options.dynamicTools ?? []),
+      JSON.stringify({ tools: this.options.dynamicTools ?? [], commandGuardEnabled: this.options.commandGuardEnabled !== false }),
       "utf8",
     );
     const promptFiles = this.writePromptFiles();

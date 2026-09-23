@@ -33,6 +33,7 @@ import {
 import {
   DEFAULT_COMPOSER_SCOPE,
   PromptBoxInternal,
+  promptFastModeCommand,
   type AttachmentsConfig,
   type HistoryConfig,
   type PromptBoxAction,
@@ -318,6 +319,13 @@ const DefaultNewThreadComposer = memo(function DefaultNewThreadComposer({
           execution.model.loadFailed
             ? undefined
             : execution.reasoning
+        }
+        fastMode={
+          execution.disabled ||
+          execution.model.isLoading ||
+          execution.model.loadFailed
+            ? undefined
+            : promptFastModeCommand(execution.serviceTier)
         }
         mentionMenuPlacement="bottom"
         attachments={attachments}

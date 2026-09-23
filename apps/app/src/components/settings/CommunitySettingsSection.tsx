@@ -1,20 +1,19 @@
 import { Button } from "@bb/shared-ui/button";
 import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
 import {
   SettingsSection,
   SettingsWithControl,
 } from "@/components/ui/settings-section.js";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
+import { CHANGELOG_LINKS } from "./changelog-preview";
 
-const DISCORD_INVITE_URL = "https://discord.gg/kvBU6tJhcJ";
-const GITHUB_REPO_URL = "https://github.com/get-bb/bb";
+const GITHUB_REPO_URL = "https://github.com/davidondrej/cloudroom-gui";
+const BB_CREDIT_URL = "https://github.com/get-bb/bb";
 
 interface CommunityLinkRowProps {
   description: string;
   href: string;
   icon: IconName;
-  iconClassName?: string;
   label: string;
   openLabel: string;
 }
@@ -23,7 +22,6 @@ function CommunityLinkRow({
   description,
   href,
   icon,
-  iconClassName,
   label,
   openLabel,
 }: CommunityLinkRowProps) {
@@ -39,7 +37,7 @@ function CommunityLinkRow({
           openUrlInExternalBrowser(href);
         }}
       >
-        <Icon name={icon} className={cn("size-3.5 shrink-0", iconClassName)} />
+        <Icon name={icon} className="size-3.5 shrink-0" />
         {openLabel}
         <Icon
           name="ExternalLink"
@@ -54,24 +52,46 @@ export function CommunitySettingsSection() {
   return (
     <SettingsSection
       title="Community"
-      description="Chat with other bb users and follow development on GitHub."
+      description="Follow Cloudroom development and learn how to get started."
     >
       <div className="space-y-5">
         <CommunityLinkRow
-          label="Discord"
-          description="Join the server for support, feedback, and announcements."
-          href={DISCORD_INVITE_URL}
-          icon="DiscordLogo"
-          iconClassName="text-brand-discord"
-          openLabel="Join Discord"
-        />
-        <CommunityLinkRow
           label="GitHub"
-          description="Source code, issues, and releases for the bb project."
+          description="Source code, issues, and contributions for the Cloudroom GUI."
           href={GITHUB_REPO_URL}
           icon="GithubLogo"
           openLabel="View on GitHub"
         />
+        <CommunityLinkRow
+          label="Getting started"
+          description="Build the GUI and connect to Cloudroom."
+          href={`${GITHUB_REPO_URL}#readme`}
+          icon="Explore"
+          openLabel="Read the guide"
+        />
+        {CHANGELOG_LINKS.page !== null ? (
+          <CommunityLinkRow
+            label="Changelog"
+            description="Cloudroom release notes and manual update information."
+            href={CHANGELOG_LINKS.page}
+            icon="ExternalLink"
+            openLabel="Read the changelog"
+          />
+        ) : null}
+        <p className="text-xs text-muted-foreground">
+          <a
+            href={BB_CREDIT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-sm underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            onClick={(event) => {
+              event.preventDefault();
+              openUrlInExternalBrowser(BB_CREDIT_URL);
+            }}
+          >
+            Built on BB
+          </a>
+        </p>
       </div>
     </SettingsSection>
   );

@@ -691,6 +691,13 @@ function ThreadRowComponent({
           !shortcut && SIDEBAR_HOVER_ACTIONS_INSET_CLASS,
         )}
       >
+        <Icon
+          name={thread.executionTarget === "cloud" && (!thread.teleport || thread.teleport.phase === "complete") ? "Cloud" : "Laptop"}
+          aria-label={
+            thread.teleport && !["complete", "cancelled"].includes(thread.teleport.phase) ? "Teleport in progress" : thread.executionTarget === "cloud" ? "Cloud thread" : "Local thread"
+          }
+          className="pointer-events-none size-3.5 shrink-0 text-muted-foreground opacity-50"
+        />
         {isEditing ? (
           <span className="relative z-10 min-w-0 flex-1 overflow-visible">
             {editor}

@@ -1,6 +1,6 @@
 ---
 kind: instruction
-title: bb Guide — Projects
+title: Room Guide — Projects
 summary: Command reference for project CRUD, attachments, and sources.
 intent: Provide complete project command documentation for agents.
 editingNotes: Keep flags accurate against the CLI implementation.

@@ -131,22 +131,22 @@ export default async function keepAwakePlugin(bb: BbPluginApi): Promise<void> {
       {
         name: "status",
         summary: "Show whether Keep Awake is enabled and which hosts it uses",
-        usage: "bb keep-awake status [--json]",
+        usage: "room keep-awake status [--json]",
       },
       {
         name: "enable",
         summary: "Enable Keep Awake",
-        usage: "bb keep-awake enable [--json]",
+        usage: "room keep-awake enable [--json]",
       },
       {
         name: "disable",
         summary: "Disable Keep Awake",
-        usage: "bb keep-awake disable [--json]",
+        usage: "room keep-awake disable [--json]",
       },
       {
         name: "hosts",
         summary: "Show or replace the Keep Awake host selection",
-        usage: "bb keep-awake hosts [all|<host-id>...] [--json]",
+        usage: "room keep-awake hosts [all|<host-id>...] [--json]",
       },
     ],
     async run(argv) {
@@ -183,7 +183,7 @@ export default async function keepAwakePlugin(bb: BbPluginApi): Promise<void> {
         return {
           exitCode: 1,
           stderr:
-            "Usage: bb keep-awake <status|enable|disable|hosts> [arguments] [--json]",
+            "Usage: room keep-awake <status|enable|disable|hosts> [arguments] [--json]",
         };
       }
       if (args.length > 0) {

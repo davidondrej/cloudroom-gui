@@ -455,10 +455,13 @@ function appendAndQueueSendThreadMessageInTransaction({
   };
 }
 
+import { teleportBlocked } from "../cloudroom/store.js";
+
 export async function sendThreadMessage(
   deps: LoggedPendingInteractionWorkSessionDeps,
   args: SendThreadMessageArgs,
 ): Promise<void> {
+  if (teleportBlocked(deps.db, args.thread.id) || getThread(deps.db, args.thread.id)?.executionTarget === "cloud") throw new ApiError(409, "teleport_in_progress", "Local execution is blocked during or after Teleport.");
   if (isStandaloneBuiltinClearCommand(args.payload.input)) {
     await clearThreadContext(deps, {
       environment: args.environment,
@@ -552,7 +555,11 @@ async function sendThreadMessageWithoutContextClear(
   // A retry's model is provenance — the failed attempt's tuple, replayed —
   // not a fresh model choice, so it must not rewrite the thread's sticky
   // override the way an explicit user send's model does.
-  if (senderThreadId === null && args.retryOf === undefined) {
+  if (
+    args.trigger === "user" &&
+    senderThreadId === null &&
+    args.retryOf === undefined
+  ) {
     await recoverThreadModelOverride(deps, {
       model: payload.model,
       modelSource:
@@ -697,6 +704,7 @@ async function sendThreadMessageWithoutContextClear(
       queuedRequest.request.notificationChanges,
       queuedRequest.request.notificationMetadata,
     );
+    if (teleportBlocked(deps.db, thread.id) || getThread(deps.db, thread.id)?.executionTarget === "cloud") throw new ApiError(409, "teleport_in_progress", "Local execution is blocked during or after Teleport.");
     startLiveHostCommand(deps, {
       command: command.command,
       hostId: readyEnvironment.hostId,
@@ -774,6 +782,7 @@ async function sendThreadMessageWithoutContextClear(
     queuedRequest.request.notificationChanges,
     queuedRequest.request.notificationMetadata,
   );
+  if (teleportBlocked(deps.db, thread.id) || getThread(deps.db, thread.id)?.executionTarget === "cloud") throw new ApiError(409, "teleport_in_progress", "Local execution is blocked during or after Teleport.");
   startLiveHostCommand(deps, {
     command,
     hostId: readyEnvironment.hostId,

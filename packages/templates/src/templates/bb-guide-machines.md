@@ -1,6 +1,6 @@
 ---
 kind: instruction
-title: bb Guide — Machines
+title: Room Guide — Machines
 summary: Command reference for listing and targeting execution machines.
 intent: Explain execution-machine discovery and selection from the CLI.
 editingNotes: Keep the user-facing noun machine; internal APIs and types use Host.
@@ -31,11 +31,11 @@ host is a machine, including existing machines enrolled with the built-in
 or from the composer machine picker.
 
 The server listens on loopback by default. Remote execution machines need
-a server access provider: paired bb Connect, or a configured direct URL reachable
+a server access provider: paired Cloudroom Connect, or a configured direct URL reachable
 from the target, such as a private Tailscale Serve URL. A configured URL alone
 does not prove reachability.
 
-The Settings installer first uses the exact `bb-app` tarball served by that bb
+The Settings installer first uses the exact `bb-app` tarball served by that Room
 server at `/install/bb-app.tgz`; only servers that do not implement the route
 (HTTP 404) fall back to the npm registry. npm installs bb-app under this
 machine enrollment's room data directory, so the installer needs neither `sudo`
@@ -205,7 +205,7 @@ primitives; `room machine remove` asks the server to remove the provider resourc
 They verify the canonical installer-owned directory, enrolled identity, and
 service or process ownership before acting. Stop and uninstall safely succeed
 when no matching installation exists; start requires an installation. They
-refuse the default BB data directory. Stopping a daemon is distinct from
+refuse the default Room data directory. Stopping a daemon is distinct from
 `room machine suspend`, which invokes provider suspension and polls until the machine
 is paused. `room machine resume` likewise waits for provider restore and bootstrap.
 
@@ -242,7 +242,7 @@ never. `status` and `cost` show live inventory and estimates; all accept `--json
 Powered-off droplets still bill; snapshot storage bills per GB. See
 https://docs.digitalocean.com/products/droplets/details/pricing/ and
 https://docs.digitalocean.com/products/snapshots/details/pricing/ . Configure a
-weekday schedule from the plugin settings or CLI on an always-on BB server.
+weekday schedule from the plugin settings or CLI on an always-on Room server.
 The latest missed action within eight days runs after recovery; busy sleep
 retries each minute until superseded. See the plugin skill for DST and cleanup.
 

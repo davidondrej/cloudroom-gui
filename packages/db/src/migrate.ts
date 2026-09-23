@@ -746,7 +746,7 @@ function validatePendingInteractionsSchema(db: DbConnection): void {
         missingOrMismatchedIndexes.length > 0
           ? `Missing or mismatched indexes: ${missingOrMismatchedIndexes.join("; ")}.`
           : null,
-        "This usually means the local DB was created by an incompatible prelaunch migration history. Restart BB so migrations can run; if this persists in development, back up the DB and run pnpm reset:dev.",
+        "This usually means the local DB was created by an incompatible prelaunch migration history. Restart Room so migrations can run; if this persists in development, back up the DB and run pnpm reset:dev.",
       ]
         .filter((line): line is string => line !== null)
         .join(" "),

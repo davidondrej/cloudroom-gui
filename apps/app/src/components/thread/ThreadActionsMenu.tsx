@@ -33,9 +33,11 @@ import { cn } from "@bb/shared-ui/lib/utils";
 import { CompactLongPressMenu } from "@/components/ui/compact-long-press-menu";
 import { isThreadRead } from "@bb/client-core";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
-import { getThreadRoutePath } from "@/lib/route-paths";
+import { getThreadDisplayTitle } from "@/lib/thread-title";
 import { useThreadActions } from "./ThreadActionsProvider";
 import { useThreadSectionMove } from "./ThreadSectionMoveProvider";
+import { sdk } from "@/lib/sdk";
+import { showMutationErrorToast } from "@/lib/mutation-errors";
 
 interface ThreadActionsMenuBaseProps {
   thread: Thread;
@@ -193,10 +195,15 @@ function ThreadActionsMenuItems({
   const isRead = isThreadRead(thread);
   const isArchived = thread.archivedAt != null;
   const isPinned = thread.pinnedAt !== null;
-  const threadUrl = new URL(
-    getThreadRoutePath({ projectId: thread.projectId, threadId: thread.id }),
-    window.location.origin,
-  ).toString();
+  const threadName = getThreadDisplayTitle(thread);
+  const [teleportPending, setTeleportPending] = useState(false);
+  const startTeleport = async () => {
+    setTeleportPending(true);
+    try { await sdk.cloudroom.teleport(thread.id); }
+    catch (error) { showMutationErrorToast({ error, fallbackMessage: "Could not start Teleport" }); }
+    finally { setTeleportPending(false); }
+  };
+  const canTeleport = thread.executionTarget !== "cloud" && !thread.parentThreadId && !isArchived && ["codex", "pi"].includes(thread.providerId) && (!thread.teleport || ["cancelled", "error"].includes(thread.teleport.phase));
 
   if (isDrawer && compactStep === "move") {
     return (
@@ -212,6 +219,7 @@ function ThreadActionsMenuItems({
 
   return (
     <>
+      {canTeleport && <ActionMenuItem surface={surface} icon="Cloud" disabled={teleportPending} onSelect={() => void startTeleport()}>Teleport to Cloud</ActionMenuItem>}
       {responsiveActions.length > 0 ? (
         <>
           {responsiveActions.map((action) => (
@@ -247,13 +255,13 @@ function ThreadActionsMenuItems({
         surface={surface}
         icon="Copy"
         onSelect={() => {
-          void copyToClipboardWithToast(threadUrl, {
-            successMessage: "Thread link copied",
-            errorMessage: "Failed to copy thread link",
+          void copyToClipboardWithToast(threadName, {
+            successMessage: "Thread name copied",
+            errorMessage: "Failed to copy thread name",
           });
         }}
       >
-        Copy thread link
+        Copy thread name
       </ActionMenuItem>
       <ActionMenuItem
         surface={surface}

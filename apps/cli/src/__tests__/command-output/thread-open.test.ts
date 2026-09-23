@@ -256,7 +256,7 @@ describe("room thread open command output", () => {
     expect(help).toContain("Usage:");
     expect(help).toContain("[id] [path]");
     expect(help).toContain(
-      "Open a BB thread, optionally with a file in its panel",
+      "Open a Room thread, optionally with a file in its panel",
     );
     expect(help).toContain("--line");
     expect(help).toContain("--split <placement>");

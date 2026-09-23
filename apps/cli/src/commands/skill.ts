@@ -395,7 +395,7 @@ export function registerSkillCommands(
   skill
     .command("cli-skills-status")
     .description(
-      "Show whether each machine has bb's built-in CLI skills installed",
+      "Show whether each machine has Room's built-in CLI skills installed",
     )
     .option(
       "--machine <id-or-name>",
@@ -435,7 +435,7 @@ export function registerSkillCommands(
   skill
     .command("install-cli-skills")
     .description(
-      "Install bb's built-in CLI skills into ~/.agents/skills and ~/.claude/skills on a machine",
+      "Install Room's built-in CLI skills into ~/.agents/skills and ~/.claude/skills on a machine",
     )
     .option(
       "--machine <id-or-name>",

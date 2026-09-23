@@ -38,6 +38,7 @@ const bridgeClaudePluginsSchema = z
   .optional();
 
 export const claudeThreadStartParamsSchema = z.object({
+  commandGuardEnabled: z.boolean().optional(),
   threadId: z.string(),
   cwd: z.string(),
   baseInstructions: z.string(),

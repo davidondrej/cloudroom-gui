@@ -48,7 +48,7 @@ export class ShareHostResolver {
     );
     if (config.primaryHostId !== null) return config.primaryHostId;
     throw new Error(
-      "this bb has no primary host yet — connect a machine before sharing ports",
+      "this Room has no primary host yet — connect a machine before sharing ports",
     );
   }
 
@@ -123,7 +123,7 @@ export class ShareHostResolver {
     );
     if (nameMatches.length === 0) {
       throw new Error(
-        `unknown host "${query}"; run \`bb machine list\` to list hosts`,
+        `unknown host "${query}"; run \`room machine list\` to list hosts`,
       );
     }
     if (nameMatches.length > 1) {

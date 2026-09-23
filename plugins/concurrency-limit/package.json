@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Control the number of concurrent threads that are running in bb",
+  "description": "Control the number of concurrent threads that are running in Room",
   "engines": {
     "bb": ">=0.0"
   },
   "bb": {
     "name": "Concurrency limit",
-    "description": "Control the number of concurrent threads that are running in bb",
+    "description": "Control the number of concurrent threads that are running in Room",
     "branding": {
       "icon": "Limitation"
     },

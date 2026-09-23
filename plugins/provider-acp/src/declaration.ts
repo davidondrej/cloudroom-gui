@@ -81,6 +81,9 @@ export function acpProviderDeclaration(
       acpLaunchSpec: { ...agent.launch },
     },
     models: { scope: "host" },
+    ...(agent.dialect === "cursor"
+      ? { experimental_modelDiscoveryRestart: true }
+      : {}),
     maintenance: {
       health: true,
       usage: agent.providerUsage === true,

@@ -10,7 +10,6 @@ import {
 
 const packageRoot = process.cwd();
 const distDir = resolve(packageRoot, "dist");
-const packageJsonPath = resolve(packageRoot, "package.json");
 const pluginSdkPackageJsonPath = resolve(
   packageRoot,
   "..",
@@ -65,13 +64,9 @@ function readBuildDate(env) {
 
 await rm(distDir, { force: true, recursive: true });
 
-const packageVersion = readPackageVersion(
-  await readFile(packageJsonPath, "utf8"),
-  "apps/desktop/package.json",
-);
-const desktopVersion = stampRequested(process.env)
-  ? await readCloudroomVersion()
-  : packageVersion;
+const desktopVersion = await readCloudroomVersion({
+  allowMissing: !stampRequested(process.env),
+});
 const pluginSdkVersion = readPackageVersion(
   await readFile(pluginSdkPackageJsonPath, "utf8"),
   "packages/plugin-sdk/package.json",

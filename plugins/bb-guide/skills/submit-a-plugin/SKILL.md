@@ -1,11 +1,11 @@
 ---
 name: submit-a-plugin
-description: "Prepare and submit a BB plugin to the Community marketplace when publication or a marketplace PR is requested."
+description: "Prepare and submit a plugin to the Community marketplace when publication or a marketplace PR is requested."
 ---
 
 # Submit a plugin
 
-Submit a public plugin to the BB Community marketplace. The marketplace stores
+Submit a public plugin to the BB Marketplace. The marketplace stores
 plugin metadata. The plugin code stays in its Git repository or npm package.
 
 ## Choose the task
@@ -25,7 +25,7 @@ Do not expose credentials, private URLs, or local secrets.
 
 ## Read current contracts
 
-The marketplace contract can change independently from BB releases. Read these
+The marketplace contract can change independently from Room releases. Read these
 files from the default branch of https://github.com/get-bb/marketplace:
 
 - README.md
@@ -69,7 +69,7 @@ Read these references as the task reaches each stage:
 - Read references/pull-request.md before cloning, validating, or submitting
   the marketplace repository.
 
-Use scripts/derive-plugin-id.mjs to calculate the same plugin ID that BB uses:
+Use scripts/derive-plugin-id.mjs to calculate the same plugin ID that Room uses:
 
 ```sh
 node /PATH/TO/THIS/SKILL/scripts/derive-plugin-id.mjs /PATH/TO/PLUGIN/package.json

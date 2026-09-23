@@ -106,7 +106,7 @@ An exact ref prevents automatic selection of later compatible releases.
 ### npm release
 
 An npm source must refer to a published package. The package must contain the
-prebuilt BB files. A Git install can build source during installation.
+prebuilt Room files. A Git install can build source during installation.
 
 1. Run room plugin build.
 2. Run tests and type checks.

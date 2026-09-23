@@ -5,6 +5,7 @@ import type {
   PendingInteraction,
   PermissionMode,
   PromptTextMention,
+  ReasoningLevel,
   ResolvedThreadExecutionOptions,
   ThreadQueuedMessage,
   ThreadTimelineActivePromptMode,
@@ -141,9 +142,12 @@ vi.mock("@/components/promptbox/FollowUpPromptBox", async () => {
       } | null;
       environmentSummary?: ReactNode;
       execution: {
+        disabled?: boolean;
+        lockModelSelection?: boolean;
         providerRouting: { environmentId?: string; hostId?: string };
         model: {
           active?: { model: string } | null;
+          options: readonly { value: string; label: string }[];
         };
         provider: {
           selectedId: string;
@@ -159,7 +163,7 @@ vi.mock("@/components/promptbox/FollowUpPromptBox", async () => {
             reasoningLevel: "medium";
           }) => void;
         };
-        reasoning: { value: string };
+        reasoning: { value: string; onChange: (value: ReasoningLevel) => void };
         serviceTier?: { value?: string };
       };
       executionReadOnly?: boolean;
@@ -221,7 +225,19 @@ vi.mock("@/components/promptbox/FollowUpPromptBox", async () => {
             .join(",")}
         </div>
         <div data-testid="selected-model">{execution.model.active?.model}</div>
+        <div data-testid="selected-model-label">
+          {execution.model.options.find(
+            (option) => option.value === execution.model.active?.model,
+          )?.label}
+        </div>
         <div data-testid="selected-reasoning">{execution.reasoning.value}</div>
+        <div data-testid="model-selection-locked">{String(execution.lockModelSelection ?? false)}</div>
+        <button
+          disabled={executionReadOnly || execution.disabled}
+          onClick={() => execution.reasoning.onChange("low")}
+        >
+          Select low reasoning
+        </button>
         <div data-testid="selected-service-tier">
           {execution.serviceTier?.value}
         </div>
@@ -600,8 +616,13 @@ vi.mock("@/hooks/useThreadCreationOptions", async () => {
         isLoadingModels: false,
         modelLoadError: null,
         modelLoadFailed: false,
-        modelOptions: [],
-        moreModelOptions: [],
+        modelOptions: [
+          { value: "openai-codex/gpt-6-astra", label: "GPT-6 Astra" },
+          { value: "gpt-6-astra", label: "GPT-6 Astra" },
+        ],
+        moreModelOptions: [
+          { value: "anthropic/claude-opus-4-20250514", label: "Claude Opus 4" },
+        ],
         permissionMode: options.initialPermissionMode ?? "auto",
         permissionModeOptions: [],
         providerOptions: [
@@ -693,6 +714,7 @@ vi.mock("@/hooks/mutations/thread-runtime-mutations", () => ({
 }));
 
 vi.mock("@/hooks/mutations/thread-state-mutations", () => ({
+  useUpdateThread: () => ({ mutate: vi.fn() }),
   useUnarchiveThread: () => ({
     isPending: false,
     mutate: mocks.unarchiveThreadMutate,
@@ -959,7 +981,7 @@ describe("environment follow-up summary", () => {
     renderPromptArea({ thread: makeThread({ executionTarget: "cloud", environmentId: null }) });
 
     expect(screen.getByTestId("thread-environment-summary").textContent).toBe(
-      `CEO · Project checkout · ${branchLabel}`,
+      `CEO · Cloud Primary · ${branchLabel}`,
     );
   });
 
@@ -973,10 +995,30 @@ describe("environment follow-up summary", () => {
 });
 
 describe("ThreadDetailPromptArea", () => {
-  it.each(["pi", "codex"])(
-    "keeps the %s agent selected in a cloud follow-up",
-    (providerId) => {
-      const model = "openai-codex/gpt-6-astra";
+  it("clears the neutral reconnect notice while idle and keeps genuine errors visible", async () => {
+    const queryKey = ["cloudroom-thread", "thr_1"];
+    testQueryClient.setQueryDefaults(queryKey, { staleTime: Infinity });
+    const status = { sessionId: "cloud-session", paused: false, model: "gpt-6-astra", reasoning: "medium", error: null, pendingDelivery: 0, reconnecting: true };
+    testQueryClient.setQueryData(queryKey, status);
+    renderPromptArea({ thread: makeThread({ executionTarget: "cloud", status: "idle" }) });
+    expect(screen.getByRole("status").textContent).toBe("Reconnecting…");
+    expect(screen.queryByRole("alert")).toBeNull();
+    await act(async () => { testQueryClient.setQueryData(queryKey, { ...status, reconnecting: false }); });
+    await waitFor(() => expect(screen.queryByText("Reconnecting…")).toBeNull());
+    await act(async () => { testQueryClient.setQueryData(queryKey, { ...status, error: "Cloudroom authentication failed" }); });
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toBe("Cloudroom authentication failed"));
+    expect(screen.queryByText("Reconnecting…")).toBeNull();
+    expect(mocks.sendMessageMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["pi", "openai-codex/gpt-6-astra", "GPT-6 Astra"],
+    ["codex", "openai-codex/gpt-6-astra", "GPT-6 Astra"],
+    ["codex", "gpt-6-astra", "GPT-6 Astra"],
+    ["pi", "anthropic/claude-opus-4-20250514", "Claude Opus 4"],
+  ])(
+    "keeps the %s agent and model label for %s in a cloud follow-up",
+    (providerId, model, label) => {
       const queryKey = ["cloudroom-thread", "thr_1"];
       testQueryClient.setQueryDefaults(queryKey, { staleTime: Infinity });
       testQueryClient.setQueryData(queryKey, {
@@ -997,6 +1039,7 @@ describe("ThreadDetailPromptArea", () => {
         providerId,
       );
       expect(screen.getByTestId("selected-model").textContent).toBe(model);
+      expect(screen.getByTestId("selected-model-label").textContent).toBe(label);
     },
   );
 
@@ -1042,9 +1085,10 @@ describe("ThreadDetailPromptArea", () => {
     expect(screen.getByRole("status").textContent).toContain(
       "Loading queued message details",
     );
-    expect(screen.getByLabelText("Queued messages").textContent).toContain(
-      "Queue1",
-    );
+    expect(
+      screen.getByLabelText("Queued messages").contains(screen.getByRole("status")),
+    ).toBe(true);
+    expect(screen.queryByText("Queue")).toBeNull();
   });
 
   it("keeps sent-message edit submission out of the normal send path", () => {
@@ -1151,6 +1195,51 @@ describe("ThreadDetailPromptArea", () => {
       inlineEditor.getByRole("button", { name: "Escape composer" }),
     );
     expect(onCancel).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["local", "cloud"] as const)("edits %s reasoning without unlocking the model or leaking the choice to another draft", (executionTarget) => {
+    mocks.defaultExecutionOptions = {
+      model: "gpt-5", permissionMode: "auto", reasoningLevel: "medium",
+      serviceTier: "default", source: "client/turn/requested",
+    };
+    const thread = makeThread({ executionTarget });
+    if (executionTarget === "cloud") {
+      const key = ["cloudroom-thread", thread.id];
+      testQueryClient.setQueryDefaults(key, { staleTime: Infinity });
+      testQueryClient.setQueryData(key, {
+        sessionId: "cloud-session", paused: false, failedStart: false,
+        model: "gpt-6-astra", reasoning: "medium", error: null, pendingDelivery: 0,
+      });
+    }
+    const hostElement = document.createElement("div");
+    hostElement.dataset.sentMessageEditorTestHost = "";
+    document.body.append(hostElement);
+    const edit: ThreadDetailSentMessageEdit = {
+      draft: { text: "Edited request", mentions: [], attachments: [] },
+      hostElement, isSubmitting: false, operationId: "reasoning-edit-1",
+      onCancel: vi.fn(), onSubmit: vi.fn(), updateDraft: vi.fn(),
+    };
+    const { rerender } = renderPromptArea({ thread, sentMessageEdit: edit });
+    const editor = within(hostElement);
+    const bottomComposer = screen.getAllByTestId("follow-up-prompt-box").find((element) => !hostElement.contains(element))!;
+    expect(editor.getByTestId("model-selection-locked").textContent).toBe("true");
+    expect(editor.getByTestId("permission-read-only").textContent).toBe("true");
+    fireEvent.click(editor.getByRole("button", { name: "Select low reasoning" }));
+    expect(editor.getByTestId("selected-reasoning").textContent).toBe("low");
+    expect(within(bottomComposer).getByTestId("selected-reasoning").textContent).toBe("medium");
+    fireEvent.click(editor.getByRole("button", { name: "Submit composer" }));
+    expect(edit.onSubmit).toHaveBeenCalledWith({
+      execution: expect.objectContaining({
+        model: executionTarget === "cloud" ? "gpt-6-astra" : "gpt-5",
+        permissionMode: executionTarget === "cloud" ? "full" : "auto",
+        reasoningLevel: "low", executionInputSources: { reasoningLevel: "explicit" },
+      }),
+      input: [{ type: "text", text: "Edited request", mentions: [] }],
+    });
+    expect(mocks.sendMessageMutateAsync).not.toHaveBeenCalled();
+    rerender(buildPromptAreaElement({ thread }));
+    rerender(buildPromptAreaElement({ thread, sentMessageEdit: { ...edit, operationId: "reasoning-edit-2" } }));
+    expect(editor.getByTestId("selected-reasoning").textContent).toBe("medium");
   });
 
   it("blocks a staged sent-message edit when the thread becomes ineligible", () => {

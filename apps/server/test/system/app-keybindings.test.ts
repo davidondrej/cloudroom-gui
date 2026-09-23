@@ -133,7 +133,7 @@ describe("app keybindings", () => {
       );
       expect(config.keybindingOverrides).toEqual([]);
       expect(assignedDefaultKeybindings).toEqual(config.keybindings);
-      for (const command of ["thread.rename", "thread.archive"] as const) {
+      for (const command of ["thread.rename", "panel.close"] as const) {
         expect(
           config.defaultKeybindings.find(
             (binding) => binding.command === command,
@@ -147,6 +147,15 @@ describe("app keybindings", () => {
           config.keybindings.some((binding) => binding.command === command),
         ).toBe(false);
       }
+      expect(
+        config.keybindings.find(
+          (binding) => binding.command === "thread.archive",
+        ),
+      ).toMatchObject({
+        desktopOnly: false,
+        shortcut: { key: "w", mod: true, shift: false },
+        when: { all: ["mainSurface"], none: ["modalOpen"] },
+      });
       for (const command of [
         "pane.focus.previous",
         "pane.focus.next",

@@ -54,7 +54,7 @@ function providerLabel(
   provider: SkillProvider | null,
   providerRoster: ProviderRoster,
 ): string {
-  if (provider === null) return "bb";
+  if (provider === null) return "Room";
   return providerRoster.get(provider)?.displayName ?? provider;
 }
 
@@ -66,7 +66,7 @@ function providerFilterLabel(
   provider: ResourceProviderFilter,
   providerRoster: ProviderRoster,
 ): string {
-  return provider === "bb" ? "bb" : providerLabel(provider, providerRoster);
+  return provider === "bb" ? "Room" : providerLabel(provider, providerRoster);
 }
 
 function skillSourceFilterId(skill: SkillSummary): ResourceSkillSourceFilter {
@@ -144,7 +144,7 @@ export function SkillProvenanceTooltip({
         className="flex size-3.5 shrink-0 items-center justify-center"
       >
         {providerId === null ? (
-          <BbLogo className="size-3.5 brightness-0 invert" />
+          <BbLogo className="size-3.5" />
         ) : (
           <ProviderLogo
             providerId={providerId}
@@ -234,11 +234,11 @@ const SKILLS_BROWSE_DESCRIPTION = (
     >
       skills.sh
     </a>
-    . Install one and every agent you use in bb can run it.
+    . Install one and every agent you use in Room can run it.
   </>
 );
 const SKILLS_LIBRARY_DESCRIPTION =
-  "The skills on this bb host — yours, your providers', and those bundled with plugins. They work with every agent you use in bb.";
+  "The skills on this Room host — yours, your providers', and those bundled with plugins. They work with every agent you use in Room.";
 
 const PREFETCH_HOVER_INTENT_MS = 150;
 
@@ -540,7 +540,7 @@ export function SkillsOverview({
               action={
                 <CreateWithTemplatesButton
                   kind="skill"
-                  label="New bb skill"
+                  label="New Room skill"
                   onCreate={onCreateSkill}
                 />
               }
@@ -695,7 +695,7 @@ export function SkillDetailDialogView({
         skill.scope === "bb-builtin"
           ? {
               label: "BB Official",
-              tooltip: "Ships with bb",
+              tooltip: "Ships with Room",
               accessibleLabel: `${skill.name} is BB Official`,
             }
           : bundledPluginName !== null

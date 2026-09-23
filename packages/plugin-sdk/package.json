@@ -92,6 +92,12 @@
       "import": "./dist/internal/file-navigation-validation.js",
       "default": "./dist/internal/file-navigation-validation.js"
     },
+    "./internal/command-guard": {
+      "source": "./src/internal/command-guard.ts",
+      "types": "./bundled-types/bb-plugin-sdk-internal-command-guard.d.ts",
+      "import": "./dist/internal/command-guard.js",
+      "default": "./dist/internal/command-guard.js"
+    },
     "./internal/host-policy": {
       "source": "./src/internal/host-policy.ts",
       "types": "./bundled-types/bb-plugin-sdk-internal-host-policy.d.ts",

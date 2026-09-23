@@ -2,30 +2,30 @@ The builtin Account Pooler plugin is disabled by default. Enable it, add Claude
 or Codex credentials, and inspect its proxy routes and account quota with:
 
 ```sh
-bb plugin enable account-pool
-bb pool account add --provider claude --login
-printf '%s\n' "$CLAUDE_AUTH_CODE" | bb pool account login-complete --session <id> --code-stdin
-bb pool account add --provider codex --login
-bb pool account login-poll --session <id>
-bb pool account add --provider claude --import
-bb pool account add --provider codex --import
-printf '%s\n' "$ANTHROPIC_API_KEY" | bb pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]
-bb pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]
-bb pool account list [--json]
-bb pool account remove <id>
-bb pool account enable <id>
-bb pool account disable <id>
-bb pool account priority <id> <n>
-bb pool account reorder <claude|codex> <id>...
-bb pool account refresh <id>
-bb pool status [--json]
-bb pool routing <claude|codex> [--off]
-bb pool config
-bb pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>
-bb pool cache-miss list [--json]
-bb pool cache-miss clear
-bb pool token rotate --machine <id-or-name>
-bb pool bypass <thread-id> [--off]
+room plugin enable account-pool
+room pool account add --provider claude --login
+printf '%s\n' "$CLAUDE_AUTH_CODE" | room pool account login-complete --session <id> --code-stdin
+room pool account add --provider codex --login
+room pool account login-poll --session <id>
+room pool account add --provider claude --import
+room pool account add --provider codex --import
+printf '%s\n' "$ANTHROPIC_API_KEY" | room pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]
+room pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]
+room pool account list [--json]
+room pool account remove <id>
+room pool account enable <id>
+room pool account disable <id>
+room pool account priority <id> <n>
+room pool account reorder <claude|codex> <id>...
+room pool account refresh <id>
+room pool status [--json]
+room pool routing <claude|codex> [--off]
+room pool config
+room pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>
+room pool cache-miss list [--json]
+room pool cache-miss clear
+room pool token rotate --machine <id-or-name>
+room pool bypass <thread-id> [--off]
 ```
 
 Claude `--login` starts a PKCE session, prints a browser URL and session ID,
@@ -33,13 +33,13 @@ then exits. Pipe the manual callback code to `account login-complete` with that
 session ID within ten minutes. Codex `--login` prints a device verification
 URL, one-time code, session ID, and an `account login-poll` command that waits
 for authorization. The Claude code stays out of process arguments, and either
-browser may be on a different machine from the bb server. Newly added or
+browser may be on a different machine from the Room server. Newly added or
 enabled accounts are available without a plugin reload. With an
 enabled account whose secret file remains readable and valid, matching Claude
 Code or Codex sessions receive the pool route and a distinct secret token for
 their machine.
 Codex receives `CODEX_OPENAI_BASE_URL` and the secret
-`CODEX_POOL_AUTH_TOKEN`; bb applies them as in-memory app-server config.
+`CODEX_POOL_AUTH_TOKEN`; Room applies them as in-memory app-server config.
 Codex image generation and editing use the same authenticated pool route.
 Tokens are never printed. `status` prunes tokens for unenrolled machines and
 shows token timestamps plus recently routed threads whose machines need a
@@ -49,16 +49,16 @@ prior token valid for ten minutes. Agents should pipe API keys to
 `--api-key <key>` is an unsafe compatibility form that exposes the key in
 process arguments, shell history, and agent transcripts. Prefer `--import` for
 an existing Claude Code login. The CLI Codex import path reads
-`~/.codex/auth.json` on the bb server host. OAuth quota refreshes on add or
+`~/.codex/auth.json` on the Room server host. OAuth quota refreshes on add or
 enable and every five minutes while an account is idle. Use
-`bb pool account refresh <id>` to request an immediate refresh for one account.
+`room pool account refresh <id>` to request an immediate refresh for one account.
 Account tables add columns for observed model-family buckets; JSON status
 exposes their utilization, reset, status, observation time, and source under
 `familyWeekly`. Selection skips an account whose requested family is spent
 while retaining it for other families. A present `metadata.user_id` account
-UUID is aligned with the selected OAuth account. Use `bb pool config` to
+UUID is aligned with the selected OAuth account. Use `room pool config` to
 inspect the full routing configuration and
-`bb pool config set <key> <value>` to update one value. The upstream URL keys
+`room pool config set <key> <value>` to update one value. The upstream URL keys
 are QA-only overrides; `switchThreshold` must be greater than 0 and at most 1.
 
 Accounts run sequentially per provider: lower priority numbers first, with ties
@@ -75,23 +75,23 @@ and the pool retains the 4,096 most recently used pins.
 
 Drag an account’s handle in Account Pooler settings (or focus the handle and use
 Space, arrow keys, and Space again), or
-`bb pool account reorder <claude|codex> <id>...`, to set the complete order for
+`room pool account reorder <claude|codex> <id>...`, to set the complete order for
 one provider. Include disabled accounts too. Reordering changes the next failover
-sequence without moving the current account. `bb pool account priority <id> <n>`
+sequence without moving the current account. `room pool account priority <id> <n>`
 sets an individual priority; the same operations are available through the
 `account.reorder` and `account.setPriority` plugin RPCs.
 
-## Nested bb servers
+## Nested Room servers
 
-A bb server started from inside another bb server's thread inherits that parent's
+A Room server started from inside another Room server's thread inherits that parent's
 pooler routing through its environment. The parent contributes
 `BB_ACCOUNT_POOL_PARENT_URL` and `BB_ACCOUNT_POOL_PARENT_TOKEN` alongside the
 provider routing variables, and the nested server enables the pooler on first run
 when it sees them.
 
-`bb pool parent` reports the detected parent, the current mode, and which
-providers the parent can serve. `bb pool parent proxy` and `bb pool parent
-isolate` set the mode; `bb pool config` shows it as `parentMode`.
+`room pool parent` reports the detected parent, the current mode, and which
+providers the parent can serve. `room pool parent proxy` and `room pool parent
+isolate` set the mode; `room pool config` shows it as `parentMode`.
 
 In `proxy` mode the nested server runs its own hub and mints its own machine
 tokens, forwarding pooled traffic upstream with the parent's token, so the
@@ -104,13 +104,13 @@ In `isolate` mode the nested server contributes empty routing variables, which
 overrides the inherited values so threads fall back to that instance's own
 accounts or to each provider's own credentials.
 
-Proxied traffic authenticates as the parent machine's token, so `bb pool status`
+Proxied traffic authenticates as the parent machine's token, so `room pool status`
 on the parent attributes it to the parent host rather than to the nested
 instance.
 
 ## Cache miss debugging
 
-Turn on reports with `bb pool config set cacheMissDebug true` or the cache miss
+Turn on reports with `room pool config set cacheMissDebug true` or the cache miss
 debugging switch in Account Pooler settings; `false` is the default. While it is
 on, the hub follows successful Claude `/v1/messages` and Codex `/v1/responses`
 requests that carry a provider session id and report usage. Claude requests
@@ -167,7 +167,7 @@ A report lists every cause that applies, in this order:
   previous request this one started. The provider likely evicted the entry or
   routed the request to another backend.
 
-`bb pool cache-miss list` prints each report's time, provider, model, session
+`room pool cache-miss list` prints each report's time, provider, model, session
 id, host, account, token counts, causes, and the divergent segment with
 indented excerpts. For a modified segment it prints the start both excerpts
 share once as `unchanged:`, then `before:` and `after:` from the first
@@ -176,7 +176,7 @@ line breaks as real line breaks and highlights the text from the first
 difference on. `--json` prints
 `{ "reports": [...], "cacheMissDebug": <boolean>, "forwardsToParent": <boolean> }`
 with the full excerpts, so a script can tell an empty list from reporting that
-is off or left to a parent pool. `bb pool cache-miss clear` removes the
+is off or left to a parent pool. `room pool cache-miss clear` removes the
 reports. The `cacheMiss.list` and `cacheMiss.clear` plugin RPCs return the same
 reports.
 
@@ -200,6 +200,6 @@ account id, missed and expected tokens, cause kinds, and divergence path, but
 no prompt text or account labels.
 
 A nested server in `proxy` mode does not analyze the traffic it forwards.
-`bb pool cache-miss list` there says so, and its `--json` output sets
+`room pool cache-miss list` there says so, and its `--json` output sets
 `forwardsToParent` to `true`. Enable `cacheMissDebug` on the parent pool that
 owns the accounts.

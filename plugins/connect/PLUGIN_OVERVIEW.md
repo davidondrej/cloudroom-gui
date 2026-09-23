@@ -1,20 +1,16 @@
-Open your bb from a phone or another computer. After you pair, this bb answers at `https://<handle>.getbb.app` for anyone signed in to your getbb.app account.
+Cloudroom Connect opens Room from a phone or another computer. It is powered by BB Connect. Your private `https://<handle>.getbb.app` address requires your BB Connect account login.
 
 ## What you get
 
-- Remote access to the full bb app through a tunnel. Your bb makes an outbound connection, so you do not open ports or change your router.
-- Port shares. Publish a local HTTP server, such as a dev server, at a share URL. The link opens from any device with your session.
-- Pairing for the bb mobile app with a QR code or a one-time code.
-- A Remote access section in Settings, and a sidebar shortcut to it, with the connection state and the remote URL.
+- Remote access through an outbound tunnel. No router changes or open inbound ports.
+- Port shares for local HTTP servers, accessible to viewers signed in to your account.
+- The Cloudroom mobile app: open your remote URL in Safari or Chrome, then use Add to Home Screen or Install app. This is the PWA, not BB's native mobile app.
+- Connection status, your remote URL, and a sidebar shortcut in Cloudroom Connect settings.
 
-## How it works
+## Setup and commands
 
-Get a pairing code from the getbb.app dashboard and enter it in Settings. You can also run `bb connect --code <code> --server <url>`. The plugin keeps the tunnel open in the background and reconnects after a drop. Disable the plugin to cut all remote access at once. `bb connect off` also disconnects and forgets the pairing.
+Get a code from the getbb.app dashboard and enter it in Settings → Cloudroom Connect, or run `room connect --code <code> --server <url>`. The tunnel reconnects after a drop. Disable the plugin to stop remote access; `room connect off` also forgets the pairing.
 
-## For agents
+Agents use `room connect expose <port>` to share previews. Inspect with `room connect status`, `room connect shares`, and `room connect servers`; stop a share with `room connect unexpose <port>`.
 
-When you view bb remotely, agents are told to share servers with `bb connect expose <port>`. A localhost link would not open. The `share-server-links` skill explains the flow. Other commands: `bb connect status`, `bb connect unexpose <port>`, `bb connect shares`, `bb connect servers`, and `bb connect machine-code`.
-
-## Requirements
-
-A getbb.app account. Share links open only for viewers with your getbb.app session; they are not public. Mobile pairing needs the "Mobile app" experiment.
+Existing native-device enrollment remains available through `room connect machine-code` for compatibility. The PWA uses browser login and does not need that command or a native pairing code.

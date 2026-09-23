@@ -260,7 +260,7 @@ describe("Theme Preview", () => {
       ).toBeDefined();
       expect(
         within(welcome).getByRole("button", {
-          name: /Learn what bb can do\s*Get a tour/i,
+          name: /Learn what Room can do\s*Get a tour/i,
         }),
       ).toBeDefined();
       expect(within(welcome).queryByText("What are we building?")).toBeNull();
@@ -514,7 +514,7 @@ describe("Theme Preview", () => {
       expect(container?.style.boxSizing).toBe("border-box");
       expect(container?.style.padding).toBe("16px");
       // At a phone-width pane the sidebar and info panel stay out.
-      expect(screen.queryByText("bb-plugins")).toBeNull();
+      expect(screen.queryByText("room-plugins")).toBeNull();
       expect(screen.queryByText("Pull request")).toBeNull();
     } finally {
       width.mockRestore();
@@ -545,7 +545,7 @@ describe("Theme Preview", () => {
         setTheme: () => DEFAULT_CATALOG,
       });
 
-      await waitFor(() => expect(screen.queryByText("bb-plugins")).not.toBeNull());
+      await waitFor(() => expect(screen.queryByText("room-plugins")).not.toBeNull());
       expect(screen.getByText("Pull request")).toBeDefined();
       expect(document.querySelector("[data-tp-mock-sidebar=left]")).not.toBeNull();
       expect(document.querySelector("[data-tp-mock-sidebar=right]")).not.toBeNull();

@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseChangelog } from "../../../../../changelog-parser";
 import {
   CHANGELOG_ENTRIES,
+  CHANGELOG_LINKS,
+  fetchLatestChangelogEntry,
   LATEST_CHANGELOG_ENTRY,
   RELEASE_META,
 } from "./changelog-preview";
@@ -107,22 +109,44 @@ It also adds more ways to customize bb.
   });
 });
 
-describe("LATEST_CHANGELOG_ENTRY", () => {
-  it("is the newest release, not the running build's", () => {
-    expect(LATEST_CHANGELOG_ENTRY).toBe(CHANGELOG_ENTRIES[0]);
+describe("Cloudroom changelog", () => {
+  afterEach(() => {
+    CHANGELOG_LINKS.page = null;
+    CHANGELOG_LINKS.source = null;
   });
 
-  it("reads the repo's own changelog", () => {
-    expect(CHANGELOG_ENTRIES.length).toBeGreaterThan(0);
-    expect(LATEST_CHANGELOG_ENTRY?.version).toMatch(/^\d+\.\d+\.\d+/);
-    expect(LATEST_CHANGELOG_ENTRY?.sections.length).toBeGreaterThan(0);
+  it("does not present inherited BB releases as Cloudroom updates", () => {
+    expect(CHANGELOG_ENTRIES).toEqual([]);
+    expect(LATEST_CHANGELOG_ENTRY).toBeNull();
+    expect(RELEASE_META).toEqual({});
   });
 
-  it("has presentation metadata for the newest release", () => {
-    expect(
-      LATEST_CHANGELOG_ENTRY === null
-        ? undefined
-        : RELEASE_META[LATEST_CHANGELOG_ENTRY.version],
-    ).toBeDefined();
+  it("does not fetch until a Cloudroom source is configured", async () => {
+    CHANGELOG_LINKS.source = null;
+    const fetchFn = vi.fn(async () => new Response("## 12\n\nA Room release."));
+    expect(await fetchLatestChangelogEntry(fetchFn)).toBeNull();
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("reads a configured Cloudroom source and reports unusable responses", async () => {
+    CHANGELOG_LINKS.source = "https://example.test/cloudroom/changelog.md";
+    const signal = new AbortController().signal;
+    const fetchFn = vi.fn(async () => new Response("## 12\n\nA Room release."));
+    expect(await fetchLatestChangelogEntry(fetchFn, signal)).toEqual({
+      version: "12",
+      lede: [{ kind: "paragraph", text: "A Room release." }],
+      sections: [],
+    });
+    expect(fetchFn).toHaveBeenCalledExactlyOnceWith(CHANGELOG_LINKS.source, {
+      signal,
+    });
+    fetchFn.mockResolvedValueOnce(new Response("", { status: 503 }));
+    await expect(fetchLatestChangelogEntry(fetchFn)).rejects.toThrow(
+      "Changelog request failed (503)",
+    );
+    fetchFn.mockResolvedValueOnce(new Response(""));
+    await expect(fetchLatestChangelogEntry(fetchFn)).rejects.toThrow(
+      "The changelog has no releases",
+    );
   });
 });

@@ -28,6 +28,7 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-text: var(--primary-text);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -415,7 +416,8 @@
   --card-foreground: var(--ink);
   --popover: var(--canvas);
   --popover-foreground: var(--ink);
-  --primary: #fd360e;
+  --primary: #bfff00;
+  --primary-text: var(--primary);
   --primary-foreground: color-mix(in oklch, var(--ink) 20%, black);
   /* Subtle fill. secondary and accent share one low-emphasis step a touch more
    * prominent than the card; they stay separate tokens for their distinct
@@ -660,7 +662,8 @@
   --card-foreground: var(--ink);
   --popover: var(--canvas);
   --popover-foreground: var(--ink);
-  --primary: #fd360e;
+  --primary: #bfff00;
+  --primary-text: var(--primary);
   --primary-foreground: color-mix(in oklch, var(--ink) 20%, black);
   /* Subtle fill: secondary and accent share one step; muted is a distinct step
    * more prominent (in light too), so the ramp reads the same in both themes. */

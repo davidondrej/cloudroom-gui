@@ -95,6 +95,7 @@ type ClearSelectionHandler = () => void;
 interface ModelReasoningSelection {
   model: string;
   reasoningLevel: ReasoningLevel;
+  serviceTier?: ServiceTier;
 }
 
 interface ProviderModelReasoningSelection extends ModelReasoningSelection {
@@ -236,8 +237,6 @@ export function useThreadCreationOptions(
     usePromptBoxProviderPreference();
   const setStoredProviderModelReasoning =
     useSetPromptBoxProviderModelReasoningPreference();
-  const { setValue: setStoredServiceTier, value: storedServiceTier } =
-    usePromptBoxServiceTierPreference();
   const { setValue: setStoredPermissionMode, value: storedPermissionMode } =
     usePromptBoxPermissionModePreference();
   const {
@@ -311,9 +310,6 @@ export function useThreadCreationOptions(
   const selectedProviderIdBeforeReadyFallback = usesStoredCreateSelections
     ? storedProviderId || renderedThreadSelections.selectedProviderId
     : renderedThreadSelections.selectedProviderId;
-  const rawServiceTier = usesStoredCreateSelections
-    ? storedServiceTier || renderedThreadSelections.serviceTier
-    : renderedThreadSelections.serviceTier;
   const rawPermissionMode = usesStoredCreateSelections
     ? storedPermissionMode || renderedThreadSelections.permissionMode
     : renderedThreadSelections.permissionMode;
@@ -423,6 +419,8 @@ export function useThreadCreationOptions(
     usePromptBoxModelPreference(effectiveProviderId);
   const { setValue: setStoredReasoningLevel, value: storedReasoningLevel } =
     usePromptBoxReasoningLevelPreference(effectiveProviderId);
+  const { setValue: setStoredServiceTier, value: storedServiceTier } =
+    usePromptBoxServiceTierPreference(effectiveProviderId);
   const effectiveProviderMatchesInitialProvider =
     effectiveProviderId.length > 0 &&
     effectiveProviderId === renderedThreadSelections.selectedProviderId;
@@ -432,6 +430,12 @@ export function useThreadCreationOptions(
         ? renderedThreadSelections.selectedModel
         : "")
     : renderedThreadSelections.selectedModel;
+  const rawServiceTier = usesStoredCreateSelections
+    ? storedServiceTier ||
+      (effectiveProviderMatchesInitialProvider
+        ? renderedThreadSelections.serviceTier
+        : undefined)
+    : renderedThreadSelections.serviceTier;
   const preferredReasoningLevel: ReasoningLevel | undefined =
     usesStoredCreateSelections
       ? storedReasoningLevel ||
@@ -655,10 +659,14 @@ export function useThreadCreationOptions(
       }
       touchedThreadFieldsRef.current.add("selectedModel");
       touchedThreadFieldsRef.current.add("reasoningLevel");
+      if (value !== effectiveProviderId) {
+        touchedThreadFieldsRef.current.add("serviceTier");
+      }
       if (effectiveProviderId.length > 0) {
         localProviderSelectionsRef.current.set(effectiveProviderId, {
           model: selectedModel,
           reasoningLevel,
+          serviceTier: rawServiceTier,
         });
       }
       const rememberedSelection = localProviderSelectionsRef.current.get(value);
@@ -675,6 +683,10 @@ export function useThreadCreationOptions(
         ...currentSelections,
         selectedProviderId: value,
         selectedModel: rememberedSelection?.model ?? "",
+        serviceTier:
+          value === effectiveProviderId
+            ? rawServiceTier
+            : rememberedSelection?.serviceTier ?? "default",
         reasoningLevel:
           rememberedSelection?.reasoningLevel ??
           currentSelections.reasoningLevel,
@@ -687,6 +699,7 @@ export function useThreadCreationOptions(
       setStoredReasoningLevel,
       setStoredSelectedModel,
       setStoredProviderId,
+      rawServiceTier,
       usesStoredCreateSelections,
     ],
   );
@@ -696,10 +709,17 @@ export function useThreadCreationOptions(
       providerId,
       model,
       reasoningLevel: nextReasoningLevel,
+      serviceTier: nextServiceTier,
     }: ProviderModelReasoningSelection) => {
       touchedThreadFieldsRef.current.add("selectedProviderId");
       touchedThreadFieldsRef.current.add("selectedModel");
       touchedThreadFieldsRef.current.add("reasoningLevel");
+      if (
+        nextServiceTier !== undefined ||
+        (!usesStoredCreateSelections && effectiveProviderId !== providerId)
+      ) {
+        touchedThreadFieldsRef.current.add("serviceTier");
+      }
       if (usesStoredCreateSelections) {
         if (
           effectiveProviderId.length > 0 &&
@@ -712,6 +732,7 @@ export function useThreadCreationOptions(
           providerId,
           model,
           reasoningLevel: nextReasoningLevel,
+          serviceTier: nextServiceTier,
         });
         setStoredProviderId(providerId);
         return;
@@ -723,11 +744,19 @@ export function useThreadCreationOptions(
         localProviderSelectionsRef.current.set(effectiveProviderId, {
           model: selectedModel,
           reasoningLevel,
+          serviceTier: rawServiceTier,
         });
       }
+      const nextTier =
+        nextServiceTier ??
+        (providerId === effectiveProviderId
+          ? rawServiceTier
+          : localProviderSelectionsRef.current.get(providerId)?.serviceTier ??
+            "default");
       localProviderSelectionsRef.current.set(providerId, {
         model,
         reasoningLevel: nextReasoningLevel,
+        serviceTier: nextTier,
       });
       setLocalProvidersUsingDefaults((current) => {
         if (!current.has(providerId)) return current;
@@ -740,6 +769,7 @@ export function useThreadCreationOptions(
         selectedProviderId: providerId,
         selectedModel: model,
         reasoningLevel: nextReasoningLevel,
+        serviceTier: nextTier,
       }));
     },
     [
@@ -750,6 +780,7 @@ export function useThreadCreationOptions(
       setStoredProviderModelReasoning,
       setStoredReasoningLevel,
       setStoredSelectedModel,
+      rawServiceTier,
       usesStoredCreateSelections,
     ],
   );
@@ -785,6 +816,7 @@ export function useThreadCreationOptions(
       localProviderSelectionsRef.current.set(effectiveProviderId, {
         model: value,
         reasoningLevel: nextReasoningLevel,
+        serviceTier: rawServiceTier,
       });
       setThreadSelections((currentSelections) => ({
         ...currentSelections,
@@ -797,6 +829,7 @@ export function useThreadCreationOptions(
       executionOptionsQuery.data?.models,
       executionOptionsQuery.data?.selectedOnlyModels,
       reasoningLevel,
+      rawServiceTier,
       setStoredProviderModelReasoning,
       usesStoredCreateSelections,
     ],
@@ -834,6 +867,7 @@ export function useThreadCreationOptions(
       localProviderSelectionsRef.current.set(effectiveProviderId, {
         model: selectedModel,
         reasoningLevel: value,
+        serviceTier: rawServiceTier,
       });
       setThreadSelections((currentSelections) =>
         updateThreadPromptSelections({
@@ -847,6 +881,7 @@ export function useThreadCreationOptions(
       effectiveProviderId,
       selectedModel,
       setStoredReasoningLevel,
+      rawServiceTier,
       usesStoredCreateSelections,
     ],
   );

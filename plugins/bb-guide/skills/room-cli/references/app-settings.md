@@ -18,7 +18,7 @@ every window and client sees the same value.
   orders, the collapsed-id lists, `sidebar.pluginPanelOrder`,
   `sidebar.visiblePluginPanels`, `sidebar.navigationProvider`,
   `sidebar.threadListProvider`).
-- `sidebar.organizationMode` defaults to Custom (`chronological`) when unset;
+- `sidebar.organizationMode` defaults to By project (`project`) when unset;
   existing server and legacy browser choices are preserved.
 - `room settings ui list [--json]` prints every key with its value, revision,
   and description; `room settings ui get <key> [--json]` prints one.
@@ -36,7 +36,7 @@ every window and client sees the same value.
   disable the shortcuts themselves.
 - Settings → Keyboard records sparse per-command chord overrides. `Mod` means
   Command on macOS and Control on Windows/Linux.
-- Reset removes the override and follows bb's current default. Clear stores an
+- Reset removes the override and follows Room's current default. Clear stores an
   explicit disabled value.
 - Bindings for non-native actions apply in browser and desktop clients. Command
   contexts and native-only availability remain server-owned. Reusing a chord
@@ -45,6 +45,13 @@ every window and client sees the same value.
   the same resolved shortcuts as renderer commands.
 - The complete default table is in `docs/configuration.md` in the room source
   repository.
+
+## Command Guard
+
+Settings → Advanced → Command Guard is on by default. Set `commandGuardEnabled` with
+`room settings general commandGuardEnabled <true|false|on|off>`.
+Start a new Local or Cloud session afterward. Personal guards remain active.
+This blocks common catastrophic shell commands; it is not a sandbox.
 
 ## Diagnostic events
 
@@ -126,7 +133,7 @@ every window and client sees the same value.
 
 ## Provider session release
 
-- BB releases restorable provider sessions after 30 idle minutes.
+- Room releases restorable provider sessions after 30 idle minutes.
 - Active turns, commands, agents, workflows, and monitors keep sessions loaded.
 
 ## Mobile app

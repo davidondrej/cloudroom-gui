@@ -26,6 +26,7 @@ import {
 } from "@bb/core-ui";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
+import { cloudroomEnvironmentPresentation } from "@/lib/cloudroom-environment-label";
 import {
   findEnvironmentDisplayProvider,
   getEnvironmentWorkspaceInfoDisplay,
@@ -261,6 +262,10 @@ export function EnvironmentRow({
     host: environmentDisplayHost,
     providerLookup,
   });
+  const cloudroomPresentation =
+    providerLookup.status === "loaded"
+      ? cloudroomEnvironmentPresentation(providerLookup.environmentProviderId, "local")
+      : null;
   const infoDisplay = getEnvironmentWorkspaceInfoDisplay({
     display,
     providerLookup,
@@ -277,7 +282,11 @@ export function EnvironmentRow({
   return (
     <DetailRow
       label={
-        providerLookup.status === "loaded" &&
+        cloudroomPresentation !== null ? (
+          <DetailRowIconLabel icon={cloudroomPresentation.icon}>
+            Environment
+          </DetailRowIconLabel>
+        ) : providerLookup.status === "loaded" &&
         providerLookup.provider !== null ? (
           <span className="flex items-center gap-1.5">
             <EnvironmentProviderIcon

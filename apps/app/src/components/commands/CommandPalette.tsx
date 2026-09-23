@@ -39,7 +39,10 @@ import { buildSettingsPaletteActions } from "@/lib/command-palette/palette-setti
 import { buildPluginPagePaletteActions } from "@/lib/command-palette/palette-plugin-page-actions";
 import { usePluginSlots } from "@/lib/plugin-slots";
 import { getActiveThreadPanelOpener } from "@/components/plugin/plugin-thread-panel-navigation";
-import { getThreadRoutePath } from "@/lib/route-paths";
+import {
+  getProjectComposeRoutePath,
+  getThreadRoutePath,
+} from "@/lib/route-paths";
 import { pluginListQueryOptions } from "@/hooks/queries/plugin-settings-queries";
 import {
   buildPluginSettingsEntries,
@@ -248,10 +251,12 @@ export function CommandPalette({ threadId, projectId }: CommandPaletteProps) {
     (item: ThreadPaletteNavigationItem) => {
       pendingRunRef.current = () => {
         void navigate(
-          getThreadRoutePath({
-            projectId: item.projectId,
-            threadId: item.threadId,
-          }),
+          item.threadId === null
+            ? getProjectComposeRoutePath(item.projectId)
+            : getThreadRoutePath({
+                projectId: item.projectId,
+                threadId: item.threadId,
+              }),
           item.messageSeq === null
             ? undefined
             : {
@@ -337,7 +342,8 @@ export function CommandPalette({ threadId, projectId }: CommandPaletteProps) {
       : mode === "commands"
         ? `${optionIdPrefix}-${activeIndex}`
         : threadItems[activeIndex]?.optionId;
-  const inputLabel = mode === "commands" ? "Search commands" : "Search threads";
+  const inputLabel =
+    mode === "commands" ? "Search commands" : "Search projects and threads";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -349,7 +355,9 @@ export function CommandPalette({ threadId, projectId }: CommandPaletteProps) {
         data-testid="command-palette"
       >
         <DialogTitle className="sr-only">
-          {mode === "commands" ? "Quick palette" : "Search threads"}
+          {mode === "commands"
+            ? "Quick palette"
+            : "Search projects and threads"}
         </DialogTitle>
         <div className="flex items-center gap-2 border-b px-3">
           <Icon
@@ -382,9 +390,7 @@ export function CommandPalette({ threadId, projectId }: CommandPaletteProps) {
           ref={listRef}
           id={listId}
           role="listbox"
-          aria-label={
-            mode === "commands" ? "Commands" : "Thread search results"
-          }
+          aria-label={mode === "commands" ? "Commands" : "Search results"}
           className="max-h-[min(24rem,50dvh)] overflow-y-auto p-1"
         >
           {mode === "commands" && rankedCommands.length === 0 ? (

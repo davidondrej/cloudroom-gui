@@ -28,7 +28,7 @@ initializeFavicon();
 createRoot(document.getElementById("root")!, {
   onUncaughtError: (error, errorInfo) => {
     console.error(
-      "[bb] uncaught render error — the app root was torn down",
+      "[Room] uncaught render error — the app root was torn down",
       error,
       errorInfo.componentStack,
     );

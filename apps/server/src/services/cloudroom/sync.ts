@@ -22,7 +22,13 @@ export async function syncStatus(deps: Deps) {
 export async function setupSync(deps: Deps): Promise<void> {
   try {
     await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", script, "configure", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json")], { timeout: 30_000, maxBuffer: 64 * 1024 });
-  } catch { throw new ApiError(503, "cloudroom_sync_setup", "Skills and login sync could not start. Cloud sessions are unaffected."); }
+  } catch { throw new ApiError(503, "cloudroom_sync_setup", "Skills and settings sync could not start. Cloud sessions are unaffected."); }
+}
+
+export async function importCodexLogin(deps: Deps): Promise<void> {
+  try {
+    await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", script, "auth", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json")], { timeout: 30_000, maxBuffer: 64 * 1024 });
+  } catch { throw new ApiError(503, "codex_auth_unavailable", "Could not check your saved Codex login. Check the cloud connection and try again."); }
 }
 
 export async function stopSync(deps: Deps): Promise<void> {

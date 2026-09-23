@@ -1,4 +1,5 @@
 import { emitPluginTerminalInput } from "../plugins/plugin-thread-events.js";
+import { requireLiveThreadStoragePath } from "../threads/thread-storage.js";
 import { resolveHostEnvironment } from "../hosts/host-environment.js";
 import { randomUUID } from "node:crypto";
 import {
@@ -688,7 +689,20 @@ export class TerminalSessionLifecycle {
       }),
       requestId,
       terminalId: startingSession.id,
-      ...(args.threadId !== null ? { threadId: args.threadId } : {}),
+      ...(args.threadId !== null
+        ? {
+            threadId: args.threadId,
+            projectId: requirePublicThread(this.options.db, args.threadId)
+              .projectId,
+            threadStoragePath: await requireLiveThreadStoragePath(
+              this.options,
+              {
+                hostId: launchTarget.hostId,
+                threadId: args.threadId,
+              },
+            ),
+          }
+        : {}),
       target: launchTarget.daemonTarget,
       cols: args.payload.cols,
       rows: args.payload.rows,

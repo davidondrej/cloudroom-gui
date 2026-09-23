@@ -1,6 +1,6 @@
 ---
 kind: instruction
-title: bb Guide — Agent Configuration
+title: Room Guide — Agent Configuration
 summary: User and workspace files that customize agent instructions and skills.
 intent: Document the user and workspace files that shape agent behavior for threads.
 editingNotes: Keep accurate against the server's agent-instructions reader and skill loader.
@@ -27,7 +27,7 @@ Workspace instructions (.bb/AGENTS.md):
 
   Only the plural AGENTS.md is read, only from the exact data-dir and
   workspace-root .bb/ locations above (room does not walk parent directories), and
-  an empty file is ignored. This is bb's own provider-agnostic instruction
+  an empty file is ignored. This is Room's own provider-agnostic instruction
   injection, separate from provider-native files such as CLAUDE.md or a
   repo-root AGENTS.md.
 
@@ -41,7 +41,7 @@ Skills (.bb/skills/):
 
   room resolves skills from three sources, in increasing precedence:
 
-    plugin     Skills from enabled plugins, including the bundled BB guide.
+    plugin     Skills from enabled plugins, including the bundled Room guide.
     user       <dataDir>/skills (e.g. ~/.bb/skills).
     project    <workspace>/.bb/skills.
 
@@ -62,7 +62,7 @@ Skills (.bb/skills/):
   identity into room user skills. Registry commands are server-wide and do not
   accept workspace selectors.
 
-  Use `room skill install-cli-skills` to copy bb's built-in CLI skills into a
+  Use `room skill install-cli-skills` to copy Room's built-in CLI skills into a
   machine's global agent skill roots (`~/.agents/skills` and
   `~/.claude/skills`) so agents running outside room can drive it. It installs on
   every connected machine unless you pass `--machine <id-or-name>`, which is
@@ -76,11 +76,11 @@ Skills (.bb/skills/):
 
   Use the skill-creator skill to author and iterate on skills.
 
-BB guide plugin:
+Room guide plugin:
 
-  The enabled-by-default BB guide plugin owns the BB introduction and the
+  The enabled-by-default Room guide plugin owns the Room introduction and the
   room-cli, bb-plugin-authoring, skill-creator, and submit-a-plugin skills. Settings → Installed
-  plugins → BB guide exposes introduction, a master skills switch, and one
+  plugins → Room guide exposes introduction, a master skills switch, and one
   switch per skill. All default to true. Use:
 
     room plugin config bb-guide set introduction false

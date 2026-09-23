@@ -94,7 +94,7 @@ export function createConnectSessionRenewal(
       return;
     }
     args.log?.(
-      `could not renew the bb Connect session: ${result.detail} — retrying`,
+      `could not renew the Cloudroom Connect session: ${result.detail} — retrying`,
     );
     start({ expiresAt: now() + leadMs, remoteServerUrl });
   }

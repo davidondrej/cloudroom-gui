@@ -22,9 +22,9 @@ export function describeServerUrl(serverUrl: string): string {
   try {
     parsed = new URL(serverUrl);
   } catch {
-    return "the saved bb server";
+    return "the saved Room server";
   }
-  return `the bb server at ${parsed.origin}`;
+  return `the Room server at ${parsed.origin}`;
 }
 
 function formatLoadFailure(error: unknown): string {
@@ -54,7 +54,7 @@ export async function loadRemoteServerPage(
         `${BUILTIN_SERVER_NAME}.`,
       logs: "",
       retryable: true,
-      title: "Could not reach this bb server",
+      title: "Could not reach this Room server",
     });
     return false;
   }

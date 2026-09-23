@@ -1109,7 +1109,7 @@ describe("NewProjectDialog", () => {
     fireEvent.change(await slot.findByPlaceholderText("e.g. Tasks Plugin"), {
       target: { value: "Personal Tasks" },
     });
-    fireEvent.click(slot.getByLabelText("Linked bb project"));
+    fireEvent.click(slot.getByLabelText("Linked Room project"));
     fireEvent.click(await slot.findByRole("option", { name: "Personal" }));
     fireEvent.click(slot.getByRole("button", { name: "Create project" }));
 

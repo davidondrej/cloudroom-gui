@@ -14,7 +14,7 @@ export function CommentAuthor({
       <button
         type="button"
         onClick={() => onOpenThread(byline.threadId)}
-        className="truncate font-semibold text-primary hover:underline"
+        className="truncate font-semibold text-primary-text hover:underline"
         title={byline.title}
       >
         {byline.title}

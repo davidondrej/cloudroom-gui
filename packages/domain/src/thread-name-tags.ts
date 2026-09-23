@@ -1,16 +1,17 @@
 import type { ThreadEvent } from "./provider-event.js";
 
-const BB_THREAD_NAME_PREFIX = "[bb] ";
+const ROOM_THREAD_NAME_PREFIX = "[room] ";
+const LEGACY_THREAD_NAME_PREFIX = "[bb] ";
 
 export function toProviderExternalThreadName(title: string): string {
-  return `${BB_THREAD_NAME_PREFIX}${title}`;
+  return `${ROOM_THREAD_NAME_PREFIX}${title}`;
 }
 
 export function fromProviderExternalThreadName(name: string): string {
-  if (!name.startsWith(BB_THREAD_NAME_PREFIX)) {
-    return name;
+  for (const prefix of [ROOM_THREAD_NAME_PREFIX, LEGACY_THREAD_NAME_PREFIX]) {
+    if (name.startsWith(prefix)) return name.slice(prefix.length);
   }
-  return name.slice(BB_THREAD_NAME_PREFIX.length);
+  return name;
 }
 
 export function normalizeProviderThreadNameEvent(

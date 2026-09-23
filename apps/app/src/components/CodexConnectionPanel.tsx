@@ -1,0 +1,119 @@
+import { useEffect, useId, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@bb/shared-ui/button";
+import { PersistentResponsiveDrawerShell } from "@bb/shared-ui/responsive-overlay";
+import { useCloudroomAccount } from "@/hooks/queries/cloudroom-queries";
+import { sdk } from "@/lib/sdk";
+import { copyToClipboardWithToast } from "@/lib/clipboard";
+import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
+
+const eventName = "cloudroom:connect-codex";
+export function openCodexConnection(threadId?: string) {
+  window.dispatchEvent(new CustomEvent(eventName, { detail: threadId ?? null }));
+}
+
+export function openCursorConnection(threadId?: string) {
+  window.dispatchEvent(new CustomEvent("cloudroom:connect-cursor", { detail: threadId ?? null }));
+}
+export function CodexConnectionPanel() { return <ConnectionPanel provider="codex" />; }
+export function CursorConnectionPanel() { return <ConnectionPanel provider="cursor" />; }
+function ConnectionPanel({ provider }: { provider: "codex" | "cursor" }) {
+  const cursor = provider === "cursor";
+  const name = cursor ? "Cursor" : "Codex";
+  const events = cursor ? "cloudroom:connect-cursor" : eventName;
+  const [apiKey, setApiKey] = useState("");
+  const account = useCloudroomAccount();
+  const queryClient = useQueryClient();
+  const titleId = useId();
+  const descriptionId = useId();
+  const [open, setOpen] = useState(false);
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const shown = useRef<string | null>(null);
+  const requestId = useRef<string | null>(null);
+  const accountId = account.data?.account?.id;
+  const queryKey = [`cloudroom-${provider}-auth`, accountId];
+  const auth = useQuery({
+    queryKey,
+    enabled: Boolean(account.data?.ready && (open || (!cursor && shown.current !== accountId))),
+    queryFn: ({ signal }) => cursor ? sdk.cloudroom.cursorAuth(signal) : sdk.cloudroom.codexAuth(signal),
+    retry: false,
+    refetchInterval: query => open && ["waiting", "missing"].includes(query.state.data?.state ?? "") ? 1500 : false,
+  });
+  useEffect(() => {
+    const show = (event: Event) => {
+      setThreadId((event as CustomEvent<string | null>).detail);
+      setOpen(true);
+      setCopied(false);
+    };
+    window.addEventListener(events, show);
+    return () => window.removeEventListener(events, show);
+  }, [events]);
+  useEffect(() => {
+    if (cursor || !accountId || shown.current === accountId || !auth.data) return;
+    shown.current = accountId;
+    if (auth.data.state !== "connected") setOpen(true);
+  }, [accountId, auth.data, cursor]);
+  const action = useMutation({
+    mutationFn: async (kind: "login" | "cancel" | "continue" | "key") => {
+      if (kind === "continue") {
+        if (threadId) await sdk.cloudroom.retryStart(threadId);
+        setOpen(false);
+        setThreadId(null);
+        await queryClient.invalidateQueries({ queryKey: ["cloudroom-thread"] });
+        return;
+      }
+      if (kind === "cancel" && !auth.data?.login_id) return;
+      requestId.current ??= crypto.randomUUID();
+      const key = apiKey;
+      setApiKey("");
+      const result = cursor
+        ? kind === "key" ? await sdk.cloudroom.cursorApiKey(requestId.current, key) : kind === "login" ? await sdk.cloudroom.cursorLogin(requestId.current) : await sdk.cloudroom.cancelCursorLogin(auth.data!.login_id!)
+        : kind === "login" ? await sdk.cloudroom.codexLogin(requestId.current) : await sdk.cloudroom.cancelCodexLogin(auth.data!.login_id!);
+      if (result.state === "error") throw new Error(result.message ?? `${name} sign-in failed`);
+      queryClient.setQueryData(queryKey, result);
+      if (result.state !== "waiting") requestId.current = null;
+      if (!cursor && kind === "login" && result.verification_url) openUrlInExternalBrowser(result.verification_url);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+  });
+  const state = auth.data?.state;
+  const close = () => { shown.current = accountId ?? null; setApiKey(""); setOpen(false); };
+  if (!accountId || !account.data?.ready) return null;
+  return <PersistentResponsiveDrawerShell
+    open={open} onOpenChange={value => { if (!value) close(); }} labelledBy={titleId} describedBy={descriptionId}
+    backdropClassName="bg-black/25 backdrop-blur-xs"
+    contentClassName="inset-0 m-auto h-fit w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-xl p-8 shadow-2xl data-[state=closed]:invisible [&>[data-persistent-drawer-handle]]:hidden"
+  >
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <h2 id={titleId} className="text-xl font-semibold">Connect {name}</h2>
+        <p id={descriptionId} className="text-sm text-muted-foreground">{cursor ? "Use your Cursor account on your cloud VM." : "Use your ChatGPT subscription on your cloud VM."}</p>
+      </div>
+      {(action.error || auth.error) && <p role="alert" className="text-sm text-destructive">{action.error?.message ?? auth.error?.message}</p>}
+      {auth.isPending ? <p role="status">Checking cloud login…</p> : state === "connected" ? <>
+        <p role="status">Connected{auth.data?.email ? ` · ${auth.data.email}` : ""}</p>
+        <Button className="w-full" disabled={action.isPending} onClick={() => action.mutate("continue")}>{threadId ? "Continue to task" : "Done"}</Button>
+      </> : state === "waiting" ? <>
+        <p role="status" className="text-sm">{cursor ? "Open Cursor’s sign-in page. Credentials will be saved on your cloud VM." : "Enter this code on OpenAI’s sign-in page."}</p>
+        {!cursor && <div className="flex items-center justify-between gap-3 border p-3">
+          <code className="text-lg tracking-wider">{auth.data?.user_code}</code>
+          <Button variant="outline" size="sm" onClick={() => void copyToClipboardWithToast(auth.data?.user_code ?? "", { successMessage: null, errorMessage: "Copy failed. Select the code and copy it manually." }).then(setCopied)}>{copied ? "Copied" : "Copy code"}</Button>
+        </div>}
+        <Button className="w-full" disabled={!auth.data?.verification_url} onClick={() => { if (auth.data?.verification_url) openUrlInExternalBrowser(auth.data.verification_url); }}>Open sign-in page</Button>
+        <p className="text-sm text-muted-foreground">Waiting for sign-in. This panel updates automatically.</p>
+        <Button variant="outline" disabled={action.isPending} onClick={() => action.mutate("cancel")}>Cancel sign-in</Button>
+      </> : <>
+        {auth.data?.message && <p role="status" className="text-sm text-muted-foreground">{auth.data.message}</p>}
+        {state !== "limited" && state !== "unavailable" && !auth.isError && <Button className="w-full" disabled={action.isPending} onClick={() => action.mutate("login")}>{action.isPending ? "Starting sign-in…" : cursor ? "Sign in with Cursor" : "Sign in with ChatGPT"}</Button>}
+        {cursor && <details><summary className="cursor-pointer text-sm">Use a Cursor API key instead</summary><div className="mt-3 space-y-2">
+          <label className="block text-sm">Cursor user API key<input type="password" autoComplete="off" value={apiKey} onChange={event => setApiKey(event.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2" /></label>
+          <p className="text-xs text-muted-foreground">Sent securely to your VM. Not saved in this app or included in history.</p>
+          <Button disabled={action.isPending || !apiKey.trim()} onClick={() => action.mutate("key")}>Connect with key</Button>
+        </div></details>}
+        {(auth.isError || state === "unavailable" || state === "limited") && <Button variant="outline" disabled={auth.isFetching} onClick={() => void auth.refetch()}>Check again</Button>}
+      </>}
+      {state !== "connected" && <Button variant="ghost" className="w-full" onClick={close}>Later</Button>}
+    </div>
+  </PersistentResponsiveDrawerShell>;
+}

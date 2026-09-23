@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
+import { prepareCodexGuard } from "@get-bb/plugin-sdk/internal/command-guard";
 import {
   isStandaloneBuiltinCompactCommand,
   approvalInteractionOutcomeSchema,
@@ -995,6 +996,17 @@ async function constructThreadSession(
 
   try {
     await initializeChild(connection, translator.buildPostInitializeRequests());
+    if (args.options.providerOptions?.commandGuardEnabled !== false) {
+      const settings = await connection.request({
+        method: "config/read",
+        params: { cwd: args.cwd, includeLayers: false },
+        resultSchema: z.object({ config: z.object({ features: z.object({ hooks: z.boolean().optional() }).nullish() }).optional() }).passthrough(),
+        timeoutMs: CHILD_REQUEST_TIMEOUT_MS,
+      });
+      if (settings.config?.features?.hooks === false) {
+        throw new Error("Codex hooks are disabled. Enable them in Codex or disable Cloudroom Command Guard before starting a new session.");
+      }
+    }
 
     const preparedGitRoots = translator.prepareWorkspaceWriteGitRoots({
       command: {
@@ -1016,7 +1028,10 @@ async function constructThreadSession(
       ...instructionOverrides,
       model: decoded.sessionOptions.model ?? undefined,
       serviceTier: toCodexServiceTier(decoded.sessionOptions.serviceTier),
-      config: preparedGitRoots.config ?? undefined,
+      config: {
+        ...preparedGitRoots.config,
+        ...(args.options.providerOptions?.commandGuardEnabled === false ? {} : prepareCodexGuard()),
+      },
       ...(dynamicTools && dynamicTools.length > 0 ? { dynamicTools } : {}),
     };
 

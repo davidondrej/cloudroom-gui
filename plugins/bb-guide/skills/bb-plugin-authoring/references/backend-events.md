@@ -292,8 +292,8 @@ wildcards. The handler is a Hono handler:
 `(context) => Response | Promise<Response>`.
 Auth modes:
 
-- `"local"` (default) — accepts no `Origin` header or a trusted BB app origin.
-  A non-GET mutation must use `application/json`. Use this mode for the BB
+- `"local"` (default) — accepts no `Origin` header or a trusted Room app origin.
+  A non-GET mutation must use `application/json`. Use this mode for the Room
   frontend.
 - `"token"` — requires the per-plugin token (`room plugin token <id>`;
   `--rotate` generates a new one, invalidating the old) via the

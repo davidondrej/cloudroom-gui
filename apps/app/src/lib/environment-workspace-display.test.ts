@@ -25,6 +25,26 @@ describe("isHostAmbiguous", () => {
   });
 });
 
+const checkoutProvider: SystemEnvironmentProvider = {
+  machineProviderId: null,
+  id: "project-checkout",
+  displayName: "Project checkout",
+  description: "Work in this project checkout.",
+  icon: "Laptop",
+  logoUrl: null,
+  pluginId: "environment-project-checkout",
+  acceptsEmptyInputs: true,
+  machineAvailability: {},
+  availability: null,
+  requires: {
+    projectCheckout: true,
+    gitCheckout: false,
+    gitRemote: false,
+    projectless: false,
+  },
+  inputs: null,
+};
+
 const worktreeProvider: SystemEnvironmentProvider = {
   machineProviderId: null,
   id: "git-worktree",
@@ -103,6 +123,10 @@ function makeDisplay(
 }
 
 const noProviderLookup = findEnvironmentDisplayProvider([], null);
+const checkoutProviderLookup = findEnvironmentDisplayProvider(
+  [checkoutProvider],
+  "project-checkout",
+);
 const worktreeProviderLookup = findEnvironmentDisplayProvider(
   [worktreeProvider],
   "git-worktree",
@@ -263,6 +287,16 @@ describe("getEnvironmentWorkspaceSummaryDisplay", () => {
 
   it.each([
     {
+      name: "a primary checkout",
+      display: makeDisplay({
+        modeLabel: "Project checkout",
+        compactModeLabel: "Project checkout",
+        providerLabel: "Project checkout",
+      }),
+      providerLookup: checkoutProviderLookup,
+      label: "Local Primary",
+    },
+    {
       name: "a worktree",
       display: makeDisplay({
         modeLabel: "Worktree",
@@ -270,7 +304,7 @@ describe("getEnvironmentWorkspaceSummaryDisplay", () => {
         providerLabel: "Worktree",
       }),
       providerLookup: worktreeProviderLookup,
-      label: "Worktree",
+      label: "Local Worktree",
     },
     {
       name: "a personal workspace",
@@ -373,8 +407,8 @@ describe("getEnvironmentWorkspaceInfoDisplay", () => {
         hostName: "Michael-M4",
       }),
     ).toEqual({
-      label: "Worktree",
-      icon: "FolderGit",
+      label: "Local Worktree",
+      icon: "Laptop",
       machineName: "Michael-M4",
     });
   });

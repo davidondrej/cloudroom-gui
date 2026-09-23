@@ -92,7 +92,7 @@ describe("enrollDesktopMachine", () => {
       }),
     ).resolves.toEqual({
       code: "not_paired",
-      detail: "this bb is not paired with bb Connect",
+      detail: "this Room instance is not paired with Cloudroom Connect",
       ok: false,
     });
     expect(fetchImpl).toHaveBeenCalledTimes(1);

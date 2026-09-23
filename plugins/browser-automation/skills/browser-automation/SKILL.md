@@ -1,9 +1,9 @@
 ---
 name: browser-automation
-description: Use the Browser Automation BB plugin to inspect and automate persistent browser pages in an explicit desktop or local headless session. Use for browser navigation, snapshots, clicking, forms, and verification screenshots.
+description: Use the Browser Automation Room plugin to inspect and automate persistent browser pages in an explicit desktop or local headless session. Use for browser navigation, snapshots, clicking, forms, and verification screenshots.
 ---
 
-Use `bb browser-automation`. Open one session, retain its session ID, then inspect,
+Use `room browser-automation`. Open one session, retain its session ID, then inspect,
 act, and verify in short scripts.
 
 Choose `--backend local --headless --machine <host-id>` for headless Chrome on
@@ -14,7 +14,7 @@ already focused. New or activated controller pages follow the same rule;
 automation does not switch threads or bring the desktop window forward. Headless sessions remain headless.
 Plugin-owned local/headless Chrome launches with `--no-sandbox`, disabling Chrome's
 sandbox. Desktop attachment does not change the browser's launch flags.
-Resolve the explicit instance with `bb browser instances --host <host-id> --json`
+Resolve the explicit instance with `room browser instances --host <host-id> --json`
 first. Never silently choose a different host, mode, or login profile.
 Adding `--tab <tab-id>` hands off an existing tab and its profile's logged-in
 authority; do so only when the user asked to use that tab. The CLI uses the
@@ -24,16 +24,16 @@ that thread.
 CLI opening:
 
 ```sh
-bb browser-automation open --backend local --headless --machine <host-id> --json
-bb browser-automation open --backend desktop --machine <host-id> --desktop <instance-id> --json
+room browser-automation open --backend local --headless --machine <host-id> --json
+room browser-automation open --backend desktop --machine <host-id> --desktop <instance-id> --json
 ```
 
 Run scripts:
 
 ```sh
-bb browser-automation run <session-id> --script 'const p = await browser.getPage("main"); await p.goto("https://example.com"); await p.snapshot()' --json
-bb browser-automation run <session-id> --script 'const p = await browser.getPage("main"); await p.click("ref/e6"); await p.snapshot()' --json
-bb browser-automation screenshot <session-id> --page main --json
+room browser-automation run <session-id> --script 'const p = await browser.getPage("main"); await p.goto("https://example.com"); await p.snapshot()' --json
+room browser-automation run <session-id> --script 'const p = await browser.getPage("main"); await p.click("ref/e6"); await p.snapshot()' --json
+room browser-automation screenshot <session-id> --page main --json
 ```
 
 Take a fresh snapshot before using refs after navigation or document changes.
@@ -50,7 +50,7 @@ you are on the same machine. If the browser host differs, fetch the image to
 local temporary storage first (substitute the returned path and host ID):
 
 ```sh
-bb file read '<image-path>' --host '<host-id>' --json | node -e '
+room file read '<image-path>' --host '<host-id>' --json | node -e '
 const fs = require("node:fs"), os = require("node:os"), path = require("node:path");
 const file = JSON.parse(fs.readFileSync(0, "utf8"));
 if (file.contentEncoding !== "base64") throw new Error("Expected binary image");

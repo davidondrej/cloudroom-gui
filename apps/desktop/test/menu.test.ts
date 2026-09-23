@@ -21,6 +21,7 @@ function menuArgs(
 ): InstallApplicationMenuArgs {
   return {
     accelerators: {
+      archiveThread: undefined,
       closeWindowOrSideTab: undefined,
       createNewWindow: undefined,
       openNewTab: undefined,
@@ -28,6 +29,7 @@ function menuArgs(
       openSettings: undefined,
       reopenClosedTab: undefined,
     },
+    archiveThread: () => {},
     closeWindowOrSideTab: () => {},
     connectServersSkipReason: null,
     createNewWindow: () => {},
@@ -62,6 +64,7 @@ describe("application menu", () => {
     const template = buildApplicationMenuTemplate(
       menuArgs(() => {}, {
         accelerators: {
+          archiveThread: undefined,
           closeWindowOrSideTab: undefined,
           createNewWindow: undefined,
           openNewTab: undefined,
@@ -79,6 +82,31 @@ describe("application menu", () => {
     expect(reopen?.accelerator).toBe("CommandOrControl+Shift+T");
     reopen?.click?.({} as never, {} as BaseWindow, {} as never);
     expect(reopenClosedTab).toHaveBeenCalledTimes(1);
+  });
+
+  it("archives the focused thread from the File menu shortcut", () => {
+    const archiveThread = vi.fn();
+    const template = buildApplicationMenuTemplate(
+      menuArgs(() => {}, {
+        accelerators: {
+          archiveThread: "CommandOrControl+W",
+          closeWindowOrSideTab: undefined,
+          createNewWindow: undefined,
+          openNewTab: undefined,
+          openNewThread: undefined,
+          openSettings: undefined,
+          reopenClosedTab: undefined,
+        },
+        archiveThread,
+      }),
+    );
+    const fileMenu = template.find((item) => item.label === "File");
+    const submenu = fileMenu?.submenu as MenuItemConstructorOptions[];
+    const archive = submenu.find((item) => item.label === "Archive Thread");
+
+    expect(archive?.accelerator).toBe("CommandOrControl+W");
+    archive?.click?.({} as never, {} as BaseWindow, {} as never);
+    expect(archiveThread).toHaveBeenCalledTimes(1);
   });
 
   it("closes a native panel when Electron omits its window", () => {
@@ -191,7 +219,7 @@ describe("application menu", () => {
     expect(note?.enabled).toBe(false);
     expect(note?.type).toBeUndefined();
     expect(note?.click).toBeUndefined();
-    expect(note?.label).toMatch(/sign in to bb Connect/u);
+    expect(note?.label).toMatch(/sign in to Cloudroom Connect/u);
   });
 
   it("builds a native Linux menu with the Linux DevTools accelerator", () => {

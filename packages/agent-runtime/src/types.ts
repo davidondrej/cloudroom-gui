@@ -279,6 +279,7 @@ export interface ListModelsArgs {
   providerId: string;
   bridgeLaunch: AgentRuntimeBridgeLaunch;
   cwd?: string;
+  restart?: boolean;
 }
 
 interface ProviderMaintenanceArgs {

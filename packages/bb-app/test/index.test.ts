@@ -1001,6 +1001,64 @@ describe("bb-app launcher", () => {
     expect(runtime.serverEnv.OPENAI_API_KEY).toBe("stored-openai-key");
   });
 
+  it.each([true, false])(
+    "isolates packaged desktop settings without changing dev startup (packaged=%s)",
+    async (packaged) => {
+      const homeDir = mkdtempSync(join(tmpdir(), "cloudroom-desktop-policy-"));
+      const dataDir = join(homeDir, ".gui-cloudroom");
+      mkdirSync(dataDir);
+      const stored = JSON.stringify({
+        env: {
+          BB_DATA_DIR: join(homeDir, ".bb"),
+          BB_SERVER_PORT: "38886",
+          BB_HOST_DAEMON_PORT: "38887",
+          BB_SERVER_BIND_HOST: "0.0.0.0",
+          BB_HOST_ID: "host_bb",
+          BB_HOST_ENROLL_KEY: "bb-enroll-key",
+          ROOM_SERVER_URL: "http://127.0.0.1:38886",
+          ROOM_HOST_DAEMON_PORT: "38887",
+          OPENAI_API_KEY: "stored-provider-key",
+        },
+      });
+      writeFileSync(join(dataDir, "env.json"), stored);
+      try {
+        const runtime = await resolveBbAppRuntimeState({
+          entrypointUrl: pathToFileURL("/repo/packages/bb-app/dist/bb-app.js")
+            .href,
+          env: {
+            BB_APP_SURFACE: "desktop",
+            ...(packaged ? { ELECTRON_RUN_AS_NODE: "1" } : {}),
+            BB_DATA_DIR: dataDir,
+            BB_SERVER_PORT: "38886",
+            BB_HOST_DAEMON_PORT: "38887",
+          },
+          homeDir,
+          options: { help: false },
+          serverUrlMode: "local",
+        });
+        expect(runtime.context).toMatchObject({
+          daemonPort: packaged ? 39887 : 38887,
+          dataDir: packaged ? dataDir : join(homeDir, ".bb"),
+          serverPort: packaged ? 39886 : 38886,
+          serverUrl: `http://127.0.0.1:${packaged ? 39886 : 38886}`,
+        });
+        for (const env of [runtime.env, runtime.serverEnv]) {
+          expect(env.OPENAI_API_KEY).toBe("stored-provider-key");
+          expect(env.BB_SERVER_BIND_HOST).toBe(
+            packaged ? "127.0.0.1" : "0.0.0.0",
+          );
+          expect(env.BB_HOST_ID).toBe(packaged ? undefined : "host_bb");
+          expect(env.BB_HOST_ENROLL_KEY).toBe(
+            packaged ? undefined : "bb-enroll-key",
+          );
+        }
+        expect(readFileSync(join(dataDir, "env.json"), "utf8")).toBe(stored);
+      } finally {
+        rmSync(homeDir, { recursive: true, force: true });
+      }
+    },
+  );
+
   it("applies the worktree policy after conflicting saved environment values", async () => {
     const dataDir = mkdtempSync(join(tmpdir(), "bb-app-worktree-policy-"));
     const storedDataDir = join(dataDir, "stored-data");

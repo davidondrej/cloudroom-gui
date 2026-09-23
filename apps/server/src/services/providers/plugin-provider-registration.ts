@@ -221,6 +221,11 @@ export function buildPluginProviderRegistration(args: {
     extensionKinds: declaration.extensionKinds ?? {},
     visibility: declaration.experimental_visibility ?? "always",
     fallbackModels: projectFallbackModels(declaration),
+    ...(declaration.experimental_modelDiscoveryRestart === undefined
+      ? {}
+      : {
+          modelDiscoveryRestart: declaration.experimental_modelDiscoveryRestart,
+        }),
     envPassthrough: declaration.env?.passthrough ?? [],
     nativeSkillRoots:
       declaration.experimental_nativeSkillRoots ?? EMPTY_PROVIDER_NATIVE_ROOTS,

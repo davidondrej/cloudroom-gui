@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Edit files in BB with the Monaco editor instead of the read-only preview.",
+  "description": "Edit files in Room with the Monaco editor instead of the read-only preview.",
   "license": "MIT",
   "homepage": "https://github.com/get-bb/bb#readme",
   "bugs": {
@@ -28,7 +28,7 @@
   },
   "bb": {
     "name": "File Editor",
-    "description": "Edit files in BB with the Monaco editor instead of the read-only preview.",
+    "description": "Edit files in Room with the Monaco editor instead of the read-only preview.",
     "branding": {
       "icon": "Code"
     },

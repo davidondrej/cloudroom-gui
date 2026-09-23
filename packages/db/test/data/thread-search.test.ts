@@ -366,6 +366,38 @@ describe("thread search data", () => {
     }
   });
 
+  it.each([false, true])("keeps name matches ahead of content before limiting results (archived: %s)", (archived) => {
+    const { db, project } = setup();
+    try {
+      const titleThread = createThread(db, noopNotifier, {
+        projectId: project.id,
+        providerId: "codex",
+        title: `priorityneedle ${"long title ".repeat(30)}`,
+      });
+      const contentThread = createThread(db, noopNotifier, {
+        projectId: project.id,
+        providerId: "pi",
+        title: "Unrelated name",
+      });
+      upsertThreadSearchSegments(db, {
+        segments: [{ threadId: contentThread.id, sourceKind: "user_message", sourceKey: "event:1", sourceSeq: 1, text: "priorityneedle" }],
+      });
+      if (archived) {
+        archiveThread(db, noopNotifier, titleThread.id);
+        archiveThread(db, noopNotifier, contentThread.id);
+      }
+
+      const results = searchThreadsWithPendingInteractionState(db, {
+        query: "priorityneedle", limitPerGroup: 1,
+      });
+      const group = archived ? results.archived : results.active;
+      expect(group.total).toBe(2);
+      expect(group.results.map((result) => result.thread.id)).toEqual([titleThread.id]);
+    } finally {
+      closeConnection(db);
+    }
+  });
+
   it("returns title matches alongside the single best message match", () => {
     const { db, project } = setup();
     try {

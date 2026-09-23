@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { closeSync, mkdirSync, openSync } from "node:fs";
+import { closeSync, fstatSync, mkdirSync, openSync, readSync } from "node:fs";
 import { join } from "node:path";
 
 interface SpawnLoggedProcessArgs {
@@ -8,6 +8,33 @@ interface SpawnLoggedProcessArgs {
   env: NodeJS.ProcessEnv;
   logDir: string;
   logName: "server" | "host-daemon";
+}
+
+export function readProcessLogTail(logPath: string): string {
+  let fd: number | undefined;
+  try {
+    fd = openSync(logPath, "r");
+    const size = fstatSync(fd).size;
+    const buffer = Buffer.alloc(Math.min(size, 16_384));
+    const bytesRead = readSync(
+      fd,
+      buffer,
+      0,
+      buffer.length,
+      size - buffer.length,
+    );
+    return buffer
+      .subarray(0, bytesRead)
+      .toString("utf8")
+      .trimEnd()
+      .split(/\r?\n/u)
+      .slice(-40)
+      .join("\n");
+  } catch {
+    return "";
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
 }
 
 export function spawnLoggedProcess(args: SpawnLoggedProcessArgs): ChildProcess {

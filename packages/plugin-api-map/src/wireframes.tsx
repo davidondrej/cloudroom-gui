@@ -696,7 +696,7 @@ function RightPanelTabLaneBadges({
       />
       <MeasuredBadge
         id="code-renderers"
-        label="Plugin code and diff renderers on bb's Diff tab"
+        label="Plugin code and diff renderers on Room's Diff tab"
         anchor='[data-guide-region="code-renderers"]'
         at="lane"
         onActivate={() => onTabSelect("code-renderers")}
@@ -921,7 +921,7 @@ export function CommandPaletteWireframe() {
                 </div>
                 <MeasuredBadge
                   id="command-palette-actions"
-                  label="Plugin actions in bb's quick command palette"
+                  label="Plugin actions in Room's quick command palette"
                   anchor='[data-guide-region="command-palette-actions"]'
                   at="start"
                   flush
@@ -1240,7 +1240,7 @@ export function AppShellRightPanel({
           </span>
           <Mark
             id="code-renderers"
-            label="Plugin code and diff renderers on bb's Diff tab"
+            label="Plugin code and diff renderers on Room's Diff tab"
             className={cn(
               tabClass("code-renderers"),
               "gap-1.5 whitespace-nowrap pl-1.5 pr-2",
@@ -1745,7 +1745,7 @@ export function SettingsWireframe() {
           <span className="block text-subtle-foreground">Configuration</span>
           <Mark
             id="declarative-settings"
-            label="The form bb generates from the fields you declare"
+            label="The form Room generates from the fields you declare"
             className="block bg-surface-recessed-solid p-3"
           >
             <span className="flex items-start justify-between gap-3 py-1.5">
@@ -1860,7 +1860,7 @@ export function ExtensionsPluginPageWireframe() {
       <div className="flex min-h-[470px] flex-col">
         <Mark
           id="plugin-status"
-          label="The needs-configuration banner bb shows for a plugin that reports it"
+          label="The needs-configuration banner Room shows for a plugin that reports it"
           className="flex items-start gap-2 border-b border-border bg-surface-recessed/55 px-5 py-2.5 text-sm"
           chip="corner-inset"
         >

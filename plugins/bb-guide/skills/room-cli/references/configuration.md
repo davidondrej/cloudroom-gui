@@ -70,7 +70,7 @@
   `room skill registry detail <registry-skill-id>`.
   Install with `room skill install <registry-skill-id>`; never infer an install
   source from a display name.
-- `room skill install-cli-skills` copies bb's built-in CLI skills into a machine's
+- `room skill install-cli-skills` copies Room's built-in CLI skills into a machine's
   global agent skill roots (`~/.agents/skills` and `~/.claude/skills`) so agents
   outside room can drive bb. It targets every connected machine unless you pass
   the repeatable `--machine <id-or-name>`, and reports each machine's outcome.
@@ -79,9 +79,9 @@
 - `room skill cli-skills-status` reports per machine whether the installed copy is
   `installed`, `outdated`, `missing`, or `unknown` (disconnected or unreachable).
 
-## BB guide instructions and skills
+## Room guide instructions and skills
 
-Settings → Installed plugins → BB guide controls the BB introduction and the
+Settings → Installed plugins → Room guide controls the Room introduction and the
 four bundled skills. All settings default to true. Use
 `room plugin config bb-guide set <key> true|false` with `introduction`, `skills`
 (the master skill switch), `bbCli`, `pluginAuthoring`, `skillCreator`, or `submitPlugin`.
@@ -89,9 +89,9 @@ Disabling the plugin removes its introduction and skills. Changes apply when
 agent configuration is next assembled; independently installed copies remain
 available through their own sources.
 
-## BB source runtime preparation
+## Room source runtime preparation
 
-In the BB repository, add `--dryrun` to `pnpm start` or `pnpm start:worktree`
+In the Room repository, add `--dryrun` to `pnpm start` or `pnpm start:worktree`
 to run Turbo preparation, print resolved paths/ports and exit. The dry run uses
 the same dotenv settings and runtime policy as normal startup. It does not start
 services, migrate instance data or require ports to be free, but still writes

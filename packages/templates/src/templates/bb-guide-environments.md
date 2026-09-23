@@ -1,6 +1,6 @@
 ---
 kind: instruction
-title: bb Guide — Environments
+title: Room Guide — Environments
 summary: Command reference for environment setup, inspection, commits, and merges.
 intent: Provide complete environment command documentation for agents.
 editingNotes: Keep flags accurate against the CLI implementation.
@@ -16,7 +16,7 @@ Making your repo work with bb:
 
   If the default environment plugin is disabled or missing, creation fails
   before inserting a thread. Enable the plugin or explicitly choose another
-  environment; BB does not silently replace an isolated worktree with a checkout.
+  environment; Room does not silently replace an isolated worktree with a checkout.
   Host-dependent preflight checks require the selected machine to be connected.
   Directory switching creates a core-owned attachment with no provider identity.
 
@@ -29,7 +29,7 @@ Making your repo work with bb:
   files, so an untracked .bb-env-setup.sh in your source checkout will not be
   present and will not run.
 
-  BB runs the hook as `env bash .bb-env-setup.sh` with cwd set to the new
+  Room runs the hook as `env bash .bb-env-setup.sh` with cwd set to the new
   workspace. POSIX shell setup scripts are not supported on Windows. The hook
   inherits the host daemon's sanitized environment: NODE_ENV and every BB_*
   variable are removed, and room does not inject ROOM_PROJECT_ID, ROOM_ENVIRONMENT_ID,
@@ -41,7 +41,7 @@ Making your repo work with bb:
   operation while the daemon remains alive. Hook state is held only in daemon
   memory; a daemon restart leaves an interrupted hook outcome unknown.
 
-  A non-zero exit, timeout, signal, or cancellation fails provisioning and bb
+  A non-zero exit, timeout, signal, or cancellation fails provisioning and Room
   removes the new worktree after confirming the script has stopped. An unknown
   hook outcome blocks automatic cleanup and requires inspection before recovery.
   Keep optional setup steps non-fatal inside the
@@ -50,7 +50,7 @@ Making your repo work with bb:
   ".bb-env-setup.sh failed", or ".bb-env-setup.sh cancelled".
 
   Commit a .bb-env-teardown.sh script at the repo root when setup creates
-  resources outside the managed worktree. BB runs the hook as
+  resources outside the managed worktree. Room runs the hook as
   `env bash .bb-env-teardown.sh` from the worktree before it removes the
   worktree. The hook receives the same sanitized environment as the setup
   hook, and stdin is closed.
@@ -187,10 +187,10 @@ Remote access (room connect):
     --code <code>          One-time pairing code from the dashboard
     --server <url>         https://<handle>.getbb.app (from the dashboard)
 
-  Pairing returns immediately: the bb SERVER redeems the code, stores the
+  Pairing returns immediately: the Room SERVER redeems the code, stores the
   credential, and holds the tunnel itself — so it stays up as long as room is
   running and reconnects on restart (no foreground process).
-  Without an installed bb, pair via npm:
+  Without an installed Room, pair via npm:
   `npx -p bb-app@latest room connect --code <code> --server <url>`.
 
   In a source checkout, `pnpm dev` automatically points the unpaired Connect
@@ -244,9 +244,9 @@ Explicit environment or project deletion bypasses the retirement grace, includin
 
 `room environment providers --project <id>` omits providers whose declared requirements are unmet on every persistent machine, and reports each provider's `machineAvailability` per machine in `--json`. Add `--machine <id>` to scope structural eligibility to that machine and print its availability: `available`, `setup-required`, `unavailable` with the plugin's reason, or `unknown` while the background probe has not answered. Listing never waits on a machine; probes run in the background, are cached for ten minutes per project and machine, and are checked afresh for the selected provider and machine during thread creation.
 
-BB source checkout startup
+Room source checkout startup
 
-  In the BB repository, `pnpm start:worktree` prepares and serves production
+  In the Room repository, `pnpm start:worktree` prepares and serves production
   artifacts using stable checkout-specific dev data and ports (no Vite).
   Add `--dryrun` to `pnpm start` or `pnpm start:worktree` to prepare through
   Turbo, print resolved paths/ports, and exit. It does not launch services,

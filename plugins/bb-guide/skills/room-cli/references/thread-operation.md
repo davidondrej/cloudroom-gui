@@ -2,7 +2,7 @@
 
 ## Cloud limits
 
-`room thread tell` automatically queues Cloud messages. Local messages steer by default. Cloud supports plain-text follow-ups, inspection, stop, title changes, pinning, and archive/restore. Stop pauses the queue; `room thread queue send THREAD FIRST_MESSAGE_ID` resumes in order. Forks/children, steering, scheduling, attachments, message editing, compaction, and session-model changes are not enabled. The provider-specific controls below apply to Local threads unless stated otherwise.
+`room thread tell` automatically queues Cloud messages. Local messages steer by default. Cloud supports follow-ups, inspection, stop, title changes, pinning, and archive/restore. Stop pauses the queue; `room thread queue send THREAD FIRST_MESSAGE_ID` resumes in order. Inspect `room cloudroom status --json`: steering, attachments, compaction, message editing (`rewind`), and queue editing/cancellation depend on the connected core and harness. Forks/children, scheduling, and session-model changes remain unavailable. Confirm actual outputs, not just advertised capabilities.
 
 ## Coordinating Work
 
@@ -10,8 +10,9 @@
 - Spawn independent tasks separately when parallel work is useful.
 - Let threads work after spawning. Do not poll with shell sleeps, repeated log
   reads, or repeated status reads.
-- Use `room thread wait <thread-id>` when you explicitly need to block until a
-  thread finishes. It defaults to waiting for `idle` for up to 20 minutes;
+- Use `room thread wait <thread-id>` to wait for a status or event. It defaults
+  to `idle` for up to 20 minutes; this does not prove queued work completed.
+  Check the queue and correlate the final output with the requested task;
   pass `--status` or `--event` for a different target, and `--timeout
 <seconds>` when you need a shorter or longer budget.
 - Use `room thread tell <thread-id> "..."` when requirements change, a blocker
@@ -122,11 +123,11 @@ For review or fix pipelines, get the environment ID from
 
 ## Opening Threads And Files In The App
 
-- Reference a BB thread in chat as `@thread:thr_abc123`, substituting its
-  actual ID. BB renders the mention with the correct project-aware link; do not
+- Reference a Room thread in chat as `@thread:thr_abc123`, substituting its
+  actual ID. Room renders the mention with the correct project-aware link; do not
   construct `/threads/...` or `/projects/.../threads/...` URLs manually.
-- Use `room thread open <path>` inside a BB thread to open a Markdown, HTML, or
-  other workspace file for the user in the BB IDE's thread panel.
+- Use `room thread open <path>` inside a Room thread to open a Markdown, HTML, or
+  other workspace file for the user in the Room IDE's thread panel.
 - Use `room thread open <thread-id> --split right|down|left|top|replace` to open
   or focus a thread in the current app split layout. `replace` is the default;
   an already-open thread is focused. Edge splits create panes through the
@@ -138,8 +139,8 @@ For review or fix pipelines, get the environment ID from
 - Absolute paths under `ROOM_THREAD_STORAGE` open as thread-storage files for the
   current thread.
 - Use `room thread pane maximize|restore|toggle|spotlight|clear-spotlight
-[thread-id]` to change a matching open pane in every connected BB app window.
-  Inside a BB thread, omit the ID to use `ROOM_THREAD_ID`. The command reports
+[thread-id]` to change a matching open pane in every connected Room app window.
+  Inside a Room thread, omit the ID to use `ROOM_THREAD_ID`. The command reports
   how many connected clients received the ephemeral action. The SDK equivalent is
   `sdk.threads.paneAction({ threadId, action })`.
 - Users can also toggle the focused pane from its header or with the configurable
@@ -163,9 +164,12 @@ For review or fix pipelines, get the environment ID from
 
 - Use `room terminal ...` for long-running commands the user may need to inspect
   or stop later: dev servers, watch tasks, REPLs, database consoles, and similar
-  processes. The terminal is a real persistent PTY shown in the bb UI.
+  processes. The terminal is a real persistent PTY shown in the Room UI.
 - `list` and `create` require exactly one explicit scope: `--thread <id>`,
   `--environment <id>`, or `--machine <id-or-name>` (`--host` is an alias).
+  Thread-scoped terminals receive `ROOM_THREAD_ID`, `ROOM_PROJECT_ID`,
+  `ROOM_ENVIRONMENT_ID`, and `ROOM_THREAD_STORAGE`; `room status` and `--self`
+  work without manual settings. Other terminal scopes have no current thread.
   Add `--cwd <path>` only to a machine scope. Machine targets resolve to an
   explicit host ID; terminal commands never silently fall back to primary.
 - Start a server with

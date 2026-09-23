@@ -4,6 +4,7 @@ import { defaultAppTheme } from "@bb/domain";
 import {
   APP_THEME_CSS_STORAGE_KEY,
   applyAppThemeCss,
+  applyCachedAppThemeCss,
   clearAppThemePreview,
   getAppThemeEpoch,
   previewAppThemeCss,
@@ -24,6 +25,24 @@ afterEach(() => {
 });
 
 describe("app theme preview", () => {
+  it("applies readable default details before the first render without a cached theme", () => {
+    applyCachedAppThemeCss();
+    const css = resolveAppThemeCss(defaultAppTheme);
+    expect(styleText()).toBe(css);
+    const light = css.split(":root:not(.dark) {")[1];
+    for (const token of ["primary-text", "ring", "timeline-accent"]) {
+      expect(light).toContain(`--${token}: var(--ink)`);
+    }
+    expect(light).toContain("--sidebar-ring: var(--ring)");
+  });
+
+  it("preserves a cached non-default theme at startup", () => {
+    const css = resolveAppThemeCss({ ...defaultAppTheme, themeId: "nord" });
+    localStorage.setItem(APP_THEME_CSS_STORAGE_KEY, css);
+    applyCachedAppThemeCss();
+    expect(styleText()).toBe(css);
+  });
+
   it("restores the default accent borders and file labels after previewing another palette", () => {
     const defaultCss = resolveAppThemeCss(defaultAppTheme);
     const nordCss = resolveAppThemeCss({ ...defaultAppTheme, themeId: "nord" });
@@ -38,6 +57,12 @@ describe("app theme preview", () => {
         `--${token}: color-mix(in oklab, var(--primary)`,
       );
     }
+    expect(defaultCss).toContain(
+      "--input: color-mix(in oklab, var(--ink) 55%, var(--canvas))",
+    );
+    expect(defaultCss).toContain(
+      "--input: color-mix(in oklab, var(--primary) 60%, var(--canvas))",
+    );
     expect(defaultCss).toContain("--file-accent: var(--timeline-accent)");
     applyAppThemeCss(defaultCss);
 

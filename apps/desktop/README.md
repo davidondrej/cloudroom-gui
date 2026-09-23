@@ -68,7 +68,7 @@ pnpm exec turbo run desktop:build --filter=@bb/desktop
 pnpm exec turbo run smoke:packaged --filter=@bb/desktop
 ```
 
-Artifacts are written under `apps/desktop/release/`. The macOS build is Apple
+Artifacts are written under `apps/desktop/release.noindex/`. The macOS build is Apple
 Silicon arm64-only; Intel Macs are not a target. Without signing secrets, local builds
 sign with a code-signing identity auto-discovered from the keychain and skip
 notarization. A valid signature matters even for local builds: macOS
@@ -341,7 +341,7 @@ Use the View menu to toggle DevTools. To open them automatically on launch, set
 `BB_DESKTOP_OPEN_DEVTOOLS=1`:
 
 ```bash
-BB_DESKTOP_OPEN_DEVTOOLS=1 apps/desktop/release/mac-arm64/bb.app/Contents/MacOS/bb
+BB_DESKTOP_OPEN_DEVTOOLS=1 apps/desktop/release.noindex/mac-arm64/bb.app/Contents/MacOS/bb
 ```
 
 When the desktop app spawns `bb-app`, server and daemon logs land under

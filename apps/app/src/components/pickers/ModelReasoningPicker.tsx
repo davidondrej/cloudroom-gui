@@ -58,6 +58,7 @@ import {
 } from "@bb/shared-ui/option-display";
 import { type PickerOption } from "./OptionPicker";
 import { PickerLoadingRows } from "./PickerLoadingRows";
+import { ModelDiscoveryRestart } from "./ModelDiscoveryRestart";
 import type { ModelPickerOption } from "./model-picker-option";
 import { searchPickerOptions } from "./picker-search";
 import { useResetPickerScroll } from "./useResetPickerScroll";
@@ -211,7 +212,6 @@ interface ModelReasoningPickerProps {
   modal?: boolean;
   align?: "start" | "center" | "end";
   disabled?: boolean;
-  /** Follow-up threads can change reasoning without offering a new model. */
   lockModelSelection?: boolean;
   handoff?: ModelReasoningPickerHandoff;
 }
@@ -481,10 +481,15 @@ export function ModelReasoningPicker({
     : modelLoadFailed || activeModelLoadErrorMatches;
   const activeModelFailureMessage =
     activeModelLoadErrorMessage ?? "Could not load models.";
-  const activeModelOptions = previewModelOptions;
-  const activeMoreModelOptions = previewSelectionBlocked
+  const canRestartModelDiscovery =
+    activeModelLoadErrorMatches && activeModelLoadError?.canRestart === true;
+  const activeModelOptions = canRestartModelDiscovery
     ? EMPTY_MODEL_OPTIONS
-    : previewMoreModelOptions;
+    : previewModelOptions;
+  const activeMoreModelOptions =
+    previewSelectionBlocked || canRestartModelDiscovery
+      ? EMPTY_MODEL_OPTIONS
+      : previewMoreModelOptions;
   const hasActiveModelOptions = activeModelOptions.length > 0;
   const activeModelErrorIsProviderSpecific =
     activeModelLoadErrorMatches && activeModelLoadError !== null;
@@ -543,11 +548,12 @@ export function ModelReasoningPicker({
     activeIndex >= 0 && activeIndex < navRows.length ? activeIndex : -1;
 
   const effectiveShowFastModeToggle =
+    showFastModeToggle &&
     !handoffMode &&
+    !isPreviewing &&
     hasActiveModelOptions &&
-    (serviceTierSupportByProvider
-      ? (serviceTierSupportByProvider[activeProviderId] ?? false)
-      : showFastModeToggle);
+    (!serviceTierSupportByProvider ||
+      serviceTierSupportByProvider[activeProviderId] === true);
   const effectiveFastModeLabel = isPreviewing
     ? fastServiceTierLabel(previewProvider)
     : (fastModeLabel ?? "Fast");
@@ -1139,7 +1145,14 @@ export function ModelReasoningPicker({
               {isShowingModelError ? null : (
                 <MenuSectionLabel>Model</MenuSectionLabel>
               )}
-              {activeModelIsLoading ? (
+              {canRestartModelDiscovery && !activeModelIsLoading ? (
+                <ModelDiscoveryRestart
+                  key={`${activeProviderId}:${providerRouting?.environmentId ?? providerRouting?.hostId ?? "primary"}`}
+                  providerId={activeProviderId}
+                  providerLabel={activeProviderLabel}
+                  routing={providerRouting}
+                />
+              ) : activeModelIsLoading ? (
                 <PickerLoadingRows
                   label="Loading models"
                   rowDataAttribute="data-model-loading-row"

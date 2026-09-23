@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { usePrefersReducedMotion } from "@bb/shared-ui/hooks/use-media-query";
+import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
 import { cn } from "@bb/shared-ui/lib/utils";
 
 interface WaveformVisualizerProps {
@@ -25,6 +26,7 @@ export function WaveformVisualizer({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const barsRef = useRef<number[]>([]);
   const prefersReducedMotion = usePrefersReducedMotion();
+  const isPointerCoarse = usePointerCoarse();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -113,6 +115,10 @@ export function WaveformVisualizer({
       return () => observer?.disconnect();
     }
 
+    if (isPointerCoarse && barsRef.current.length === 0) {
+      barsRef.current = Array.from({ length: barCount }, () => IDLE_AMPLITUDE);
+    }
+
     const audioCtx = new AudioContext();
     void audioCtx.resume();
     const analysisTrack = audioTrack.clone();
@@ -139,8 +145,11 @@ export function WaveformVisualizer({
         const rms = Math.sqrt(sumSquares / timeData.length);
         const boosted = Math.max(0, rms - NOISE_FLOOR) * AMPLITUDE_GAIN;
         const amp = Math.min(1, boosted ** AMPLITUDE_GAMMA);
+        const ambient = isPointerCoarse
+          ? IDLE_AMPLITUDE * (1.5 + 0.5 * Math.sin(frame / 24))
+          : 0;
         const bars = barsRef.current;
-        bars.push(amp);
+        bars.push(Math.max(amp, ambient));
         if (bars.length > barCount) bars.shift();
         draw();
       }
@@ -159,7 +168,7 @@ export function WaveformVisualizer({
       analysisTrack.stop();
       void audioCtx.close();
     };
-  }, [stream, active, prefersReducedMotion]);
+  }, [stream, active, prefersReducedMotion, isPointerCoarse]);
 
   return (
     <canvas

@@ -1,4 +1,5 @@
 import { useCallback, useMemo, type RefObject } from "react";
+import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { transcribeVoiceInput } from "@/lib/api";
 import type { PromptBoxHandle, PromptVoiceConfig } from "./PromptBoxInternal";
@@ -23,11 +24,13 @@ function createVoiceAbortError(): DOMException {
 export function usePromptVoice(
   promptBoxRef: RefObject<PromptBoxHandle | null>,
 ): PromptVoiceConfig {
+  const isPointerCoarse = usePointerCoarse();
   const onTranscript = useCallback(
     (text: string) => {
       promptBoxRef.current?.insertTextAtCursor(text);
+      if (isPointerCoarse) promptBoxRef.current?.submit();
     },
-    [promptBoxRef],
+    [isPointerCoarse, promptBoxRef],
   );
 
   const getPromptContext = useCallback(

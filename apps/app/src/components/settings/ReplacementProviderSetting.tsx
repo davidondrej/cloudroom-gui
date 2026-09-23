@@ -44,7 +44,7 @@ export function ReplacementProviderSetting({
   if (automaticProvider === undefined) return null;
   const builtInOption = {
     key: BUILT_IN_REPLACEMENT_PROVIDER,
-    title: "bb (built-in)",
+    title: "Room (built-in)",
     description: builtInDescription,
   };
   const options = [
