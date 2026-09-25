@@ -4,6 +4,16 @@ Cloudroom's desktop app, based on [BB](https://github.com/get-bb/bb). Run agents
 
 This is an experimental source release. Building needs no Cloudroom account or core checkout. Using the GUI currently requires an invite-enabled Cloudroom account, including for local agents. See [release notes and compatibility](docs/releases.md).
 
+## Security
+
+- Your core token stays in the app's private data folder, readable only by you. It never reaches the UI or logs.
+- The app only connects to remote cores over HTTPS.
+- Hosted sign-in works only through cloudroom.dev. Codex and Cursor login links must point to the official OpenAI and Cursor pages.
+- Other websites cannot call the app's local API.
+- Cloud agents run inside the [core's security model](https://github.com/davidondrej/cloudroom-core#security).
+
+See [cloudroom.dev/security](https://www.cloudroom.dev/security). Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+
 ## Build from source
 
 Use macOS on Apple Silicon for the supported development target. Install Git, Node.js 22.19+, pnpm **9.15.0**, Python **3.11+**, and Xcode Command Line Tools for native dependencies. Keep the same Node version for installation and builds.
