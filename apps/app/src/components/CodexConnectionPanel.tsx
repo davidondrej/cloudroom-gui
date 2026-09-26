@@ -29,13 +29,12 @@ function ConnectionPanel({ provider }: { provider: "codex" | "cursor" }) {
   const [open, setOpen] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const shown = useRef<string | null>(null);
   const requestId = useRef<string | null>(null);
   const accountId = account.data?.account?.id;
   const queryKey = [`cloudroom-${provider}-auth`, accountId];
   const auth = useQuery({
     queryKey,
-    enabled: Boolean(account.data?.ready && (open || (!cursor && shown.current !== accountId))),
+    enabled: Boolean(account.data?.ready && open),
     queryFn: ({ signal }) => cursor ? sdk.cloudroom.cursorAuth(signal) : sdk.cloudroom.codexAuth(signal),
     retry: false,
     refetchInterval: query => open && ["waiting", "missing"].includes(query.state.data?.state ?? "") ? 1500 : false,
@@ -49,11 +48,6 @@ function ConnectionPanel({ provider }: { provider: "codex" | "cursor" }) {
     window.addEventListener(events, show);
     return () => window.removeEventListener(events, show);
   }, [events]);
-  useEffect(() => {
-    if (cursor || !accountId || shown.current === accountId || !auth.data) return;
-    shown.current = accountId;
-    if (auth.data.state !== "connected") setOpen(true);
-  }, [accountId, auth.data, cursor]);
   const action = useMutation({
     mutationFn: async (kind: "login" | "cancel" | "continue" | "key") => {
       if (kind === "continue") {
@@ -78,7 +72,7 @@ function ConnectionPanel({ provider }: { provider: "codex" | "cursor" }) {
     onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
   const state = auth.data?.state;
-  const close = () => { shown.current = accountId ?? null; setApiKey(""); setOpen(false); };
+  const close = () => { setApiKey(""); setOpen(false); };
   if (!accountId || !account.data?.ready) return null;
   return <PersistentResponsiveDrawerShell
     open={open} onOpenChange={value => { if (!value) close(); }} labelledBy={titleId} describedBy={descriptionId}
@@ -105,7 +99,7 @@ function ConnectionPanel({ provider }: { provider: "codex" | "cursor" }) {
         <Button variant="outline" disabled={action.isPending} onClick={() => action.mutate("cancel")}>Cancel sign-in</Button>
       </> : <>
         {auth.data?.message && <p role="status" className="text-sm text-muted-foreground">{auth.data.message}</p>}
-        {state !== "limited" && state !== "unavailable" && !auth.isError && <Button className="w-full" disabled={action.isPending} onClick={() => action.mutate("login")}>{action.isPending ? "Starting sign-in…" : cursor ? "Sign in with Cursor" : "Sign in with ChatGPT"}</Button>}
+        {(state !== "limited" || !cursor) && state !== "unavailable" && !auth.isError && <Button className="w-full" disabled={action.isPending} onClick={() => action.mutate("login")}>{action.isPending ? "Starting sign-in…" : cursor ? "Sign in with Cursor" : state === "limited" ? "Sign in with another account" : "Sign in with ChatGPT"}</Button>}
         {cursor && <details><summary className="cursor-pointer text-sm">Use a Cursor API key instead</summary><div className="mt-3 space-y-2">
           <label className="block text-sm">Cursor user API key<input type="password" autoComplete="off" value={apiKey} onChange={event => setApiKey(event.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2" /></label>
           <p className="text-xs text-muted-foreground">Sent securely to your VM. Not saved in this app or included in history.</p>

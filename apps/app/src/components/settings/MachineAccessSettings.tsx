@@ -136,7 +136,7 @@ export function MachineAccessSettingsContent({
   return (
     <SettingsSection
       title="Machine access"
-      description="Choose how new machines connect to the Room server."
+      description="Choose how new machines connect to the Cloudroom server."
       action={<MachineAccessMethodPicker machineAccess={machineAccess} />}
       bodyClassName="space-y-3"
     >

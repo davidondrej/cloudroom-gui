@@ -341,7 +341,7 @@ function toThreadResponseWithHost(
   };
 }
 
-import { queuedPrompts as cloudQueuedPrompts, teleportProgress } from "../cloudroom/store.js";
+import { projectCopyProgress, queuedPrompts as cloudQueuedPrompts, teleportProgress } from "../cloudroom/store.js";
 
 export function toThreadResponseFromThread(
   deps: ThreadRuntimeDisplayDeps,
@@ -354,6 +354,7 @@ export function toThreadResponseFromThread(
   return {
     ...threadWithRuntime,
     ...(teleportProgress(deps.db, args.thread.id) ? { teleport: teleportProgress(deps.db, args.thread.id)! } : {}),
+    ...(projectCopyProgress(deps.db, args.thread.id) ? { projectCopy: projectCopyProgress(deps.db, args.thread.id)! } : {}),
     activeBackgroundAgentCount:
       listActiveBackgroundTaskCountsByThreadIds(deps.db, {
         threadIds: [args.thread.id],
@@ -586,7 +587,8 @@ export function toThreadListEntryResponses(
       thread,
     });
     const teleport = teleportProgress(deps.db, thread.id);
-    return teleport ? { ...response, teleport } : response;
+    const projectCopy = projectCopyProgress(deps.db, thread.id);
+    return { ...response, ...(teleport ? { teleport } : {}), ...(projectCopy ? { projectCopy } : {}) };
   });
 }
 

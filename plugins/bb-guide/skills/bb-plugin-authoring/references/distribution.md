@@ -5,12 +5,12 @@
 This skill is a guide, not the contract. For an exact signature or a symbol it
 does not cover:
 
-1. **`room plugin types`**, run in the plugin directory (or given its path),
-   syncs that plugin's SDK surface to the running Room — no server needed. For a
+1. **`cloudroom plugin types`**, run in the plugin directory (or given its path),
+   syncs that plugin's SDK surface to the running Cloudroom — no server needed. For a
    plugin that depends on the npm package it repins the exact
-   `@get-bb/plugin-sdk` devDependency to this Room's SDK version and brings the
+   `@get-bb/plugin-sdk` devDependency to this Cloudroom's SDK version and brings the
    runtime-shimmed packages' type-only devDependencies (sonner, vaul, the
-   portal radix families, ...) to the versions this room ships — adding any an
+   portal radix families, ...) to the versions this cloudroom ships — adding any an
    app plugin is missing and moving one out of `dependencies` (run
    `npm install` after); for an older plugin that still vendors `types/*.d.ts`
    it rewrites those declarations. Either way a cloned or older plugin can be
@@ -19,7 +19,7 @@ does not cover:
    about stale package pins; they do not repin installed packages or lockfiles.
 2. **Read the bundled declarations** — the authoritative surface, ~13,000
    lines of readable declarations with doc comments:
-   - plugins scaffolded by a current room depend on the npm package, so after
+   - plugins scaffolded by a current cloudroom depend on the npm package, so after
      `npm install` read
      `node_modules/@get-bb/plugin-sdk/bundled-types/bb-plugin-sdk.d.ts`
      (`bb-plugin-sdk-app.d.ts` for frontend symbols and
@@ -47,11 +47,11 @@ Users can install third-party plugins directly from a local path, npm package,
 or Git repository:
 
 ```sh
-room plugin install ./bb-plugin-notes
-room plugin install npm:bb-plugin-notes@^1.0.0
-room plugin install https://github.com/acme/bb-plugin-notes
-room plugin install git:https://github.com/acme/bb-plugin-notes.git@main
-room plugin install git:https://github.com/acme/bb-plugin-notes.git@^1.2.0
+cloudroom plugin install ./bb-plugin-notes
+cloudroom plugin install npm:bb-plugin-notes@^1.0.0
+cloudroom plugin install https://github.com/acme/bb-plugin-notes
+cloudroom plugin install git:https://github.com/acme/bb-plugin-notes.git@main
+cloudroom plugin install git:https://github.com/acme/bb-plugin-notes.git@^1.2.0
 ```
 
 A bare HTTP(S) repository URL tracks its default branch. Use the `git:` form
@@ -63,13 +63,13 @@ user confirms that exact source and version.
 ### Releasing a git plugin with semver tags
 
 Tag each release `vX.Y.Z` and users can install a range instead of a ref:
-room reads the repository's tags, installs the highest release the range allows,
-and `room plugin update` moves them to later releases in the same range.
+cloudroom reads the repository's tags, installs the highest release the range allows,
+and `cloudroom plugin update` moves them to later releases in the same range.
 Prereleases stay out unless the range names one. Give each plugin of a
 multi-plugin repository its own tag prefix — `notes/v1.2.3` — and users add
 `--tag-prefix notes/`.
 
-room records the tag it installed together with the commit that tag pointed at,
+cloudroom records the tag it installed together with the commit that tag pointed at,
 and refuses the plugin if that tag is ever moved to another commit. Publish a
 fix as a new version rather than retagging.
 
@@ -96,9 +96,9 @@ file is an index only — it never overrides a plugin's identity, branding,
 entry points, or engine ranges. Users install one plugin at a time:
 
 ```sh
-room plugin install git:https://github.com/acme/bb-plugins.git@main --plugin notes
-room plugin install git:https://github.com/acme/bb-plugins.git@main --subdirectory plugins/notes
-room plugin install path:. --plugin notes
+cloudroom plugin install git:https://github.com/acme/bb-plugins.git@main --plugin notes
+cloudroom plugin install git:https://github.com/acme/bb-plugins.git@main --subdirectory plugins/notes
+cloudroom plugin install path:. --plugin notes
 ```
 
 `--subdirectory` works without a collection manifest; `--plugin` resolves an
@@ -140,22 +140,22 @@ installing an entry runs the same install pipeline a direct install runs.
 ```
 
 The schema is strict: an unknown field rejects the whole document, and the
-last catalog room validated keeps serving. `name` is the marketplace's identity
+last catalog cloudroom validated keeps serving. `name` is the marketplace's identity
 and must be unique on the user's machine; `bb-community` is reserved.
 Compatibility belongs in each plugin package manifest. Icons are `.svg`,
 `.png`, or `.webp`, either an absolute https URL or a path relative to the
-manifest — room fetches and validates them server-side and serves them from its
+manifest — cloudroom fetches and validates them server-side and serves them from its
 own origin.
 
 Host it three ways, and users add whichever fits:
 
 ```sh
-room marketplace add https://plugins.acme.dev/marketplace.json
-room marketplace add git:github.com/acme/bb-marketplace@main
-room marketplace add path:/work/acme-marketplace
-room marketplace list
-room marketplace refresh acme-plugins
-room marketplace remove acme-plugins
+cloudroom marketplace add https://plugins.acme.dev/marketplace.json
+cloudroom marketplace add git:github.com/acme/bb-marketplace@main
+cloudroom marketplace add path:/work/acme-marketplace
+cloudroom marketplace list
+cloudroom marketplace refresh acme-plugins
+cloudroom marketplace remove acme-plugins
 ```
 
 `list` shows configured catalogs. `refresh` updates discovery metadata and
@@ -166,7 +166,7 @@ An https marketplace is re-read with a conditional request; a git one is
 cloned into a throwaway checkout each refresh, with `marketplace.json` and any
 relative icons read from the repository root. Prefer git tag ranges over
 pinned refs so a release reaches users without a catalog change. Before
-installing from a marketplace that is not `bb-community`, room resolves and shows
+installing from a marketplace that is not `bb-community`, cloudroom resolves and shows
 the true source — including the exact release tag and commit a range lands
 on — so keep your listed URL, subdirectory, and range honest.
 
@@ -184,7 +184,7 @@ State the outcome the user gets.
 
 `PLUGIN_OVERVIEW.md` beside package.json holds the long-form description. The
 detail page shows it in an Overview section under the lead paragraph, in the
-app and on the public getbb.app marketplace. `room plugin new` scaffolds one, the
+app and on the public getbb.app marketplace. `cloudroom plugin new` scaffolds one, the
 BB Marketplace requires one, and a plugin that is only installed from
 a local path or a private source still reads better with one.
 
@@ -194,9 +194,9 @@ one text in two lengths. Whenever you change `bb.description`, or add or remove
 a surface, update this file in the same change so the lead paragraph and the
 Overview section never disagree.
 
-The `submit-a-plugin` skill copies the file into the marketplace repository as
+A marketplace submission copies the file into the marketplace repository as
 `overview/<plugin-id>.md` and references it from the entry with
-`"overview": "./overview/<plugin-id>.md"`. A bundled Room plugin uses the same
+`"overview": "./overview/<plugin-id>.md"`. A bundled Cloudroom plugin uses the same
 file, and the bb-official generator folds it into the built catalog.
 
 Follow these rules. Marketplace CI rejects a file that breaks one.
@@ -214,4 +214,4 @@ Follow these rules. Marketplace CI rejects a file that breaks one.
 Lead with the outcome, then sections such as What you get, How it works, and
 Requirements. Name every cost: an external service, an account, a separate
 install, or a limited operating system. Name agent surfaces with their exact
-tool or `room` command names in inline code.
+tool or `cloudroom` command names in inline code.

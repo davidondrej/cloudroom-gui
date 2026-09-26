@@ -33,7 +33,7 @@ function queuedMessage(
   };
 }
 
-describe("room thread organization commands", () => {
+describe("cloudroom thread organization commands", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>

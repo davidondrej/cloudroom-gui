@@ -95,7 +95,8 @@ it("pairs through a loopback callback, keeps secrets out of status, persists/rec
     expect(callbackResponse.status).toBe(200);
     expect(callbackResponse.headers.get("content-type")).toContain("text/html");
     const confirmation = await callbackResponse.text();
-    expect(confirmation).toContain("<h1>Account connected</h1>");
+    expect(confirmation).toContain("<h1>You’re signed in</h1>");
+    expect(confirmation).toContain('href="cloudroom://open"');
     expect(confirmation).toContain("--accent:#bfff00");
     expect(confirmation).not.toContain("#fd360e");
     for (const secret of [token, gateToken, url.searchParams.get("state")!, "c".repeat(64)]) expect(confirmation).not.toContain(secret);

@@ -479,9 +479,9 @@ describe("readInitialPromptFromLocationState", () => {
     expect(
       readInitialPromptFromLocationState({
         focusPrompt: true,
-        initialPrompt: "Create a new room automation to ",
+        initialPrompt: "Create a new cloudroom automation to ",
       }),
-    ).toBe("Create a new room automation to ");
+    ).toBe("Create a new cloudroom automation to ");
   });
 
   it("returns null when no usable initialPrompt is present", () => {

@@ -33,6 +33,7 @@ import {
   resolveToolsBreadcrumbs,
 } from "@/components/tools/tools-navigation";
 import { AppBreadcrumbs } from "./AppBreadcrumbs";
+import { DesktopUpdateBanner } from "./DesktopUpdateBanner";
 import { resourceRouteLabelAtom } from "./resourceRouteLabelAtom";
 import { AppPageHeader, HEADER_ICON_BUTTON_CLASS } from "./AppPageHeader";
 import { stripProjectThreads } from "@/hooks/queries/project-queries";
@@ -260,7 +261,7 @@ function SidebarTriggerOverlay({
 }
 
 const routeTitles: Record<string, { title: string }> = {
-  "/": { title: "Room" },
+  "/": { title: "Cloudroom" },
   "/settings": { title: "Settings" },
   "/automations": { title: "Automations" },
   "/skills": { title: "Skills" },
@@ -607,7 +608,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       return pluginPanel.title;
     }
     if (documentTitleBreadcrumbs) {
-      const sectionLabel = documentTitleBreadcrumbs[0]?.label ?? "Room";
+      const sectionLabel = documentTitleBreadcrumbs[0]?.label ?? "Cloudroom";
       const pageLabel = documentTitleBreadcrumbs.at(-1)?.label ?? sectionLabel;
       return pageLabel === sectionLabel
         ? sectionLabel
@@ -625,7 +626,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       return projectLabel ?? projectId;
     }
     const routeTitle = resolveRouteTitle(location.pathname)?.title;
-    return routeTitle && routeTitle.length > 0 ? routeTitle : "Room";
+    return routeTitle && routeTitle.length > 0 ? routeTitle : "Cloudroom";
   })();
   const currentThreadPendingInteractionsQuery = useThreadPendingInteractions(
     threadId ?? "",
@@ -776,6 +777,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                       meta={meta}
                     />
                   ) : null}
+                  <DesktopUpdateBanner />
                   <main className="flex min-h-0 flex-1 flex-col p-4 md:p-5">
                     {children}
                   </main>

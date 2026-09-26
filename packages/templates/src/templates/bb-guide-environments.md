@@ -1,6 +1,6 @@
 ---
 kind: instruction
-title: Room Guide — Environments
+title: Cloudroom Guide — Environments
 summary: Command reference for environment setup, inspection, commits, and merges.
 intent: Provide complete environment command documentation for agents.
 editingNotes: Keep flags accurate against the CLI implementation.
@@ -16,12 +16,12 @@ Making your repo work with bb:
 
   If the default environment plugin is disabled or missing, creation fails
   before inserting a thread. Enable the plugin or explicitly choose another
-  environment; Room does not silently replace an isolated worktree with a checkout.
+  environment; Cloudroom does not silently replace an isolated worktree with a checkout.
   Host-dependent preflight checks require the selected machine to be connected.
   Directory switching creates a core-owned attachment with no provider identity.
 
-  Commit a .bb-env-setup.sh script at the repo root when new room worktrees need
-  repo-specific setup. After room creates a new managed worktree environment, it
+  Commit a .bb-env-setup.sh script at the repo root when new cloudroom worktrees need
+  repo-specific setup. After cloudroom creates a new managed worktree environment, it
   looks for .bb-env-setup.sh inside that new workspace. If the file is absent,
   provisioning continues with no error.
 
@@ -29,10 +29,10 @@ Making your repo work with bb:
   files, so an untracked .bb-env-setup.sh in your source checkout will not be
   present and will not run.
 
-  Room runs the hook as `env bash .bb-env-setup.sh` with cwd set to the new
+  Cloudroom runs the hook as `env bash .bb-env-setup.sh` with cwd set to the new
   workspace. POSIX shell setup scripts are not supported on Windows. The hook
   inherits the host daemon's sanitized environment: NODE_ENV and every BB_*
-  variable are removed, and room does not inject ROOM_PROJECT_ID, ROOM_ENVIRONMENT_ID,
+  variable are removed, and cloudroom does not inject ROOM_PROJECT_ID, ROOM_ENVIRONMENT_ID,
   or BB_SOURCE_PATH.
 
   Core admits and claims the path before hooks, and runs hooks only
@@ -41,7 +41,7 @@ Making your repo work with bb:
   operation while the daemon remains alive. Hook state is held only in daemon
   memory; a daemon restart leaves an interrupted hook outcome unknown.
 
-  A non-zero exit, timeout, signal, or cancellation fails provisioning and Room
+  A non-zero exit, timeout, signal, or cancellation fails provisioning and Cloudroom
   removes the new worktree after confirming the script has stopped. An unknown
   hook outcome blocks automatic cleanup and requires inspection before recovery.
   Keep optional setup steps non-fatal inside the
@@ -50,14 +50,14 @@ Making your repo work with bb:
   ".bb-env-setup.sh failed", or ".bb-env-setup.sh cancelled".
 
   Commit a .bb-env-teardown.sh script at the repo root when setup creates
-  resources outside the managed worktree. Room runs the hook as
+  resources outside the managed worktree. Cloudroom runs the hook as
   `env bash .bb-env-teardown.sh` from the worktree before it removes the
   worktree. The hook receives the same sanitized environment as the setup
   hook, and stdin is closed.
 
   Teardown has a separate 15-minute timeout. A non-zero exit, timeout, or
-  signal reports failure in the destroy transcript, but room removes the
-  worktree after script termination. If transport fails, room cancels the hook
+  signal reports failure in the destroy transcript, but cloudroom removes the
+  worktree after script termination. If transport fails, cloudroom cancels the hook
   and confirms its process group has stopped before releasing the workspace.
   An unreachable daemon leaves cleanup pending for retry. If the daemon no
   longer knows the hook, cleanup remains blocked with an explicit unknown-outcome
@@ -67,7 +67,7 @@ Making your repo work with bb:
   New worktrees do not contain untracked files such as .env.local. To copy
   them from the source checkout, commit a .worktreeinclude file at the repo
   root. It uses gitignore syntax: one pattern per line, # for comments, ! to
-  negate an earlier pattern. room copies each untracked file in the source
+  negate an earlier pattern. cloudroom copies each untracked file in the source
   checkout that matches a pattern:
 
     .env
@@ -75,19 +75,19 @@ Making your repo work with bb:
     !.env.example
     certs/
 
-  room copies files only. It follows no symlinks, and it replaces nothing that
+  cloudroom copies files only. It follows no symlinks, and it replaces nothing that
   the worktree already has. The copy runs after `git worktree add` and before
   .bb-env-setup.sh, so the setup script can read the copied files. A pattern
-  that matches nothing, or a file room cannot read, is reported in the
+  that matches nothing, or a file cloudroom cannot read, is reported in the
   provisioning transcript and does not fail provisioning.
 
   Large directories such as node_modules are copied file by file. Install
   dependencies in .bb-env-setup.sh instead of listing them here.
 
   For files that customize agent instructions and skills (AGENTS.md,
-  .bb/AGENTS.md, .bb/skills/), run `room guide agent-configuration`.
+  .bb/AGENTS.md, .bb/skills/), run `cloudroom guide agent-configuration`.
 
-  room environment providers                List registered environment providers in picker order:
+  cloudroom environment providers                List registered environment providers in picker order:
                                           Project checkout, Worktree, then other installed providers
                                           by display name; includes id, name, the `requires` facts (host,
                                           projectCheckout, gitCheckout, gitRemote, projectless), and whether
@@ -95,7 +95,7 @@ Making your repo work with bb:
     --project <id>                        Filter by structural eligibility for this project
     --machine <id-or-name>               Scope structural eligibility to this machine
     --host <id-or-name>                  Alias for --machine
-  room environment list                     List environments that are not destroyed
+  cloudroom environment list                     List environments that are not destroyed
     --project <id>                        Only environments in this project
     --provider <id>                       Only environments this environment provider produced
     --host <id-or-name>                   Only environments on this machine
@@ -106,53 +106,53 @@ Making your repo work with bb:
                                           ready, error, destroyed (the only way to see
                                           destroyed rows)
     --limit <n> / --offset <n>            Page through the rows, oldest first
-  room environment delete <id>              Request provider cleanup; refused while threads are
+  cloudroom environment delete <id>              Request provider cleanup; refused while threads are
                                           live or stopping. The command returns with cleanup
                                           requested; lifecycle becomes destroyed only after
                                           provider removal completes
-  room environment show <id>                Show environment details (path, branch, status, lifecycle, retirement deadline and teardown attempts)
+  cloudroom environment show <id>                Show environment details (path, branch, status, lifecycle, retirement deadline and teardown attempts)
 
-  room environment status <id>              Show workspace status
+  cloudroom environment status <id>              Show workspace status
     --merge-base-branch <branch>          Include merge-base status
 
-  room environment branches <id>            List local and remote branches
+  cloudroom environment branches <id>            List local and remote branches
     --query <query>                       Filter branch names
     --limit <count>                       Limit local and remote results
 
-  room environment paths <id>               Search workspace paths
+  cloudroom environment paths <id>               Search workspace paths
     --query <query>                       Fuzzy path query
     --limit <count>                       Maximum results
     --files                               Include only files unless combined with --directories
     --directories                         Include only directories unless combined with --files
 
-  room environment diff <id>                Show file summary and full git diff
-  room environment diff-files <id>          List changed-file metadata
+  cloudroom environment diff <id>                Show file summary and full git diff
+  cloudroom environment diff-files <id>          List changed-file metadata
     --target <target>                     uncommitted, branch_committed, all, or commit (required)
     --merge-base-branch <branch>          Required for branch_committed and all
     --sha <sha>                           Required for commit
 
-  room environment diff-file <id>           Read one side of a changed file
+  cloudroom environment diff-file <id>           Read one side of a changed file
     --target <target>                     Diff target (required)
     --path <path>                         Repository-relative path (required)
     --side <old|new>                      File side (required)
     --merge-base-ref <sha>                Required for branch_committed and all
     --sha <sha>                           Required for commit
 
-  room environment diff-patch <id>          Fetch selected file patches
+  cloudroom environment diff-patch <id>          Fetch selected file patches
     --target <target>                     Diff target (required)
     --path <path>                         Changed path; repeat for multiple files (required)
     --merge-base-branch <branch>          Required for branch_committed and all
     --sha <sha>                           Required for commit
 
-  room environment update <id>              Update environment metadata
+  cloudroom environment update <id>              Update environment metadata
     --merge-base-branch <branch>          Set merge-base branch override
     --clear-merge-base-branch             Clear merge-base override
     --name <name>                         Set display name
     --clear-name                          Clear display name
 
-  room environment commit <id>              Create a commit in the environment
+  cloudroom environment commit <id>              Create a commit in the environment
 
-  room environment archive-threads <id>     Archive all threads in an environment
+  cloudroom environment archive-threads <id>     Archive all threads in an environment
 
   When the last thread of a worktree environment is archived, the worktree
   plugin waits five minutes and then tears it down: it runs
@@ -165,10 +165,10 @@ Making your repo work with bb:
   teardown. Move your own shells out of the worktree first if you want to
   keep them.
 
-  room environment pull-request show <id>   Inspect a pull request
-  room environment pull-request ready <id>  Mark a pull request ready
-  room environment pull-request draft <id>  Convert a pull request to draft
-  room environment pull-request merge <id>  Merge a pull request
+  cloudroom environment pull-request show <id>   Inspect a pull request
+  cloudroom environment pull-request ready <id>  Mark a pull request ready
+  cloudroom environment pull-request draft <id>  Convert a pull request to draft
+  cloudroom environment pull-request merge <id>  Merge a pull request
     --method <method>                     merge, squash, or rebase
 
 Every inspection command accepts an arbitrary environment ID and supports
@@ -176,39 +176,39 @@ Every inspection command accepts an arbitrary environment ID and supports
 prints UTF-8 content directly and labels base64 binary content; diff and patch
 truncation markers are preserved.
 
-Remote access (room connect):
+Remote access (cloudroom connect):
 
-  Expose this room server at <handle>.getbb.app so you can reach it from any
+  Expose this cloudroom server at <handle>.getbb.app so you can reach it from any
   browser. Claim a handle at https://getbb.app, copy the connect command it
   generates, then run it here to
   pair:
 
-  room connect --code <code> --server https://<handle>.getbb.app
+  cloudroom connect --code <code> --server https://<handle>.getbb.app
     --code <code>          One-time pairing code from the dashboard
     --server <url>         https://<handle>.getbb.app (from the dashboard)
 
-  Pairing returns immediately: the Room SERVER redeems the code, stores the
-  credential, and holds the tunnel itself — so it stays up as long as room is
+  Pairing returns immediately: the Cloudroom SERVER redeems the code, stores the
+  credential, and holds the tunnel itself — so it stays up as long as Cloudroom is
   running and reconnects on restart (no foreground process).
-  Without an installed Room, pair via npm:
-  `npx -p bb-app@latest room connect --code <code> --server <url>`.
+  Without an installed Cloudroom, pair via npm:
+  `npx -p bb-app@latest cloudroom connect --code <code> --server <url>`.
 
   In a source checkout, `pnpm dev` automatically points the unpaired Connect
   settings and code-only pairing at that worktree's local Cloud origin through
   `BB_DEV_CONNECT_BASE_URL`. Explicit `--server` and `--base-url` targets still
-  win, so the dev room can also pair with getbb.app.
+  win, so the dev cloudroom can also pair with getbb.app.
 
-  room connect status                       Show the server's connect status
-  room connect off                          Disconnect and forget the pairing
-  room connect expose <port> [--host <name-or-id>]    Share a host's HTTP port
-  room connect unexpose <port> [--host <name-or-id>]  Stop sharing on that host
-  room connect shares [--host <name-or-id>]           List that host's shares
-  room connect servers                      List every room on this account (handle, url, live)
-  room connect machine-code                 Mint a one-time code that pairs the room mobile app
+  cloudroom connect status                       Show the server's connect status
+  cloudroom connect off                          Disconnect and forget the pairing
+  cloudroom connect expose <port> [--host <name-or-id>]    Share a host's HTTP port
+  cloudroom connect unexpose <port> [--host <name-or-id>]  Stop sharing on that host
+  cloudroom connect shares [--host <name-or-id>]           List that host's shares
+  cloudroom connect servers                      List every Cloudroom server on this account (handle, url, live)
+  cloudroom connect machine-code                 Mint a one-time code that pairs the cloudroom mobile app
                                           (needs the mobileApp experiment)
 
   Port sharing works from threads on any enrolled host. In a thread,
-  `room connect expose <port>` resolves the thread environment's host; outside a
+  `cloudroom connect expose <port>` resolves the thread environment's host; outside a
   thread it defaults to the server host. `--host <name-or-id>` overrides that
   choice for expose, unexpose, and shares. Server-host URLs use
   `https://<server-label>--<port>.getbb.app`; machine-host URLs use
@@ -217,14 +217,14 @@ Remote access (room connect):
   the owner's getbb.app account can open the URL; it is not a public internet
   link. Agents should run expose from the thread that started the server, share
   the returned URL, and unexpose from the same thread when it stops.
-  `room connect status` shows all shares with host + URL. `shares --json` returns
+  `cloudroom connect status` shows all shares with host + URL. `shares --json` returns
   the resolved `host` and rows with `hostId`, `hostName`, `port`, and `url`.
 
-  The room mobile app pairs with a paired room through room connect. Turn on the
-  `mobileApp` experiment first (`room settings experiment mobileApp true`, or
+  The cloudroom mobile app pairs with a paired cloudroom through cloudroom connect. Turn on the
+  `mobileApp` experiment first (`cloudroom settings experiment mobileApp true`, or
   Settings → Experiments → Mobile app); the surfaces below stay hidden without
   it. Settings → Remote access → Add mobile device shows a QR code plus the code as text;
-  `room connect machine-code` prints the same code, server URL, apex, and expiry
+  `cloudroom connect machine-code` prints the same code, server URL, apex, and expiry
   (`--json` for `{code, serverUrl, apex, expiresAt}`). The phone scans or
   types the code and enrolls as a connect machine on the account with its own
   revocable credential (it appears in the getbb.app dashboard machine list).
@@ -233,20 +233,20 @@ Remote access (room connect):
 
   Remote access is owned by the builtin "connect" plugin (Plugins → connect
   shows the URL, QR code, mobile pairing, and shared ports). Disabling the
-  plugin (`room plugin disable connect`) cuts off all remote access; re-enable
-  with `room plugin enable connect`.
+  plugin (`cloudroom plugin disable connect`) cuts off all remote access; re-enable
+  with `cloudroom plugin enable connect`.
 
-Core owns environment retirement and teardown. After the last live thread is archived or deleted, the provider policy sets the retirement deadline. `room environment show <id>` reports lifecycle phase and teardown status, attempt and failure message. Failed teardown retries automatically; checkout environments do not retire.
+Core owns environment retirement and teardown. After the last live thread is archived or deleted, the provider policy sets the retirement deadline. `cloudroom environment show <id>` reports lifecycle phase and teardown status, attempt and failure message. Failed teardown retries automatically; checkout environments do not retire.
 
-Explicit environment or project deletion bypasses the retirement grace, including the never-retire policy. Provider cleanup retains the host, path and resource until removal completes; inspect progress with `room environment show <id>`.
+Explicit environment or project deletion bypasses the retirement grace, including the never-retire policy. Provider cleanup retains the host, path and resource until removal completes; inspect progress with `cloudroom environment show <id>`.
 
-`room environment providers --json` includes each choice’s `description` and `icon`, as well as its label, inputs, and availability.
+`cloudroom environment providers --json` includes each choice’s `description` and `icon`, as well as its label, inputs, and availability.
 
-`room environment providers --project <id>` omits providers whose declared requirements are unmet on every persistent machine, and reports each provider's `machineAvailability` per machine in `--json`. Add `--machine <id>` to scope structural eligibility to that machine and print its availability: `available`, `setup-required`, `unavailable` with the plugin's reason, or `unknown` while the background probe has not answered. Listing never waits on a machine; probes run in the background, are cached for ten minutes per project and machine, and are checked afresh for the selected provider and machine during thread creation.
+`cloudroom environment providers --project <id>` omits providers whose declared requirements are unmet on every persistent machine, and reports each provider's `machineAvailability` per machine in `--json`. Add `--machine <id>` to scope structural eligibility to that machine and print its availability: `available`, `setup-required`, `unavailable` with the plugin's reason, or `unknown` while the background probe has not answered. Listing never waits on a machine; probes run in the background, are cached for ten minutes per project and machine, and are checked afresh for the selected provider and machine during thread creation.
 
-Room source checkout startup
+Cloudroom source checkout startup
 
-  In the Room repository, `pnpm start:worktree` prepares and serves production
+  In the Cloudroom repository, `pnpm start:worktree` prepares and serves production
   artifacts using stable checkout-specific dev data and ports (no Vite).
   Add `--dryrun` to `pnpm start` or `pnpm start:worktree` to prepare through
   Turbo, print resolved paths/ports, and exit. It does not launch services,
@@ -258,4 +258,4 @@ Room source checkout startup
   instance still serves those paths. Keep the serving checkout path stable to
   preserve its data and ports. See `docs/debugging-and-qa.md` for the restart
   sequence and source programmatic helpers. These are repository maintenance
-  commands, not environment lifecycle hooks or installed `room` commands.
+  commands, not environment lifecycle hooks or installed `cloudroom` commands.

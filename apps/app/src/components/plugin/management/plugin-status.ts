@@ -44,20 +44,20 @@ function pluginRuntimeRecovery(plugin: PluginListItem): string {
         return "Fix the plugin, then reload it.";
       }
       if (plugin.provenance === "builtin") {
-        return "Reload the plugin. If it still fails, restart Room.";
+        return "Reload the plugin. If it still fails, restart Cloudroom.";
       }
       return "Reload the plugin. If it still fails, remove it and install it again.";
     case "incompatible":
       return plugin.provenance === "builtin"
-        ? "Update Room to load a compatible bundled plugin."
-        : "Install a version compatible with this Room.";
+        ? "Update Cloudroom to load a compatible bundled plugin."
+        : "Install a version compatible with this Cloudroom version.";
     case "missing":
       return plugin.provenance === "builtin"
-        ? "Restart Room. If the files are still missing, reinstall Room."
+        ? "Restart Cloudroom. If the files are still missing, reinstall Cloudroom."
         : "Remove the plugin, then install it again from its source.";
     case "needs-configuration":
       return plugin.hasSettings
-        ? "Complete the Configuration section; Room reloads the plugin after you save."
+        ? "Complete the Configuration section; Cloudroom reloads the plugin after you save."
         : "Add the required configuration, then reload the plugin.";
     case "degraded":
       return "Wait a moment, then reload the plugin.";
@@ -73,7 +73,7 @@ function pluginRuntimeCondition(plugin: PluginListItem): string {
     case "error":
       return "The plugin couldn't start.";
     case "incompatible":
-      return "This plugin version isn't compatible with your version of Room.";
+      return "This plugin version isn't compatible with your version of Cloudroom.";
     case "missing":
       return "The plugin's files are missing.";
     case "needs-configuration":

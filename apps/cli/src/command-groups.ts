@@ -26,9 +26,19 @@ function group<Module>(
 
 export const CORE_COMMAND_GROUPS: readonly CommandGroup[] = [
   group(
-    "cloudroom",
+    "cloud",
     () => import("./commands/cloudroom.js"),
-    (m) => (program, deps) => m.registerCloudroomCommands(program, deps.getUrl),
+    (m) => (program, deps) => m.registerCloudCommands(program, deps.getUrl),
+  ),
+  group(
+    "vm",
+    () => import("./commands/cloudroom.js"),
+    (m) => (program, deps) => m.registerVmCommands(program, deps.getUrl),
+  ),
+  group(
+    "import",
+    () => import("./commands/cloudroom.js"),
+    (m) => (program, deps) => m.registerImportCommands(program, deps.getUrl),
   ),
   group(
     "browser",

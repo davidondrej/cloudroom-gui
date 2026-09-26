@@ -11,16 +11,16 @@ describe("thread name tags", () => {
   it("round-trips user-provided literal bb-prefixed titles", () => {
     const providerName = toProviderExternalThreadName("[bb] Literal");
 
-    expect(providerName).toBe("[room] [bb] Literal");
+    expect(providerName).toBe("[cloudroom] [bb] Literal");
     expect(fromProviderExternalThreadName(providerName)).toBe("[bb] Literal");
     expect(fromProviderExternalThreadName("[bb] [bb] Literal")).toBe(
       "[bb] Literal",
     );
     expect(
       fromProviderExternalThreadName(
-        toProviderExternalThreadName("[room] Literal"),
+        toProviderExternalThreadName("[cloudroom] Literal"),
       ),
-    ).toBe("[room] Literal");
+    ).toBe("[cloudroom] Literal");
     expect(fromProviderExternalThreadName("Plain title")).toBe("Plain title");
   });
 
@@ -33,7 +33,11 @@ describe("thread name tags", () => {
       threadName: toProviderExternalThreadName("[bb] Literal"),
     } satisfies ThreadEvent;
 
-    for (const threadName of [event.threadName, "[bb] [bb] Literal"]) {
+    for (const threadName of [
+      event.threadName,
+      "[room] [bb] Literal",
+      "[bb] [bb] Literal",
+    ]) {
       expect(
         normalizeProviderThreadNameEvent({ ...event, threadName }),
       ).toEqual({

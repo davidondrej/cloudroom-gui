@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { ClaudeContextUsageCollector } from "./context-usage.js";
+import { expandClaudeSkillInput } from "./skill-input.js";
 
 import {
   type PendingInteractionGrantedPermissionProfile,
@@ -2231,7 +2232,7 @@ async function runTurnInput(
   acceptance: CanonicalTurnAcceptance,
   intent: "new-turn" | "steer",
 ): Promise<void> {
-  const promptText = buildPromptText(params.input);
+  let promptText = buildPromptText(params.input);
   if (promptText === undefined) {
     sendError(id, BRIDGE_JSON_RPC_ERRORS.INVALID_PARAMS, "Missing input text");
     return;
@@ -2256,6 +2257,10 @@ async function runTurnInput(
     return;
   }
   try {
+    promptText = buildPromptText(await expandClaudeSkillInput(
+      params.input,
+      threadSession.attachment.sessionOptions,
+    ))!;
     await applyLiveSessionSettings(
       threadSession,
       params.threadId,

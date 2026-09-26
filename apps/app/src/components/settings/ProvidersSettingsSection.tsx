@@ -1,3 +1,4 @@
+import { ClaudeConnectionButton } from "@/components/ClaudeConnection";
 import { useState } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import type {
@@ -265,6 +266,12 @@ export function ProvidersSettingsSection({
           </SortableSettingsRowList>
         )}
       </SettingsSection>
+      {providers.some(provider => provider.id === "claude-code") ? (
+        <div className="space-y-3">
+          <ClaudeConnectionButton target="local" presentation="settings" />
+          <ClaudeConnectionButton target="cloud" presentation="settings" />
+        </div>
+      ) : null}
       {providers.length === 0 ? null : (
         <SettingsSection
           title="Collapse finished turns"

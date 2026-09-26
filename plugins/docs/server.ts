@@ -20,9 +20,9 @@ const SYNC_STATE_VERSION = 1;
 class CliUsageError extends Error {}
 
 const DOCS_CLI_USAGE =
-  "Usage: room docs <vaults|vault-add|vault-remove|list|read|pull|status|push|write|mkdir|move|remove>";
+  "Usage: cloudroom docs <vaults|vault-add|vault-remove|list|read|pull|status|push|write|mkdir|move|remove>";
 const DOCS_STATUS_USAGE =
-  "room docs status [workspace-dir] [--delete] [--diff] [--workspace-host <id>] [--json]";
+  "cloudroom docs status [workspace-dir] [--delete] [--diff] [--workspace-host <id>] [--json]";
 const DOCS_STATUS_HELP = [
   `Usage: ${DOCS_STATUS_USAGE}`,
   "",
@@ -32,7 +32,7 @@ const DOCS_STATUS_HELP = [
   "Exit 3: local and remote changes conflict.",
   "Exit 4: changes present.",
   "",
-  "Exit 4 is a successful status result. Review the output, then run room docs push separately.",
+  "Exit 4 is a successful status result. Review the output, then run cloudroom docs push separately.",
 ].join("\n");
 
 const CLI_OPTIONS_BY_COMMAND: Record<string, ReadonlySet<string>> = {
@@ -681,7 +681,7 @@ function parseCli(argv: string[]): {
   for (let index = 1; index < argv.length; index += 1) {
     const arg = argv[index]!;
     if (arg.startsWith("--") && allowedOptions && !allowedOptions.has(arg)) {
-      throw new CliUsageError(`${arg} is not valid for room docs ${command}`);
+      throw new CliUsageError(`${arg} is not valid for cloudroom docs ${command}`);
     }
     if (arg === "--vault") vaultId = nextValue(arg, index++);
     else if (arg === "--content") content = nextValue(arg, index++);
@@ -737,7 +737,7 @@ function validateCliPositionals(args: ReturnType<typeof parseCli>): void {
     args.positionals.length > range.maximum
   ) {
     throw new CliUsageError(
-      `room docs ${args.command} received ${args.positionals.length} positional argument(s); expected ${
+      `cloudroom docs ${args.command} received ${args.positionals.length} positional argument(s); expected ${
         range.minimum === range.maximum
           ? range.minimum
           : `${range.minimum}-${range.maximum}`
@@ -2217,7 +2217,7 @@ export default async function plugin(
     const existing = await readSyncState(rootPath, hostId);
     if (!existing) {
       throw new Error(
-        `${SYNC_STATE_FILE} was not found; run room docs pull first`,
+        `${SYNC_STATE_FILE} was not found; run cloudroom docs pull first`,
       );
     }
     if (args.vaultId && args.vaultId !== existing.state.vault.id) {
@@ -2581,33 +2581,33 @@ export default async function plugin(
       {
         name: "vaults",
         summary: "List configured vaults",
-        usage: "room docs vaults [--json]",
+        usage: "cloudroom docs vaults [--json]",
       },
       {
         name: "vault-add",
         summary: "Add a vault",
-        usage: "room docs vault-add <name> <absolute-root> [host-id]",
+        usage: "cloudroom docs vault-add <name> <absolute-root> [host-id]",
       },
       {
         name: "vault-remove",
         summary: "Remove a vault configuration",
-        usage: "room docs vault-remove <id>",
+        usage: "cloudroom docs vault-remove <id>",
       },
       {
         name: "list",
         summary: "List notes and folders",
-        usage: "room docs list [--vault <id>] [--json]",
+        usage: "cloudroom docs list [--vault <id>] [--json]",
       },
       {
         name: "read",
         summary: "Read a file",
-        usage: "room docs read <path> [--vault <id>]",
+        usage: "cloudroom docs read <path> [--vault <id>]",
       },
       {
         name: "pull",
         summary: "Pull one file, a folder subtree, or a whole vault",
         usage:
-          "room docs pull <path> [--folder] | --all [--vault <id>] [--into <dir>] [--workspace-host <id>] [--json]",
+          "cloudroom docs pull <path> [--folder] | --all [--vault <id>] [--into <dir>] [--workspace-host <id>] [--json]",
       },
       {
         name: "status",
@@ -2618,27 +2618,27 @@ export default async function plugin(
         name: "push",
         summary: "Safely push local edits using optimistic concurrency",
         usage:
-          "room docs push [workspace-dir] [--delete] [--dry-run] [--diff] [--workspace-host <id>] [--json]",
+          "cloudroom docs push [workspace-dir] [--delete] [--dry-run] [--diff] [--workspace-host <id>] [--json]",
       },
       {
         name: "write",
         summary: "Deprecated: write a UTF-8 file directly",
-        usage: "room docs write <path> --content <text> [--vault <id>]",
+        usage: "cloudroom docs write <path> --content <text> [--vault <id>]",
       },
       {
         name: "mkdir",
         summary: "Deprecated: create a folder directly",
-        usage: "room docs mkdir <path> [--vault <id>]",
+        usage: "cloudroom docs mkdir <path> [--vault <id>]",
       },
       {
         name: "move",
         summary: "Deprecated: move a path directly",
-        usage: "room docs move <from> <to> [--vault <id>]",
+        usage: "cloudroom docs move <from> <to> [--vault <id>]",
       },
       {
         name: "remove",
         summary: "Deprecated: remove a file or directory directly",
-        usage: "room docs remove <path> [--vault <id>] [--recursive]",
+        usage: "cloudroom docs remove <path> [--vault <id>] [--recursive]",
       },
     ],
     async run(argv, context) {
@@ -2711,14 +2711,14 @@ export default async function plugin(
             content: args.content,
           });
           warning =
-            "Deprecated: direct Docs mutations will be removed; use room docs pull, edit local files, then room docs push.";
+            "Deprecated: direct Docs mutations will be removed; use cloudroom docs pull, edit local files, then cloudroom docs push.";
         } else if (args.command === "mkdir") {
           result = await handlers.createFolder({
             vaultId: args.vaultId,
             path: args.positionals[0],
           });
           warning =
-            "Deprecated: direct Docs mutations will be removed; use room docs pull, edit local files, then room docs push.";
+            "Deprecated: direct Docs mutations will be removed; use cloudroom docs pull, edit local files, then cloudroom docs push.";
         } else if (args.command === "move") {
           result = await movePath(
             args.vaultId,
@@ -2726,7 +2726,7 @@ export default async function plugin(
             args.positionals[1],
           );
           warning =
-            "Deprecated: direct Docs mutations will be removed; use room docs pull, edit local files, then room docs push.";
+            "Deprecated: direct Docs mutations will be removed; use cloudroom docs pull, edit local files, then cloudroom docs push.";
         } else if (args.command === "remove") {
           result = await removePath(
             args.vaultId,
@@ -2734,7 +2734,7 @@ export default async function plugin(
             args.recursive,
           );
           warning =
-            "Deprecated: direct Docs mutations will be removed; use room docs pull, edit local files, then room docs push --delete.";
+            "Deprecated: direct Docs mutations will be removed; use cloudroom docs pull, edit local files, then cloudroom docs push --delete.";
         } else {
           return {
             exitCode: 2,

@@ -7,6 +7,7 @@ import {
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
 import { CHANGELOG_LINKS } from "./changelog-preview";
 
+const WEBSITE_URL = "https://www.cloudroom.dev";
 const GITHUB_REPO_URL = "https://github.com/davidondrej/cloudroom-gui";
 const BB_CREDIT_URL = "https://github.com/get-bb/bb";
 
@@ -55,6 +56,13 @@ export function CommunitySettingsSection() {
       description="Follow Cloudroom development and learn how to get started."
     >
       <div className="space-y-5">
+        <CommunityLinkRow
+          label="Website"
+          description="Product updates, blog posts, and security details."
+          href={WEBSITE_URL}
+          icon="Globe"
+          openLabel="Visit cloudroom.dev"
+        />
         <CommunityLinkRow
           label="GitHub"
           description="Source code, issues, and contributions for the Cloudroom GUI."

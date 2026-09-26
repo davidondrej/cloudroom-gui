@@ -10,13 +10,13 @@ import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import * as fixtures from "../helpers/command-output-fixtures.js";
 import { registerThreadCommands } from "../../commands/thread/index.js";
 
-describe("room thread update command output", () => {
+describe("cloudroom thread update command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
     registerThreadCommands(program, () => "http://server");
 
-  it("room thread update sets the parent thread id", async () => {
+  it("cloudroom thread update sets the parent thread id", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-update-1",
       projectId: "proj-1",
@@ -53,7 +53,7 @@ describe("room thread update command output", () => {
     );
   });
 
-  it("room thread update changes visibility", async () => {
+  it("cloudroom thread update changes visibility", async () => {
     const thread = fixtures.makeThread({
       id: "thread-update-visibility",
       projectId: "proj-1",
@@ -83,7 +83,7 @@ describe("room thread update command output", () => {
     );
   });
 
-  it("room thread update rejects invalid parent-thread values", async () => {
+  it("cloudroom thread update rejects invalid parent-thread values", async () => {
     const patch = vi.fn(async () =>
       fixtures.makeThread({
         id: "thread-update-invalid-parent",
@@ -112,7 +112,7 @@ describe("room thread update command output", () => {
     expect(patch).not.toHaveBeenCalled();
   });
 
-  it("room thread update clears the parent thread id", async () => {
+  it("cloudroom thread update clears the parent thread id", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-update-2");
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-update-2",
@@ -143,7 +143,7 @@ describe("room thread update command output", () => {
     );
   });
 
-  it("room thread update moves a thread into a section", async () => {
+  it("cloudroom thread update moves a thread into a section", async () => {
     const thread = fixtures.makeThread({
       id: "thread-section",
       projectId: "proj-1",
@@ -164,7 +164,7 @@ describe("room thread update command output", () => {
     });
   });
 
-  it("room thread update sets a sticky model and reasoning level override", async () => {
+  it("cloudroom thread update sets a sticky model and reasoning level override", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-update-3",
       projectId: "proj-1",
@@ -202,7 +202,7 @@ describe("room thread update command output", () => {
     expect(lines).toContain("Reasoning level: high");
   });
 
-  it("room thread update sets the model override independently", async () => {
+  it("cloudroom thread update sets the model override independently", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-update-4",
       projectId: "proj-1",
@@ -229,7 +229,7 @@ describe("room thread update command output", () => {
     });
   });
 
-  it("room thread update rejects an invalid reasoning level before calling the API", async () => {
+  it("cloudroom thread update rejects an invalid reasoning level before calling the API", async () => {
     const patch = vi.fn();
     stubServerApi({ "v1.threads.:id.$patch": patch });
 

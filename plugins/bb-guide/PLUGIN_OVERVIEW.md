@@ -1,21 +1,20 @@
-# Room guide
+# Cloudroom guide
 
-Control the Room introduction and bundled agent skills in Settings → Installed
-plugins → Room guide. The plugin and all six settings default to enabled.
+Control the Cloudroom introduction and bundled agent skills in Settings → Installed
+plugins → Cloudroom guide. The plugin and all five settings default to enabled.
 
-- `introduction`: send the Room CLI, thread, and link instructions.
+- `introduction`: send the Cloudroom CLI, thread, and link instructions.
 - `skills`: make the selected bundled skills available.
-- `bbCli`: include `room-cli`.
+- `bbCli`: include `cloudroom`.
 - `pluginAuthoring`: include `bb-plugin-authoring`.
 - `skillCreator`: include `skill-creator`.
-- `submitPlugin`: include `submit-a-plugin`.
 
-Use `room plugin config bb-guide set <key> true|false` from the CLI, or
+Use `cloudroom plugin config bb-guide set <key> true|false` from the CLI, or
 `bb.sdk.plugins.updateSettings({ pluginId: "bb-guide", values: { ... } })`
 through the SDK. Changes apply when agent configuration is next assembled;
 they do not erase instructions from an existing conversation.
 
-Disabling the plugin removes its introduction and all four skills. The
+Disabling the plugin removes its introduction and all three skills. The
 settings affect this plugin's copies, not independently installed user or
 provider skills. Other plugins keep their own skills. The generated
 `plugin-commands` skill continues to describe enabled plugin commands.

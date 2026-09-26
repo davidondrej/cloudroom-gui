@@ -236,7 +236,7 @@ describe("AddPluginDialog", () => {
       source: "builtin:linear",
     });
     expect(
-      screen.getByText("Install this plugin, bundled with Room."),
+      screen.getByText("Install this plugin, bundled with Cloudroom."),
     ).not.toBeNull();
     unmount();
 

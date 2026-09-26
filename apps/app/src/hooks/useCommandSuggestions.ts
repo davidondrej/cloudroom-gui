@@ -176,7 +176,7 @@ export function useCommandSuggestions(
             args.commandScope === "thread" ||
             suggestion.source !== "command" ||
             suggestion.origin !== "builtin" ||
-            suggestion.name !== "compact",
+            !["compact", "teleport"].includes(suggestion.name),
         ),
       trimmedQuery,
     );

@@ -6,10 +6,10 @@ import {
 } from "../helpers/command-output-harness.js";
 import { registerGuideCommand } from "../../commands/guide.js";
 
-describe("room guide command output", () => {
+describe("cloudroom guide command output", () => {
   setupCommandOutputTestEnvironment();
 
-  it("room guide unknown chapter lists available chapters", async () => {
+  it("cloudroom guide unknown chapter lists available chapters", async () => {
     await expect(
       runCommand(["guide", "missing"], registerGuideCommand),
     ).rejects.toThrow("process.exit:1");
@@ -21,12 +21,12 @@ describe("room guide command output", () => {
     );
   });
 
-  it("room guide terminals documents explicit scopes and ID-only mutations", async () => {
+  it("cloudroom guide terminals documents explicit scopes and ID-only mutations", async () => {
     await runCommand(["guide", "terminals"], registerGuideCommand);
 
     const output = collectLogLines(vi.mocked(console.log)).join("\n");
     expect(output).toContain("exactly one explicit scope");
-    expect(output).toContain("room terminal list --thread <thread-id>");
-    expect(output).toContain("room terminal rename <terminal-id> <title>");
+    expect(output).toContain("cloudroom terminal list --thread <thread-id>");
+    expect(output).toContain("cloudroom terminal rename <terminal-id> <title>");
   });
 });

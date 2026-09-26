@@ -176,8 +176,8 @@ installer. It links to Settings → Remote access instead.
 The installer always installs the exact host-only `bb-app` package exposed by
 that server at `/install/bb-app.tgz`. The package contains the host daemon,
 provider/plugin workers, native host dependencies, and bundled `bb` CLI, but no
-web app or server. A `bb-app` already on PATH is reused, and the npm registry
-consulted, only when the server provides no package. Version strings cannot
+web app or server. If the server provides no package, installation stops with
+an error; it never reuses a `bb-app` on PATH or installs from npm. Version strings cannot
 distinguish unpublished builds, so the route also publishes a SHA-256 digest.
 The installer verifies that digest and uses a conditional request on later runs
 to skip an identical installed artifact. The package route is public like

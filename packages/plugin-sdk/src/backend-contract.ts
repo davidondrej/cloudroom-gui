@@ -951,9 +951,9 @@ export interface PluginCliExecutionResult {
 }
 
 export interface PluginCliRegistration {
-  /** Preferred top-level command name (`room <name> …`): lowercase [a-z0-9-]+.
+  /** Preferred top-level command name (`cloudroom <name> …`): lowercase [a-z0-9-]+.
    * A core collision logs an activation warning and remains available through
-   * `room plugin run <plugin-id>`. */
+   * `cloudroom plugin run <plugin-id>`. */
   name: string;
   summary: string;
   /** Subcommand metadata rendered in help and the plugin-commands skill
@@ -967,7 +967,7 @@ export interface PluginCliRegistration {
 
 export interface PluginCli {
   /**
-   * Register this plugin's `room` subcommand. One registration per factory
+   * Register this plugin's `cloudroom` subcommand. One registration per factory
    * execution; a repeated call is rejected. Core bb commands always win
    * name collisions; the plugin is warned and remains explicitly callable by id.
    */

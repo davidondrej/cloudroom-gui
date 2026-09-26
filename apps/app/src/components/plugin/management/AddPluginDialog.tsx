@@ -49,7 +49,7 @@ function catalogInstallDescription(
   publisherLabel: string,
 ): string {
   if (source.startsWith("builtin:")) {
-    return "Install this plugin, bundled with Room.";
+    return "Install this plugin, bundled with Cloudroom.";
   }
   if (source.startsWith("npm:")) {
     return `Install this ${publisherLabel} plugin from its listed npm package.`;

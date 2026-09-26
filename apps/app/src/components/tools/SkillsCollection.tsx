@@ -54,7 +54,7 @@ function providerLabel(
   provider: SkillProvider | null,
   providerRoster: ProviderRoster,
 ): string {
-  if (provider === null) return "Room";
+  if (provider === null) return "Cloudroom";
   return providerRoster.get(provider)?.displayName ?? provider;
 }
 
@@ -66,7 +66,7 @@ function providerFilterLabel(
   provider: ResourceProviderFilter,
   providerRoster: ProviderRoster,
 ): string {
-  return provider === "bb" ? "Room" : providerLabel(provider, providerRoster);
+  return provider === "bb" ? "Cloudroom" : providerLabel(provider, providerRoster);
 }
 
 function skillSourceFilterId(skill: SkillSummary): ResourceSkillSourceFilter {
@@ -234,11 +234,11 @@ const SKILLS_BROWSE_DESCRIPTION = (
     >
       skills.sh
     </a>
-    . Install one and every agent you use in Room can run it.
+    . Install one and every agent you use in Cloudroom can run it.
   </>
 );
 const SKILLS_LIBRARY_DESCRIPTION =
-  "The skills on this Room host — yours, your providers', and those bundled with plugins. They work with every agent you use in Room.";
+  "The skills on this Cloudroom host — yours, your providers', and those bundled with plugins. They work with every agent you use in Cloudroom.";
 
 const PREFETCH_HOVER_INTENT_MS = 150;
 
@@ -540,7 +540,7 @@ export function SkillsOverview({
               action={
                 <CreateWithTemplatesButton
                   kind="skill"
-                  label="New Room skill"
+                  label="New Cloudroom skill"
                   onCreate={onCreateSkill}
                 />
               }
@@ -695,7 +695,7 @@ export function SkillDetailDialogView({
         skill.scope === "bb-builtin"
           ? {
               label: "BB Official",
-              tooltip: "Ships with Room",
+              tooltip: "Ships with Cloudroom",
               accessibleLabel: `${skill.name} is BB Official`,
             }
           : bundledPluginName !== null

@@ -10,13 +10,13 @@ import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import * as fixtures from "../helpers/command-output-fixtures.js";
 import { registerStatusCommand } from "../../commands/status.js";
 
-describe("room status command output", () => {
+describe("cloudroom status command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
     registerStatusCommand(program, () => "http://server");
 
-  it("room status prints project/thread context", async () => {
+  it("cloudroom status prints project/thread context", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     vi.stubEnv("ROOM_THREAD_ID", "thread-1");
 
@@ -27,7 +27,7 @@ describe("room status command output", () => {
     expect(lines).toContain("Thread: thread-1");
   });
 
-  it("room status prints environment without fetching hosts", async () => {
+  it("cloudroom status prints environment without fetching hosts", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     vi.stubEnv("ROOM_THREAD_ID", "thread-1");
 
@@ -63,7 +63,7 @@ describe("room status command output", () => {
     );
   });
 
-  it("room status prints pinned state for pinned thread context", async () => {
+  it("cloudroom status prints pinned state for pinned thread context", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     vi.stubEnv("ROOM_THREAD_ID", "thread-pinned-1");
 
@@ -130,7 +130,7 @@ function stubServer(plugins: Array<{ id: string; status: string }>): void {
   });
 }
 
-describe("room status plugin attention", () => {
+describe("cloudroom status plugin attention", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
@@ -149,7 +149,7 @@ describe("room status plugin attention", () => {
     await runCommand(["status"], register);
 
     expect(collectLogPayloads(vi.mocked(console.log)).join("\n")).toContain(
-      "1 plugin not running (notify: incompatible). Run room plugin list.",
+      "1 plugin not running (notify: incompatible). Run cloudroom plugin list.",
     );
   });
 

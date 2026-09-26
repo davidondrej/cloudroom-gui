@@ -40,7 +40,7 @@ describe("resolveNewPluginTarget", () => {
   });
 });
 
-describe.sequential("room plugin new dependency install", () => {
+describe.sequential("cloudroom plugin new dependency install", () => {
   const originalCwd = process.cwd();
   let workDir: string;
   let logged: string[];
@@ -124,7 +124,7 @@ describe.sequential("room plugin new dependency install", () => {
     expect(logged).toContain("  npm install --include=dev");
   });
 
-  it("pins the scaffold to this bb's SDK version", async () => {
+  it("pins the scaffold to this Cloudroom's SDK version", async () => {
     await runPluginNew(["pinned"]);
 
     const manifest: { devDependencies: Record<string, string> } = JSON.parse(
@@ -139,7 +139,7 @@ describe.sequential("room plugin new dependency install", () => {
     expect(warned).toEqual([]);
   });
 
-  it("warns, without failing, when this bb's SDK version is not on npm yet", async () => {
+  it("warns, without failing, when this Cloudroom's SDK version is not on npm yet", async () => {
     vi.stubEnv("BB_TEST_NPM_VIEW", "missing");
 
     await runPluginNew(["unpublished"]);
@@ -149,7 +149,7 @@ describe.sequential("room plugin new dependency install", () => {
     );
     const warnings = warned.join("\n");
     expect(warnings).toContain(
-      `@get-bb/plugin-sdk ${PLUGIN_SDK_VERSION} — this bb's SDK version — was not found on npm`,
+      `@get-bb/plugin-sdk ${PLUGIN_SDK_VERSION} — this Cloudroom's SDK version — was not found on npm`,
     );
     expect(warnings).toContain("npm pack");
   });
@@ -160,7 +160,7 @@ describe.sequential("room plugin new dependency install", () => {
     await runPluginNew(["missing-package"]);
 
     expect(warned.join("\n")).toContain(
-      `@get-bb/plugin-sdk ${PLUGIN_SDK_VERSION} — this bb's SDK version — was not found on npm`,
+      `@get-bb/plugin-sdk ${PLUGIN_SDK_VERSION} — this Cloudroom's SDK version — was not found on npm`,
     );
   });
 

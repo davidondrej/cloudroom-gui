@@ -18,7 +18,7 @@ function steerPrompt(
   return (
     `New comment on task ${taskKey} from ${authorName}: ${body}\n\n` +
     "Treat this as updated context for your work on this task; " +
-    `reply via room tasks comment ${taskKey} when relevant.`
+    `reply via cloudroom tasks comment ${taskKey} when relevant.`
   );
 }
 

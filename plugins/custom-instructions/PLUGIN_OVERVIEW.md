@@ -1,4 +1,4 @@
-Tell every agent on this Room host the things you would otherwise repeat in each thread. Examples: your coding conventions, the tools you prefer, and the projects it should know about.
+Tell every agent on this Cloudroom host the things you would otherwise repeat in each thread. Examples: your coding conventions, the tools you prefer, and the projects it should know about.
 
 ## What you get
 
@@ -8,14 +8,14 @@ Tell every agent on this Room host the things you would otherwise repeat in each
 
 ## How it works
 
-Write the instructions as plain text or Markdown. Leave the field empty to add nothing. Room appends your text to the instructions it already gives the agent.
+Write the instructions as plain text or Markdown. Leave the field empty to add nothing. Cloudroom appends your text to the instructions it already gives the agent.
 
 ## For agents and scripts
 
-Use the `room instructions` command:
+Use the `cloudroom instructions` command:
 
-- `room instructions get` prints the current text.
-- `room instructions set <text...>` replaces it.
-- `room instructions clear` removes it.
+- `cloudroom instructions get` prints the current text.
+- `cloudroom instructions set <text...>` replaces it.
+- `cloudroom instructions clear` removes it.
 
 Add `--json` for machine-readable output.

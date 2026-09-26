@@ -7,11 +7,11 @@ contains `url`, `token`, and `projectId`, with permissions `0600`. Configure it
 through `POST /api/v1/cloudroom`; remote core URLs require HTTPS. See
 [Cloudroom](cloudroom.md) for the pilot's setup, supported operations, and limits.
 
-Cloud Codex first reuses an existing local file-backed login when the VM has none. **Connect Codex** is the fallback; ongoing two-way token-file sync remains disabled. Use `room cloudroom codex status --json`, `login --request-id ID`, or `cancel ID`; see [the login flow](cloudroom.md#connect-codex). No environment variable or API key is required.
+Cloud Codex first reuses an existing local file-backed login when the VM has none. **Connect Codex** is the fallback; ongoing two-way token-file sync remains disabled. Use `cloudroom cloud codex status --json`, `login --request-id ID`, or `cancel ID`; see [the login flow](cloudroom.md#connect-codex). No environment variable or API key is required.
 
 ## Cloudroom CLI
 
-Use `room`, not official BB's `bb`. Standalone `room` defaults to `http://127.0.0.1:39886` and daemon port `39887`. `room status --json` reports the selected server and profile. The same backend controls Local and Cloud threads.
+Use `cloudroom`, not official BB's `bb`. Standalone `cloudroom` defaults to `http://127.0.0.1:39886` and daemon port `39887`. `cloudroom status --json` reports the selected server and profile. The same backend controls Local and Cloud threads.
 
 Cloudroom supplies these automatically to Local agent shells and thread-scoped terminals:
 
@@ -175,7 +175,7 @@ signal it, so a stale file left by a crash cannot stop an unrelated process.
 | ------------------------------ | -------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `BB_APP_URL`                   | `bb-app config`                                    | Optional for remote use | Human-facing app URL used for generated links and allowed browser origins. Leave empty for local-only use.                                                                                                                                                                                                                                                                                                     |
 | `BB_INFERENCE`                 | `bb-app config`                                    | Optional                | Primary server-side helper model in `<service>/<model>` format, where `<service>` is an AI service a loaded plugin registers (`bb settings ai-services` lists them; `codex` comes with the codex plugin and uses the codex CLI's credentials with no reasoning) or a pi-ai provider the server calls directly with its API key. Defaults to `codex/gpt-5.6-luna`.                                              |
-| `BB_INFERENCE_FALLBACK`        | `bb-app config`                                    | Optional                | Helper model used after a transient primary timeout, rate limit, or service-unavailable failure. Defaults to `codex/gpt-5.4-mini`.                                                                                                                                                                                                                                                                             |
+| `BB_INFERENCE_FALLBACK`        | `bb-app config`                                    | Optional                | Helper model used after a transient primary timeout, rate limit, or service-unavailable failure. Defaults to `codex/gpt-5.6-luna`.                                                                                                                                                                                                                                                                             |
 | `BB_TRANSCRIPTION`             | `bb-app config`                                    | Optional                | Voice transcription model in `<service>/<model>` format: a plugin-registered AI service (`codex` with the codex plugin; audio up to 5MB) or `openai/<model>` with `OPENAI_API_KEY`. Defaults to `codex/gpt-transcribe`.                                                                                                                                                                                        |
 | `BB_MARKETPLACE_URL`           | `bb-app env`, or environment                       | Startup-only testing    | Manifest URL of the reserved `bb-community` plugin marketplace. It defaults to `https://getbb.app/marketplace/v2/marketplace.json`. If the default v2 request returns 404, the server requests v1. Set another URL to test catalog refreshes. The server requests that URL without fallback. It changes only `bb-community`. Add other marketplaces with `bb marketplace add`. Restart the app after a change. |
 | `BB_SERVER_URL`                | `bb-app config`                                    | Remote CLI/host use     | Server URL for standalone `bb` CLI and `host-daemon` commands on the current machine. The CLI defaults to `http://127.0.0.1:38886` when unset.                                                                                                                                                                                                                                                                 |
@@ -231,22 +231,10 @@ bb keep-awake hosts all
 bb keep-awake hosts <host-id>...
 ```
 
-The builtin Concurrency limit plugin has an autosaving page under Plugins →
-Installed plugins. Its overall limit is unlimited by default. Each host defaults to
-Auto: one thread per available processor. A blank host field restores
-Auto, and 0 pauses new work for that scope. Configure it from an agent or
-terminal with:
-
-```sh
-bb concurrency-limit status [--json]
-bb concurrency-limit global [unlimited|<limit>] [--json]
-bb concurrency-limit host <host-id> [auto|<limit>] [--json]
-```
-
 The **Command Guard** toggle in Settings → Advanced → Command Guard defaults to on. It blocks a
 small set of catastrophic shell-command patterns in new Local Codex/Pi/Claude
 Code sessions and Cloud Codex/Pi sessions. Use
-`room settings general commandGuardEnabled <true|false>` or the existing
+`cloudroom settings general commandGuardEnabled <true|false>` or the existing
 `system.updateGeneralSettings` API. Start a new session after changing it.
 Personal guards and running commands are unchanged. Cloud starts require a core
 with `command_guard` support when enabled. This is accident prevention, not a
@@ -270,7 +258,7 @@ queued message waits and then runs when the agent stops. A steer message goes
 to the agent during the current run. The picker defaults to "Queue": Enter
 queues and Command+Enter steers. "Steer" swaps them. Ctrl+Enter is the same
 modifier shortcut on Windows and Linux. Existing saved preferences are preserved.
-Set it with `room settings general steerActiveThreadOnEnter <true|false>`,
+Set it with `cloudroom settings general steerActiveThreadOnEnter <true|false>`,
 where `true` is "Steer".
 
 The "Streamer mode" toggle in Settings → General hides every `customModels`
@@ -354,7 +342,7 @@ block:
 - `--font-terminal` controls the integrated terminal's font family.
 
 Always end font stacks with a generic fallback such as `sans-serif` or
-`monospace`. The complete theme token reference is in the room-cli skill's
+`monospace`. The complete theme token reference is in the cloudroom skill's
 `references/theming.md`.
 
 ## Keyboard Shortcuts
@@ -689,8 +677,9 @@ distribution source: `/install/version` reports the server package/protocol and
 and strong ETag. That package contains the daemon, its workers and native
 dependencies, and the bundled `bb` CLI; it omits the server and web app. The
 installer verifies the digest and skips the download and npm install when its
-recorded installed digest receives `304 Not Modified`. It falls back to the npm
-registry only when the package route returns 404. It installs the package under
+recorded installed digest receives `304 Not Modified`. If the package route
+fails, installation stops with an error; it never falls back to npm or a
+`bb-app` on PATH. It installs the package under
 the machine's bb data directory rather than npm's system-wide prefix, so
 enrollment needs neither `sudo` nor a global npm configuration.
 Installed services enable `--auto-update`; remove that flag from the launchd
@@ -712,6 +701,7 @@ client wrote first, so a stale window cannot silently clobber a newer value.
 | --------------------------------- | --------------------------------------------------- |
 | `sidebar.organizationMode`        | `project`, `chronological`, or `machine`            |
 | `sidebar.chronologicalSort`       | `updated`, `created`, `alpha`, or `none`            |
+| `sidebar.sectionSorts`            | Sort per section id; falls back to the global sort  |
 | `sidebar.sectionOrder`            | Section id list for **By project**                  |
 | `sidebar.manualSectionOrder`      | Section id list for **Manually**                    |
 | `sidebar.machineSectionOrder`     | Section id list for **By machine**                  |
@@ -1400,7 +1390,7 @@ For isolated development smoke tests only, `DEV_BROWSER_SMOKE_BINARY` selects th
 
 BB guide is installed and enabled by default. In Settings → Installed plugins
 → BB guide, `introduction` controls the BB introduction, `skills` controls all
-four bundled skills, and `bbCli`, `pluginAuthoring`, `skillCreator`, and `submitPlugin` control
+three bundled skills, and `bbCli`, `pluginAuthoring`, and `skillCreator` control
 individual skills. All default to true. Disabling BB guide removes its
 introduction and skills; other plugins and independently installed skill
 copies retain their own configuration.

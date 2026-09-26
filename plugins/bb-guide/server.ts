@@ -7,7 +7,7 @@ export default async function plugin(bb: BbPluginApi) {
       type: "boolean",
       label: "Send Cloudroom introduction",
       description:
-        "Tell agents about the Room CLI, threads, and clickable links. Applies to new agent sessions.",
+        "Tell agents about the Cloudroom CLI, threads, and clickable links. Applies to new agent sessions.",
       default: true,
     },
     skills: {
@@ -18,27 +18,20 @@ export default async function plugin(bb: BbPluginApi) {
     },
     bbCli: {
       type: "boolean",
-      label: "Room CLI skill",
+      label: "Cloudroom CLI skill",
       description: "Inspect and manage Cloudroom through the CLI.",
       default: true,
     },
     pluginAuthoring: {
       type: "boolean",
       label: "Plugin authoring skill",
-      description: "Create and change Room plugins and SDK extensions.",
+      description: "Create and change Cloudroom plugins and SDK extensions.",
       default: true,
     },
     skillCreator: {
       type: "boolean",
       label: "Skill creator skill",
-      description: "Create and improve Room skills.",
-      default: true,
-    },
-    submitPlugin: {
-      type: "boolean",
-      label: "Plugin submission skill",
-      description:
-        "Prepare and submit a plugin to the Community marketplace.",
+      description: "Create and improve Cloudroom skills.",
       default: true,
     },
   });
@@ -55,10 +48,9 @@ export default async function plugin(bb: BbPluginApi) {
     tools: [],
     skills: current.skills
       ? [
-          ...(current.bbCli ? ["room-cli"] : []),
+          ...(current.bbCli ? ["cloudroom"] : []),
           ...(current.pluginAuthoring ? ["bb-plugin-authoring"] : []),
           ...(current.skillCreator ? ["skill-creator"] : []),
-          ...(current.submitPlugin ? ["submit-a-plugin"] : []),
         ]
       : [],
   }));

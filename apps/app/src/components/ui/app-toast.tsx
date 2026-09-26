@@ -121,9 +121,9 @@ function AppToastActionButton({
   return (
     <Button
       type="button"
-      variant="link"
+      variant="ghost"
       size="sm"
-      className="h-auto shrink-0 px-0 py-0 text-xs text-muted-foreground underline underline-offset-4"
+      className="h-6 shrink-0 px-2 text-xs font-medium"
       onClick={handleClick}
     >
       {action.label}
@@ -213,9 +213,9 @@ export function AppToastContent({
   ) : null;
 
   return (
-    <div className="w-[var(--width,356px)] max-w-[calc(100vw-32px)] shrink-0 rounded-md border border-border bg-popover px-4 py-3 text-popover-foreground shadow-sm max-[600px]:w-[calc(100vw-32px)]">
-      <div className="flex min-w-0 items-start gap-3">
-        <div className="mt-0.5 flex size-4 shrink-0 items-center justify-center text-foreground">
+    <div className="w-[var(--width,320px)] max-w-[calc(100vw-32px)] shrink-0 rounded-lg border border-border bg-popover py-2.5 pl-3 pr-2 text-popover-foreground shadow-md max-[600px]:w-[calc(100vw-32px)]">
+      <div className="flex min-w-0 items-start gap-2.5">
+        <div className="mt-0.5 flex size-4 shrink-0 items-center justify-center text-muted-foreground">
           <Icon
             name={iconForTone(tone)}
             className={cn("size-4", tone === "loading" && "animate-spin")}
@@ -224,37 +224,33 @@ export function AppToastContent({
           />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-2">
-            <AppToastOverflowText
-              className="text-sm font-medium leading-5"
-              content={title}
-              notificationId={notificationId}
-              onShowMore={showNotification}
-              testId="app-toast-title"
-            />
-          </div>
-          {description || hasActions ? (
-            <div className="mt-0.5 flex min-w-0 flex-col items-start gap-2 text-xs leading-5 text-muted-foreground">
-              {description ? (
-                <AppToastOverflowText
-                  content={description}
-                  notificationId={notificationId}
-                  onShowMore={showNotification}
-                  testId="app-toast-description"
-                />
-              ) : null}
-              {hasActions ? (
-                <div className="flex flex-wrap gap-2">{actions}</div>
-              ) : null}
+          <AppToastOverflowText
+            className="text-[13px] font-medium leading-5"
+            content={title}
+            notificationId={notificationId}
+            onShowMore={showNotification}
+            testId="app-toast-title"
+          />
+          {description ? (
+            <div className="min-w-0 text-xs leading-4 text-muted-foreground">
+              <AppToastOverflowText
+                content={description}
+                notificationId={notificationId}
+                onShowMore={showNotification}
+                testId="app-toast-description"
+              />
             </div>
           ) : null}
         </div>
+        {hasActions ? (
+          <div className="flex shrink-0 items-center">{actions}</div>
+        ) : null}
         {dismissible ? (
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="-mr-1 -mt-1 size-6 shrink-0 text-muted-foreground"
+            className="size-6 shrink-0 text-muted-foreground"
             aria-label="Dismiss notification"
             onClick={() => (onDismiss ? onDismiss() : dismissToast(id))}
           >

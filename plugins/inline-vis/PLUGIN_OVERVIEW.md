@@ -24,7 +24,7 @@ Read-only artifacts in the thread's storage directory can be rendered without re
 
 The plugin confirms the file exists in the selected source before it renders. Files must be UTF-8 text with a maximum size of 5 MiB. Relative assets next to HTML files load as usual.
 
-HTML runs in a sandboxed iframe with an opaque origin. Scripts in the file cannot read the Room page, its cookies, or its storage. Markdown uses Room's renderer with raw HTML disabled.
+HTML runs in a sandboxed iframe with an opaque origin. Scripts in the file cannot read the Cloudroom page, its cookies, or its storage. Markdown uses Cloudroom's renderer with raw HTML disabled.
 
 ## For agents
 

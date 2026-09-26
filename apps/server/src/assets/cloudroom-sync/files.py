@@ -29,11 +29,38 @@ PORTABLE = {
     'claude': {'model', 'effortLevel', 'language'},
     'cursor': {'notifications', 'hints', 'suggestNextPrompt'},
     'codex': {'model', 'model_reasoning_effort', 'model_verbosity', 'personality'},
+    'mcp-json': {'mcpServers'},
+    'mcp-toml': {'mcp_servers'},
 }
+# MCP servers copy one way, Mac to VM, and only add or update. Secrets and machine-specific
+# setup stay local: the VM cannot use Mac paths, environment variables, or keychain logins.
+MCP = {'mcp-json': 'mcpServers', 'mcp-toml': 'mcp_servers'}
+MCP_LOCAL_KEYS = {'env', 'env_vars', 'headers', 'http_headers', 'env_http_headers', 'bearer_token_env_var', 'cwd'}
+# Conservative: a false match only keeps that server on the Mac. Catches key prefixes anywhere,
+# UUIDs, and long random-looking runs, such as keys embedded in MCP URL paths.
+MCP_SECRET = re.compile(r'(?i)api[-_]?key|token|secret|password|bearer|(?<![a-z0-9])(?:sk|pk|rk|ghp|gho|ghs|github_pat|xox[abpr])[-_]'
+                        r'|[0-9a-f]{8}-[0-9a-f]{4}-|(?<![a-z0-9_])(?=[a-z_]*[0-9])[a-z0-9_]{24,}')
 
 
 class Conflict(Exception):
     pass
+
+
+def portable_mcp(name, server):
+    if (not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', name) or not isinstance(server, dict) or server.keys() & MCP_LOCAL_KEYS
+            or not all(re.fullmatch(r'[A-Za-z0-9_-]+', key) for key in server)):
+        return False
+    for value in server.values():
+        for item in value if isinstance(value, list) else [value]:
+            if isinstance(item, float) and item == item and abs(item) != float('inf'):
+                continue
+            if not isinstance(item, (str, bool, int)) or isinstance(item, str) and (
+                    item.startswith(('/', '~')) or '/Users/' in item or MCP_SECRET.search(item)):
+                return False
+    url, command = server.get('url'), server.get('command')
+    if url is not None:
+        return command is None and isinstance(url, str) and url.startswith('https://') and '?' not in url
+    return isinstance(command, str) and bool(command) and '/' not in command
 
 
 def excluded(path):
@@ -169,9 +196,20 @@ class Tree:
                 except FileNotFoundError:
                     pass
 
+    def known_rollout(self, native_id):
+        # Codex resumes a conversation it already knows only from that saved path.
+        # Its dated folders win over teleport/ copies left by earlier failed transfers.
+        found = []
+        for folder, _, names in os.walk(self.root):
+            for name in names:
+                if name.endswith(f'-{native_id}.jsonl'):
+                    relative = os.path.relpath(os.path.join(folder, name), self.root)
+                    found.append((not relative.startswith('teleport/'), os.lstat(os.path.join(folder, name)).st_mtime, relative))
+        return max(found)[2] if found else None
+
     def install_transfer(self, request, stream):
-        relative = request['path']
         native = request.get('native')
+        relative = (native and native['harness'] == 'codex' and self.known_rollout(native['id'])) or request['path']
         digest = hashlib.sha256()
         count = 0
         with self.parent(relative, create=True) as (fd, name):
@@ -179,7 +217,8 @@ class Tree:
             try:
                 out = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=fd)
                 with os.fdopen(out, 'wb') as output:
-                    if native:
+                    # Claude and Cursor sessions are stored byte-for-byte; the core checks them.
+                    if native and native['harness'] in ('pi', 'codex'):
                         line = stream.readline(16 * 1024 * 1024 + 1)
                         if len(line) > 16 * 1024 * 1024 or not line.endswith(b'\n'):
                             raise ValueError('invalid native header')
@@ -216,7 +255,11 @@ class Tree:
                             while chunk := existing.read(CHUNK): checksum.update(chunk)
                             return checksum.digest()
                     if checksum(name) != checksum(temporary):
-                        raise Conflict('transfer destination changed')
+                        if not native:
+                            raise Conflict('transfer destination changed')
+                        # A returning conversation replaces the VM's older copy, which stays beside it.
+                        os.link(name, f'{name}.before-teleport-{uuid.uuid4().hex}', src_dir_fd=fd, dst_dir_fd=fd, follow_symlinks=False)
+                        os.replace(temporary, name, src_dir_fd=fd, dst_dir_fd=fd)
                 os.fsync(fd)
             finally:
                 try: os.unlink(temporary, dir_fd=fd)
@@ -256,12 +299,45 @@ class Tree:
             return data
         if self.kind not in PORTABLE:
             return data
-        if self.kind == 'codex' and tomllib is None:
+        toml = self.kind in {'codex', 'mcp-toml'}
+        if toml and tomllib is None:
             raise ValueError('Codex settings require Python 3.11+')
-        value = tomllib.loads(data.decode()) if self.kind == 'codex' else json.loads(data)
+        value = tomllib.loads(data.decode()) if toml else json.loads(data)
         if not isinstance(value, dict):
             raise ValueError('invalid settings')
+        if self.kind in MCP:
+            servers = value.get(MCP[self.kind]) or {}
+            if not isinstance(servers, dict):
+                raise ValueError('invalid MCP servers')
+            value = {MCP[self.kind]: {n: s for n, s in servers.items() if portable_mcp(n, s)}}
+            if not value[MCP[self.kind]]:
+                return b'{}'
         return json.dumps({k: v for k, v in value.items() if k in PORTABLE[self.kind]}, sort_keys=True, separators=(',', ':')).encode()
+
+    def merged_mcp(self, servers, original):
+        key = MCP[self.kind]
+        if not isinstance(servers, dict) or not all(portable_mcp(n, s) for n, s in servers.items()):
+            raise ValueError('unsupported MCP server')
+        if self.kind == 'mcp-json':
+            document = json.loads(original or b'{}')
+            if not isinstance(document, dict) or not isinstance(document.setdefault(key, {}), dict):
+                raise ValueError('invalid MCP settings')
+            document[key].update(servers)
+            return (json.dumps(document, indent=2) + '\n').encode()
+        # Replace only the incoming servers' tables; everything else stays byte-for-byte.
+        lines, replacing = [], False
+        for line in original.decode().splitlines():
+            if re.match(r'^\s*\[', line):
+                table = re.match(r'^\s*\[\s*mcp_servers\.([A-Za-z0-9_-]+)\s*[.\]]', line)
+                replacing = bool(table and table[1] in servers)
+            if not replacing:
+                lines.append(line)
+        tables = [f'[mcp_servers.{name}]\n' + ''.join(f'{k} = {json.dumps(v, ensure_ascii=False)}\n' for k, v in sorted(server.items()))
+                  for name, server in sorted(servers.items())]
+        result = '\n'.join(lines).rstrip('\n') + ('\n\n' if lines else '') + '\n'.join(tables)
+        if any(tomllib.loads(result).get(key, {}).get(n) != s for n, s in servers.items()):
+            raise ValueError('unsupported Codex MCP layout')
+        return result.encode()
 
     def merged(self, incoming, original):
         if self.kind not in PORTABLE:
@@ -269,6 +345,8 @@ class Tree:
         values = json.loads(incoming)
         if not isinstance(values, dict) or values.keys() - PORTABLE[self.kind]:
             raise ValueError('unsupported settings')
+        if self.kind in MCP:
+            return self.merged_mcp(values.get(MCP[self.kind], {}), original)
         if any(not isinstance(v, (str, bool, int)) for v in values.values()):
             raise ValueError('unsupported setting value')
         if self.kind == 'codex':
@@ -471,7 +549,7 @@ class Tree:
                                 if entry['size'] > 16 * 1024 * 1024:
                                     raise ValueError('settings exceed the existing API JSON limit')
                                 incoming = stream.read(entry['size'] + 1)
-                                if len(incoming) != entry['size']:
+                                if len(incoming) != entry['size'] or self.kind in MCP and transfer(io.BytesIO(incoming), 'file', False)['tag'] != entry['tag']:
                                     raise Conflict('incomplete settings')
                                 output.write(self.merged(incoming, previous))
                             else:
@@ -482,7 +560,8 @@ class Tree:
                             os.fchmod(output.fileno(), 0o600 if self.filename else 0o755 if entry['executable'] else 0o644)
                     else:
                         raise ValueError('unsupported entry')
-                    if (self.filename or entry['kind'] == 'symlink') and self.inspect(recovery, temporary, relative)['tag'] != entry['tag']:
+                    # MCP merges add to existing servers, so the result may hold more than the incoming set.
+                    if (self.filename and self.kind not in MCP or entry['kind'] == 'symlink') and self.inspect(recovery, temporary, relative)['tag'] != entry['tag']:
                         raise Conflict('incomplete or changed transfer')
                     if (self.tag(relative) != expected or (original_signature is not None
                             and self.signature(os.stat(name, dir_fd=fd, follow_symlinks=False)) != original_signature)):
@@ -574,6 +653,43 @@ def worker():
         except (Conflict, FileExistsError):
             pass  # An existing login always wins, including a concurrent native sign-in.
         result = {}
+    elif op == 'pi_auth':
+        # Pi keeps one entry per provider. Imports only add missing providers; `replace` is an explicit user key.
+        if tree.filename != 'auth.json' or not isinstance(request['credentials'], dict):
+            raise ValueError('invalid Pi login request')
+        try:
+            with tree.snapshot('auth.json') as (previous, data):
+                expected, current = previous['tag'], json.load(data)
+        except FileNotFoundError:
+            expected, current = None, {}
+        if not isinstance(current, dict):
+            raise ValueError('invalid Pi login file')
+        added = [name for name in request['credentials'] if request.get('replace') or name not in current]
+        if added:
+            data = json.dumps({**current, **{name: request['credentials'][name] for name in added}}, indent=2).encode()
+            tree.apply('auth.json', expected, transfer(io.BytesIO(data), 'file', False), io.BytesIO(data))
+        result = {'providers': sorted({*current, *added}), 'added': added}
+    elif op == 'pi_setup':
+        # The Mac's custom providers replace same-named VM providers; VM-only providers stay.
+        if tree.filename != 'models.json' or not isinstance(request['providers'], dict):
+            raise ValueError('invalid Pi setup request')
+        try:
+            with tree.snapshot('models.json') as (previous, data):
+                expected, current = previous['tag'], json.load(data)
+        except FileNotFoundError:
+            expected, current = None, {}
+        if not isinstance(current, dict) or not isinstance(current.get('providers', {}), dict):
+            raise ValueError('invalid Pi models file')
+        providers = {**current.get('providers', {}), **request['providers']}
+        if providers != current.get('providers', {}):
+            data = json.dumps({**current, 'providers': providers}, indent=2).encode()
+            tree.apply('models.json', expected, transfer(io.BytesIO(data), 'file', False), io.BytesIO(data))
+        try:
+            with Tree(tree.root, 'auth', 'settings.json').snapshot('settings.json') as (_, data):
+                packages = json.load(data).get('packages', [])
+        except FileNotFoundError:
+            packages = []
+        result = {'providers': sorted(providers), 'packages': packages if isinstance(packages, list) else []}
     elif op == 'apply':
         tree.apply(request['path'], request['expected'], request.get('entry'), sys.stdin.buffer)
         result = {}

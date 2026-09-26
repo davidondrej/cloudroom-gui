@@ -128,12 +128,12 @@ export function describeUnreachableServer(
 
   if (blockedCode !== undefined) {
     return (
-      `Cannot reach room at ${baseUrl}: ${blockedCode} — the connection was blocked. ` +
-      `room may still be running; check sandbox or firewall rules for this shell.`
+      `Cannot reach Cloudroom at ${baseUrl}: ${blockedCode} — the connection was blocked. ` +
+      `Cloudroom may still be running; check sandbox or firewall rules for this shell.`
     );
   }
   if (refused) {
-    return `room is not running at ${baseUrl} — open the room app, then re-run this command.`;
+    return `Cloudroom is not running at ${baseUrl} — open the Cloudroom app, then re-run this command.`;
   }
   if (timedOut || retryable) {
     const tried =
@@ -141,11 +141,11 @@ export function describeUnreachableServer(
         ? ` after ${attempts} attempts (last window ${timeoutMs}ms)`
         : ` within ${timeoutMs}ms`;
     return (
-      `room did not respond at ${baseUrl}${tried} — it may be busy or temporarily unreachable. ` +
+      `Cloudroom did not respond at ${baseUrl}${tried} — it may be busy or temporarily unreachable. ` +
       `No server response was received and your command did not run; re-run it.`
     );
   }
-  return `Cannot reach room at ${baseUrl}: ${
+  return `Cannot reach Cloudroom at ${baseUrl}: ${
     messages.length > 0 ? messages.join(": ") : String(cause)
   }`;
 }

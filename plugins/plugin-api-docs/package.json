@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Browse the Room plugin API as an annotated map of the product.",
+  "description": "Browse the Cloudroom plugin API as an annotated map of the product.",
   "engines": {
     "bb": ">=0.0",
     "bbPluginSdk": ">=0.4.3"
   },
   "bb": {
     "name": "Plugin Guide",
-    "description": "Browse the Room plugin API as an annotated map of the product.",
+    "description": "Browse the Cloudroom plugin API as an annotated map of the product.",
     "branding": {
       "icon": "./icons/ai-generative.svg"
     },

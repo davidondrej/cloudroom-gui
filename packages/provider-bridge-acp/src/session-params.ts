@@ -111,9 +111,9 @@ function buildAcpSkillsInstructions(
   }
 
   return [
-    "Room skills are reusable instruction folders. When the current task matches a listed skill description, read that skill's SKILL.md at the absolute path before proceeding; you may read supporting files in the same skill directory that SKILL.md references. If a listed path does not exist, the list is stale and should be ignored.",
+    "Cloudroom skills are reusable instruction folders. When the current task matches a listed skill description, read that skill's SKILL.md at the absolute path before proceeding; you may read supporting files in the same skill directory that SKILL.md references. If a listed path does not exist, the list is stale and should be ignored.",
     "",
-    "Available Room skills:",
+    "Available Cloudroom skills:",
     ...skillLines,
   ].join("\n");
 }

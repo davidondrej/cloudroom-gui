@@ -7,13 +7,13 @@ import {
   readFile,
   readdir,
   realpath,
-  readlink,
   rename,
   rm,
   stat,
   writeFile,
 } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
+import { DatabaseSync } from "node:sqlite";
 import { homedir } from "node:os";
 import {
   basename,
@@ -25,6 +25,8 @@ import {
   sep,
 } from "node:path";
 import { HOST_ARTIFACT_MAX_BYTES } from "@bb/host-daemon-contract";
+import { runGit } from "@bb/host-workspace";
+import { userExecutableProcessOptions } from "../user-executable-env.js";
 import { requireResolvedWorkspaceForCommand } from "../workspace-resolution.js";
 import type {
   CommandDispatchOptions,
@@ -92,6 +94,42 @@ async function nativePath(
       )
         return path;
     }
+  } else if (harness === "claude-code") {
+    const root = join(
+      process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"),
+      "projects",
+    );
+    const found: string[] = [];
+    for (const entry of await readdir(root, { withFileTypes: true }).catch(
+      () => [],
+    )) {
+      const path = join(root, entry.name, `${nativeId}.jsonl`);
+      if (
+        entry.isDirectory() &&
+        (await stat(path).then(
+          (s) => s.isFile(),
+          () => false,
+        ))
+      )
+        found.push(path);
+    }
+    if (found.length === 1) return found[0]!;
+  } else if (harness === "cursor") {
+    const path = join(
+      homedir(),
+      ".cursor",
+      "acp-sessions",
+      nativeId,
+      "meta.json",
+    );
+    if (
+      /^[a-f0-9-]{36}$/.test(nativeId) &&
+      (await stat(path).then(
+        (s) => s.isFile(),
+        () => false,
+      ))
+    )
+      return path;
   } else {
     const root = join(
       process.env.CODEX_HOME || join(homedir(), ".codex"),
@@ -250,6 +288,7 @@ async function runCapture(
     });
   };
   const sessions = [...(command.sessions ?? [])];
+  const texts: string[] = [];
   const knownCodexSessions = new Set(
     sessions
       .filter((session) => session.harness === "codex")
@@ -264,13 +303,22 @@ async function runCapture(
     const info = await lstat(source);
     if (!info.isFile() || info.size > HOST_ARTIFACT_MAX_BYTES)
       throw new Error("Native history exceeds the bounded capture size");
-    const original = await readFile(source, "utf8");
-    const lines = original.trimEnd().split("\n");
-    const header = JSON.parse(lines[0]!);
-    const id = session.harness === "pi" ? header.id : header.payload?.id;
+    const cursor = session.harness === "cursor";
+    const lines = cursor
+      ? []
+      : (await readFile(source, "utf8")).trimEnd().split("\n");
+    const header = cursor ? {} : JSON.parse(lines[0]!);
+    const id =
+      cursor ||
+      (session.harness === "claude-code" &&
+        lines.some((line) => JSON.parse(line).sessionId === session.nativeId))
+        ? session.nativeId
+        : session.harness === "pi"
+          ? header.id
+          : header.payload?.id;
     if (
       typeof id !== "string" ||
-      (session.harness === "codex" && id !== session.nativeId)
+      (session.harness !== "pi" && id !== session.nativeId)
     )
       throw new Error("Native history has no matching session identity");
     if (session.threadId === command.threadId) capture.nativeId = id;
@@ -280,15 +328,23 @@ async function runCapture(
       if (!value || typeof value !== "object") return value;
       const item = value as Record<string, unknown>;
       const url = typeof item.image_url === "string" ? item.image_url : null;
+      const base64 = item.source as Record<string, unknown> | undefined;
       const embedded =
         item.type === "image" && typeof item.data === "string"
           ? { data: item.data, mime: String(item.mimeType ?? "image/png") }
-          : item.type === "input_image" && url?.startsWith("data:")
+          : item.type === "image" &&
+              base64?.type === "base64" &&
+              typeof base64.data === "string"
             ? {
-                data: url.slice(url.indexOf(",") + 1),
-                mime: url.slice(5, url.indexOf(";")),
+                data: base64.data,
+                mime: String(base64.media_type ?? "image/png"),
               }
-            : null;
+            : item.type === "input_image" && url?.startsWith("data:")
+              ? {
+                  data: url.slice(url.indexOf(",") + 1),
+                  mime: url.slice(5, url.indexOf(";")),
+                }
+              : null;
       if (embedded) {
         const extension =
           (
@@ -317,44 +373,55 @@ async function runCapture(
     }
     const images: { file: string; name: string; data: Buffer }[] = [];
     const frozen = join(root, `${session.threadId}.jsonl`);
-    const text =
-      lines
-        .map((line) => {
-          const record = JSON.parse(line);
-          if (session.harness === "codex" && record.type === "event_msg") {
-            const payload = record.payload;
-            const item = payload?.item;
-            const children =
-              item?.type === "SubAgentActivity" && item.kind === "started"
-                ? [item.agent_thread_id]
-                : item?.type === "CollabAgentToolCall" && item.tool === "spawn"
-                  ? (item.receiver_thread_ids ?? [])
-                  : payload?.type === "collab_agent_spawn_end"
-                    ? [payload.new_agent_id]
-                    : [];
-            for (const child of children) {
-              if (
-                typeof child !== "string" ||
-                !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(child) ||
-                knownCodexSessions.has(child)
-              )
-                continue;
-              knownCodexSessions.add(child);
-              sessions.push({
-                threadId: child,
-                nativeId: child,
-                harness: "codex",
-              });
+    const text = cursor
+      ? await cursorSnapshot(dirname(source), session.nativeId, root)
+      : lines
+          .map((line) => {
+            const record = JSON.parse(line);
+            if (session.harness === "codex" && record.type === "event_msg") {
+              const payload = record.payload;
+              const item = payload?.item;
+              const children =
+                item?.type === "SubAgentActivity" && item.kind === "started"
+                  ? [item.agent_thread_id]
+                  : item?.type === "CollabAgentToolCall" &&
+                      item.tool === "spawn"
+                    ? (item.receiver_thread_ids ?? [])
+                    : payload?.type === "collab_agent_spawn_end"
+                      ? [payload.new_agent_id]
+                      : [];
+              for (const child of children) {
+                if (
+                  typeof child !== "string" ||
+                  !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(
+                    child,
+                  ) ||
+                  knownCodexSessions.has(child)
+                )
+                  continue;
+                knownCodexSessions.add(child);
+                sessions.push({
+                  threadId: child,
+                  nativeId: child,
+                  harness: "codex",
+                });
+              }
             }
-          }
-          return JSON.stringify(separateImages(record));
-        })
-        .join("\n") + "\n";
+            const separated = separateImages(record);
+            collectText(
+              spoken(session.harness, separated as Record<string, any>),
+              texts,
+            );
+            return JSON.stringify(separated);
+          })
+          .join("\n") + "\n";
     await writeSnapshot(frozen, text);
     await add(
       source,
       session.threadId === command.threadId
-        ? basename(source)
+        ? cursor
+          ? `${session.nativeId}.jsonl`
+          : basename(source)
         : `${session.threadId}.jsonl`,
       session.threadId === command.threadId ? "native" : "context",
       frozen,
@@ -364,10 +431,18 @@ async function runCapture(
       command.extraText !== undefined
     ) {
       const history = join(root, "gui-history.json");
-      await writeSnapshot(
-        history,
-        JSON.stringify(separateImages(JSON.parse(command.extraText))) + "\n",
-      );
+      const separated = separateImages(JSON.parse(command.extraText)) as {
+        queued?: unknown;
+        threads?: {
+          events?: { type?: string; data?: { input?: unknown } }[];
+        }[];
+      };
+      collectText(separated.queued, texts);
+      for (const thread of separated.threads ?? [])
+        for (const event of thread.events ?? [])
+          if (event.type === "client/turn/requested")
+            collectText(event.data?.input, texts);
+      await writeSnapshot(history, JSON.stringify(separated) + "\n");
       await add(history, "gui-history.json", "context", history);
     }
     for (const image of images) {
@@ -423,36 +498,51 @@ async function runCapture(
       }
     }
   }
-  async function visit(dir: string) {
-    for (const file of await readdir(dir, { withFileTypes: true })) {
-      if (excluded.has(file.name) || file.name.startsWith(".cloudroom-sync-"))
-        continue;
-      const source = join(dir, file.name);
-      const path = relative(workspace, source).split(sep).join("/");
-      if (file.isDirectory()) await visit(source);
-      else if (file.isFile()) await add(source, path, "project");
-      else if (file.isSymbolicLink()) {
-        const target = await readlink(source);
-        const destination = relative(
-          workspace,
-          resolve(dirname(source), target),
-        );
-        if (
-          isAbsolute(target) ||
-          destination.startsWith("..") ||
-          destination.split(sep).some((part) => excluded.has(part))
-        ) {
-          capture.omitted.push(path);
-          continue;
-        }
-        const frozen = join(root, `link-${capture.files.length}`);
-        await writeSnapshot(frozen, target);
-        await add(source, path, "project", frozen);
-        capture.files[capture.files.length - 1]!.symlink = true;
-      } else capture.omitted.push(path);
-    }
+  // Tracked files reach the cloud through Git, and ignored files are build
+  // output or secrets. Copy only new, unignored files the conversation
+  // mentions, plus the local Git state so the agent can match it.
+  const gitOptions = {
+    cwd: workspace,
+    ...userExecutableProcessOptions(options.runtimeManager.getShellEnv()),
+  };
+  const untracked = git
+    ? new Set(
+        (
+          await runGit(
+            ["ls-files", "-z", "--others", "--exclude-standard"],
+            gitOptions,
+          )
+        ).stdout.split("\0"),
+      )
+    : null;
+  if (git) {
+    const gitState = join(root, "git-state.txt");
+    const status = await runGit(
+      ["status", "--short", "--branch", "--untracked-files=no"],
+      gitOptions,
+    );
+    const head = await runGit(["log", "-1", "--format=HEAD %H %s"], {
+      ...gitOptions,
+      allowFailure: true,
+    });
+    await writeSnapshot(gitState, status.stdout + head.stdout);
+    await add(gitState, "git-state.txt", "context", gitState);
   }
-  await visit(workspace);
+  for (const path of mentionedPaths(workspace, texts)) {
+    if (
+      (untracked && !untracked.has(path)) ||
+      path
+        .split("/")
+        .some(
+          (part) => excluded.has(part) || part.startsWith(".cloudroom-sync-"),
+        )
+    )
+      continue;
+    const source = join(workspace, path);
+    const info = await lstat(source).catch(() => null);
+    if (info?.isFile() && info.size <= 4 * 1024 ** 3)
+      await add(source, path, "project");
+  }
   for (const source of command.attachments ?? []) {
     const path = await realpath(source).catch(
       (error: NodeJS.ErrnoException) => {
@@ -473,6 +563,103 @@ async function runCapture(
   }
   await writeSnapshot(capturePath, JSON.stringify(capture));
   return publicCapture(capture);
+}
+
+// Only what the user and agent said or did counts as a mention, not tool output.
+function spoken(harness: string, record: Record<string, any>): unknown {
+  if (harness === "claude-code") {
+    const content = ["user", "assistant"].includes(record.type)
+      ? record.message?.content
+      : undefined;
+    return Array.isArray(content)
+      ? content.filter((block) => block?.type !== "tool_result")
+      : content;
+  }
+  if (harness === "pi")
+    return record.type === "message" &&
+      ["user", "assistant"].includes(record.message?.role)
+      ? record.message.content
+      : undefined;
+  const payload = record.type === "response_item" ? record.payload : undefined;
+  if (payload?.type === "message")
+    return ["user", "assistant"].includes(payload.role)
+      ? payload.content
+      : undefined;
+  return ["function_call", "custom_tool_call"].includes(payload?.type)
+    ? payload
+    : undefined;
+}
+
+// Same JSONL snapshot format the core's cursor-history.py restores.
+async function cursorSnapshot(
+  directory: string,
+  sessionId: string,
+  scratch: string,
+): Promise<string> {
+  const meta = await readFile(join(directory, "meta.json"));
+  const parsed = JSON.parse(meta.toString("utf8"));
+  if (parsed.schemaVersion !== 1 || typeof parsed.cwd !== "string")
+    throw new Error("Unsupported Cursor session metadata");
+  const files: [string, Buffer][] = [["meta.json", meta]];
+  const store = join(directory, "store.db");
+  if (
+    await stat(store).then(
+      () => true,
+      () => false,
+    )
+  ) {
+    // VACUUM INTO takes a consistent copy that includes unmerged WAL pages.
+    const copy = join(scratch, `cursor-${randomUUID()}.db`);
+    const database = new DatabaseSync(store, { readOnly: true });
+    try {
+      database.prepare("VACUUM INTO ?").run(copy);
+    } finally {
+      database.close();
+    }
+    files.push(["store.db", await readFile(copy)]);
+    await rm(copy, { force: true });
+  }
+  const lines = [
+    JSON.stringify({
+      type: "cursor_snapshot",
+      version: 1,
+      session_id: sessionId,
+    }),
+  ];
+  for (const [name, data] of files)
+    for (let offset = 0; offset < data.length; offset += 64 * 1024)
+      lines.push(
+        JSON.stringify({
+          file: name,
+          offset,
+          data: data.subarray(offset, offset + 64 * 1024).toString("base64"),
+        }),
+      );
+  const digest = createHash("sha256");
+  for (const line of lines) digest.update(`${line}\n`);
+  lines.push(JSON.stringify({ end: true, sha256: digest.digest("hex") }));
+  return `${lines.join("\n")}\n`;
+}
+
+function collectText(value: unknown, out: string[]) {
+  if (typeof value === "string") out.push(value);
+  else if (value && typeof value === "object")
+    for (const child of Object.values(value)) collectText(child, out);
+}
+
+function mentionedPaths(workspace: string, texts: string[]): Set<string> {
+  const paths = new Set<string>();
+  for (const text of texts)
+    for (const token of text.split(/[\s"'`()[\]{}<>,;:|=*]+/)) {
+      if (token.length > 1024 || !/[/.]/.test(token)) continue;
+      const cleaned = token.replace(/^@/, "").replace(/[.!?]+$/, "");
+      const absolute = cleaned.startsWith("~/")
+        ? join(homedir(), cleaned.slice(2))
+        : resolve(workspace, cleaned);
+      const path = relative(workspace, absolute).split(sep).join("/");
+      if (path && !path.startsWith("..") && !isAbsolute(path)) paths.add(path);
+    }
+  return paths;
 }
 
 async function syncPath(path: string) {

@@ -1,10 +1,11 @@
 import { execFile } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { z } from "zod";
 import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
+import { errorMessage } from "../lib/error-log-fields.js";
 import { CLOUDROOM_PYTHON_PATH, CLOUDROOM_SYNC_SCRIPT_PATH as script } from "../../cloudroom-workspace-asset.js";
 
 const state = z.enum(["synced", "syncing", "offline", "conflict"]);
@@ -19,20 +20,38 @@ export async function syncStatus(deps: Deps) {
   } catch { return { state: "offline" as const, conflicts: 0 }; }
 }
 
+/** The user's "Copy my logins and model providers" choice (ADR 0130), or null until first-run setup asks. */
+const copyLoginsFile = (deps: Deps) => join(deps.config.dataDir, "cloudroom-copy-logins.json");
+export async function copyLogins(deps: Deps): Promise<boolean | null> {
+  return readFile(copyLoginsFile(deps), "utf8").then((text) => JSON.parse(text).enabled === true, () => null);
+}
+export async function setCopyLogins(deps: Deps, enabled: boolean): Promise<void> {
+  await writeFile(copyLoginsFile(deps), JSON.stringify({ enabled }), { mode: 0o600 });
+  if (await readFile(join(folder(deps), "config.json")).then(() => true, () => false)) await setupSync(deps);
+}
+
 export async function setupSync(deps: Deps): Promise<void> {
+  const choice = await copyLogins(deps);
   try {
-    await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", script, "configure", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json")], { timeout: 30_000, maxBuffer: 64 * 1024 });
-  } catch { throw new ApiError(503, "cloudroom_sync_setup", "Skills and settings sync could not start. Cloud sessions are unaffected."); }
+    await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", script, "configure", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json"), ...(choice === null ? [] : ["--copy-logins", choice ? "on" : "off"])], { timeout: 30_000, maxBuffer: 64 * 1024 });
+  } catch (error) { throw new ApiError(503, "cloudroom_sync_setup", `Skills and settings sync could not start. Cloud sessions are unaffected. Cause: ${errorMessage(error)}`); }
 }
 
 export async function importCodexLogin(deps: Deps): Promise<void> {
   try {
     await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", script, "auth", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json")], { timeout: 30_000, maxBuffer: 64 * 1024 });
-  } catch { throw new ApiError(503, "codex_auth_unavailable", "Could not check your saved Codex login. Check the cloud connection and try again."); }
+  } catch (error) { throw new ApiError(503, "codex_auth_unavailable", `Could not check your saved Codex login. Check the cloud connection and try again. Cause: ${errorMessage(error)}`); }
+}
+
+/** Copies Pi logins the VM lacks, custom providers, and packages. Never blocks a start: Pi reports a missing key itself. */
+export async function importPiLogin(deps: Deps): Promise<void> {
+  try {
+    await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", script, "pi-auth", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json")], { timeout: 30_000, maxBuffer: 64 * 1024 });
+  } catch (error) { console.warn(`Cloudroom Pi login import failed: ${errorMessage(error)}`); }
 }
 
 export async function stopSync(deps: Deps): Promise<void> {
   if (!await readFile(join(folder(deps), "config.json")).then(() => true, () => false)) return;
   try { await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", script, "stop", folder(deps)], { timeout: 15_000, maxBuffer: 64 * 1024 }); }
-  catch {}
+  catch (error) { console.warn(`Cloudroom sync stop failed: ${errorMessage(error)}`); }
 }

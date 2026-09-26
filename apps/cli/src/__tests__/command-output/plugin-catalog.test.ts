@@ -109,7 +109,7 @@ function json(value: object, status = 200): Response {
   });
 }
 
-describe("room plugin catalog", () => {
+describe("cloudroom plugin catalog", () => {
   setupCommandOutputTestEnvironment();
   const register: CommandRegistrar = (program) =>
     registerPluginCommands(program, () => "http://server");
@@ -353,7 +353,7 @@ describe("room plugin catalog", () => {
       entryId: "linear",
     });
     expect(collectLogPayloads(vi.mocked(console.log)).join("\n")).toContain(
-      "bundled with BB",
+      "bundled with Cloudroom",
     );
   });
 

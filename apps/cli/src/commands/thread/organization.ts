@@ -48,6 +48,7 @@ interface QueueListOptions extends JsonOptions {
 }
 
 interface QueueCreateOptions extends JsonOptions {
+  hard?: boolean;
   model?: string;
 }
 
@@ -344,6 +345,10 @@ export function registerOrganizationCommands(
     .command("create <threadId> <message>")
     .description("Create a queued text message")
     .option("--model <model>", "Model override for the queued message")
+    .option(
+      "--hard",
+      "Hard Queue: wait until the thread and all its child threads are idle",
+    )
     .option("--json", "Print machine-readable JSON output")
     .action(
       action(
@@ -354,6 +359,7 @@ export function registerOrganizationCommands(
             threadId,
             input: [{ type: "text", text: message, mentions: [] }],
             ...(opts.model ? { model: opts.model } : {}),
+            ...(opts.hard ? { hardQueue: true } : {}),
           });
           if (outputJson(opts, result)) return;
           console.log(

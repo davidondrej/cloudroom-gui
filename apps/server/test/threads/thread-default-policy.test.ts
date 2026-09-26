@@ -652,7 +652,7 @@ describe("resolveProjectDefaultThreadEnvironment", () => {
 });
 
 describe("resolveThreadDefaultPermissionMode", () => {
-  it("uses the auto permission default for non-agent providers", () => {
+  it("uses the full permission default for non-agent providers", () => {
     expect(
       resolveThreadDefaultPermissionMode(registry, {
         thread: makeThread({
@@ -660,7 +660,7 @@ describe("resolveThreadDefaultPermissionMode", () => {
           providerId: "custom-provider",
         }),
       }),
-    ).toBe("auto");
+    ).toBe("full");
   });
 
   it("uses full for Pi threads", () => {
@@ -685,7 +685,7 @@ describe("resolveThreadDefaultPermissionMode", () => {
     ).toBe("full");
   });
 
-  it("uses auto for Codex threads", () => {
+  it("uses full for Codex threads", () => {
     expect(
       resolveThreadDefaultPermissionMode(registry, {
         thread: makeThread({
@@ -693,7 +693,7 @@ describe("resolveThreadDefaultPermissionMode", () => {
           providerId: "codex",
         }),
       }),
-    ).toBe("auto");
+    ).toBe("full");
   });
 });
 

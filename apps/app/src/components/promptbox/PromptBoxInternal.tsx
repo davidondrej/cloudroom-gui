@@ -236,6 +236,7 @@ export interface PromptBoxSubmissionConfig {
   isRunning?: boolean;
   onStop?: () => void;
   onModifierSubmit?: () => void;
+  onHardQueueSubmit?: () => void;
 }
 
 interface PromptSubmitButtonProps {
@@ -434,6 +435,7 @@ export interface PromptVoiceConfig {
   stream: MediaStream | null;
   start: () => void | Promise<void>;
   stop: () => void;
+  stopAndSend?: () => void;
   cancel: () => void;
 }
 
@@ -1236,6 +1238,7 @@ export function PromptBoxInternal({
     isRunning = false,
     onStop,
     onModifierSubmit,
+    onHardQueueSubmit,
   } = submission;
   const {
     triggers: mentionTriggerChars = DEFAULT_TYPEAHEAD_MENTION_TRIGGERS,
@@ -3086,6 +3089,19 @@ export function PromptBoxInternal({
         return true;
       }
 
+      if (
+        event.key === "Enter" &&
+        event.altKey &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.shiftKey &&
+        onHardQueueSubmit
+      ) {
+        event.preventDefault();
+        if (canSubmit) onHardQueueSubmit();
+        return true;
+      }
+
       const isBlockquoteExitKey =
         event.key === "Enter" &&
         event.shiftKey &&
@@ -3156,6 +3172,8 @@ export function PromptBoxInternal({
       loadMoreCommands,
       onEscape,
       onModifierSubmit,
+      onHardQueueSubmit,
+      canSubmit,
       postCompositionKeyDownEvents,
       resetHistorySession,
       selectedIndex,
@@ -3393,6 +3411,7 @@ export function PromptBoxInternal({
                     state={renderedVoiceActionState}
                     stream={voice.stream}
                     onConfirm={voice.stop}
+                    onSend={isPointerCoarse ? voice.stopAndSend : undefined}
                     onCancel={cancelVoiceInput}
                   />
                 </div>

@@ -61,6 +61,10 @@ import {
   acpBridgeCommandMethodValues,
 } from "../bridge-protocol.js";
 import {
+  createAcpContextEstimate,
+  type AcpContextEstimate,
+} from "../context-estimate.js";
+import {
   createAcpDeltaTranslator,
   type AcpDeltaTranslator,
 } from "../delta-translation.js";
@@ -166,6 +170,8 @@ interface AcpThreadSession {
   cwd: string;
   dialect: AcpDialect;
   translator: AcpDeltaTranslator;
+  contextEstimate: AcpContextEstimate | undefined;
+  model: string | undefined;
   connection: AcpAgentConnection;
   supportsImageInput: boolean;
   supportsLoadSession: boolean;
@@ -296,6 +302,22 @@ function emitForSession(
       { threadId: session.bbThreadId },
     ),
   );
+}
+
+function emitContextEstimate(session: AcpThreadSession): void {
+  const estimate = session.contextEstimate;
+  if (estimate === undefined) {
+    return;
+  }
+  sendThreadDeltas(session.bbThreadId, [
+    {
+      kind: "contextWindow",
+      used: estimate.used(),
+      size: estimate.windowSize(session.model),
+      estimated: true,
+      attach: "open",
+    },
+  ]);
 }
 
 function emitSessionError(session: AcpThreadSession, message: string): void {
@@ -1109,10 +1131,13 @@ async function selectAcpNativeModel(args: {
   models: AcpSessionModels | undefined;
   modelSelection: AcpSessionParams["modelSelection"];
   nativeReasoning: AcpBridgeNativeReasoning | undefined;
-}): Promise<void> {
+}): Promise<string | undefined> {
   const selection = args.modelSelection;
   if (!selection || !("modelId" in selection)) {
-    return;
+    return (
+      findAcpModelConfigOption(args.configOptions)?.currentValue ??
+      args.models?.currentModelId
+    );
   }
   let configOptions = args.configOptions;
   const modelOption = findAcpModelConfigOption(args.configOptions);
@@ -1166,6 +1191,9 @@ async function selectAcpNativeModel(args: {
     configOptions,
     modelSelection: selection,
   });
+  return (
+    findAcpModelConfigOption(configOptions)?.currentValue ?? selection.modelId
+  );
 }
 
 async function selectAcpNativeReasoning(args: {
@@ -1205,7 +1233,9 @@ async function selectAcpNativeReasoning(args: {
       },
       resultSchema: acpConfigStateResultSchema,
     });
-  } catch {}
+  } catch (error) {
+    console.error(`ACP reasoning level ${value} was not applied:`, error);
+  }
 }
 
 async function selectAcpNativeServiceTier(args: {
@@ -1277,10 +1307,10 @@ function buildPromptContentBlocks(
             data,
             mimeType: mimeTypeFromExtension(item.path),
           });
-        } catch {
+        } catch (error) {
           blocks.push({
             type: "text",
-            text: `[unreadable image attachment: ${item.path}]`,
+            text: `[unreadable image attachment: ${item.path} (${error instanceof Error ? error.message : String(error)})]`,
           });
         }
         break;
@@ -1703,6 +1733,11 @@ async function startAgentSession(
     cwd: params.cwd,
     dialect,
     translator,
+    contextEstimate:
+      dialect.contextEstimate === undefined
+        ? undefined
+        : createAcpContextEstimate(dialect.contextEstimate),
+    model: undefined,
     connection,
     supportsImageInput: false,
     supportsLoadSession: false,
@@ -1807,7 +1842,9 @@ async function startAgentSession(
         loadedConfigOptions = configState?.configOptions;
         loadedModels = configState?.models;
         sessionId = request.resumeProviderThreadId;
-      } catch {
+      } catch (error) {
+        // Resume failed, so a fresh session starts below; log why so the lost context is traceable.
+        console.error(`ACP session/load failed for ${request.resumeProviderThreadId}; starting a new session:`, error);
         sessionId = undefined;
         session.loading = false;
         session.loadingSessionId = undefined;
@@ -1825,7 +1862,8 @@ async function startAgentSession(
         resultSchema: acpSessionNewResultSchema,
       });
       sessionId = newSession.sessionId;
-      await selectAcpNativeModel({
+      session.contextEstimate?.reset();
+      session.model = await selectAcpNativeModel({
         connection,
         sessionId,
         configOptions: newSession.configOptions,
@@ -1840,7 +1878,7 @@ async function startAgentSession(
         });
       }
     } else {
-      await selectAcpNativeModel({
+      session.model = await selectAcpNativeModel({
         connection,
         sessionId,
         configOptions: loadedConfigOptions,
@@ -2016,6 +2054,7 @@ function finishTurn(
   dropQueuedTurnInputs(session, "ACP turn ended before the steer was sent");
   session.promptRequestPending = false;
   session.cancelRequested = false;
+  emitContextEstimate(session);
   emitForSession(session, ACP_TURN_COMPLETED_METHOD, {
     threadId: session.bbThreadId,
     stopReason,
@@ -2044,12 +2083,11 @@ function runTurn(
       session.cancelRequested = false;
       try {
         session.promptRequestPending = true;
+        const prompt = buildPromptContentBlocks(session, pending.input);
+        session.contextEstimate?.addPrompt(prompt);
         const promptResult = session.connection.request({
           method: "session/prompt",
-          params: {
-            sessionId: session.providerThreadId,
-            prompt: buildPromptContentBlocks(session, pending.input),
-          },
+          params: { sessionId: session.providerThreadId, prompt },
           resultSchema: acpPromptResultSchema,
         });
         acceptTurnInput(session, pending);
@@ -2146,6 +2184,10 @@ function finishCompaction(
   if (session.activePromptKind !== "compaction") {
     return;
   }
+  if (outcome["status"] === "completed") {
+    session.contextEstimate?.reset();
+    emitContextEstimate(session);
+  }
   emitForSession(session, ACP_COMPACTION_COMPLETED_METHOD, {
     threadId: session.bbThreadId,
     ...outcome,
@@ -2214,6 +2256,9 @@ function handleAgentNotification(
     return;
   }
   if (session.loading) {
+    if (parsed.data.sessionId === session.loadingSessionId) {
+      session.contextEstimate?.addUpdate(parsed.data.update);
+    }
     if (
       parsed.data.sessionId === session.loadingSessionId &&
       parsed.data.update.sessionUpdate === "usage_update"
@@ -2236,6 +2281,7 @@ function handleAgentNotification(
   if (parsed.data.sessionId !== session.providerThreadId) {
     return;
   }
+  session.contextEstimate?.addUpdate(parsed.data.update);
   if (session.activePromptKind === "compaction") {
     const chunk = acpAgentMessageChunkUpdateSchema.safeParse(
       parsed.data.update,

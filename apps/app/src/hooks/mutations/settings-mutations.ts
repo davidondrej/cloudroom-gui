@@ -90,7 +90,7 @@ export function useUpdateKeyboardSettings() {
 export function useInstallCliSkills() {
   return useMutation({
     meta: {
-      errorMessage: "Failed to install the Room CLI skills.",
+      errorMessage: "Failed to install the Cloudroom CLI skills.",
     },
     mutationFn: (args: SystemInstallCliSkillsRequest) =>
       sdk.system.installCliSkills(args),

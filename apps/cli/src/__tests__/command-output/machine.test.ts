@@ -63,7 +63,7 @@ const creating: Host = {
   },
 };
 
-describe("room machine command output", () => {
+describe("cloudroom machine command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
@@ -170,7 +170,7 @@ describe("room machine command output", () => {
       runCommand(["machine", "create", "--provider", "ssh"], register),
     ).rejects.toThrow("process.exit:130");
     expect(collectLogPayloads(vi.mocked(console.error))).toEqual([
-      "Error: Stopped following; creation continues. Use room machine remove <host-id> to cancel.",
+      "Error: Stopped following; creation continues. Use cloudroom machine remove <host-id> to cancel.",
     ]);
   });
 
@@ -210,7 +210,7 @@ describe("room machine command output", () => {
     },
   );
 
-  it("room machine list renders names, IDs, status, and relative last seen", async () => {
+  it("cloudroom machine list renders names, IDs, status, and relative last seen", async () => {
     vi.spyOn(Date, "now").mockReturnValue(1_700_000_120_000);
     stubServerApi({ "v1.hosts.$get": vi.fn(async () => hosts) });
 
@@ -223,7 +223,7 @@ describe("room machine command output", () => {
     ]);
   });
 
-  it("hides disposable sandboxes from room machine list until --all", async () => {
+  it("hides disposable sandboxes from cloudroom machine list until --all", async () => {
     const sandbox: Host = {
       ...hosts[0]!,
       id: "host-sandbox",
@@ -245,7 +245,7 @@ describe("room machine command output", () => {
     ).toEqual([...hosts, sandbox]);
   });
 
-  it("room machine retry-update resolves the machine and requests a retry", async () => {
+  it("cloudroom machine retry-update resolves the machine and requests a retry", async () => {
     const retryUpdate = vi.fn(async () => ({ ok: true as const }));
     stubServerApi({
       "v1.hosts.$get": vi.fn(async () => hosts),
@@ -265,7 +265,7 @@ describe("room machine command output", () => {
     ["resume", "v1.hosts.:id.resume.$post", "resumed"],
     ["retry-cleanup", "v1.hosts.:id.retry-cleanup.$post", "cleanup retried"],
   ] as const)(
-    "room machine %s resolves the machine and invokes the lifecycle action",
+    "cloudroom machine %s resolves the machine and invokes the lifecycle action",
     async (command, route, message) => {
       const lifecycleAction = vi.fn(async () =>
         command === "retry-cleanup"
@@ -325,7 +325,7 @@ describe("room machine command output", () => {
     ]);
   });
 
-  it("room machine remove resolves and removes a provider machine", async () => {
+  it("cloudroom machine remove resolves and removes a provider machine", async () => {
     const remove = vi.fn(async () => undefined);
     stubServerApi({
       "v1.hosts.$get": vi.fn(async () => hosts),

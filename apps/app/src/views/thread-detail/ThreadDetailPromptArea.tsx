@@ -1,5 +1,11 @@
 import { ThreadMachineStatus } from "@/components/promptbox/banner/ThreadMachineStatus";
 import { TeleportNotice } from "@/components/thread/TeleportNotice";
+import { TeleportCheckCard } from "@/components/thread/TeleportCheckCard";
+import { ProjectCopyNotice } from "@/components/thread/ProjectCopyNotice";
+import { FixPrompt } from "@/components/ui/fix-prompt";
+import { cloudLoginFixPrompt, cloudThreadFixPrompt } from "@/lib/fix-prompts";
+import { canTeleportLocalThread, canTeleportThread } from "@/components/thread/ThreadActionsMenu";
+import { ClaudeConnectionButton } from "@/components/ClaudeConnection";
 import { openCodexConnection, openCursorConnection } from "@/components/CodexConnectionPanel";
 import {
   useCallback,
@@ -369,7 +375,8 @@ async function runWhileFollowUpShortcutSending(
   }
 }
 
-import { useCloudroomThread, useCloudroomThreadWorkspace, useCloudroomConnection, useRetryCloudStart, cloudroomRequestId, clearCloudroomRequestId, cloudReasoningLevels, cloudServiceTierSupported, cloudFeatureSupported } from "@/hooks/queries/cloudroom-queries";
+import { showCloudWaitlist, useCloudLocked } from "@/hooks/useCloudLocked";
+import { useCloudroomThread, useCloudroomThreadWorkspace, useCloudroomConnection, useRetryCloudStart, useTeleportThread, useTeleportLocal, cloudroomRequestId, clearCloudroomRequestId, cloudReasoningLevels, cloudServiceTierSupported, cloudFeatureSupported } from "@/hooks/queries/cloudroom-queries";
 import { reasoningLevelSchema } from "@bb/domain";
 import { reasoningLevelLabel } from "@/lib/reasoning-labels";
 import { fetchWithAppSurface } from "@/lib/app-surface";
@@ -423,11 +430,21 @@ export function ThreadDetailPromptArea({
   const teleporting = Boolean(thread.teleport && !["complete", "cancelled"].includes(thread.teleport.phase));
   const transferredChild = Boolean(thread.teleport?.phase === "complete" && thread.teleport.owner !== thread.id);
   const cloudState = useCloudroomThread(thread.id, isCloud);
+  const teleport = useTeleportThread(thread.id);
+  const canTeleport = canTeleportThread(thread);
+  const cloudLocked = useCloudLocked();
+  const startTeleport = useCallback(() => cloudLocked ? showCloudWaitlist() : teleport.mutate("start"), [cloudLocked, teleport.mutate]);
+  const teleportLocal = useTeleportLocal(thread.id);
+  const movingToLocal = teleportLocal.isPending;
+  const canTeleportLocal = canTeleportLocalThread(thread) && !movingToLocal;
+  const startTeleportLocal = useCallback(() => teleportLocal.mutate(), [teleportLocal.mutate]);
   const authThreadId = thread.id;
+  const claudeThread = thread.providerId === "claude-code";
   const openCloudConnection = thread.providerId === "acp-cursor" ? openCursorConnection : openCodexConnection;
   useEffect(() => {
-    if (cloudState.data?.authRequired) openCloudConnection(authThreadId);
-  }, [cloudState.data?.authRequired, authThreadId, openCloudConnection]);
+    // Claude connects through its own popover in the cloud notice below.
+    if (cloudState.data?.authRequired && !claudeThread) openCloudConnection(authThreadId);
+  }, [cloudState.data?.authRequired, claudeThread, authThreadId, openCloudConnection]);
   const cloudWorkspace = useCloudroomThreadWorkspace(
     thread.id,
     isCloud && Boolean(cloudState.data?.sessionId),
@@ -729,7 +746,7 @@ export function ThreadDetailPromptArea({
     initialEnvironmentSelectionValue: thread.environmentId ?? undefined,
   });
   const cloudFollowUpReasoningOptions = useMemo(() => {
-    const levels = thread.providerId === "acp-cursor" ? [cloudReasoning] : cloudReasoningLevels(cloudConnection.data, thread.providerId, cloudState.data?.model);
+    const levels = thread.providerId === "acp-cursor" || thread.providerId === "acp-fx" ? [cloudReasoning] : cloudReasoningLevels(cloudConnection.data, thread.providerId, cloudState.data?.model);
     const options = levels.flatMap((level) => {
       const parsed = reasoningLevelSchema.safeParse(level);
       return parsed.success ? [{ value: parsed.data, label: reasoningLevelLabel(parsed.data, undefined) }] : [];
@@ -1155,29 +1172,35 @@ export function ThreadDetailPromptArea({
     ],
   );
 
+  const sendCloudDraft = useCallback(async (steer: boolean) => {
+    const submittedDraft = currentPromptDraft;
+    const submittedInput = currentPromptDraftInput;
+    if (!cloudState.data || submittedInput.length === 0) return;
+    const request = {
+      id: thread.id,
+      input: submittedInput,
+      model: cloudState.data.model,
+      reasoningLevel: cloudReasoning,
+      permissionMode: "full" as const,
+      serviceTier: cloudFastSupported && serviceTier ? serviceTier : "default" as const,
+      mode: steer && thread.status === "active" ? "steer-if-active" as const : "queue-if-active" as const,
+    };
+    promptDraft.clearIfCurrentMatches(submittedDraft);
+    try {
+      await sendMessage.mutateAsync({ ...request, requestId: await cloudroomRequestId(thread.id, request) });
+      clearCloudroomRequestId(thread.id);
+    } catch (error) {
+      promptDraft.restoreIfEmpty(submittedDraft);
+      showMutationErrorToast({ error, fallbackMessage: "Cloud message was not confirmed", lifecycleOperation: "send_message" });
+    }
+  }, [cloudFastSupported, cloudReasoning, cloudState.data, currentPromptDraft, currentPromptDraftInput, promptDraft, sendMessage, serviceTier, thread.id, thread.status]);
+
   const handleSend = useCallback(async () => {
     if (isExecutionUpdatePending) return;
     const submittedDraft = currentPromptDraft;
     const submittedInput = currentPromptDraftInput;
     if (isCloud) {
-      if (!cloudState.data || submittedInput.length === 0) return;
-      const request = {
-        id: thread.id,
-        input: submittedInput,
-        model: cloudState.data.model,
-        reasoningLevel: cloudReasoning,
-        permissionMode: "full" as const,
-        serviceTier: cloudFastSupported && serviceTier ? serviceTier : "default" as const,
-        mode: cloudSteerSupported && steerActiveThreadOnEnter && thread.status === "active" ? "steer-if-active" as const : "auto" as const,
-      };
-      promptDraft.clearIfCurrentMatches(submittedDraft);
-      try {
-        await sendMessage.mutateAsync({ ...request, requestId: await cloudroomRequestId(thread.id, request) });
-        clearCloudroomRequestId(thread.id);
-      } catch (error) {
-        promptDraft.restoreIfEmpty(submittedDraft);
-        showMutationErrorToast({ error, fallbackMessage: "Cloud message was not confirmed", lifecycleOperation: "send_message" });
-      }
+      await sendCloudDraft(false);
       return;
     }
     if (isHandoffSelection) {
@@ -1230,13 +1253,7 @@ export function ThreadDetailPromptArea({
   }, [
     isExecutionUpdatePending,
     isCloud,
-    cloudState.data,
-    cloudReasoning,
-    cloudFastSupported,
-    cloudSteerSupported,
-    serviceTier,
-    steerActiveThreadOnEnter,
-    thread.status,
+    sendCloudDraft,
     createHandoffThread,
     createQueuedMessage,
     currentPromptDraft,
@@ -1249,6 +1266,37 @@ export function ThreadDetailPromptArea({
     setBottomAttachmentError,
     thread.id,
     runtimeDisplayStatus,
+  ]);
+  const handleHardQueue = useCallback(async () => {
+    if (isExecutionUpdatePending) return;
+    const submittedDraft = currentPromptDraft;
+    const request = buildCreateQueuedFollowUpRequest({
+      threadId: thread.id,
+      input: currentPromptDraftInput,
+      execution: followUpExecutionSelection,
+    });
+    if (!request) return;
+    promptDraft.clearIfCurrentMatches(submittedDraft);
+    setBottomAttachmentError(null);
+    try {
+      await createQueuedMessage.mutateAsync({ ...request, hardQueue: true });
+    } catch (nextError) {
+      promptDraft.restoreIfEmpty(submittedDraft);
+      showMutationErrorToast({
+        error: nextError,
+        fallbackMessage: "Failed to queue message",
+        lifecycleOperation: "queue_message",
+      });
+    }
+  }, [
+    createQueuedMessage,
+    currentPromptDraft,
+    currentPromptDraftInput,
+    followUpExecutionSelection,
+    isExecutionUpdatePending,
+    promptDraft,
+    setBottomAttachmentError,
+    thread.id,
   ]);
   const submitProgrammatically = useCallback(
     async (
@@ -1339,6 +1387,10 @@ export function ThreadDetailPromptArea({
     if (!canSubmitModifierShortcut) {
       return;
     }
+    if (isCloud && currentPromptDraftInput.length > 0) {
+      await runWhileFollowUpShortcutSending(setIsFollowUpShortcutSending, () => sendCloudDraft(true));
+      return;
+    }
 
     const submittedDraft = currentPromptDraft;
     const submittedInput = currentPromptDraftInput;
@@ -1393,8 +1445,10 @@ export function ThreadDetailPromptArea({
     currentPromptDraft,
     currentPromptDraftInput,
     followUpExecutionSelection,
+    isCloud,
     promptDraft,
     queuedMessagesRef,
+    sendCloudDraft,
     sendMessage,
     sendQueuedMessageById,
     setBottomAttachmentError,
@@ -1451,6 +1505,9 @@ export function ThreadDetailPromptArea({
   const handleBottomComposerModifierSubmit = useCallback(() => {
     void handleModifierSubmit();
   }, [handleModifierSubmit]);
+  const handleBottomComposerHardQueueSubmit = useCallback(() => {
+    void handleHardQueue();
+  }, [handleHardQueue]);
   const handleInlineComposerSubmit = useCallback(() => {
     void handleSaveInlineQueuedMessage();
   }, [handleSaveInlineQueuedMessage]);
@@ -1468,6 +1525,9 @@ export function ThreadDetailPromptArea({
       mentionRanges: currentPromptDraft.mentions,
       onChangeMessage: promptDraft.setTextAndMentions,
       onModifierSubmit: handleBottomComposerModifierSubmit,
+      ...(isCloud || isHandoffSelection
+        ? {}
+        : { onHardQueueSubmit: handleBottomComposerHardQueueSubmit }),
       onSubmit: handleBottomComposerSubmit,
       ...(isHandoffSelection
         ? {
@@ -1478,7 +1538,7 @@ export function ThreadDetailPromptArea({
         : {}),
       compactPromptPlaceholder,
       promptPlaceholder,
-      canModifierSubmit: !isCloud && canSubmitModifierShortcut,
+      canModifierSubmit: (!isCloud || cloudSteerSupported) && canSubmitModifierShortcut,
       steerActiveThreadOnEnter: isCloud ? cloudSteerSupported && steerActiveThreadOnEnter : steerActiveThreadOnEnter,
       submitMode,
       threadRuntimeDisplayStatus: runtimeDisplayStatus,
@@ -1488,6 +1548,7 @@ export function ThreadDetailPromptArea({
       canSubmitModifierShortcut,
       compactPromptPlaceholder,
       currentPromptDraft,
+      handleBottomComposerHardQueueSubmit,
       handleBottomComposerModifierSubmit,
       handleBottomComposerSubmit,
       isFollowUpSubmitting,
@@ -1642,6 +1703,7 @@ export function ThreadDetailPromptArea({
     [
       effectiveSelectedModel,
       executionOptionsRouting,
+      isCloud,
       hasMultipleProviders,
       handleHandoffSelect,
       beginHandoff,
@@ -1769,24 +1831,31 @@ export function ThreadDetailPromptArea({
         <ThreadEnvironmentSummary
           projectName={projectName}
           environmentLabel={
-            teleporting ? "Teleporting" : isCloud ? CLOUDROOM_CLOUD_PRIMARY : environmentLabel
+            teleporting || movingToLocal ? "Teleporting" : isCloud ? CLOUDROOM_CLOUD_PRIMARY : environmentLabel
           }
           environmentCompactLabel={
-            teleporting ? "Teleporting" : isCloud ? CLOUDROOM_CLOUD_PRIMARY : environmentCompactLabel
+            teleporting || movingToLocal ? "Teleporting" : isCloud ? CLOUDROOM_CLOUD_PRIMARY : environmentCompactLabel
           }
           environmentHost={isCloud ? undefined : environmentHost}
-          environmentIcon={teleporting ? "Laptop" : isCloud ? "Cloud" : environmentIcon}
+          environmentIcon={movingToLocal ? "Loading" : teleporting ? "Laptop" : isCloud ? "Cloud" : environmentIcon}
           environmentProviderName={isCloud ? "Cloud" : environmentProviderName}
           environmentMachineProvider={isCloud ? undefined : environmentMachineProvider}
           environmentCheckout={isCloud ? cloudCheckout : environmentCheckout}
           onCreateNewThreadInEnvironment={
             isCloud ? undefined : onCreateNewThreadInEnvironment
           }
+          onTeleportToCloud={canTeleport ? startTeleport : undefined}
+          onTeleportToLocal={canTeleportLocal ? startTeleportLocal : undefined}
         />
       ) : null,
     [
       isCloud,
       teleporting,
+      canTeleport,
+      startTeleport,
+      movingToLocal,
+      canTeleportLocal,
+      startTeleportLocal,
       cloudCheckout,
       environmentCheckout,
       environmentCompactLabel,
@@ -2161,6 +2230,8 @@ export function ThreadDetailPromptArea({
             queuedMessages={queuedMessages}
             resolveMentionLink={resolveMentionLink}
             inlineEditor={queuedMessageEditor ?? undefined}
+            reorderable={!isCloud || cloudConnection.data?.queue_reorder === true}
+            groupable={!isCloud}
             sendAction={shouldSteerWhenReady ? "steer-when-ready" : "send-now"}
             sendDisabled={
               submitMode.kind === "blocked" ||
@@ -2213,6 +2284,8 @@ export function ThreadDetailPromptArea({
       pullRequestSection,
       pendingTodos,
       displayedProcessingQueuedMessage,
+      isCloud,
+      cloudConnection.data?.queue_reorder,
       queuedMessageCount,
       queuedMessages,
       queuedMessagesPending,
@@ -2260,12 +2333,16 @@ export function ThreadDetailPromptArea({
   const cloudStarting = isCloud && !cloudError && !cloudState.data?.paused && !cloudState.data?.failedStart &&
     (cloudState.data?.starting ?? ["pending", "starting"].includes(thread.status));
   const cloudReconnecting = !cloudError && cloudState.data?.reconnecting;
+  const cloudFixPrompt = cloudState.data?.authRequired
+    ? cloudLoginFixPrompt(thread.id, thread.providerId)
+    : cloudError || cloudState.data?.failedStart ? cloudThreadFixPrompt(thread.id, thread.providerId, cloudError) : null;
   const cloudNotice = isCloud && !shouldHideComposer && (cloudError || cloudReconnecting || cloudState.data?.failedStart || cloudState.data?.paused) ? (
     <PromptStackCard ariaLabel="Cloud thread status" className="space-y-2 p-3 text-xs">
       {cloudError && <div role="alert" className="whitespace-pre-wrap break-words text-destructive">{cloudError}</div>}
       {cloudReconnecting && <div role="status" className="text-muted-foreground">Reconnecting…</div>}
       <div className="flex items-center gap-2">
-        {cloudState.data?.authRequired ? <Button type="button" size="sm" variant="outline" onClick={() => (thread.providerId === "acp-cursor" ? openCursorConnection : openCodexConnection)(thread.id)}>Connect {thread.providerId === "acp-cursor" ? "Cursor" : "Codex"}</Button> : cloudState.data?.failedStart && <Button type="button" size="sm" variant="outline" disabled={retryCloudStart.isPending} onClick={() => retryCloudStart.mutate()}>Retry start</Button>}
+        {cloudState.data?.authRequired && claudeThread && <ClaudeConnectionButton target="cloud" presentation="notice" defaultOpen />}
+        {cloudState.data?.authRequired && !claudeThread ? <Button type="button" size="sm" variant="outline" onClick={() => openCloudConnection(thread.id)}>Connect {thread.providerId === "acp-cursor" ? "Cursor" : "Codex"}</Button> : cloudState.data?.failedStart && <Button type="button" size="sm" variant="outline" disabled={retryCloudStart.isPending} onClick={() => retryCloudStart.mutate()}>Retry start</Button>}
         {cloudState.isError && <Button type="button" size="sm" variant="outline" disabled={cloudState.isFetching} onClick={() => void cloudState.refetch()}>Reconnect</Button>}
         {cloudState.data?.paused && <>
           <span className="text-muted-foreground">Queue paused</span>
@@ -2276,6 +2353,7 @@ export function ThreadDetailPromptArea({
           }}>Resume queue</Button>
         </>}
       </div>
+      {cloudFixPrompt && <FixPrompt prompt={cloudFixPrompt} />}
     </PromptStackCard>
   ) : null;
 
@@ -2284,10 +2362,10 @@ export function ThreadDetailPromptArea({
       id={THREAD_DETAIL_COMPOSER_TEXTAREA_ID}
       loadingLabel={cloudStarting ? "Starting cloud thread" : undefined}
       attachments={bottomAttachmentsConfig}
-      stack={<>{thread.teleport && <TeleportNotice thread={thread} pendingDelivery={cloudState.data?.pendingDelivery} paused={cloudState.data?.paused} />}{cloudNotice}{pendingInteractionNode ? pendingInteractionStack : promptStack}</>}
+      stack={<>{!isCloud && !teleporting && <TeleportCheckCard pending={teleport.isPending} error={teleport.error} models={[...modelOptions, ...moreModelOptions]} reasoning={reasoningLevel} usedTokens={contextWindowUsage?.usedTokens ?? null} levelsFor={(model) => cloudReasoningLevels(cloudConnection.data, thread.providerId, model)} onTeleport={(choice) => teleport.mutate(choice)} onDismiss={teleport.reset} />}{thread.teleport && <TeleportNotice thread={thread} pendingDelivery={cloudState.data?.pendingDelivery} paused={cloudState.data?.paused} />}{thread.projectCopy && <ProjectCopyNotice thread={thread} />}{cloudNotice}{pendingInteractionNode ? pendingInteractionStack : promptStack}</>}
       pendingInteraction={pendingInteractionNode}
       activePromptMode={isHandoffSelection ? null : activePromptMode}
-      composer={shouldHideComposer || teleporting || transferredChild ? null : bottomComposerConfig}
+      composer={shouldHideComposer || teleporting || transferredChild || movingToLocal ? null : bottomComposerConfig}
       pluginComposerHost={normalPluginComposerHost}
       pluginComposerScope={normalPluginComposerHost.scope}
       textEffects={promptTextEffects}
@@ -2295,6 +2373,7 @@ export function ThreadDetailPromptArea({
       focusEndKey={bottomFocusEndKey}
       environmentSummary={environmentSummary}
       contextWindowUsage={contextWindowUsage ?? null}
+      contextWindowNote={thread.providerId === "acp-cursor" ? "Cursor doesn't report token usage, so this is an estimate." : undefined}
       execution={isCloud ? {
         ...bottomExecutionConfig,
         lockModelSelection: true,

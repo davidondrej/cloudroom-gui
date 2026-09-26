@@ -58,6 +58,10 @@
     "category": "utilities",
     "screenshots": []
   },
+  "machine-ssh": {
+    "category": "cloud-and-remote",
+    "screenshots": []
+  },
   "plugin-api-docs": {
     "category": "plugin-development",
     "screenshots": [
@@ -83,10 +87,6 @@
     "screenshots": []
   },
   "drafts": {
-    "category": "tasks-and-workflows",
-    "screenshots": []
-  },
-  "concurrency-limit": {
     "category": "tasks-and-workflows",
     "screenshots": []
   },

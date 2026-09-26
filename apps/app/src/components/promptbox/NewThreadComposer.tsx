@@ -1,10 +1,13 @@
+import { ClaudeConnectionButton } from "@/components/ClaudeConnection";
 import {
   useCloudroomConnection,
+  cloudHarness,
   cloudReasoningLevels,
   cloudServiceTierSupported,
   cloudroomRequestId,
   clearCloudroomRequestId,
 } from "@/hooks/queries/cloudroom-queries";
+import { CLOUD_LOCKED_REASON, showCloudWaitlist, useCloudLocked } from "@/hooks/useCloudLocked";
 import { fetchWithAppSurface } from "@/lib/app-surface";
 import { ProviderRequirementBanner } from "./banner/ProviderRequirementBanner";
 import { Button } from "@bb/shared-ui/button";
@@ -157,6 +160,7 @@ type PromptDraftController = ReturnType<typeof usePromptDraftStorage>;
 type ParsedEnvironment = ReturnType<typeof parseEnvironmentValue>;
 
 export interface NewThreadComposerState {
+  connectionFooter?: ReactNode;
   projectId: string;
   isProjectless: boolean;
   projects: readonly SidebarProject[] | undefined;
@@ -420,6 +424,7 @@ export function NewThreadComposer({
 }: NewThreadComposerProps) {
   const navigate = useNavigate();
   const cloudConnection = useCloudroomConnection();
+  const cloudLocked = useCloudLocked();
   const [storedExecutionTarget, setExecutionTarget] = useState<
     "local" | "cloud"
   >(() =>
@@ -427,6 +432,7 @@ export function NewThreadComposer({
       ? "cloud"
       : "local",
   );
+  const executionTarget = cloudLocked ? "local" : storedExecutionTarget;
   const [localPromptBoxFocusRequest, setLocalPromptBoxFocusRequest] = useState<
     number | null
   >(null);
@@ -455,7 +461,6 @@ export function NewThreadComposer({
     return candidateKnown ? requestedCandidate : PERSONAL_PROJECT_ID;
   }, [candidateKnown, projects, replayKnowsCandidate, requestedCandidate]);
   const isProjectless = isProjectlessProjectId(projectId);
-  const executionTarget = isProjectless ? "local" : storedExecutionTarget;
   useEffect(() => {
     if (executionTarget !== "cloud" || !cloudConnection.data?.ready) return;
     void fetchWithAppSurface("/api/v1/cloudroom/account/project", {
@@ -1475,10 +1480,10 @@ export function NewThreadComposer({
   });
   const submitDisabledReason =
     executionTarget === "cloud"
-      ? (selectedProviderId !== "codex" && selectedProviderId !== "pi" && selectedProviderId !== "claude-code"
-          ? "Select a harness supported by your Cloud VM"
-          : selectedProviderId === "claude-code" && cloudConnection.data?.ready && !cloudConnection.data.harnesses.some(harness => harness.id === "claude-code")
+      ? (cloudConnection.data?.ready && !cloudHarness(cloudConnection.data, selectedProviderId)
+          ? selectedProviderId === "claude-code"
             ? "Claude Code is not configured on this Cloud VM"
+            : "Select a harness supported by your Cloud VM"
           : !selectedThreadModel || isLoadingModels
             ? "Select a model"
             : cloudConnection.data?.ready && !cloudLevels.includes(reasoningLevel)
@@ -1695,20 +1700,17 @@ export function NewThreadComposer({
           promptActions={promptActions}
           modeConfig={{
             environment: {
-              cloud: isProjectless
-                ? undefined
-                : {
-                    selected: executionTarget === "cloud",
-                    unavailableReason: null,
-                    onSelect: () => {
-                      snapshotDraftBeforeOptionChange();
-                      setExecutionTarget("cloud");
-                      localStorage.setItem(
-                        "cloudroom.executionTarget",
-                        "cloud",
-                      );
-                    },
-                  },
+              cloud: {
+                selected: executionTarget === "cloud",
+                unavailableReason: null,
+                ...(cloudLocked ? { note: CLOUD_LOCKED_REASON } : {}),
+                onSelect: () => {
+                  if (cloudLocked) return showCloudWaitlist();
+                  snapshotDraftBeforeOptionChange();
+                  setExecutionTarget("cloud");
+                  localStorage.setItem("cloudroom.executionTarget", "cloud");
+                },
+              },
               value: effectiveEnvironmentValue,
               sources: projectSources,
               disabled: locks.environment,
@@ -1907,6 +1909,14 @@ export function NewThreadComposer({
     <NewThreadComposerStateRenderer
       render={children}
       state={{
+        connectionFooter: providerOptions.some(provider => provider.value === "claude-code") ? (
+          <ClaudeConnectionButton
+            target={executionTarget}
+            hostId={executionOptionsRouting.hostId}
+            environmentId={executionOptionsRouting.environmentId}
+            presentation="footer"
+          />
+        ) : null,
         projectId,
         isProjectless,
         projects,

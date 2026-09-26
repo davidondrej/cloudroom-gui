@@ -39,10 +39,13 @@ import {
 } from "./workspace-agent-instructions.js";
 import { resolveDeprecatedWorkspaceProvisionType } from "../environments/environment-response.js";
 
+import {
+  CUSTOM_INSTRUCTIONS_PLUGIN_ID,
+  PLUGIN_INSTRUCTION_MAX_CHARS,
+} from "./custom-instructions.js";
+
 const UPDATE_ENVIRONMENT_DIRECTORY_INSTRUCTIONS =
   "If the user asks you to move this thread to another checkout, worktree, or directory, make sure the target directory exists, then call `update_environment_directory` with its absolute path. After it succeeds, stop work in the current turn; future turns will run in the updated environment.";
-
-const PLUGIN_INSTRUCTION_CONTRIBUTION_MAX_CHARS = 4096;
 
 export interface ThreadRuntimeCommandEnvironment {
   hostId: string;
@@ -230,12 +233,13 @@ export async function resolveThreadRuntimeCommandConfig(
       instructionSections.push(contribution.instructions);
     } else {
       instructionSections.push(
-        `The following instructions come from the Room plugin "${contribution.pluginId}" for its tool "${contribution.tool.name}":`,
+        `The following instructions come from the Cloudroom plugin "${contribution.pluginId}" for its tool "${contribution.tool.name}":`,
         contribution.instructions,
       );
     }
   }
   for (const contribution of listPluginInstructionContributions()) {
+    if (contribution.pluginId === CUSTOM_INSTRUCTIONS_PLUGIN_ID) continue;
     let text: string | null;
     try {
       text = contribution.provider({
@@ -254,17 +258,17 @@ export async function resolveThreadRuntimeCommandConfig(
       continue;
     }
     if (text === null || text.trim().length === 0) continue;
-    if (text.length > PLUGIN_INSTRUCTION_CONTRIBUTION_MAX_CHARS) {
-      text = text.slice(0, PLUGIN_INSTRUCTION_CONTRIBUTION_MAX_CHARS);
+    if (text.length > PLUGIN_INSTRUCTION_MAX_CHARS) {
+      text = text.slice(0, PLUGIN_INSTRUCTION_MAX_CHARS);
     }
     instructionSections.push(
-      `The following instructions come from the Room plugin "${contribution.pluginId}":`,
+      `The following instructions come from the Cloudroom plugin "${contribution.pluginId}":`,
       text,
     );
   }
   for (const contribution of conditionalConfiguration.dynamicInstructions) {
     instructionSections.push(
-      `The following dynamic instructions come from the Room plugin "${contribution.pluginId}":`,
+      `The following dynamic instructions come from the Cloudroom plugin "${contribution.pluginId}":`,
       contribution.text,
     );
   }

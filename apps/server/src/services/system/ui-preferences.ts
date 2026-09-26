@@ -39,7 +39,9 @@ function toEntry<Key extends UiPreferenceKey>(
     : defaultEntry;
 }
 
-export function readUiPreferences(deps: AppDeps): UiPreferenceEntries {
+export function readUiPreferences(
+  deps: Pick<AppDeps, "db">,
+): UiPreferenceEntries {
   const stored = new Map<string, StoredUiPreference>();
   for (const row of listStoredUiPreferences(deps.db)) {
     if (isUiPreferenceKey(row.key)) stored.set(row.key, row);

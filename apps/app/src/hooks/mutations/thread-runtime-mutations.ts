@@ -259,6 +259,7 @@ export function useCreateThreadQueuedMessage() {
       permissionMode,
       senderThreadId,
       executionInputSources,
+      hardQueue,
     }: CreateThreadQueuedMessageMutationRequest): Promise<ThreadQueuedMessage> =>
       sdk.threads.queuedMessages.create({
         threadId: id,
@@ -269,6 +270,7 @@ export function useCreateThreadQueuedMessage() {
         permissionMode,
         executionInputSources,
         ...(senderThreadId !== undefined ? { senderThreadId } : {}),
+        ...(hardQueue === true ? { hardQueue } : {}),
       }),
     onMutate: async (variables): Promise<CreateQueuedMessageTransaction> =>
       beginCreateQueuedMessageTransaction({

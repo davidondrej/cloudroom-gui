@@ -59,7 +59,7 @@ export function ExperimentalFileLinkMenu({
                 navigation.openFilePreview({ ...intent, viewer: "builtin" })
               }
             >
-              Room preview
+              Cloudroom preview
             </ContextMenuItem>
             {matchingOpeners.map((opener) => (
               <ContextMenuItem

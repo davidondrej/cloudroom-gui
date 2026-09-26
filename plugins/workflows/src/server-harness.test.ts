@@ -338,7 +338,7 @@ describe("workflows plugin", () => {
           {
             type: "text",
             text: expect.stringContaining(
-              `[room workflow finished · ${started.runId}]`,
+              `[cloudroom workflow finished · ${started.runId}]`,
             ),
             visibility: "agent-only",
           },

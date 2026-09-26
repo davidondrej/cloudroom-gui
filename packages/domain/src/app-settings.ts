@@ -4,7 +4,7 @@ import { isValidGitBranchName } from "./git-checkout.js";
 
 export const MANAGED_BRANCH_PREFIX_MAX_LENGTH = 64;
 
-export const DEFAULT_MANAGED_BRANCH_PREFIX = "room/";
+export const DEFAULT_MANAGED_BRANCH_PREFIX = "cloudroom/";
 
 export const managedBranchPrefixSchema = z
   .string()

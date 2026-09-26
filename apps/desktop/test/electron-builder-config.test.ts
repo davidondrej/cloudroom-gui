@@ -107,7 +107,9 @@ const electronBuilderConfigSchema = z
     appId: z.string().min(1),
     artifactName: z.string().min(1),
     productName: z.string().min(1),
-    publish: z.null(),
+    publish: z
+      .object({ provider: z.literal("generic"), url: z.string(), channel: z.literal("latest") })
+      .nullable(),
     toolsets: z.object({
       appimage: z.literal("1.0.3"),
     }),
@@ -632,7 +634,15 @@ describe("electron-builder signing config", () => {
         expect(config.artifactName).toBe(channel === "latest"
           ? "${productName}-v17-${arch}.${ext}"
           : "gui-cloudroom-nightly-v17-${arch}.${ext}");
+        expect(config.publish).toBeNull();
       }
+      const release = await runConfigScript({ BB_CLOUDROOM_STAMP: "1" }, [], packageRoot);
+      expect(release.exitCode).toBe(0);
+      expect(JSON.parse(release.stdout).publish).toEqual({
+        provider: "generic",
+        url: "https://github.com/davidondrej/cloudroom-gui/releases/latest/download/",
+        channel: "latest",
+      });
     } finally {
       await rm(packageRoot, { recursive: true, force: true });
     }
@@ -714,6 +724,6 @@ describe("electron-builder signing config", () => {
       "Sawyer Hood (TEAMID1234)",
     );
     expect(completeAppleCredentials.config.mac.notarize).toBe(true);
-    expect(completeAppleCredentials.config.dmg.sign).toBe(false);
+    expect(completeAppleCredentials.config.dmg.sign).toBe(true);
   });
 });

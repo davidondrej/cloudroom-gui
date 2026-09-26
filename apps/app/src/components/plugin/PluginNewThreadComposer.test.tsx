@@ -268,7 +268,7 @@ vi.mock("@/hooks/queries/system-queries", () => ({
         providers: [
           {
             id: "connect",
-            displayName: "room connect",
+            displayName: "cloudroom connect",
             description: "Use a private getbb.app address.",
             pluginId: "connect",
             availability: mocks.serverAccessReady
@@ -773,10 +773,10 @@ describe("PluginNewThreadComposer seeding", () => {
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ executionTarget: "cloud", input: [{ type: "text", text: "Work in my new folder", mentions: [] }] })));
   });
 
-  it("does not apply a remembered Cloud target to a projectless composer", () => {
+  it("applies a remembered Cloud target to a projectless composer", () => {
     window.localStorage.setItem("cloudroom.executionTarget", "cloud");
     render(newThreadElement(PERSONAL_PROJECT_ID));
-    expect(latestPromptBoxProps().modeConfig.environment.cloud).toBeUndefined();
+    expect(latestPromptBoxProps().modeConfig.environment.cloud.selected).toBe(true);
     expect(latestPromptBoxProps().modeConfig.banner).toBeNull();
   });
 

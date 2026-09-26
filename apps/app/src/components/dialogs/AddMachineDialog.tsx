@@ -13,6 +13,10 @@ import {
   DialogTitle,
 } from "@bb/shared-ui/dialog";
 import { Icon } from "@bb/shared-ui/icon";
+import { Input } from "@bb/shared-ui/input";
+import { COARSE_POINTER_INPUT_HEIGHT_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
+import { OptionPicker } from "@/components/pickers/OptionPicker";
+import { useSystemMachineProviders } from "@/hooks/queries/machine-provider-queries";
 import { MachineStatusDot } from "@/components/machines/MachineStatusDot";
 import { useHosts } from "@/hooks/queries/host-queries";
 import { sdk } from "@/lib/sdk";
@@ -22,6 +26,9 @@ import { getSettingsMachineRoutePath } from "@/lib/route-paths";
 import { getMutationErrorMessage } from "@/lib/mutation-errors";
 
 const MANUAL_MACHINE_PROVIDER_ID = "manual";
+const SSH_MACHINE_PROVIDER_ID = "ssh";
+
+type SetupMethod = "command" | "ssh";
 
 export function AddMachineDialog({
   open,
@@ -50,6 +57,8 @@ export function AddMachineContent({
   onOpenChange: (open: boolean) => void;
 }) {
   const config = useSystemConfig();
+  const { providers } = useSystemMachineProviders();
+  const [method, setMethod] = useState<SetupMethod>("command");
   const accessReady = machineServerAccessReady(config.data?.serverAccess);
   if (!accessReady) {
     return (
@@ -66,7 +75,53 @@ export function AddMachineContent({
       </MachineAccessGate>
     );
   }
-  return <ManualMachineSetup onOpenChange={onOpenChange} />;
+  const sshAvailable =
+    providers?.some((provider) => provider.id === SSH_MACHINE_PROVIDER_ID) ??
+    false;
+  const methodPicker = sshAvailable ? (
+    <SetupMethodPicker value={method} onChange={setMethod} />
+  ) : null;
+  return sshAvailable && method === "ssh" ? (
+    <SshMachineSetup methodPicker={methodPicker} onOpenChange={onOpenChange} />
+  ) : (
+    <ManualMachineSetup
+      methodPicker={methodPicker}
+      onOpenChange={onOpenChange}
+    />
+  );
+}
+
+function SetupMethodPicker({
+  value,
+  onChange,
+}: {
+  value: SetupMethod;
+  onChange: (method: SetupMethod) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm font-normal text-foreground">Setup method</span>
+      <OptionPicker
+        modal={false}
+        label="Setup method"
+        value={value}
+        align="end"
+        options={[
+          {
+            value: "command",
+            label: "Run a command",
+            description: "Paste one command on the machine.",
+          },
+          {
+            value: "ssh",
+            label: "SSH",
+            description: "Cloudroom connects with your SSH keys.",
+          },
+        ]}
+        onChange={onChange}
+      />
+    </div>
+  );
 }
 
 export type MachineAccessGateState =
@@ -128,8 +183,10 @@ export interface EnrollmentCommand {
 }
 
 export function ManualMachineSetup({
+  methodPicker,
   onOpenChange,
 }: {
+  methodPicker?: ReactNode;
   onOpenChange: (open: boolean) => void;
 }) {
   const createController = useRef<AbortController | null>(null);
@@ -229,6 +286,7 @@ export function ManualMachineSetup({
 
   return (
     <ManualMachineSetupView
+      methodPicker={methodPicker}
       command={command}
       connectedHost={connectedHost}
       errorMessage={
@@ -247,6 +305,7 @@ export function ManualMachineSetup({
 }
 
 export function ManualMachineSetupView({
+  methodPicker,
   command,
   connectedHost,
   errorMessage,
@@ -254,6 +313,7 @@ export function ManualMachineSetupView({
   onRegenerate,
   onOpenMachine,
 }: {
+  methodPicker?: ReactNode;
   command: EnrollmentCommand | null;
   connectedHost: Host | null;
   errorMessage: string | null;
@@ -271,9 +331,10 @@ export function ManualMachineSetupView({
           }
         >
           {errorMessage ??
-            "Run this command on the machine you want to add. It installs Room and keeps the machine connected to this server."}
+            "Run this command on the machine you want to add. It installs Cloudroom and keeps the machine connected to this server."}
         </DialogDescription>
       </DialogHeader>
+      {methodPicker}
       {errorMessage === null ? null : (
         <div className="flex justify-end">
           <Button variant="outline" size="sm" onClick={onRetry}>
@@ -290,45 +351,178 @@ export function ManualMachineSetupView({
         />
       )}
       {errorMessage === null ? (
-        <div className="flex items-center gap-2.5 rounded-md bg-muted/40 px-3 py-2.5">
-          {connectedHost === null ? (
-            <>
-              <Icon
-                name="Spinner"
-                className="size-4 shrink-0 animate-spin text-muted-foreground"
-              />
-              <span role="status" className="text-sm text-muted-foreground">
-                {command === null
-                  ? "Preparing an enrollment command…"
-                  : "Waiting for the machine to connect…"}
-              </span>
-            </>
-          ) : (
-            <>
-              <MachineStatusDot connected />
-              <span
-                role="status"
-                className="min-w-0 flex-1 truncate text-sm text-foreground"
-              >
-                {connectedHost.name} connected
-              </span>
-              <Button
-                asChild
-                size="sm"
-                variant="ghost"
-                className="h-7 shrink-0 px-2 text-xs"
-              >
-                <Link
-                  to={getSettingsMachineRoutePath(connectedHost.id)}
-                  onClick={onOpenMachine}
-                >
-                  Open machine
-                  <Icon name="ArrowRight" />
-                </Link>
-              </Button>
-            </>
-          )}
-        </div>
+        <MachineSetupStatus
+          connectedHost={connectedHost}
+          pendingText={
+            command === null
+              ? "Preparing an enrollment command…"
+              : "Waiting for the machine to connect…"
+          }
+          onOpenMachine={onOpenMachine}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function MachineSetupStatus({
+  connectedHost,
+  pendingText,
+  onOpenMachine,
+}: {
+  connectedHost: Host | null;
+  pendingText: string;
+  onOpenMachine: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-md bg-muted/40 px-3 py-2.5">
+      {connectedHost === null ? (
+        <>
+          <Icon
+            name="Spinner"
+            className="size-4 shrink-0 animate-spin text-muted-foreground"
+          />
+          <span role="status" className="text-sm text-muted-foreground">
+            {pendingText}
+          </span>
+        </>
+      ) : (
+        <>
+          <MachineStatusDot connected />
+          <span
+            role="status"
+            className="min-w-0 flex-1 truncate text-sm text-foreground"
+          >
+            {connectedHost.name} connected
+          </span>
+          <Button
+            asChild
+            size="sm"
+            variant="ghost"
+            className="h-7 shrink-0 px-2 text-xs"
+          >
+            <Link
+              to={getSettingsMachineRoutePath(connectedHost.id)}
+              onClick={onOpenMachine}
+            >
+              Open machine
+              <Icon name="ArrowRight" />
+            </Link>
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
+
+export function SshMachineSetup({
+  methodPicker,
+  onOpenChange,
+}: {
+  methodPicker?: ReactNode;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [target, setTarget] = useState("");
+  const [pendingHost, setPendingHost] = useState<Host | null>(null);
+  const controller = useRef<AbortController | null>(null);
+  const pendingHostId = useRef<string | null>(null);
+  useEffect(
+    () => () => {
+      controller.current?.abort();
+      const hostId = pendingHostId.current;
+      if (hostId !== null)
+        void sdk.hosts.delete({ hostId }).catch(() => undefined);
+    },
+    [],
+  );
+  const connect = useMutation({
+    meta: { showErrorToast: false },
+    mutationFn: async (sshTarget: string) => {
+      setPendingHost(null);
+      const abort = new AbortController();
+      controller.current = abort;
+      let host = await sdk.hosts.experimental_create({
+        key: crypto.randomUUID(),
+        machineProviderId: SSH_MACHINE_PROVIDER_ID,
+        inputs: { target: sshTarget },
+        wait: false,
+        signal: abort.signal,
+      });
+      if (abort.signal.aborted) {
+        await sdk.hosts.delete({ hostId: host.id });
+        throw new Error("Machine setup closed");
+      }
+      pendingHostId.current = host.id;
+      setPendingHost(host);
+      while (host.lifecycle.phase === "creating") {
+        await new Promise<void>((resolve) => setTimeout(resolve, 1_000));
+        abort.signal.throwIfAborted();
+        host = await sdk.hosts.get({ hostId: host.id, signal: abort.signal });
+        setPendingHost(host);
+      }
+      pendingHostId.current = null;
+      if (host.lifecycle.phase !== "active") {
+        throw new Error(host.lifecycle.message ?? "Couldn't add the machine");
+      }
+      return host;
+    },
+  });
+  const trimmedTarget = target.trim();
+  const busy = connect.isPending || connect.isSuccess;
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Add a machine</DialogTitle>
+        <DialogDescription>
+          Cloudroom connects with your SSH keys, installs itself, and keeps the
+          machine connected to this server.
+        </DialogDescription>
+      </DialogHeader>
+      {methodPicker}
+      <form
+        className="flex flex-wrap items-center gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (trimmedTarget && !busy) connect.mutate(trimmedTarget);
+        }}
+      >
+        <Input
+          className="min-w-0 flex-1 basis-48"
+          aria-label="SSH target"
+          placeholder="user@host"
+          value={target}
+          disabled={busy}
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          onChange={(event) => setTarget(event.target.value)}
+        />
+        <Button
+          type="submit"
+          variant="outline"
+          className={COARSE_POINTER_INPUT_HEIGHT_CLASS}
+          disabled={busy || !trimmedTarget}
+        >
+          Connect
+        </Button>
+      </form>
+      {connect.isError ? (
+        <p
+          role="alert"
+          className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words text-sm text-destructive-text"
+        >
+          {getMutationErrorMessage({
+            error: connect.error,
+            fallbackMessage: "Couldn't add the machine.",
+          })}
+        </p>
+      ) : null}
+      {busy ? (
+        <MachineSetupStatus
+          connectedHost={connect.data ?? null}
+          pendingText={pendingHost?.lifecycle.message ?? "Connecting…"}
+          onOpenMachine={() => onOpenChange(false)}
+        />
       ) : null}
     </>
   );

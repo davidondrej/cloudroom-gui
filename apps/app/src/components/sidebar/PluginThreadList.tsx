@@ -30,7 +30,7 @@ export function PluginThreadList({
   const handleCrash = useCallback(
     (pluginId: string) => {
       appToast.error("Sidebar plugin crashed", {
-        description: `${title} (${pluginId}) stopped working, so Room's own thread list is back.`,
+        description: `${title} (${pluginId}) stopped working, so Cloudroom's own thread list is back.`,
       });
     },
     [title],

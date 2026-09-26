@@ -170,7 +170,7 @@ export function macOsPermissionPresentation(
   const detail =
     requested.length === 0
       ? "No macOS capability was requested."
-      : `Requested: ${requested.join(", ")}. Room cannot grant macOS permissions; the approval covers the command only.`;
+      : `Requested: ${requested.join(", ")}. Cloudroom cannot grant macOS permissions; the approval covers the command only.`;
   return { ...presentation, detail: presentationDetail(detail) };
 }
 

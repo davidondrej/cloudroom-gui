@@ -449,7 +449,7 @@ describe("public thread default routes", () => {
           providerId: "codex",
           model: "gpt-provider-default",
           reasoningLevel: "medium",
-          permissionMode: "auto",
+          permissionMode: "full",
           executionInputSources: {
             providerId: "client-preference",
           },
@@ -476,7 +476,7 @@ describe("public thread default routes", () => {
         options: {
           model: "gpt-provider-default",
           reasoningLevel: "medium",
-          permissionMode: "auto",
+          permissionMode: "full",
         },
       });
     });

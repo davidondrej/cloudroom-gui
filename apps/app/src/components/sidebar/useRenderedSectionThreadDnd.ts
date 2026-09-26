@@ -1,12 +1,14 @@
 import { useMemo } from "react";
 import type { ThreadListEntry } from "@bb/domain";
 import {
+  buildSidebarEntitySectionId,
   CHRONOLOGICAL_CONTAINER_ID,
   type ProjectThreadItem,
   type ProjectThreadNode,
   type SidebarSectionDefinition,
-  type ThreadComparator,
+  type SidebarSectionId,
 } from "@bb/client-core";
+import type { SidebarSectionComparator } from "./sidebarSectionSort";
 import {
   resolveSidebarDropPreviewPlacement,
   type SidebarDropPreviewTarget,
@@ -85,8 +87,17 @@ export function resolveDropPreviewTarget({
   return null;
 }
 
+function getDropTargetSectionId(
+  target: SidebarDropPreviewTarget,
+): SidebarSectionId {
+  return target.kind === "group" &&
+    target.parentKey !== CHRONOLOGICAL_CONTAINER_ID
+    ? (target.parentKey as SidebarSectionId)
+    : "threads";
+}
+
 interface UseRenderedSectionThreadDndArgs {
-  compareThreads: ThreadComparator;
+  compareThreadsForSection: SidebarSectionComparator;
   draftThreadIds: ReadonlySet<string>;
   groups?: boolean;
   pinnedRootNodes: readonly ProjectThreadNode[];
@@ -98,7 +109,7 @@ interface UseRenderedSectionThreadDndArgs {
 }
 
 export function useRenderedSectionThreadDnd({
-  compareThreads,
+  compareThreadsForSection,
   draftThreadIds,
   groups = false,
   pinnedRootNodes,
@@ -136,7 +147,13 @@ export function useRenderedSectionThreadDnd({
       dropPreview: target
         ? resolveSidebarDropPreviewPlacement({
             activeThread,
-            compareThreads,
+            compareThreads: compareThreadsForSection(
+              getDropTargetSectionId(target),
+            ),
+            compareSectionThreads: (sectionId) =>
+              compareThreadsForSection(
+                buildSidebarEntitySectionId("section", sectionId),
+              ),
             draftThreadIds,
             pinnedRootNodes,
             sections,
@@ -146,7 +163,7 @@ export function useRenderedSectionThreadDnd({
         : null,
     };
   }, [
-    compareThreads,
+    compareThreadsForSection,
     draftThreadIds,
     groups,
     pinnedRootNodes,

@@ -84,7 +84,7 @@ export function pluginCliCollisionWarning(
   commandName: string,
 ): string | null {
   if (!RESERVED_BB_CLI_COMMANDS.includes(commandName)) return null;
-  return `CLI command "${commandName}" collides with core command "room ${commandName}"; core keeps the short form. Use "room plugin run ${pluginId}" to invoke this plugin.`;
+  return `CLI command "${commandName}" collides with core command "cloudroom ${commandName}"; core keeps the short form. Use "cloudroom plugin run ${pluginId}" to invoke this plugin.`;
 }
 
 /**

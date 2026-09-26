@@ -116,6 +116,7 @@ interface CreateHostDaemonAppOptions {
   resolveRuntimeShellEnv?: () => Promise<
     NonNullable<AgentRuntimeOptions["shellEnv"]>
   >;
+  providerUserEnv?: RuntimeManagerOptions["providerUserEnv"];
   nowMs?: () => number;
   hostWatcher?: HostWatcher;
   fetchFn?: FetchFn;
@@ -485,6 +486,7 @@ export async function createHostDaemonApp(
     hostWatcher: options.hostWatcher,
     logger: options.logger,
     shellEnv: options.runtimeShellEnv,
+    providerUserEnv: options.providerUserEnv,
     applyMachineEnvironment: (shell) =>
       machineEnvironment.shellEnvironment(shell),
     onEvent: ({ environmentId, event }) => {

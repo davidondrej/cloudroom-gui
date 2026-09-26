@@ -608,6 +608,9 @@ export function createAcpDeltaTranslator(
         if (text === undefined) {
           return suppressedUnhandled(rawEvent);
         }
+        if (dialect.isNotice?.(text)) {
+          return [];
+        }
         return [
           closeThoughtStream(),
           {

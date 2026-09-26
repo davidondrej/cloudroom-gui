@@ -89,7 +89,7 @@ export function buildRegistrySkillReferencePrompt(
   skill: RegistrySkill,
 ): string {
   return [
-    "Create a new, distinct Room skill using the skills.sh entry below as a reference.",
+    "Create a new, distinct Cloudroom skill using the skills.sh entry below as a reference.",
     "",
     `Reference name: ${JSON.stringify(skill.name)}`,
     `Reference skill ID: ${JSON.stringify(skill.id)}`,

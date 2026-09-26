@@ -3,10 +3,10 @@
 ## Quickstart
 
 ```
-room plugin new hello            # scaffolds ./bb-plugin-hello: a todo list with a sidebar page, `room hello` CLI, and a skill
+cloudroom plugin new hello            # scaffolds ./bb-plugin-hello: a todo list with a sidebar page, `cloudroom hello` CLI, and a skill
 cd bb-plugin-hello
-room plugin install .            # registers the directory in place (--yes to skip the prompt)
-room plugin dev                  # rebuild app/host bundles + reload on every save
+cloudroom plugin install .            # registers the directory in place (--yes to skip the prompt)
+cloudroom plugin dev                  # rebuild app/host bundles + reload on every save
 ```
 
 The manifest is `package.json`. This block is illustrative. The scaffold adds
@@ -29,26 +29,26 @@ the current engine values and the entries for its generated surfaces.
 ```
 
 - `bb.server` (required) — backend entry. Path installs load it as
-  TypeScript directly (no build step); `room plugin build` also emits a
+  TypeScript directly (no build step); `cloudroom plugin build` also emits a
   `dist/server.js` + `server.js.map` + `server.meta.json`. The server bundle
   externalizes the SDK and `better-sqlite3`; use `bb.storage.database()` for
   plugin-owned SQLite. `bb.app` (optional) — frontend entry compiled by
-  `room plugin build` into minified `dist/app.js` + `app.css` + `app.meta.json`
-  (`room plugin dev` keeps them readable); path and git installs build it
+  `cloudroom plugin build` into minified `dist/app.js` + `app.css` + `app.meta.json`
+  (`cloudroom plugin dev` keeps them readable); path and git installs build it
   automatically at install time. Git installs also
   run `npm install --omit=dev --omit=optional` first (so a git plugin may use third-party
   packages) and keep node_modules, since bundling cannot inline data files read
-  at runtime. Runtime imports that room does not shim belong in `dependencies`.
+  at runtime. Runtime imports that cloudroom does not shim belong in `dependencies`.
   Type-only imports can stay in `devDependencies`. A build-required package left in
   `devDependencies` makes the plugin uninstallable from git, and unbuildable
   after any install that omits dev deps — including the packaged CLI's own,
   which runs npm under `NODE_ENV=production`. `devDependencies` is for types
-  and tooling only — including every package room shims at runtime (sonner,
+  and tooling only — including every package cloudroom shims at runtime (sonner,
   vaul, the portal radix families, @pierre/diffs, clsx, tailwind-merge,
   class-variance-authority): the build never bundles them, but `tsc` still
   resolves their declarations through node_modules, so each one you import
-  needs a `devDependencies` entry at the host's version (`room plugin new`
-  writes all of them; `room plugin types` repins them). Never put one in
+  needs a `devDependencies` entry at the host's version (`cloudroom plugin new`
+  writes all of them; `cloudroom plugin types` repins them). Never put one in
   `dependencies` — that bundles a second copy beside the host's.
 - `bb.host` (optional, singular) — full-trust Node 22 ESM entry bundled into
   `dist/host.js` + source map + `host.meta.json`. Its owning server entry calls
@@ -66,52 +66,52 @@ the current engine values and the entries for its generated surfaces.
   prebuilt artifacts need no npm, but managed Git and npm installs need npm on
   `PATH`.
 - Building yourself (CI, or verifying a build without a running bb): add
-  `bb-app` to `devDependencies` and set `"build": "room plugin build"`.
-  `room plugin build` needs no running server, but the manifest still needs
+  `bb-app` to `devDependencies` and set `"build": "cloudroom plugin build"`.
+  `cloudroom plugin build` needs no running server, but the manifest still needs
   `bb.server`. Depending on `bb-app@X` builds
-  against exactly that release's shim configuration. room downloads its build
+  against exactly that release's shim configuration. cloudroom downloads its build
   toolchain on first use, so cache `<dataDir>/plugins/toolchain-*` in CI.
 - `bb.skills` (optional) — relocates the auto-imported skills directories
   (default `skills/`; `[]` opts out). Every `skills/<name>/SKILL.md` is
   injected into agent threads as the plugin skills tier.
 - `bb.themes` (optional) — contributes palettes to Settings → Appearance and
-  `room theme list`. Each entry is
+  `cloudroom theme list`. Each entry is
   `{ id, name, description?, css: "./themes/name.css", codeTheme? }`;
   `codeTheme` is `{ dark?, light? }` where each side is a bundled Shiki /
-  Pierre name or a plugin-relative VS Code theme `.json` file. room namespaces
+  Pierre name or a plugin-relative VS Code theme `.json` file. cloudroom namespaces
   its selectable id as `plugin:<plugin-id>:<id>`. Only loaded plugins
   contribute.
 - `bb.name` and `bb.description` (required) — non-empty human-facing plugin
   identity. The top-level package `name` remains the package identity and
   source of the plugin id.
 - `bb.branding` (required) — declare `bb.branding.icon` as either the plugin's
-  canonical Room icon name, such as `Zap`, or a plugin-relative compact SVG path
+  canonical Cloudroom icon name, such as `Zap`, or a plugin-relative compact SVG path
   such as `./assets/icon.svg`. A namespaced `"<pluginId>/<name>"` glyph is
   refused here: that form is how tool presentations and provider declarations
   name a declared icon, and the plugin's own mark points at its file directly.
-  Room validates path-shaped SVGs (well-formed XML with an `<svg>` root, no
+  Cloudroom validates path-shaped SVGs (well-formed XML with an `<svg>` root, no
   doctype or processing instruction), hash-serves them, then renders them
   as CSS masks so their shape inherits the surrounding text color; SVG
   colors are ignored.
-  Room reuses this icon on roomy surfaces when no logo override is declared.
+  Cloudroom reuses this icon on roomy surfaces when no logo override is declared.
   Add `logo.light` only for
   intentionally different rich/full-size identity artwork; optional
   `logo.dark` is preferred in dark mode. Logo paths are explicit
   plugin-relative `.svg`, `.png`, or `.webp` files: nulls, empty strings,
   missing/escaping files, unsupported extensions, and a dark logo without a
-  light logo fail the manifest. `room plugin build` refuses an SVG logo that
+  light logo fail the manifest. `cloudroom plugin build` refuses an SVG logo that
   carries a script vector (a `script`, `handler` or `listener` element, an
   `on*` attribute, or a `javascript:` href). Manifest, build, and load checks
-  reject the invalid paths and SVGs described above. Every SVG Room serves
+  reject the invalid paths and SVGs described above. Every SVG Cloudroom serves
   carries `nosniff` and a `default-src 'none'` CSP. There is
   no root logo auto-detection. Logo-only
   manifests remain supported for compatibility, so at least an icon or light
-  logo is required. Room uses a declared logo where space permits, such as roomy
+  logo is required. Cloudroom uses a declared logo where space permits, such as roomy
   Settings rows and cards.
   Compact sidebar, menu, action, mention, and panel-title surfaces prefer the
   plugin-owned icon asset, then a named manifest icon, then a contribution's
   local `icon` hint, then Zap. Branding changes are picked up on
-  `room plugin reload`. Named inline icons use `currentColor`; compact SVG assets
+  `cloudroom plugin reload`. Named inline icons use `currentColor`; compact SVG assets
   should contain only the intended transparent glyph shape. Do not duplicate
   the same artwork across `icon` and `logo`; reserve logos for intentionally
   different branded artwork and provide a dark variant when needed.
@@ -133,7 +133,7 @@ the current engine values and the entries for its generated surfaces.
   Reference an entry by its namespaced glyph `"<pluginId>/<name>"` — in a
   bridge's `presentation.icon`,
   in `bb.agents.registerTool`'s `presentation.icon`, or as a
-  `bb.providers.register` `icon`. Room serves each file hashed from
+  `bb.providers.register` `icon`. Cloudroom serves each file hashed from
   `/api/v1/plugins/<id>/assets/icons/<name>.svg`, lists them on the
   installed-plugin inventory as `icons`, and draws them as `currentColor`
   masks (web) or tinted SVG views (mobile), so ship monochrome shapes. A
@@ -146,23 +146,23 @@ the current engine values and the entries for its generated surfaces.
   row whose name is no longer declared, or whose plugin is uninstalled,
   draws the per-kind fallback glyph.
 - `engines.room` — optional compatibility string checked during runtime and
-  update selection against the Room app version.
+  update selection against the Cloudroom app version.
 - `engines.bbPluginSdk` — optional SDK compatibility string. The scaffold uses
-  the repository SDK version. Room validates this range before use. Absent means
+  the repository SDK version. Cloudroom validates this range before use. Absent means
   a legacy manifest. Managed (`git:`/`npm:`) installs **refuse** a plugin that needs a
   newer SDK than the host provides, or one pinned to a different major; path
   installs surface it as `incompatible` at load.
-  Compatible updates (`room plugin outdated` / `room plugin update`) only select
+  Compatible updates (`cloudroom plugin outdated` / `cloudroom plugin update`) only select
   candidates that satisfy these ranges; newer incompatible releases are
   reported as blocked rather than applied. Dev builds (bb `0.0.0`) skip
   enforcing `engines.room` and annotate that on check results.
-- **Manual updates:** `room plugin outdated` checks tracking sources and
-  `room plugin update` applies compatible candidates (reinstall of an already
+- **Manual updates:** `cloudroom plugin outdated` checks tracking sources and
+  `cloudroom plugin update` applies compatible candidates (reinstall of an already
   installed managed plugin is refused). A failed activation **rolls back** to
   the previous state snapshot and records the failure for the user. Keep
   `engines.*` honest and ship load-safe factories so an update never strands
   users.
-- `room plugin build` stamps authoritative metadata into every declared
+- `cloudroom plugin build` stamps authoritative metadata into every declared
   artifact's `dist/*.meta.json`: `sdkMajor`, `sdkVersion`,
   `artifactFormatVersion` (currently `1`), `pluginId`, `pluginVersion`, and
   `builtWith: { bbVersion, pluginSdkVersion }`. Managed installs reject
@@ -170,7 +170,7 @@ the current engine values and the entries for its generated surfaces.
   manifest, or whose SDK major does not match the host.
 - Default to `bb-plugin-hello` for the package name. Scoped names such as
   `@acme/bb-plugin-hello` are also supported. The plugin id is the final
-  package-name component minus the `bb-plugin-` prefix. Room lowercases it,
+  package-name component minus the `bb-plugin-` prefix. Cloudroom lowercases it,
   replaces non-alphanumeric runs with `-`, and trims separators. An empty
   result is invalid. Every bundled plugin id is reserved for its bundled
   source. The id namespaces routes, storage, settings, and CLI commands.
@@ -180,10 +180,10 @@ Backend API imports normally stay type-only. The root runtime exports are
 `PLUGIN_CLI_OUTPUT_MAX_BYTES` ceiling:
 `import { defineRpcContract, type BbPluginApi } from
 "@get-bb/plugin-sdk"`. Validator imports such as Zod are normal plugin runtime
-dependencies (and are bundled by `room plugin build`).
+dependencies (and are bundled by `cloudroom plugin build`).
 
 On-disk state per plugin: `<dataDir>/plugins/<id>/data.db` (its SQLite),
 `secrets/` (secret settings + HTTP token), `logs/plugin.log` (JSONL,
 rotated at 5MB). Healthy or degraded plugins receive effective setting changes
 through `onChange`. A plugin in `needs-configuration` retries automatically.
-Use `room plugin reload <id>` only when the change or plugin requires it.
+Use `cloudroom plugin reload <id>` only when the change or plugin requires it.

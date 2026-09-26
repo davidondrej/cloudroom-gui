@@ -351,6 +351,7 @@ export const threadQueuedMessageSchema = z.object({
   permissionMode: permissionModeSchema,
   serviceTier: serviceTierSchema,
   groupWithNext: z.boolean(),
+  hardQueue: z.boolean().optional(),
   /**
    * Epoch ms this row is scheduled to attempt dispatch, or null when it is
    * eligible as soon as its other waits clear.
@@ -396,10 +397,17 @@ export const teleportProgressSchema = z.object({
 });
 export type TeleportProgress = z.infer<typeof teleportProgressSchema>;
 
+export const projectCopyProgressSchema = z.object({
+  phase: z.enum(["cloning", "uploading", "complete", "error"]),
+  completed: z.number(), total: z.number(), error: z.string().optional(),
+});
+export type ProjectCopyProgress = z.infer<typeof projectCopyProgressSchema>;
+
 export const threadSchema = z.object({
   id: z.string(),
   executionTarget: z.enum(["local", "cloud"]).optional(),
   teleport: teleportProgressSchema.optional(),
+  projectCopy: projectCopyProgressSchema.optional(),
   projectId: z.string(),
   environmentId: z.string().nullable(),
   providerId: z.string(),

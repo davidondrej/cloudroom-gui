@@ -30,6 +30,7 @@
     "!**/*.map"
   ],
   "publish": null,
+  "protocols": [{ "name": "Cloudroom", "schemes": ["cloudroom"] }],
   "mac": {
     "category": "public.app-category.developer-tools",
     "minimumSystemVersion": "13.0.0",
@@ -67,7 +68,13 @@
     "target": [{ "target": "AppImage", "arch": ["x64"] }]
   },
   "dmg": {
-    "sign": false
+    "sign": false,
+    "title": "Cloudroom",
+    "iconSize": 120,
+    "contents": [
+      { "x": 180, "y": 190, "type": "file" },
+      { "x": 480, "y": 190, "type": "link", "path": "/Applications" }
+    ]
   },
   "npmRebuild": false
 }

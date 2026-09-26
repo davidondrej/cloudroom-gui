@@ -1769,7 +1769,11 @@ describe("plugin thread panel actions", () => {
     threadId: string | null;
     openPluginPanel: (args: OpenPluginPanelArgs) => void;
   }) {
-    const entries = usePluginPanelActions({ openPluginPanel, threadId });
+    const entries = usePluginPanelActions({
+      forkAvailable: true,
+      openPluginPanel,
+      threadId,
+    });
     return (
       <div>
         {entries.map((entry) => (
@@ -1911,6 +1915,7 @@ describe("plugin thread panel actions", () => {
 
     function BothActionsHarness() {
       const threadEntries = usePluginPanelActions({
+        forkAvailable: true,
         openPluginPanel: () => undefined,
         threadId: "thr_9",
       });

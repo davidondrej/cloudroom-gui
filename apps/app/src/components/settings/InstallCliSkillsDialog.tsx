@@ -61,7 +61,7 @@ function InstallCliSkillsDialogContent({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Install Room CLI skills</DialogTitle>
+        <DialogTitle>Install Cloudroom CLI skills</DialogTitle>
         <DialogDescription>
           {choosable
             ? "Choose the machines to install them onto. Each one gets the skills in ~/.agents/skills and ~/.claude/skills, replacing any copy already there."

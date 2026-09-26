@@ -66,6 +66,7 @@ export interface CreateQueuedThreadMessageInput {
   payload: QueuedMessagePayload;
   /** Non-null only for one of core's own system notices. */
   systemNotice: QueuedMessageSystemNotice | null;
+  hardQueue?: boolean;
 }
 
 export interface UpdateQueuedThreadMessageInput {
@@ -616,6 +617,7 @@ export function createQueuedThreadMessageInTransaction(
         input.payload.kind === "retry" ? input.payload.attempt : null,
       retryReason: input.payload.kind === "retry" ? input.payload.reason : null,
       groupWithNext: false,
+      hardQueue: input.hardQueue ?? false,
       claimedAt: null,
       claimToken: null,
       sortKey,

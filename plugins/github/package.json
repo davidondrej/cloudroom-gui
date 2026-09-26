@@ -1,7 +1,7 @@
 {
   "name": "bb-plugin-github",
   "version": "0.2.1",
-  "description": "Browse GitHub issues and pull requests in Room, then send them to agents.",
+  "description": "Browse GitHub issues and pull requests in Cloudroom, then send them to agents.",
   "private": true,
   "license": "MIT",
   "homepage": "https://github.com/get-bb/bb#readme",
@@ -27,7 +27,7 @@
   },
   "bb": {
     "name": "GitHub",
-    "description": "Browse GitHub issues and pull requests in Room, then send them to agents.",
+    "description": "Browse GitHub issues and pull requests in Cloudroom, then send them to agents.",
     "branding": {
       "icon": "Github"
     },

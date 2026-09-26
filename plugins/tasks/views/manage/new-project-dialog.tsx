@@ -266,8 +266,8 @@ export function NewProjectDialog({
             ) : null}
           </Field>
           <Field
-            label="Linked Room project"
-            hint="Optional. Linking a Room project enables dispatching to agents."
+            label="Linked Cloudroom project"
+            hint="Optional. Linking a Cloudroom project enables dispatching to agents."
           >
             <BbProjectLinkPicker
               value={linkedBbProjectId}

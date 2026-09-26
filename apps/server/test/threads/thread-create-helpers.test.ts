@@ -41,7 +41,7 @@ describe("buildSuggestedBranchName", () => {
         title: null,
         threadId: "thr_abc123def456",
       }),
-    ).toBe("room/thr_abc123def456");
+    ).toBe("cloudroom/thr_abc123def456");
   });
 
   it("includes a sanitized slug before the full thread ID", () => {
@@ -51,7 +51,7 @@ describe("buildSuggestedBranchName", () => {
         title: "Fix login flow!",
         threadId: "thr_abc123def456",
       }),
-    ).toBe("room/fix-login-flow-thr_abc123def456");
+    ).toBe("cloudroom/fix-login-flow-thr_abc123def456");
   });
 
   it("falls back to the full thread ID when the slug is empty after sanitizing", () => {
@@ -61,7 +61,7 @@ describe("buildSuggestedBranchName", () => {
         title: "!!!",
         threadId: "thr_abc123def456",
       }),
-    ).toBe("room/thr_abc123def456");
+    ).toBe("cloudroom/thr_abc123def456");
   });
 
   it("produces unique names for threads with the same slug", () => {

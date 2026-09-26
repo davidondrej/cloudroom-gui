@@ -1,4 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { FixPrompt } from "@/components/ui/fix-prompt";
+import { crashFixPrompt } from "@/lib/fix-prompts";
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -19,7 +21,7 @@ export class AppErrorBoundary extends Component<
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error("[Room] the app crashed", error, info.componentStack);
+    console.error("[Cloudroom] the app crashed", error, info.componentStack);
   }
 
   override render(): ReactNode {
@@ -30,7 +32,7 @@ export class AppErrorBoundary extends Component<
     return (
       <div className="flex h-dvh w-full items-center justify-center bg-background p-6 text-foreground">
         <div className="w-full max-w-md rounded-lg border border-border bg-card p-6">
-          <h1 className="text-base font-medium">Room hit an error and stopped</h1>
+          <h1 className="text-base font-medium">Cloudroom hit an error and stopped</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             A reload is safe. Your threads live on the server and an unsent
             draft is kept locally. If this repeats, open the browser console and
@@ -49,8 +51,9 @@ export class AppErrorBoundary extends Component<
             className="mt-4 w-full cursor-pointer rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground"
             onClick={() => window.location.reload()}
           >
-            Reload Room
+            Reload Cloudroom
           </button>
+          <FixPrompt className="mt-4" prompt={crashFixPrompt(error.message)} />
         </div>
       </div>
     );

@@ -607,7 +607,7 @@ function describeThreadTellOutcome(
 ): string {
   if (response.delivery === "queued") {
     // The server says WHY it is waiting, so the CLI does not have to guess
-    // from the flags it happened to send. `room thread queue list` shows the
+    // from the flags it happened to send. `cloudroom thread queue list` shows the
     // same reason for the row afterwards.
     return `Thread ${threadId} message queued (${describeQueueWait(response.queuedMessage)}); it dispatches when that clears`;
   }
@@ -633,10 +633,14 @@ function describeThreadRetryOutcome(
 
 /** One short phrase for a queued row's wait, shared by `tell` and `queue`. */
 export function describeQueueWait(row: {
+  hardQueue?: boolean;
   sendAt: number | null;
   waitingOn: QueuedMessageWaitingOn | null;
 }): string {
   const waitingOn = row.waitingOn ?? { kind: "thread-busy" as const };
+  if (row.hardQueue === true && waitingOn.kind === "thread-busy") {
+    return "hard queue: waiting for the thread and its child threads";
+  }
   switch (waitingOn.kind) {
     case "time":
       return row.sendAt === null

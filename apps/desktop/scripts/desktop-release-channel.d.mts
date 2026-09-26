@@ -1,4 +1,6 @@
 export type DesktopReleaseChannel = "latest" | "nightly";
+
+export const CLOUDROOM_UPDATE_BASE_URL: string;
 export type DesktopBuildPlatform = "macos" | "linux";
 
 export interface DesktopUpdateMetadataFileNames {

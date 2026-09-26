@@ -31,7 +31,7 @@ import { isLiveParentThread, type ParentThread } from "./thread-parent.js";
 export const DEFAULT_SERVICE_TIER: ServiceTier = "default";
 export const DEFAULT_REASONING_LEVEL: ReasoningLevel = "medium";
 
-const DEFAULT_PERMISSION_MODE: PermissionMode = "auto";
+const DEFAULT_PERMISSION_MODE: PermissionMode = "full";
 
 function listDefaultProviderIdCandidates(
   registry: ProviderRegistryService,

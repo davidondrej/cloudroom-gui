@@ -63,7 +63,7 @@ export function ensureClaudeSkillPlugin(args: {
     $schema: MANIFEST_SCHEMA,
     name,
     version: "0.1.0",
-    description: `Skills injected by Room (${args.root.id}).`,
+    description: `Skills injected by Cloudroom (${args.root.id}).`,
     author: { name: "bb" },
     skills: "./skills",
   };

@@ -2,7 +2,7 @@
   "name": "@bb/desktop",
   "version": "0.43.1",
   "private": true,
-  "description": "macOS and Linux Electron shell for Room",
+  "description": "macOS and Linux Electron shell for Cloudroom",
   "main": "dist/main.js",
   "os": [
     "darwin",

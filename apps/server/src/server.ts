@@ -22,6 +22,7 @@ import { registerProjectRoutes } from "./routes/projects.js";
 import { registerThreadSectionRoutes } from "./routes/thread-sections.js";
 import { registerSystemRoutes } from "./routes/system.js";
 import { registerUiPreferenceRoutes } from "./routes/ui-preferences.js";
+import { registerUiPerfRoutes } from "./routes/ui-perf.js";
 import { registerTerminalRoutes } from "./routes/terminals.js";
 import { installCloudroomRoutes } from "./services/cloudroom/routes.js";
 import { registerThreadRoutes } from "./routes/threads/index.js";
@@ -534,7 +535,7 @@ export function createApp(
         thresholdMs: slowApiRequestLogThresholdMs,
       })
     ) {
-      deps.logger.debug(
+      deps.logger.info(
         {
           durationMs: roundDurationMs(durationMs),
           method: context.req.method,
@@ -685,6 +686,7 @@ export function createApp(
   registerPluginRoutes(publicApi, deps, pluginService, upgradeWebSocket);
   registerSkillsRegistryRoutes(publicApi, deps);
   installCloudroomRoutes(app, deps);
+  registerUiPerfRoutes(app, deps);
   app.route("/api/v1", publicApi);
   app.use("/api/v1/*", () => {
     throw new ApiError(404, "not_found", "Not found");

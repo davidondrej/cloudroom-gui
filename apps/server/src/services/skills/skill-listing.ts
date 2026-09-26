@@ -463,7 +463,7 @@ export async function writeProjectSkill(
     throw new ApiError(
       403,
       "forbidden",
-      "Bundled skills cannot be edited in Room",
+      "Bundled skills cannot be edited in Cloudroom",
     );
   }
   if (editableScope.data === "bb-project" && args.workspace.cwd === null) {
@@ -560,7 +560,7 @@ export async function deleteProjectSkill(
     throw new ApiError(
       403,
       "forbidden",
-      "Bundled skills cannot be deleted in Room",
+      "Bundled skills cannot be deleted in Cloudroom",
     );
   }
   if (editableScope.data === "bb-project" && args.workspace.cwd === null) {

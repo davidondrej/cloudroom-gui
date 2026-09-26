@@ -16,7 +16,7 @@ export default async function plugin(bb: BbPluginApi) {
       type: "string",
       label: "Custom instructions",
       description:
-        "Give agents extra instructions and context for tasks on this Room host.",
+        "Give agents extra instructions and context for tasks on this Cloudroom host.",
       experimental_multiline: true,
       experimental_schema: customInstructionsSchema,
       default: "",
@@ -48,17 +48,17 @@ export default async function plugin(bb: BbPluginApi) {
       {
         name: "get",
         summary: "Print the current custom instructions",
-        usage: "room instructions get [--json]",
+        usage: "cloudroom instructions get [--json]",
       },
       {
         name: "set",
         summary: "Replace the custom instructions",
-        usage: "room instructions set <text...> [--json]",
+        usage: "cloudroom instructions set <text...> [--json]",
       },
       {
         name: "clear",
         summary: "Clear the custom instructions",
-        usage: "room instructions clear [--json]",
+        usage: "cloudroom instructions clear [--json]",
       },
     ],
     async run(argv) {
@@ -103,7 +103,7 @@ export default async function plugin(bb: BbPluginApi) {
       }
       return {
         exitCode: 1,
-        stderr: "Usage: room instructions get|set <text...>|clear [--json]",
+        stderr: "Usage: cloudroom instructions get|set <text...>|clear [--json]",
       };
     },
   });

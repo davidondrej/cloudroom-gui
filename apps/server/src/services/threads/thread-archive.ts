@@ -32,6 +32,7 @@ import { requireThreadHostCommandEnvironment } from "./thread-command-environmen
 import { getThreadProvisionContext } from "./thread-startup-store.js";
 import { isPreStartThreadStatus } from "./thread-status.js";
 import { cloudroom, isCloudThread } from "../cloudroom/commands.js";
+import { teleports } from "../cloudroom/teleport.js";
 
 interface ArchiveThreadEnvironment {
   hostId: string;
@@ -88,6 +89,7 @@ function archiveThreadWithLifecycleEffects(
   if (!archivedThread) {
     return null;
   }
+  teleports(deps).abandon(archivedThread.id);
 
   deps.terminalSessions.closeArchivedThreadTerminals({
     threadId: archivedThread.id,

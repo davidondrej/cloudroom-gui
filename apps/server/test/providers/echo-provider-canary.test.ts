@@ -608,12 +608,11 @@ describe("echo-provider canary: plugin install → server command → runtime �
     expect(
       command.injectedSkillSources.map((source) => source.name).sort(),
     ).toEqual([
-      "room-cli",
       "bb-plugin-authoring",
+      "cloudroom",
       "skill-creator",
-      "submit-a-plugin",
     ]);
-    expect(command.instructions).toContain("bb status");
+    expect(command.instructions).toContain("cloudroom status");
 
     const skillDirectoryRootPath = join(guideRoot, "skills");
     const skillRoots: AgentRuntimeSkillRoot[] = [

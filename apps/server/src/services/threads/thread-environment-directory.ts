@@ -32,7 +32,7 @@ const updateEnvironmentDirectoryInputSchema = z
 export const UPDATE_ENVIRONMENT_DIRECTORY_TOOL: DynamicTool = {
   name: UPDATE_ENVIRONMENT_DIRECTORY_TOOL_NAME,
   description:
-    "Move this room thread to a different working directory for subsequent turns. Use this when the user asks to switch to a new checkout, worktree, or local directory. The path must be an absolute existing directory on the current host. The tool reuses this project's existing room environment for that host/path, otherwise it creates an unmanaged environment after validating the path. Another project may hold its own environment for the same directory; that is allowed, except for a bb-managed worktree owned by another project, which this tool refuses. After a successful switch, stop the current turn because the running provider cwd will not change until the next turn.",
+    "Move this cloudroom thread to a different working directory for subsequent turns. Use this when the user asks to switch to a new checkout, worktree, or local directory. The path must be an absolute existing directory on the current host. The tool reuses this project's existing cloudroom environment for that host/path, otherwise it creates an unmanaged environment after validating the path. Another project may hold its own environment for the same directory; that is allowed, except for a bb-managed worktree owned by another project, which this tool refuses. After a successful switch, stop the current turn because the running provider cwd will not change until the next turn.",
   inputSchema: {
     type: "object",
     properties: {
@@ -210,24 +210,29 @@ function attachReadyEnvironment(
   return result;
 }
 
-async function provisionUnmanagedEnvironmentForPath(
+export async function provisionUnmanagedEnvironmentForPath(
   deps: AppDeps,
-  args: {
-    currentEnvironment: EnvironmentRow;
-    path: string;
-    thread: Thread;
-  },
-): Promise<ReadyEnvironment | ToolCallResponse> {
+  args: { hostId: string; path: string; projectId: string },
+): Promise<ReadyEnvironment | { failure: string }> {
+  const refusal = foreignProviderOwnedPathRefusal(deps.db, {
+    dataDir: findHostDataDir(deps, args.hostId),
+    hostId: args.hostId,
+    path: args.path,
+    projectId: args.projectId,
+  });
+  if (refusal !== null) {
+    return { failure: `${refusal}. Use a different directory.` };
+  }
   const environment = createEnvironment(deps.db, deps.hub, {
-    projectId: args.thread.projectId,
-    hostId: args.currentEnvironment.hostId,
+    projectId: args.projectId,
+    hostId: args.hostId,
     providerOwnsPath: false,
     status: "provisioning",
     environmentProvider: null,
   });
   const command = buildEnvironmentProvisionCommand({
     environmentId: environment.id,
-    hostId: args.currentEnvironment.hostId,
+    hostId: args.hostId,
     initiator: null,
     path: args.path,
     setupScriptTimeoutMs: null,
@@ -235,26 +240,22 @@ async function provisionUnmanagedEnvironmentForPath(
 
   try {
     await runLiveHostCommand(deps, {
-      hostId: args.currentEnvironment.hostId,
+      hostId: args.hostId,
       command,
       timeoutMs: UPDATE_ENVIRONMENT_DIRECTORY_TIMEOUT_MS,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return toolCallFailure(
-      `Could not update environment directory to ${args.path}: ${message}`,
-    );
+    return {
+      failure: `Could not update environment directory to ${args.path}: ${message}`,
+    };
   }
 
   const readyEnvironment = getEnvironment(deps.db, environment.id);
   if (!readyEnvironment) {
-    return toolCallFailure("Prepared environment no longer exists.");
+    return { failure: "Prepared environment no longer exists." };
   }
-  const ready = resolveReadyEnvironment(readyEnvironment);
-  if ("failure" in ready) {
-    return toolCallFailure(ready.failure);
-  }
-  return ready;
+  return resolveReadyEnvironment(readyEnvironment);
 }
 
 export async function handleUpdateEnvironmentDirectoryToolCall(
@@ -315,27 +316,16 @@ export async function handleUpdateEnvironmentDirectoryToolCall(
     }
     targetEnvironment = ready;
   } else {
-    const dataDir = findHostDataDir(deps, args.currentEnvironment.hostId);
-    const refusal = foreignProviderOwnedPathRefusal(deps.db, {
-      dataDir,
-      hostId: args.currentEnvironment.hostId,
-      path: normalizedPath,
-      projectId: args.thread.projectId,
-    });
-    if (refusal !== null) {
-      return toolCallFailure(`${refusal}. Use a different directory.`);
-    }
     const provisionedEnvironment = await provisionUnmanagedEnvironmentForPath(
       deps,
       {
-        currentEnvironment: args.currentEnvironment,
+        hostId: args.currentEnvironment.hostId,
         path: normalizedPath,
-        thread: args.thread,
+        projectId: args.thread.projectId,
       },
     );
-
-    if ("success" in provisionedEnvironment) {
-      return provisionedEnvironment;
+    if ("failure" in provisionedEnvironment) {
+      return toolCallFailure(provisionedEnvironment.failure);
     }
     targetEnvironment = provisionedEnvironment;
     createdEnvironment = true;

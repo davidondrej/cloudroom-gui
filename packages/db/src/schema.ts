@@ -650,7 +650,7 @@ export const cloudroomThreads = sqliteTable("cloudroom_threads", {
 export const cloudroomCommands = sqliteTable("cloudroom_commands", {
   id: text("id").primaryKey(),
   threadId: text("thread_id").notNull().references(() => cloudroomThreads.threadId, { onDelete: "cascade" }),
-  command: text("command", { enum: ["prompt", "stop", "resume", "edit", "cancel", "steer", "compact", "rewind", "attach", "title", "teleport"] }).notNull(),
+  command: text("command", { enum: ["prompt", "stop", "resume", "sleep", "edit", "cancel", "reorder", "steer", "compact", "rewind", "attach", "title", "teleport"] }).notNull(),
   input: text("input").notNull(),
   state: text("state").notNull().default("sending"),
   createdAt: integer("created_at").notNull(),
@@ -927,6 +927,9 @@ export const queuedThreadMessages = sqliteTable(
     permissionMode: text("permission_mode").$type<PermissionMode>().notNull(),
     serviceTier: text("service_tier").notNull(),
     groupWithNext: integer("group_with_next", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    hardQueue: integer("hard_queue", { mode: "boolean" })
       .notNull()
       .default(false),
     // Epoch ms this row is scheduled to attempt dispatch. NULL means "as soon

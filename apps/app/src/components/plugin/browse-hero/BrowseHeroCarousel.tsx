@@ -16,12 +16,12 @@ const PLUGIN_RAIL: readonly IconName[] = [
 ];
 
 const PLUGIN_HERO_COPY: ShowcaseHeroCopy = {
-  ariaLabel: "What you can build with Room plugins",
-  headlineLead: "Turn Room into",
+  ariaLabel: "What you can build with Cloudroom plugins",
+  headlineLead: "Turn Cloudroom into",
   composingNoun: "whatever you need",
   description: PLUGINS_BROWSE_DESCRIPTION,
   tablistLabel: "Plugin examples",
-  frameTitlePrefix: "Room — ",
+  frameTitlePrefix: "Cloudroom — ",
   frameBadge: "Plugin",
 };
 

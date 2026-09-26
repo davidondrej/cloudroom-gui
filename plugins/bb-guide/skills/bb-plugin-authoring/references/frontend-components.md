@@ -2,7 +2,7 @@
 
 Host components:
 
-- `ThreadChat` — Room's complete chat surface for an existing thread, rendered
+- `ThreadChat` — Cloudroom's complete chat surface for an existing thread, rendered
   wherever plugin React runs (nav panels, thread-panel tabs, homepage and
   settings sections). This is the deliberate exception to the
   no-host-components rule: a stable product capability, not a UI kit. Props:
@@ -31,14 +31,14 @@ className?, leadingContent?, messageActions? }` —
   host owns timeline loading, streaming, drafts, send/queue/steer/stop,
   attachments, execution controls, pending interactions, and read tracking —
   do not proxy thread data through your own RPC or rebuild the composer.
-- `experimental_ProviderModelPicker` — Room's controlled provider, model, and
+- `experimental_ProviderModelPicker` — Cloudroom's controlled provider, model, and
   reasoning picker. Props:
   `{ value: { providerId, model, reasoningLevel, serviceTier? }, onChange,
 routing?, allowProviderChange?, align?, disabled?, className? }`, where `routing` is
   `{ kind: "host", hostId }` or `{ kind: "environment", environmentId }`.
   It uses the same live catalog, defaults, capability
   reconciliation, retired-model handling, search, and provider branding as
-  Room's composers. Provider switches wait for the target provider's verified
+  Cloudroom's composers. Provider switches wait for the target provider's verified
   catalog, then emit one coherent value with its default model and resolved
   reasoning without closing the picker; `serviceTier` is retained only when
   that provider supports it.
@@ -71,7 +71,7 @@ routing?, allowProviderChange?, align?, disabled?, className? }`, where `routing
   reference consumers: both persist the coherent value and use it at spawn.
   Experimental: see `docs/api_to_audit.md`.
 
-- `experimental_PermissionModePicker` — Room's controlled permission-mode
+- `experimental_PermissionModePicker` — Cloudroom's controlled permission-mode
   picker. Props:
   `{ providerId, value, onChange, routing?, align?, disabled?, className? }`.
   The host resolves the provider's supported modes and the routed machine's
@@ -97,7 +97,7 @@ routing?, allowProviderChange?, align?, disabled?, className? }`, where `routing
   capabilities. Tasks presets and Automations are the reference consumers.
   Experimental: see `docs/api_to_audit.md`.
 
-- `experimental_BranchPicker` — Room's controlled branch picker for a standard
+- `experimental_BranchPicker` — Cloudroom's controlled branch picker for a standard
   branch choice. Props:
   `{ hostId, projectId, value, onChange, label?, placeholder?, disabled? }`.
   The host searches and refreshes local and remote branches for the selected
@@ -113,21 +113,21 @@ routing?, allowProviderChange?, align?, disabled?, className? }`, where `routing
   checkout provider is the reference consumer: it owns its Current, existing,
   and new-from-base modes and reports ready or blocked inputs through its slot.
 
-- `experimental_SourceCode` — Room's source viewer. Props:
+- `experimental_SourceCode` — Cloudroom's source viewer. Props:
   `{ content, path, overflow?, highlightedLines?, className? }` — `path`
   drives language detection, `overflow` is `"scroll"` (default) or `"wrap"`,
   and `highlightedLines` is a 1-based inclusive `{ start, end }` (default
-  null). room owns syntax highlighting, gutters, and the live code theme.
-- `experimental_Diff` — Room's diff viewer. Props:
+  null). cloudroom owns syntax highlighting, gutters, and the live code theme.
+- `experimental_Diff` — Cloudroom's diff viewer. Props:
   `{ patch, path, view?, overflow?, showLineNumbers?, experimental_fullFileContents?,
 className? }` —
   `patch` is a unified patch for exactly ONE file and `view` is `"unified"`
-  (default) or `"split"`. room normalizes the patch, so a GitHub REST patch or
+  (default) or `"split"`. cloudroom normalizes the patch, so a GitHub REST patch or
   a bare `@@` hunk works without synthesizing a `diff --git` header
   yourself; unparseable content degrades to plain monospace text.
   `experimental_fullFileContents` is
   `{ old: { path, content }, new: { path, content } }`; when supplied and
-  consistent with the patch, room enables expand-context controls between
+  consistent with the patch, cloudroom enables expand-context controls between
   hunks. The caller owns loading those complete UTF-8 sides and omits the prop
   while it has only the patch. Reference: `plugins/github/app.tsx`.
 
@@ -145,7 +145,7 @@ className? }` —
   not, so code there renders unhighlighted rather than broken.
   Experimental: see `docs/api_to_audit.md`.
 
-- `Markdown` — Room's chat-message markdown renderer (same typography,
+- `Markdown` — Cloudroom's chat-message markdown renderer (same typography,
   spacing, and code styling as timeline messages). Props:
   `{ content, className? }`. Use it wherever plugin UI quotes or previews
   message content (e.g. a reply header) so it reads like the rest of the
@@ -153,7 +153,7 @@ className? }` —
   beyond content/className stay host-internal.
 - `UrlLink` — a real anchor whose ordinary HTTP(S) activation
   follows the current client's in-app/external-browser preference. It keeps
-  internal Room routes in SPA history, preserves modifier clicks, copying,
+  internal Cloudroom routes in SPA history, preserves modifier clicks, copying,
   accessibility, and explicit anchor props, and leaves unsupported schemes and
   explicit targets to browser behavior. A `_blank` or named target preserves
   supplied `rel` tokens but adds `noopener noreferrer` unless `rel` explicitly
@@ -164,7 +164,7 @@ className? }` —
   `{ kind: "workspace", environmentId, path }`,
   `{ kind: "host", hostId, path }` (absolute), or
   `{ kind: "thread-storage", threadId, path }`. Ordinary activation opens the
-  current surface's shared Room preview. Its lazy context menu offers the
+  current surface's shared Cloudroom preview. Its lazy context menu offers the
   built-in preview, matching plugin `fileOpener`s, the preferred external
   target, available client apps, and copy actions. Valid targets expose an
   encoded, scheme-safe href; traversal paths, ill-formed Unicode, and other
@@ -188,7 +188,7 @@ className? }` —
   `experimental_fixedTabOpenCalls`, gates them with
   `experimental_openFixedTab`, and seeds state with
   `experimental_fixedTabTarget`.
-- `experimental_NewThreadComposer` — Room's complete compose surface for
+- `experimental_NewThreadComposer` — Cloudroom's complete compose surface for
   CREATING a thread (the create-side counterpart to `ThreadChat`): prompt
   editor with @-mentions and expand, `+` attachments,
   provider/model/reasoning picker, voice, submit, and the row beneath with
@@ -224,7 +224,7 @@ className?, draftKey? }` — the `default*` props are SEEDS, not controlled
   provider, the machine; everything else that provider needs comes
   from its plugin's own inputs control, rendered beside the picker. The reuse
   picker beside it offers the environments this project's live threads are
-  already running in. room contributes no branch chip of its own: the worktree
+  already running in. cloudroom contributes no branch chip of its own: the worktree
   provider's control owns the base branch, and the checkout provider's owns
   the directory and the branch to switch to.
 
@@ -260,7 +260,7 @@ className?, draftKey? }` — the `default*` props are SEEDS, not controlled
   configured named base branch.
 
   Projectless threads: the project picker always offers "Don't work in a
-  project". That choice submits Room's personal-project id in `projectId` (not
+  project". That choice submits Cloudroom's personal-project id in `projectId` (not
   `null`) and uses an eligible projectless environment provider. The provider
   supplies its own inputs and workspace; the composer does not synthesize a
   personal-workspace request.
@@ -317,7 +317,7 @@ Use `app.experimental_icons.register({ name, component })` during
 `definePluginApp` setup to add or override a shared app icon. Names are trimmed
 and must be nonempty; namespacing is recommended, not required. Any plugin can
 render the name with `experimental_Icon`. Duplicate names within a plugin reject
-setup. Across plugins, the first plugin id in lexical order wins and room warns.
+setup. Across plugins, the first plugin id in lexical order wins and cloudroom warns.
 Registration returns `void`; reload replaces registrations and unload restores
 the next owner or built-in. A rejected setup preserves the previous generation.
 

@@ -419,6 +419,7 @@ export function EnvironmentSlot({
   const [environmentPickerOpen, setEnvironmentPickerOpen] = useState(false);
   const showEnvironmentPicker =
     !projectless ||
+    environment.cloud !== undefined ||
     environment.isLoading ||
     providers.length > 1 ||
     showReuseEnvironmentPicker ||

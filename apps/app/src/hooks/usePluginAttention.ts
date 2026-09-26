@@ -11,10 +11,14 @@ export function pluginNeedsAttention(
   );
 }
 
+// Builtins removed from this build (e.g. concurrency-limit) stay listed so
+// they can be uninstalled, but should not raise a global warning.
 export function pluginsNeedingAttention(
   plugins: readonly PluginListItem[],
 ): PluginListItem[] {
-  return plugins.filter(pluginNeedsAttention);
+  return plugins.filter(
+    (plugin) => !plugin.isOrphanedBuiltin && pluginNeedsAttention(plugin),
+  );
 }
 
 export function pluginAttentionLabel(

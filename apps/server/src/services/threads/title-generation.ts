@@ -8,9 +8,9 @@ import {
   InferenceTimeoutError,
   inferenceCompleteWithFallback,
 } from "../ai/inference.js";
+import { readUiPreferences } from "../system/ui-preferences.js";
 
-const MIN_TITLE_GENERATION_WORDS = 5;
-const MAX_GENERATED_TITLE_WORDS = 5;
+const MAX_GENERATED_TITLE_LENGTH = 80;
 const MAX_BRANCH_SLUG_LENGTH = 48;
 
 interface ApplyGeneratedThreadTitleArgs {
@@ -33,7 +33,6 @@ type ThreadMetadataGenerationOutcomeReason =
   | "empty-input"
   | "failed"
   | "inference-unavailable"
-  | "too-short"
   | "timeout";
 
 export interface ThreadMetadataGenerationOutcome {
@@ -64,22 +63,16 @@ export function deriveTitleFallback(input: PromptInput[]): string | null {
 }
 
 export function shouldGenerateThreadTitle(input: PromptInput[]): boolean {
-  const text = cleanPromptText(input);
-  if (text.length === 0) {
-    return false;
-  }
-
-  return text.split(/\s+/u).length >= MIN_TITLE_GENERATION_WORDS;
+  return cleanPromptText(input).length > 0;
 }
 
 export function sanitizeGeneratedTitle(value: string): string | null {
-  const words = value
-    .trim()
+  const title = value
     .replace(/\s+/gu, " ")
-    .split(" ")
-    .filter((word) => word.length > 0);
-
-  const title = words.slice(0, MAX_GENERATED_TITLE_WORDS).join(" ");
+    .trim()
+    .replace(/^["'`]+|["'`.]+$/gu, "")
+    .slice(0, MAX_GENERATED_TITLE_LENGTH)
+    .trim();
   return title.length > 0 ? title : null;
 }
 
@@ -133,20 +126,25 @@ export async function generateThreadMetadataWithOutcome(
   if (!fallback) {
     return complete(null, "empty-input");
   }
-  if (!shouldGenerateThreadTitle(args.input)) {
-    return complete(null, "too-short");
-  }
 
+  const preferences = readUiPreferences(deps);
+  const model = preferences["threadNaming.model"].value;
+  const fallbackModel =
+    preferences["threadNaming.fallbackModel"].value ?? model;
   const prompt = renderTemplate("generateThreadMetadata", {
     cleanedPrompt: fallback,
+    rules: preferences["threadNaming.rules"].value,
   });
   const maxAttempts = Math.max(1, args.timeoutMaxAttempts ?? 1);
 
   try {
     const inference = await inferenceCompleteWithFallback(deps, {
+      fallbackOnAnyError: true,
       label: "Thread metadata inference",
       logContext: { threadId: args.threadId },
       maxAttempts,
+      ...(model ? { primaryModel: model } : {}),
+      ...(fallbackModel ? { fallbackModel } : {}),
       prompt,
       retryDelayMs: INFERENCE_POLICY.threadMetadata.retryDelayMs,
       schema: threadMetadataSchema,

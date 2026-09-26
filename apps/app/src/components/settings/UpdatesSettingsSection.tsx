@@ -74,8 +74,14 @@ import {
   type UpdateInventoryMachine,
 } from "@/hooks/useUpdateInventory";
 import { useHostDaemon } from "@/hooks/useHostDaemon";
-import { useDesktopUpdateInfo } from "@/hooks/useDesktopUpdateInfo";
+import {
+  DESKTOP_DOWNLOAD_URL,
+  LATEST_DESKTOP_RELEASE_QUERY_KEY,
+  useDesktopUpdateInfo,
+} from "@/hooks/useDesktopUpdateInfo";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
+import { FixPrompt } from "@/components/ui/fix-prompt";
+import { appUpdateFixPrompt } from "@/lib/fix-prompts";
 import {
   hostCanRetryUpdate,
   hostNeedsUpdate,
@@ -598,7 +604,7 @@ export function ChangelogPreviewCard() {
                         variant="ghost"
                         size="icon"
                         className="size-7 text-muted-foreground hover:text-foreground"
-                        aria-label={`Dismiss Room ${entry.version} changelog preview`}
+                        aria-label={`Dismiss Cloudroom ${entry.version} changelog preview`}
                         onClick={() => {
                           rawStringLocalStorage.setItem(
                             CHANGELOG_DISMISSED_VERSION_STORAGE_KEY,
@@ -670,7 +676,7 @@ export function ChangelogPreviewCard() {
               <button
                 type="button"
                 disabled={!releaseVisible}
-                aria-label={`Open the full Room ${entry.version} changelog`}
+                aria-label={`Open the full Cloudroom ${entry.version} changelog`}
                 onClick={() =>
                   openUrlInExternalBrowser(
                     `${CHANGELOG_LINKS.page}#${entry.version.replaceAll(".", "-")}`,
@@ -713,7 +719,7 @@ export function ChangelogPreviewCard() {
                   You're all caught up
                 </h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                  We'll show the next Room release here.
+                  We'll show the next Cloudroom release here.
                 </p>
               </div>
             </div>
@@ -763,7 +769,7 @@ export function BbAppUpdateRows({
   );
   if (isDesktop && desktopInfo === null) {
     return row(
-      <RowName name="Room app" current={null} latest={null} />,
+      <RowName name="Cloudroom app" current={null} latest={null} />,
       <RowStateControl live state="in-progress" />,
     );
   }
@@ -773,7 +779,10 @@ export function BbAppUpdateRows({
       desktopInfo.pendingVersion ?? desktopInfo.latestVersion;
     const latest = desktopInfo.updateAvailable ? pendingVersion : null;
     const name = (
-      <RowName name="Room app" current={desktopInfo.version} latest={latest} />
+      <RowName name="Cloudroom app" current={desktopInfo.version} latest={latest} />
+    );
+    const agentInstall = (
+      <FixPrompt className="mb-2" prompt={appUpdateFixPrompt(desktopInfo.version, pendingVersion)} />
     );
 
     if (desktopInfo.updateDownloaded) {
@@ -783,7 +792,7 @@ export function BbAppUpdateRows({
           state="restart-required"
           buttonLeading={<BbLogo className="size-3" />}
           buttonLabel="Relaunch"
-          actionLabel="Relaunch Room to finish updating"
+          actionLabel="Relaunch Cloudroom to finish updating"
           onClick={() => onRelaunchDesktop?.()}
         />,
       );
@@ -792,33 +801,48 @@ export function BbAppUpdateRows({
       return row(name, <RowStateControl live state="in-progress" />);
     }
     if (desktopInfo.downloadState === "failed") {
-      return row(
-        name,
-        <RowStateControl
-          state="failed"
-          buttonLabel="Retry"
-          actionLabel="Retry the download"
-          onClick={() => onRetryDesktop?.()}
-        />,
-        <RowStateCaption state="failed">Download failed</RowStateCaption>,
-      );
+      return <>
+        {row(
+          name,
+          <RowStateControl
+            state="failed"
+            buttonLabel="Retry"
+            actionLabel="Retry the download"
+            onClick={() => onRetryDesktop?.()}
+          />,
+          <RowStateCaption state="failed">Download failed</RowStateCaption>,
+        )}
+        {agentInstall}
+      </>;
     }
     if (desktopInfo.updateAvailable) {
-      return row(name, <RowStateControl state="update-available" />);
+      return <>
+        {row(
+          name,
+          <RowStateControl
+            state="update-available"
+            buttonLeading={<Icon aria-hidden name="Download" className="size-3" />}
+            buttonLabel="Download"
+            actionLabel="Download the new Cloudroom app"
+            onClick={() => openUrlInExternalBrowser(DESKTOP_DOWNLOAD_URL)}
+          />,
+        )}
+        {agentInstall}
+      </>;
     }
     return row(name, settledStatus);
   }
 
   if (systemVersion === undefined) {
     return row(
-      <RowName name="Room app" current={null} latest={null} />,
+      <RowName name="Cloudroom app" current={null} latest={null} />,
       <RowStateControl state="in-progress" />,
     );
   }
 
   const name = (
     <RowName
-      name="Room app"
+      name="Cloudroom app"
       detail={
         systemVersion.updateAvailable ? (
           <span className="hidden truncate font-mono text-2xs text-muted-foreground sm:inline">
@@ -944,7 +968,7 @@ export function BbDaemonUpdateRow({
           <BbLogo className="size-4" />
         </span>
       }
-      title="Room daemon"
+      title="Cloudroom daemon"
       state={daemonCaption}
       trailingMeta={null}
       actions={
@@ -1199,7 +1223,7 @@ export function MachineUpdatesFleetSection({
     <SettingsSection
       action={action}
       bodyClassName="border-0 bg-transparent p-0"
-      description="Manage Room and provider CLI updates across all machines."
+      description="Manage Cloudroom and provider CLI updates across all machines."
       title="Machine updates"
     >
       <div className="space-y-6 pt-1.5">{children}</div>
@@ -1267,7 +1291,12 @@ export function UpdatesSettingsSection({
   function handleCheckForUpdates(): void {
     startAppUpdateCheck(async () => {
       if (desktopApi !== null) {
-        await desktopApi.checkForUpdates();
+        await Promise.all([
+          desktopApi.checkForUpdates(),
+          queryClient.refetchQueries({
+            queryKey: LATEST_DESKTOP_RELEASE_QUERY_KEY,
+          }),
+        ]);
       } else {
         const version = await sdk.system.version({ force: true });
         hydrateSystemVersionCache({ queryClient, version });

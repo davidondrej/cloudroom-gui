@@ -16,10 +16,9 @@ import { SETTINGS_NAV_SECTIONS } from "./settings-sections";
 import { SettingsSidebarContent } from "./SettingsSidebar";
 
 const visiblePlugins = [
-  { id: "bb-guide", label: "Room guide" },
+  { id: "bb-guide", label: "Cloudroom guide" },
   { id: "provider-claude-code", label: "Claude Code provider" },
   { id: "provider-codex", label: "Codex provider" },
-  { id: "concurrency-limit", label: "Concurrency limit" },
   { id: "custom-instructions", label: "Custom instructions" },
   { id: "keep-awake", label: "Keep Awake" },
   { id: "provider-retry", label: "Provider retry" },
@@ -191,16 +190,16 @@ describe("SettingsSidebarContent navigation", () => {
     renderSidebar({
       pluginEntries: [
         { id: "connect", label: "Renamed remote access", icon: null },
-        { id: "new-plugin", label: "Room guide", icon: null },
+        { id: "new-plugin", label: "Cloudroom guide", icon: null },
       ],
     });
     expect(
       screen.getByRole("link", { name: "Renamed remote access" }),
     ).toBeTruthy();
-    expect(screen.queryByRole("link", { name: "Room guide" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Cloudroom guide" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
     expect(
-      screen.getByRole("link", { name: "Room guide" }).getAttribute("href"),
+      screen.getByRole("link", { name: "Cloudroom guide" }).getAttribute("href"),
     ).toBe("/settings/plugins/new-plugin");
   });
 

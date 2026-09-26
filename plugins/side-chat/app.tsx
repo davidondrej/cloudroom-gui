@@ -295,6 +295,7 @@ export default definePluginApp((app) => {
     title: "Start side chat",
     icon: "SideChat",
     component: SideChatPanel,
+    experimental_requiresFork: true,
     layout: "flush",
     async run(context: PluginThreadPanelActionContext) {
       await openSideChat({

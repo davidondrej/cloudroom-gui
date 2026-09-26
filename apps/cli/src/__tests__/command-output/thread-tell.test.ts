@@ -12,7 +12,7 @@ import {
 import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import { registerThreadCommands } from "../../commands/thread/index.js";
 
-describe("room thread tell command output", () => {
+describe("cloudroom thread tell command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
@@ -31,7 +31,7 @@ describe("room thread tell command output", () => {
     });
   }
 
-  it("room thread tell --json prints the raw response plus thread id", async () => {
+  it("cloudroom thread tell --json prints the raw response plus thread id", async () => {
     const post = vi.fn(async () => ({ ok: true, delivery: "sent" }));
     stubTellApi({ "v1.threads.:id.send.$post": post });
 
@@ -50,7 +50,7 @@ describe("room thread tell command output", () => {
     });
   });
 
-  it("room thread tell names the typed reason a message queued for", async () => {
+  it("cloudroom thread tell names the typed reason a message queued for", async () => {
     // The server says WHY, so the CLI stops inferring it from the flags it
     // sent — which is what let the old four-way delivery enum collapse.
     const post = vi.fn(async () => ({
@@ -71,7 +71,7 @@ describe("room thread tell command output", () => {
     );
   });
 
-  it("room thread tell names the plugin a message is waiting on", async () => {
+  it("cloudroom thread tell names the plugin a message is waiting on", async () => {
     const post = vi.fn(async () => ({
       ok: true,
       delivery: "queued",
@@ -94,7 +94,7 @@ describe("room thread tell command output", () => {
     );
   });
 
-  it("room thread tell keeps the steered wording for servers that only report ok", async () => {
+  it("cloudroom thread tell keeps the steered wording for servers that only report ok", async () => {
     const post = vi.fn(async () => ({ ok: true }));
     stubTellApi({ "v1.threads.:id.send.$post": post });
 
@@ -105,7 +105,7 @@ describe("room thread tell command output", () => {
     );
   });
 
-  it("room thread tell --mode queue preserves non-urgent queued delivery", async () => {
+  it("cloudroom thread tell --mode queue preserves non-urgent queued delivery", async () => {
     const post = vi.fn(async () => ({ ok: true }));
     stubTellApi({ "v1.threads.:id.send.$post": post });
 
@@ -123,7 +123,7 @@ describe("room thread tell command output", () => {
     });
   });
 
-  it("room thread tell --mode auto preserves explicit legacy auto delivery", async () => {
+  it("cloudroom thread tell --mode auto preserves explicit legacy auto delivery", async () => {
     const post = vi.fn(async () => ({ ok: true }));
     stubTellApi({ "v1.threads.:id.send.$post": post });
 
@@ -141,7 +141,7 @@ describe("room thread tell command output", () => {
     });
   });
 
-  it("room thread tell forwards execution options", async () => {
+  it("cloudroom thread tell forwards execution options", async () => {
     const post = vi.fn(async () => ({ ok: true }));
     stubTellApi({ "v1.threads.:id.send.$post": post });
 
@@ -176,7 +176,7 @@ describe("room thread tell command output", () => {
     });
   });
 
-  it("room thread tell forwards automatic review mode", async () => {
+  it("cloudroom thread tell forwards automatic review mode", async () => {
     const post = vi.fn(async () => ({ ok: true }));
     stubTellApi({ "v1.threads.:id.send.$post": post });
 
@@ -202,7 +202,7 @@ describe("room thread tell command output", () => {
     });
   });
 
-  it("room thread tell --plan sends the composer's /plan command mention", async () => {
+  it("cloudroom thread tell --plan sends the composer's /plan command mention", async () => {
     const post = vi.fn(async () => ({ ok: true }));
     stubTellApi({ "v1.threads.:id.send.$post": post });
 
@@ -254,7 +254,7 @@ describe("room thread tell command output", () => {
     ["file", "localFile", "report.pdf", "application/pdf", false],
     ["file", "localFile", "report with spaces.pdf", "application/pdf", true],
   ] as const)(
-    "room thread tell uploads client %s paths to the target project",
+    "cloudroom thread tell uploads client %s paths to the target project",
     async (flag, type, filename, mimeType, fileUrl) => {
       const clientDir = await mkdtemp(join(tmpdir(), "bb-cli-thread-image-"));
       try {
@@ -339,7 +339,7 @@ describe("room thread tell command output", () => {
     },
   );
 
-  it("room thread tell includes sender thread metadata when run inside another thread", async () => {
+  it("cloudroom thread tell includes sender thread metadata when run inside another thread", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-sender");
     const post = vi.fn(async () => ({ ok: true }));
     stubTellApi({ "v1.threads.:id.send.$post": post });
@@ -359,7 +359,7 @@ describe("room thread tell command output", () => {
     });
   });
 
-  it("room thread tell omits sender metadata when targeting the current thread", async () => {
+  it("cloudroom thread tell omits sender metadata when targeting the current thread", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-self");
     const post = vi.fn(async () => ({ ok: true }));
     stubTellApi({ "v1.threads.:id.send.$post": post });

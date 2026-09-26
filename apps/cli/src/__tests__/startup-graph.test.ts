@@ -46,7 +46,7 @@ interface CliRun {
   urls: string[];
 }
 
-describe("room startup module graph", () => {
+describe("cloudroom startup module graph", () => {
   let tempDir: string;
   let registerHooksPath: string;
   let distEntry: string;
@@ -136,10 +136,10 @@ describe("room startup module graph", () => {
     }
   }, 30_000);
 
-  it("loads only the named command group for `room thread`", async () => {
+  it("loads only the named command group for `cloudroom thread`", async () => {
     const run = await runCli("source", ["thread", "--help"]);
 
-    expect(run.stdout).toContain("Usage: room thread");
+    expect(run.stdout).toContain("Usage: cloudroom thread");
     expect(loaded(run, "/apps/cli/src/commands/thread/index.ts")).toHaveLength(
       1,
     );
@@ -211,10 +211,10 @@ describe("room startup module graph", () => {
       }
     }, 30_000);
 
-    it("loads only the thread chunk for `room thread`", async () => {
+    it("loads only the thread chunk for `cloudroom thread`", async () => {
       const run = await runCli("dist", ["thread", "--help"]);
 
-      expect(run.stdout).toContain("Usage: room thread");
+      expect(run.stdout).toContain("Usage: cloudroom thread");
       expect(loaded(run, `${chunkDirUrl}thread-`)).toHaveLength(1);
 
       const otherGroups = CORE_COMMAND_GROUPS.map((group) => group.name).filter(
@@ -241,7 +241,7 @@ describe("room startup module graph", () => {
                     {
                       name: "inspect",
                       summary: "Inspect a fixture",
-                      usage: "room fixture inspect <id>",
+                      usage: "cloudroom fixture inspect <id>",
                     },
                   ],
                 },
@@ -285,7 +285,7 @@ describe("room startup module graph", () => {
             ["fixture", "inspect", helpFlag],
             serverUrl,
           );
-          expect(run.stdout).toBe("room fixture inspect <id>\n");
+          expect(run.stdout).toBe("cloudroom fixture inspect <id>\n");
         }
         expect(pluginCalls).toBe(0);
 

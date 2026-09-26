@@ -33,7 +33,7 @@ describe("managedBranchPrefixSchema", () => {
   });
 
   it("defaults to the bb namespace", () => {
-    expect(defaultAppSettings.managedBranchPrefix).toBe("room/");
+    expect(defaultAppSettings.managedBranchPrefix).toBe("cloudroom/");
     expect(appSettingsSchema.parse(defaultAppSettings)).toEqual(
       defaultAppSettings,
     );

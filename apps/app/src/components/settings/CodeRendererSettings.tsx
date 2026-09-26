@@ -12,8 +12,8 @@ export function CodeRendererSettings() {
       <ReplacementProviderSetting
         label="Source code"
         triggerAriaLabel="Source code"
-        description="Choose automatic activation, Room's viewer, or a specific plugin on this device."
-        builtInDescription="Syntax highlighting and gutters from the Room code theme."
+        description="Choose automatic activation, Cloudroom's viewer, or a specific plugin on this device."
+        builtInDescription="Syntax highlighting and gutters from the Cloudroom code theme."
         preferenceAtom={sourceCodeRendererProviderAtom}
         slots={sourceCodeRenderers}
       />
@@ -21,7 +21,7 @@ export function CodeRendererSettings() {
         label="Diffs"
         triggerAriaLabel="Diffs"
         description="Applies to file diffs in threads, the diff panel, and plugin views."
-        builtInDescription="Unified and split diffs from the Room code theme."
+        builtInDescription="Unified and split diffs from the Cloudroom code theme."
         preferenceAtom={diffRendererProviderAtom}
         slots={diffRenderers}
       />

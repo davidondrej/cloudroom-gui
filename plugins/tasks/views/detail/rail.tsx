@@ -369,7 +369,7 @@ function DispatchTargetMenu({
             </span>
           ) : (
             <span className="truncate text-muted-foreground">
-              Link a Room project…
+              Link a Cloudroom project…
             </span>
           )}
         </button>

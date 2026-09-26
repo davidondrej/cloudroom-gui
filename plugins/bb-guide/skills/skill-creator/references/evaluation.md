@@ -6,11 +6,11 @@ prompt. Include near-miss prompts when you tune the description.
 Spawn a fresh thread for every test:
 
 ```sh
-room thread spawn --project "$ROOM_PROJECT_ID" --prompt "<test prompt>" --json
-room thread wait <thread-id>
-room thread output <thread-id>
-room thread log <thread-id>
-room thread show <thread-id> --git-diff
+cloudroom thread spawn --project "$ROOM_PROJECT_ID" --prompt "<test prompt>" --json
+cloudroom thread wait <thread-id>
+cloudroom thread output <thread-id>
+cloudroom thread log <thread-id>
+cloudroom thread show <thread-id> --git-diff
 ```
 
 Read the transcript, not only the final answer. Check whether the skill

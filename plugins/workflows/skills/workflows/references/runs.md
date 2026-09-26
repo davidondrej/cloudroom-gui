@@ -2,7 +2,7 @@
 
 ## Running and resuming
 
-`bb_workflow_run` and `room workflows validate` accept exactly one source mode:
+`bb_workflow_run` and `cloudroom workflows validate` accept exactly one source mode:
 
 - `script`: inline JavaScript.
 - `scriptPath`: a relative path or an absolute path confined to the workflow
@@ -18,9 +18,9 @@ rejected. QuickJS receives source text only; it never gets filesystem access.
 Plugin-bundled workflow discovery is not supported.
 
 `bb_workflow_run` also accepts optional JSON `args` and optional `resumeRunId`.
-It returns a durable run ID immediately. Use the compact `room workflows status`
-summary, paged `room workflows history`, `room workflows list`, and
-`room workflows stop` afterward. Completion is sent back as an agent-only input:
+It returns a durable run ID immediately. Use the compact `cloudroom workflows status`
+summary, paged `cloudroom workflows history`, `cloudroom workflows list`, and
+`cloudroom workflows stop` afterward. Completion is sent back as an agent-only input:
 it steers an active origin immediately or starts a turn when the origin is idle,
 without rendering a user-facing message. Delivery is duplicate-tolerant
 at-least-once because `threads.send` has no idempotency key. CLI status polling
@@ -36,7 +36,7 @@ JSONL page on the execution host, then use normal file-navigation tools:
 ```bash
 run=<run-id>
 mkdir -p "$ROOM_THREAD_STORAGE/workflows"
-room workflows history "$run" --cursor 0 --limit 100 \
+cloudroom workflows history "$run" --cursor 0 --limit 100 \
   > "$ROOM_THREAD_STORAGE/workflows/$run.jsonl"
 jq -c 'select(.type == "page")' "$ROOM_THREAD_STORAGE/workflows/$run.jsonl"
 ```
@@ -73,18 +73,18 @@ persisted and visible in workflow history.
 The CLI equivalents are:
 
 ```bash
-room workflows validate --script '<javascript>'
-room workflows validate --file .bb/workflows/review-change.js
-room workflows validate --name review-change
-room workflows run --script '<javascript>' --args '<json>'
-room workflows run --file .bb/workflows/review-change.js --resume <run-id>
-room workflows run --name review-change
-room workflows status <run-id>
-room workflows history <run-id> --cursor 0 --limit 100
-room workflows list --limit 20
-room workflows stop <run-id>
-room provider list --environment "$ROOM_ENVIRONMENT_ID" --json
-room provider models <provider-id> --environment "$ROOM_ENVIRONMENT_ID" --json
+cloudroom workflows validate --script '<javascript>'
+cloudroom workflows validate --file .bb/workflows/review-change.js
+cloudroom workflows validate --name review-change
+cloudroom workflows run --script '<javascript>' --args '<json>'
+cloudroom workflows run --file .bb/workflows/review-change.js --resume <run-id>
+cloudroom workflows run --name review-change
+cloudroom workflows status <run-id>
+cloudroom workflows history <run-id> --cursor 0 --limit 100
+cloudroom workflows list --limit 20
+cloudroom workflows stop <run-id>
+cloudroom provider list --environment "$ROOM_ENVIRONMENT_ID" --json
+cloudroom provider models <provider-id> --environment "$ROOM_ENVIRONMENT_ID" --json
 ```
 
 The CLI's `--file` maps to the agent tool's `scriptPath`, but a relative CLI

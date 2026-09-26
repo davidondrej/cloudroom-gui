@@ -120,6 +120,9 @@ export interface QueuedMessageInlineEditor {
 
 export interface QueuedMessagesListProps {
   attachedToComposer: boolean;
+  reorderable?: boolean;
+  /** Shows the "send together" divider. Cloud cores cannot group queued messages yet. */
+  groupable?: boolean;
   queuedMessages: readonly ThreadQueuedMessage[];
   resolveMentionLink?: PromptMentionLinkResolver;
   sendAction: QueuedMessageSendAction;
@@ -152,6 +155,7 @@ interface QueuedMessageRowProps {
   isProcessing: boolean;
   processingLabel: string;
   dragDisabled: boolean;
+  showDragHandle: boolean;
   sendAction: QueuedMessageSendAction;
   sendDisabled: boolean;
   actionDisabled: boolean;
@@ -293,11 +297,13 @@ const QUEUED_MARKDOWN_COMPONENTS: Components = {
   h6: ({ children }) => (
     <span className="font-semibold text-foreground">{children} </span>
   ),
+  hr: () => " ",
   img: ({ alt }) => (alt ? <span>{alt}</span> : null),
   li: ({ children }) => <span>{children} </span>,
   ol: ({ children }) => <span>{children}</span>,
   p: ({ children }) => compactInline(children),
   pre: ({ children }) => <span>{children}</span>,
+  section: ({ children }) => <span>{children}</span>,
   table: ({ children }) => <span>{children}</span>,
   tbody: ({ children }) => <span>{children}</span>,
   td: ({ children }) => <span>{children} </span>,
@@ -754,6 +760,7 @@ const QueuedMessageRow = memo(function QueuedMessageRow({
   isProcessing,
   processingLabel,
   dragDisabled,
+  showDragHandle,
   sendAction,
   sendDisabled,
   actionDisabled,
@@ -825,7 +832,7 @@ const QueuedMessageRow = memo(function QueuedMessageRow({
       )}
     >
       <div className="flex items-center gap-1.5">
-        <Button
+        {showDragHandle ? <Button
           ref={setActivatorNodeRef}
           type="button"
           variant="ghost"
@@ -848,7 +855,7 @@ const QueuedMessageRow = memo(function QueuedMessageRow({
             )}
             aria-hidden="true"
           />
-        </Button>
+        </Button> : null}
         <div
           className={cn(
             "min-w-0 flex-1 py-1",
@@ -856,6 +863,17 @@ const QueuedMessageRow = memo(function QueuedMessageRow({
           )}
         >
           <div className="flex min-w-0 items-center gap-1">
+            {queuedMessage.hardQueue === true ? (
+              <span
+                data-queued-message-hard-queue=""
+                className="inline-flex shrink-0 text-subtle-foreground"
+                role="img"
+                aria-label="Hard Queue"
+                title="Hard Queue: sends after all child threads finish"
+              >
+                <Icon name="Lock" className="size-3" aria-hidden />
+              </span>
+            ) : null}
             <QueuedMessagePreview
               compact={compact}
               queuedMessage={queuedMessage}
@@ -1201,6 +1219,8 @@ export function QueuedMessagesPendingCard({
 
 export function QueuedMessagesList({
   attachedToComposer,
+  reorderable = true,
+  groupable = true,
   queuedMessages,
   resolveMentionLink,
   sendAction,
@@ -1422,15 +1442,15 @@ export function QueuedMessagesList({
   }, [orderedMessages]);
   const combinedIds = useMemo(() => {
     const ids = orderedMessages.map((queuedMessage) => queuedMessage.id);
-    if (ids.length < 2) return ids;
+    if (ids.length < 2 || !reorderable || !groupable) return ids;
     return [
       ...ids.slice(0, groupBoundaryIndex + 1),
       GROUP_DIVIDER_ID,
       ...ids.slice(groupBoundaryIndex + 1),
     ];
-  }, [groupBoundaryIndex, orderedMessages]);
+  }, [groupBoundaryIndex, groupable, orderedMessages, reorderable]);
   const sortingDisabled =
-    actionDisabled || processingMessageId !== null || queuedMessages.length < 2;
+    !reorderable || actionDisabled || processingMessageId !== null || queuedMessages.length < 2;
   const sortableIds = useMemo(
     () =>
       inlineEditor
@@ -1707,6 +1727,7 @@ export function QueuedMessagesList({
           isProcessing={processingMessageId === queuedMessage.id}
           processingLabel={processingLabel}
           dragDisabled={sortingDisabled || inlineEditor !== undefined}
+          showDragHandle={reorderable}
           sendAction={sendAction}
           sendDisabled={sendDisabled}
           actionDisabled={actionDisabled}

@@ -87,6 +87,7 @@ import {
 } from "./thread-send.js";
 import type { TurnRequestRetryMarker } from "./thread-events.js";
 import { restoreInterruptedThreadStartupRequest } from "./thread-provisioning.js";
+import { isHardQueueHeld } from "./thread-parent.js";
 
 export const pendingThreadStartContextSchema = z.object({
   environmentIntent: threadProvisionEnvironmentIntentSchema,
@@ -399,6 +400,15 @@ async function runDispatchAttempt(
 
     if (thread.status === "stopping") {
       continued.outcome = waitOn({ kind: "stopping" }, null);
+      return;
+    }
+
+    if (
+      !sendNow &&
+      claimed?.some((row) => row.hardQueue) === true &&
+      isHardQueueHeld(deps.db, thread)
+    ) {
+      continued.outcome = waitOn({ kind: "thread-busy" }, null);
       return;
     }
 

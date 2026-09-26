@@ -140,6 +140,7 @@ import {
 } from "./sortableMotion";
 import type { ConsumeDragClickSuppression } from "@/components/ui/use-drag-click-suppression";
 import type { NeighborReorderRequest } from "@bb/client-core";
+import type { SidebarSectionComparator } from "./sidebarSectionSort";
 import { SidebarChildToggleChevron } from "./SidebarChildToggleChevron";
 import { SidebarSectionOrderList } from "./SidebarSectionOrderList";
 import {
@@ -224,7 +225,7 @@ interface ProjectThreadTreeProps {
 
 interface SectionThreadTreeProps {
   threadListState: ProjectThreadListState;
-  compareThreads: ThreadComparator;
+  compareThreadsForSection: SidebarSectionComparator;
   sections?: readonly SidebarSectionDefinition[];
   selectedThreadId?: string;
   collapsedThreadIds: Set<string>;
@@ -1515,6 +1516,7 @@ const SectionTreeItemRow = memo(function SectionTreeItemRow({
     const topLevelActions = (
       <SidebarHeaderControls
         label={`${section.name} section`}
+        sectionId={buildSidebarEntitySectionId("section", section.id)}
         onNewThread={
           onCreateThreadInSection
             ? () => onCreateThreadInSection(section.id)
@@ -1571,6 +1573,7 @@ const SectionTreeItemRow = memo(function SectionTreeItemRow({
       )}
     >
       <SidebarSectionRow
+        sectionId={buildSidebarEntitySectionId("section", section.id)}
         name={section.name}
         label={section.name}
         depth={headerDepth}
@@ -2131,7 +2134,7 @@ export const ProjectThreadTree = memo(function ProjectThreadTree({
 export const ChronologicalSectionThreadSections = memo(
   function ChronologicalSectionThreadSections({
     threadListState,
-    compareThreads,
+    compareThreadsForSection,
     sections = EMPTY_THREAD_SECTIONS,
     selectedThreadId,
     collapsedThreadIds,
@@ -2167,11 +2170,15 @@ export const ChronologicalSectionThreadSections = memo(
       () =>
         buildSectionThreadList(
           threads,
-          compareThreads,
+          compareThreadsForSection("threads"),
           sections,
           draftThreadIds,
+          (sectionId) =>
+            compareThreadsForSection(
+              buildSidebarEntitySectionId("section", sectionId),
+            ),
         ),
-      [threads, compareThreads, sections, draftThreadIds],
+      [threads, compareThreadsForSection, sections, draftThreadIds],
     );
     const persistedSectionItems = rootItems.filter(
       (item) => item.kind === "section",
@@ -2190,7 +2197,7 @@ export const ChronologicalSectionThreadSections = memo(
       onReorderPinnedThread,
     });
     const renderedSectionDnd = useRenderedSectionThreadDnd({
-      compareThreads,
+      compareThreadsForSection,
       draftThreadIds,
       pinnedRootNodes,
       pinnedThreads,
@@ -2417,6 +2424,7 @@ function ProjectRowComponent({
   const projectActions = (
     <SidebarHeaderControls
       label={project.name}
+      sectionId={buildSidebarEntitySectionId("project", project.id)}
       showNewThread={!isLocalPathInvalid}
       onNewThread={onCreateProjectThread ? handleCreateThread : undefined}
       onOpenChange={setIsDropdownActionsOpen}

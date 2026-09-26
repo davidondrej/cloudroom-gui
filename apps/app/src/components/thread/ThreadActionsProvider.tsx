@@ -83,7 +83,7 @@ interface ThreadActionContext {
   childThreadCount: number;
 }
 
-const ARCHIVE_UNDO_TOAST_DURATION_MS = 10_000;
+const ARCHIVE_UNDO_TOAST_DURATION_MS = 8_000;
 
 export function ThreadActionsProvider({
   children,

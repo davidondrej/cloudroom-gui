@@ -25,6 +25,7 @@ export interface SidebarDropPreviewPlacement {
 interface ResolveSidebarDropPreviewPlacementArgs {
   activeThread: ThreadListEntry;
   compareThreads: ThreadComparator | undefined;
+  compareSectionThreads?: (sectionId: string) => ThreadComparator;
   draftThreadIds: ReadonlySet<string>;
   pinnedRootNodes: readonly ProjectThreadNode[];
   sections: readonly SidebarSectionDefinition[];
@@ -117,6 +118,7 @@ function nodesToItems(
 export function resolveSidebarDropPreviewPlacement({
   activeThread,
   compareThreads,
+  compareSectionThreads,
   draftThreadIds,
   pinnedRootNodes,
   sections,
@@ -191,6 +193,7 @@ export function resolveSidebarDropPreviewPlacement({
       compareThreads,
       sections,
       draftThreadIds,
+      compareSectionThreads,
     );
     const parentNode = findThreadNode(projected, target.parentThreadId);
     return {
@@ -210,6 +213,7 @@ export function resolveSidebarDropPreviewPlacement({
     compareThreads,
     sections,
     draftThreadIds,
+    compareSectionThreads,
   );
   const siblings =
     target.parentKey === CHRONOLOGICAL_CONTAINER_ID

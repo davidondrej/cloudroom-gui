@@ -3,10 +3,10 @@
 ### Trusted frontend content scripts
 
 `app.contentScripts.register({ id, mount })` runs ordinary
-bundled JavaScript/TypeScript in the room app shell without a React slot. It is
+bundled JavaScript/TypeScript in the cloudroom app shell without a React slot. It is
 full-trust, same-origin page code — **not a security sandbox**. It can access
 the app DOM and any authenticated client state available to ordinary page
-code, so install only plugins you trust. room does not use `eval`, `Function`,
+code, so install only plugins you trust. cloudroom does not use `eval`, `Function`,
 or persisted source strings: the existing `bb.app` build emits a normal CSP-
 compatible ESM bundle.
 
@@ -19,7 +19,7 @@ explicit thread row with `{ icon, label, tone? }` or clears it with `null`.
 Use `tone: "running"` for the host's animated running treatment. The host
 scopes statuses to the calling plugin and automatically clears them when that
 frontend generation deactivates; feature-detect the setter for compatibility
-with older room clients.
+with older cloudroom clients.
 
 A script may return nothing, a disposer, or a promise of either; async mount
 setup is time-boxed to 10 seconds. Keep long-running work outside the returned
@@ -74,12 +74,12 @@ Slot props contracts (versioned, additive-only):
   settings sections.
 - `experimental_appOverlay` → `{}` (deliberately no props). An additive,
   app-wide React owner for floating plugin UI. Registration:
-  `{ id, component }`. Room mounts every registration once per app window
+  `{ id, component }`. Cloudroom mounts every registration once per app window
   through `PluginSlotMount`, outside route-owned layout regions. The component
   can therefore call app-level SDK hooks, including the sidebar thread data and
   action hooks, and keep their React contexts through a portal. Hooks whose
   contract requires a particular surface, including `useComposer` and
-  `useComposerView`, remain limited to that surface. Room supplies no chrome,
+  `useComposerView`, remain limited to that surface. Cloudroom supplies no chrome,
   positioning, visibility, focus, or responsive behavior; render fixed UI
   directly or use the vendored responsive overlay primitives. A crash hides
   only that overlay. Use a content script instead for DOM enhancement that does
@@ -94,10 +94,10 @@ Slot props contracts (versioned, additive-only):
   routing).
   Registration:
   `{ id, title, icon, path, component, fixedTabs?, experimental_sidebarAccessory?, headerContent? }`.
-  Room automatically wraps every plugin page in the same host-owned App panel
+  Cloudroom automatically wraps every plugin page in the same host-owned App panel
   used by New thread and thread pages. The page component supplies only its
   main body; it must not mount a second panel layout or register Browser and
-  Terminal itself. Room owns the desktop split, compact drawer, header/panel
+  Terminal itself. Cloudroom owns the desktop split, compact drawer, header/panel
   toggle, resizing, tab strip, persistence, and the shared `panel.toggle`,
   `panel.newTab`, `panel.reopenClosedTab`, and `terminal.open` keyboard
   commands.
@@ -112,14 +112,14 @@ Slot props contracts (versioned, additive-only):
   is page-session UI state, not plugin storage.
 
   Browser and Terminal tabs are normal host content tabs. Closing the final
-  content tab closes an otherwise empty panel; if fixed tabs remain, Room falls
+  content tab closes an otherwise empty panel; if fixed tabs remain, Cloudroom falls
   back to the first one instead. Hydration closes an open panel when no durable
   tab survived.
 
   `fixedTabs` declares ordered, non-closable page views in that
   same host tab strip:
   `{ id, panelId, title, icon, component, layout?, experimental_target? }`.
-  Room opens the
+  Cloudroom opens the
   first fixed tab on the page's first wide-layout visit, but remembers a later
   user close. One tab is active per visible split pane, so multiple fixed-tab
   components can be mounted concurrently. A component mounts only while its
@@ -133,7 +133,7 @@ Slot props contracts (versioned, additive-only):
   Every registration's `panelId` must exactly match its containing nav panel's
   `id`; the registration is also the stable reference for selecting that
   plugin-owned tab. A targetable tab declares
-  `experimental_target: { validate(value): value is Target }`; Room checks JSON
+  `experimental_target: { validate(value): value is Target }`; Cloudroom checks JSON
   safety before calling the owner validator. From any component of the same
   plugin on that page, call
   `experimental_useAppPanel().openFixedTab({ surface: { kind: "current" }, tab,
@@ -219,10 +219,10 @@ target? })`. Inside the fixed-tab component,
   the app sidebar footer. Both variants take `{ id, label, icon }`. An action
   adds `{ kind: "action", onActivate }`; its callback receives
   `openPluginDetails()`. A disclosure adds
-  `{ kind: "disclosure", component }`; room toggles that component above the
+  `{ kind: "disclosure", component }`; cloudroom toggles that component above the
   row and passes it only `{ dismiss }`. A disclosure registration returns a
   controller that requests `open`, `close`, or `toggle`; an action registration
-  returns nothing. Room keeps only one disclosure open across all plugins.
+  returns nothing. Cloudroom keeps only one disclosure open across all plugins.
   The component owns everything inside, including tabs and navigation.
   Experimental: see `docs/api_to_audit.md`.
 - `sidebarFooterAction` → compatibility API for a host-rendered footer action.
@@ -235,18 +235,18 @@ target? })`. Inside the fixed-tab component,
   `{ id, title, description?, component }`. The component receives semantic
   host items, the active item id, the compact-viewport state,
   `experimental_activate`, and `experimental_Original`. Search activation opens
-  the quick palette. No inline search field or query state exists. Room keeps the
+  the quick palette. No inline search field or query state exists. Cloudroom keeps the
   drawer, thread list, footer, resize handle, and shortcut ownership.
 - `fileOpener` → `{ path: string, source, experimental_lineRange?, Original }` — register as a viewer/editor
   for file extensions: `{ id, title, extensions: ["md"], component }`.
   Matching files use the first applicable opener in deterministic slot order
-  by default. Users can pin Room's preview or a specific opener per extension
+  by default. Users can pin Cloudroom's preview or a specific opener per extension
   under Settings → "File openers", and
   right-clicking a file link in rendered markdown offers a one-off
   "Open with …" choice; matching files opened in the right panel then
   render your component in a plugin tab instead of the built-in preview —
   this includes links clicked in rendered markdown, the file picker, and
-  `room thread open`. `source` is
+  `cloudroom thread open`. `source` is
   `{ kind: "workspace" | "host" | "thread-storage", threadId, environmentId,
 projectId, experimental_hostId? }` (nullable fields). The optional host ID
   selects a project-backed workspace host and persists in opener-tab parameters.
@@ -258,7 +258,7 @@ projectId, experimental_hostId? }` (nullable fields). The optional host ID
   identical range in the active tab. Apply the latest target after loading
   and on subsequent requests without replacing the editor model; null means
   no requested navigation.
-  `Original` is Room's preview bound to this file; render it to
+  `Original` is Cloudroom's preview bound to this file; render it to
   delegate conditionally without re-entering plugin replacement resolution.
   Applies only to live file content — git-ref snapshots and deleted files
   always use the built-in preview, and a removed/disabled opener degrades

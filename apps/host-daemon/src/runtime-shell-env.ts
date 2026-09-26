@@ -20,7 +20,7 @@ interface PrepareRuntimeShellEnvOptions {
   inheritedPath?: string;
 }
 
-interface ResolveUserShellPathOptions {
+interface ResolveUserShellEnvOptions {
   env?: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;
   spawnUserShellEnv?: SpawnUserShellEnv;
@@ -57,7 +57,7 @@ const USER_SHELL_ENV_TIMEOUT_MS = 3_000;
 const USER_SHELL_ENV_FORCE_KILL_AFTER_MS = 1_000;
 
 function getDefaultCliExecutablePath(): string {
-  return fileURLToPath(new URL("../../cli/bin/room", import.meta.url));
+  return fileURLToPath(new URL("../../cli/bin/cloudroom", import.meta.url));
 }
 
 function getDefaultCliRuntimePath(): string {
@@ -295,7 +295,9 @@ function userShellEnvArgSets(shell: string): string[][] {
   ];
 }
 
-function parsePathFromUserShellEnv(stdout: string): string | null {
+const ENV_LINE_PATTERN = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/u;
+
+function parseUserShellEnv(stdout: string): Record<string, string> | null {
   const lines = stdout.split(/\r?\n/u);
   const startIndex = lines.findIndex(
     (line) => line.trim() === SHELL_ENV_START_MARKER,
@@ -310,20 +312,58 @@ function parsePathFromUserShellEnv(stdout: string): string | null {
     return null;
   }
 
+  const env: Record<string, string> = {};
+  let lastKey: string | undefined;
   for (const line of lines.slice(startIndex + 1, endIndex)) {
-    if (!line.startsWith("PATH=")) {
-      continue;
+    const match = ENV_LINE_PATTERN.exec(line);
+    if (match) {
+      lastKey = match[1];
+      env[lastKey] = match[2];
+    } else if (lastKey !== undefined) {
+      // `env` prints multi-line values as raw continuation lines.
+      env[lastKey] += `\n${line}`;
     }
-    const pathValue = line.slice("PATH=".length).trim();
-    return pathValue.length > 0 ? pathValue : null;
   }
-  return null;
+  const path = env.PATH?.trim();
+  if (!path) {
+    return null;
+  }
+  env.PATH = path;
+  return env;
 }
 
-async function resolveUserShellPathWithPrevious(
-  options: ResolveUserShellPathOptions,
-  previousPath: string | null,
-): Promise<string | null> {
+// Vars owned by Cloudroom, the probe shell, or Node (NODE_OPTIONS would also
+// load into Cloudroom's own bridge processes). Everything else in the user's
+// login shell (API keys, tool config) reaches provider processes, the same as
+// when the user runs those CLIs in their terminal.
+const NON_PROVIDER_SHELL_ENV_KEYS = new Set([
+  "NODE_ENV",
+  "NODE_OPTIONS",
+  "OLDPWD",
+  "PATH",
+  "PWD",
+  "SHLVL",
+  "_",
+]);
+
+export function providerEnvFromUserShell(
+  shellEnv: Record<string, string>,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(shellEnv).filter(
+      ([key]) =>
+        !NON_PROVIDER_SHELL_ENV_KEYS.has(key) &&
+        !key.startsWith("BB_") &&
+        !key.startsWith("ROOM_") &&
+        !key.startsWith("ELECTRON_"),
+    ),
+  );
+}
+
+async function resolveUserShellEnvWithPrevious(
+  options: ResolveUserShellEnvOptions,
+  previousEnv: Record<string, string> | null,
+): Promise<Record<string, string> | null> {
   const env = options.env ?? process.env;
   const shell = resolveUserShellCommand(
     env,
@@ -348,31 +388,34 @@ async function resolveUserShellPathWithPrevious(
       result.signal !== null ||
       result.status !== 0
     ) {
-      if (index === 0 && previousPath !== null) {
-        return previousPath;
+      if (index === 0 && previousEnv !== null) {
+        return previousEnv;
       }
       continue;
     }
-    const path = parsePathFromUserShellEnv(result.stdout);
-    if (path !== null) {
-      return path;
+    const shellEnv = parseUserShellEnv(result.stdout);
+    if (shellEnv !== null) {
+      return shellEnv;
     }
-    if (index === 0 && previousPath !== null) {
-      return previousPath;
+    if (index === 0 && previousEnv !== null) {
+      return previousEnv;
     }
   }
 
   return null;
 }
 
-export function createUserShellPathResolver(
-  options: ResolveUserShellPathOptions = {},
-): () => Promise<string | null> {
-  let previousPath: string | null = null;
+export function createUserShellEnvResolver(
+  options: ResolveUserShellEnvOptions = {},
+): () => Promise<Record<string, string> | null> {
+  let previousEnv: Record<string, string> | null = null;
   return async () => {
-    const path = await resolveUserShellPathWithPrevious(options, previousPath);
-    if (path !== null) previousPath = path;
-    return path;
+    const shellEnv = await resolveUserShellEnvWithPrevious(
+      options,
+      previousEnv,
+    );
+    if (shellEnv !== null) previousEnv = shellEnv;
+    return shellEnv;
   };
 }
 
@@ -396,7 +439,7 @@ export async function resolveLocalBbExecutablePath(
 export function resolveBbExecutablePathInDirectory(
   bbExecutableDirectory: string,
 ): string {
-  return resolve(bbExecutableDirectory, "room");
+  return resolve(bbExecutableDirectory, "cloudroom");
 }
 
 export function prepareRuntimeShellEnv(

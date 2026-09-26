@@ -1,5 +1,3 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
 import {
   mkdir,
@@ -7,7 +5,6 @@ import {
   rename,
   rm,
   writeFile,
-  symlink,
   access,
 } from "node:fs/promises";
 import { homedir, hostname } from "node:os";
@@ -184,21 +181,13 @@ export async function enrollMachine(
   )
     throw new Error("Refusing to overwrite a different machine identity");
   async function prepareRuntime(): Promise<void> {
-    await reservePort(dataDir);
     const launcher = join(dataDir, "npm", "bin", "bb-app");
-    try {
-      await access(launcher);
-    } catch {
-      const result = await promisify(execFile)(
-        "sh",
-        ["-c", "command -v bb-app"],
-        { env },
-      ).catch(() => null);
-      if (result?.stdout.trim()) {
-        await mkdir(join(dataDir, "npm", "bin"), { recursive: true });
-        await symlink(result.stdout.trim(), launcher);
-      }
-    }
+    await access(launcher).catch(() => {
+      throw new Error(
+        `Cloudroom's host package is missing at ${launcher}. Rerun the machine installer.`,
+      );
+    });
+    await reservePort(dataDir);
   }
   if (auth) {
     if (!config.serverUrl)

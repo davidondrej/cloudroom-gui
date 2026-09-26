@@ -381,20 +381,20 @@ legacy_service_slug=$(printf '%s' "$server_host" | tr '.' '-')
 # serve several bb servers and a full local bb install keeps ~/.bb to itself.
 data_dir=${BB_DATA_DIR:-"$HOME/.bb-machines/$server_host"}
 mkdir -p "$HOME/.local/bin"
-if [ ! -e "$HOME/.local/bin/room" ] && [ ! -L "$HOME/.local/bin/room" ]; then
+if [ ! -e "$HOME/.local/bin/cloudroom" ] && [ ! -L "$HOME/.local/bin/cloudroom" ]; then
   shim_file=$(mktemp "$HOME/.local/bin/.bb-machine.XXXXXX")
   node_path_quoted=$(printf '%s' "${node_bin%/*}" | sed "s/'/'\\''/g")
   printf '#!/bin/sh\nPATH=\047%s\047:"$PATH"\nexport PATH\n' "$node_path_quoted" > "$shim_file"
-  cli_path_quoted=$(printf '%s' "$data_dir/npm/bin/room" | sed "s/'/'\\''/g")
+  cli_path_quoted=$(printf '%s' "$data_dir/npm/bin/cloudroom" | sed "s/'/'\\''/g")
   cat >> "$shim_file" <<'BB_MACHINE_EXPLICIT_DATA'
-if [ -n "${ROOM_DATA_DIR:-}" ] && [ -x "$ROOM_DATA_DIR/npm/bin/room" ]; then
-  exec "$ROOM_DATA_DIR/npm/bin/room" "$@"
+if [ -n "${ROOM_DATA_DIR:-}" ] && [ -x "$ROOM_DATA_DIR/npm/bin/cloudroom" ]; then
+  exec "$ROOM_DATA_DIR/npm/bin/cloudroom" "$@"
 fi
 BB_MACHINE_EXPLICIT_DATA
   printf 'if [ -x \047%s\047 ]; then exec \047%s\047 "$@"; fi\n' "$cli_path_quoted" "$cli_path_quoted" >> "$shim_file"
   cat >> "$shim_file" <<'BB_MACHINE_CLI'
 unset ROOM_DATA_DIR
-for candidate in "$HOME"/.bb-machines/*/npm/bin/room; do
+for candidate in "$HOME"/.bb-machines/*/npm/bin/cloudroom; do
   if [ -x "$candidate" ]; then exec "$candidate" "$@"; fi
 done
 if [ "${1:-}" = machine ] && [ "${2:-}" = uninstall ]; then exit 0; fi
@@ -402,8 +402,8 @@ printf '%s\n' 'No installed Cloudroom machine CLI is available.' >&2
 exit 1
 BB_MACHINE_CLI
   chmod 755 "$shim_file"
-  if ! ln "$shim_file" "$HOME/.local/bin/room" 2>/dev/null; then
-    if [ ! -e "$HOME/.local/bin/room" ] && [ ! -L "$HOME/.local/bin/room" ]; then
+  if ! ln "$shim_file" "$HOME/.local/bin/cloudroom" 2>/dev/null; then
+    if [ ! -e "$HOME/.local/bin/cloudroom" ] && [ ! -L "$HOME/.local/bin/cloudroom" ]; then
       rm -f "$shim_file"
       fail_step "Could not publish the machine CLI shim."
       exit 1
@@ -542,9 +542,8 @@ host_daemon_port_temp="$host_daemon_port_file.$$.tmp"
 mv "$host_daemon_port_temp" "$host_daemon_port_file"
 complete_step "Using local host-daemon port $host_daemon_port"
 
-# The server's own build is always installed when it offers one: version
-# strings cannot distinguish unpublished builds, so an existing bb-app is
-# trusted only when the server provides no package (404) or is unreachable.
+# Always install the server's own build. Never fall back to a bb-app on PATH
+# or on npm: that could be other people's software (ADR 0147).
 package_url="${server_url%/}/install/bb-app.tgz"
 package_dir=$(mktemp -d "${TMPDIR:-/tmp}/bb-app.XXXXXX")
 package_file="$package_dir/bb-app.tgz"
@@ -558,7 +557,7 @@ package_headers="$package_dir/headers"
 host_artifact_digest_file="$data_dir/host-artifact.sha256"
 installed_artifact_digest=
 if [ -x "$machine_npm_prefix/bin/bb-app" ] && \
-   [ -x "$machine_npm_prefix/bin/room" ] && \
+   [ -x "$machine_npm_prefix/bin/cloudroom" ] && \
    [ -f "$machine_npm_prefix/lib/node_modules/bb-app/host-daemon/dist/daemon-bundle.mjs" ]; then
   installed_artifact_digest=$(node -e '
     const fs = require("node:fs");
@@ -636,29 +635,9 @@ elif [ "$package_status" -ge 200 ] && [ "$package_status" -lt 300 ]; then
   fi
   bb_app_npm_prefix=$machine_npm_prefix
   complete_step "Installed the server's bb-app build"
-elif command -v bb-app >/dev/null 2>&1; then
-  rm -f "$host_artifact_digest_file"
-  bb_app=$(command -v bb-app)
-  if [ "$package_status" = 404 ]; then
-    warning_step "The server does not provide its bb-app package; using bb-app at $bb_app"
-  else
-    warning_step "Could not download the server's bb-app package (HTTP $package_status); using bb-app at $bb_app"
-  fi
-elif [ "$package_status" = 404 ]; then
-  require_npm
-  rm -f "$host_artifact_digest_file"
-  warning_step "The server does not provide its bb-app package"
-  active_step "Installing bb-app from the npm registry"
-  if ! npm install -g "$bb_app_allow_scripts" --prefix "$machine_npm_prefix" bb-app; then
-    rm -rf "$package_dir"
-    fail_step "Could not install bb-app for this machine. Check the npm error above, then rerun this command."
-    exit 1
-  fi
-  bb_app_npm_prefix=$machine_npm_prefix
-  complete_step "Installed bb-app from the npm registry"
 else
   rm -rf "$package_dir"
-  fail_step "Could not download the server's bb-app package from $package_url (HTTP $package_status)."
+  fail_step "Could not download the server's bb-app package from $package_url (HTTP $package_status). Check that the server is running and up to date, then rerun this command."
   exit 1
 fi
 rm -rf "$package_dir"
@@ -689,14 +668,14 @@ if [ -n "$bb_app_npm_prefix" ]; then
   fi
 fi
 
-bb_cli="${bb_app%/*}/room"
+bb_cli="${bb_app%/*}/cloudroom"
 if [ ! -x "$bb_cli" ]; then bb_cli=$(command -v room || true); fi
 if [ -n "$bootstrap_env" ]; then
   if [ -z "$bb_cli" ]; then
     fail_step "The installed build does not provide the machine enrollment CLI."
     exit 1
   fi
-  BB_ENROLLMENT="$bootstrap_payload" ROOM_DATA_DIR="$data_dir" "$bb_cli" machine enroll --bootstrap-env BB_ENROLLMENT
+  ROOM_ENROLLMENT="$bootstrap_payload" ROOM_DATA_DIR="$data_dir" "$bb_cli" machine enroll --bootstrap-env ROOM_ENROLLMENT
   bootstrap_payload=
 fi
 

@@ -358,7 +358,7 @@ describe("buildPluginApp", () => {
     expect(result.jsPath).toBe(join(root, "dist", "app.js"));
   });
 
-  it("builds the `room plugin new` scaffold end to end", async () => {
+  it("builds the `cloudroom plugin new` scaffold end to end", async () => {
     const targetDir = join(root, "bb-plugin-scaffolded");
     await scaffoldPlugin({
       targetDir,

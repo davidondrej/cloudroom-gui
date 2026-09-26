@@ -152,11 +152,11 @@ export function registerUpdatesCommands(
 ): void {
   const updates = program
     .command("updates")
-    .description("Inspect and apply room and provider CLI updates");
+    .description("Inspect and apply Cloudroom and provider CLI updates");
 
   updates
     .command("status", { isDefault: true })
-    .description("Show room and provider CLI update status across machines")
+    .description("Show Cloudroom and provider CLI update status across machines")
     .option("--machine <id-or-name>", "Limit to one machine")
     .option("--json", "Print machine-readable JSON output")
     .action(
@@ -228,7 +228,7 @@ export function registerUpdatesCommands(
           );
           console.log(
             hasManualUpdates
-              ? "No updates room can apply. Run room updates status for manual updates."
+              ? "No updates cloudroom can apply. Run cloudroom updates status for manual updates."
               : "Everything is up to date.",
           );
           return;

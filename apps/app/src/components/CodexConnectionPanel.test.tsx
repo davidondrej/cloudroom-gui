@@ -58,7 +58,6 @@ it("keeps the saved task pending until cloud verification, then retries it once"
   vi.mocked(sdk.cloudroom.codexAuth).mockImplementation(async () => current);
   vi.mocked(sdk.cloudroom.codexLogin).mockImplementation(async () => { current = waiting; return current; });
   const client = mount();
-  fireEvent.click(await screen.findByRole("button", { name: "Later" }));
   openCodexConnection("thread-pending");
   fireEvent.click(await screen.findByRole("button", { name: "Sign in with ChatGPT" }));
   await screen.findByText("TEST-1234");
@@ -77,22 +76,27 @@ it("cancels only the pending login and never sends the task", async () => {
   vi.mocked(sdk.cloudroom.codexAuth).mockImplementation(async () => current);
   vi.mocked(sdk.cloudroom.cancelCodexLogin).mockImplementation(async () => { current = missing; return current; });
   mount();
+  openCodexConnection();
   fireEvent.click(await screen.findByRole("button", { name: "Cancel sign-in" }));
   await screen.findByRole("button", { name: "Sign in with ChatGPT" });
   expect(sdk.cloudroom.cancelCodexLogin).toHaveBeenCalledExactlyOnceWith("attempt");
   expect(sdk.cloudroom.retryStart).not.toHaveBeenCalled();
   expect(openUrlInExternalBrowser).not.toHaveBeenCalled();
 });
-it("offers retry for expired login, but not another login for network or quota failures", async () => {
+it("offers retry for expired login, another account for quota, and no login for network failures", async () => {
   let current: Status = { ...missing, state: "expired", message: "Sign-in expired. Try again." };
   vi.mocked(sdk.cloudroom.codexAuth).mockImplementation(async () => current);
   const client = mount();
+  openCodexConnection();
   await screen.findByRole("button", { name: "Sign in with ChatGPT" });
-  for (const state of ["unavailable", "limited"] as const) {
-    current = { ...missing, state, message: state === "limited" ? "Usage limit reached" : "Network unavailable" };
-    await client.invalidateQueries({ queryKey: ["cloudroom-codex-auth"] });
-    await screen.findByText(current.message!);
-    expect(screen.queryByRole("button", { name: "Sign in with ChatGPT" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Check again" })).toBeDefined();
-  }
+  current = { ...missing, state: "unavailable", message: "Network unavailable" };
+  await client.invalidateQueries({ queryKey: ["cloudroom-codex-auth"] });
+  await screen.findByText(current.message!);
+  expect(screen.queryByRole("button", { name: /Sign in/u })).toBeNull();
+  expect(screen.getByRole("button", { name: "Check again" })).toBeDefined();
+  current = { ...missing, state: "limited", message: "Usage limit reached" };
+  await client.invalidateQueries({ queryKey: ["cloudroom-codex-auth"] });
+  await screen.findByText(current.message!);
+  expect(screen.getByRole("button", { name: "Sign in with another account" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Check again" })).toBeDefined();
 });

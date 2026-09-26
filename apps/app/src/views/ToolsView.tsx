@@ -178,7 +178,7 @@ function PluginDetailToolView({ pluginId }: { pluginId: string }) {
     onSuccess: (_data, deletedPlugin) => {
       const isLocal = pluginIsLocalSource(deletedPlugin);
       pluginToast.success(
-        isLocal ? "Plugin removed from Room" : "Plugin uninstalled",
+        isLocal ? "Plugin removed from Cloudroom" : "Plugin uninstalled",
         deletedPlugin,
         "catalog",
       );
@@ -368,7 +368,7 @@ function PluginDetailToolView({ pluginId }: { pluginId: string }) {
               <ConfirmDeleteDialogContent
                 title={
                   pluginIsLocalSource(deleteTarget)
-                    ? "Remove plugin from Room?"
+                    ? "Remove plugin from Cloudroom?"
                     : "Uninstall plugin?"
                 }
                 description={pluginRemovalDescription(deleteTarget)}

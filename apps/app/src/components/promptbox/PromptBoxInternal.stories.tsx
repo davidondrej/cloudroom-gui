@@ -54,6 +54,7 @@ const idleVoice: PromptVoiceConfig = {
   stream: null,
   start: noop,
   stop: noop,
+  stopAndSend: noop,
   cancel: noop,
 };
 

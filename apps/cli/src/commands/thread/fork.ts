@@ -111,7 +111,7 @@ export function registerForkCommand(
     )
     .option(
       "--base-branch <branch>",
-      "Exact Git ref; omit for Room's project default (use origin/<branch> for a remote ref)",
+      "Exact Git ref; omit for Cloudroom's project default (use origin/<branch> for a remote ref)",
     )
     .option("--permission-mode <mode>", PERMISSION_MODE_HELP)
     .option("--visibility <visibility>", "Thread visibility: visible or hidden")

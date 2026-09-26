@@ -190,6 +190,28 @@ export const KNOWN_ACP_AGENTS: readonly AcpAgentDefinition[] = [
     nativeRootsResolver: resolveGrokNativeRoots,
   },
   {
+    id: "acp-fx",
+    displayName: "fx",
+    icon: declaredIcon("fx"),
+    signInCommand: "fx login",
+    installUrl: "https://fx.sh",
+    visibility: "installed",
+    dialect: "fx",
+    fork: "none",
+    primaryModels: [
+      "anthropic/claude-opus-5.5",
+      "anthropic/claude-sonnet-5",
+      "openai/gpt-6-sol",
+      "spacexai/grok-4.7",
+    ],
+    launch: {
+      displayName: "fx",
+      command: "fx",
+      args: ["acp"],
+      env: { FX_PERMISSION_MODE: "full-access" },
+    },
+  },
+  {
     id: "acp-hermes-agent",
     displayName: "Hermes Agent",
     icon: declaredIcon("hermes-agent"),

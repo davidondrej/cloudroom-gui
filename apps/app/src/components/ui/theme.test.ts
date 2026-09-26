@@ -296,7 +296,9 @@ describe("theme.css semantic update surfaces", () => {
 
 describe("theme.css desktop portal hit testing", () => {
   it("carves portaled overlays out of native window drag regions", () => {
-    const rule = css.match(/\[data-bb-portaled-overlay\]\s*\{([^}]*)\}/)?.[1];
+    const rule = css.match(
+      /\[data-bb-portaled-overlay\]:not\(\[data-state="closed"\]\)\s*\{([^}]*)\}/,
+    )?.[1];
 
     expect(rule).toBeDefined();
     expect(rule).toMatch(/(?:^|\s)app-region:\s*no-drag;/);

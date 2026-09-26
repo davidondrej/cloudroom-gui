@@ -137,6 +137,7 @@ import type { DesktopUpdateService } from "./desktop-update-scheduler.js";
 import {
   createDesktopAutoUpdateService,
   createElectronAutoUpdaterAdapter,
+  shouldEnableDesktopAutoUpdate,
   type DesktopAutoUpdateLogger,
   type DesktopAutoUpdateService,
 } from "./desktop-auto-update.js";
@@ -148,6 +149,7 @@ import {
   BB_DESKTOP_INSTALL_UPDATE_CHANNEL,
   BB_DESKTOP_OPEN_EXTERNAL_URL_CHANNEL,
   BB_DESKTOP_SET_THEME_CHANNEL,
+  BB_DESKTOP_FOCUS_WINDOW_CHANNEL,
 } from "./desktop-update-ipc.js";
 import {
   BB_DESKTOP_APP_COMMAND_CHANNEL,
@@ -1102,7 +1104,7 @@ async function authenticateConnectTarget(
       cachedFailure ?? {
         code: "network",
         detail:
-          "the local Room server is unavailable, and this app has no stored Cloudroom Connect credential",
+          "the local Cloudroom server is unavailable, and this app has no stored Cloudroom Connect credential",
         ok: false,
       }
     );
@@ -1138,7 +1140,7 @@ function ensureDesktopMachineEnrolled(): void {
   }
   if (!cache.canPersist()) {
     desktopLogger.info(
-      "[desktop] no OS keychain available — keeping the local Room server for Cloudroom Connect sessions",
+      "[desktop] no OS keychain available — keeping the local Cloudroom server for Cloudroom Connect sessions",
     );
     return;
   }
@@ -1172,7 +1174,7 @@ async function retryStartup(): Promise<void> {
       details: error instanceof Error ? error.message : String(error),
       logs: "",
       retryable: false,
-      title: "Could not open Room",
+      title: "Could not open Cloudroom",
     });
   } finally {
     startupRetryPending = false;
@@ -1199,7 +1201,7 @@ async function applyServerTarget(): Promise<void> {
     if (!attached) {
       await loadStartupError({
         details:
-          "Could not connect to the local Room server on this Mac. Check that the port is free or that a compatible Room server is running.",
+          "Could not connect to the local Cloudroom server on this Mac. Check that the port is free or that a compatible Cloudroom server is running.",
         logs: "",
         retryable: true,
         title: "Could not connect",
@@ -1391,7 +1393,7 @@ async function loadLogViewerWindow(
     minHeight: 520,
     minWidth: 840,
     show: false,
-    title: "Room - Server & Daemon Logs",
+    title: "Cloudroom - Server & Daemon Logs",
     titleBarStyle: "default",
     webPreferences: {
       contextIsolation: true,
@@ -1483,8 +1485,8 @@ async function loadLoadingView(): Promise<void> {
     url: createLocalViewUrl({
       viewModel: {
         kind: "loading",
-        message: "Starting local services and opening the Room workspace.",
-        title: "Opening Room",
+        message: "Starting local services and opening the Cloudroom workspace.",
+        title: "Opening Cloudroom",
       },
     }),
   });
@@ -1630,6 +1632,14 @@ function registerDesktopUpdateIpc(): void {
     }
     nativeTheme.themeSource = parsed.data;
   });
+  ipcMain.on(BB_DESKTOP_FOCUS_WINDOW_CHANNEL, (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (!window) return;
+    if (window.isMinimized()) window.restore();
+    // Sign-in finishes in the browser, so the app must take focus from it.
+    app.focus({ steal: true });
+    window.focus();
+  });
   ipcMain.on(STARTUP_RETRY_CHANNEL, (event, ...payload: unknown[]) => {
     if (
       payload.length !== 0 ||
@@ -1730,6 +1740,7 @@ async function startOwnedRuntime(
     env: {
       ...process.env,
       [APP_SURFACE_ENV_NAME]: APP_SURFACE_DESKTOP,
+      BB_DESKTOP_VERSION: process.env.BB_DESKTOP_VERSION,
     },
     logLineLimit: PROCESS_LOG_LINE_LIMIT,
     runtime: resolveBbAppProcessRuntime({
@@ -1765,7 +1776,7 @@ async function startOwnedRuntime(
       )}.`,
       logs: bbProcess.logs.text(),
       retryable: false,
-      title: "Room stopped",
+      title: "Cloudroom stopped",
     });
   });
 
@@ -1791,7 +1802,7 @@ async function startOwnedRuntime(
       )}.`,
       logs: bbProcess.logs.text(),
       retryable: false,
-      title: "Could not start Room",
+      title: "Could not start Cloudroom",
     });
     setCurrentRuntime(null);
     return null;
@@ -1804,11 +1815,11 @@ async function startOwnedRuntime(
   await loadStartupError({
     details:
       raceResult.result.kind === "incompatible"
-        ? `Port ${args.serverUrl} is responding, but it does not look like Room: ${raceResult.result.reason}.`
-        : `Timed out waiting for Room at ${args.serverUrl}: ${raceResult.result.reason}.`,
+        ? `Port ${args.serverUrl} is responding, but it does not look like Cloudroom: ${raceResult.result.reason}.`
+        : `Timed out waiting for Cloudroom at ${args.serverUrl}: ${raceResult.result.reason}.`,
     logs: bbProcess.logs.text(),
     retryable: false,
-    title: "Could not start Room",
+    title: "Could not start Cloudroom",
   });
   await stopOwnedRuntime();
   return null;
@@ -1891,40 +1902,40 @@ async function decideOnExistingServer(
   if (stopResult.kind === "unverified") {
     await loadStartupError({
       details:
-        `The Room at ${probe.serverUrl} records process ${String(stopResult.pid)}, but that ` +
-        "process no longer matches the record. Room did not stop it. Stop it yourself, then open Room again.",
+        `The Cloudroom at ${probe.serverUrl} records process ${String(stopResult.pid)}, but that ` +
+        "process no longer matches the record. Cloudroom did not stop it. Stop it yourself, then open Cloudroom again.",
       logs: "",
       retryable: false,
-      title: "Could not stop the running Room",
+      title: "Could not stop the running Cloudroom",
     });
     return "quit";
   }
   if (stopResult.kind === "still-running") {
     await loadStartupError({
-      details: `Room could not stop process ${String(stopResult.pid)}, even after SIGKILL.`,
+      details: `Cloudroom could not stop process ${String(stopResult.pid)}, even after SIGKILL.`,
       logs: "",
       retryable: false,
-      title: "Could not stop the running Room",
+      title: "Could not stop the running Cloudroom",
     });
     return "quit";
   }
   if (stopResult.kind === "replaced") {
     await loadStartupError({
       details:
-        `Another Room started at ${probe.serverUrl} while the question was open, so Room stopped nothing. ` +
-        "Open Room again to see the copy that runs now.",
+        `Another Cloudroom started at ${probe.serverUrl} while the question was open, so Cloudroom stopped nothing. ` +
+        "Open Cloudroom again to see the copy that runs now.",
       logs: "",
       retryable: false,
-      title: "Could not stop the running Room",
+      title: "Could not stop the running Cloudroom",
     });
     return "quit";
   }
   if (!(await waitForServerToStop(probe.serverUrl))) {
     await loadStartupError({
-      details: `The Room at ${probe.serverUrl} stopped, but the address is still in use.`,
+      details: `The Cloudroom at ${probe.serverUrl} stopped, but the address is still in use.`,
       logs: "",
       retryable: false,
-      title: "Could not stop the running Room",
+      title: "Could not stop the running Cloudroom",
     });
     return "quit";
   }
@@ -1977,7 +1988,7 @@ async function initializeRuntime(args: InitializeRuntimeArgs): Promise<void> {
 
   if (existingProbe.kind === "incompatible") {
     await loadStartupError({
-      details: `Port ${args.serverUrl} is already in use, but it is not a compatible Room server: ${existingProbe.reason}.`,
+      details: `Port ${args.serverUrl} is already in use, but it is not a compatible Cloudroom server: ${existingProbe.reason}.`,
       logs: "",
       retryable: false,
       title: "Port conflict",
@@ -2031,6 +2042,11 @@ async function runDesktopApp(): Promise<void> {
       initialUrl: currentWindowUrl,
       stateKey: null,
     });
+  });
+  // cloudroom:// links (like the sign-in page's Open Cloudroom button) only bring the app forward.
+  app.on("open-url", (event) => {
+    event.preventDefault();
+    desktopWindowFactory?.focusFirstWindow();
   });
   app.on("before-quit", handleBeforeQuit);
   app.on("window-all-closed", () => {
@@ -2214,7 +2230,12 @@ async function runDesktopApp(): Promise<void> {
   });
   desktopAutoUpdateService = createDesktopAutoUpdateService({
     currentVersion: desktopVersion,
-    enabled: false,
+    enabled:
+      desktopUpdateSupport.autoUpdate &&
+      shouldEnableDesktopAutoUpdate({
+        env: process.env,
+        isPackaged: app.isPackaged,
+      }),
     forceDevUpdateConfig:
       !app.isPackaged && process.env.BB_DESKTOP_AUTO_UPDATE === "1",
     logger: desktopLogger,
@@ -2426,6 +2447,6 @@ void runDesktopApp().catch((error) => {
     details: message,
     logs: "",
     retryable: false,
-    title: "Could not open Room",
+    title: "Could not open Cloudroom",
   });
 });

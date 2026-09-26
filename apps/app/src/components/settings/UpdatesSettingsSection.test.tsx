@@ -75,7 +75,8 @@ vi.mock("@/hooks/useUpdateInventory", () => ({
   useUpdateInventory: vi.fn(),
 }));
 
-vi.mock("@/hooks/useDesktopUpdateInfo", () => ({
+vi.mock("@/hooks/useDesktopUpdateInfo", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/useDesktopUpdateInfo")>()),
   useDesktopUpdateInfo: vi.fn(),
 }));
 
@@ -397,7 +398,7 @@ describe("UpdatesSettingsSection", () => {
     expect(bulkActions.querySelector('[data-icon="Download"]')).not.toBeNull();
     expect(
       screen.getByText(
-        "Manage Room and provider CLI updates across all machines.",
+        "Manage Cloudroom and provider CLI updates across all machines.",
       ),
     ).toBeDefined();
   });
@@ -500,7 +501,7 @@ The canonical release summary.
     expect(screen.queryByRole("button", { name: /check/i })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Updates" })).toBeNull();
     expect(
-      screen.getByRole("button", { name: /^Open the full Room .* changelog$/ }),
+      screen.getByRole("button", { name: /^Open the full Cloudroom .* changelog$/ }),
     ).toBeDefined();
     const changelog = document.querySelector(
       '[data-updates-domain="changelog"]',
@@ -548,7 +549,7 @@ The canonical release summary.
     expect(changelog?.textContent).toContain("Full changelog");
     expect(
       screen.getByRole("button", {
-        name: "Open the full Room 9.9.9 changelog",
+        name: "Open the full Cloudroom 9.9.9 changelog",
       }).className,
     ).toContain("font-semibold");
     for (const highlight of ["New features", "Fixes"]) {
@@ -562,7 +563,7 @@ The canonical release summary.
     expect(changelog?.textContent).toContain("One current feature.");
     expect(changelog?.textContent).toContain("One current fix.");
     const dismissChangelog = screen.getByRole("button", {
-      name: "Dismiss Room 9.9.9 changelog preview",
+      name: "Dismiss Cloudroom 9.9.9 changelog preview",
     });
     const changelogHeader = changelog?.querySelector("[data-changelog-header]");
     const changelogCard = changelogHeader?.closest("section");
@@ -573,7 +574,7 @@ The canonical release summary.
     expect(dismissChangelog.querySelector('[data-icon="X"]')).not.toBeNull();
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Open the full Room 9.9.9 changelog",
+        name: "Open the full Cloudroom 9.9.9 changelog",
       }),
     );
     expect(openUrlInExternalBrowserMock).toHaveBeenCalledWith(
@@ -586,7 +587,7 @@ The canonical release summary.
     );
     expect(
       screen.queryByRole("button", {
-        name: "Open the full Room 9.9.9 changelog",
+        name: "Open the full Cloudroom 9.9.9 changelog",
       }),
     ).toBeNull();
     expect(changelog?.getAttribute("data-changelog-dismiss-phase")).toBe(
@@ -640,7 +641,7 @@ The canonical release summary.
     await waitFor(() => {
       expect(
         screen.getByRole("button", {
-          name: "Dismiss Room 9.9.9 changelog preview",
+          name: "Dismiss Cloudroom 9.9.9 changelog preview",
         }),
       ).toBeDefined();
     });
@@ -702,10 +703,10 @@ The canonical release summary.
     );
     expect(offlineIcon?.getAttribute("class")).not.toContain("text-input");
     const daemonRow = screen
-      .getByText("Room daemon")
+      .getByText("Cloudroom daemon")
       .closest("[data-resource-row]");
     expect(daemonRow).not.toBeNull();
-    expect(screen.getByText("Room app")).toBeDefined();
+    expect(screen.getByText("Cloudroom app")).toBeDefined();
     expect(
       screen.getByRole("button", { name: "Open homelab settings" }),
     ).toBeDefined();
@@ -796,7 +797,7 @@ The canonical release summary.
 
     expect(screen.getByText("homelab")).toBeDefined();
     expect(screen.queryByText("1 updating")).toBeNull();
-    expect(screen.getByText("Room daemon")).toBeDefined();
+    expect(screen.getByText("Cloudroom daemon")).toBeDefined();
     expect(screen.getAllByText("In progress").length).toBeGreaterThan(0);
     expect(
       document.querySelector('[data-updates-machine="host_1"]'),
@@ -840,7 +841,7 @@ The canonical release summary.
     expect(screen.queryByText("1 machine needs attention")).toBeNull();
     expect(screen.queryByText(/daemon protocol/)).toBeNull();
     expect(
-      screen.getByText("Room daemon").closest("[data-resource-row]")?.className,
+      screen.getByText("Cloudroom daemon").closest("[data-resource-row]")?.className,
     ).not.toContain("bg-surface-destructive");
     expect(screen.queryByText(/^Up to date/)).toBeNull();
     const stalledMessage = screen.getByText("Update didn't finish");
@@ -969,7 +970,7 @@ The canonical release summary.
     const machineName = screen.getByText("workstation");
     expect(machineHeading.querySelector('[data-icon="Laptop"]')).not.toBeNull();
     expect(machineName.nextElementSibling).toBeNull();
-    expect(screen.getByText("Room app")).toBeDefined();
+    expect(screen.getByText("Cloudroom app")).toBeDefined();
     expect(screen.queryByLabelText(/available update/)).toBeNull();
     expect(screen.getAllByText("workstation")).toHaveLength(1);
     expect(screen.getByText("Codex")).toBeDefined();
@@ -1421,7 +1422,7 @@ The canonical release summary.
 
     renderSection();
     const relaunch = screen.getByRole("button", {
-      name: /Relaunch Room to finish updating/,
+      name: /Relaunch Cloudroom to finish updating/,
     });
     expect(relaunch.querySelector("img")?.className).toContain("size-3");
     expect(relaunch.className).toContain("border");
@@ -1453,7 +1454,14 @@ The canonical release summary.
 
     renderSection();
 
-    expect(screen.getByText("Update available")).toBeDefined();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Update available · Download the new Cloudroom app",
+      }),
+    );
+    expect(openUrlInExternalBrowserMock).toHaveBeenCalledWith(
+      "https://www.cloudroom.dev/download",
+    );
     expect(screen.queryByText("Downloading in the background…")).toBeNull();
   });
 

@@ -242,7 +242,7 @@ export function registerSettingsCommands(
 ): void {
   const settings = program
     .command("settings")
-    .description("Inspect and update Room settings");
+    .description("Inspect and update Cloudroom settings");
 
   settings
     .command("show")
@@ -568,7 +568,7 @@ export function registerSettingsCommands(
 
   settings
     .command("version")
-    .description("Check the running and latest Room versions")
+    .description("Check the running and latest Cloudroom versions")
     .option("--force", "Bypass the latest-version cache")
     .option("--json", "Print machine-readable JSON output")
     .action(
@@ -583,7 +583,7 @@ export function registerSettingsCommands(
 
   settings
     .command("reload")
-    .description("Reload Room's managed configuration")
+    .description("Reload Cloudroom's managed configuration")
     .option("--json", "Print machine-readable JSON output")
     .action(
       action(async (opts: JsonOptions) => {

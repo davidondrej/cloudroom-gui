@@ -27,7 +27,7 @@ bb.providers.register({
   experimental_bridgeOptions: { launch: { command: "echo-agent" } },
   // "installed" hides the row until provider/health finds the executable.
   experimental_visibility: "always", // default
-  // Sessionless maintenance support (each defaults to false) so room can skip
+  // Sessionless maintenance support (each defaults to false) so cloudroom can skip
   // unsupported host probes and hide providers that never expose usage. A
   // shared bridge that declares usage may still return no windows or
   // supported: false for one id.
@@ -37,8 +37,8 @@ bb.providers.register({
     supportsNativeUserQuestion: false,
     fork: "none", // "none" | "tip" | "checkpoint"
     supportsManualCompaction: false,
-    supportsThreadArchive: false, // room mirrors archive/unarchive onto it
-    supportsThreadRename: false, // room forwards renames to it
+    supportsThreadArchive: false, // cloudroom mirrors archive/unarchive onto it
+    supportsThreadRename: false, // cloudroom forwards renames to it
     permissionModes: ["full"], // non-empty, no duplicates
     reasoningLevels: ["medium"], // coarse fallback ladder
   },
@@ -52,7 +52,7 @@ bb.providers.register({
   // exactly one isDefault; an empty or omitted list is valid.
   // `scope` says how far one model/list answer travels: "host" when the
   // bridge answers from account or agent state and ignores the workspace
-  // path (room then probes once per machine), "workspace" (the default) when
+  // path (cloudroom then probes once per machine), "workspace" (the default) when
   // project configuration can change the answer.
   models: { fallback: [], scope: "workspace" },
   // Daemon env vars the bridge may read. Provider processes are spawned with
@@ -79,10 +79,10 @@ icons by its namespaced glyph (`"<pluginId>/<name>"`, an entry of
 `bb.branding.experimental_icons`; the plugin id must be this plugin's and
 the name declared, else the plugin fails to load). A path-shaped SVG is
 served as declared behind `nosniff` and a `default-src 'none'` CSP; it is
-not in the manifest, so `room plugin build` cannot check it — keep it free of
+not in the manifest, so `cloudroom plugin build` cannot check it — keep it free of
 the script vectors the build refuses in a logo. A path or a declared
 icon is served to clients as a `logoUrl` and drawn as a `currentColor`
-mask, so a monochrome mark follows the room theme (and the declared
+mask, so a monochrome mark follows the cloudroom theme (and the declared
 `strings.iconTint`) with no frontend bundle — this is how every provider bb
 ships gets its brand mark; core vendors none. A full-colour logo renders as a silhouette. A glyph name carries no
 bytes, so there is no `logoUrl` and clients draw the glyph from the shared
@@ -111,7 +111,7 @@ export default definePluginApp((app) => {
 });
 ```
 
-(The four first-party provider plugins ship no `app.tsx`: room vendors their
+(The four first-party provider plugins ship no `app.tsx`: cloudroom vendors their
 marks itself, so an icon-only bundle would only add fetches at boot.)
 
 A provider plugin's `app.tsx` loads in the same deferred boot pass as every
@@ -128,15 +128,15 @@ other surface. Disabling the plugin removes the provider (open threads show a
 provider-unavailable state instead of erroring). The provider picker lists
 providers in plugin install order (bundled first-party plugins first); the
 user reorders them and picks a default in Settings → Providers
-(`room settings general providerOrder '["my-agent","codex"]'` and
-`room settings general defaultProviderId my-agent`).
+(`cloudroom settings general providerOrder '["my-agent","codex"]'` and
+`cloudroom settings general defaultProviderId my-agent`).
 
 `completedTurnDisplay` sets how the timeline shows your provider's finished
 turns by default: `"collapse"` (the default) folds the work into one "Worked
 for" row and keeps the final answer visible, and `"flat"` keeps every row
 visible. Pick `"flat"` when your agent narrates its work in text the user
 should keep reading after the turn ends. The user can override it per
-provider (`room settings completed-turns my-agent collapse`).
+provider (`cloudroom settings completed-turns my-agent collapse`).
 
 `experimental_bridgeOptions` must be a plain JSON object no larger than 64
 KiB. It is validated and frozen at registration, then carried on every bridge
@@ -144,7 +144,7 @@ request as provider-scoped static options. Use it for immutable launch facts
 shared by all hosts, not user settings or machine-local state. It participates
 in bridge process identity, so changing it causes the next runtime to use a
 new bridge process. `experimental_visibility: "installed"` makes the provider
-host-dependent: Room asks that provider's bridge for `provider/health` and lists
+host-dependent: Cloudroom asks that provider's bridge for `provider/health` and lists
 it only when the status is not `not_installed`. Such a declaration must support
 health; bridge failures hide only that provider.
 
@@ -176,9 +176,9 @@ the selected host against its authenticated `ROOM_SERVER_URL`, which is the
 right form for a server route that must work from enrolled machines.
 
 Contributions override the host shell environment. If multiple plugins return
-the same name, the earlier registration wins and Room logs the conflict. A
+the same name, the earlier registration wins and Cloudroom logs the conflict. A
 resolver that throws, times out after five seconds, or returns invalid entries
-contributes nothing for that command without blocking other plugins. Room passes
+contributes nothing for that command without blocking other plugins. Cloudroom passes
 values to the provider and reports them as-is in `provider.env-resolved`
 timeline events, provider output, and diagnostics.
 
@@ -187,7 +187,7 @@ login, pair the resolver with
 `bb.providers.experimental_contributeEnvHealth(providerId, resolve)`. Its
 host-scoped `ExperimentalPluginProviderEnvHealthContext` contains `hostId`.
 Return an `ExperimentalPluginProviderEnvHealth` `{ label, statusMessage }` only
-while the proxy is usable, or `null` otherwise. Room uses it only when the
+while the proxy is usable, or `null` otherwise. Cloudroom uses it only when the
 provider bridge reports `unauthenticated` or `expired`, and only when the same
 plugin registered an env resolver for that provider. Installation and unknown
 failures are preserved.
@@ -241,7 +241,7 @@ subpath from the plugin's own SDK install, and managed Git installs run
 `npm install --omit=dev`, so a devDependency-only SDK is absent when the
 artifact is built. This is the exception to the devDependency rule under
 "bb.hosts"; the echo example's `package.json` shows the shape. A `bb.host`
-artifact cannot import Room's private `@bb/*` workspace packages; an installed
+artifact cannot import Cloudroom's private `@bb/*` workspace packages; an installed
 plugin could not resolve them.
 
 The bridge speaks the canonical Provider Bridge Protocol — line-delimited
@@ -258,7 +258,7 @@ fabricate nothing), and reply hygiene: unknown method → `-32601`, invalid
 params → `-32602` with the issues, never a silent drop. The bridge emits
 parsed semantic deltas keyed by provider-native ids (tool-call ids, stream
 keys, parent refs); the runtime's delta assembler — never the bridge —
-mints every room turn and item id and constructs the canonical timeline
+mints every cloudroom turn and item id and constructs the canonical timeline
 events.
 
 The runtime can send these requests: `initialize`, `model/list`,
@@ -306,7 +306,7 @@ test parsing, request replies, semantic timeline output, and error cases.
 **Recorded replay.** The same kit ships the regression oracle the first-party
 bridges use. Record a real session: start the host daemon with
 `BB_PROVIDER_BRIDGE_RECORD_DIR=<dir>` in its environment, run a thread on
-your provider, and room writes `<dir>/<providerId>/<threadId>/<direction>.ndjson`
+your provider, and cloudroom writes `<dir>/<providerId>/<threadId>/<direction>.ndjson`
 (a bridge that spawns a CLI also calls `experimental_recordProviderChildIo`
 right after `spawn()`). Commit the lanes under your plugin, then replay them in
 a test: `experimental_resolveProviderBridgeLaunch({ modulePath, pluginId })`

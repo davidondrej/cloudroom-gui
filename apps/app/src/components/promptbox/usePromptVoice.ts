@@ -1,5 +1,4 @@
-import { useCallback, useMemo, type RefObject } from "react";
-import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
+import { useCallback, useMemo, useRef, type RefObject } from "react";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { transcribeVoiceInput } from "@/lib/api";
 import type { PromptBoxHandle, PromptVoiceConfig } from "./PromptBoxInternal";
@@ -24,13 +23,13 @@ function createVoiceAbortError(): DOMException {
 export function usePromptVoice(
   promptBoxRef: RefObject<PromptBoxHandle | null>,
 ): PromptVoiceConfig {
-  const isPointerCoarse = usePointerCoarse();
+  const submitAfterTranscriptRef = useRef(false);
   const onTranscript = useCallback(
     (text: string) => {
       promptBoxRef.current?.insertTextAtCursor(text);
-      if (isPointerCoarse) promptBoxRef.current?.submit();
+      if (submitAfterTranscriptRef.current) promptBoxRef.current?.submit();
     },
-    [isPointerCoarse, promptBoxRef],
+    [promptBoxRef],
   );
 
   const getPromptContext = useCallback(
@@ -56,13 +55,24 @@ export function usePromptVoice(
     getPromptContext,
   });
 
+  const { stop: stopVoiceInput } = voiceInput;
+  const stop = useCallback(() => {
+    submitAfterTranscriptRef.current = false;
+    stopVoiceInput();
+  }, [stopVoiceInput]);
+  const stopAndSend = useCallback(() => {
+    submitAfterTranscriptRef.current = true;
+    stopVoiceInput();
+  }, [stopVoiceInput]);
+
   return useMemo<PromptVoiceConfig>(
     () => ({
       state: voiceInput.state,
       isSupported: voiceInput.isSupported,
       stream: voiceInput.stream,
       start: voiceInput.start,
-      stop: voiceInput.stop,
+      stop,
+      stopAndSend,
       cancel: voiceInput.cancel,
     }),
     [
@@ -70,7 +80,8 @@ export function usePromptVoice(
       voiceInput.isSupported,
       voiceInput.stream,
       voiceInput.start,
-      voiceInput.stop,
+      stop,
+      stopAndSend,
       voiceInput.cancel,
     ],
   );

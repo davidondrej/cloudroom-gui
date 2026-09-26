@@ -1,13 +1,13 @@
 ---
 name: account-pool
-description: "Configure or diagnose Account Pooler accounts, authentication, quota routing, and failover through room pool."
+description: "Configure or diagnose Account Pooler accounts, authentication, quota routing, and failover through cloudroom pool."
 ---
 
 # Account Pooler
 
-Use `room pool` for this plugin's accounts and routes. Inspect current state with
-`room pool status --json` and `room pool account list --json` before changing routing.
-Use `room pool --help` for available commands.
+Use `cloudroom pool` for this plugin's accounts and routes. Inspect current state with
+`cloudroom pool status --json` and `cloudroom pool account list --json` before changing routing.
+Use `cloudroom pool --help` for available commands.
 
 For account login/import, secret handling, quota refresh, routing settings,
 ordering, failover, or cache miss debugging, read

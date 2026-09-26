@@ -40,6 +40,7 @@ export const APP_COMMAND_IDS = [
   "thread.new",
   "thread.search",
   "thread.rename",
+  "thread.pin",
   "thread.archive",
   "thread.previous",
   "thread.next",

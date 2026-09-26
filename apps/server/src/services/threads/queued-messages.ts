@@ -93,6 +93,7 @@ import {
 } from "../lib/lifecycle-api-errors.js";
 import { validatePromptAttachmentReferences } from "../projects/attachments.js";
 import { requestQueuedMessageDispatch } from "./queued-message-dispatch.js";
+import { isHardQueueHeld } from "./thread-parent.js";
 import {
   ThreadContextClearInProgressError,
   withThreadSendGuard,
@@ -130,9 +131,14 @@ export function createAutomaticQueuedMessageGroupEligibility(
   args: { now: number; thread: Thread },
 ): QueuedThreadMessageGroupEligibility {
   const activeTurnId = getActiveTurnId(deps, args.thread.id);
+  let hardQueueHeld: boolean | undefined;
   return (group) =>
     group.every((member) => {
       if (member.failureReason !== null) return false;
+      if (member.hardQueue) {
+        hardQueueHeld ??= isHardQueueHeld(deps.db, args.thread);
+        if (hardQueueHeld) return false;
+      }
       const waitingOn = parseStoredQueuedThreadMessageWaitingOn(member);
       switch (waitingOn?.kind) {
         case undefined:
@@ -261,6 +267,7 @@ export async function createQueuedMessageForThread(
           sendAt: null,
           payload: { kind: "inline" },
           systemNotice: null,
+          hardQueue: payload.hardQueue === true,
         });
         return { currentThread, providerThreadId, queuedMessage };
       },

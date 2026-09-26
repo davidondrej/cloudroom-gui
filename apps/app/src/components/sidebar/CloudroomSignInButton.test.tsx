@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
+import { TooltipProvider } from "@bb/shared-ui/tooltip";
 import { afterEach, expect, it, vi } from "vitest";
 import { sdk } from "@/lib/sdk";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
@@ -19,7 +20,7 @@ function Location() { return <span data-testid="location">{useLocation().pathnam
 function mount(path = "/") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   clients.push(client);
-  render(<MemoryRouter initialEntries={[path]}><QueryClientProvider client={client}><ul><CloudroomSignInButton /></ul><Location /></QueryClientProvider></MemoryRouter>);
+  render(<MemoryRouter initialEntries={[path]}><QueryClientProvider client={client}><TooltipProvider><ul><CloudroomSignInButton /></ul></TooltipProvider><Location /></QueryClientProvider></MemoryRouter>);
 }
 async function clickSignIn() {
   const button = await screen.findByRole("button", { name: "Sign in" });

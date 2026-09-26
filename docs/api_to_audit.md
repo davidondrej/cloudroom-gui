@@ -330,7 +330,7 @@ The split it draws: **core owns the re-draining and the clock; plugins own
 every other wait condition and tell core when to re-ask.** Core's own wakes are
 the `sendAt` due sweep, thread-idle, workspace-ready, interaction-settled,
 send-now and the orphan sweep — all of them queue mechanics or core waits.
-Capacity is not one of them: `concurrency-limit` subscribes to
+Capacity is not one of them: a capacity plugin subscribes to
 `thread.idle`/`thread.failed`/`thread.archived`/`thread.deleted` and calls
 `recheck("message.dispatch")` itself. That retires the future `clearWait` need for
 external-event waits: a plugin does not release a row, it wakes core and core
@@ -3034,3 +3034,13 @@ the plugin uses `experimental_suspend` to request a new pause. Core schedules
 no provider polling. Validate concurrent resume/removal, failure reporting,
 long-running caller behavior, and the scope of supported states before
 stabilizing this API. Exposed as `bb machine reconcile`.
+
+## `PluginThreadPanelActionRegistration.experimental_requiresFork`
+
+**What it does.** Hides a thread panel action from the side panel launcher
+when the thread cannot be forked: its provider does not support forks, or the
+thread is archived or has no environment. Side chat uses it so Cursor threads
+never offer a side chat that fails.
+
+**Audit before stabilizing.** One consumer. Decide whether a general
+availability predicate should replace this single capability flag.

@@ -7,29 +7,29 @@ import {
 import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import { registerManagerCommands } from "../../commands/manager.js";
 
-describe("room manager command output", () => {
+describe("cloudroom manager command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
     registerManagerCommands(program);
 
-  it("room manager exits with a parent-thread replacement message", async () => {
+  it("cloudroom manager exits with a parent-thread replacement message", async () => {
     await expect(runCommand(["manager"], register)).rejects.toThrow(
       "process.exit:1",
     );
 
     const error = collectLogLines(vi.mocked(console.error)).join("\n");
     expect(error).toContain("Manager threads were replaced by parent threads.");
-    expect(error).toContain("room thread spawn --parent-thread <id>");
+    expect(error).toContain("cloudroom thread spawn --parent-thread <id>");
   });
 
-  it("room manager subcommands exit with the same replacement message", async () => {
+  it("cloudroom manager subcommands exit with the same replacement message", async () => {
     await expect(
       runCommand(["manager", "list", "project-123"], register),
     ).rejects.toThrow("process.exit:1");
 
     const error = collectLogLines(vi.mocked(console.error)).join("\n");
     expect(error).toContain("Manager threads were replaced by parent threads.");
-    expect(error).toContain("room thread list --parent-thread <id>");
+    expect(error).toContain("cloudroom thread list --parent-thread <id>");
   });
 });

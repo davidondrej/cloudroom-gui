@@ -1930,12 +1930,12 @@ function requiredHostArtifactPaths(context: BbAppStartContext): ArtifactPath[] {
     {
       kind: "file",
       label: "bundled room CLI",
-      path: join(context.daemonBundleDir, "room"),
+      path: join(context.daemonBundleDir, "cloudroom"),
     },
     {
       kind: "chunk-dir",
       label: "bundled room CLI chunks",
-      path: join(context.daemonBundleDir, "room-chunks"),
+      path: join(context.daemonBundleDir, "cloudroom-chunks"),
     },
     {
       kind: "file",
@@ -2334,7 +2334,7 @@ export function createServerEnv(args: CreateServerEnvArgs): NodeJS.ProcessEnv {
     ...args.env,
     BB_APP_VERSION: args.context.appVersion,
     [APP_SURFACE_ENV_NAME]: resolveServerAppSurface(args.env),
-    ROOM_CLI: join(args.context.daemonBundleDir, "room"),
+    ROOM_CLI: join(args.context.daemonBundleDir, "cloudroom"),
     ROOM_SERVER_URL: args.context.serverUrl,
     ROOM_DATA_DIR: args.context.dataDir,
     ROOM_HOST_DAEMON_PORT: String(args.context.daemonPort),
@@ -2455,7 +2455,7 @@ export async function runBundledCliCommand(
   args: RunBundledCliCommandArgs,
 ): Promise<number> {
   const bbCliOverride = toOptionalString(args.env.ROOM_CLI);
-  const cliPath = bbCliOverride ?? join(args.context.daemonBundleDir, "room");
+  const cliPath = bbCliOverride ?? join(args.context.daemonBundleDir, "cloudroom");
   const childProcess = spawn(cliPath, args.args, {
     cwd: process.cwd(),
     env: createCliEnv({ context: args.context, env: args.env }),

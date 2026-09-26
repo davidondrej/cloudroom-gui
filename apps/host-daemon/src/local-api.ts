@@ -247,7 +247,7 @@ export async function startLocalApiServer(
       !(await isAllowedAppOrigin(origin, c.req.url))
     ) {
       return c.json(
-        { error: `origin "${origin}" is not a local Room app origin` },
+        { error: `origin "${origin}" is not a local Cloudroom app origin` },
         403,
       );
     }

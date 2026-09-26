@@ -40,7 +40,7 @@ export function InstalledPluginsTab({
 
   if (plugins.length === 0) {
     return (
-      <EmptyState message="No plugins installed. Browse the catalog, create a plugin, or run room plugin install <source>." />
+      <EmptyState message="No plugins installed. Browse the catalog, create a plugin, or run cloudroom plugin install <source>." />
     );
   }
 

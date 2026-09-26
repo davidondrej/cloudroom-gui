@@ -1125,7 +1125,7 @@ describe("Account Pool plugin", () => {
       }),
     ).resolves.toBeNull();
     expect(host.harness.inspection.needsConfigurationMessages).toEqual([
-      "Add and enable a Claude or Codex account with `room pool account add`.",
+      "Add and enable a Claude or Codex account with `cloudroom pool account add`.",
     ]);
     const hello = helloResponse();
     expect(hello.status).toBe(200);
@@ -1599,7 +1599,7 @@ describe("Account Pool plugin", () => {
       {
         name: "BB_ACCOUNT_POOL_PARENT_URL",
         value: { serverPath: "/api/v1/plugins/account-pool/http" },
-        reason: "Account Pooler hub for nested Room servers on this machine",
+        reason: "Account Pooler hub for nested Cloudroom servers on this machine",
       },
       {
         name: "BB_ACCOUNT_POOL_PARENT_TOKEN",
@@ -1790,7 +1790,7 @@ describe("Account Pool plugin", () => {
     expect(fixture.host.harness.inspection.logEntries).toContainEqual({
       level: "warn",
       message:
-        "Account Pooler disabled with 1 recently routed thread on machines without a local Claude login. Run room pool status before disabling to inspect them.",
+        "Account Pooler disabled with 1 recently routed thread on machines without a local Claude login. Run cloudroom pool status before disabling to inspect them.",
     });
   });
 
@@ -6527,7 +6527,7 @@ describe("Account Pool cache miss debugging", () => {
     ).toMatchObject({
       exitCode: 0,
       stdout:
-        "No cache miss reports. Enable reporting with room pool config set cacheMissDebug true.\n",
+        "No cache miss reports. Enable reporting with cloudroom pool config set cacheMissDebug true.\n",
     });
     const listedOff = await fixture.host.harness.behavior.runCli([
       "cache-miss",
@@ -6630,8 +6630,8 @@ describe("Account Pool cache miss debugging", () => {
       "cache-miss",
       "--help",
     ]);
-    expect(help.stdout).toContain("room pool cache-miss list [--json]");
-    expect(help.stdout).toContain("room pool cache-miss clear");
+    expect(help.stdout).toContain("cloudroom pool cache-miss list [--json]");
+    expect(help.stdout).toContain("cloudroom pool cache-miss clear");
     expect(
       (
         await fixture.host.harness.behavior.runCli([
@@ -6938,7 +6938,7 @@ describe("Account Pool nested proxy", () => {
       name,
       value: "",
       reason:
-        "Account Pooler is isolated from the parent Room server's pool on this instance",
+        "Account Pooler is isolated from the parent Cloudroom server's pool on this instance",
     }));
 
   it.each([
@@ -7115,7 +7115,7 @@ describe("Account Pool nested proxy", () => {
     ).toMatchObject({
       exitCode: 0,
       stdout:
-        "No cache miss reports. This Room server forwards pooled traffic to its parent Account Pooler, which does the analysis; enable cacheMissDebug on the parent.\n",
+        "No cache miss reports. This Cloudroom server forwards pooled traffic to its parent Account Pooler, which does the analysis; enable cacheMissDebug on the parent.\n",
     });
     const listed = await host.harness.behavior.runCli([
       "cache-miss",

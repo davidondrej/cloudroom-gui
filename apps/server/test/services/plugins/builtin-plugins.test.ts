@@ -291,12 +291,12 @@ describe("builtin plugin reconciliation", () => {
       ["account-pool", "Layers"],
       ["ask-user-question", "MessageQuestion"],
       ["automations", "Repeat"],
-      ["concurrency-limit", "Limitation"],
       ["connect", "Smartphone"],
       ["custom-instructions", "EditFile"],
       ["plugin-api-tester", "Beaker"],
       ["inline-vis", "AppWindow"],
       ["keep-awake", "Coffee"],
+      ["machine-ssh", "Terminal"],
       ["monaco-editor", "Code"],
       ["pdf-preview", "FileText"],
       ["environment-project-checkout", "Laptop"],
@@ -620,14 +620,6 @@ describe("builtin plugin reconciliation", () => {
         status: "running",
       },
     ]);
-  });
-
-  it("ships Concurrency limit enabled on a fresh database", () => {
-    const limiter = BUILTIN_PLUGINS.find(
-      (builtin) => builtin.name === "concurrency-limit",
-    );
-    expect(limiter).toBeDefined();
-    expect(limiter?.defaultEnabled).toBe(true);
   });
 
   it("ships Send later enabled on a fresh database", () => {
@@ -1064,7 +1056,7 @@ describe("builtin plugin reconciliation", () => {
         version: "0.1.0",
         enabled: true,
         status: "incompatible",
-        statusDetail: `server artifact for plugin "automations" was built for SDK major ${incompatibleMajor}, running SDK major is ${PLUGIN_SDK_MAJOR}; rebuild the server artifact with this Room version`,
+        statusDetail: `server artifact for plugin "automations" was built for SDK major ${incompatibleMajor}, running SDK major is ${PLUGIN_SDK_MAJOR}; rebuild the server artifact with this Cloudroom version`,
       },
     ]);
     expect(packagedLoadCount()).toBe(before);

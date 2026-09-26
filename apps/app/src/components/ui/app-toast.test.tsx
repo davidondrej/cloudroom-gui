@@ -30,16 +30,8 @@ describe("AppToastContent", () => {
         .getByText("A deliberately long detail that can wrap")
         .classList.contains("line-clamp-4"),
     ).toBe(true);
-    expect(
-      screen
-        .getByRole("button", { name: "View log" })
-        .parentElement?.classList.contains("flex-wrap"),
-    ).toBe(true);
-    expect(
-      screen
-        .getByRole("button", { name: "View log" })
-        .classList.contains("underline"),
-    ).toBe(true);
+    expect(screen.getByRole("button", { name: "View log" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Dismiss" })).toBeDefined();
     expect(
       screen.getByRole("button", { name: "Dismiss notification" }),
     ).toBeDefined();

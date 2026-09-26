@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Run Room threads with Pi.",
+  "description": "Run Cloudroom threads with Pi.",
   "engines": {
     "bb": ">=0.0"
   },
   "bb": {
     "name": "Pi provider",
-    "description": "Run Room threads with Pi.",
+    "description": "Run Cloudroom threads with Pi.",
     "branding": {
       "icon": "./icons/pi.svg"
     },

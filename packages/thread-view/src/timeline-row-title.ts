@@ -459,6 +459,9 @@ function mapExecutionTitle(row: TimelineExecutionWorkRow): TimelineTitle {
     return explorationTitle;
   }
   const badges = badgeDecorations(row);
+  // Cloud agents reach the user's Mac through `cloudroom mac` (ADR 0113).
+  const onMac = isCommand && /\bcloudroom mac (run|pull|push)\b/.test(content);
+  const ran = isCommand ? (onMac ? "Ran on your Mac:" : "Ran") : "Ran tool";
   switch (status) {
     case "waiting":
       return makeTitle({
@@ -483,7 +486,7 @@ function mapExecutionTitle(row: TimelineExecutionWorkRow): TimelineTitle {
     case "pending":
       return makeTitle({
         segments: [
-          segment(isCommand ? "Running" : "Running tool:", { shimmer: true }),
+          segment(onMac ? "Running on your Mac:" : isCommand ? "Running" : "Running tool:", { shimmer: true }),
           segment(content, { em: true, truncate: true }),
         ],
         decorations: [
@@ -494,7 +497,7 @@ function mapExecutionTitle(row: TimelineExecutionWorkRow): TimelineTitle {
     case "completed":
       return makeTitle({
         segments: [
-          segment(isCommand ? "Ran" : "Ran tool"),
+          segment(ran),
           segment(content, { em: true, truncate: true }),
         ],
         decorations: [
@@ -505,7 +508,7 @@ function mapExecutionTitle(row: TimelineExecutionWorkRow): TimelineTitle {
     case "error":
       return makeTitle({
         segments: [
-          segment(isCommand ? "Ran" : "Ran tool"),
+          segment(ran),
           segment(content, { em: true, truncate: true }),
         ],
         decorations: [
@@ -519,7 +522,7 @@ function mapExecutionTitle(row: TimelineExecutionWorkRow): TimelineTitle {
     case "interrupted":
       return makeTitle({
         segments: [
-          segment(isCommand ? "Ran" : "Ran tool"),
+          segment(ran),
           segment(content, { em: true, truncate: true }),
         ],
         decorations: [

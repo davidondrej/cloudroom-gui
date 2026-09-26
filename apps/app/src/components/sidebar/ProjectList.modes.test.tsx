@@ -172,7 +172,7 @@ function MachineModeProbe({ threads = [] }: { threads?: ThreadListEntry[] }) {
         collapsedSectionIds={collapsedSectionIdSet}
         collapsedThreadIds={new Set()}
         collapsedEnvironmentIds={new Set()}
-        compareThreads={() => 0}
+        compareThreadsForSection={() => () => 0}
         renderSectionDisplayOptions={() => null}
         isSectionDisplayOptionsOpen={() => false}
         onToggleCollapsed={handleToggleCollapsed}

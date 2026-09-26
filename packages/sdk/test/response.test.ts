@@ -10,10 +10,10 @@ import { createNodeTransport } from "../src/node.js";
 
 const REQUEST_TIMEOUT_ERROR_NAME = "BbRequestTimeoutError";
 const REQUEST_TIMEOUT_VALIDATION_MESSAGE =
-  "Room request timeout must be a non-negative finite number.";
+  "Cloudroom request timeout must be a non-negative finite number.";
 
 function requestTimeoutMessage(duration: string): string {
-  return `Room request timed out after ${duration}.`;
+  return `Cloudroom request timed out after ${duration}.`;
 }
 
 const IMMEDIATE_TIMEOUT_MS = 0;

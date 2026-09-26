@@ -24,7 +24,10 @@ import {
   SIDEBAR_HOVER_ACTIONS_ROW_CLASS,
 } from "@/components/ui/sidebar-hover-actions.js";
 import { cn } from "@bb/shared-ui/lib/utils";
-import type { CollapsedChildActivity } from "@bb/client-core";
+import type {
+  CollapsedChildActivity,
+  SidebarSectionId,
+} from "@bb/client-core";
 import {
   SIDEBAR_ROW_BASE_CLASS,
   SIDEBAR_GROUP_TEXT_CLASS,
@@ -48,6 +51,7 @@ function stopActionsClick(event: MouseEvent<HTMLElement>) {
 }
 
 interface SidebarSectionRowProps {
+  sectionId: SidebarSectionId;
   name: string;
   label: string;
   depth: number;
@@ -65,6 +69,7 @@ interface SidebarSectionRowProps {
 }
 
 function SidebarSectionRowComponent({
+  sectionId,
   name,
   label,
   depth,
@@ -192,6 +197,7 @@ function SidebarSectionRowComponent({
           >
             <SidebarHeaderControls
               label={`${label} section`}
+              sectionId={sectionId}
               onNewThread={onCreateThread}
               onOpenChange={setIsActionsOpen}
             >

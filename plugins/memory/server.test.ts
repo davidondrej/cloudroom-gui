@@ -122,7 +122,7 @@ describe("bb-plugin-memory", () => {
     });
     expect(instructions?.length).toBeLessThanOrEqual(3_900);
     expect(instructions).toContain("Showing");
-    expect(instructions).toContain("room memory catalog --scope all --json");
+    expect(instructions).toContain("cloudroom memory catalog --scope all --json");
     expect(instructions).not.toContain("Private details");
   }, 20_000);
 
@@ -200,7 +200,7 @@ describe("bb-plugin-memory", () => {
       "reason",
     ]);
     expect(missingProject.exitCode).toBe(1);
-    expect(missingProject.stderr).toContain("requires a Room project context");
+    expect(missingProject.stderr).toContain("requires a Cloudroom project context");
   });
 
   it("uses optimistic versions for updates and forgetting", async () => {

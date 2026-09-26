@@ -85,6 +85,7 @@ export interface EnvironmentPickerUIProps {
   cloud?: {
     selected: boolean;
     unavailableReason: string | null;
+    note?: string;
     onSelect: () => void;
   };
   onRequestMachineSetup?: (host: Host) => void;
@@ -108,6 +109,13 @@ export const PROVIDER_INPUTS_CONTROL_MISSING_REASON =
   "Needs its plugin's control";
 
 const NO_INPUTS_CONTROL_PROVIDER_IDS: ReadonlySet<string> = new Set();
+
+function localPresentation(providerId: string, projectless: boolean) {
+  return (
+    cloudroomEnvironmentPresentation(providerId, "local") ??
+    (projectless ? { label: "Local", icon: "Laptop" as const } : null)
+  );
+}
 
 function providerValueSelected(
   value: string,
@@ -270,25 +278,23 @@ export function EnvironmentPickerUI({
       provider.machineProviderId &&
       provider.requires.projectless === projectless,
   );
+  const cloudLabel = projectless ? "Cloud" : CLOUDROOM_CLOUD_PRIMARY;
   const selected = useMemo((): SelectedEnvironment => {
     if (cloud?.selected) {
       return {
-        modeLabel: CLOUDROOM_CLOUD_PRIMARY,
-        compactModeLabel: CLOUDROOM_CLOUD_PRIMARY,
+        modeLabel: cloudLabel,
+        compactModeLabel: cloudLabel,
         icon: "Cloud",
         usePlaceIcon: true,
       };
     }
     if (cloud && selectedProvider) {
-      const localPresentation = cloudroomEnvironmentPresentation(
-        selectedProvider.id,
-        "local",
-      );
-      if (localPresentation !== null) {
+      const presentation = localPresentation(selectedProvider.id, projectless);
+      if (presentation !== null) {
         return {
-          modeLabel: localPresentation.label,
-          compactModeLabel: localPresentation.label,
-          icon: localPresentation.icon,
+          modeLabel: presentation.label,
+          compactModeLabel: presentation.label,
+          icon: presentation.icon,
           usePlaceIcon: true,
         };
       }
@@ -336,6 +342,8 @@ export function EnvironmentPickerUI({
     };
   }, [
     cloud,
+    cloudLabel,
+    projectless,
     parsed,
     hostUnavailableReason,
     availableHost,
@@ -495,9 +503,9 @@ export function EnvironmentPickerUI({
                         { value, selectedProviderHostId },
                       )
                         .flatMap((provider) => {
-                          const presentation = cloudroomEnvironmentPresentation(
+                          const presentation = localPresentation(
                             provider.id,
-                            "local",
+                            projectless,
                           );
                           return presentation === null
                             ? []
@@ -539,25 +547,27 @@ export function EnvironmentPickerUI({
                   <CommandGroup>
                     <EnvironmentMenuItem
                       value="cloud:primary-checkout"
-                      label={CLOUDROOM_CLOUD_PRIMARY}
+                      label={cloudLabel}
                       icon="Cloud"
                       selected={cloud.selected}
-                      description={cloud.unavailableReason ?? undefined}
+                      description={cloud.unavailableReason ?? cloud.note}
                       disabled={cloud.unavailableReason !== null}
                       onSelect={() => {
                         cloud.onSelect();
                         handleOpenChange(false);
                       }}
                     />
-                    <EnvironmentMenuItem
-                      value="cloud:worktree"
-                      label={CLOUDROOM_CLOUD_WORKTREE}
-                      icon="Cloud"
-                      selected={false}
-                      description="Cloud worktrees are not supported yet"
-                      disabled
-                      onSelect={() => {}}
-                    />
+                    {projectless ? null : (
+                      <EnvironmentMenuItem
+                        value="cloud:worktree"
+                        label={CLOUDROOM_CLOUD_WORKTREE}
+                        icon="Cloud"
+                        selected={false}
+                        description="Cloud worktrees are not supported yet"
+                        disabled
+                        onSelect={() => {}}
+                      />
+                    )}
                   </CommandGroup>
                 </>
               ) : isMachineMenu && availableMachines ? (

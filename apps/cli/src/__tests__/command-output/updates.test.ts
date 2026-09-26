@@ -110,13 +110,13 @@ function providerStatus(args: {
   };
 }
 
-describe("room updates command output", () => {
+describe("cloudroom updates command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
     registerUpdatesCommands(program, () => "http://server");
 
-  it("room updates renders bb-app and per-machine provider rows", async () => {
+  it("cloudroom updates renders bb-app and per-machine provider rows", async () => {
     stubServerApi({
       "v1.system.version.$get": vi.fn(async () => version),
       "v1.hosts.$get": vi.fn(async () => hosts),
@@ -139,7 +139,7 @@ describe("room updates command output", () => {
     expect(output).toContain("offline");
   });
 
-  it("room updates --json prints the aggregate", async () => {
+  it("cloudroom updates --json prints the aggregate", async () => {
     const status = providerStatus({ codexNeedsUpdate: false });
     stubServerApi({
       "v1.system.version.$get": vi.fn(async () => version),
@@ -158,7 +158,7 @@ describe("room updates command output", () => {
     expect(payload.machines[1].providerStatus).toBeNull();
   });
 
-  it("room updates apply runs each available provider update", async () => {
+  it("cloudroom updates apply runs each available provider update", async () => {
     const install = vi.fn(
       async () =>
         new Response(
@@ -197,7 +197,7 @@ describe("room updates command output", () => {
     ]);
   });
 
-  it("room updates apply reports when everything is current", async () => {
+  it("cloudroom updates apply reports when everything is current", async () => {
     stubServerApi({
       "v1.hosts.$get": vi.fn(async () => hosts),
       "v1.hosts.:id.provider-clis.status.$get": vi.fn(async () =>
@@ -212,7 +212,7 @@ describe("room updates command output", () => {
     ]);
   });
 
-  it("room updates reports but does not apply manual provider updates", async () => {
+  it("cloudroom updates reports but does not apply manual provider updates", async () => {
     const status = providerStatus({ codexNeedsUpdate: true });
     status.codex.installAction = null;
     stubServerApi({
@@ -229,7 +229,7 @@ describe("room updates command output", () => {
     vi.mocked(console.log).mockClear();
     await runCommand(["updates", "apply"], register);
     expect(collectLogPayloads(vi.mocked(console.log))).toEqual([
-      "No updates room can apply. Run room updates status for manual updates.",
+      "No updates cloudroom can apply. Run cloudroom updates status for manual updates.",
     ]);
   });
 });

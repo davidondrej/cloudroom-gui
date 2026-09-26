@@ -3,7 +3,7 @@ import { createBooleanPreferenceAtom } from "./browser-storage";
 
 const OPEN_LINKS_IN_APP_BROWSER_STORAGE_KEY = "bb.openLinksInAppBrowser";
 
-const OPEN_LINKS_IN_APP_BROWSER_DEFAULT = true;
+const OPEN_LINKS_IN_APP_BROWSER_DEFAULT = false;
 
 type UrlOpenTarget = "in-app-browser" | "external-browser" | "unhandled";
 

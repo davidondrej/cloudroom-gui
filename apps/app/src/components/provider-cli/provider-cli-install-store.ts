@@ -72,6 +72,7 @@ let snapshot: ProviderCliInstallSnapshot = INITIAL_SNAPSHOT;
 let queuedJobs: ProviderCliInstallJob[] = [];
 let queryClient: QueryClient | null = null;
 const listeners = new Set<() => void>();
+const autoStartedIssueKeys = new Set<string>();
 
 function setSnapshot(patch: Partial<ProviderCliInstallSnapshot>): void {
   snapshot = { ...snapshot, ...patch };
@@ -330,9 +331,19 @@ export function startProviderCliInstall(job: ProviderCliInstallJob): void {
   runInstall(job);
 }
 
+export function autoStartProviderCliInstall(job: ProviderCliInstallJob): void {
+  const issueKey = `${providerCliJobKey(job.hostId, job.issue.provider)}:${job.issue.fingerprint}`;
+  if (autoStartedIssueKeys.has(issueKey)) {
+    return;
+  }
+  autoStartedIssueKeys.add(issueKey);
+  startProviderCliInstall(job);
+}
+
 export function resetProviderCliInstallStoreForTests(): void {
   snapshot = INITIAL_SNAPSHOT;
   queuedJobs = [];
   queryClient = null;
   listeners.clear();
+  autoStartedIssueKeys.clear();
 }

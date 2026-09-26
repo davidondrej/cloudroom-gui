@@ -290,7 +290,7 @@ describe("workspace read caches on the environment routes", () => {
       );
       await reportQueuedCommandSuccess(harness, commitCommand, {
         commitSha: "abc123",
-        commitSubject: "room: automated commit",
+        commitSubject: "cloudroom: automated commit",
       });
       expect((await commitResponse).status).toBe(200);
 

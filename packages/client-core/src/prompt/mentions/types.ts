@@ -139,6 +139,10 @@ function commandSuggestionMatchRank(
     return 0;
   }
   const names = commandSuggestionSearchNames(suggestion);
+  // Keep the Cloudroom skill first for partial queries like "/c".
+  if (names.includes("cloudroom") && "cloudroom".startsWith(normalizedQuery)) {
+    return 0.5;
+  }
   if (names.includes(normalizedQuery)) {
     return 1;
   }

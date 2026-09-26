@@ -1,10 +1,11 @@
 export const RESERVED_BB_CLI_COMMANDS: readonly string[] = [
   "browser",
-  "cloudroom",
+  "cloud",
   "environment",
   "file",
   "guide",
   "help",
+  "import",
   "machine",
   "manager",
   "marketplace",
@@ -18,11 +19,12 @@ export const RESERVED_BB_CLI_COMMANDS: readonly string[] = [
   "theme",
   "thread",
   "updates",
+  "vm",
   "voice",
 ];
 
 export function pluginCliCall(pluginId: string, name: string): string {
   if (RESERVED_BB_CLI_COMMANDS.includes(name))
-    return `room plugin run ${pluginId}`;
-  return `room ${name}`;
+    return `cloudroom plugin run ${pluginId}`;
+  return `cloudroom ${name}`;
 }

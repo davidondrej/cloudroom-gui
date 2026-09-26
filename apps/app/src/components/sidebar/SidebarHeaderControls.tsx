@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
+import type { SidebarSectionId } from "@bb/client-core";
 import { Button } from "@bb/shared-ui/button";
 import { Icon } from "@bb/shared-ui/icon";
 import { COARSE_POINTER_ICON_SIZE_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
@@ -18,9 +19,9 @@ import {
 } from "@bb/shared-ui/dropdown-menu";
 import {
   sidebarOrganizationModeAtom,
-  sidebarChronologicalSortAtom,
-  sidebarSortDirectionAtom,
+  sidebarSectionSortsAtom,
 } from "./sidebarCollapsedAtoms";
+import { useSidebarSectionSort } from "./sidebarSectionSort";
 import { SidebarControlButton, SidebarRowControls } from "./SidebarRowControls";
 import { SIDEBAR_CONTROL_BUTTON_CLASS } from "./sidebarRowClasses";
 
@@ -46,11 +47,24 @@ const SIDEBAR_SORT_OPTIONS = [
   { label: "Alphabetical", sort: "alpha", direction: "ascending" },
 ] as const;
 
-function SidebarViewItems({ page }: { page: "organize" | "sort" }) {
+// Only Pinned has a saved drag order.
+const PINNED_SORT_OPTIONS = [
+  { label: "Drag order", sort: "manual", direction: "ascending" },
+  ...SIDEBAR_SORT_OPTIONS,
+] as const;
+
+function SidebarViewItems({
+  page,
+  sectionId,
+}: {
+  page: "organize" | "sort";
+  sectionId: SidebarSectionId;
+}) {
   const [organization, setOrganization] = useAtom(sidebarOrganizationModeAtom);
-  const [sort, setSort] = useAtom(sidebarChronologicalSortAtom);
-  const [savedDirection, setDirection] = useAtom(sidebarSortDirectionAtom);
-  const selectedSort = sort === "none" ? "updated" : sort;
+  const setSectionSorts = useSetAtom(sidebarSectionSortsAtom);
+  const current = useSidebarSectionSort()(sectionId);
+  const sortOptions =
+    sectionId === "pinned" ? PINNED_SORT_OPTIONS : SIDEBAR_SORT_OPTIONS;
   return (
     <DropdownMenuGroup
       aria-label={page === "organize" ? "Organize" : "Sort by"}
@@ -73,33 +87,40 @@ function SidebarViewItems({ page }: { page: "organize" | "sort" }) {
               </span>
             </DropdownMenuItem>
           ))
-        : SIDEBAR_SORT_OPTIONS.map((option) => {
-            const selected = selectedSort === option.sort;
-            const direction =
-              savedDirection === "default" ? option.direction : savedDirection;
-            const nextDirection = selected
-              ? direction === "ascending"
-                ? "descending"
-                : "ascending"
-              : option.direction;
+        : sortOptions.map((option) => {
+            const selected = current.sort === option.sort;
+            const manual = option.sort === "manual";
+            const direction = selected ? current.direction : option.direction;
+            const nextDirection =
+              selected && !manual
+                ? direction === "ascending"
+                  ? "descending"
+                  : "ascending"
+                : option.direction;
+            const announceDirection = selected && !manual;
             return (
               <DropdownMenuItem
                 key={option.sort}
                 role="menuitemradio"
                 aria-checked={selected}
                 aria-label={
-                  selected
+                  announceDirection
                     ? `${option.label}, ${direction}. Sort ${nextDirection}`
                     : option.label
                 }
                 onSelect={(event) => {
                   event.preventDefault();
-                  setSort(option.sort);
-                  setDirection(nextDirection);
+                  setSectionSorts((sorts) => ({
+                    ...sorts,
+                    [sectionId]: {
+                      sort: option.sort,
+                      direction: nextDirection,
+                    },
+                  }));
                 }}
               >
                 {option.label}
-                {selected && (
+                {announceDirection && (
                   <span className="sr-only">
                     , {direction}. Sort {nextDirection}
                   </span>
@@ -107,7 +128,13 @@ function SidebarViewItems({ page }: { page: "organize" | "sort" }) {
                 <span className="ml-auto inline-flex size-4 shrink-0 items-center justify-center">
                   {selected && (
                     <Icon
-                      name={direction === "ascending" ? "ArrowUp" : "ArrowDown"}
+                      name={
+                        manual
+                          ? "Check"
+                          : direction === "ascending"
+                            ? "ArrowUp"
+                            : "ArrowDown"
+                      }
                       className="size-4"
                     />
                   )}
@@ -121,6 +148,7 @@ function SidebarViewItems({ page }: { page: "organize" | "sort" }) {
 
 export function SidebarHeaderControls({
   label,
+  sectionId,
   onNewThread,
   showNewThread = true,
   children,
@@ -128,6 +156,7 @@ export function SidebarHeaderControls({
   onOpenChange,
 }: {
   label: string;
+  sectionId: SidebarSectionId;
   onNewThread?: () => void;
   showNewThread?: boolean;
   children?: ReactNode;
@@ -191,7 +220,7 @@ export function SidebarHeaderControls({
                 Back
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <SidebarViewItems page={page} />
+              <SidebarViewItems page={page} sectionId={sectionId} />
             </>
           ) : (
             <>
@@ -236,7 +265,10 @@ export function SidebarHeaderControls({
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                       <DropdownMenuSubContent className="min-w-32">
-                        <SidebarViewItems page={item.page} />
+                        <SidebarViewItems
+                          page={item.page}
+                          sectionId={sectionId}
+                        />
                       </DropdownMenuSubContent>
                     </DropdownMenuPortal>
                   </DropdownMenuSub>

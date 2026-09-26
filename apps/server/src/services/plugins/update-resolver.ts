@@ -214,7 +214,7 @@ export function evaluateCompatibility(args: {
 } {
   const appVersion = semver.coerce(args.appVersion);
   if (!appVersion) {
-    throw new Error(`cannot parse running Room version "${args.appVersion}"`);
+    throw new Error(`cannot parse running Cloudroom version "${args.appVersion}"`);
   }
   const devMode = appVersion.version === "0.0.0";
   const bbProblems: CompatibilityProblem[] = [];
@@ -231,7 +231,7 @@ export function evaluateCompatibility(args: {
         engine: "bb",
         required: args.bbRange,
         actual: appVersion.version,
-        message: `requires bb ${args.bbRange}, running Room is ${appVersion.version}`,
+        message: `requires bb ${args.bbRange}, running Cloudroom is ${appVersion.version}`,
       });
     }
   }
@@ -666,7 +666,7 @@ async function resolveGitRangeUpdate(args: {
     if (probes >= MAX_GIT_CANDIDATE_PROBES) {
       return {
         outcome: "unavailable",
-        detail: `no release of ${args.url} matching ${args.intent.range} runs on this Room within the newest ${MAX_GIT_CANDIDATE_PROBES} releases`,
+        detail: `no release of ${args.url} matching ${args.intent.range} runs on this Cloudroom within the newest ${MAX_GIT_CANDIDATE_PROBES} releases`,
       };
     }
     probes += 1;
@@ -779,7 +779,7 @@ export async function resolveGitRange(args: {
     if (probes >= MAX_GIT_CANDIDATE_PROBES) {
       return {
         outcome: "unavailable",
-        detail: `no release of ${args.url} matching ${args.range} runs on this Room within the newest ${MAX_GIT_CANDIDATE_PROBES} releases`,
+        detail: `no release of ${args.url} matching ${args.range} runs on this Cloudroom within the newest ${MAX_GIT_CANDIDATE_PROBES} releases`,
       };
     }
     probes += 1;

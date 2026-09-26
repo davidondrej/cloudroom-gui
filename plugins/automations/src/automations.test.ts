@@ -1573,21 +1573,21 @@ describe("room CLI injection for script runs", () => {
   it("prefers the env pointers over PATH and macOS install locations", () => {
     expect(
       bbBinaryCandidates({
-        ROOM_CLI: "/daemon/bundle/room",
+        ROOM_CLI: "/daemon/bundle/cloudroom",
         BB_CLI_DIR: "/other/dir",
       })[0],
-    ).toBe("/daemon/bundle/room");
+    ).toBe("/daemon/bundle/cloudroom");
     expect(bbBinaryCandidates({ BB_CLI_DIR: "/daemon/bundle" })[0]).toBe(
-      "/daemon/bundle/room",
+      "/daemon/bundle/cloudroom",
     );
   });
 
   it("expands PATH itself so every candidate is absolute", () => {
     expect(bbBinaryCandidates({ PATH: "/usr/bin:/opt/tools" })).toEqual([
-      "/usr/bin/room",
-      "/opt/tools/room",
-      "/opt/homebrew/bin/room",
-      "/usr/local/bin/room",
+      "/usr/bin/cloudroom",
+      "/opt/tools/cloudroom",
+      "/opt/homebrew/bin/cloudroom",
+      "/usr/local/bin/cloudroom",
     ]);
     expect(
       bbBinaryCandidates({ PATH: "/usr/bin" }).every((c) => c.startsWith("/")),
@@ -1596,26 +1596,26 @@ describe("room CLI injection for script runs", () => {
 
   it("drops entries that would resolve against the wrong directory", () => {
     expect(bbBinaryCandidates({ PATH: "/usr/bin::/bin" })).toEqual([
-      "/usr/bin/room",
-      "/bin/room",
-      "/opt/homebrew/bin/room",
-      "/usr/local/bin/room",
+      "/usr/bin/cloudroom",
+      "/bin/cloudroom",
+      "/opt/homebrew/bin/cloudroom",
+      "/usr/local/bin/cloudroom",
     ]);
     expect(
       bbBinaryCandidates({ ROOM_CLI: "  ", BB_CLI_DIR: "", PATH: "" }),
-    ).toEqual(["/opt/homebrew/bin/room", "/usr/local/bin/room"]);
+    ).toEqual(["/opt/homebrew/bin/cloudroom", "/usr/local/bin/cloudroom"]);
     expect(
       bbBinaryCandidates({ ROOM_CLI: "./room", BB_CLI_DIR: "rel/dir", PATH: "" }),
-    ).toEqual(["/opt/homebrew/bin/room", "/usr/local/bin/room"]);
+    ).toEqual(["/opt/homebrew/bin/cloudroom", "/usr/local/bin/cloudroom"]);
   });
 
   it("prepends bb's directory to PATH only when it is absolute", () => {
-    expect(scriptPathEnv("/daemon/bundle/room", "/usr/bin:/bin")).toBe(
+    expect(scriptPathEnv("/daemon/bundle/cloudroom", "/usr/bin:/bin")).toBe(
       "/daemon/bundle:/usr/bin:/bin",
     );
-    expect(scriptPathEnv("room", "/usr/bin:/bin")).toBe("/usr/bin:/bin");
+    expect(scriptPathEnv("cloudroom", "/usr/bin:/bin")).toBe("/usr/bin:/bin");
     expect(scriptPathEnv(null, "/usr/bin:/bin")).toBe("/usr/bin:/bin");
-    expect(scriptPathEnv("/daemon/bundle/room", undefined)).toBe(
+    expect(scriptPathEnv("/daemon/bundle/cloudroom", undefined)).toBe(
       "/daemon/bundle",
     );
   });

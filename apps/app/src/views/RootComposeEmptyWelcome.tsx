@@ -1,39 +1,26 @@
 import { Icon, type IconName } from "@bb/shared-ui/icon";
 import { BbLogo } from "@/components/ui/bb-logo";
+import { appToast } from "@/components/ui/app-toast";
+import { useHostDaemon } from "@/hooks/useHostDaemon";
+import { useImportBb } from "@/hooks/queries/cloudroom-queries";
 
 interface RootComposeEmptyWelcomeProps {
-  onCompose: (prompt?: string) => void;
-  onAddProject: () => void;
-  addProjectDisabled?: boolean;
+  onCompose: () => void;
 }
-
-const IMPORT_PROJECTS_PROMPT =
-  "Search my home directory (max depth 3) for git repositories touched in the last 30 days and import only those projects into Room using the cli";
-
-const LEARN_PROMPT =
-  "What can Room do, and how can you (my agent) interact with it? Summarize Room's capabilities and how you'd use the Room CLI to work with threads and projects.";
 
 interface WelcomeActionProps {
   icon: IconName;
   title: string;
   description: string;
   onClick: () => void;
-  disabled?: boolean;
 }
 
-function WelcomeAction({
-  icon,
-  title,
-  description,
-  onClick,
-  disabled,
-}: WelcomeActionProps) {
+function WelcomeAction({ icon, title, description, onClick }: WelcomeActionProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
-      className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-state-hover focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+      className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-state-hover focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
     >
       <Icon
         name={icon}
@@ -48,14 +35,23 @@ function WelcomeAction({
   );
 }
 
-export function RootComposeEmptyWelcome({
-  onCompose,
-  onAddProject,
-  addProjectDisabled,
-}: RootComposeEmptyWelcomeProps) {
+export function RootComposeEmptyWelcome({ onCompose }: RootComposeEmptyWelcomeProps) {
+  const { localHostId } = useHostDaemon();
+  const importBb = useImportBb();
+  const bringWorkOver = () => {
+    if (importBb.isPending) return;
+    if (!localHostId) return appToast.error("This Mac is not connected yet. Try again in a moment.");
+    importBb.mutate(localHostId, {
+      onSuccess: ({ imported, skipped }) =>
+        appToast.success(`Imported ${imported.length} BB thread${imported.length === 1 ? "" : "s"}`, {
+          description: skipped.length ? skipped.map((thread) => `${thread.title}: ${thread.reason}`).join(" · ") : undefined,
+        }),
+      onError: (error) => appToast.error(error.message),
+    });
+  };
   return (
     <div className="flex flex-col items-center gap-12 duration-500 animate-in fade-in-0 slide-in-from-bottom-2">
-      <div role="img" aria-label="Room" className="size-24 select-none">
+      <div role="img" aria-label="Cloudroom" className="size-24 select-none">
         <BbLogo className="size-full" />
       </div>
       <div className="flex w-full max-w-[360px] flex-col gap-1">
@@ -67,22 +63,9 @@ export function RootComposeEmptyWelcome({
         />
         <WelcomeAction
           icon="FolderGit"
-          title="Automatically import my projects"
-          description="Find repos touched in the last 30 days"
-          onClick={() => onCompose(IMPORT_PROJECTS_PROMPT)}
-        />
-        <WelcomeAction
-          icon="FolderPlus"
-          title="New project"
-          description="Create one from a local folder"
-          onClick={onAddProject}
-          disabled={addProjectDisabled}
-        />
-        <WelcomeAction
-          icon="Explore"
-          title="Learn what Room can do"
-          description="Get a tour of its capabilities"
-          onClick={() => onCompose(LEARN_PROMPT)}
+          title={importBb.isPending ? "Bringing your work over…" : "Bring your work over"}
+          description="Copy your open BB threads. Uses no tokens."
+          onClick={bringWorkOver}
         />
       </div>
     </div>

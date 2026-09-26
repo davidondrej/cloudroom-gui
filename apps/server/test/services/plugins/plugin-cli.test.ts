@@ -22,7 +22,7 @@ const CLI_SOURCE = `
       name: "acme",
       summary: "Acme tools",
       commands: [
-        { name: "issues", summary: "List issues", usage: "room acme issues [--json]" },
+        { name: "issues", summary: "List issues", usage: "cloudroom acme issues [--json]" },
       ],
       async run(argv: string[], ctx: any) {
         if (argv[0] === "fail") return { exitCode: 3, stderr: "acme failed" };
@@ -123,7 +123,7 @@ describe("plugin CLI commands (bb.cli.register + endpoints + skill + logs)", () 
             {
               name: "issues",
               summary: "List issues",
-              usage: "room acme issues [--json]",
+              usage: "cloudroom acme issues [--json]",
             },
           ],
         },
@@ -275,7 +275,7 @@ describe("plugin CLI commands (bb.cli.register + endpoints + skill + logs)", () 
         name: "bb-plugin-shadower",
         serverSource: `
           export default function plugin(bb: any) {
-            bb.cli.register({ name: "thread", summary: "s", commands: [{ name: "inspect", summary: "Inspect", usage: "room thread inspect" }], run: async () => ({ exitCode: 0, stdout: "thread" }) });
+            bb.cli.register({ name: "thread", summary: "s", commands: [{ name: "inspect", summary: "Inspect", usage: "cloudroom thread inspect" }], run: async () => ({ exitCode: 0, stdout: "thread" }) });
           }
         `,
       },
@@ -290,7 +290,7 @@ describe("plugin CLI commands (bb.cli.register + endpoints + skill + logs)", () 
       {
         level: "warn",
         message:
-          'CLI command "thread" collides with core command "room thread"; core keeps the short form. Use "room plugin run shadower" to invoke this plugin.',
+          'CLI command "thread" collides with core command "cloudroom thread"; core keeps the short form. Use "cloudroom plugin run shadower" to invoke this plugin.',
       },
     ]);
     expect(
@@ -300,7 +300,7 @@ describe("plugin CLI commands (bb.cli.register + endpoints + skill + logs)", () 
       join(pluginCommandsSkillDir(harness.config.dataDir), "SKILL.md"),
       "utf8",
     );
-    expect(skill).toContain("room plugin run shadower inspect");
+    expect(skill).toContain("cloudroom plugin run shadower inspect");
 
     const invalid = await writePlugin(
       join(harness.config.dataDir, "fixtures"),
@@ -350,8 +350,8 @@ describe("plugin CLI commands (bb.cli.register + endpoints + skill + logs)", () 
     expect(content).toContain("name: plugin-commands");
     expect(content).toContain("capped at 1048576 UTF-8 bytes");
     expect(content).toContain("plugin_cli_output_too_large");
-    expect(content).toContain("## room acme — Acme tools");
-    expect(content).toContain("room acme issues [--json]");
+    expect(content).toContain("## cloudroom acme — Acme tools");
+    expect(content).toContain("cloudroom acme issues [--json]");
 
     const sources = resolveSkillCatalogEntries(testLogger, {
       additionalSkillsRootPaths: [
@@ -374,8 +374,8 @@ describe("plugin CLI commands (bb.cli.register + endpoints + skill + logs)", () 
     );
     await harness.pluginService.reload("acme");
     const reloaded = await readFile(skillFile, "utf8");
-    expect(reloaded).toContain("## room acme2 — Acme v2");
-    expect(reloaded).not.toContain("## room acme —");
+    expect(reloaded).toContain("## cloudroom acme2 — Acme v2");
+    expect(reloaded).not.toContain("## cloudroom acme —");
   });
 
   it("bb.log writes JSONL to the plugin log file and the tail endpoint serves it", async () => {

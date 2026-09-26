@@ -62,7 +62,7 @@ function parseSecretName(value: string, label: string): string {
 
 function parseRequest(argv: string[]): ParsedRequest {
   if (argv[0] !== "request")
-    throw new Error("Usage: room secret request <NAME...> --write-env <path>");
+    throw new Error("Usage: cloudroom secret request <NAME...> --write-env <path>");
   const names: string[] = [];
   const descriptions = new Map<string, string>();
   let purpose: string | null = null;
@@ -159,10 +159,10 @@ async function runRequest(
 ): Promise<PluginCliResult> {
   const parsed = parseRequest(argv);
   if (!ctx.threadId)
-    throw new Error("room secret request must run from a Room thread.");
+    throw new Error("cloudroom secret request must run from a Cloudroom thread.");
   if (!ctx.cwd)
     throw new Error(
-      "room secret request requires the invoking working directory.",
+      "cloudroom secret request requires the invoking working directory.",
     );
   const thread = threadHostSchema.parse(
     await bb.sdk.threads.get({
@@ -247,7 +247,7 @@ export default function plugin(bb: BbPluginApi) {
         name: "request",
         summary: "Request one or more secrets in a secure user form.",
         usage:
-          "room secret request <NAME...> --write-env <path> [--purpose <text>] [--describe <NAME> <text>]...",
+          "cloudroom secret request <NAME...> --write-env <path> [--purpose <text>] [--describe <NAME> <text>]...",
       },
     ],
     async run(argv, ctx) {

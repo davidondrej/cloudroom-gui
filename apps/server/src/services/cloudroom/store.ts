@@ -1,5 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import { cloudroomCommands, cloudroomThreads, threads, threadPluginMetadata, type DbQueryConnection } from "@bb/db";
+import type { ProjectCopyProgress } from "@bb/domain";
 
 export type TeleportProgress = {
   id: string; owner: string; phase: "stopping" | "uploading" | "running" | "complete" | "cancelled" | "error" | "cancelling";
@@ -25,6 +26,16 @@ export function pendingTeleports(db: DbQueryConnection): { threadId: string; pro
     .map(row => ({ threadId: row.threadId, progress: JSON.parse(row.value) as TeleportProgress }))
     .filter(row => row.threadId === row.progress.owner && !["complete", "cancelled", "error"].includes(row.progress.phase));
 }
+const projectCopyNamespace = "cloudroom.project-copy";
+export function projectCopyProgress(db: DbQueryConnection, threadId: string): ProjectCopyProgress | null {
+  const row = db.select({ value: threadPluginMetadata.metadataJson }).from(threadPluginMetadata)
+    .where(and(eq(threadPluginMetadata.threadId, threadId), eq(threadPluginMetadata.pluginId, projectCopyNamespace))).get();
+  return row ? JSON.parse(row.value) as ProjectCopyProgress : null;
+}
+export function saveProjectCopyProgress(db: DbQueryConnection, threadId: string, value: ProjectCopyProgress): void {
+  db.insert(threadPluginMetadata).values({ threadId, pluginId: projectCopyNamespace, metadataJson: JSON.stringify(value) })
+    .onConflictDoUpdate({ target: [threadPluginMetadata.threadId, threadPluginMetadata.pluginId], set: { metadataJson: JSON.stringify(value) } }).run();
+}
 
 export type Binding = typeof cloudroomThreads.$inferSelect;
 export type Command = typeof cloudroomCommands.$inferSelect;
@@ -46,7 +57,16 @@ export function commands(db: DbQueryConnection, threadId: string): Command[] {
 }
 
 export function queuedPrompts(db: DbQueryConnection, threadId: string): Command[] {
-  return commands(db, threadId).filter(item => item.command === "prompt" && item.id !== `first_${threadId}` && item.state === "accepted" && !JSON.parse(item.input).teleport_handoff);
+  const all = commands(db, threadId);
+  const active = db.select({ status: threads.status }).from(threads).where(eq(threads.id, threadId)).get()?.status === "active";
+  const cancelling = new Set(all.filter(item => item.command === "cancel" && ["sending", "accepted", "completed"].includes(item.state)).map(item => JSON.parse(item.input).target_request_id));
+  const queued = all.filter(item => item.command === "prompt" && item.id !== `first_${threadId}` && (item.state === "accepted" || (active && item.state === "sending")) && !cancelling.has(item.id) && !JSON.parse(item.input).teleport_handoff);
+  // Mirror the core: the latest reorder puts its listed prompts first; newer prompts follow in send order.
+  const reorder = [...all].reverse().find(item => item.command === "reorder" && ["sending", "accepted", "completed"].includes(item.state));
+  if (!reorder) return queued;
+  const order: string[] = JSON.parse(reorder.input).order;
+  const rank = (id: string) => { const index = order.indexOf(id); return index === -1 ? order.length : index; };
+  return queued.map((item, index) => ({ item, index })).sort((a, b) => rank(a.item.id) - rank(b.item.id) || a.index - b.index).map(({ item }) => item);
 }
 
 export function command(db: DbQueryConnection, id: string): Command | null {

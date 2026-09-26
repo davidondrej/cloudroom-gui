@@ -49,6 +49,11 @@ export const APP_COMMAND_GROUPS: readonly AppCommandGroup[] = [
       ),
       command("thread.rename", "Rename thread", "Rename the focused thread."),
       command(
+        "thread.pin",
+        "Pin or unpin thread",
+        "Pin or unpin the focused thread.",
+      ),
+      command(
         "thread.archive",
         "Archive thread",
         "Archive the focused thread.",
@@ -78,19 +83,19 @@ export const APP_COMMAND_GROUPS: readonly AppCommandGroup[] = [
       paletteHiddenCommand(
         "palette.open",
         "Open quick palette",
-        "Search and run Room commands from the keyboard.",
+        "Search and run Cloudroom commands from the keyboard.",
       ),
-      command("window.new", "New window", "Open another Room desktop window."),
+      command("window.new", "New window", "Open another Cloudroom desktop window."),
       command(
         "app.back",
         "Back to app",
         "Return from Settings, Plugins, or Skills to the app.",
       ),
-      command("settings.open", "Open settings", "Open Room settings."),
+      command("settings.open", "Open settings", "Open Cloudroom settings."),
       command(
         "settings.openServers",
         "Open server settings",
-        "Open settings to add or manage Room servers.",
+        "Open settings to add or manage Cloudroom servers.",
       ),
       command(
         "sidebar.toggle",
@@ -147,7 +152,7 @@ export const APP_COMMAND_GROUPS: readonly AppCommandGroup[] = [
       command(
         "logs.openServerDaemon",
         "Open server and daemon logs",
-        "Open the desktop log viewer for the Room server and host daemon.",
+        "Open the desktop log viewer for the Cloudroom server and host daemon.",
       ),
       command(
         "notifications.open",
@@ -252,7 +257,7 @@ export const APP_COMMAND_GROUPS: readonly AppCommandGroup[] = [
       paletteHiddenCommand(
         id,
         `Choose answer ${index + 1}`,
-        `Choose visible answer ${index + 1} when Room asks a question.`,
+        `Choose visible answer ${index + 1} when Cloudroom asks a question.`,
       ),
     ),
   },

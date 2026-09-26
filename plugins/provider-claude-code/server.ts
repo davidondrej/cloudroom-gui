@@ -1,3 +1,7 @@
+import {
+  claudeLoginHostContract,
+  claudeLoginRpcContract,
+} from "./src/login-contract.js";
 import { registerUsageSource } from "./src/usage-source.js";
 import type { BbPluginApi } from "@get-bb/plugin-sdk";
 import {
@@ -9,25 +13,42 @@ import { CLAUDE_NATIVE_ROOTS_DECLARATION } from "./src/native-roots.js";
 
 export default function plugin(bb: BbPluginApi) {
   registerUsageSource(bb);
+  bb.experimental_aiServices.register({
+    id: "claude-code",
+    displayName: "Claude Code",
+    kinds: ["inference"],
+  });
+  const host = bb.hosts.experimental_client({
+    contract: claudeLoginHostContract,
+  });
+  bb.rpc.register(claudeLoginRpcContract, {
+    async claudeAccount({ hostId, environmentId, ...input }) {
+      const target = environmentId
+        ? (await bb.sdk.environments.get({ environmentId })).hostId
+        : (hostId ?? (await bb.sdk.system.config()).primaryHostId);
+      if (!target) throw new Error("No local machine is connected.");
+      return host.call("account", input, { hostId: target });
+    },
+  });
   bb.settings.define({
     memoryEnabled: {
       type: "boolean",
       label: "Claude Code memory",
       description:
-        "Allow Claude Code to read and write its native auto-memory for Room threads.",
+        "Allow Claude Code to read and write its native auto-memory for Cloudroom threads.",
       default: true,
     },
     subagentsDisabled: {
       type: "boolean",
       label: "Disable provider subagents",
       description:
-        "Hide Claude Code's native Task tool so agents use Room for delegation.",
+        "Hide Claude Code's native Task tool so agents use Cloudroom for delegation.",
       default: true,
     },
     workflowsDisabled: {
       type: "boolean",
       label: "Disable Workflow tool",
-      description: "Hide Claude Code's native Workflow tool for Room threads.",
+      description: "Hide Claude Code's native Workflow tool for Cloudroom threads.",
       default: false,
     },
     chromeEnabled: {

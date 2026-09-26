@@ -79,7 +79,7 @@ function renderAutomationDueMessage(args: {
   automationId: string;
   prompt: string;
 }): string {
-  return `[room automation due:${args.automationId}]\n\n${args.prompt}`;
+  return `[cloudroom automation due:${args.automationId}]\n\n${args.prompt}`;
 }
 
 function isThreadReusable(thread: SdkThread): boolean {

@@ -141,9 +141,11 @@ function runPluginNewThreadPanelAction({
 }
 
 export function usePluginPanelActions({
+  forkAvailable,
   openPluginPanel,
   threadId,
 }: {
+  forkAvailable: boolean;
   openPluginPanel: OpenPluginPanelHandler;
   threadId: string | null | undefined;
 }): readonly PluginPanelActionEntry[] {
@@ -152,15 +154,17 @@ export function usePluginPanelActions({
     if (threadId === null || threadId === undefined || threadId.length === 0) {
       return [];
     }
-    return threadPanelActions.map((action) => ({
-      id: `plugin-action:${action.pluginId}:${action.id}`,
-      pluginId: action.pluginId,
-      icon: action.icon ?? null,
-      title: action.title,
-      onSelect: () =>
-        runPluginPanelAction({ action, openPluginPanel, threadId }),
-    }));
-  }, [openPluginPanel, threadId, threadPanelActions]);
+    return threadPanelActions
+      .filter((action) => forkAvailable || !action.experimental_requiresFork)
+      .map((action) => ({
+        id: `plugin-action:${action.pluginId}:${action.id}`,
+        pluginId: action.pluginId,
+        icon: action.icon ?? null,
+        title: action.title,
+        onSelect: () =>
+          runPluginPanelAction({ action, openPluginPanel, threadId }),
+      }));
+  }, [forkAvailable, openPluginPanel, threadId, threadPanelActions]);
 }
 
 export function usePluginNewThreadPanelActions({

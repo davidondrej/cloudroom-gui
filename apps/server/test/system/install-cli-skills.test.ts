@@ -14,12 +14,12 @@ import { resolveServerOwnedSkillCatalogEntries } from "../../src/services/skills
 async function writeBuiltinCliSkill(harness: TestAppHarness): Promise<void> {
   const skillDirectory = join(
     harness.deps.config.builtinSkillsRootPath,
-    "room-cli",
+    "cloudroom",
   );
   await mkdir(skillDirectory, { recursive: true });
   await writeFile(
     join(skillDirectory, "SKILL.md"),
-    "---\nname: room-cli\ndescription: Control bb from the CLI.\n---\n",
+    "---\nname: cloudroom\ndescription: Control bb from the CLI.\n---\n",
   );
 }
 
@@ -29,9 +29,9 @@ function expectedCliSkillTreeHash(harness: TestAppHarness): string {
     dataDir: harness.deps.config.dataDir,
     logger: harness.deps.logger,
     skillTreeRegistry: harness.deps.skillTreeRegistry,
-  }).find(({ runtimeSource }) => runtimeSource.name === "room-cli");
+  }).find(({ runtimeSource }) => runtimeSource.name === "cloudroom");
   if (entry?.runtimeSource.kind !== "tree") {
-    throw new Error("The built-in room-cli skill did not resolve to a tree");
+    throw new Error("The built-in cloudroom skill did not resolve to a tree");
   }
   return entry.runtimeSource.treeHash;
 }
@@ -45,7 +45,7 @@ function installRequest(hostIds: string[]): Request {
 }
 
 describe("install cli skills", () => {
-  it("installs the built-in room-cli tree on every requested machine", async () => {
+  it("installs the built-in cloudroom tree on every requested machine", async () => {
     await withTestHarness(async (harness) => {
       await writeBuiltinCliSkill(harness);
       const laptop = seedHostSession(harness.deps, { id: "host-laptop" });
@@ -57,13 +57,13 @@ describe("install cli skills", () => {
           handle: (request) => {
             expect(request.command).toMatchObject({
               type: "host.install_global_skills",
-              skills: [{ name: "room-cli", entryPath: "SKILL.md" }],
+              skills: [{ name: "cloudroom", entryPath: "SKILL.md" }],
             });
             return {
               ok: true,
               result: {
                 installations: [
-                  { name: "room-cli", path: `/home/${host.id}/.agents/skills` },
+                  { name: "cloudroom", path: `/home/${host.id}/.agents/skills` },
                 ],
               },
             };
@@ -99,7 +99,7 @@ describe("install cli skills", () => {
         handle: () => ({
           ok: true,
           result: {
-            installations: [{ name: "room-cli", path: "/home/u/.agents/skills" }],
+            installations: [{ name: "cloudroom", path: "/home/u/.agents/skills" }],
           },
         }),
       });
@@ -163,15 +163,15 @@ describe("install cli skills", () => {
           handle: (request) => {
             expect(request.command).toMatchObject({
               type: "host.global_skills_status",
-              names: ["room-cli"],
+              names: ["cloudroom"],
             });
             return {
               ok: true,
               result: {
                 entries: [
                   {
-                    name: "room-cli",
-                    path: `/home/${host.id}/.agents/skills/room-cli`,
+                    name: "cloudroom",
+                    path: `/home/${host.id}/.agents/skills/cloudroom`,
                     treeHash: hashByHostId[host.id] ?? null,
                   },
                 ],

@@ -35,6 +35,7 @@ import {
   SIDEBAR_HOVER_ACTIONS_CLASS,
   SIDEBAR_HOVER_ACTIONS_FADE_CLASS,
   SIDEBAR_HOVER_ACTIONS_INSET_CLASS,
+  SIDEBAR_HOVER_ACTIONS_MOBILE_ALWAYS_VALUE,
   SIDEBAR_HOVER_ACTIONS_ROW_CLASS,
 } from "@/components/ui/sidebar-hover-actions.js";
 import {
@@ -692,7 +693,7 @@ function ThreadRowComponent({
         )}
       >
         <Icon
-          name={thread.executionTarget === "cloud" && (!thread.teleport || thread.teleport.phase === "complete") ? "Cloud" : "Laptop"}
+          name={thread.executionTarget === "cloud" && (!thread.teleport || ["complete", "cancelled"].includes(thread.teleport.phase)) ? "Cloud" : "Laptop"}
           aria-label={
             thread.teleport && !["complete", "cancelled"].includes(thread.teleport.phase) ? "Teleport in progress" : thread.executionTarget === "cloud" ? "Cloud thread" : "Local thread"
           }
@@ -794,16 +795,22 @@ function ThreadRowComponent({
                 data-sidebar-hover-actions-open={
                   isActionsOpen ? "true" : undefined
                 }
+                data-sidebar-hover-actions-mobile={
+                  SIDEBAR_HOVER_ACTIONS_MOBILE_ALWAYS_VALUE
+                }
                 className={cn(
                   SIDEBAR_HOVER_ACTIONS_CLASS,
-                  "absolute inset-y-0 right-0 z-10 flex items-center justify-end max-md:pointer-coarse:hidden",
+                  "absolute inset-y-0 right-0 z-10 flex items-center justify-end max-md:pointer-coarse:right-full",
                 )}
               >
                 <SidebarRowControls
                   primaryAction={
                     <ThreadArchiveQuickAction
                       thread={thread}
-                      className={SIDEBAR_CONTROL_BUTTON_CLASS}
+                      className={cn(
+                        SIDEBAR_CONTROL_BUTTON_CLASS,
+                        "max-md:pointer-coarse:hidden",
+                      )}
                     />
                   }
                 >

@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -21,6 +21,8 @@ const bundle = () => ({
 async function harness() {
   const dir = await mkdtemp(join(tmpdir(), "bb-machine-enrollment-test-"));
   directories.push(dir);
+  await mkdir(join(dir, "npm", "bin"), { recursive: true });
+  await writeFile(join(dir, "npm", "bin", "bb-app"), "");
   const fetchFn = vi.fn<typeof fetch>(async () =>
     Response.json(
       { hostId: "host_test", hostKey: "private-durable" },

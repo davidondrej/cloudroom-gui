@@ -271,7 +271,7 @@ function ThreadPills({ links }: { links: ThreadLink[] | undefined }) {
       {links.map((link, index) => (
         <Badge
           key={link.threadId}
-          title={`Open Room thread ${link.threadId}`}
+          title={`Open Cloudroom thread ${link.threadId}`}
           onClick={(event) => {
             event.stopPropagation();
             navigate.toThread(link.threadId);
@@ -2149,7 +2149,7 @@ function GithubPanelBody({
   }
   if (status !== null && status.repos.length === 0) {
     return (
-      <EmptyState message="No GitHub repos tracked yet. Create a Room project whose checkout has a GitHub origin remote, or add repos via the extraRepos plugin setting." />
+      <EmptyState message="No GitHub repos tracked yet. Create a Cloudroom project whose checkout has a GitHub origin remote, or add repos via the extraRepos plugin setting." />
     );
   }
 

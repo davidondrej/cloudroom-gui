@@ -8,7 +8,7 @@ import {
   useParams,
 } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
-import { CloudroomSignInGate } from "./components/CloudroomSignInGate";
+import { CloudroomAccountPanels } from "./components/CloudroomAccountPanels";
 import { AuthCallbackView } from "./views/AuthCallbackView";
 import { QuickCreateProjectProvider } from "./hooks/useQuickCreateProject";
 import { RouteNavigationProvider } from "./components/ui/app-route-anchor";
@@ -441,7 +441,7 @@ export function App() {
                 <Route path="*" element={<AppRoutes />} />
               </Routes>
               <ProviderCliInstallLogDialogHost />
-              <CloudroomSignInGate />
+              <CloudroomAccountPanels />
             </AppFileExternalNavigationHost>
           </AppNavigationUrlHost>
         </RouteNavigationProvider>

@@ -8,6 +8,7 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ProviderInfo } from "@bb/domain";
 import { defaultAppSettings } from "@bb/domain";
 import { makeProviderInfo } from "@bb/test-helpers/domain-fixtures";
@@ -124,12 +125,25 @@ describe("ProvidersSettingsSection", () => {
       ...defaultAppSettings,
       providerCompletedTurnDisplay: { codex: "flat" as const },
     };
+    const client = new QueryClient();
+    client.setQueryData(["cloudroom-account"], { ready: false });
+    client.setQueryData(["claude-connection", "local", "primary", null], {
+      state: "connected",
+      message: null,
+      login_id: null,
+      verification_url: null,
+    });
     render(
       <ProvidersSettingsSection
         disabled={false}
         generalSettings={generalSettings}
         onGeneralSettingsChange={onChange}
       />,
+      {
+        wrapper: ({ children }) => (
+          <QueryClientProvider client={client}>{children}</QueryClientProvider>
+        ),
+      },
     );
 
     const claudeSwitch = screen.getByRole("switch", {

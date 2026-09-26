@@ -2,6 +2,9 @@ import { z } from "zod";
 
 const UI_PREFERENCE_STRING_MAX_LENGTH = 1_024;
 const UI_PREFERENCE_LIST_MAX_LENGTH = 10_000;
+const THREAD_NAMING_RULES_MAX_LENGTH = 4_000;
+export const DEFAULT_THREAD_NAMING_RULES =
+  "Name the thread after the main thing the user wants to do. All lowercase, just 2-5 clear descriptive words.";
 
 const sidebarOrganizationModeSchema = z.enum([
   "project",
@@ -22,6 +25,12 @@ export type SidebarChronologicalSort = z.infer<
   typeof sidebarChronologicalSortSchema
 >;
 
+const sidebarSectionSortSchema = z.object({
+  sort: z.enum(["manual", "updated", "created", "alpha"]),
+  direction: z.enum(["ascending", "descending"]),
+});
+export type SidebarSectionSort = z.infer<typeof sidebarSectionSortSchema>;
+
 const collapsibleSidebarSectionIdSchema = z.enum(["pinned", "threads"]);
 
 const uiPreferenceStringSchema = z
@@ -36,6 +45,7 @@ export const UI_PREFERENCE_KEYS = [
   "sidebar.organizationMode",
   "sidebar.chronologicalSort",
   "sidebar.sortDirection",
+  "sidebar.sectionSorts",
   "sidebar.sectionOrder",
   "sidebar.manualSectionOrder",
   "sidebar.machineSectionOrder",
@@ -51,6 +61,9 @@ export const UI_PREFERENCE_KEYS = [
   "sidebar.visiblePluginPanels",
   "sidebar.navigationProvider",
   "sidebar.threadListProvider",
+  "threadNaming.model",
+  "threadNaming.fallbackModel",
+  "threadNaming.rules",
 ] as const;
 export type UiPreferenceKey = (typeof UI_PREFERENCE_KEYS)[number];
 const uiPreferenceKeySchema = z.enum(UI_PREFERENCE_KEYS);
@@ -88,6 +101,11 @@ export const uiPreferenceDefinitions = {
     z.enum(["default", "ascending", "descending"]),
     "default",
     "Sidebar thread sort direction; default preserves the selected field's original direction.",
+  ),
+  "sidebar.sectionSorts": defineUiPreference(
+    z.record(uiPreferenceStringSchema, sidebarSectionSortSchema),
+    {},
+    "Sort per sidebar section id. Sections without an entry use sidebar.chronologicalSort. Pinned also allows manual drag order.",
   ),
   "sidebar.sectionOrder": defineUiPreference(
     uiPreferenceStringListSchema,
@@ -165,6 +183,21 @@ export const uiPreferenceDefinitions = {
     uiPreferenceStringSchema,
     "__automatic__",
     "Plugin that renders the sidebar thread list, or __automatic__ / __builtin__.",
+  ),
+  "threadNaming.model": defineUiPreference(
+    uiPreferenceStringSchema.nullable(),
+    null,
+    "Model that names new threads after the first message, as provider/model; null uses the app's inference model.",
+  ),
+  "threadNaming.fallbackModel": defineUiPreference(
+    uiPreferenceStringSchema.nullable(),
+    null,
+    "Model that names new threads when the naming model fails, as provider/model; null retries the naming model on timeouts.",
+  ),
+  "threadNaming.rules": defineUiPreference(
+    z.string().trim().min(1).max(THREAD_NAMING_RULES_MAX_LENGTH),
+    DEFAULT_THREAD_NAMING_RULES,
+    "Rules and formatting the model follows when naming new threads.",
   ),
 } as const satisfies Record<UiPreferenceKey, UiPreferenceDefinition>;
 

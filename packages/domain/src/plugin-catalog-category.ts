@@ -44,7 +44,7 @@ export const PLUGIN_CATALOG_CATEGORIES = [
   {
     id: "themes-and-appearance",
     displayName: "Themes & Appearance",
-    description: "Personalize how Room looks and feels.",
+    description: "Personalize how Cloudroom looks and feels.",
   },
   {
     id: "thread-management",
@@ -104,23 +104,23 @@ export const PLUGIN_CATALOG_CATEGORIES = [
     id: "cloud-and-remote",
     displayName: "Cloud & Remote",
     description:
-      "Run Room work in cloud environments or access Room from elsewhere.",
+      "Run Cloudroom work in cloud environments or access Cloudroom from elsewhere.",
   },
   {
     id: "command-line",
     displayName: "Command Line",
-    description: "Work with shells and command-line programs inside Room.",
+    description: "Work with shells and command-line programs inside Cloudroom.",
   },
   {
     id: "utilities",
     displayName: "Utilities",
-    description: "Inspect or control the computers Room runs on.",
+    description: "Inspect or control the computers Cloudroom runs on.",
   },
   {
     id: "plugin-development",
     displayName: "Plugin Development",
     description:
-      "Understand, inspect, build, or debug Room and its plugin surfaces.",
+      "Understand, inspect, build, or debug Cloudroom and its plugin surfaces.",
   },
   {
     id: "tasks-and-workflows",

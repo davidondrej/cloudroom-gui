@@ -5,7 +5,7 @@ where the user can add its prompt while reviewing the other settings. It can
 also be repaired directly:
 
 ```bash
-room automation update <automationId> --project <id> --prompt "<prompt>"
+cloudroom automation update <automationId> --project <id> --prompt "<prompt>"
 ```
 
 Writes remain strict. Run, pause, and resume reject damaged records; update
@@ -27,11 +27,11 @@ Choose one of two execution update forms:
   reasoning, tier, and permission selection together:
 
 ```bash
-room automation update <automationId> --project <id> \
+cloudroom automation update <automationId> --project <id> \
   --environment <environment-id-or-path>
-room automation update <automationId> --project <id> \
+cloudroom automation update <automationId> --project <id> \
   --target-thread <thread-id>
-room automation update <automationId> --project <id> \
+cloudroom automation update <automationId> --project <id> \
   --new-environment worktree [--base-branch <branch>]
 ```
 

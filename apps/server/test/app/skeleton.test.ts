@@ -201,7 +201,7 @@ describe("server skeleton", () => {
     try {
       const response = await serverApp.app.request("/api/v1/hosts");
       expect(response.status).toBe(200);
-      expect(logger.debug).toHaveBeenCalledWith(
+      expect(logger.info).toHaveBeenCalledWith(
         expect.objectContaining({
           durationMs: expect.any(Number),
           method: "GET",
@@ -247,7 +247,10 @@ describe("server skeleton", () => {
       );
 
       expect(response.status).toBe(204);
-      expect(logger.debug).not.toHaveBeenCalled();
+      expect(logger.info).not.toHaveBeenCalledWith(
+        expect.anything(),
+        "Slow API request",
+      );
     } finally {
       await serverApp.closeWebSockets();
       await harness.cleanup();

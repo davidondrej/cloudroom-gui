@@ -42,6 +42,7 @@ import type {
 import type { WorkspaceOpenTarget } from "@bb/host-daemon-contract";
 import { appToast } from "@/components/ui/app-toast";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
+import { useThreadOpenTiming } from "@/lib/perf";
 import type { ThreadSecondaryPanel as ThreadSecondaryPanelTab } from "@/lib/thread-secondary-panel";
 import {
   PluginDetailPanelContext,
@@ -309,6 +310,7 @@ import { useRouteState } from "@/hooks/useRouteState";
 import { useAppCommandHandler } from "@/components/commands/AppCommandProvider";
 import { DefaultPaneContextProvider, usePaneContext } from "./PaneContext";
 import { ThreadArchiveCommandHandler } from "./ThreadArchiveCommandHandler";
+import { ThreadPinCommandHandler } from "./ThreadPinCommandHandler";
 import { ThreadRenameCommandHandler } from "./ThreadRenameCommandHandler";
 
 const EMPTY_PARENT_THREADS: readonly ThreadListEntry[] = [];
@@ -716,10 +718,6 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     storageFiles: threadStorageFiles,
     terminalSessions: terminalsListQuery.data?.sessions,
   });
-  const pluginPanelActions = usePluginPanelActions({
-    openPluginPanel,
-    threadId,
-  });
   const {
     fileOpeners: pluginFileOpeners,
     threadPanelActions: pluginThreadPanelActions,
@@ -996,6 +994,11 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     thread ?? null,
     threadProviderInfo?.capabilities.supportsFork ?? false,
   );
+  const pluginPanelActions = usePluginPanelActions({
+    forkAvailable: isForkAvailable,
+    openPluginPanel,
+    threadId,
+  });
   const dismissCompactKeyboard = useCallback(() => {
     if (!renderSecondaryPanelAsDrawer) {
       return;
@@ -1214,6 +1217,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     thread?.environmentId !== undefined &&
     environment?.status === "ready" &&
     connectedHostIds.has(environment.hostId);
+  const isCloudThread = thread?.executionTarget === "cloud";
   const createThreadInEnvironment = useCreateThreadInEnvironment({
     projectId,
     environmentId: thread?.environmentId ?? "",
@@ -1993,6 +1997,10 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     childThreadsSection?.items ?? EMPTY_CHILD_THREAD_ITEMS,
   );
   const isThreadTimelinePending = timelineLoading && timelineRows.length === 0;
+  useThreadOpenTiming(
+    threadId,
+    thread !== undefined && !isThreadTimelinePending,
+  );
   useThreadReadTracking({
     markThreadRead,
     thread,
@@ -2622,12 +2630,21 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
               openBrowserTabAndReveal();
             }}
             onStartTerminal={
-              canCreateTerminal
+              canCreateTerminal || isCloudThread
                 ? () => {
                     activateTab(tab.id);
                     handleStartTerminal();
                   }
                 : undefined
+            }
+            // Cloud VMs have no interactive shell yet; show why instead of hiding it.
+            startTerminalDisabled={isCloudThread}
+            startTerminalTrailing={
+              isCloudThread ? (
+                <span className="text-xs text-muted-foreground">
+                  Not on Cloud yet
+                </span>
+              ) : undefined
             }
             pluginActions={pluginPanelActions}
           />
@@ -3016,6 +3033,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     <>
       <ThreadArchiveCommandHandler thread={thread} />
       <ThreadRenameCommandHandler thread={thread} />
+      <ThreadPinCommandHandler thread={thread} />
       <ThreadProviderContext.Provider value={threadProviderContextValue}>
         <PluginThreadPanelNavigationProvider
           openThreadPanel={handleOpenTimelinePluginPanel}

@@ -414,7 +414,7 @@ export function toDevProcessEnv(args: DevProcessEnvArgs): NodeJS.ProcessEnv {
     ROOM_SERVER_URL: args.config.serverUrl,
     ROOM_HOST_DAEMON_PORT: String(args.config.ports.hostDaemonPort),
     ROOM_DATA_DIR: args.config.dataDir,
-    ROOM_CLI: join(args.config.repoRoot, "apps", "cli", "bin", "room"),
+    ROOM_CLI: join(args.config.repoRoot, "apps", "cli", "bin", "cloudroom"),
     NODE_ENV: "development",
   };
 }

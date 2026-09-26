@@ -298,11 +298,11 @@ describe("createAgentRuntime command contracts", () => {
       expect(record.last("thread/name/set")?.params).toEqual({
         threadId: "t1",
         providerThreadId: "prov-1",
-        title: "[room] New Title",
+        title: "[cloudroom] New Title",
       });
       expect(events).not.toContainEqual(
         expect.objectContaining({
-          threadName: "[room] New Title",
+          threadName: "[cloudroom] New Title",
           type: "thread/name/updated",
         }),
       );

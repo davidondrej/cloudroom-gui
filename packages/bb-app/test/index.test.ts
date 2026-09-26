@@ -2209,7 +2209,7 @@ describe("bb-app launcher", () => {
       "host-daemon/dist/bb-plugin-host-worker.mjs",
     );
     expect(metadata.files).toContain("host-daemon/dist/room");
-    expect(metadata.files).toContain("host-daemon/dist/room-chunks");
+    expect(metadata.files).toContain("host-daemon/dist/cloudroom-chunks");
     expect(metadata.os).toEqual(["darwin", "linux"]);
   });
 
@@ -2235,10 +2235,10 @@ describe("bb-app launcher", () => {
       }
 
       const missingChunks =
-        /^Missing bundled room CLI chunks at .*\/host-daemon\/dist\/room-chunks\. Rebuild bb-app/;
+        /^Missing bundled room CLI chunks at .*\/host-daemon\/dist\/cloudroom-chunks\. Rebuild bb-app/;
       expect(() => assertBbAppArtifacts(context)).toThrow(missingChunks);
 
-      const chunkDir = join(context.daemonBundleDir, "room-chunks");
+      const chunkDir = join(context.daemonBundleDir, "cloudroom-chunks");
       mkdirSync(chunkDir);
       expect(() => assertBbAppArtifacts(context)).toThrow(missingChunks);
 
@@ -2265,11 +2265,11 @@ describe("bb-app launcher", () => {
     );
     const packageRoot = mkdtempSync(join(tmpdir(), "bb-app-prune-"));
     try {
-      const chunkDir = join(packageRoot, "host-daemon", "dist", "room-chunks");
+      const chunkDir = join(packageRoot, "host-daemon", "dist", "cloudroom-chunks");
       mkdirSync(chunkDir, { recursive: true });
       writeFileSync(
         join(packageRoot, "host-daemon", "dist", "room"),
-        'import"./room-chunks/chunk-LIVE.js";\n',
+        'import"./cloudroom-chunks/chunk-LIVE.js";\n',
       );
       writeFileSync(join(chunkDir, "chunk-LIVE.js"), "export var a=1;\n");
       writeFileSync(join(chunkDir, "chunk-STALE.js"), "export var s=1;\n");
@@ -2278,7 +2278,7 @@ describe("bb-app launcher", () => {
         JSON.stringify({
           name: "bb-app-prune-fixture",
           version: "0.0.1",
-          files: ["host-daemon/dist/room", "host-daemon/dist/room-chunks"],
+          files: ["host-daemon/dist/room", "host-daemon/dist/cloudroom-chunks"],
         }),
       );
 

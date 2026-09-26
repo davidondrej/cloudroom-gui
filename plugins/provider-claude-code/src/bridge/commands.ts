@@ -76,7 +76,7 @@ export const claudeThreadForkParamsSchema =
 export const claudeTurnStartParamsSchema = z.object({
   threadId: z.string(),
   providerThreadId: z.string().nullable(),
-  input: z.array(z.unknown()),
+  input: canonicalTurnStartParamsSchema.shape.input,
   model: z.string().optional(),
   reasoningLevel: reasoningLevelSchema.optional(),
   workflowsEnabled: z.boolean().optional(),

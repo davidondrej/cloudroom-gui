@@ -8,13 +8,13 @@ import {
 import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import { registerThreadCommands } from "../../commands/thread/index.js";
 
-describe("room thread output command output", () => {
+describe("cloudroom thread output command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
     registerThreadCommands(program, () => "http://server");
 
-  it("room thread output requires a thread id or --self", async () => {
+  it("cloudroom thread output requires a thread id or --self", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-output-context");
     const getOutput = vi.fn(async () => ({ output: "FINAL" }));
     stubServerApi({ "v1.threads.:id.output.$get": getOutput });
@@ -29,7 +29,7 @@ describe("room thread output command output", () => {
     );
   });
 
-  it("room thread output --self resolves from ROOM_THREAD_ID", async () => {
+  it("cloudroom thread output --self resolves from ROOM_THREAD_ID", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-output-context");
     const getOutput = vi.fn(async () => ({ output: "FINAL" }));
     stubServerApi({ "v1.threads.:id.output.$get": getOutput });
@@ -45,7 +45,7 @@ describe("room thread output command output", () => {
     expect(collectLogLines(vi.mocked(console.log))).toContain("FINAL");
   });
 
-  it("room thread output --json prints the raw output payload", async () => {
+  it("cloudroom thread output --json prints the raw output payload", async () => {
     const getOutput = vi.fn(async () => ({ output: "FINAL" }));
     stubServerApi({ "v1.threads.:id.output.$get": getOutput });
 

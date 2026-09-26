@@ -1,20 +1,20 @@
 ---
 kind: instruction
-title: Room Guide Automations
+title: Cloudroom Guide Automations
 summary: Command reference for scheduled agent and script work.
 intent: Help agents create, edit, inspect, and run automations through the CLI.
 ---
 Automations schedule recurring or one-shot work. Agent automations run a prompt
 in a thread; script automations run stored code without model usage.
 
-  room automation list --project <id>
-  room automation show <automationId> --project <id>
-  room automation create --project <id> --name <name> <schedule> <execution>
-  room automation update <automationId> --project <id> [changes]
-  room automation pause|resume <automationId> --project <id>
-  room automation run <automationId> --project <id>
-  room automation runs <automationId> --project <id> [--limit <count>]
-  room automation delete <automationId> --project <id> --yes
+  cloudroom automation list --project <id>
+  cloudroom automation show <automationId> --project <id>
+  cloudroom automation create --project <id> --name <name> <schedule> <execution>
+  cloudroom automation update <automationId> --project <id> [changes]
+  cloudroom automation pause|resume <automationId> --project <id>
+  cloudroom automation run <automationId> --project <id>
+  cloudroom automation runs <automationId> --project <id> [--limit <count>]
+  cloudroom automation delete <automationId> --project <id> --yes
 
 Schedules:
 
@@ -67,7 +67,7 @@ record in the Automations panel takes you through the standard editor, where
 you can add the prompt while reviewing its other settings. The same repair is
 available through the CLI:
 
-  room automation update <automationId> --project <id> --prompt "<prompt>"
+  cloudroom automation update <automationId> --project <id> --prompt "<prompt>"
 
 Writes remain strict. Run, pause, and resume reject damaged records; update
 succeeds only when the resulting complete record is canonical.

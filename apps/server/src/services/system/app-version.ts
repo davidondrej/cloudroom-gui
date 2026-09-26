@@ -26,6 +26,7 @@ interface AppVersionGetSystemVersionArgs {
 
 interface CreateAppVersionServiceArgs {
   config: Pick<ServerRuntimeConfig, "appVersion" | "isDevelopment">;
+  desktopVersion?: string;
   fetchImpl?: typeof fetch;
   updatesEnabled?: boolean;
   logger: ServerLogger;
@@ -46,6 +47,7 @@ export function createAppVersionService(
   const now = args.now ?? (() => Date.now());
   const logger = args.logger;
   const config = args.config;
+  const desktopVersion = args.desktopVersion;
   const updatesEnabled = args.updatesEnabled ?? true;
 
   let cache: NpmLatestCacheEntry | null = null;
@@ -133,6 +135,7 @@ export function createAppVersionService(
         updateAvailable: false,
         isDevelopment: config.isDevelopment,
         upgradeCommand: updatesEnabled ? UPGRADE_COMMAND : "",
+        desktopVersion,
       };
 
       if (config.isDevelopment || !updatesEnabled) {

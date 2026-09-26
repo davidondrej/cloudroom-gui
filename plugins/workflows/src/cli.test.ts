@@ -152,7 +152,7 @@ describe("workflows CLI argument validation", () => {
       (tool) => tool.name === "bb_workflow_run",
     );
     expect(run?.description).toBe(
-      "Execute a workflow script that orchestrates multiple subagents deterministically. Workflows run in the background — this tool returns immediately with a run ID and a `previewDirective`. After a successful call, emit that directive exactly once on its own line (not in a code fence) so Room renders live progress in chat. A completion notification is sent to the origin thread. Use `room workflows status <run-id>` for a compact summary. For detailed history, redirect a bounded JSONL page from `room workflows history <run-id> --cursor <call-index> --limit <1-100>` into `$ROOM_THREAD_STORAGE`, then inspect the file with normal filesystem tools.",
+      "Execute a workflow script that orchestrates multiple subagents deterministically. Workflows run in the background — this tool returns immediately with a run ID and a `previewDirective`. After a successful call, emit that directive exactly once on its own line (not in a code fence) so Cloudroom renders live progress in chat. A completion notification is sent to the origin thread. Use `cloudroom workflows status <run-id>` for a compact summary. For detailed history, redirect a bounded JSONL page from `cloudroom workflows history <run-id> --cursor <call-index> --limit <1-100>` into `$ROOM_THREAD_STORAGE`, then inspect the file with normal filesystem tools.",
     );
     expect(run?.inputSchema).toMatchObject({
       type: "object",

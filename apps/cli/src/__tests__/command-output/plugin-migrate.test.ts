@@ -85,7 +85,7 @@ function setTty(value: boolean): void {
   });
 }
 
-describe("room plugin migrate", () => {
+describe("cloudroom plugin migrate", () => {
   it("prints the plan and changes nothing without --yes on a non-TTY", async () => {
     await writeVendoredPlugin();
     setTty(false);
@@ -216,7 +216,7 @@ describe("room plugin migrate", () => {
   });
 });
 
-describe("room plugin dev stale-pin warning", () => {
+describe("cloudroom plugin dev stale-pin warning", () => {
   function stubEmptyPluginList(): void {
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify({ plugins: [] }), {
@@ -225,7 +225,7 @@ describe("room plugin dev stale-pin warning", () => {
     );
   }
 
-  it("warns when an exact pin differs from this bb's SDK version", async () => {
+  it("warns when an exact pin differs from this Cloudroom's SDK version", async () => {
     await writeManifest({
       name: "bb-plugin-modern",
       bb: { server: "./server.ts" },
@@ -238,7 +238,7 @@ describe("room plugin dev stale-pin warning", () => {
     ).rejects.toThrow("process.exit:1");
 
     expect(vi.mocked(console.warn).mock.calls.flat().join("\n")).toContain(
-      `This plugin pins @get-bb/plugin-sdk 0.2.0; this bb's SDK is ${PLUGIN_SDK_VERSION}`,
+      `This plugin pins @get-bb/plugin-sdk 0.2.0; this Cloudroom's SDK is ${PLUGIN_SDK_VERSION}`,
     );
   });
 
@@ -269,7 +269,7 @@ describe("room plugin dev stale-pin warning", () => {
   });
 });
 
-describe("room plugin types on a package-layout plugin", () => {
+describe("cloudroom plugin types on a package-layout plugin", () => {
   it("repoints an outdated pin to the running host's SDK version", async () => {
     await writeManifest({
       name: "bb-plugin-modern",

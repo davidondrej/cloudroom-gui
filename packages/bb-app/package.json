@@ -4,7 +4,7 @@
   "version": "0.43.1",
   "description": "bb app launcher for npx",
   "keywords": [
-    "room",
+    "cloudroom",
     "coding-agent",
     "agent",
     "cli",
@@ -39,7 +39,7 @@
   ],
   "bin": {
     "bb-app": "dist/bb-app.js",
-    "room": "dist/room.js",
+    "cloudroom": "dist/cloudroom.js",
     "bb-server": "dist/bb-server.js",
     "bb-host-daemon": "dist/bb-host-daemon.js"
   },
@@ -47,8 +47,8 @@
     "app/dist",
     "dist",
     "!dist/*.map",
-    "host-daemon/dist/room",
-    "host-daemon/dist/room-chunks",
+    "host-daemon/dist/cloudroom",
+    "host-daemon/dist/cloudroom-chunks",
     "host-daemon/dist/bb-parcel-watcher-child.mjs",
     "host-daemon/dist/bb-plugin-host-worker.mjs",
     "host-daemon/dist/bb-provider-bridge-worker.mjs",

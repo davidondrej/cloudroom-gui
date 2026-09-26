@@ -12,9 +12,11 @@ import { installForeignDomMutationGuard } from "./lib/foreign-dom-mutation-guard
 import { installAppQueryClientBrowserEvents } from "./lib/query-client";
 import { appQueryClient } from "./lib/app-query-client";
 import { applyCachedAppThemeCss } from "./lib/themes";
+import { installPerfMonitor } from "./lib/perf";
 import "./app.css";
 
 installForeignDomMutationGuard();
+installPerfMonitor();
 
 Error.stackTraceLimit = 50;
 
@@ -28,7 +30,7 @@ initializeFavicon();
 createRoot(document.getElementById("root")!, {
   onUncaughtError: (error, errorInfo) => {
     console.error(
-      "[Room] uncaught render error — the app root was torn down",
+      "[Cloudroom] uncaught render error — the app root was torn down",
       error,
       errorInfo.componentStack,
     );

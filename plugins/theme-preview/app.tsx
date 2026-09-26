@@ -374,9 +374,7 @@ function ThreadTocFixture() {
 
 const NEW_THREAD_ACTIONS = [
   { icon: "MessageSquarePlus", title: "New thread", description: "Start a new conversation" },
-  { icon: "FolderGit", title: "Automatically import my projects", description: "Find repos touched in the last 30 days" },
-  { icon: "FolderPlus", title: "New project", description: "Create one from a local folder" },
-  { icon: "Explore", title: "Learn what Room can do", description: "Get a tour of its capabilities" },
+  { icon: "FolderGit", title: "Bring your work over", description: "Copy your open BB projects and threads" },
 ] as const;
 
 function Thread({ title = "Endless theme family — blacklight pass", active = true, narrow = false, brief = false, empty = false, showToc = false, story = "blacklight" }: { title?: string; active?: boolean; narrow?: boolean; brief?: boolean; empty?: boolean; showToc?: boolean; story?: "blacklight" | "specimen" }) {
@@ -386,7 +384,7 @@ function Thread({ title = "Endless theme family — blacklight pass", active = t
     <div style={{ flex: 1, minWidth: 0, minHeight: 0, background: v("canvas", v("background")), color: v("foreground"), display: "flex", flexDirection: "column", fontFamily: SANS, position: "relative" }}>
       {empty ? (
         <div data-tp-new-welcome="" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: narrow ? 22 : 34, padding: `0 ${pad}px` }}>
-          <img src="/icon-192.png?v=room" alt="Room" style={{ width: narrow ? 56 : 68, height: narrow ? 56 : 68, objectFit: "contain" }} />
+          <img src="/icon-192.png?v=room" alt="Cloudroom" style={{ width: narrow ? 56 : 68, height: narrow ? 56 : 68, objectFit: "contain" }} />
           <div style={{ width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", gap: 4 }}>
             {NEW_THREAD_ACTIONS.map((action) => (
               <BbButton key={action.title} type="button" variant="ghost" className="h-auto w-full cursor-pointer justify-start gap-3 px-3 py-2.5 text-left">
@@ -404,7 +402,7 @@ function Thread({ title = "Endless theme family — blacklight pass", active = t
           <div style={{ height: 48, display: "flex", alignItems: "center", gap: 10, padding: `0 ${pad}px`, flex: "none", position: "relative" }}>
             <span style={{ fontSize: 13.5, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{title}</span>
             <Badge tone="success"><Dot color={v("success")} size={6} /> Running</Badge>
-            {narrow ? null : <Badge tone="outline">room/endless-theme-plugin</Badge>}
+            {narrow ? null : <Badge tone="outline">cloudroom/endless-theme-plugin</Badge>}
           </div>
           {showToc ? <ThreadTocFixture /> : null}
           {/* Anchored at the bottom like a scrolled thread: messages keep their
@@ -487,7 +485,7 @@ function InfoPanel() {
           <div>
             {kv("Environment", "Worktree")}
             {kv("Directory", <span style={{ fontFamily: MONO, fontSize: 12 }}>~/Code/room</span>)}
-            {kv("Branch", <span style={{ fontFamily: MONO, fontSize: 12 }}>room/endless-theme</span>)}
+            {kv("Branch", <span style={{ fontFamily: MONO, fontSize: 12 }}>cloudroom/endless-theme</span>)}
             {kv("Compare to", <span style={{ fontFamily: MONO, fontSize: 12 }}>main</span>)}
             {kv("Status", <Badge tone="success">Clean</Badge>)}
             {kv("Pull request", <Badge tone="merged">Merged #42</Badge>)}
@@ -531,7 +529,7 @@ function SettingsPage({ narrow = false, themeName, mode }: { narrow?: boolean; t
           <div style={{ borderRadius: RADIUS_LG, border: `1px solid ${v("border")}`, background: v("card"), padding: "14px 16px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               {row("Theme", null, control("Theme", mode === "light" ? "Light" : "Dark"))}
-              {row("Palette", "Palettes change Room's colors, including syntax colors in diffs and file previews. Choose a built-in palette or create one from a prompt.", control("Palette", themeName))}
+              {row("Palette", "Palettes change Cloudroom's colors, including syntax colors in diffs and file previews. Choose a built-in palette or create one from a prompt.", control("Palette", themeName))}
               {row("Favicon color", "Tint browser tabs to tell instances apart.", control("Favicon color", <span style={{ display: "flex", alignItems: "center", gap: 8 }}><span aria-hidden style={{ width: 12, height: 12, borderRadius: 3, background: v("foreground") }} />Default</span>))}
               {row("Fade inactive splits", "Fade out splits that do not have focus.", <BbSwitch checked aria-label="Fade inactive splits" />)}
             </div>
@@ -1159,7 +1157,7 @@ function OverlaySpecimens() {
             <span style={{ fontSize: 13, fontWeight: 600 }}>Endless theme family</span>
             <Badge tone="success"><Dot color={v("success")} size={6} /> Running</Badge>
           </div>
-          <div style={{ marginTop: 6, fontFamily: MONO, fontSize: 12, color: v("muted-foreground") }}>room/endless-theme</div>
+          <div style={{ marginTop: 6, fontFamily: MONO, fontSize: 12, color: v("muted-foreground") }}>cloudroom/endless-theme</div>
           <div style={{ marginTop: 6, fontSize: 12.5, lineHeight: "18px", color: v("muted-foreground") }}>Sidebar reads true black with the orange seam; blue selection at .20.</div>
           {/* Controls live inside the card: acting on them must not dismiss it. */}
           <div style={{ display: "flex", gap: 6, marginTop: 10 }}>

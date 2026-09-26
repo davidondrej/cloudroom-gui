@@ -236,6 +236,7 @@ export const systemVersionResponseSchema = z.object({
   updateAvailable: z.boolean(),
   isDevelopment: z.boolean(),
   upgradeCommand: z.string(),
+  desktopVersion: z.string().optional(),
 });
 export type SystemVersionResponse = z.infer<typeof systemVersionResponseSchema>;
 

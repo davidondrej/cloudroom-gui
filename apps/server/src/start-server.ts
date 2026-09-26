@@ -158,6 +158,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
 
   const appVersion = createAppVersionService({
     config: runtimeConfig,
+    desktopVersion: process.env.BB_DESKTOP_VERSION,
     logger,
     updatesEnabled: false,
   });
@@ -194,7 +195,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
   const eventLoopStallMonitor = startEventLoopStallMonitor({ logger });
   const cloud = cloudroom({
     db, hub, config: runtimeConfig, providerRegistry, logger, lifecycleDedupers,
-    machineAuth, pluginHostArtifacts, aiServices, skillTreeRegistry, telemetry,
+    machineAuth, pluginHostArtifacts, aiServices, skillTreeRegistry, telemetry, pendingInteractions,
   });
   cloud.start();
 

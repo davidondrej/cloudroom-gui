@@ -155,7 +155,7 @@ describe("Connect server-owned machine access", () => {
         hostId: request.hostId,
         grantId: request.hostId,
       }),
-    ).rejects.toThrow("Pair this Room instance");
+    ).rejects.toThrow("Pair this Cloudroom instance");
     expect(await restarted.bb.storage.kv.get(key)).toMatchObject({
       result: { connectMachineId: "cloud-id" },
     });

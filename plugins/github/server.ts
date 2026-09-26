@@ -12,7 +12,7 @@ const CLOSED_PR_PAGE = 30;
 
 const GH_HINT =
   "Install the GitHub CLI (https://cli.github.com) and run `gh auth login`, " +
-  "then `room plugin reload github`.";
+  "then `cloudroom plugin reload github`.";
 
 const repoNameSchema = z.string().regex(/^[\w.-]+\/[\w.-]+$/);
 const itemNumberSchema = z.number().int().positive();
@@ -527,7 +527,7 @@ export default async function plugin(bb: BbPluginApi) {
       type: "string",
       label: "Extra repositories",
       description:
-        'Comma-separated "owner/repo" list to track in addition to repos discovered from Room projects.',
+        'Comma-separated "owner/repo" list to track in addition to repos discovered from Cloudroom projects.',
       experimental_schema: z.string().superRefine((value, context) => {
         const { ignored } = parseExtraRepos(value);
         if (ignored.length > 0) {
@@ -541,9 +541,9 @@ export default async function plugin(bb: BbPluginApi) {
     },
     defaultProject: {
       type: "project",
-      label: "Default Room project",
+      label: "Default Cloudroom project",
       description:
-        "Where agent threads spawn for repos that are not attached to a Room project.",
+        "Where agent threads spawn for repos that are not attached to a Cloudroom project.",
     },
   });
 
@@ -937,7 +937,7 @@ export default async function plugin(bb: BbPluginApi) {
     const { defaultProject } = await settings.get();
     if (defaultProject) return defaultProject;
     throw new Error(
-      `No Room project is attached to ${repo}. Create a project whose checkout has ` +
+      `No Cloudroom project is attached to ${repo}. Create a project whose checkout has ` +
         "that origin remote, or set the defaultProject plugin setting.",
     );
   }

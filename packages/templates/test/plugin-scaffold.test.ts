@@ -67,7 +67,7 @@ describe("scaffoldPlugin SDK dependency", () => {
       "node_modules/@get-bb/plugin-sdk/bundled-types/bb-plugin-sdk.d.ts",
     );
     expect(readme).toContain(
-      "sync this plugin's SDK surface to the running Room",
+      "sync this plugin's SDK surface to the running Cloudroom",
     );
     expect(readme).not.toContain("rewrite types/");
     expect(readme).toContain("https://github.com/davidondrej/cloudroom-gui");
@@ -94,7 +94,7 @@ describe("scaffoldPlugin SDK dependency", () => {
       join(targetDir, "PLUGIN_OVERVIEW.md"),
       "utf8",
     );
-    expect(overview).toContain("room todo list");
+    expect(overview).toContain("cloudroom todo list");
     expect(overview).toMatch(/^[^#]/u);
     expect([...overview].length).toBeGreaterThan(700);
     expect([...overview].length).toBeLessThanOrEqual(4000);
@@ -123,21 +123,21 @@ describe("scaffoldPlugin SDK dependency", () => {
     expect(pkg.bb.name).toBe("Scoped");
 
     const readme = await readFile(join(targetDir, "README.md"), "utf8");
-    expect(readme).toContain("room plugin reload scoped");
-    expect(readme).toContain("room plugin config scoped");
+    expect(readme).toContain("cloudroom plugin reload scoped");
+    expect(readme).toContain("cloudroom plugin config scoped");
 
     const server = await readFile(join(targetDir, "server.ts"), "utf8");
-    expect(server).toContain("room plugin config scoped");
-    expect(server).not.toContain("room plugin config @acme/");
+    expect(server).toContain("cloudroom plugin config scoped");
+    expect(server).not.toContain("cloudroom plugin config @acme/");
     expect(server).toContain('name: "scoped"');
-    expect(server).toContain("room scoped list");
+    expect(server).toContain("cloudroom scoped list");
     const app = await readFile(join(targetDir, "app.tsx"), "utf8");
-    expect(app).toContain("room scoped add");
+    expect(app).toContain("cloudroom scoped add");
     const skill = await readFile(
       join(targetDir, "skills", "example-todos", "SKILL.md"),
       "utf8",
     );
-    expect(skill).toContain("room scoped list");
+    expect(skill).toContain("cloudroom scoped list");
     expect(skill).not.toContain("@acme/");
   });
 });

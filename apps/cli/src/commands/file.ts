@@ -70,7 +70,7 @@ export function registerFileCommands(
 ): void {
   const file = program
     .command("file")
-    .description("Read and manage files on Room machines");
+    .description("Read and manage files on Cloudroom machines");
 
   file
     .command("read <path>")

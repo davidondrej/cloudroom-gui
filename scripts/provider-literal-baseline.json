@@ -1,11 +1,11 @@
 {
   "_comment": "Provider-literal ratchet (G1). Per-file occurrence count of provider-ID references in core. May only go DOWN. Regenerate: node scripts/check-provider-literal-ratchet.mjs --write. Every counted file must have an `allowlist` entry (count, reason, owner, diesAt); the entries are authored by hand and survive --write. Delete this file and the guard when empty.",
-  "total": 108,
+  "total": 102,
   "files": {
     "apps/app/src/components/CodexConnectionPanel.tsx": 2,
-    "apps/app/src/components/promptbox/NewThreadComposer.tsx": 5,
+    "apps/app/src/components/promptbox/NewThreadComposer.tsx": 1,
     "apps/app/src/components/thread/ThreadActionsMenu.tsx": 2,
-    "apps/app/src/hooks/queries/cloudroom-queries.ts": 4,
+    "apps/app/src/hooks/queries/cloudroom-queries.ts": 2,
     "apps/app/src/views/thread-detail/ThreadDetailPromptArea.tsx": 4,
     "apps/cli/src/commands/cloudroom.ts": 1,
     "apps/cli/src/commands/thread/spawn.ts": 1,
@@ -66,13 +66,13 @@
       "diesAt": "when a versioned generic native-history contract replaces the closed harness union"
     },
     "apps/app/src/components/promptbox/NewThreadComposer.tsx": {
-      "count": 5,
-      "reason": "Cloud-only composer gate for the supported core harnesses; local provider selection remains unchanged.",
+      "count": 1,
+      "reason": "Preserve the existing Claude Code configuration hint when the VM does not advertise that harness.",
       "owner": "Cloudroom GUI",
-      "diesAt": "when the Cloudroom capability response replaces this explicit harness gate"
+      "diesAt": "when missing-harness guidance is provider-neutral"
     },
     "apps/app/src/hooks/queries/cloudroom-queries.ts": {
-      "count": 4,
+      "count": 2,
       "reason": "Translate Pi model selectors and Cursor provider IDs while preserving per-harness capability restrictions.",
       "owner": "Cloudroom GUI",
       "diesAt": "when the remote model contract no longer needs this Pi-specific translation"

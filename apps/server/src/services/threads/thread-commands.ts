@@ -25,6 +25,7 @@ import {
   startLiveHostCommand,
 } from "../hosts/live-command.js";
 import { getLastProviderThreadId } from "./thread-events.js";
+import { prepareCustomInstructionInput } from "./custom-instructions.js";
 import type { ThreadForkDescriptor } from "./thread-startup-store.js";
 import {
   resolveThreadRuntimeCommandConfig,
@@ -281,10 +282,10 @@ export async function buildThreadStartCommand(
     providerId: args.providerId,
     bridgeLaunch,
     requestId: args.requestId,
-    input: args.input,
-    ...(args.inputGroups !== undefined
-      ? { inputGroups: args.inputGroups }
-      : {}),
+    ...prepareCustomInstructionInput(
+      { threadId: args.thread.id, projectId: args.projectId },
+      args,
+    ),
     options: toRuntimeExecutionOptions({
       ...args,
       deps,
@@ -314,10 +315,10 @@ function buildPreparedTurnSubmitCommandPayload(
     environmentId: args.environmentId,
     threadId: args.threadId,
     bridgeLaunch,
-    input: args.input,
-    ...(args.inputGroups !== undefined
-      ? { inputGroups: args.inputGroups }
-      : {}),
+    ...prepareCustomInstructionInput(
+      { threadId: args.threadId, projectId: args.runtimeContext.projectId },
+      args,
+    ),
     options: toRuntimeExecutionOptions({
       ...args,
       input: args.input,

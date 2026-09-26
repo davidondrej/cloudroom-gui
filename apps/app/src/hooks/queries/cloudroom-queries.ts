@@ -3,6 +3,8 @@ import { z } from "zod";
 import { reasoningLevelSchema, serviceTierSchema } from "@bb/domain";
 import { fetchWithAppSurface } from "@/lib/app-surface";
 import { sdk } from "@/lib/sdk";
+import { appToast } from "@/components/ui/app-toast";
+import { showMutationErrorToast } from "@/lib/mutation-errors";
 
 export const cloudroomStatusSchema = z.object({
   ready: z.boolean(),
@@ -24,6 +26,7 @@ export const cloudroomStatusSchema = z.object({
   compact: z.boolean().default(false),
   queue_edit: z.boolean().default(false),
   queue_cancel: z.boolean().default(false),
+  queue_reorder: z.boolean().default(false),
   harnesses: z.array(z.object({
     id: z.string(),
     provider: z.string().nullable().optional(),
@@ -36,18 +39,25 @@ export const cloudroomStatusSchema = z.object({
   })).default([]),
 });
 
+const CORE_HARNESS_IDS: Record<string, string> = { "acp-cursor": "cursor", "acp-fx": "fx" };
+
+export function cloudHarness(status: z.infer<typeof cloudroomStatusSchema> | undefined, harness: string | undefined) {
+  const id = harness === undefined ? undefined : (CORE_HARNESS_IDS[harness] ?? harness);
+  return status?.harnesses.find((item) => item.id === id);
+}
+
 export function cloudServiceTierSupported(status: z.infer<typeof cloudroomStatusSchema> | undefined, harness: string | undefined): boolean {
-  return status?.harnesses.find((item) => item.id === (harness === "acp-cursor" ? "cursor" : harness))?.service_tier === true;
+  return cloudHarness(status, harness)?.service_tier === true;
 }
 
 export function cloudReasoningLevels(status: z.infer<typeof cloudroomStatusSchema> | undefined, harness: string | undefined, model: string | undefined): string[] {
-  const profile = status?.harnesses.find((item) => item.id === (harness === "acp-cursor" ? "cursor" : harness));
+  const profile = cloudHarness(status, harness);
   if (profile?.models === null) return [];
   const remoteModel = harness === "pi" && model ? model.slice(model.indexOf("/") + 1) : model;
   return (profile?.models ? profile.models.find((item) => item.model === remoteModel)?.reasoning_levels : profile?.reasoning_levels) ?? [];
 }
 export function cloudFeatureSupported(status: z.infer<typeof cloudroomStatusSchema> | undefined, harness: string, feature: "steer" | "compact" | "rewind"): boolean {
-  const profile = status?.harnesses.find((item) => item.id === (harness === "acp-cursor" ? "cursor" : harness));
+  const profile = cloudHarness(status, harness);
   return status?.[feature] === true && profile?.[feature] !== false;
 }
 const threadStatusSchema = z.object({ authRequired: z.boolean().default(false), starting: z.boolean().default(false), sessionId: z.string().nullable(), paused: z.boolean(), failedStart: z.boolean().default(false), model: z.string(), reasoning: reasoningLevelSchema, serviceTier: serviceTierSchema.default("default"), error: z.string().nullable(), reconnecting: z.boolean().default(false), pendingDelivery: z.number() }).nullable();
@@ -79,7 +89,44 @@ export function useCloudroomThreadWorkspace(threadId: string, enabled: boolean) 
 export function useTeleportThread(threadId: string) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (action: "start" | "cancel") => sdk.cloudroom.teleport(threadId, action),
+    mutationFn: (input: "start" | "cancel" | { model: string; reasoning: string }) =>
+      typeof input === "string" ? sdk.cloudroom.teleport(threadId, input) : sdk.cloudroom.teleport(threadId, "start", input),
+    onSettled: () => client.invalidateQueries(),
+  });
+}
+
+export function useTeleportLocal(threadId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => sdk.cloudroom.teleportLocal(threadId),
+    onSuccess: ({ conflicts }) => appToast.success(conflicts ? `Moved to this computer. ${conflicts} files could not be merged safely; the cloud versions are in .cloudroom/teleport/.` : "Moved to this computer."),
+    onError: (error) => showMutationErrorToast({ error, fallbackMessage: "Could not teleport to Local" }),
+    onSettled: () => client.invalidateQueries(),
+  });
+}
+
+/** "Let cloud agents access this computer" (ADR 0113). */
+export function useSetMacAccess() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (enabled: boolean) => sdk.cloudroom.setMacAccess(enabled),
+    onSettled: () => client.invalidateQueries({ queryKey: ["cloudroom-account"] }),
+  });
+}
+
+/** "Copy my logins and model providers to my VM" (ADR 0130). */
+export function useSetCopyLogins() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (enabled: boolean) => sdk.cloudroom.setCopyLogins(enabled),
+    onSettled: () => client.invalidateQueries({ queryKey: ["cloudroom-account"] }),
+  });
+}
+
+export function useImportBb() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (hostId: string) => sdk.cloudroom.importBb(hostId),
     onSettled: () => client.invalidateQueries(),
   });
 }

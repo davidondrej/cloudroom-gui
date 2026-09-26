@@ -22,6 +22,13 @@ const BUILT_IN_PROVIDER_COMMANDS: ProviderCommand[] = [
     description: "Compact context",
     argumentHint: null,
   },
+  {
+    name: "teleport",
+    source: "command",
+    origin: "builtin",
+    description: "Move this thread to the cloud",
+    argumentHint: null,
+  },
 ];
 
 function providerComposerHasSkillsAction(
@@ -93,6 +100,7 @@ function compareCommands(a: ProviderCommand, b: ProviderCommand): number {
 interface BuildCommandListResponseArgs {
   commands: HostProviderCommand[];
   includeBuiltinCompact: boolean;
+  includeBuiltinTeleport?: boolean;
   skillCatalog: readonly ResolvedSkillCatalogEntry[];
 }
 
@@ -102,7 +110,9 @@ export function buildCommandListResponse(
   return {
     commands: dedupeBySourceAndName([
       ...BUILT_IN_PROVIDER_COMMANDS.filter(
-        (command) => command.name !== "compact" || args.includeBuiltinCompact,
+        (command) =>
+          (command.name !== "compact" || args.includeBuiltinCompact) &&
+          (command.name !== "teleport" || args.includeBuiltinTeleport === true),
       ),
       ...args.skillCatalog.map(toSkillCommand),
       ...args.commands.map(toProviderCommand),

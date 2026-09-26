@@ -1,4 +1,4 @@
-Write a message now and let Room send it when you choose. The draft keeps its attachments, mentions, model, environment, and permission mode.
+Write a message now and let Cloudroom send it when you choose. The draft keeps its attachments, mentions, model, environment, and permission mode.
 
 ## What you get
 
@@ -14,6 +14,6 @@ Write a message now and let Room send it when you choose. The draft keeps its at
 3. Pick a preset or a custom time up to one year ahead.
 4. Choose **Schedule send**.
 
-Room submits the draft through the normal send path, so the scheduled message is the same message you would send with Enter. In the new-thread screen, the thread starts at the chosen time with the provider and environment you selected. The entry is disabled when the draft is empty or a send is in progress.
+Cloudroom submits the draft through the normal send path, so the scheduled message is the same message you would send with Enter. In the new-thread screen, the thread starts at the chosen time with the provider and environment you selected. The entry is disabled when the draft is empty or a send is in progress.
 
 The plugin adds no agent tools or CLI commands.

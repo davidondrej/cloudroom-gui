@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent localhost previews. Standard-library control client and native OpenSSH transport."""
+"""Independent localhost previews and Mac access. Standard-library control client and native OpenSSH transport."""
 import argparse
 import base64
 import concurrent.futures
@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import pwd
 import select
 import signal
 import socket
@@ -326,6 +327,101 @@ def identity(folder):
     return ' '.join(public.read_text().split()[:2])
 
 
+MAC_LIMIT = 16 * 1024 * 1024
+
+
+class MacJobs:
+    """Mac access (ADR 0113): run commands from the user's cloud agents as this user, only while enabled."""
+    def __init__(self, folder):
+        self.folder, self.running, self.lock = folder, {}, threading.Lock()
+
+    def enabled(self):
+        config = private_json(self.folder / 'config.json')
+        return config if config.get('macAccess') and not config.get('revoked') else None
+
+    def serve(self):
+        delay = 2
+        while True:
+            try:
+                config = self.enabled()
+                if config:
+                    core = Core(config)
+                    request = urllib.request.Request(core.url + '/v1/mac/jobs?device=' + config['device'],
+                                                     headers={**core.headers, 'Accept': 'text/event-stream'})
+                    with core.opener.open(request, timeout=60) as stream:
+                        delay, event = 2, None
+                        for raw in stream:
+                            line = raw.decode().rstrip('\r\n')
+                            if line.startswith('event:'):
+                                event = line[6:].strip()
+                            elif line.startswith('data:') and event == 'job':
+                                threading.Thread(target=self.execute, args=(core, config['device'], json.loads(line[5:])), daemon=True).start()
+                            elif line.startswith('data:') and event == 'cancel':
+                                self.cancel(json.loads(line[5:])['id'])
+                            elif line.startswith(':') and not self.enabled():
+                                break
+            except (OSError, ValueError, KeyError, TypeError):
+                delay = min(delay * 2, 30)
+            time.sleep(delay)
+
+    def execute(self, core, device, job):
+        def post(body):
+            core.fetch(core.url + '/v1/mac/results/' + urllib.parse.quote(job['id']), {'device': device, **body}, None, core.headers)
+        with contextlib.suppress(OSError, ValueError):
+            post({'state': 'running'})
+        result = {'state': 'done', 'code': 127, 'stdout': '', 'stderr': '', 'truncated': False}
+        try:
+            folder = Path.home() / os.path.expanduser(job.get('cwd') or '~')
+            process = subprocess.Popen([pwd.getpwuid(os.getuid()).pw_shell or '/bin/zsh', '-lc', job['command']], cwd=folder,
+                                       stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+        except OSError as error:
+            result['stderr'] = str(error).encode().hex()
+        else:
+            with self.lock:
+                self.running[job['id']] = process
+            output = {'stdout': bytearray(), 'stderr': bytearray()}
+            def read(name):
+                for chunk in iter(lambda: getattr(process, name).read1(65536), b''):
+                    if len(output[name]) <= MAC_LIMIT:
+                        output[name] += chunk
+            def feed():
+                with contextlib.suppress(OSError):
+                    process.stdin.write(bytes.fromhex(job.get('stdin') or ''))
+                    process.stdin.close()
+            readers = [threading.Thread(target=read, args=(name,), daemon=True) for name in output]
+            for thread in [*readers, threading.Thread(target=feed, daemon=True)]:
+                thread.start()
+            result['code'] = process.wait()
+            for thread in readers:
+                thread.join(2)  # A background process may keep the pipe open.
+            with self.lock:
+                self.running.pop(job['id'], None)
+            result['truncated'] = any(len(value) > MAC_LIMIT for value in output.values())
+            result.update({name: bytes(value[:MAC_LIMIT]).hex() for name, value in output.items()})
+        # The result survives disconnects: retry until the VM accepts it, forgets the job, or an hour passes.
+        deadline = time.monotonic() + 3600
+        while time.monotonic() < deadline:
+            try:
+                post(result)
+                return
+            except ControlError as error:
+                if error.code in (403, 404, 409, 413):
+                    return
+            except (OSError, ValueError):
+                pass
+            time.sleep(5)
+
+    def cancel(self, job):
+        with self.lock:
+            process = self.running.get(job)
+        if process:
+            def kill(signal_number):
+                with contextlib.suppress(ProcessLookupError, PermissionError):
+                    os.killpg(process.pid, signal_number)
+            kill(signal.SIGTERM)
+            threading.Timer(2, kill, (signal.SIGKILL,)).start()
+
+
 def run(folder):
     tunnels = {}
     ports_file = folder / 'ports.json'
@@ -335,6 +431,7 @@ def run(folder):
     def stop(*_):
         raise KeyboardInterrupt()
     signal.signal(signal.SIGTERM, stop)
+    threading.Thread(target=MacJobs(folder).serve, daemon=True).start()
     with (folder / 'lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         try:
@@ -424,9 +521,30 @@ def label(folder):
     return 'dev.cloudroom.preview.' + hashlib.sha256(str(folder).encode()).hexdigest()[:16]
 
 
+def systemd(folder, label, stop):
+    unit = label + '.service'
+    path = Path(os.environ.get('XDG_CONFIG_HOME') or Path.home() / '.config') / 'systemd/user' / unit
+    def systemctl(*args):
+        subprocess.run(['systemctl', '--user', *args], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if stop:
+        if path.exists():
+            systemctl('disable', '--now', unit)
+            path.unlink()
+            systemctl('daemon-reload')
+        return
+    quote = lambda value: '"' + str(value).replace('\\', '\\\\').replace('"', '\\"').replace('%', '%%') + '"'
+    command = ' '.join(quote(part) for part in [sys.executable, '-B', '-E', '-s', folder / 'client.py', 'run', folder])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f'[Service]\nExecStart={command}\nEnvironment={quote("PATH=" + os.environ.get("PATH", os.defpath))}\nRestart=always\nRestartSec=5\n\n[Install]\nWantedBy=default.target\n')
+    systemctl('daemon-reload')
+    systemctl('enable', '--now', unit)
+
+
 def launch(folder, stop=False):
+    if sys.platform.startswith('linux'):
+        return systemd(folder, label(folder), stop)
     if sys.platform != 'darwin':
-        raise ValueError('Use run for foreground helpers outside macOS')
+        raise ValueError('Use run for foreground helpers outside macOS and Linux')
     name = label(folder)
     domain = f'gui/{os.getuid()}'
     path = Path.home() / 'Library/LaunchAgents' / (name + '.plist')
@@ -454,7 +572,7 @@ def launch(folder, stop=False):
     subprocess.run(['launchctl', 'bootstrap', domain, str(path)], check=True, capture_output=True)
 
 
-def configure(folder, connection_file, activate, allow_private):
+def configure(folder, connection_file, activate, allow_private, mac_access=None):
     folder.mkdir(mode=0o700, parents=True, exist_ok=True); folder.chmod(0o700)
     connection = private_json(connection_file)
     binding = [connection['url'].rstrip('/'), (connection.get('account') or {}).get('id')]
@@ -464,10 +582,12 @@ def configure(folder, connection_file, activate, allow_private):
     source = Path(__file__).resolve()
     target = folder / 'client.py'
     allow_private = bool(allow_private if allow_private is not None else (old or {}).get('allowPrivateSsh', False))
+    mac_access = bool(mac_access if mac_access is not None else (old or {}).get('macAccess', False))
     if (activate and old and old.get('connectionFile') == str(connection_file)
-            and old.get('allowPrivateSsh', False) == allow_private
+            and old.get('allowPrivateSsh', False) == allow_private and old.get('macAccess', False) == mac_access
             and target.is_file() and target.read_bytes() == source.read_bytes()):
-        active = subprocess.run(['launchctl', 'print', f'gui/{os.getuid()}/' + label(folder)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        check = ['systemctl', '--user', 'is-active', '--quiet', label(folder) + '.service'] if sys.platform.startswith('linux') else ['launchctl', 'print', f'gui/{os.getuid()}/' + label(folder)]
+        active = subprocess.run(check, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if active.returncode == 0:
             return {'enabled': True}
     if activate:
@@ -475,7 +595,8 @@ def configure(folder, connection_file, activate, allow_private):
     if source != target:
         temporary = folder / 'client.pending'
         temporary.write_bytes(source.read_bytes()); temporary.chmod(0o600); temporary.replace(target)
-    config = {'device': old['device'] if old else uuid.uuid4().hex, 'binding': binding, 'connectionFile': str(connection_file), 'allowPrivateSsh': allow_private}
+    config = {'device': old['device'] if old else uuid.uuid4().hex, 'binding': binding, 'connectionFile': str(connection_file),
+              'allowPrivateSsh': allow_private, 'macAccess': mac_access}
     save(folder / 'config.json', config)
     identity(folder)
     if activate:
@@ -490,12 +611,14 @@ def main():
     parser.add_argument('--connection', type=Path)
     parser.add_argument('--no-start', action='store_true')
     parser.add_argument('--allow-private-ssh', action='store_true', default=None, help='Explicitly allow a self-hosted private/loopback SSH address')
+    parser.add_argument('--mac-access', choices=['on', 'off'], help='Let cloud agents run commands on this Mac (ADR 0113)')
     args = parser.parse_args()
     folder = args.directory.expanduser().resolve()
     if args.command == 'configure':
         if args.connection is None:
             raise ValueError('--connection is required')
-        print(json.dumps(configure(folder, args.connection.expanduser().resolve(strict=True), not args.no_start, args.allow_private_ssh)))
+        print(json.dumps(configure(folder, args.connection.expanduser().resolve(strict=True), not args.no_start, args.allow_private_ssh,
+                                   None if args.mac_access is None else args.mac_access == 'on')))
     elif args.command == 'run':
         run(folder)
     elif args.command in {'stop', 'pause'}:

@@ -10,13 +10,13 @@ import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import * as fixtures from "../helpers/command-output-fixtures.js";
 import { registerThreadCommands } from "../../commands/thread/index.js";
 
-describe("room thread list command output", () => {
+describe("cloudroom thread list command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
     registerThreadCommands(program, () => "http://server");
 
-  it("room thread list supports parent-thread filtering", async () => {
+  it("cloudroom thread list supports parent-thread filtering", async () => {
     const list = vi.fn(async () => []);
     stubServerApi({ "v1.threads.$get": list });
 
@@ -36,22 +36,48 @@ describe("room thread list command output", () => {
       query: {
         projectId: "proj-1",
         parentThreadId: "thread-manager-1",
+        archived: "false",
       },
     });
   });
 
-  it("room thread list opts into hidden threads explicitly", async () => {
+  it("cloudroom thread list opts into hidden threads explicitly", async () => {
     const list = vi.fn(async () => []);
     stubServerApi({ "v1.threads.$get": list });
 
     await runCommand(["thread", "list", "--include-hidden"], register);
 
     expect(list).toHaveBeenCalledWith({
-      query: { includeHidden: "true" },
+      query: { archived: "false", includeHidden: "true" },
     });
   });
 
-  it("room thread list rejects invalid parent-thread values", async () => {
+  it("cloudroom thread list shows only archived threads with --archived", async () => {
+    const list = vi.fn(async () => []);
+    stubServerApi({ "v1.threads.$get": list });
+
+    await runCommand(["thread", "list", "--archived"], register);
+
+    expect(list).toHaveBeenCalledWith({
+      query: { archived: "true" },
+    });
+  });
+
+  it("cloudroom thread list rejects --archived with --include-archived", async () => {
+    const list = vi.fn(async () => []);
+    stubServerApi({ "v1.threads.$get": list });
+
+    await expect(
+      runCommand(
+        ["thread", "list", "--archived", "--include-archived"],
+        register,
+      ),
+    ).rejects.toThrow("process.exit:1");
+
+    expect(list).not.toHaveBeenCalled();
+  });
+
+  it("cloudroom thread list rejects invalid parent-thread values", async () => {
     const list = vi.fn(async () => []);
     stubServerApi({ "v1.threads.$get": list });
 
@@ -75,7 +101,7 @@ describe("room thread list command output", () => {
     expect(list).not.toHaveBeenCalled();
   });
 
-  it("room thread list renders archived status in the shared borderless table", async () => {
+  it("cloudroom thread list renders archived status in the shared borderless table", async () => {
     const list = vi.fn(async () => [
       fixtures.makeThread({
         id: "thread-archived-1",
@@ -92,7 +118,7 @@ describe("room thread list command output", () => {
       "v1.projects.$get": async () => [{ id: "proj-1", name: "Alpha" }],
     });
 
-    await runCommand(["thread", "list"], register);
+    await runCommand(["thread", "list", "--include-archived"], register);
 
     expect(list).toHaveBeenCalledWith({
       query: {},
@@ -104,7 +130,7 @@ describe("room thread list command output", () => {
     ]);
   });
 
-  it("room thread list renders pinned status in the shared borderless table", async () => {
+  it("cloudroom thread list renders pinned status in the shared borderless table", async () => {
     const list = vi.fn(async () => [
       fixtures.makeThread({
         id: "thread-pinned-1",
@@ -128,7 +154,7 @@ describe("room thread list command output", () => {
     );
   });
 
-  it("room thread list hides the personal project label", async () => {
+  it("cloudroom thread list hides the personal project label", async () => {
     const list = vi.fn(async () => [
       fixtures.makeThread({
         id: "thread-personal-1",
@@ -148,7 +174,7 @@ describe("room thread list command output", () => {
     await runCommand(["thread", "list"], register);
 
     expect(list).toHaveBeenCalledWith({
-      query: {},
+      query: { archived: "false" },
     });
     expect(collectLogPayloads(vi.mocked(console.log))).toEqual([
       "",
@@ -157,7 +183,7 @@ describe("room thread list command output", () => {
     ]);
   });
 
-  it("room thread list prints the thread title, fallback, and project name (#1648)", async () => {
+  it("cloudroom thread list prints the thread title, fallback, and project name (#1648)", async () => {
     const list = vi.fn(async () => [
       fixtures.makeThread({
         id: "thr_a9niqhjj9c",
@@ -213,7 +239,7 @@ describe("room thread list command output", () => {
     expect(output).toMatch(/thr_unknownproj\s+x+…\s+proj_missing\s+idle/);
   });
 
-  it("room thread list --json does not fetch projects", async () => {
+  it("cloudroom thread list --json does not fetch projects", async () => {
     const list = vi.fn(async () => []);
     const projects = vi.fn(async () => []);
     stubServerApi({ "v1.threads.$get": list, "v1.projects.$get": projects });
@@ -223,7 +249,7 @@ describe("room thread list command output", () => {
     expect(projects).not.toHaveBeenCalled();
   });
 
-  it("room thread list ignores ROOM_PROJECT_ID when --project is omitted", async () => {
+  it("cloudroom thread list ignores ROOM_PROJECT_ID when --project is omitted", async () => {
     const list = vi.fn(async () => []);
     stubServerApi({ "v1.threads.$get": list });
 
@@ -231,11 +257,11 @@ describe("room thread list command output", () => {
     await runCommand(["thread", "list"], register);
 
     expect(list).toHaveBeenCalledWith({
-      query: {},
+      query: { archived: "false" },
     });
   });
 
-  it("room thread list does not infer parent-thread from ROOM_THREAD_ID", async () => {
+  it("cloudroom thread list does not infer parent-thread from ROOM_THREAD_ID", async () => {
     const list = vi.fn(async () => []);
 
     stubServerApi({ "v1.threads.$get": list });
@@ -245,7 +271,7 @@ describe("room thread list command output", () => {
     await runCommand(["thread", "list"], register);
 
     expect(list).toHaveBeenCalledWith({
-      query: {},
+      query: { archived: "false" },
     });
   });
 });

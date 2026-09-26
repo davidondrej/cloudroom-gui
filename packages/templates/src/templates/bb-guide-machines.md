@@ -1,6 +1,6 @@
 ---
 kind: instruction
-title: Room Guide — Machines
+title: Cloudroom Guide — Machines
 summary: Command reference for listing and targeting execution machines.
 intent: Explain execution-machine discovery and selection from the CLI.
 editingNotes: Keep the user-facing noun machine; internal APIs and types use Host.
@@ -9,17 +9,17 @@ editingNotes: Keep the user-facing noun machine; internal APIs and types use Hos
 Cloudroom account
 
 Settings → Machines → Cloudroom account connects the existing VM directly to the
-Rust core. Do not add that VM as a native machine or configure a remote room server.
-`room cloudroom sign-in --project ID` prints its browser confirmation link;
-`room cloudroom status --json` reports account identity and readiness.
-`room cloudroom cancel` cancels pending login. `room cloudroom logout` removes local
+Rust core. Do not add that VM as a native machine or configure a remote cloudroom server.
+`cloudroom cloud sign-in --project ID` prints its browser confirmation link;
+`cloudroom cloud status --json` reports account identity and readiness.
+`cloudroom cloud cancel` cancels pending login. `cloudroom cloud logout` removes local
 VM credentials without stopping remote agents or erasing local history.
 The SDK equivalents are `sdk.cloudroom.signIn`, `.status`, `.cancel`, and `.logout`.
 Existing cloud threads keep their account, core URL, and project bindings.
 A rejected cloud start keeps its prompt but stops retrying automatically. Use
-`room cloudroom retry-start THREAD` or `sdk.cloudroom.retryStart(threadId)` to retry
+`cloudroom cloud retry-start THREAD` or `sdk.cloudroom.retryStart(threadId)` to retry
 with the same request ID. The app offers **Retry start** on the failed thread.
-`room cloudroom thread-workspace THREAD --json` (SDK: `.threadWorkspace(threadId)`)
+`cloudroom cloud thread-workspace THREAD --json` (SDK: `.threadWorkspace(threadId)`)
 reads that session's current cloud directory, branch, and commit, never the local checkout.
 
 Machine commands
@@ -35,16 +35,16 @@ a server access provider: paired Cloudroom Connect, or a configured direct URL r
 from the target, such as a private Tailscale Serve URL. A configured URL alone
 does not prove reachability.
 
-The Settings installer first uses the exact `bb-app` tarball served by that Room
-server at `/install/bb-app.tgz`; only servers that do not implement the route
-(HTTP 404) fall back to the npm registry. npm installs bb-app under this
-machine enrollment's room data directory, so the installer needs neither `sudo`
+The Settings installer first uses the exact `bb-app` tarball served by that Cloudroom
+server at `/install/bb-app.tgz`. If that download fails, installation stops with
+an error; it never falls back to npm or another installed bb-app. npm installs bb-app under this
+machine enrollment's cloudroom data directory, so the installer needs neither `sudo`
 nor a global npm configuration. Installed launchd/systemd services pass
 `--auto-update`. On a newer server protocol mismatch, the daemon downloads that
 same artifact, updates its private install, and exits for the service manager to
 restart. Failed attempts use a persisted exponential backoff that starts at 5
 seconds and caps at 5 minutes. A daemon never auto-downgrades to an older server
-protocol. Use Settings → Machines or `room machine retry-update` to bypass the
+protocol. Use Settings → Machines or `cloudroom machine retry-update` to bypass the
 current backoff after a transient failure.
 
 To opt out, remove `--auto-update` from the launchd plist or systemd user unit
@@ -57,32 +57,32 @@ directly under the selected data directory in `logs/server-stdio.log` and
 console output and startup errors; rotating application logs remain separate.
 Use `tail -F` to follow them without coupling service logging to the terminal.
 
-room machine list List persistent machines with ID,
+cloudroom machine list List persistent machines with ID,
 type, connection status, and
 relative last-seen time
 --all Include disposable provider
 sandboxes
 --json Print the raw host list
-room machine providers List installed machine providers
+cloudroom machine providers List installed machine providers
 --json Include inputs schemas and policy
-room machine create --provider <id> Create a standalone machine
+cloudroom machine create --provider <id> Create a standalone machine
 --key <idempotency-key> Reuse this creation on retries
 --inputs <JSON> Non-secret provider inputs
 --project <id-or-name> Optional project context
 --json Print the created machine as JSON
-room machine enroll --bootstrap-file <path>
+cloudroom machine enroll --bootstrap-file <path>
 --bootstrap-env <NAME> Alternative private bundle source
-room machine show <id-or-name> Show machine details
-room machine join-code Create a machine pairing code
-room machine rename <id-or-name> <name> Rename a machine
-room machine retry-update <id-or-name> Retry a pending daemon update now
-room machine reconcile <id-or-name> Reconcile compute with core’s recorded state
-room machine suspend <id-or-name> Suspend a provider-managed machine
-room machine resume <id-or-name> Resume a machine (already active is a no-op)
-room machine retry-cleanup <id-or-name> Retry failed teardown now
-room machine remove <id-or-name> [--yes] Revoke and remove a machine
-room machine provider-cli status <machine>
-room machine provider-cli install <machine> <provider-id>
+cloudroom machine show <id-or-name> Show machine details
+cloudroom machine join-code Create a machine pairing code
+cloudroom machine rename <id-or-name> <name> Rename a machine
+cloudroom machine retry-update <id-or-name> Retry a pending daemon update now
+cloudroom machine reconcile <id-or-name> Reconcile compute with core’s recorded state
+cloudroom machine suspend <id-or-name> Suspend a provider-managed machine
+cloudroom machine resume <id-or-name> Resume a machine (already active is a no-op)
+cloudroom machine retry-cleanup <id-or-name> Retry failed teardown now
+cloudroom machine remove <id-or-name> [--yes] Revoke and remove a machine
+cloudroom machine provider-cli status <machine>
+cloudroom machine provider-cli install <machine> <provider-id>
 --action <install|update>
 
 Each machine has a permission limit: the highest permission mode any thread on
@@ -92,7 +92,7 @@ limit cannot run there. Set it in Settings → Machines → the machine → Perm
 limit; that page also shows the machine's projects, provider CLIs, update state,
 and rename/remove. There is no CLI or SDK command to set it, and a paired
 machine cannot set it for any machine, so a sandbox machine can stay at Full
-Access while your laptop stays lower. `room machine list --json` and `room machine
+Access while your laptop stays lower. `cloudroom machine list --json` and `cloudroom machine
 show` report the current limit.
 
 Standalone create does not create a thread or workspace. Omit inputs to use the
@@ -101,16 +101,16 @@ provider defaults; supply JSON when its schema requires additional values. Omit
 Creation is durable:
 `--no-wait` returns the creating host ID immediately; otherwise the CLI polls
 that host until active. SIGINT stops following and exits 130 while creation
-continues. `room machine list` includes machines still being created. It lists persistent
+continues. `cloudroom machine list` includes machines still being created. It lists persistent
 machines only; pass `--all` to include the disposable sandboxes that
 environment providers create per thread.
-Use `room machine show <host-id>` to inspect progress and `room machine
+Use `cloudroom machine show <host-id>` to inspect progress and `cloudroom machine
 remove <host-id>` to cancel and clean up. The SDK provides
 `hosts.experimental_create`; pass `wait: false` to receive the creating host and
 poll it with `hosts.get`. Aborting a caller signal never cancels the server operation. A connected daemon does not
 yet imply an agent-ready checkout and authenticated provider.
 
-`room machine reconcile` / `hosts.experimental_reconcile` is an explicit request,
+`cloudroom machine reconcile` / `hosts.experimental_reconcile` is an explicit request,
 not a core timer. For a machine core records as suspended, it runs the provider’s
 save-and-stop operation. The API returns HTTP 202 immediately; the CLI polls
 machine status until completion. Active machines and lifecycle
@@ -123,30 +123,30 @@ provider teardown failed.
 
 Updates commands
 
-One consolidated view of room and provider CLI updates across machines — the
+One consolidated view of Cloudroom and provider CLI updates across machines — the
 CLI counterpart of Settings → Updates and the sidebar Updates badge.
 
-room updates [status] Show bb-app and provider CLI update
+cloudroom updates [status] Show bb-app and provider CLI update
 status for every machine
 --machine <id-or-name> Limit to one machine
 --json Print the aggregate as JSON
-room updates apply Run every available provider CLI
+cloudroom updates apply Run every available provider CLI
 install/update, one at a time
 --machine <id-or-name> Limit to one machine
 --json Print per-target results as JSON
 
-`room updates apply` covers provider CLIs only. Update bb-app itself with the
+`cloudroom updates apply` covers provider CLIs only. Update bb-app itself with the
 printed upgrade command (`npx bb-app@latest`) or the desktop app's relaunch;
 connected daemons then follow the server version automatically.
 
 Machine selectors accept either an exact machine ID or an unambiguous machine
 name. `--host` is an alias for `--machine`.
 
-room thread spawn --project <id> --machine <id-or-name> --prompt "..."
-room thread spawn --project <id> --new-machine <provider-id> --prompt "..."
+cloudroom thread spawn --project <id> --machine <id-or-name> --prompt "..."
+cloudroom thread spawn --project <id> --new-machine <provider-id> --prompt "..."
 --machine-inputs <json>
-room project create --name "..." --root <path> --machine <id-or-name>
-room project source add <projectId> --machine <id-or-name> --path <path>
+cloudroom project create --name "..." --root <path> --machine <id-or-name>
+cloudroom project source add <projectId> --machine <id-or-name> --path <path>
 
 For thread spawning, machine targeting works with an unmanaged workspace path,
 a new managed worktree, or the personal workspace. Do not combine it with an
@@ -165,7 +165,7 @@ Automatic setup uses a stable per-project target and shares concurrent setup on
 the same host. After a server restart, it registers a completed checkout whose
 remote matches instead of cloning again; a conflicting target is refused.
 The project needs a Git remote and the machine needs Git access to it. Choosing
-Personal workspace first does not clone a project. Standalone `room machine create`
+Personal workspace first does not clone a project. Standalone `cloudroom machine create`
 does not set up a project source and remains available until explicitly removed.
 Machines created for threads retire after their last live thread is archived
 when the provider declares them ephemeral.
@@ -178,19 +178,19 @@ instead of `--path` to clone the project's Git remote there; `--remote-url` and
 
 ## Server access
 
-Set Machines → Server URL reachable by machines, or run `room settings general
+Set Machines → Server URL reachable by machines, or run `cloudroom settings general
 machineServerUrl https://bb.example.com`. An unset value uses BB_EXTERNAL_URL.
 Select Manual to show the URL input. Set Default machine access with
-`room settings general defaultMachineAccess direct` or `connect`; `null` uses
+`cloudroom settings general defaultMachineAccess direct` or `connect`; `null` uses
 the first registered access provider, or direct when none is registered. An
-unpaired provider reports setup required. `room settings show --json` includes
+unpaired provider reports setup required. `cloudroom settings show --json` includes
 fresh provider availability and the effective selection; failed or timed-out
 checks report unavailable without acquiring a grant. Settings and creation
 banners refresh this status when the access provider signals a change. Machines use this
 access for ongoing runtime requests, including account-pool endpoints.
 
 The Tailscale plugin can supply private machine access without a Direct URL.
-Use `room tailscale devices`, `room tailscale status`, and `room tailscale configure
+Use `cloudroom tailscale devices`, `cloudroom tailscale status`, and `cloudroom tailscale configure
 <port>` to discover devices and validate a dedicated existing HTTPS Serve
 mapping. Choose Tailscale explicitly; it is not selected by default.
 The plugin skill documents SSH prerequisites and safe endpoint cleanup.
@@ -201,25 +201,25 @@ The plugin skill documents SSH prerequisites and safe endpoint cleanup.
 owned local installation. Optional `--server-url <url>` and `--data-dir <path>`
 assert the expected installation. The installer's internal BB_DATA_DIR is treated as an assertion too.
 An identity mismatch refuses the operation. These commands are local machine
-primitives; `room machine remove` asks the server to remove the provider resource.
+primitives; `cloudroom machine remove` asks the server to remove the provider resource.
 They verify the canonical installer-owned directory, enrolled identity, and
 service or process ownership before acting. Stop and uninstall safely succeed
 when no matching installation exists; start requires an installation. They
-refuse the default Room data directory. Stopping a daemon is distinct from
-`room machine suspend`, which invokes provider suspension and polls until the machine
-is paused. `room machine resume` likewise waits for provider restore and bootstrap.
+refuse the default Cloudroom data directory. Stopping a daemon is distinct from
+`cloudroom machine suspend`, which invokes provider suspension and polls until the machine
+is paused. `cloudroom machine resume` likewise waits for provider restore and bootstrap.
 
 ## Enroll a preinstalled machine
 
-`room machine enroll --bootstrap-file <path>` or `room machine enroll --bootstrap-env <NAME>` consumes a versioned private enrollment bundle prepared by core. Supply exactly one source. The environment source is removed from the CLI process environment after reading it; files remain under the caller's ownership. Neither command prints the bundle or credentials.
+`cloudroom machine enroll --bootstrap-file <path>` or `cloudroom machine enroll --bootstrap-env <NAME>` consumes a versioned private enrollment bundle prepared by core. Supply exactly one source. The environment source is removed from the CLI process environment after reading it; files remain under the caller's ownership. Neither command prints the bundle or credentials.
 
 The CLI refuses another host or server identity in the selected machine directory. Repeating enrollment with the same persisted identity succeeds without exchanging the credential again, including when the original bundle expired. Machine data defaults to `~/.bb-machines/<server-host>`; `ROOM_DATA_DIR` can select another isolated machine directory, but enrollment refuses the default `~/.bb` directory.
 
 The manual copy command fetches `/install.sh` using a short-lived `X-BB-Enrollment` header. The server supplies the bootstrap only for a pending, unexpired, uncancelled manual enrollment whose credential has not been consumed; downloaded responses are not cached. The command contains no bootstrap JSON or access-provider credentials.
 
-The installer accepts `--bootstrap-env <NAME>` and uses the same enrollment command. It installs a private CLI and supplies `~/.local/bin/room` without replacing an existing path. Non-login transports can use `command -v room` with `~/.local/bin/room` as a fallback. Linux machines without a systemd user session run a detached daemon; systemd and launchd machines receive a persistent service.
+The installer accepts `--bootstrap-env <NAME>` and uses the same enrollment command. It installs a private CLI and supplies `~/.local/bin/cloudroom` without replacing an existing path. Non-login transports can use `command -v cloudroom` with `~/.local/bin/cloudroom` as a fallback. Linux machines without a systemd user session run a detached daemon; systemd and launchd machines receive a persistent service.
 
-Machine bootstrap v2 supplies optional server request headers. `room machine enroll`
+Machine bootstrap v2 supplies optional server request headers. `cloudroom machine enroll`
 persists them privately as `serverHeaders`; the launcher passes `BB_SERVER_HEADERS`
 to the daemon for enrollment, connection and runtime requests. Server-access
 plugins redeem provider codes on the server. Pending encrypted v1 bundles are
@@ -229,20 +229,20 @@ Delivered enrollment bundles from v1 remain valid until their expiry. The CLI ac
 
 ## DigitalOcean dev boxes
 
-`room digitalocean configure <host-id> '<config-json>'` sets `idleMinutes` (null
+`cloudroom digitalocean configure <host-id> '<config-json>'` sets `idleMinutes` (null
 turns idle stop off), `retention` (default 2), and `schedule` (null disables;
 otherwise `weekdays` 0–6, `sleep`/`wake` HH:mm, and explicit IANA `timezone`).
-`room digitalocean snapshot-now <host-id>` drains through core, gracefully shuts
+`cloudroom digitalocean snapshot-now <host-id>` drains through core, gracefully shuts
 down, confirms off, snapshots and remains off. `sleep` does the same; `wake`
 resumes through core. Busy threads and open terminals prevent sleep. Core also
 wakes on dispatch. Empty boxes participate in opt-in idle stop; retirement stays
 never. `status` and `cost` show live inventory and estimates; all accept `--json`.
-`room machine show <host-id> --json` includes provider inventory in `providerDetails`.
+`cloudroom machine show <host-id> --json` includes provider inventory in `providerDetails`.
 
 Powered-off droplets still bill; snapshot storage bills per GB. See
 https://docs.digitalocean.com/products/droplets/details/pricing/ and
 https://docs.digitalocean.com/products/snapshots/details/pricing/ . Configure a
-weekday schedule from the plugin settings or CLI on an always-on Room server.
+weekday schedule from the plugin settings or CLI on an always-on Cloudroom server.
 The latest missed action within eight days runs after recovery; busy sleep
 retries each minute until superseded. See the plugin skill for DST and cleanup.
 
@@ -253,24 +253,24 @@ status if inventory is unavailable (`details.values.cost: null` and
 on mutations. Schedule changes invalidate selected, undispatched runs.
 
 Create DigitalOcean dev boxes from Settings → Machines or
-`room machine create --provider digitalocean --inputs '{}' --json`, without a
+`cloudroom machine create --provider digitalocean --inputs '{}' --json`, without a
 project. SDK creation uses `machineProviderId: "digitalocean", projectId: null,
 inputs: {}`. Enrolled boxes appear as machine sections in the composer picker;
 DigitalOcean contributes no new-machine/project-checkout shortcut row.
 
 Existing machines
 
-`room machine create --provider manual` waits for a private enrollment command,
+`cloudroom machine create --provider manual` waits for a private enrollment command,
 prints it once, and follows the host until the daemon connects. Run that command on the target
-machine; it installs room if needed. Server access is resolved through the selected
+machine; it installs cloudroom if needed. Server access is resolved through the selected
 default access provider, just like SSH or cloud machines. `--no-wait` returns the
 creating host ID. The CLI prints the enrollment command and its expiry while it
 follows. This command is built transiently from the in-memory pending bundle;
 durable host progress contains no credential. After enrollment or removal, the
 host-keyed command endpoint returns no command. Treat it as a credential.
 
-Use `room machine show <host-id>` to recover progress and
-`room machine remove <host-id>` to cancel and revoke enrollment/access. Stopping
+Use `cloudroom machine show <host-id>` to recover progress and
+`cloudroom machine remove <host-id>` to cancel and revoke enrollment/access. Stopping
 the CLI or closing the dialog only stops following; creation continues.
 Manual machines never idle-suspend or automatically retire and do not expose
 suspend/resume. Removing one revokes its server access without executing on the
@@ -283,10 +283,10 @@ Repository setup receives freshly resolved machine variables on each dispatch,
 including recovery. Values are sent transiently to the setup process and are
 not stored in provisioning requests. Existing attached paths skip setup.
 
-`room machine env list --json` lists global machine variables and built-in GitHub
-health. `room machine env set NAME [--note text] --json` reads its value
+`cloudroom machine env list --json` lists global machine variables and built-in GitHub
+health. `cloudroom machine env set NAME [--note text] --json` reads its value
 from stdin, removing one trailing newline; values are never accepted in argv.
-`room machine env unset NAME --json` removes an override. All values are encrypted in the database and never returned by list or set.
+`cloudroom machine env unset NAME --json` removes an override. All values are encrypted in the database and never returned by list or set.
 
 Settings → Machines → Machine environment edits variables inline. Add, remove,
 or import .env rows, then Save variables; Discard changes leaves saved values
@@ -315,14 +315,14 @@ every row to retain, using value: null for an unchanged saved secret.
 
 Thread startup does not install or update agent CLIs, probe authentication, or validate workspace fingerprints. Core runs repository setup when creating an owned environment and teardown before removing it. Resume does not rerun setup.
 
-`room machine list --json` includes lifecycle phase, progress, and any suspension or resume error.
+`cloudroom machine list --json` includes lifecycle phase, progress, and any suspension or resume error.
 Maintenance interrupts active turns and closes terminals before saving. Submit a
 new continuation turn after restore; interrupted turns are never reported successful.
 
 Resuming a machine restores its provider state without rerunning environment setup.
 
 Automatic machine GitHub credentials are enabled by default. Use
-`room settings general machineGitCredentialsEnabled false` to stop forwarding the
+`cloudroom settings general machineGitCredentialsEnabled false` to stop forwarding the
 server gh credentials to machines; `true` enables them again. In Machines →
 Advanced settings, the automatic GH_TOKEN switch controls the same setting.
 This does not log the server out or suppress an explicit custom GH_TOKEN.
@@ -334,7 +334,7 @@ attempt and creates a fresh one. Manual owns the command and expiry in memory;
 polling does not renew it. Restart machine setup if the plugin or server restarts.
 
 For a new thread on a new Modal sandbox, select the environment composition:
-`room thread spawn --project <id> --environment-provider modal-sandbox --prompt "..."`.
+`cloudroom thread spawn --project <id> --environment-provider modal-sandbox --prompt "..."`.
 It creates the machine, prepares the project checkout, and runs environment setup.
 Progress and failures appear in the thread's provisioning details. If cloning
 fails, the machine remains available for retry or explicit removal.

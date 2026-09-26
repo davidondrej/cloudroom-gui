@@ -298,7 +298,7 @@ export function registerMachineCommands(
         } catch (error) {
           if (controller.signal.aborted) {
             throw new CliExitError(
-              "Stopped following; creation continues. Use room machine remove <host-id> to cancel.",
+              "Stopped following; creation continues. Use cloudroom machine remove <host-id> to cancel.",
               130,
             );
           }

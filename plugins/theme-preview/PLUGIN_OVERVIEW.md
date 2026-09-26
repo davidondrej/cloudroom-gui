@@ -1,4 +1,4 @@
-See a custom theme on real Room screens before you commit to it, and find contrast problems while you still edit the file.
+See a custom theme on real Cloudroom screens before you commit to it, and find contrast problems while you still edit the file.
 
 ## What you get
 
@@ -10,8 +10,8 @@ See a custom theme on real Room screens before you commit to it, and find contra
 
 ## How it works
 
-The panel reads the theme catalog from Room and from installed plugins that ship themes. Choose a theme in the dropdown to activate it app-wide. Contrast rows are measurements for guidance. The plugin never creates, edits, or repairs a theme file.
+The panel reads the theme catalog from Cloudroom and from installed plugins that ship themes. Choose a theme in the dropdown to activate it app-wide. Contrast rows are measurements for guidance. The plugin never creates, edits, or repairs a theme file.
 
 ## For agents
 
-The bundled `bb-theme-authoring` skill explains the theme file layout, the token groups, and the checks to run. Agents use the built-in `room theme dir`, `room theme list`, `room theme set`, and `room theme show` commands. Work in a split: the agent edits `theme.css` on one side and you watch the preview on the other.
+The bundled `bb-theme-authoring` skill explains the theme file layout, the token groups, and the checks to run. Agents use the built-in `cloudroom theme dir`, `cloudroom theme list`, `cloudroom theme set`, and `cloudroom theme show` commands. Work in a split: the agent edits `theme.css` on one side and you watch the preview on the other.

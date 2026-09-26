@@ -164,7 +164,7 @@ describe("ThreadActionsProvider archive feedback", () => {
     const toastOptions = vi.mocked(appToast.success).mock.calls[0]?.[1];
     expect(toastOptions).toMatchObject({
       cancel: { label: "Undo" },
-      duration: 10_000,
+      duration: 8_000,
       id: "thread-archived-thr_parent",
     });
     expect(toastOptions?.description).toBeDefined();

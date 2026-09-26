@@ -128,6 +128,11 @@ export const BUILTIN_PLUGINS = [
     defaultEnabled: true,
   },
   {
+    name: "machine-ssh",
+    pluginId: "machine-ssh",
+    defaultEnabled: true,
+  },
+  {
     name: "plugin-api-docs",
     pluginId: "plugin-api-docs",
     defaultEnabled: false,
@@ -155,11 +160,6 @@ export const BUILTIN_PLUGINS = [
   {
     name: "scheduled-send",
     pluginId: "scheduled-send",
-    defaultEnabled: true,
-  },
-  {
-    name: "concurrency-limit",
-    pluginId: "concurrency-limit",
     defaultEnabled: true,
   },
   {

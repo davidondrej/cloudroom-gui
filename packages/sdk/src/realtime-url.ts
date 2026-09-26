@@ -72,6 +72,6 @@ export function resolveRealtimeUrl(args: ResolveRealtimeUrlArgs): string {
   }
 
   throw new Error(
-    "Room SDK realtime requires an absolute baseUrl or realtimeUrl in this runtime.",
+    "Cloudroom SDK realtime requires an absolute baseUrl or realtimeUrl in this runtime.",
   );
 }

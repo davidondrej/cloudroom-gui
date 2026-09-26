@@ -34,7 +34,7 @@ function RegistrySkillActions({
 }) {
   return (
     <ResourceInstallControl
-      accessibleLabel={`Fork ${skillName} into a new Room skill`}
+      accessibleLabel={`Fork ${skillName} into a new Cloudroom skill`}
       label="Fork"
       icon="Fork"
       presentation={presentation}

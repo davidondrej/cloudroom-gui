@@ -9,13 +9,13 @@ import {
 import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import { registerProviderCommands } from "../../commands/provider.js";
 
-describe("room provider command output", () => {
+describe("cloudroom provider command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
     registerProviderCommands(program, () => "http://server");
 
-  it("room provider list renders the shared borderless table", async () => {
+  it("cloudroom provider list renders the shared borderless table", async () => {
     const get = vi.fn(async () => [{ id: "openai", displayName: "OpenAI" }]);
     stubServerApi({ "v1.system.providers.$get": get });
 
@@ -35,7 +35,7 @@ describe("room provider command output", () => {
     expect(help).toContain("--environment <id>");
   });
 
-  it("room provider list resolves a machine and preserves portable JSON output", async () => {
+  it("cloudroom provider list resolves a machine and preserves portable JSON output", async () => {
     const getProviders = vi.fn(async () => [
       { id: "acp-remote", displayName: "Remote ACP" },
     ]);
@@ -71,7 +71,7 @@ describe("room provider command output", () => {
     ]);
   });
 
-  it("room provider models renders the shared borderless table", async () => {
+  it("cloudroom provider models renders the shared borderless table", async () => {
     const get = vi.fn(async () => [
       { model: "gpt-5", displayName: "GPT-5", isDefault: true },
     ]);
@@ -93,7 +93,7 @@ describe("room provider command output", () => {
     ]);
   });
 
-  it("room provider models includes a matching selected-only model", async () => {
+  it("cloudroom provider models includes a matching selected-only model", async () => {
     const get = vi.fn(async () => ({
       providers: [],
       models: [
@@ -137,7 +137,7 @@ describe("room provider command output", () => {
     ]);
   });
 
-  it("room provider models routes through an environment", async () => {
+  it("cloudroom provider models routes through an environment", async () => {
     const get = vi.fn(async () => ({
       providers: [],
       models: [],

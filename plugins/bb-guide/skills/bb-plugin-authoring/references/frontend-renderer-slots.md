@@ -1,14 +1,14 @@
 # Renderer and action slots
 
 - `experimental_sourceCodeRenderer` / `experimental_diffRenderer` →
-  replace Room's source or diff renderer everywhere it draws supplied content:
+  replace Cloudroom's source or diff renderer everywhere it draws supplied content:
   the native file preview, timeline file diffs, the environment diff panel's
   file bodies, and every plugin calling the host components. Registration:
   `{ id, title, description?, component }`. Like `experimental_threadList`
   each slot is **exclusive** — one renderer at a time, first in slot order
-  wins, and a missing, disabled, or crashing replacement falls back to Room's
+  wins, and a missing, disabled, or crashing replacement falls back to Cloudroom's
   renderer. Installing and enabling the plugin activates it, and the user can
-  pin Room's renderer or a specific provider under
+  pin Cloudroom's renderer or a specific provider under
   **Settings → Appearance** ("Source code" / "Diffs"), per client. There are no
   scope or extension filters on the registration, so conditional behavior
   belongs in the component. Source props:
@@ -18,7 +18,7 @@
 Original }`. `experimental_fullFileContents` is either
   `{ old: { path, content }, new: { path, content } }` or `null`; a replacement
   can use those complete UTF-8 sides to implement context expansion.
-  Every value is already resolved. Render `Original` (Room's
+  Every value is already resolved. Render `Original` (Cloudroom's
   renderer, bound to this call) to delegate without re-entering resolution —
   behind a plugin setting, by language, over a size threshold:
   A bundle compiled against an SDK before 0.4.16 may still read
@@ -85,8 +85,8 @@ openWorkspaceFile }` — register a leaf
   `useBbNavigate().openThreadPanel`. Errors from `run` (sync or
   async) are contained and
   logged, never breaking the timeline.
-- `app.commands.register` → a row in Room's quick palette (Mod+Shift+P), listed
-  under "Plugins" beside Room's own commands. Host-rendered chrome, no plugin
+- `app.commands.register` → a row in Cloudroom's quick palette (Mod+Shift+P), listed
+  under "Plugins" beside Cloudroom's own commands. Host-rendered chrome, no plugin
   component — registration: `{ id, title, defaultShortcut?, isAvailable?, run }`. Both callbacks
   receive `{ threadId, projectId, openPanel }`, where `threadId` and
   `projectId` are null on surfaces without one and `openPanel` matches
@@ -118,7 +118,7 @@ openWorkspaceFile }` — register a leaf
   declared in `bb.providers.register({ extensionKinds })`) or
   `"tool"` for the generic tool items of the providers this plugin
   registered. Core kinds (messages, commands, file changes, reads, searches,
-  delegations, plan steps) always use Room's renderers and are customized only
+  delegations, plan steps) always use Cloudroom's renderers and are customized only
   through the bridge's presentation. The component receives `row` (id,
   threadId, turnId, kind, toolName, status, startedAt, completedAt),
   `payload` (the extension item's validated payload, or `{ arguments,
@@ -133,7 +133,7 @@ providerId }`) and `Original`, the host's declarative base for the body —
   glyph when the name is no longer declared. With no renderer registered,
   the declarative base renders, so a row never goes blank; a crash in the
   component is contained to that row.
-- `experimental_providerIcon` → the React component room draws as one agent, machine,
+- `experimental_providerIcon` → the React component cloudroom draws as one agent, machine,
   or environment provider's icon. Registration:
   `{ providerKind, providerId, icon }`, with required `providerKind` (`"agent"`, `"machine"`, or `"environment"`); `providerId` is the provider's id (`"codex"`,
   `"git-worktree"`) — not the plugin id — and

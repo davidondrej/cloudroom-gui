@@ -140,7 +140,7 @@ export function useUpdateInventory(
       0,
     ) +
     (appUpdateAvailable ? 1 : 0) +
-    (desktopUpdateReady ? 1 : 0) +
+    (desktopUpdateReady || desktopInfo?.updateAvailable === true ? 1 : 0) +
     pluginAttentionCount;
 
   const desktopLastCheckedAt =

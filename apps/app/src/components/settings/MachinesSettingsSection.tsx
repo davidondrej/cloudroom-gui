@@ -70,7 +70,7 @@ const PERMISSION_MODE_PRESENTATION: Record<
 const MACHINES_SECTION_DESCRIPTION =
   "Computers that can run your tasks. Pair a machine to run projects and threads on it.";
 
-const PRIMARY_REMOVE_DISABLED_REASON = "Room's primary machine can't be removed.";
+const PRIMARY_REMOVE_DISABLED_REASON = "Cloudroom's primary machine can't be removed.";
 
 const MACHINE_MENU_ITEM_CLASS = "min-h-9 px-2.5 py-2";
 

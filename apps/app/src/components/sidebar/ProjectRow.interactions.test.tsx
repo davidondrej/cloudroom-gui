@@ -345,7 +345,7 @@ describe("ProjectRow interactions", () => {
             <MemoryRouter>
               <ChronologicalSectionThreadSections
                 threadListState={{ status: "ready", threads: [activeThread] }}
-                compareThreads={() => 0}
+                compareThreadsForSection={() => () => 0}
                 sections={[{ id: sectionId, name: "Active work" }]}
                 collapsedThreadIds={new Set()}
                 collapsedEnvironmentIds={new Set()}
@@ -413,7 +413,7 @@ describe("ProjectRow interactions", () => {
             <MemoryRouter>
               <ChronologicalSectionThreadSections
                 threadListState={{ status: "ready", threads: [activeThread] }}
-                compareThreads={() => 0}
+                compareThreadsForSection={() => () => 0}
                 sections={[{ id: sectionId, name: "Draft work" }]}
                 collapsedThreadIds={new Set()}
                 collapsedEnvironmentIds={new Set()}

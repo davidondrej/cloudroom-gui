@@ -19,7 +19,7 @@ const SCRIPT_OUTPUT_MAX_BYTES = 1024 * 1024;
 let resolvedBbPath: string | null = null;
 
 const BB_NOT_INJECTED_WARNING =
-  "[Room] warning: could not locate the room CLI, so `room` is not on PATH for this script.";
+  "[Cloudroom] warning: could not locate the cloudroom CLI, so `cloudroom` is not on PATH for this script.";
 
 async function commandWorks(command: string, args: string[]): Promise<boolean> {
   try {
@@ -43,15 +43,15 @@ export function bbBinaryCandidates(env: NodeJS.ProcessEnv): string[] {
   }
   const fromCliDir = env.BB_CLI_DIR?.trim();
   if (fromCliDir !== undefined && fromCliDir.length > 0) {
-    pushIfAbsolute(join(fromCliDir, "room"));
+    pushIfAbsolute(join(fromCliDir, "cloudroom"));
   }
   for (const entry of (env.PATH ?? "").split(delimiter)) {
     const trimmed = entry.trim();
     if (trimmed.length > 0) {
-      pushIfAbsolute(join(trimmed, "room"));
+      pushIfAbsolute(join(trimmed, "cloudroom"));
     }
   }
-  candidates.push("/opt/homebrew/bin/room", "/usr/local/bin/room");
+  candidates.push("/opt/homebrew/bin/cloudroom", "/usr/local/bin/cloudroom");
   return candidates;
 }
 

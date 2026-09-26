@@ -422,6 +422,7 @@ function buildOptimisticQueuedMessage({
     serviceTier:
       request.serviceTier ?? defaultExecutionOptions?.serviceTier ?? "default",
     groupWithNext: false,
+    hardQueue: request.hardQueue === true,
     sendAt: scheduledSendAt,
     waitingOn: scheduledSendAt === null ? null : { kind: "time" },
     failureReason: null,

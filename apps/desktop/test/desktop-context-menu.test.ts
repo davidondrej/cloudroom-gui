@@ -51,7 +51,7 @@ const DEFAULT_MEDIA_FLAGS = {
 
 interface FakeWebContents extends Pick<
   DesktopContextMenuWebContents,
-  "replaceMisspelling" | "session"
+  "copyImageAt" | "replaceMisspelling" | "session"
 > {
   addedDictionaryWords: string[];
   replacedMisspellings: string[];
@@ -100,6 +100,7 @@ function createFakeWebContents(): FakeWebContents {
     addedDictionaryWords,
     replacedMisspellings,
     spellCheckerEnabledValues,
+    copyImageAt() {},
     replaceMisspelling(text) {
       replacedMisspellings.push(text);
     },

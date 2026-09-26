@@ -25,13 +25,13 @@ function renderPluginCommandsSkill(
   contributions: readonly PluginCliContribution[],
 ): string {
   const sections = contributions.map((contribution) => {
-    const directForms = [`room ${contribution.name}`, `bb ${contribution.name}`];
+    const directForms = [`cloudroom ${contribution.name}`, `bb ${contribution.name}`];
     const invocation = pluginCliCall(contribution.pluginId, contribution.name);
     const lines = [
       `## ${invocation} — ${contribution.summary}`,
       "",
       `Contributed by plugin \`${contribution.pluginId}\`. Run \`${invocation} --help\` for details.`,
-      `\`room plugin run ${contribution.pluginId} <args...>\` is always available.`,
+      `\`cloudroom plugin run ${contribution.pluginId} <args...>\` is always available.`,
     ];
     if (contribution.commands.length > 0) {
       lines.push("");
@@ -57,7 +57,7 @@ function renderPluginCommandsSkill(
     "",
     "# Plugin Commands",
     "",
-    "Installed Cloudroom plugins contribute commands; core-name collisions use the explicit plugin-id form while others use a top-level `room` subcommand.",
+    "Installed Cloudroom plugins contribute commands; core-name collisions use the explicit plugin-id form while others use a top-level `cloudroom` subcommand.",
     `Combined stdout and stderr is capped at ${PLUGIN_CLI_OUTPUT_MAX_BYTES} UTF-8 bytes. Above-limit`,
     "results fail atomically as `plugin_cli_output_too_large` and are never clipped;",
     "use pagination or file/streaming commands for large results.",

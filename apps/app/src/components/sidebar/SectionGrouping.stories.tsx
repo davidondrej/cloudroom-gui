@@ -138,7 +138,7 @@ export function ChronologicalSections() {
         <SidebarStage>
           <ChronologicalSectionThreadSections
             threadListState={projectTree(sectionThreads)}
-            compareThreads={compareStandardThreads}
+            compareThreadsForSection={() => compareStandardThreads}
             sections={STORY_SECTIONS}
             collapsedThreadIds={new Set()}
             collapsedEnvironmentIds={new Set()}

@@ -247,8 +247,8 @@ function statusSummary(page: WorkflowRunInspectionPage) {
     finishedAt: run.finishedAt,
     history: {
       format: "jsonl",
-      pageUsage: `room workflows history ${run.id} --cursor 0 --limit ${DEFAULT_HISTORY_LIMIT}`,
-      fileUsage: `mkdir -p "$ROOM_THREAD_STORAGE/workflows" && room workflows history ${run.id} --cursor 0 --limit ${DEFAULT_HISTORY_LIMIT} > "$ROOM_THREAD_STORAGE/workflows/${run.id}.jsonl"`,
+      pageUsage: `cloudroom workflows history ${run.id} --cursor 0 --limit ${DEFAULT_HISTORY_LIMIT}`,
+      fileUsage: `mkdir -p "$ROOM_THREAD_STORAGE/workflows" && cloudroom workflows history ${run.id} --cursor 0 --limit ${DEFAULT_HISTORY_LIMIT} > "$ROOM_THREAD_STORAGE/workflows/${run.id}.jsonl"`,
     },
   };
 }
@@ -332,40 +332,40 @@ export function registerWorkflowCli(
 ): void {
   bb.cli.register({
     name: "workflows",
-    summary: "Run and inspect durable Room workflows",
+    summary: "Run and inspect durable Cloudroom workflows",
     commands: [
       {
         name: "run",
         summary: "Start a workflow and return immediately",
         usage:
-          "room workflows run (--script '<javascript>'|--file <path>|--name <name>) [--args '<json>'] [--resume <run-id>]",
+          "cloudroom workflows run (--script '<javascript>'|--file <path>|--name <name>) [--args '<json>'] [--resume <run-id>]",
       },
       {
         name: "validate",
         summary: "Validate workflow source and literal model selections",
         usage:
-          "room workflows validate (--script '<javascript>'|--file <path>|--name <name>)",
+          "cloudroom workflows validate (--script '<javascript>'|--file <path>|--name <name>)",
       },
       {
         name: "status",
         summary: "Show a compact workflow run summary",
-        usage: "room workflows status <run-id>",
+        usage: "cloudroom workflows status <run-id>",
       },
       {
         name: "history",
         summary: "Read one JSONL page of workflow run and call history",
         usage:
-          "room workflows history <run-id> [--cursor <call-index>] [--limit <1-100>]",
+          "cloudroom workflows history <run-id> [--cursor <call-index>] [--limit <1-100>]",
       },
       {
         name: "list",
         summary: "List recent project workflow runs",
-        usage: "room workflows list [--limit <1-50>]",
+        usage: "cloudroom workflows list [--limit <1-50>]",
       },
       {
         name: "stop",
         summary: "Cancel a workflow run",
-        usage: "room workflows stop <run-id>",
+        usage: "cloudroom workflows stop <run-id>",
       },
     ],
     async run(argv, ctx) {
@@ -497,7 +497,7 @@ export function registerWorkflowCli(
           return success({ runId, stopped: await service.stop(runId) });
         }
         return failure(
-          "Usage: room workflows <run|validate|status|history|list|stop> [options]",
+          "Usage: cloudroom workflows <run|validate|status|history|list|stop> [options]",
         );
       } catch (error) {
         return failure(error instanceof Error ? error.message : String(error));

@@ -2590,14 +2590,14 @@ describe("DesktopBrowserViewManager", () => {
         webSecurity: true,
       },
     });
-    expect(popupWindow.titleCalls).toEqual(["Room browser popup"]);
+    expect(popupWindow.titleCalls).toEqual(["Cloudroom browser popup"]);
     childContents.emitDidNavigate("https://accounts.google.com/oauth2/auth");
     expect(popupWindow.titleCalls.at(-1)).toBe(
-      "Room browser — https://accounts.google.com",
+      "Cloudroom browser — https://accounts.google.com",
     );
     expect(childContents.emitPageTitleUpdated("Google Sign In")).toBe(true);
     expect(popupWindow.titleCalls.at(-1)).toBe(
-      "Room browser — https://accounts.google.com",
+      "Cloudroom browser — https://accounts.google.com",
     );
     expect(popupContents.emitWindowOpen("https://example.com/nested")).toEqual({
       action: "deny",

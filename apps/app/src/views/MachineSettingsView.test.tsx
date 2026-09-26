@@ -360,7 +360,7 @@ describe("MachineSettingsView", () => {
     expect(screen.queryByText("This machine")).toBeNull();
     expect(screen.queryByText("Primary")).toBeNull();
     expect(
-      screen.getByText("Room's primary machine can't be removed."),
+      screen.getByText("Cloudroom's primary machine can't be removed."),
     ).toBeDefined();
   });
 

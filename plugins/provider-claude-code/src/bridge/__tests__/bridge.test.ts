@@ -1290,7 +1290,7 @@ describe("bridge", () => {
         },
         expected: {
           behavior: "deny",
-          messageIncludes: "Room's workspace sandbox allows work inside",
+          messageIncludes: "Cloudroom's workspace sandbox allows work inside",
         },
       },
       {
@@ -1306,7 +1306,7 @@ describe("bridge", () => {
         },
         expected: {
           behavior: "deny",
-          messageIncludes: "Room's workspace sandbox allows work inside",
+          messageIncludes: "Cloudroom's workspace sandbox allows work inside",
         },
       },
       {

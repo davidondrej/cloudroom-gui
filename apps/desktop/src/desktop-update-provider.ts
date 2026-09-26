@@ -5,6 +5,9 @@ import {
 
 type DesktopReleaseChannel = "latest" | "nightly";
 
+export const CLOUDROOM_UPDATE_BASE_URL =
+  "https://github.com/davidondrej/cloudroom-gui/releases/latest/download/";
+
 interface DesktopReleaseInfo {
   applicationName: "Cloudroom" | "Cloudroom Nightly";
   channel: DesktopReleaseChannel;
@@ -24,7 +27,7 @@ export function createDesktopReleaseInfo(
     channel,
     iconFileName: nightly ? "icon-nightly.png" : "icon.png",
     releaseTag,
-    updateReleaseBaseUrl: `https://github.com/get-bb/bb/releases/download/${releaseTag}/`,
+    updateReleaseBaseUrl: CLOUDROOM_UPDATE_BASE_URL,
   };
 }
 

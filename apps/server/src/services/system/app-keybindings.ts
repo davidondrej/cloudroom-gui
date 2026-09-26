@@ -145,6 +145,7 @@ export const DEFAULT_APP_KEYBINDINGS: AppDefaultKeybindings = [
   ),
   binding("thread.search", "k", { mod: true }, mainWithoutModal),
   unassignedBinding("thread.rename", mainWithoutModal),
+  unassignedBinding("thread.pin", mainWithoutModal),
   binding("thread.archive", "w", { mod: true }, mainWithoutModal),
   binding("app.back", "Escape", {}, mainWithoutModal),
   binding("settings.open", ",", { mod: true }, mainWithoutModal),

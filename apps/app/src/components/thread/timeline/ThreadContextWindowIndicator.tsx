@@ -16,17 +16,20 @@ import {
 
 interface ThreadContextWindowCardProps {
   usage: ThreadContextWindowUsage;
+  note?: string | undefined;
   className?: string;
 }
 
 interface ThreadContextWindowIndicatorProps {
   usage: ThreadContextWindowUsage;
+  note?: string | undefined;
   defaultOpen?: boolean;
 }
 
 const CONTEXT_WINDOW_POPOVER_CLOSE_DELAY_MS = 60;
 export function ThreadContextWindowCard({
   usage,
+  note,
   className,
 }: ThreadContextWindowCardProps) {
   const details = usage.snapshot?.categories.length
@@ -113,6 +116,9 @@ export function ThreadContextWindowCard({
           </span>
           <span>{leftPercent}% left</span>
         </div>
+        {note ? (
+          <p className="text-xs text-muted-foreground max-md:text-sm">{note}</p>
+        ) : null}
       </div>
       {details ? (
         <>
@@ -155,6 +161,7 @@ export function ThreadContextWindowCard({
 
 export function ThreadContextWindowIndicator({
   usage,
+  note,
   defaultOpen,
 }: ThreadContextWindowIndicatorProps) {
   const details = usage.snapshot?.categories.length
@@ -234,6 +241,7 @@ export function ThreadContextWindowIndicator({
       >
         <ThreadContextWindowCard
           usage={usage}
+          note={note}
           className="max-md:w-full max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:px-4 max-md:pt-2 max-md:pb-[max(1rem,env(safe-area-inset-bottom))] max-md:shadow-none"
         />
       </PopoverContent>

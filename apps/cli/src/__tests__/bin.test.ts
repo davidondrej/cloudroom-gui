@@ -22,7 +22,7 @@ function shellQuote(value: string): string {
   return `'${value.replace(/'/gu, "'\\''")}'`;
 }
 
-describe("room bin wrapper", () => {
+describe("cloudroom bin wrapper", () => {
   let tempRoot: string;
 
   beforeEach(async () => {
@@ -39,13 +39,13 @@ describe("room bin wrapper", () => {
     await mkdir(fakeBinDir, { recursive: true });
     await writeFile(
       join(fakeRepoRoot, "package.json"),
-      JSON.stringify({ name: "room", private: true }),
+      JSON.stringify({ name: "cloudroom", private: true }),
     );
     await copyFile(
-      join(repoRoot, "apps", "cli", "bin", "room"),
-      join(fakeBinDir, "room"),
+      join(repoRoot, "apps", "cli", "bin", "cloudroom"),
+      join(fakeBinDir, "cloudroom"),
     );
-    await chmod(join(fakeBinDir, "room"), 0o755);
+    await chmod(join(fakeBinDir, "cloudroom"), 0o755);
     return fakeRepoRoot;
   }
 
@@ -79,7 +79,7 @@ NODE
 `);
 
     const result = await execFileAsync(
-      join(fakeRepoRoot, "apps", "cli", "bin", "room"),
+      join(fakeRepoRoot, "apps", "cli", "bin", "cloudroom"),
       ["status", "--json"],
       {
         cwd: fakeRepoRoot,
@@ -114,7 +114,7 @@ exit 42
     );
 
     const result = await execFileAsync(
-      join(fakeRepoRoot, "apps", "cli", "bin", "room"),
+      join(fakeRepoRoot, "apps", "cli", "bin", "cloudroom"),
       ["--help"],
       {
         cwd: fakeRepoRoot,

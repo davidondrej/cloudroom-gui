@@ -27,6 +27,7 @@ describe("SidebarSectionRow", () => {
   it("renders the section name before the disclosure without a sidebar icon", () => {
     const result = render(
       <SidebarSectionRow
+        sectionId="section:test"
         name="Nested work"
         label="Nested work"
         depth={1}
@@ -97,6 +98,7 @@ describe("SidebarSectionRow", () => {
     render(
       <Provider store={store}>
         <SidebarSectionRow
+          sectionId="section:test"
           name="Build"
           label="Work / Build"
           depth={1}
@@ -139,6 +141,7 @@ describe("SidebarSectionRow", () => {
 
     render(
       <SidebarSectionRow
+        sectionId="section:test"
         name="Building"
         label="Work / Building"
         depth={1}

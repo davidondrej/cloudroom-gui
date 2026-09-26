@@ -369,19 +369,19 @@ describe("commit message generation", () => {
           command.environmentId === environment.id,
       );
       expect(commitCommand.command).toMatchObject({
-        message: "room: automated commit",
+        message: "cloudroom: automated commit",
       });
       expect(piAiMocks.complete).toHaveBeenCalledTimes(2);
       await reportQueuedCommandSuccess(harness, commitCommand, {
         commitSha: "abc123",
-        commitSubject: "room: automated commit",
+        commitSubject: "cloudroom: automated commit",
       });
 
       const response = await responsePromise;
       expect(response.status).toBe(200);
       await expect(readJson(response)).resolves.toMatchObject({
         action: "commit",
-        commitSubject: "room: automated commit",
+        commitSubject: "cloudroom: automated commit",
         ok: true,
       });
     });
@@ -469,18 +469,18 @@ describe("commit message generation", () => {
             command.environmentId === environment.id,
         );
         expect(commitCommand.command).toMatchObject({
-          message: "room: automated commit",
+          message: "cloudroom: automated commit",
         });
         await reportQueuedCommandSuccess(harness, commitCommand, {
           commitSha: "abc123",
-          commitSubject: "room: automated commit",
+          commitSubject: "cloudroom: automated commit",
         });
 
         const response = await responsePromise;
         expect(response.status).toBe(200);
         await expect(readJson(response)).resolves.toMatchObject({
           action: "commit",
-          commitSubject: "room: automated commit",
+          commitSubject: "cloudroom: automated commit",
           ok: true,
         });
       },

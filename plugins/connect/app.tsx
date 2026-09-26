@@ -770,7 +770,7 @@ function NotPairedContent({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Pairing gives this Room a private URL like{" "}
+        Pairing gives this Cloudroom server a private URL like{" "}
         <span className="rounded bg-surface-recessed px-1.5 py-0.5 font-mono text-xs text-foreground">
           you.{dashboardHost}
         </span>
@@ -806,7 +806,7 @@ function NotPairedContent({
           className="mt-px size-3.5 shrink-0 opacity-70"
         />
         Anyone signed in to your {dashboardHost} account gets full control of
-        this Room.
+        this Cloudroom server.
       </p>
     </div>
   );
@@ -845,7 +845,8 @@ function DisconnectControls({
     );
   }, [rpc, onChanged, onDisconnected]);
 
-  const host = status.url !== null ? hostOf(status.url) : "this Room";
+  const host =
+    status.url !== null ? hostOf(status.url) : "this Cloudroom server";
 
   return (
     <>
@@ -917,8 +918,8 @@ function ConnectedContent({
       {repairOpen ? (
         <div className="space-y-2 rounded-md border border-border bg-surface-recessed/50 px-3 py-3">
           <p className="text-xs text-muted-foreground">
-            Re-pairing replaces this Room&apos;s credential. Paste a fresh code
-            from your dashboard.
+            Re-pairing replaces this Cloudroom server&apos;s credential. Paste a
+            fresh code from your dashboard.
           </p>
           <PairForm dashboardUrl={status.dashboardUrl} onPaired={onChanged} />
         </div>
@@ -930,7 +931,7 @@ function ConnectedContent({
 
       <DisconnectControls
         status={status}
-        note="Disconnecting forgets this Room's credential."
+        note="Disconnecting forgets this Cloudroom server's credential."
         onChanged={onChanged}
         onDisconnected={onDisconnected}
       />
@@ -965,7 +966,7 @@ function ReconnectingContent({
 
       <div className="space-y-2 pointer-events-none opacity-60 saturate-[0.85]">
         <p className="text-sm text-muted-foreground">
-          Your Room will be reachable again at:
+          Your Cloudroom will be reachable again at:
         </p>
         {status.url !== null ? (
           <UrlHero url={status.url} showOpen={false} />
@@ -976,7 +977,7 @@ function ReconnectingContent({
 
       <DisconnectControls
         status={status}
-        note="Remote devices can't reach this Room right now. Local access is unaffected."
+        note="Remote devices can't reach this Cloudroom server right now. Local access is unaffected."
         onChanged={onChanged}
         onDisconnected={onDisconnected}
       />
@@ -1080,7 +1081,7 @@ export default definePluginApp((app) => {
   app.slots.settingsSection({
     id: "remote-access",
     description:
-      "Cloudroom Connect gives Room a private getbb.app address for remote access.",
+      "Cloudroom Connect gives Cloudroom a private getbb.app address for remote access.",
     component: ConnectSettingsSection,
   });
   app.experimental_sidebarFooter.register({

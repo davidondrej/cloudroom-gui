@@ -134,8 +134,9 @@ function UpdatePluginDialogContent({
               aria-hidden
             />
             <span>
-              Room couldn&rsquo;t activate {displayPluginVersion(failure.version)}
-              . It restored {displayPluginVersion(plugin.version)} and its data.
+              Cloudroom couldn&rsquo;t activate{" "}
+              {displayPluginVersion(failure.version)}. It restored{" "}
+              {displayPluginVersion(plugin.version)} and its data.
             </span>
           </div>
           {failure.detail.length > 0 ? (
@@ -203,7 +204,7 @@ function UpdatePluginDialogContent({
             <span className="font-medium" style={SUCCESS_TEXT_STYLE}>
               ✓
             </span>
-            <span>Compatible with your Room and plugin SDK</span>
+            <span>Compatible with your Cloudroom version and plugin SDK</span>
           </div>
           <DetailsDisclosure summary="Details — source, versions">
             <KeyValueGrid
@@ -265,7 +266,7 @@ function UpdatePluginDialogContent({
             />
             <span>
               {displayPluginVersion(blocked)} isn&rsquo;t compatible with this
-              Room
+              Cloudroom
             </span>
           </div>
           <DetailsDisclosure summary="Details" defaultExpanded>

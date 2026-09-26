@@ -175,6 +175,8 @@ export interface RuntimeManagerOptions {
   providerInstallationGateTtlMs?: number;
   providerMaintenanceIdleTimeoutMs?: number;
   shellEnv?: AgentRuntimeOptions["shellEnv"];
+  /** Filtered vars from the user's login shell, such as provider API keys. */
+  providerUserEnv?: () => Record<string, string>;
   applyMachineEnvironment?: (
     shell: NonNullable<AgentRuntimeOptions["shellEnv"]>,
   ) => NonNullable<AgentRuntimeOptions["shellEnv"]>;
@@ -242,8 +244,9 @@ function shellEnvEquals(
 
 function providerProcessEnvFromShellEnv(
   shellEnv: NonNullable<AgentRuntimeOptions["shellEnv"]>,
+  userEnv: Record<string, string>,
 ): Record<string, string> | null {
-  const env: Record<string, string> = {};
+  const env: Record<string, string> = { ...userEnv };
   if (shellEnv.PATH) {
     env.PATH = shellEnv.PATH;
   }
@@ -259,6 +262,7 @@ export class RuntimeManager {
   private readonly hostWatcher;
   private readonly provisionWorkspace;
   private baseShellEnv;
+  private providerUserEnv: Record<string, string>;
   private readonly entries = new Map<string, RuntimeEntry>();
   private readonly pendingEntries = new Map<string, Promise<RuntimeEntry>>();
   private readonly pendingCatalogHashes = new Map<string, string>();
@@ -294,6 +298,7 @@ export class RuntimeManager {
     this.hostWatcher = options.hostWatcher;
     this.provisionWorkspace = options.provisionWorkspace ?? provisionWorkspace;
     this.baseShellEnv = { ...(options.shellEnv ?? {}) };
+    this.providerUserEnv = options.providerUserEnv?.() ?? {};
     this.providerInstallationGate = createProviderInstallationGate({
       ttlMs:
         options.providerInstallationGateTtlMs ??
@@ -553,11 +558,16 @@ export class RuntimeManager {
   async replaceBaseShellEnv(
     shellEnv: NonNullable<AgentRuntimeOptions["shellEnv"]>,
   ): Promise<void> {
-    if (shellEnvEquals(this.baseShellEnv, shellEnv)) {
+    const providerUserEnv = this.options.providerUserEnv?.() ?? {};
+    if (
+      shellEnvEquals(this.baseShellEnv, shellEnv) &&
+      shellEnvEquals(this.providerUserEnv, providerUserEnv)
+    ) {
       return;
     }
 
     this.baseShellEnv = { ...shellEnv };
+    this.providerUserEnv = providerUserEnv;
     this.providerInstallationGate.clear();
     await this.shutdownProviderMaintenanceRuntime();
     await this.evictIdleRuntimeEntries();
@@ -1117,7 +1127,10 @@ export class RuntimeManager {
 
     let runtime: AgentRuntime | null = null;
     const shellEnv = this.getShellEnv();
-    const providerProcessEnv = providerProcessEnvFromShellEnv(shellEnv);
+    const providerProcessEnv = providerProcessEnvFromShellEnv(
+      shellEnv,
+      this.providerUserEnv,
+    );
     runtime = this.createRuntime({
       workspacePath,
       additionalWorkspaceWriteRoots: [],
@@ -1187,7 +1200,10 @@ export class RuntimeManager {
     });
     let runtime: AgentRuntime | null = null;
     const shellEnv = this.getShellEnv();
-    const providerProcessEnv = providerProcessEnvFromShellEnv(shellEnv);
+    const providerProcessEnv = providerProcessEnvFromShellEnv(
+      shellEnv,
+      this.providerUserEnv,
+    );
     runtime = this.createRuntime({
       workspacePath: workspace.path,
       additionalWorkspaceWriteRoots,

@@ -493,20 +493,20 @@ async function mountWithTimeout(
             if (controller.signal.aborted) return;
             if (typeof threadId !== "string") {
               deps.warn(
-                `Room plugin "${pluginId}": contentScript.experimental_setThreadRowStatus: "threadId" must be a non-empty string`,
+                `Cloudroom plugin "${pluginId}": contentScript.experimental_setThreadRowStatus: "threadId" must be a non-empty string`,
               );
               return;
             }
             const normalizedThreadId = threadId.trim();
             if (normalizedThreadId.length === 0) {
               deps.warn(
-                `Room plugin "${pluginId}": contentScript.experimental_setThreadRowStatus: "threadId" must be a non-empty string`,
+                `Cloudroom plugin "${pluginId}": contentScript.experimental_setThreadRowStatus: "threadId" must be a non-empty string`,
               );
               return;
             }
             const normalizedStatus = normalizePluginThreadRowStatus(
               status,
-              (reason) => deps.warn(`Room plugin "${pluginId}": ${reason}`),
+              (reason) => deps.warn(`Cloudroom plugin "${pluginId}": ${reason}`),
             );
             if (normalizedStatus === undefined) return;
             setPluginThreadRowStatus(

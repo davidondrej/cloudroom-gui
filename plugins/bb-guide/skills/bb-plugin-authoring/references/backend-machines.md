@@ -130,7 +130,7 @@ Allocation checkpoints are recovery records, not filesystem saves: providers
 must create any filesystem snapshot themselves. Daemon-connected is not
 agent-ready; checkout setup and provider authentication still need to complete.
 
-Standalone `room machine create` and `bb.sdk.hosts.experimental_create` create a
+Standalone `cloudroom machine create` and `bb.sdk.hosts.experimental_create` create a
 durable host and follow its progress. `create --no-wait` returns the creating
 host ID; `machine show` / `hosts.get` poll it. `machine remove` / `hosts.delete`
 cancel creation; closing a client or aborting its signal only stops following.

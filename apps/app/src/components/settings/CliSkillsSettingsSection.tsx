@@ -16,7 +16,7 @@ import { useInstallCliSkills } from "@/hooks/mutations/settings-mutations";
 import { selectHosts, useHosts } from "@/hooks/queries/host-queries";
 import { useCliSkillsStatus } from "@/hooks/queries/system-queries";
 
-const CLI_SKILLS_SETTING_LABEL = "Room CLI skills";
+const CLI_SKILLS_SETTING_LABEL = "Cloudroom CLI skills";
 
 interface CliSkillsSettingsSectionContentProps {
   hasConnectedMachine: boolean;
@@ -27,7 +27,7 @@ interface CliSkillsSettingsSectionContentProps {
 
 function installDescription(hasConnectedMachine: boolean): string {
   return hasConnectedMachine
-    ? "Install them into ~/.agents/skills and ~/.claude/skills so agents outside Room can use the Room CLI."
+    ? "Install them into ~/.agents/skills and ~/.claude/skills so agents outside Cloudroom can use the Cloudroom CLI."
     : "Connect a machine to install them into ~/.agents/skills and ~/.claude/skills.";
 }
 
@@ -83,7 +83,7 @@ function reportInstallResults(result: SystemInstallCliSkillsResponse): void {
   const failed = result.results.filter((entry) => !entry.ok);
   if (installed.length > 0) {
     appToast.success(
-      `Installed the Room CLI skills on ${installed
+      `Installed the Cloudroom CLI skills on ${installed
         .map((entry) => entry.hostName)
         .join(", ")}`,
     );

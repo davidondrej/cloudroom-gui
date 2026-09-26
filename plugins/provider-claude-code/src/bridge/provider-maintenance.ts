@@ -31,6 +31,7 @@ const CLAUDE_USAGE_URL = "https://api.anthropic.com/api/oauth/usage";
 const CLAUDE_KEYCHAIN_SERVICE = "Claude Code-credentials";
 const CLAUDE_NPM_PACKAGE = "@anthropic-ai/claude-code";
 const CLAUDE_INSTALL_SCRIPT_URL = "https://claude.ai/install.sh";
+const CLAUDE_MINIMUM_SUPPORTED_VERSION = "2.1.280";
 
 const claudeCredentialsSchema = z.object({
   claudeAiOauth: z.object({
@@ -53,7 +54,7 @@ const claudeAccountSchema = z.object({
     .nullish(),
 });
 
-function claudeExecutable(): string {
+export function claudeExecutable(): string {
   return process.env.BB_CLAUDE_CODE_EXECUTABLE?.trim() || "claude";
 }
 
@@ -166,14 +167,22 @@ export async function getClaudeProviderInstallationStatus(): Promise<ProviderIns
     doctor.installMethod === null &&
     installSource === "external" &&
     isDefaultNativeClaudePath(resolvedExecutable);
+  const canRunNativeUpdate =
+    doctor.installMethod === "native" || nativeFallback;
   const canRunUpdate =
-    doctor.installMethod === "native" ||
-    nativeFallback ||
+    canRunNativeUpdate ||
     (installSource === "npmGlobal" &&
       (doctor.installMethod === null || doctor.installMethod === "npm-global"));
+  const versionUnsupported =
+    canRunNativeUpdate &&
+    currentVersion !== null &&
+    compareVersions(currentVersion, CLAUDE_MINIMUM_SUPPORTED_VERSION) < 0 &&
+    (latestVersion === null
+      ? doctor.updateChannel !== "stable"
+      : compareVersions(latestVersion, CLAUDE_MINIMUM_SUPPORTED_VERSION) >= 0);
   const actionKind = !installed
     ? "install"
-    : needsUpdate && canRunUpdate
+    : (needsUpdate || versionUnsupported) && canRunUpdate
       ? "update"
       : null;
   const displayCommand =
@@ -187,7 +196,7 @@ export async function getClaudeProviderInstallationStatus(): Promise<ProviderIns
     installSource,
     currentVersion,
     latestVersion,
-    minimumSupportedVersion: null,
+    minimumSupportedVersion: CLAUDE_MINIMUM_SUPPORTED_VERSION,
     npmPackageName: CLAUDE_NPM_PACKAGE,
     npmGlobalPackageVersion: npmGlobal.npmGlobalPackageVersion,
     installAction:
@@ -199,7 +208,7 @@ export async function getClaudeProviderInstallationStatus(): Promise<ProviderIns
             command: displayCommand,
           },
     needsUpdate,
-    versionUnsupported: false,
+    versionUnsupported,
   };
 }
 

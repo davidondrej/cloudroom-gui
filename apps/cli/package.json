@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "type": "module",
   "bin": {
-    "room": "./bin/room",
+    "cloudroom": "./bin/cloudroom",
     "title": "./bin/title"
   },
   "scripts": {

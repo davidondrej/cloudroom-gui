@@ -42,9 +42,9 @@ export function registerOpenCommand(
 ): void {
   parent
     .command("open")
-    .description("Open a Room thread, optionally with a file in its panel")
+    .description("Open a Cloudroom thread, optionally with a file in its panel")
     .usage("[id] [path] [options]")
-    .argument("[id]", "Thread ID. Omit inside a Room thread.")
+    .argument("[id]", "Thread ID. Omit inside a Cloudroom thread.")
     .argument("[path]", "Thread-relative or absolute file path to open")
     .option("--line <number>", "Line number to focus")
     .option(
@@ -144,7 +144,7 @@ function resolveThreadOpenTarget(
       }
       if (explicitThreadId !== contextThreadId && !allowsExplicitThreadTarget) {
         throw new Error(
-          "ROOM_THREAD_ID is set, so room thread open targets the current thread. Omit the thread ID.",
+          "ROOM_THREAD_ID is set, so cloudroom thread open targets the current thread. Omit the thread ID.",
         );
       }
       return {
@@ -182,7 +182,7 @@ function resolveThreadOpenTarget(
 
   if (first === undefined) {
     throw new Error(
-      "Missing thread ID. Pass <threadId> [path], or run inside a Room thread.",
+      "Missing thread ID. Pass <threadId> [path], or run inside a Cloudroom thread.",
     );
   }
 

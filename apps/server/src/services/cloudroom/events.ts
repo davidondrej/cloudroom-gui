@@ -6,10 +6,16 @@ import { appendThreadEventsInTransaction } from "../threads/thread-events.js";
 import { reasoningLevelSchema, threadEventSchema, threadScope, turnScope, encodeClientTurnRequestIdNumber, type ThreadEvent } from "@bb/domain";
 import { z } from "zod";
 import { CloudroomError, type SessionRecord } from "./client.js";
+import { codexErrorFields } from "./codex-errors.js";
 import { binding, command, saveBinding, saveCommandState, saveStatus, effectivePrompt, type Binding, type Command } from "./store.js";
 
 const object = z.record(z.string(), z.unknown());
 const nativeFrame = z.object({ method: z.string(), params: object.optional() });
+// GUI provider ID → cloud core harness ID.
+export const CLOUD_HARNESSES = { codex: "codex", pi: "pi", "claude-code": "claude-code", "acp-cursor": "cursor", "acp-fx": "fx" } as const;
+export type CloudProvider = keyof typeof CLOUD_HARNESSES;
+export const isCloudProvider = (id: string | undefined): id is CloudProvider => id !== undefined && Object.hasOwn(CLOUD_HARNESSES, id);
+const isAcpProvider = (id: string | undefined): id is "acp-cursor" | "acp-fx" => id === "acp-cursor" || id === "acp-fx";
 const bbRequestId = (id: string) => encodeClientTurnRequestIdNumber({ value: createHash("sha256").update(id).digest().readUIntBE(0, 6) });
 
 function messageReasoning(input: string, fallback: string): string {
@@ -32,14 +38,15 @@ function requestedTurns(db: DbQueryConnection, threadId: string) {
   return found;
 }
 
-function promptRequestedEvent(db: DbQueryConnection, saved: Binding, request: Command): ThreadEvent {
+function promptRequestedEvent(db: DbQueryConnection, saved: Binding, request: Command, steeredTurnId?: string): ThreadEvent {
   const stored = effectivePrompt(db, saved.threadId, request.id);
   const initial = request.id === `first_${saved.threadId}`;
   return threadEventSchema.parse({
     type: "client/turn/requested", scope: threadScope(), threadId: saved.threadId,
     direction: "outbound", requestId: bbRequestId(request.id), source: initial ? "spawn" : "tell", initiator: "user", senderThreadId: null,
     input: Array.isArray(stored.content) ? stored.content : [{ type: "text", text: stored.text ?? "", mentions: [] }],
-    target: { kind: initial ? "thread-start" : "new-turn" }, request: { method: initial ? "thread/start" : "turn/start", params: {} },
+    target: steeredTurnId ? { kind: "steer", expectedTurnId: steeredTurnId } : { kind: initial ? "thread-start" : "new-turn" },
+    request: { method: initial ? "thread/start" : "turn/start", params: {} },
     execution: { source: "client/turn/requested", model: saved.model, reasoningLevel: messageReasoning(JSON.stringify(stored), saved.reasoning), permissionMode: "full", serviceTier: stored.service_tier === "fast" ? "fast" : "default" },
   });
 }
@@ -72,7 +79,7 @@ export function retractStillQueuedPrompts(db: DbConnection, threadId: string, re
   return true;
 }
 
-export function projectRecord(db: DbConnection, threadId: string, record: SessionRecord): ThreadEvent["type"][] {
+export function projectRecord(db: DbConnection, threadId: string, record: SessionRecord, codexOutage = false): ThreadEvent["type"][] {
   return db.transaction((tx) => {
     const saved = binding(tx, threadId);
     if (!saved || record.sequence <= saved.cursor) return [];
@@ -100,16 +107,19 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
     if (record.kind === "receipt") {
       const receipt = z.object({ request_id: z.string(), command: z.string(), state: z.string(), error: z.string().optional() }).parse(data);
       const previous = command(tx, receipt.request_id);
-      if (!previous && ["prompt", "edit", "cancel"].includes(receipt.command) && data.input) {
-        tx.insert(cloudroomCommands).values({ id: receipt.request_id, threadId, command: receipt.command as "prompt" | "edit" | "cancel", input: JSON.stringify(data.input), state: receipt.state, createdAt: record.timestamp_ms ?? 0 }).run();
+      if (!previous && ["prompt", "edit", "cancel", "reorder"].includes(receipt.command) && data.input) {
+        tx.insert(cloudroomCommands).values({ id: receipt.request_id, threadId, command: receipt.command as "prompt" | "edit" | "cancel" | "reorder", input: JSON.stringify(data.input), state: receipt.state, createdAt: record.timestamp_ms ?? 0 }).run();
       }
       saveCommandState(tx, threadId, receipt.request_id, receipt.state);
       if (receipt.command === "start" && receipt.state === "accepted" && object.parse(data.input).workspace) saveStatus(tx, threadId, "pending");
-      if ((harness === "pi" || harness === "acp-cursor" || harness === "claude-code") && previous && receipt.command === "prompt" && ["completed", "failed", "interrupted", "unknown", "unknown_after_restart"].includes(receipt.state) && saved.nativeId) {
+      const turnStarted = () => Boolean(tx.select({ id: events.id }).from(events).where(and(eq(events.threadId, threadId), eq(events.turnId, receipt.request_id), eq(events.type, "turn/started"))).get());
+      if ((harness === "pi" || isAcpProvider(harness) || harness === "claude-code") && previous && receipt.command === "prompt" && ["completed", "failed", "interrupted", "unknown", "unknown_after_restart"].includes(receipt.state) && saved.nativeId && turnStarted()) {
         emit({ threadId, providerThreadId: saved.nativeId, scope: turnScope(receipt.request_id), type: "turn/completed", status: receipt.state === "completed" ? "completed" : receipt.state === "interrupted" ? "interrupted" : "failed" });
       }
-      if (receipt.state === "failed" && receipt.error) {
-        emit({ type: "system/error", scope: threadScope(), threadId, message: receipt.error });
+      const lastError = () => tx.select({ data: events.data }).from(events).where(and(eq(events.threadId, threadId), eq(events.type, "system/error"))).orderBy(desc(events.sequence)).limit(1).get();
+      const error = receipt.error ? codexErrorFields(receipt.error, codexOutage) : null;
+      if (["failed", "unknown"].includes(receipt.state) && error && !projected.some((event) => event.type === "system/error" && event.message === error.message) && JSON.parse(lastError()?.data ?? "{}").message !== error.message) {
+        emit({ type: "system/error", scope: threadScope(), threadId, ...error });
       }
       if (receipt.state === "accepted" && ["stop", "resume"].includes(receipt.command)) {
         saveBinding(tx, threadId, { queuePaused: receipt.command === "stop" });
@@ -117,6 +127,11 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
       if (receipt.command === "cancel" && ["accepted", "completed"].includes(receipt.state)) {
         const stored = data.input ? object.parse(data.input) : previous ? JSON.parse(previous.input) as { target_request_id?: string } : {};
         if (typeof stored.target_request_id === "string") saveCommandState(tx, threadId, stored.target_request_id, "cancelled");
+      }
+      if (receipt.command === "steer" && receipt.state === "completed" && previous?.command === "steer" && saved.nativeId && !requestedTurns(tx, threadId).has(bbRequestId(previous.id))) {
+        const target = z.object({ target_request_id: z.string() }).parse(JSON.parse(previous.input)).target_request_id;
+        emit(promptRequestedEvent(tx, saved, previous, target));
+        emit({ threadId, providerThreadId: saved.nativeId, scope: turnScope(target), type: "turn/input/accepted", clientRequestId: bbRequestId(previous.id) });
       }
     }
     if (record.kind === "receipt" && data.command === "rewind" && data.state === "accepted") saveStatus(tx, threadId, "starting");
@@ -136,7 +151,10 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
       if (typeof data.request_id === "string") saveCommandState(tx, threadId, data.request_id, "completed");
       if (data.replacement) {
         const replacement = z.object({ request_id: z.string(), input: object }).parse(data.replacement);
-        if (!command(tx, replacement.request_id)) tx.insert(cloudroomCommands).values({ id: replacement.request_id, threadId, command: "prompt", input: JSON.stringify(replacement.input), state: "accepted", createdAt: record.timestamp_ms ?? 0 }).run();
+        const rewind = typeof data.request_id === "string" ? command(tx, data.request_id) : null;
+        const original = rewind?.command === "rewind" ? JSON.parse(rewind.input).replacement : undefined;
+        const input = original?.request_id === replacement.request_id ? original : replacement.input;
+        if (!command(tx, replacement.request_id)) tx.insert(cloudroomCommands).values({ id: replacement.request_id, threadId, command: "prompt", input: JSON.stringify(input), state: "accepted", createdAt: record.timestamp_ms ?? 0 }).run();
       }
       emit({ type: "system/operation", scope: threadScope(), threadId, operation: "edit_message", status: "completed", message: "Message edited", operationId: String(data.request_id), metadata: { cutoffSequence: cutoff ?? null, replacementProviderThreadId: data.id } });
       emit({ type: "thread/contextWindowUsage/updated", scope: threadScope(), threadId, providerThreadId: data.id, contextWindowUsage: { usedTokens: null, modelContextWindow: null, estimated: false } });
@@ -188,7 +206,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
         if (request?.command === "prompt" && !JSON.parse(request.input).teleport_handoff && !requestedTurns(tx, threadId).has(bbRequestId(data.request_id))) {
           emit(promptRequestedEvent(tx, saved, request));
         }
-        if ((harness === "pi" || harness === "acp-cursor" || harness === "claude-code") && saved.nativeId) {
+        if ((harness === "pi" || isAcpProvider(harness) || harness === "claude-code") && saved.nativeId) {
           const base = { threadId, providerThreadId: saved.nativeId, scope: turnScope(data.request_id) };
           emit({ ...base, type: "turn/started" });
           emit({ ...base, type: "turn/input/accepted", clientRequestId: bbRequestId(data.request_id) });
@@ -203,6 +221,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
       if (["failed", "process_lost"].includes(state)) emit({
         type: "system/error", scope: threadScope(), threadId,
         message: typeof data.reason === "string" ? data.reason : "Cloudroom execution failed",
+        ...(typeof data.stderr === "string" ? { detail: `Harness stderr (last lines):\n${data.stderr}` } : {}),
       });
     }
     if (harness === "claude-code" && data.harness === "claude-code" && saved.nativeId && typeof data.request_id === "string") {
@@ -273,7 +292,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
         } });
       }
     }
-    if (harness === "acp-cursor" && saved.nativeId && saved.turnId && data.harness === "cursor") {
+    if (isAcpProvider(harness) && saved.nativeId && saved.turnId && data.harness === CLOUD_HARNESSES[harness]) {
       const base = { threadId, providerThreadId: saved.nativeId, scope: turnScope(saved.turnId) };
       const itemId = `${saved.turnId}:${String(data.item_id)}`;
       if (record.kind === "text_delta" || record.kind === "thinking_delta") {
@@ -349,7 +368,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
             if (reason) emit({ ...base, type: "provider/warning", category: "general", summary: reason });
           } else if (method === "error") {
             const error = object.parse(params.error);
-            emit({ type: "system/error", scope: threadScope(), threadId, message: z.string().parse(error.message) });
+            emit({ type: "system/error", scope: threadScope(), threadId, ...codexErrorFields(z.string().parse(error.message), codexOutage) });
           }
         }
       }

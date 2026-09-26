@@ -186,7 +186,7 @@ export class ConnectTunnel {
     if (credential === null) {
       throw new ConnectListError(
         "not_paired",
-        "this Room is not connected to getbb.app — run `room connect` for how to pair",
+        "this Cloudroom server is not connected to getbb.app — run `cloudroom connect` for how to pair",
       );
     }
     return listAccountServers(credential);
@@ -194,7 +194,10 @@ export class ConnectTunnel {
 
   async createDesktopSession(): Promise<DesktopSession> {
     if (this.credential === null) {
-      throw new ConnectListError("not_paired", "this Room is not connected");
+      throw new ConnectListError(
+        "not_paired",
+        "this Cloudroom server is not connected",
+      );
     }
     return fetchDesktopSession(this.credential);
   }
@@ -333,7 +336,7 @@ export class ConnectTunnel {
 
   private credentialRejected(statusCode: number): void {
     this.lastError =
-      `the gate rejected this Room's credential (HTTP ${statusCode}) — ` +
+      `the gate rejected this Cloudroom server's credential (HTTP ${statusCode}) — ` +
       "pairing was revoked; get a new code from the getbb.app dashboard and re-pair";
     this.options.log.warn(this.lastError);
     this.credential = null;

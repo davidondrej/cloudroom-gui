@@ -46,7 +46,7 @@ export function frameCompositionForWidth(width: number): FrameComposition {
   return {
     // The sidebar joins once it and a readable thread both fit.
     sidebar: width >= SIDEBAR_WIDTH + THREAD_MIN_WIDTH,
-    // The info panel waits until the thread keeps comfortable room beside it.
+    // The info panel waits until the thread keeps comfortable cloudroom beside it.
     infoPanel: width >= SIDEBAR_WIDTH + THREAD_COMFORTABLE_WIDTH + INFO_PANEL_WIDTH,
     // Split panes go side by side only when each stays readable.
     splitColumns: width >= SIDEBAR_WIDTH + 2 * THREAD_MIN_WIDTH,

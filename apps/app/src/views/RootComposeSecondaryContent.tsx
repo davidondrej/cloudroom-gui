@@ -3,6 +3,7 @@ import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
 import { Skeleton } from "@bb/shared-ui/skeleton";
 import { COARSE_POINTER_HEADER_ICON_BUTTON_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
 import { cn } from "@bb/shared-ui/lib/utils";
+import { CompactHeaderVersionMark } from "@/components/layout/CloudroomVersionMark";
 import { PluginHomepageSections } from "@/components/plugin/PluginHomepageSections";
 import { usePluginComposerHost } from "@/components/plugin/plugin-composer-host";
 import { SecondaryPanelLayout } from "@/components/secondary-panel/SecondaryPanelLayout";
@@ -42,6 +43,7 @@ type RootSecondaryPanelProps = Omit<
 };
 
 interface RootComposeSecondaryContentProps {
+  footer?: ReactNode;
   children: ReactNode;
   compactScrollContent: ReactNode;
   contentClassName?: string;
@@ -64,6 +66,7 @@ function DrawerPanelLoadingSkeleton() {
 }
 
 export function RootComposeSecondaryContent({
+  footer,
   children,
   compactScrollContent,
   contentClassName,
@@ -113,6 +116,7 @@ export function RootComposeSecondaryContent({
           className="@container/page flex min-h-0 flex-1 flex-col"
           style={PAGE_SHELL_CONTENT_STYLE}
         >
+          <CompactHeaderVersionMark />
           <RootComposeCompactHome composer={children}>
             {compactScrollContent}
             <PluginHomepageSections />
@@ -134,6 +138,11 @@ export function RootComposeSecondaryContent({
           </div>
         </div>
       )}
+      {footer ? (
+        <div className="flex shrink-0 justify-center px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
+          {footer}
+        </div>
+      ) : null}
     </div>
   );
 

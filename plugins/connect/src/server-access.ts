@@ -73,7 +73,7 @@ export async function registerServerAccess(
     const credential = tunnel.getCredential();
     if (!credential)
       throw new Error(
-        "Pair this Room instance with Cloudroom Connect to revoke machine access",
+        "Pair this Cloudroom instance with Cloudroom Connect to revoke machine access",
       );
     try {
       const status = await lookupMachineCode(credential, intent.code, signal);
@@ -101,7 +101,7 @@ export async function registerServerAccess(
           }
         : {
             status: "setup-required",
-            message: "Pair this Room instance with Cloudroom Connect",
+            message: "Pair this Cloudroom instance with Cloudroom Connect",
           };
     },
     acquire({ key, hostId, signal }) {
@@ -111,7 +111,7 @@ export async function registerServerAccess(
         if (existing && "result" in existing) return existing.result.grant;
         const credential = tunnel.getCredential();
         if (!credential)
-          throw new Error("Pair this Room instance with Cloudroom Connect");
+          throw new Error("Pair this Cloudroom instance with Cloudroom Connect");
         let intent = existing?.intent;
         if (intent) {
           const reconciliation = await reconcile(intent, signal);
@@ -173,7 +173,7 @@ export async function registerServerAccess(
           const credential = tunnel.getCredential();
           if (!credential)
             throw new Error(
-              "Pair this Room instance with Cloudroom Connect to revoke machine access",
+              "Pair this Cloudroom instance with Cloudroom Connect to revoke machine access",
             );
           await revokeMachine(credential, stored.result.connectMachineId);
         }

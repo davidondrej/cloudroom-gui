@@ -10,13 +10,13 @@ import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import * as fixtures from "../helpers/command-output-fixtures.js";
 import { registerThreadCommands } from "../../commands/thread/index.js";
 
-describe("room thread interactions command output", () => {
+describe("cloudroom thread interactions command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
     registerThreadCommands(program, () => "http://server");
 
-  it("room thread interactions list renders the shared borderless table", async () => {
+  it("cloudroom thread interactions list renders the shared borderless table", async () => {
     const listInteractions = vi.fn(async () => [
       fixtures.makePendingInteraction({
         id: "int-1",
@@ -45,7 +45,7 @@ describe("room thread interactions command output", () => {
     expect(lines[2]).toBe("");
   });
 
-  it("room thread interactions show prints interaction details", async () => {
+  it("cloudroom thread interactions show prints interaction details", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-show-interaction");
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
@@ -86,7 +86,7 @@ describe("room thread interactions command output", () => {
     ]);
   });
 
-  it("room thread interactions show prints a tool-use approval from its presentation", async () => {
+  it("cloudroom thread interactions show prints a tool-use approval from its presentation", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-tool-use",
@@ -129,7 +129,7 @@ describe("room thread interactions command output", () => {
     ]);
   });
 
-  it("room thread interactions show prints user question details", async () => {
+  it("cloudroom thread interactions show prints user question details", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-show-question");
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
@@ -171,7 +171,7 @@ describe("room thread interactions command output", () => {
     );
   });
 
-  it("room thread interactions answer resolves single-question interactions with shorthand flags", async () => {
+  it("cloudroom thread interactions answer resolves single-question interactions with shorthand flags", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-question-answer",
@@ -240,7 +240,7 @@ describe("room thread interactions command output", () => {
     ]);
   });
 
-  it("room thread interactions answer resolves multi-question interactions with explicit question ids", async () => {
+  it("cloudroom thread interactions answer resolves multi-question interactions with explicit question ids", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-question-multi",
@@ -312,7 +312,7 @@ describe("room thread interactions command output", () => {
     });
   });
 
-  it("room thread interactions answer rejects shorthand for multi-question interactions", async () => {
+  it("cloudroom thread interactions answer rejects shorthand for multi-question interactions", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-question-shorthand",
@@ -348,7 +348,7 @@ describe("room thread interactions command output", () => {
     );
   });
 
-  it("room thread interactions answer rejects unknown explicit text question ids", async () => {
+  it("cloudroom thread interactions answer rejects unknown explicit text question ids", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-question-unknown-text",
@@ -384,7 +384,7 @@ describe("room thread interactions command output", () => {
     );
   });
 
-  it("room thread interactions answer rejects approvals and invalid question choices before posting", async () => {
+  it("cloudroom thread interactions answer rejects approvals and invalid question choices before posting", async () => {
     const getInteraction = vi
       .fn()
       .mockResolvedValueOnce(
@@ -444,7 +444,7 @@ describe("room thread interactions command output", () => {
     expect(errorOutput).toContain("does not offer choice 'qa'");
   });
 
-  it("room thread interactions show prints a provider's plugin-defined request with its form and data", async () => {
+  it("cloudroom thread interactions show prints a provider's plugin-defined request with its form and data", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-plugin-request",
@@ -479,7 +479,7 @@ describe("room thread interactions command output", () => {
     expect(lines).toContain('  Data: {"fields":["TOKEN"]}');
   });
 
-  it("room thread interactions respond posts the form's JSON value", async () => {
+  it("cloudroom thread interactions respond posts the form's JSON value", async () => {
     const respond = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-plugin-request",
@@ -519,7 +519,7 @@ describe("room thread interactions command output", () => {
     ]);
   });
 
-  it("room thread interactions respond rejects a value that is not JSON", async () => {
+  it("cloudroom thread interactions respond rejects a value that is not JSON", async () => {
     await expect(
       runCommand(
         [
@@ -539,7 +539,7 @@ describe("room thread interactions command output", () => {
     );
   });
 
-  it("room thread interactions show indicates when resolution delivery is in progress", async () => {
+  it("cloudroom thread interactions show indicates when resolution delivery is in progress", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-show-resolving");
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
@@ -569,7 +569,7 @@ describe("room thread interactions command output", () => {
     expect(lines).toContain("  Decision: allow_for_session");
   });
 
-  it("room thread interactions approve resolves command approvals for the current turn", async () => {
+  it("cloudroom thread interactions approve resolves command approvals for the current turn", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-approve",
@@ -616,7 +616,7 @@ describe("room thread interactions command output", () => {
     ]);
   });
 
-  it("room thread interactions approve falls back to accept when session approval is unavailable", async () => {
+  it("cloudroom thread interactions approve falls back to accept when session approval is unavailable", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-approve-no-session",
@@ -677,7 +677,7 @@ describe("room thread interactions command output", () => {
     ]);
   });
 
-  it("room thread interactions approve errors when no allow decision is available", async () => {
+  it("cloudroom thread interactions approve errors when no allow decision is available", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-approve-amendment",
@@ -713,7 +713,7 @@ describe("room thread interactions command output", () => {
     );
   });
 
-  it("room thread interactions deny uses decline when it is available", async () => {
+  it("cloudroom thread interactions deny uses decline when it is available", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-deny",
@@ -758,7 +758,7 @@ describe("room thread interactions command output", () => {
     ]);
   });
 
-  it("room thread interactions deny errors when deny is unavailable", async () => {
+  it("cloudroom thread interactions deny errors when deny is unavailable", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-cancel",
@@ -788,7 +788,7 @@ describe("room thread interactions command output", () => {
     );
   });
 
-  it("room thread interactions approve resolves file-change approvals without granting extra permissions", async () => {
+  it("cloudroom thread interactions approve resolves file-change approvals without granting extra permissions", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-file-change",
@@ -843,7 +843,7 @@ describe("room thread interactions command output", () => {
     ]);
   });
 
-  it("room thread interactions grant resolves permission requests", async () => {
+  it("cloudroom thread interactions grant resolves permission requests", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-permission-grant",
@@ -914,7 +914,7 @@ describe("room thread interactions command output", () => {
     ]);
   });
 
-  it("room thread interactions grant builds a semantic turn-scoped resolution from server interaction data", async () => {
+  it("cloudroom thread interactions grant builds a semantic turn-scoped resolution from server interaction data", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-claude-permission-grant",
@@ -987,7 +987,7 @@ describe("room thread interactions command output", () => {
     ]);
   });
 
-  it("room thread interactions deny resolves permission requests as denied", async () => {
+  it("cloudroom thread interactions deny resolves permission requests as denied", async () => {
     const getInteraction = vi.fn(async () =>
       fixtures.makePendingInteraction({
         id: "int-permission-deny",

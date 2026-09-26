@@ -63,6 +63,7 @@ import { SETTINGS_PLUGIN_ROUTE_PATH } from "@/lib/route-paths";
 import { PluginSettingsPage } from "@/components/plugin/PluginSettings";
 import { FileOpenersSettingsSection } from "@/components/settings/FileOpenersSettingsSection";
 import { VoiceInputSettingsSection } from "@/components/settings/VoiceInputSettingsSection";
+import { ThreadNamingSettingsSection } from "@/components/settings/ThreadNamingSettingsSection";
 import { CommunitySettingsSection } from "@/components/settings/CommunitySettingsSection";
 import { UpdatesSettingsSection } from "@/components/settings/UpdatesSettingsSection";
 import { KeyboardSettingsSection } from "@/components/settings/KeyboardSettingsSection";
@@ -247,9 +248,9 @@ const SETTINGS_DROPDOWN_CONTENT_CLASS =
   "min-w-[var(--radix-dropdown-menu-trigger-width)]";
 
 const CREATE_CUSTOM_PALETTE_PROMPT =
-  "Create a custom Room palette. First run `room theme dir` to find the custom theme directory. Ask me for the palette name and visual direction, then create `<theme-dir>/<name>/theme.css` with light and dark theme variables compatible with Room's theme tokens.";
+  "Create a custom Cloudroom palette. First run `cloudroom theme dir` to find the custom theme directory. Ask me for the palette name and visual direction, then create `<theme-dir>/<name>/theme.css` with light and dark theme variables compatible with Cloudroom's theme tokens.";
 const PALETTE_SETTING_DESCRIPTION =
-  "Palettes change Room's colors, including syntax colors in diffs and file previews. Choose a built-in palette or create one from a prompt.";
+  "Palettes change Cloudroom's colors, including syntax colors in diffs and file previews. Choose a built-in palette or create one from a prompt.";
 
 interface PaletteMenuItemProps {
   active: boolean;
@@ -496,10 +497,10 @@ export function LocalOpenTargetSettingsSection({
     const accessDenied = accessState === "denied";
     const accessAvailable = accessState === "available";
     const descriptionText = accessDenied
-      ? "Your browser blocked access to Room on this device. Allow local network access for this site in browser settings, then reload Room."
+      ? "Your browser blocked access to Cloudroom on this device. Allow local network access for this site in browser settings, then reload Cloudroom."
       : accessAvailable
-        ? "Room couldn’t connect to its local editor helper. Make sure the Room desktop app or CLI is running on this device, then retry. If it is already running, a remote browser origin may need to be configured."
-        : "Connect this browser to Room on this device so it can discover installed editors. Room only contacts the local helper after you choose Enable; your browser may ask for local network access.";
+        ? "Cloudroom couldn’t connect to its local editor helper. Make sure the Cloudroom desktop app or CLI is running on this device, then retry. If it is already running, a remote browser origin may need to be configured."
+        : "Connect this browser to Cloudroom on this device so it can discover installed editors. Cloudroom only contacts the local helper after you choose Enable; your browser may ask for local network access.";
     const buttonLabel = accessRequestPending
       ? accessAvailable
         ? "Retrying…"
@@ -609,7 +610,7 @@ function ManagedBranchPrefixSetting({
       label={MANAGED_BRANCH_PREFIX_SETTING_LABEL}
       description={
         valid ? (
-          `Room puts this in front of every branch it creates for a worktree, such as ${draft}${MANAGED_BRANCH_PREFIX_EXAMPLE_SLUG}. Leave it empty for no prefix.`
+          `Cloudroom puts this in front of every branch it creates for a worktree, such as ${draft}${MANAGED_BRANCH_PREFIX_EXAMPLE_SLUG}. Leave it empty for no prefix.`
         ) : (
           <span className="text-destructive" role="alert">
             This prefix cannot start a valid git branch name.
@@ -907,7 +908,7 @@ export function GeneralSettingsSection({
           {desktopBrowserAvailable ? (
             <SettingsWithControl
               label={IN_APP_BROWSER_LINK_SETTING_LABEL}
-              description="Open web links inside Room."
+              description="Open web links inside Cloudroom."
             >
               <Switch
                 checked={openLinksInAppBrowser}
@@ -968,7 +969,7 @@ export function PrivacySettingsSection({
 
         <SettingsWithControl
           label="Share anonymous usage data"
-          description="Send anonymous app starts, thread and message counts, and plugin installs to help improve Room. Turning this off takes effect immediately for this server."
+          description="Send anonymous app starts, thread and message counts, and plugin installs to help improve Cloudroom. Turning this off takes effect immediately for this server. Details: cloudroom.dev/privacy."
         >
           <Switch
             checked={telemetryEnabled}
@@ -1279,6 +1280,7 @@ export function SettingsView() {
           }
         />
         <CliSkillsSettingsSection />
+        <ThreadNamingSettingsSection />
         <VoiceInputSettingsSection />
         <PrivacySettingsSection
           telemetryEnabled={generalSettings.telemetryEnabled}

@@ -15,6 +15,7 @@ interface ThreadListCommandOptions {
   project?: string;
   parentThread?: string;
   archived?: boolean;
+  includeArchived?: boolean;
   section?: string;
   unsectioned?: boolean;
   json?: boolean;
@@ -27,13 +28,14 @@ export function registerListCommand(
 ): void {
   parent
     .command("list")
-    .description("List threads")
+    .description("List open (unarchived) threads")
     .option("--project <id>", "Filter by project ID (defaults to all projects)")
     .option("--environment <id>", "Filter by environment ID")
     .option("--parent-thread <id>", "Filter by parent thread ID")
     .option("--section <id>", "Filter by thread section ID")
     .option("--unsectioned", "Show only threads outside sections")
     .option("--archived", "Show only archived threads")
+    .option("--include-archived", "Include archived threads with open ones")
     .option("--include-hidden", "Include hidden threads")
     .option("--json", "Print machine-readable JSON output")
     .action(
@@ -54,6 +56,9 @@ export function registerListCommand(
         if (opts.section && opts.unsectioned) {
           throw new Error("Cannot combine --section with --unsectioned.");
         }
+        if (opts.archived && opts.includeArchived) {
+          throw new Error("Cannot combine --archived with --include-archived.");
+        }
         const sectionId = resolveExplicitIdFlag({
           flagName: "--section",
           value: opts.section,
@@ -62,7 +67,7 @@ export function registerListCommand(
           ...(projectId ? { projectId } : {}),
           ...(environmentId ? { environmentId } : {}),
           ...(parentThreadId ? { parentThreadId } : {}),
-          ...(opts.archived ? { archived: true } : {}),
+          ...(opts.includeArchived ? {} : { archived: opts.archived === true }),
           ...(sectionId ? { sectionId } : {}),
           ...(opts.unsectioned ? { unsectioned: true } : {}),
           ...(opts.includeHidden ? { includeHidden: true } : {}),

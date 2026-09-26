@@ -69,7 +69,7 @@ ${DESKTOP_DIALOG_BASE_CSS}
 </head>
 <body>
   <h1>Set Server URL</h1>
-  <p>Point this app at a Room server. Leave empty to use only This Mac.</p>
+  <p>Point this app at a Cloudroom server. Leave empty to use only This Mac.</p>
   <form>
     <input name="url" type="text" placeholder="https://example.com:38886" value="${escapeHtmlText(initialUrl ?? "")}" autocomplete="off" spellcheck="false">
     <div data-error></div>

@@ -1,7 +1,6 @@
-import { createThread, getThread, listEvents } from "@bb/db";
+import { createThread, getThread } from "@bb/db";
 import {
   type ResolvedThreadExecutionOptions,
-  systemThreadProvisioningEventDataSchema,
   threadSchema,
   turnScope,
 } from "@bb/domain";
@@ -31,10 +30,7 @@ import {
 } from "../helpers/test-app.js";
 import { installFakeGitWorktreeProvider } from "../helpers/environment-provider.js";
 import { AiServiceCallError } from "../../src/services/ai/ai-service-call.js";
-import { InferenceTimeoutError } from "../../src/services/ai/inference.js";
-import { runEnvironmentProvisioningSweep } from "../../src/services/system/periodic-sweeps.js";
 import { createThreadFromRequest } from "../../src/services/threads/thread-create.js";
-import { requestThreadStopForCurrentState } from "../../src/services/threads/thread-lifecycle.js";
 import {
   advanceThreadProvisioning,
   requestThreadProvision,
@@ -137,24 +133,14 @@ async function createManagedWorktreeThread(
   return threadSchema.parse(await readJson(response));
 }
 
-function provisioningEntries(harness: TestAppHarness, threadId: string) {
-  return listEvents(harness.db, { threadId })
-    .filter((event) => event.type === "system/thread-provisioning")
-    .flatMap(
-      (event) =>
-        systemThreadProvisioningEventDataSchema.parse(JSON.parse(event.data))
-          .entries,
-    );
-}
-
 describe("generated thread titles", () => {
   beforeEach(() => {
     piAiMocks.complete.mockReset();
     piAiMocks.getModel.mockReset();
   });
 
-  it("resolves a managed-worktree request to the worktree provider once the title is generated", async () => {
-    mockThreadMetadata({ title: "Improve Branch Names" });
+  it("provisions a managed worktree without waiting for the generated title", async () => {
+    const resolveMetadata = pendingThreadMetadata();
     await withTestHarness(async (harness) => {
       const provider = installFakeGitWorktreeProvider();
       const { host } = seedHostSession(harness.deps, {
@@ -174,187 +160,20 @@ describe("generated thread titles", () => {
 
       const context = await provider.waitForProvision();
       expect(context.thread.id).toBe(thread.id);
-      expect(context.thread.title).toBe("Improve Branch Names");
+      expect(context.thread.title).toBeNull();
+      expect(context.suggestedBranchName).toContain(
+        "improve-the-generated-branch-naming-path",
+      );
       expect(context.host?.id).toBe(host.id);
       expect(context.inputs).toEqual({ branch: { kind: "default" } });
-      expect(getThread(harness.db, thread.id)?.title).toBe(
-        "Improve Branch Names",
-      );
-      expect(piAiMocks.complete).toHaveBeenCalledTimes(1);
-    });
-  });
 
-  it("opens the workspace-setup block before metadata inference completes", async () => {
-    const resolveMetadata = pendingThreadMetadata();
-
-    await withTestHarness(async (harness) => {
-      const provider = installFakeGitWorktreeProvider();
-      const { host } = seedHostSession(harness.deps, {
-        id: "host-managed-early-provisioning-row",
-      });
-      const { project } = seedProjectWithSource(harness.deps, {
-        hostId: host.id,
-        path: "/tmp/managed-early-provisioning-row-project",
-      });
-
-      const thread = await createManagedWorktreeThread(harness, {
-        hostId: host.id,
-        projectId: project.id,
-        text: "Show provisioning before generated branch metadata finishes",
-      });
-
+      resolveMetadata({ title: "Improve Branch Names" });
       await vi.waitFor(() => {
-        expect(piAiMocks.complete).toHaveBeenCalledTimes(1);
-        expect(provisioningEntries(harness, thread.id)[0]?.key).toBe(
-          "workspace-started",
+        expect(getThread(harness.db, thread.id)?.title).toBe(
+          "Improve Branch Names",
         );
       });
-      expect(getThread(harness.db, thread.id)?.environmentId).toBeNull();
-      expect(provider.contexts).toHaveLength(0);
-
-      resolveMetadata({ title: "Early Visible Provisioning" });
-
-      const context = await provider.waitForProvision();
-      expect(context.thread.title).toBe("Early Visible Provisioning");
-    });
-  });
-
-  it("does not fail a stopped thread when metadata inference settles", async () => {
-    const resolveMetadata = pendingThreadMetadata();
-
-    await withTestHarness(async (harness) => {
-      const provider = installFakeGitWorktreeProvider();
-      const { host } = seedHostSession(harness.deps, {
-        id: "host-stop-during-metadata",
-      });
-      const { project } = seedProjectWithSource(harness.deps, {
-        hostId: host.id,
-        path: "/tmp/stop-during-metadata-project",
-      });
-      const thread = seedThread(harness.deps, {
-        projectId: project.id,
-        status: "starting",
-        title: null,
-        titleFallback: "Stop during metadata inference",
-      });
-      const input = textInput("Stop during metadata inference before setup");
-      requestThreadProvision(harness.deps, {
-        environmentIntent: {
-          type: "provider",
-          environmentProviderId: "git-worktree",
-          machine: { type: "existing", hostId: host.id },
-          inputs: { branch: { kind: "default" } },
-          selectionResolved: true,
-        },
-        execution: THREAD_START_EXECUTION,
-        fork: null,
-        input,
-        startedOnBehalfOf: null,
-        thread,
-        titleProvided: false,
-      });
-      const advance = advanceThreadProvisioning(harness.deps, {
-        threadId: thread.id,
-      });
-
-      await vi.waitFor(() => {
-        expect(piAiMocks.complete).toHaveBeenCalledTimes(1);
-      });
-
-      const startingThread = getThread(harness.db, thread.id);
-      if (!startingThread) {
-        throw new Error("Expected the starting thread");
-      }
-      expect(startingThread.environmentId).toBeNull();
-      requestThreadStopForCurrentState(harness.deps, startingThread, null);
-      expect(getThread(harness.db, thread.id)).toMatchObject({
-        status: "idle",
-      });
-
-      resolveMetadata({ title: "Stopped Metadata Race" });
-      await advance;
-
-      expect(getThread(harness.db, thread.id)).toMatchObject({
-        status: "idle",
-      });
-      const events = listEvents(harness.db, { threadId: thread.id });
-      expect(events.map((event) => event.type)).not.toContain("system/error");
-      expect(provider.contexts).toHaveLength(0);
-      expect(getThread(harness.db, thread.id)?.environmentId).toBeNull();
-    });
-  });
-
-  it("does not fail a thread waiting on metadata during provisioning sweeps", async () => {
-    const resolveMetadata = pendingThreadMetadata();
-
-    await withTestHarness(async (harness) => {
-      const provider = installFakeGitWorktreeProvider();
-      const { host } = seedHostSession(harness.deps, {
-        id: "host-managed-prepared-sweep",
-      });
-      const { project } = seedProjectWithSource(harness.deps, {
-        hostId: host.id,
-        path: "/tmp/managed-prepared-sweep-project",
-      });
-
-      const thread = await createManagedWorktreeThread(harness, {
-        hostId: host.id,
-        projectId: project.id,
-        text: "Keep prepared provisioning safe during sweeps",
-      });
-
-      await vi.waitFor(() => {
-        expect(piAiMocks.complete).toHaveBeenCalledTimes(1);
-        expect(provisioningEntries(harness, thread.id)).not.toHaveLength(0);
-      });
-
-      await runEnvironmentProvisioningSweep(harness.deps);
-
-      expect(getThread(harness.db, thread.id)?.status).toBe("starting");
-      expect(
-        listEvents(harness.db, { threadId: thread.id }).map(
-          (event) => event.type,
-        ),
-      ).not.toContain("system/error");
-
-      resolveMetadata({ title: "Prepared Sweep Safe" });
-
-      const context = await provider.waitForProvision();
-      expect(context.thread.title).toBe("Prepared Sweep Safe");
-    });
-  });
-
-  it("uses two timeout attempts for provider-path metadata inference", async () => {
-    piAiMocks.getModel.mockReturnValue({ provider: "test" });
-    piAiMocks.complete
-      .mockRejectedValueOnce(new InferenceTimeoutError({ timeoutMs: 2_500 }))
-      .mockResolvedValueOnce(
-        mockThreadMetadataCompletion({
-          title: "Recovered Managed Metadata",
-        }),
-      );
-    await withTestHarness(async (harness) => {
-      const provider = installFakeGitWorktreeProvider();
-      const { host } = seedHostSession(harness.deps, {
-        id: "host-managed-metadata-retry",
-      });
-      const { project } = seedProjectWithSource(harness.deps, {
-        hostId: host.id,
-        path: "/tmp/managed-metadata-retry-project",
-      });
-
-      const thread = await createManagedWorktreeThread(harness, {
-        hostId: host.id,
-        projectId: project.id,
-        text: "Recover managed metadata after transient timeout",
-      });
-
-      const context = await provider.waitForProvision();
-      expect(context.thread.title).toBe("Recovered Managed Metadata");
-      expect(getThread(harness.db, thread.id)?.title).toBe(
-        "Recovered Managed Metadata",
-      );
-      expect(piAiMocks.complete).toHaveBeenCalledTimes(2);
+      expect(piAiMocks.complete).toHaveBeenCalledTimes(1);
     });
   });
 

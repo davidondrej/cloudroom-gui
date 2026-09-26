@@ -863,7 +863,7 @@ describe("cli", () => {
       expect(reservedHost.harness.logEntries).toEqual([
         {
           level: "warn",
-          message: `CLI command "${name}" collides with core command "room ${name}"; core keeps the short form. Use "room plugin run test-plugin" to invoke this plugin.`,
+          message: `CLI command "${name}" collides with core command "cloudroom ${name}"; core keeps the short form. Use "cloudroom plugin run test-plugin" to invoke this plugin.`,
         },
       ]);
     }

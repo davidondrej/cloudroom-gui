@@ -188,7 +188,7 @@ export function registerSkillCommands(
               entry.id,
               entry.name,
               entry.scope,
-              entry.provider ?? "room",
+              entry.provider ?? "cloudroom",
               entry.manageable ? "yes" : "no",
               entry.filePath,
             ]),
@@ -239,7 +239,7 @@ export function registerSkillCommands(
     .requiredOption("--file <path>", "Local SKILL.md to upload")
     .requiredOption(
       "--revision <sha256>",
-      "Revision returned by room skill show --json",
+      "Revision returned by cloudroom skill show --json",
     )
     .action(
       action(async (skillId: string, options: SkillUpdateOptions) => {
@@ -380,7 +380,7 @@ export function registerSkillCommands(
 
   skill
     .command("install <registry-skill-id>")
-    .description("Install a canonical skills.sh entry into room user skills")
+    .description("Install a canonical skills.sh entry into cloudroom user skills")
     .option("--json", "Print machine-readable JSON output")
     .action(
       action(async (registrySkillId: string, options: JsonOutputOptions) => {
@@ -395,7 +395,7 @@ export function registerSkillCommands(
   skill
     .command("cli-skills-status")
     .description(
-      "Show whether each machine has Room's built-in CLI skills installed",
+      "Show whether each machine has Cloudroom's built-in CLI skills installed",
     )
     .option(
       "--machine <id-or-name>",
@@ -435,7 +435,7 @@ export function registerSkillCommands(
   skill
     .command("install-cli-skills")
     .description(
-      "Install Room's built-in CLI skills into ~/.agents/skills and ~/.claude/skills on a machine",
+      "Install Cloudroom's built-in CLI skills into ~/.agents/skills and ~/.claude/skills on a machine",
     )
     .option(
       "--machine <id-or-name>",

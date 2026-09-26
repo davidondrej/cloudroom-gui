@@ -1,4 +1,4 @@
-Start a thread, pick Codex, and let it write and review code in your repository from Room. The plugin drives the Codex CLI on the host machine. It streams the agent's work into the Room timeline.
+Start a thread, pick Codex, and let it write and review code in your repository from Cloudroom. The plugin drives the Codex CLI on the host machine. It streams the agent's work into the Cloudroom timeline.
 
 ## What you get
 
@@ -6,14 +6,14 @@ Start a thread, pick Codex, and let it write and review code in your repository 
 - Reasoning levels from Low to Ultra. Ultra adds automatic task delegation.
 - A service tier picker with two tiers.
 - Checkpoint forks, manual compaction, thread rename, and thread archive.
-- Codex skills from your home directory and project, listed next to Room skills.
+- Codex skills from your home directory and project, listed next to Cloudroom skills.
 - Health, usage, and install status on each host, with an install or update action.
-- A Codex AI service for inference and voice that other Room features can use.
+- A Codex AI service for inference and voice that other Cloudroom features can use.
 
 ## Settings
 
-- `Codex memory`: let Codex recall and create memories from Room threads.
-- `Disable provider subagents`: stop native subagents so the agent delegates through Room.
+- `Codex memory`: let Codex recall and create memories from Cloudroom threads.
+- `Disable provider subagents`: stop native subagents so the agent delegates through Cloudroom.
 
 ## Requirements
 

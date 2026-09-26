@@ -104,7 +104,7 @@ async function run() {
       ? "Port conflict"
       : scenario === "connect"
         ? "Could not authenticate with bb Connect"
-        : "Could not reach this Room server";
+        : "Could not reach this Cloudroom server";
   const hasError = () =>
     contents?.getURL().startsWith("data:") &&
     contents.executeJavaScript(

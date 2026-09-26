@@ -218,7 +218,7 @@ export function BrowserImportDialog({
             <DialogHeader>
               {title(`Import from ${source.name}`)}
               <DialogDescription>
-                Which profile's cookies should be copied into the Room browser?
+                Which profile's cookies should be copied into the Cloudroom browser?
               </DialogDescription>
             </DialogHeader>
             <div

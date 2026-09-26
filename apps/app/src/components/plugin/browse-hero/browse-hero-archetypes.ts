@@ -16,7 +16,7 @@ const ARCHETYPE_SOURCE: readonly Omit<ShowcaseArchetype, "id">[] = [
   {
     noun: "a live dashboard",
     title: "Live dashboard",
-    hook: "Put the numbers your team actually checks on the Room homepage.",
+    hook: "Put the numbers your team actually checks on the Cloudroom homepage.",
     capability: "homepageSection",
     icon: "ChartColumn",
     accentToken: "--success",
@@ -56,7 +56,7 @@ const ARCHETYPE_SOURCE: readonly Omit<ShowcaseArchetype, "id">[] = [
   {
     noun: "a support inbox",
     title: "Support inbox",
-    hook: "Triage user reports into fixes without leaving Room.",
+    hook: "Triage user reports into fixes without leaving Cloudroom.",
     capability: "navPanel + service + messageAction",
     icon: "Mail",
     accentToken: "--destructive-text",
@@ -109,7 +109,7 @@ export const UTILITY_EXAMPLES: readonly UtilityExample[] = [
     label: "CLI command",
     icon: "Terminal",
     brief:
-      "adds a Room CLI command that deploys the current branch to staging and reports status",
+      "adds a Cloudroom CLI command that deploys the current branch to staging and reports status",
   },
   {
     id: "background-service",

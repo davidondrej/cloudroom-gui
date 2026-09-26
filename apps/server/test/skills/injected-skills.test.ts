@@ -448,19 +448,19 @@ describe("injected skill source discovery", () => {
     const workspacePath = await makeTempDir();
     await writeSkill({
       rootPath: path.join(dataDir, "skills"),
-      name: "room-cli",
+      name: "cloudroom",
       description: "User copy.",
     });
     const projectSkillRoot = await writeSkill({
       rootPath: path.join(workspacePath, ".bb", "skills"),
-      name: "room-cli",
+      name: "cloudroom",
       description: "Project copy.",
     });
     const { logger, warnings } = createCapturingLogger();
     const projectSkillSource = resolveProjectSkillSourceFromContent(logger, {
       candidatePath: projectSkillRoot,
       content: await readFile(path.join(projectSkillRoot, "SKILL.md"), "utf8"),
-      directoryName: "room-cli",
+      directoryName: "cloudroom",
     });
     expect(projectSkillSource).not.toBeNull();
 
@@ -474,7 +474,7 @@ describe("injected skill source discovery", () => {
       {
         kind: "workspace-path",
         sourceType: "project",
-        name: "room-cli",
+        name: "cloudroom",
         description: "Project copy.",
         sourceRootPath: projectSkillRoot,
         skillFilePath: path.join(projectSkillRoot, "SKILL.md"),
@@ -497,8 +497,8 @@ describe("injected skill source discovery", () => {
       .map((entry) => entry.runtimeSource);
 
     const builtinNames = sources.map((source) => source.name);
-    expect(builtinNames).toContain("room-cli");
-    expect(builtinNames).toContain("submit-a-plugin");
+    expect(builtinNames).toContain("cloudroom");
+    expect(builtinNames).toContain("skill-creator");
     for (const source of sources) {
       expect(source.sourceType).toBe("builtin");
       expect(source.description.trim().length).toBeGreaterThan(0);

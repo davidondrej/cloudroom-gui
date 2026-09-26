@@ -246,13 +246,13 @@ export class ShareRegistry {
       validated === serverOwnPort(this.options.getLoopbackBaseUrl())
     ) {
       throw new SharePortError(
-        `Cannot share port ${validated}: that is the Room server's own port — the bare handle URL already serves Room`,
+        `Cannot share port ${validated}: that is the Cloudroom server's own port — the bare handle URL already serves Cloudroom`,
       );
     }
     const credential = this.options.getCredential();
     if (credential === null) {
       throw new SharePortError(
-        "this Room is not connected to getbb.app — run `room connect` for how to pair",
+        "this Cloudroom server is not connected to getbb.app — run `cloudroom connect` for how to pair",
       );
     }
     if (host.isServer) this.serverHostId = host.id;
@@ -474,7 +474,7 @@ export class ShareRegistry {
 
   private unavailableReason(share: RestoredShare, error: unknown): string {
     if (error instanceof ShareHostNotFoundError) {
-      return `Host ${error.hostId} was removed. Run \`room connect unexpose ${share.port} --host ${error.hostId}\` to prune this share.`;
+      return `Host ${error.hostId} was removed. Run \`cloudroom connect unexpose ${share.port} --host ${error.hostId}\` to prune this share.`;
     }
     return error instanceof SharePortError
       ? error.message

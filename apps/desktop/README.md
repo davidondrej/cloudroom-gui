@@ -289,39 +289,24 @@ failing the build.
 
 ## macOS signing + notarization
 
-The desktop package is ready for Developer ID signing and Apple notarization.
-Local builds with no secrets sign via keychain auto-discovery and skip
-notarization. To activate signed and notarized release artifacts, add these
-GitHub Actions secrets:
-
-| Secret                       | Value                                                                                                                                                                                  |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MACOS_CERTIFICATE_P12`      | Base64-encoded `.p12` exported from Keychain Access for a `Developer ID Application` certificate and its private key. On macOS: `base64 -i DeveloperID.p12 -o certificate.base64.txt`. |
-| `MACOS_CERTIFICATE_PASSWORD` | Password used when exporting the `.p12`.                                                                                                                                               |
-| `MACOS_CERTIFICATE_NAME`     | Optional certificate common name, without the `Developer ID Application:` prefix. Leave unset when the `.p12` contains a single usable identity and electron-builder can derive it.    |
-| `APPLE_ID`                   | Apple ID email for the Developer Program account.                                                                                                                                      |
-| `APPLE_APP_PASSWORD`         | App-specific password from `appleid.apple.com` under Sign-In and Security.                                                                                                             |
-| `APPLE_TEAM_ID`              | Developer Team ID from `developer.apple.com/account` membership details.                                                                                                               |
-
-Once those secrets are present, the next `Build Desktop` workflow run with
-`publish=true` and `release_channel=stable` signs the `.app`, notarizes it, and
-publishes the signed `.dmg` / `.zip` assets to `desktop-latest`. If no required
-signing secrets are configured, the workflow still builds unsigned artifacts, but
-the release job publishes only `desktop-version.json` and withholds unsigned
-binaries from `desktop-latest`. If only some required signing secrets are set,
-the workflow fails before packaging so a misconfigured release cannot silently
-produce unsigned or signed-but-not-notarized artifacts.
+Cloudroom releases are built, signed, and notarized by GitHub Actions (see the
+`release-gui` skill). The [signing wrapper](scripts/run-electron-builder.mjs)
+signs and notarizes when `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID` are all set, then notarizes
+and staples the DMG too. A partial set fails before packaging. Locally,
+`APPLE_KEYCHAIN_PROFILE=<notarytool profile>` does the same with the Keychain's
+Developer ID identity. Local builds with neither sign via keychain
+auto-discovery and skip notarization.
 
 ## Auto-update
 
-The renderer update toast keeps using `desktop-version.json` as the lightweight
-feature surface. The installer path uses `electron-updater` against the same
-`desktop-latest` release asset directory and reads `latest-mac.yml`. These
-checks run in parallel on launch, hourly, and when the app becomes active: the
-JSON feed can show "update available" even when CI has published metadata only,
-while the Electron updater only flips the toast to "ready to install" after a
-signed update has actually downloaded. Local dev builds skip Electron auto-update
-unless `BB_DESKTOP_AUTO_UPDATE=1` is set.
+Cloudroom updates itself. `electron-updater` reads `latest-mac.yml` from the latest public release of
+`davidondrej/cloudroom-gui`, downloads the zip in the background, and shows
+**Relaunch** in Settings and the update banner. Only stamped stable release
+builds write `latest-*.yml`, so releases must be marked latest, not prerelease. The
+`cloudroom.dev/download/latest` version check stays as the fallback: it shows
+**Download** when the in-app updater cannot install. Local dev builds skip
+Electron auto-update unless `BB_DESKTOP_AUTO_UPDATE=1` is set.
 
 `bb Nightly` follows the equivalent isolated `desktop-nightly` release and
 `nightly-mac.yml`; it never reads or moves the stable feed. The scheduled

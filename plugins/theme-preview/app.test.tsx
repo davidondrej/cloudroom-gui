@@ -260,7 +260,7 @@ describe("Theme Preview", () => {
       ).toBeDefined();
       expect(
         within(welcome).getByRole("button", {
-          name: /Learn what Room can do\s*Get a tour/i,
+          name: /Bring your work over\s*Copy your open BB projects/i,
         }),
       ).toBeDefined();
       expect(within(welcome).queryByText("What are we building?")).toBeNull();

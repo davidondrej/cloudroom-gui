@@ -10,7 +10,7 @@ describe("@bb/templates", () => {
   it("documents project creation machine routing", () => {
     const guide = renderTemplate("bbGuideProjects", {});
 
-    expect(guide).toContain("room project create --name");
+    expect(guide).toContain("cloudroom project create --name");
     expect(guide).toContain("--machine <id-or-name>");
     expect(guide).toContain("--host <id-or-name>");
     expect(guide).toContain("local CLI machine fallback");
@@ -19,7 +19,7 @@ describe("@bb/templates", () => {
   it("documents complete and partial automation execution updates", () => {
     const guide = renderTemplate("bbGuideAutomations", {});
 
-    expect(guide).toContain("room automation update <automationId>");
+    expect(guide).toContain("cloudroom automation update <automationId>");
     expect(guide).toContain("Partial updates to an existing");
     expect(guide).toContain("--env-json");
     expect(guide).toContain("--reasoning <none|low|medium|high");

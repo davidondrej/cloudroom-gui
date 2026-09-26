@@ -130,7 +130,7 @@ function NotificationSettings() {
         </p>
       ) : null}
       <p className="text-xs text-muted-foreground">
-        Channel settings apply to this Room server. Each browser needs permission.
+        Channel settings apply to this Cloudroom server. Each browser needs permission.
         Click a notification to open its thread.
       </p>
     </div>

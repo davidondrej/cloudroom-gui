@@ -38,6 +38,8 @@ import { useThreadActions } from "./ThreadActionsProvider";
 import { useThreadSectionMove } from "./ThreadSectionMoveProvider";
 import { sdk } from "@/lib/sdk";
 import { showMutationErrorToast } from "@/lib/mutation-errors";
+import { useTeleportLocal } from "@/hooks/queries/cloudroom-queries";
+import { showCloudWaitlist, useCloudLocked } from "@/hooks/useCloudLocked";
 
 interface ThreadActionsMenuBaseProps {
   thread: Thread;
@@ -69,6 +71,14 @@ interface ThreadActionsMenuItemsProps extends ThreadActionsMenuBaseProps {
   onCompactStepChange?: (step: ThreadActionsCompactStep) => void;
   responsiveActions?: readonly ThreadActionsMenuResponsiveAction[];
   surface: ThreadActionsMenuSurface;
+}
+
+export function canTeleportLocalThread(thread: Thread): boolean {
+  return thread.executionTarget === "cloud" && !thread.parentThreadId && thread.archivedAt == null && ["codex", "pi", "claude-code"].includes(thread.providerId) && (!thread.teleport || ["complete", "cancelled", "error"].includes(thread.teleport.phase));
+}
+
+export function canTeleportThread(thread: Thread): boolean {
+  return thread.executionTarget !== "cloud" && !thread.parentThreadId && thread.archivedAt == null && ["codex", "pi", "claude-code", "acp-cursor"].includes(thread.providerId) && (!thread.teleport || ["cancelled", "error"].includes(thread.teleport.phase));
 }
 
 function ThreadSectionMoveMenu({
@@ -197,13 +207,16 @@ function ThreadActionsMenuItems({
   const isPinned = thread.pinnedAt !== null;
   const threadName = getThreadDisplayTitle(thread);
   const [teleportPending, setTeleportPending] = useState(false);
+  const cloudLocked = useCloudLocked();
   const startTeleport = async () => {
+    if (cloudLocked) return showCloudWaitlist();
     setTeleportPending(true);
     try { await sdk.cloudroom.teleport(thread.id); }
     catch (error) { showMutationErrorToast({ error, fallbackMessage: "Could not start Teleport" }); }
     finally { setTeleportPending(false); }
   };
-  const canTeleport = thread.executionTarget !== "cloud" && !thread.parentThreadId && !isArchived && ["codex", "pi"].includes(thread.providerId) && (!thread.teleport || ["cancelled", "error"].includes(thread.teleport.phase));
+  const canTeleport = canTeleportThread(thread);
+  const teleportLocal = useTeleportLocal(thread.id);
 
   if (isDrawer && compactStep === "move") {
     return (
@@ -220,6 +233,7 @@ function ThreadActionsMenuItems({
   return (
     <>
       {canTeleport && <ActionMenuItem surface={surface} icon="Cloud" disabled={teleportPending} onSelect={() => void startTeleport()}>Teleport to Cloud</ActionMenuItem>}
+      {canTeleportLocalThread(thread) && <ActionMenuItem surface={surface} icon="Laptop" disabled={teleportLocal.isPending} onSelect={() => teleportLocal.mutate()}>Teleport to Local</ActionMenuItem>}
       {responsiveActions.length > 0 ? (
         <>
           {responsiveActions.map((action) => (

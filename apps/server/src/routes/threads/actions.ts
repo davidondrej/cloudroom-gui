@@ -26,6 +26,7 @@ import {
 import type { Hono } from "hono";
 import {
   createStandaloneBuiltinCompactCommandInput,
+  isStandaloneBuiltinTeleportCommand,
   type Thread,
   type ThreadQueuedMessage,
 } from "@bb/domain";
@@ -70,6 +71,7 @@ import {
 } from "../../services/threads/thread-runtime-display.js";
 import { archiveThreadAndChildren } from "../../services/threads/thread-archive.js";
 import { cloudroom, isCloudThread } from "../../services/cloudroom/commands.js";
+import { teleports } from "../../services/cloudroom/teleport.js";
 import {
   requireThreadCommandEnvironment,
   requireThreadHostCommandEnvironment,
@@ -234,6 +236,10 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
 
   post(routes.send, async (context, payload) => {
     const thread = requirePublicThread(deps.db, context.req.param("id"));
+    if (isStandaloneBuiltinTeleportCommand(payload.input)) {
+      await teleports(deps).begin(thread.id);
+      return context.json({ ok: true, delivery: "sent" } as const);
+    }
     return context.json(
       await acceptThreadSendRequest(deps, { payload, thread }),
     );
@@ -283,8 +289,11 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
     return context.json({ ok: true, ...result });
   });
 
-  patch(routes.reorderQueuedMessage, (context, payload) => {
+  patch(routes.reorderQueuedMessage, async (context, payload) => {
     const thread = requirePublicThread(deps.db, context.req.param("id"));
+    if (isCloudThread(thread)) {
+      return context.json(await cloudroom(deps).reorderQueued(thread, { ...payload, queuedMessageId: context.req.param("queuedMessageId") }));
+    }
     ensureThreadQueueIsWritable(thread);
     return context.json(
       toQueuedMessageOrderResponse(
@@ -386,6 +395,7 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
       db: deps.db,
       thread,
     });
+    teleports(deps).abandon(thread.id);
     await stopThreadForCurrentState(deps, thread, environment);
     return context.json({ ok: true });
   });

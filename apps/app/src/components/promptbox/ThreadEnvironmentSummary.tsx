@@ -4,6 +4,12 @@ import { copyToClipboardWithToast } from "@/lib/clipboard";
 import { Icon, type IconName } from "@bb/shared-ui/icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@bb/shared-ui/tooltip";
 import { cn } from "@bb/shared-ui/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@bb/shared-ui/dropdown-menu";
 import { CHROME_SUBTLE_ICON_BUTTON_FOREGROUND_CLASS } from "@bb/shared-ui/chrome-style-tokens";
 import type { WorkspaceCheckoutDisplay } from "@/lib/workspace-checkout-display";
 import {
@@ -26,6 +32,8 @@ interface ThreadEnvironmentSummaryProps {
   environmentMachineProvider?: MachineProviderPresentation | null;
   environmentCheckout?: WorkspaceCheckoutDisplay;
   onCreateNewThreadInEnvironment?: () => void;
+  onTeleportToCloud?: () => void;
+  onTeleportToLocal?: () => void;
 }
 
 export const ThreadEnvironmentSummary = memo(function ThreadEnvironmentSummary({
@@ -38,6 +46,8 @@ export const ThreadEnvironmentSummary = memo(function ThreadEnvironmentSummary({
   environmentMachineProvider,
   environmentCheckout,
   onCreateNewThreadInEnvironment,
+  onTeleportToCloud,
+  onTeleportToLocal,
 }: ThreadEnvironmentSummaryProps) {
   if (
     !projectName &&
@@ -50,6 +60,48 @@ export const ThreadEnvironmentSummary = memo(function ThreadEnvironmentSummary({
   }
 
   const checkoutCopyValue = environmentCheckout?.copyValue ?? null;
+  const environmentNode = environmentHost ? (
+    <MachineLabel
+      host={environmentHost}
+      machineProvider={environmentMachineProvider}
+      className="h-6 w-fit max-w-full shrink px-1 text-xs leading-tight text-muted-foreground"
+      iconClassName="size-4"
+    />
+  ) : environmentLabel ? (
+    <div className="inline-flex h-6 w-fit max-w-full min-w-0 shrink items-center justify-start gap-1.5 px-1 text-xs leading-tight text-muted-foreground">
+      {environmentIcon &&
+      environmentProviderName &&
+      environmentProviderName !== environmentLabel ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span
+              role="img"
+              tabIndex={0}
+              aria-label={environmentProviderName}
+              className="inline-flex size-4 shrink-0 items-center justify-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <Icon name={environmentIcon} className="size-4" />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{environmentProviderName}</TooltipContent>
+        </Tooltip>
+      ) : environmentIcon ? (
+        <Icon
+          name={environmentIcon}
+          className={cn(
+            "size-4 shrink-0",
+            environmentIcon === "Loading" && "animate-spin",
+          )}
+        />
+      ) : null}
+      <OptionDisplay
+        label="Environment"
+        value={environmentLabel}
+        compactValue={environmentCompactLabel}
+        className="h-6 min-w-0 shrink px-0"
+      />
+    </div>
+  ) : null;
   return (
     <div className="flex min-w-0 max-w-full items-center gap-2 pr-1.5">
       {projectName ? (
@@ -61,48 +113,43 @@ export const ThreadEnvironmentSummary = memo(function ThreadEnvironmentSummary({
           className="h-6 min-w-0 max-w-[10rem] shrink"
         />
       ) : null}
-      {environmentHost ? (
-        <MachineLabel
-          host={environmentHost}
-          machineProvider={environmentMachineProvider}
-          className="h-6 w-fit max-w-full shrink px-1 text-xs leading-tight text-muted-foreground"
-          iconClassName="size-4"
-        />
-      ) : environmentLabel ? (
-        <div className="inline-flex h-6 w-fit max-w-full min-w-0 shrink items-center justify-start gap-1.5 px-1 text-xs leading-tight text-muted-foreground">
-          {environmentIcon &&
-          environmentProviderName &&
-          environmentProviderName !== environmentLabel ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  role="img"
-                  tabIndex={0}
-                  aria-label={environmentProviderName}
-                  className="inline-flex size-4 shrink-0 items-center justify-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  <Icon name={environmentIcon} className="size-4" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>{environmentProviderName}</TooltipContent>
-            </Tooltip>
-          ) : environmentIcon ? (
-            <Icon
-              name={environmentIcon}
-              className={cn(
-                "size-4 shrink-0",
-                environmentIcon === "Loading" && "animate-spin",
-              )}
-            />
-          ) : null}
-          <OptionDisplay
-            label="Environment"
-            value={environmentLabel}
-            compactValue={environmentCompactLabel}
-            className="h-6 min-w-0 shrink px-0"
-          />
-        </div>
-      ) : null}
+      {environmentNode && (onTeleportToCloud || onTeleportToLocal) ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Environment actions"
+              className="inline-flex min-w-0 shrink cursor-pointer rounded-md transition-colors hover:bg-state-hover"
+            >
+              {environmentNode}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="start" sideOffset={4}>
+            {onTeleportToCloud ? (
+              <DropdownMenuItem onSelect={onTeleportToCloud}>
+                <Icon
+                  name="Cloud"
+                  className="size-4 text-muted-foreground"
+                  aria-hidden
+                />
+                Teleport to Cloud
+              </DropdownMenuItem>
+            ) : null}
+            {onTeleportToLocal ? (
+              <DropdownMenuItem onSelect={onTeleportToLocal}>
+                <Icon
+                  name="Laptop"
+                  className="size-4 text-muted-foreground"
+                  aria-hidden
+                />
+                Teleport to Local
+              </DropdownMenuItem>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        environmentNode
+      )}
       {environmentCheckout && checkoutCopyValue !== null ? (
         <Tooltip>
           <TooltipTrigger asChild>

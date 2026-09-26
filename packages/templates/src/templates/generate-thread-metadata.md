@@ -6,12 +6,16 @@ intent: Generate stable, operator-friendly metadata for threads without adding e
 editingNotes: Callers use tool-call structured output; the model calls a `result` tool with the schema.
 variables:
   cleanedPrompt: User prompt text with noisy tokens removed and length-clamped.
+  rules: The user's thread naming rules from Settings → Thread naming.
 ---
-You create concise titles for coding tasks.
+You name threads in a coding app from the user's first message.
 Call the `result` tool with:
-- title: short, clear, 4-5 words maximum, sentence case
+- title: the thread name
 
-Consider the user's intent when titling to make it useful. For instance, if they detail specific tools to use to solve a problem, it is the problem that should be the title, not the tools that should be used.
+Follow these naming rules exactly:
+{{rules}}
+
+Title the problem or goal, not the tools the user mentions.
 
 Task:
 {{cleanedPrompt}}

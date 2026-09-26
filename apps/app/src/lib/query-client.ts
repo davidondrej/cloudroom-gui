@@ -123,6 +123,7 @@ export function createAppQueryClient(
     defaultOptions: {
       ...defaultOptions,
       queries: {
+        networkMode: "always",
         staleTime: 2000,
         refetchOnWindowFocus:
           shouldRefetchOnWindowFocus === undefined
@@ -136,6 +137,7 @@ export function createAppQueryClient(
         retryDelay: TRANSIENT_READ_RETRY_DELAY_MS,
         ...defaultOptions?.queries,
       },
+      mutations: { networkMode: "always", ...defaultOptions?.mutations },
     },
   });
 }

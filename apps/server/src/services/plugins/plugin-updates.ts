@@ -564,7 +564,7 @@ export function createPluginUpdates(
             ok: false,
             error:
               row.sourceKind === "path"
-                ? `plugin "${id}" is a local path source with no update channel; edit it in place and run \`room plugin reload ${id}\`, or move it with \`room plugin install path:<new directory>\` (settings, secrets, and schedules are kept)`
+                ? `plugin "${id}" is a local path source with no update channel; edit it in place and run \`cloudroom plugin reload ${id}\`, or move it with \`cloudroom plugin install path:<new directory>\` (settings, secrets, and schedules are kept)`
                 : `plugin "${id}" is pinned by its source intent; remove and reinstall it with an npm range, a git branch, or a git semver range to track updates`,
           };
         }

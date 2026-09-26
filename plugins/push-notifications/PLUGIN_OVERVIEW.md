@@ -2,7 +2,7 @@ Get a notification when an agent asks a question, finishes a turn, or stops on a
 
 ## Delivery
 
-Mobile devices receive push messages through Expo, including when the app is closed. Web browsers and the desktop app receive system notifications over Room’s live connection while a tab or app window remains open. Web delivery requires HTTPS (or localhost), browser notification permission, and a browser that supports the Notification constructor. Closing all Room tabs stops web delivery; quitting the desktop app stops desktop delivery. Mobile WebViews use mobile push only.
+Mobile devices receive push messages through Expo, including when the app is closed. Web browsers and the desktop app receive system notifications over Cloudroom’s live connection while a tab or app window remains open. Web delivery requires HTTPS (or localhost), browser notification permission, and a browser that supports the Notification constructor. Closing all Cloudroom tabs stops web delivery; quitting the desktop app stops desktop delivery. Mobile WebViews use mobile push only.
 
 Click a notification to open its thread. Events arriving together are combined, with pending questions taking priority. Read, archived, deleted, and hidden threads are suppressed. Multiple tabs or windows of the same origin and client type deduplicate delivery when browser storage and Web Locks are available.
 
@@ -17,11 +17,11 @@ Channel switches apply to this server and save immediately. Browser permission i
 
 ## CLI and SDK
 
-- `room push-notifications list [--json]`: registered mobile devices, with redacted tokens.
-- `room push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>`: register or refresh a mobile device.
-- `room push-notifications remove <id>`: remove a mobile device.
-- `room push-notifications status [--json]`: channel switches, mobile relay, subscription count, and last mobile send result.
-- `room push-notifications test <web|desktop>`: broadcast a test to connected clients of that type. Fails if the channel is disabled.
-- `room plugin config push-notifications set <mobileEnabled|webEnabled|desktopEnabled> <true|false>`: change a channel.
+- `cloudroom push-notifications list [--json]`: registered mobile devices, with redacted tokens.
+- `cloudroom push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>`: register or refresh a mobile device.
+- `cloudroom push-notifications remove <id>`: remove a mobile device.
+- `cloudroom push-notifications status [--json]`: channel switches, mobile relay, subscription count, and last mobile send result.
+- `cloudroom push-notifications test <web|desktop>`: broadcast a test to connected clients of that type. Fails if the channel is disabled.
+- `cloudroom plugin config push-notifications set <mobileEnabled|webEnabled|desktopEnabled> <true|false>`: change a channel.
 
 Agents can use the SDK’s plugin settings API for the same switches and `sdk.plugins.callRpc({ pluginId: "push-notifications", method: "notifications.test", input: { channel: "web" }, outputSchema: z.object({ ok: z.literal(true) }) })` to send a test. RPC input is validated by `pushNotificationsRpcContract`. Permission requests still require a click in the target client.

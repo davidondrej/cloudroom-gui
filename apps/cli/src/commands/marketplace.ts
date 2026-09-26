@@ -38,7 +38,7 @@ export function registerMarketplaceCommands(
 ): void {
   const marketplace = program
     .command("marketplace")
-    .description("Manage the plugin marketplaces room reads catalogs from");
+    .description("Manage the plugin marketplaces cloudroom reads catalogs from");
 
   marketplace
     .command("add <source>")
@@ -58,14 +58,14 @@ export function registerMarketplaceCommands(
         console.log(`Added marketplace ${added.name}:`);
         printMarketplace(added);
         console.log(
-          `Adding a marketplace installs nothing. Install an entry with \`room plugin install <id>@${added.name}\`.`,
+          `Adding a marketplace installs nothing. Install an entry with \`cloudroom plugin install <id>@${added.name}\`.`,
         );
       }),
     );
 
   marketplace
     .command("list")
-    .description("List the marketplaces room reads catalogs from")
+    .description("List the marketplaces cloudroom reads catalogs from")
     .option("--json", "Output JSON")
     .action(
       action(async (opts: JsonOutputOptions) => {

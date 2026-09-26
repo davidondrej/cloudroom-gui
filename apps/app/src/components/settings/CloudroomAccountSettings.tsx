@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@bb/shared-ui/button";
+import { Switch } from "@bb/shared-ui/switch";
 import { SettingsSection } from "@/components/ui/settings-section";
 import { sdk } from "@/lib/sdk";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
-import { useCloudroomAccount } from "@/hooks/queries/cloudroom-queries";
+import { useCloudroomAccount, useSetMacAccess } from "@/hooks/queries/cloudroom-queries";
 import { openCodexConnection, openCursorConnection } from "@/components/CodexConnectionPanel";
+import { FixPrompt } from "@/components/ui/fix-prompt";
+import { cloudUnavailableFixPrompt, syncFixPrompt } from "@/lib/fix-prompts";
 
 export function CloudroomAccountSettings() {
   const queryClient = useQueryClient();
@@ -27,16 +30,26 @@ export function CloudroomAccountSettings() {
     },
     onSuccess: refresh,
   });
+  const macAccess = useSetMacAccess();
   const accountId = status.data?.account?.id;
   const ready = status.data?.ready;
   useEffect(() => { void queryClient.invalidateQueries({ queryKey: ["cloudroom-connection"] }); }, [queryClient, accountId, ready]);
   const error = action.error instanceof Error ? action.error.message : status.data?.signInError;
+  const sync = status.data?.sync;
+  const syncBroken = ready && sync && (sync.issue || sync.state === "offline" || sync.state === "conflict");
   return <SettingsSection title="Cloudroom account" description="Sign in to connect your existing cloud VM. Local execution stays available.">
     <div className="space-y-3 text-sm">
+      {status.data?.account && <div className="flex items-center justify-between gap-3 border-b pb-3">
+        <span>Let cloud agents access this computer<span className="block text-xs text-muted-foreground">Makes your agents much more powerful. They can run commands and copy files as you.</span></span>
+        <Switch checked={macAccess.isPending ? macAccess.variables : status.data.macAccess === true} disabled={macAccess.isPending} onCheckedChange={(enabled) => macAccess.mutate(enabled)} aria-label="Let cloud agents access this computer" />
+      </div>}
+      {macAccess.error && <p role="alert">{macAccess.error.message}</p>}
       <p>{status.data?.account ? status.data.account.email : "Not signed in to Cloudroom"}</p>
       {status.isError && <p role="alert">Could not reach the local Cloudroom backend.</p>}
       {status.data?.account && <p role="status">{ready ? "Cloud connected" : status.data.error ?? "Cloud is unavailable. Your VM may still be working."}</p>}
+      {status.data?.account && !ready && <FixPrompt prompt={cloudUnavailableFixPrompt(status.data.error)} />}
       {status.data?.sync && <p role="status">Automatic sync: {status.data.sync.state === "synced" ? "Up to date" : status.data.sync.state}. {status.data.sync.issue ?? (status.data.sync.conflicts ? `${status.data.sync.conflicts} conflicting files need review.` : "")}</p>}
+      {sync && syncBroken && <FixPrompt prompt={syncFixPrompt(sync.state, sync.issue)} />}
       {status.data?.previews && <p role="status">Cloud previews: {status.data.previews.state === "connected" ? "Ready" : "Reconnecting"}. {status.data.previews.issue ?? status.data.previews.message}</p>}
       <p className="text-xs text-muted-foreground">Skills and portable agent settings sync automatically. Cloud provider logins stay on your VM.</p>
       {error && <p role="alert">{error}</p>}

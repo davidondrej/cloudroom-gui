@@ -206,8 +206,8 @@ done
 mkdir -p "$prefix/bin"
 cp "${bbAppTemplatePath}" "$prefix/bin/bb-app"
 chmod +x "$prefix/bin/bb-app"
-cp "${bbAppTemplatePath}" "$prefix/bin/room"
-chmod +x "$prefix/bin/room"
+cp "${bbAppTemplatePath}" "$prefix/bin/cloudroom"
+chmod +x "$prefix/bin/cloudroom"
 mkdir -p "$prefix/lib/node_modules/bb-app/host-daemon/dist"
 printf '%s\n' 'fixture' >"$prefix/lib/node_modules/bb-app/host-daemon/dist/daemon-bundle.mjs"
 for module in node-pty @parcel/watcher; do
@@ -215,6 +215,28 @@ for module in node-pty @parcel/watcher; do
   if [ -z "$FAKE_NPM_SKIP_NATIVE_MODULES" ]; then
     printf '%s\n' 'module.exports = {};' >"$prefix/lib/node_modules/bb-app/node_modules/$module/index.js"
   fi
+done
+`,
+  );
+}
+
+function writeNpmInstallingFixtureBbApp(fixture: Fixture): void {
+  const bbApp = join(fixture.binDir, "bb-app");
+  const cli = join(fixture.binDir, "cloudroom");
+  writeExecutable(
+    join(fixture.binDir, "npm"),
+    `#!/bin/sh
+prefix=
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = --prefix ]; then prefix=$2; shift 2; else shift; fi
+done
+[ -n "$prefix" ] || exit 2
+mkdir -p "$prefix/bin"
+cp "${bbApp}" "$prefix/bin/bb-app"
+if [ -x "${cli}" ]; then cp "${cli}" "$prefix/bin/cloudroom"; else cp "${bbApp}" "$prefix/bin/cloudroom"; fi
+for module in node-pty @parcel/watcher; do
+  mkdir -p "$prefix/lib/node_modules/bb-app/node_modules/$module"
+  printf '%s\n' 'module.exports = {};' >"$prefix/lib/node_modules/bb-app/node_modules/$module/index.js"
 done
 `,
   );
@@ -230,6 +252,7 @@ function writeEnrollingBbApp(
     join(fixture.binDir, "bb-app"),
     createEnrollingBbAppScript({ hostId, invocationPath, statusServerUrl }),
   );
+  writeNpmInstallingFixtureBbApp(fixture);
 }
 
 function writeCurlArtifactMock(
@@ -292,7 +315,7 @@ exec '${process.execPath}' "$@"
       expect(result.status).not.toBe(0);
       expect(result.stderr).not.toContain("HOME");
       expect(existsSync(join(fixture.dataDir, "resolved-home"))).toBe(unset);
-      expect(existsSync(join(fixture.homeDir, ".local/bin/room"))).toBe(true);
+      expect(existsSync(join(fixture.homeDir, ".local/bin/cloudroom"))).toBe(true);
       expect(existsSync(join(fixture.dataDir, "auth.json"))).toBe(false);
     },
   );
@@ -399,14 +422,14 @@ exec '${process.execPath}' "$@"
       "older",
       "npm",
       "bin",
-      "room",
+      "cloudroom",
     );
     mkdirSync(dirname(olderCli), { recursive: true });
     writeExecutable(olderCli, "#!/bin/sh\necho wrong-installation\n");
-    const installedCli = join(fixture.dataDir, "npm", "bin", "room");
+    const installedCli = join(fixture.dataDir, "npm", "bin", "cloudroom");
     mkdirSync(dirname(installedCli), { recursive: true });
     writeExecutable(installedCli, '#!/bin/sh\nprintf "%s" "$ROOM_DATA_DIR"\n');
-    const shim = join(fixture.homeDir, ".local", "bin", "room");
+    const shim = join(fixture.homeDir, ".local", "bin", "cloudroom");
     const explicit = spawnSync(
       shim,
       ["machine", "uninstall", "--host-id", "host-test"],
@@ -437,7 +460,7 @@ exec '${process.execPath}' "$@"
     });
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("Could not install bb-app");
-    const shim = join(fixture.homeDir, ".local", "bin", "room");
+    const shim = join(fixture.homeDir, ".local", "bin", "cloudroom");
     expect(existsSync(shim)).toBe(true);
     const cleanup = spawnSync(
       shim,
@@ -453,18 +476,18 @@ exec '${process.execPath}' "$@"
     "enrolls privately with portable service selection (%j)",
     ({ container }) => {
       const fixture = createFixture();
-      writeCurlArtifactMock(fixture, 404);
+      writeCurlArtifactMock(fixture, 200);
       writeEnrollingBbApp(
         fixture,
         join(fixture.dataDir, "daemon-invocation"),
         "host-test",
       );
       writeExecutable(
-        join(fixture.binDir, "room"),
+        join(fixture.binDir, "cloudroom"),
         `#!/usr/bin/env node
 const fs = require("node:fs");
 const path = require("node:path");
-const bundle = JSON.parse(process.env.BB_ENROLLMENT);
+const bundle = JSON.parse(process.env.ROOM_ENROLLMENT);
 fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "enrollment-argv"), JSON.stringify(process.argv.slice(2)));
 fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "auth.json"), JSON.stringify({hostId: bundle.hostId, hostKey: "durable-test"}));
 fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "config.json"), JSON.stringify({serverUrl: bundle.serverUrl}));
@@ -505,12 +528,12 @@ fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "config.json"), JSON.strin
           JSON.parse(
             readFileSync(join(fixture.dataDir, "enrollment-argv"), "utf8"),
           ),
-        ).toEqual(["machine", "enroll", "--bootstrap-env", "BB_ENROLLMENT"]);
+        ).toEqual(["machine", "enroll", "--bootstrap-env", "ROOM_ENROLLMENT"]);
         expect(result.stdout + result.stderr).not.toContain(
           "private-bootstrap-test",
         );
         expect(
-          spawnSync("sh", ["-n", join(fixture.homeDir, ".local/bin/room")])
+          spawnSync("sh", ["-n", join(fixture.homeDir, ".local/bin/cloudroom")])
             .status,
         ).toBe(0);
       } finally {
@@ -532,10 +555,10 @@ fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "config.json"), JSON.strin
     },
   );
 
-  it("uses bb-app from PATH and passes the launcher join flags verbatim", () => {
+  it("installs the server's package and passes the launcher join flags verbatim", () => {
     const fixture = createFixture();
     const invocationPath = join(fixture.dataDir, "invocation");
-    writeCurlArtifactMock(fixture, 404);
+    writeCurlArtifactMock(fixture, 200);
     writeEnrollingBbApp(fixture, invocationPath);
     const result = runScript(JOIN_ARGS, fixture, {
       BB_INSTALL_SKIP_SERVICE: "1",
@@ -575,7 +598,7 @@ fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "config.json"), JSON.strin
     const fixture = createFixture();
     const invocationPath = join(fixture.dataDir, "invocation");
     const daemonPidPath = join(fixture.dataDir, "install-daemon.pid");
-    writeCurlArtifactMock(fixture, 404);
+    writeCurlArtifactMock(fixture, 200);
     writeEnrollingBbApp(fixture, invocationPath);
     writeJoinedState(fixture);
 
@@ -605,7 +628,7 @@ fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "config.json"), JSON.strin
   it("accepts the daemon's normalized loopback server URL", () => {
     const fixture = createFixture();
     const invocationPath = join(fixture.dataDir, "invocation");
-    writeCurlArtifactMock(fixture, 404);
+    writeCurlArtifactMock(fixture, 200);
     writeEnrollingBbApp(
       fixture,
       invocationPath,
@@ -768,21 +791,24 @@ fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "config.json"), JSON.strin
     );
   });
 
-  it("falls back to npm only when the server artifact returns 404", () => {
+  it("never falls back to other software when the server has no package", () => {
     const fixture = createFixture();
+    const pathBbAppRan = join(fixture.dataDir, "path-bb-app-ran");
     writeServerInstallTools(fixture, 404);
+    writeExecutable(
+      join(fixture.binDir, "bb-app"),
+      `#!/bin/sh\n: >"${pathBbAppRan}"\n`,
+    );
     const result = runScript(JOIN_ARGS, fixture, {
       BB_INSTALL_SKIP_SERVICE: "1",
     });
 
-    expect(result.status, result.stderr).toBe(0);
-    expect(readFileSync(join(fixture.dataDir, "npm.log"), "utf8")).toMatch(
-      /^install -g --allow-scripts=better-sqlite3,node-pty,@parcel\/watcher --prefix \/.*\/data\/npm bb-app\n$/u,
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      "Could not download the server's bb-app package",
     );
-    const daemonPid = Number(
-      readFileSync(join(fixture.dataDir, "install-daemon.pid"), "utf8"),
-    );
-    process.kill(daemonPid, "SIGTERM");
+    expect(existsSync(join(fixture.dataDir, "npm.log"))).toBe(false);
+    expect(existsSync(pathBbAppRan)).toBe(false);
   });
 
   it("fails loudly when npm skipped the native add-on install scripts", () => {
@@ -827,8 +853,9 @@ fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "config.json"), JSON.strin
 
   it("refuses a data dir enrolled for a different host instead of faking success", () => {
     const fixture = createFixture();
-    writeCurlArtifactMock(fixture, 404);
+    writeCurlArtifactMock(fixture, 200);
     writeExecutable(join(fixture.binDir, "bb-app"), "#!/bin/sh\nexit 99\n");
+    writeNpmInstallingFixtureBbApp(fixture);
     writeJoinedState(fixture, "https://machine.getbb.app", "host-other");
     const result = runScript(JOIN_ARGS, fixture, {
       BB_INSTALL_SKIP_SERVICE: "1",
@@ -861,7 +888,7 @@ fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "config.json"), JSON.strin
     });
     const fixture = createFixture();
     const invocationPath = join(fixture.dataDir, "invocation");
-    writeCurlArtifactMock(fixture, 404);
+    writeCurlArtifactMock(fixture, 200);
     writeEnrollingBbApp(fixture, invocationPath);
 
     try {
@@ -894,7 +921,7 @@ fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "config.json"), JSON.strin
   it("redeems and persists a connect machine code before joining through the tunnel", () => {
     const fixture = createFixture();
     const invocationPath = join(fixture.dataDir, "invocation");
-    writeServerInstallTools(fixture, 404);
+    writeServerInstallTools(fixture, 200);
     writeEnrollingBbApp(fixture, invocationPath);
     const result = runScript(
       [
@@ -934,13 +961,14 @@ fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "config.json"), JSON.strin
 
   it("reports periodic progress while a host daemon is still joining", () => {
     const fixture = createFixture();
-    writeCurlArtifactMock(fixture, 404);
+    writeCurlArtifactMock(fixture, 200);
     writeExecutable(
       join(fixture.binDir, "bb-app"),
       `#!/usr/bin/env node
 setInterval(() => {}, 1000);
 `,
     );
+    writeNpmInstallingFixtureBbApp(fixture);
     writeExecutable(join(fixture.binDir, "sleep"), "#!/bin/sh\nexit 0\n");
 
     const result = runScript(JOIN_ARGS, fixture, {

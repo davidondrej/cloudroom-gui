@@ -8,7 +8,7 @@ export function SidebarThreadListSetting() {
     <ReplacementProviderSetting
       label="Sidebar"
       triggerAriaLabel="Sidebar thread list"
-      description="Choose automatic activation, Room's list, or a specific plugin on this device."
+      description="Choose automatic activation, Cloudroom's list, or a specific plugin on this device."
       builtInDescription="Projects, sections, and nested threads."
       preferenceAtom={threadListProviderAtom}
       slots={threadLists}

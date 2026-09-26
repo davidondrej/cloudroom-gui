@@ -291,7 +291,7 @@ describe("describeUnreachableServer", () => {
 
   it("says room is not running only on ECONNREFUSED", () => {
     expect(describeUnreachableServer(url, fetchFailed("ECONNREFUSED"))).toBe(
-      `room is not running at ${url} — open the room app, then re-run this command.`,
+      `Cloudroom is not running at ${url} — open the Cloudroom app, then re-run this command.`,
     );
   });
 
@@ -302,23 +302,23 @@ describe("describeUnreachableServer", () => {
         aggregateFetchFailed(["ECONNREFUSED", "ECONNREFUSED"]),
       ),
     ).toBe(
-      `room is not running at ${url} — open the room app, then re-run this command.`,
+      `Cloudroom is not running at ${url} — open the Cloudroom app, then re-run this command.`,
     );
 
     const mixedMessage = describeUnreachableServer(
       url,
       aggregateFetchFailed(["ECONNREFUSED", "EPERM"]),
     );
-    expect(mixedMessage).toContain(`Cannot reach room at ${url}: EPERM`);
-    expect(mixedMessage).toContain("room may still be running");
+    expect(mixedMessage).toContain(`Cannot reach Cloudroom at ${url}: EPERM`);
+    expect(mixedMessage).toContain("Cloudroom may still be running");
     expect(mixedMessage).not.toContain("not running at");
   });
 
-  it("reports a blocked connection without declaring room down", () => {
+  it("reports a blocked connection without declaring Cloudroom down", () => {
     for (const code of ["EPERM", "EACCES"]) {
       const message = describeUnreachableServer(url, fetchFailed(code));
-      expect(message).toContain(`Cannot reach room at ${url}: ${code}`);
-      expect(message).toContain("room may still be running");
+      expect(message).toContain(`Cannot reach Cloudroom at ${url}: ${code}`);
+      expect(message).toContain("Cloudroom may still be running");
       expect(message).not.toContain("not running at");
     }
   });
@@ -328,10 +328,10 @@ describe("describeUnreachableServer", () => {
       name: "TimeoutError",
     });
     const message = describeUnreachableServer(url, timeout, 2000);
-    expect(message).toContain(`room did not respond at ${url} within 2000ms`);
+    expect(message).toContain(`Cloudroom did not respond at ${url} within 2000ms`);
     expect(message).toContain("it may be busy or temporarily unreachable");
     expect(message).not.toContain("not running at");
-    expect(message).not.toContain("room is running");
+    expect(message).not.toContain("Cloudroom is running");
     expect(message).toContain("re-run it");
   });
 
@@ -349,7 +349,7 @@ describe("describeUnreachableServer", () => {
       cause: new Error("getaddrinfo ENOTFOUND example.invalid"),
     });
     expect(describeUnreachableServer(url, err)).toBe(
-      `Cannot reach room at ${url}: fetch failed: getaddrinfo ENOTFOUND example.invalid`,
+      `Cannot reach Cloudroom at ${url}: fetch failed: getaddrinfo ENOTFOUND example.invalid`,
     );
   });
 });

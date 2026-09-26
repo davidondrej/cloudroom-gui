@@ -491,7 +491,7 @@ describe("BrowsePluginsTab", () => {
       await screen.findByRole("button", { name: "Create a plugin" }),
     );
     expect((await screen.findByTestId("inline-composer")).textContent).toBe(
-      "Create a new Room plugin that ",
+      "Create a new Cloudroom plugin that ",
     );
     fireEvent.click(
       screen.getByText(

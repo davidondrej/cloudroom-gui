@@ -1430,7 +1430,7 @@ describe("connect plugin", () => {
           threadId: "thr_test",
           projectId: "proj_test",
         });
-      expect(instructions()).toContain("room connect expose");
+      expect(instructions()).toContain("cloudroom connect expose");
       await harness.behavior.setSettings({ sendRemoteInstructions: false });
       expect(instructions()).toBeNull();
       await harness.behavior.setSettings({ sendRemoteInstructions: true });
@@ -1442,7 +1442,7 @@ describe("connect plugin", () => {
         remoteClients: 0,
         lastRemoteActivityAt: Date.now(),
       });
-      expect(instructions()).toContain("room connect expose");
+      expect(instructions()).toContain("cloudroom connect expose");
     } finally {
       statusSpy.mockRestore();
     }
@@ -2393,8 +2393,8 @@ describe("connect CLI", () => {
     const result = await harness.runCli([]);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("getbb.app");
-    expect(result.stdout).toContain("room connect status");
-    expect(result.stdout).toContain("room connect expose");
+    expect(result.stdout).toContain("cloudroom connect status");
+    expect(result.stdout).toContain("cloudroom connect expose");
   });
 
   it("`bb connect --code --server` pairs verbatim (the dashboard command)", async () => {
@@ -2534,7 +2534,7 @@ describe("connect CLI", () => {
     const result = await harness.runCli(["machine-code"]);
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain('Legacy native-device pairing is off');
-    expect(result.stderr).toContain("room settings experiment mobileApp true");
+    expect(result.stderr).toContain("cloudroom settings experiment mobileApp true");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

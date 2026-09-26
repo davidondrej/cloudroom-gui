@@ -1604,7 +1604,7 @@ export function createPluginRuntime(context: PluginRuntimeContext) {
       discardCandidateHandle(handle);
       let message = error instanceof Error ? error.message : String(error);
       if (/ERR_DLOPEN_FAILED|\.node/.test(message)) {
-        message += " (native dependencies are not supported in Room plugins)";
+        message += " (native dependencies are not supported in Cloudroom plugins)";
       }
       if (previous !== undefined) {
         setStatus(row.id, "running", `reload failed: ${message}`);

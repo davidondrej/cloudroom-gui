@@ -19,8 +19,9 @@ import { loadHostIdentity, persistHostId } from "./identity.js";
 import { acquireDaemonLock } from "./lock.js";
 import { resolveHostDaemonLocalApiConfig } from "./local-api-config.js";
 import {
-  createUserShellPathResolver,
+  createUserShellEnvResolver,
   prepareRuntimeShellEnv,
+  providerEnvFromUserShell,
   resolveBbExecutablePathInDirectory,
   resolveLocalBbExecutablePath,
 } from "./runtime-shell-env.js";
@@ -151,16 +152,22 @@ export async function startHostDaemon(
       }),
     );
     const hostWatcher = createHostWatcher();
-    const resolveUserShellPath = createUserShellPathResolver();
-    const resolveRuntimeShellEnv = async () =>
-      prepareRuntimeShellEnv({
+    const resolveUserShellEnv = createUserShellEnvResolver();
+    let providerUserEnv: Record<string, string> = {};
+    const resolveRuntimeShellEnv = async () => {
+      const userShellEnv = await resolveUserShellEnv();
+      if (userShellEnv !== null) {
+        providerUserEnv = providerEnvFromUserShell(userShellEnv);
+      }
+      return prepareRuntimeShellEnv({
         bbExecutableDirectory,
         bbExecutablePath,
         dataDir,
         hostDaemonPort: localApiConfig.port,
-        inheritedPath: (await resolveUserShellPath()) ?? process.env.PATH,
+        inheritedPath: userShellEnv?.PATH ?? process.env.PATH,
         serverUrl: machineAuthProxy?.serverUrl ?? serverUrl,
       });
+    };
     const runtimeShellEnv = await resolveRuntimeShellEnv();
     const runtimeShellEnvResolvedAtMs = Date.now();
     app = await createHostDaemonApp({
@@ -184,6 +191,7 @@ export async function startHostDaemon(
       runtimeShellEnv,
       runtimeShellEnvResolvedAtMs,
       resolveRuntimeShellEnv,
+      providerUserEnv: () => providerUserEnv,
       hostWatcher,
       closeMachineAuthProxy: machineAuthProxy?.close,
       exitProcess: (code) => process.exit(code),

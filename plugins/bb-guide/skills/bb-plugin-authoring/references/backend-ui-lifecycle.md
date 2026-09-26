@@ -41,7 +41,7 @@ ships as a `skills/` entry instead.
 ### bb.status
 
 `bb.status.needsConfiguration(message)` — mark the plugin
-`needs-configuration` (shown in `room plugin list` and the UI) instead of
+`needs-configuration` (shown in `cloudroom plugin list` and the UI) instead of
 failing. Cleared on the next load.
 
 ### bb.onDispose and the reload lifecycle
@@ -54,7 +54,7 @@ pending plugin input, aborts services, and waits up to five seconds for each
 service. A hung service marks the plugin as degraded until it stops. The host
 then runs dispose hooks in LIFO order. One failed hook does not stop later
 cleanup. It gives in-flight HTTP, RPC, and event handlers five seconds to
-finish. It then closes database handles and invalidates the old `room` object.
+finish. It then closes database handles and invalidates the old `cloudroom` object.
 Disable and shutdown use the same sequence without a replacement. A
-captured `room` from a previous load throws `PluginContextStaleError` on use
+captured `cloudroom` from a previous load throws `PluginContextStaleError` on use
 — never stash the API object in module-level state that outlives a load.

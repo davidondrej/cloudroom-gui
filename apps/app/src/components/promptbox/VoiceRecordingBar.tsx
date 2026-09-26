@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@bb/shared-ui/button";
 import { Icon } from "@bb/shared-ui/icon";
 import { cn } from "@bb/shared-ui/lib/utils";
@@ -7,6 +8,8 @@ interface VoiceRecordingBarProps {
   state: "recording" | "transcribing";
   stream: MediaStream | null;
   onConfirm: () => void;
+  // When set, shows a Stop button (insert only) and a Send button.
+  onSend?: () => void;
   onCancel: () => void;
 }
 
@@ -17,16 +20,19 @@ export function VoiceRecordingBar({
   state,
   stream,
   onConfirm,
+  onSend,
   onCancel,
 }: VoiceRecordingBarProps) {
   const isTranscribing = state === "transcribing";
+  const [sendPressed, setSendPressed] = useState(false);
+  const spinner = <Icon name="Spinner" className="size-4 animate-spin" />;
 
   return (
     <div className="flex flex-row items-center gap-2 px-2 py-1.5">
       <Button
         type="button"
         size="icon"
-        variant="ghost"
+        variant={onSend ? "secondary" : "ghost"}
         aria-label={
           isTranscribing ? "Cancel transcription" : "Cancel recording"
         }
@@ -45,25 +51,65 @@ export function VoiceRecordingBar({
           {isTranscribing ? "Transcribing" : "Recording"}
         </span>
       </div>
-      <Button
-        type="button"
-        size="icon"
-        variant="default"
-        aria-label={
-          isTranscribing
-            ? "Transcribing voice input"
-            : "Stop and transcribe recording"
-        }
-        disabled={isTranscribing}
-        onClick={onConfirm}
-        className={CONTROL_BUTTON_CLASS}
-      >
-        {isTranscribing ? (
-          <Icon name="Spinner" className="size-4 animate-spin" />
-        ) : (
-          <Icon name="Check" className="size-4" />
-        )}
-      </Button>
+      {onSend ? (
+        <>
+          <Button
+            type="button"
+            size="icon"
+            variant="secondary"
+            aria-label="Stop and transcribe recording"
+            disabled={isTranscribing}
+            onClick={() => {
+              setSendPressed(false);
+              onConfirm();
+            }}
+            className={CONTROL_BUTTON_CLASS}
+          >
+            {isTranscribing && !sendPressed ? (
+              spinner
+            ) : (
+              <Icon
+                name="Square"
+                className="size-3.5 fill-current [&_*]:stroke-0"
+              />
+            )}
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="default"
+            aria-label="Stop and send recording"
+            disabled={isTranscribing}
+            onClick={() => {
+              setSendPressed(true);
+              onSend();
+            }}
+            className={CONTROL_BUTTON_CLASS}
+          >
+            {isTranscribing && sendPressed ? (
+              spinner
+            ) : (
+              <Icon name="ArrowUp" className="size-4" />
+            )}
+          </Button>
+        </>
+      ) : (
+        <Button
+          type="button"
+          size="icon"
+          variant="default"
+          aria-label={
+            isTranscribing
+              ? "Transcribing voice input"
+              : "Stop and transcribe recording"
+          }
+          disabled={isTranscribing}
+          onClick={onConfirm}
+          className={CONTROL_BUTTON_CLASS}
+        >
+          {isTranscribing ? spinner : <Icon name="Check" className="size-4" />}
+        </Button>
+      )}
     </div>
   );
 }

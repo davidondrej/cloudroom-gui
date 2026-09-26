@@ -123,7 +123,7 @@ describe("Cloudroom changelog", () => {
 
   it("does not fetch until a Cloudroom source is configured", async () => {
     CHANGELOG_LINKS.source = null;
-    const fetchFn = vi.fn(async () => new Response("## 12\n\nA Room release."));
+    const fetchFn = vi.fn(async () => new Response("## 12\n\nA Cloudroom release."));
     expect(await fetchLatestChangelogEntry(fetchFn)).toBeNull();
     expect(fetchFn).not.toHaveBeenCalled();
   });
@@ -131,10 +131,10 @@ describe("Cloudroom changelog", () => {
   it("reads a configured Cloudroom source and reports unusable responses", async () => {
     CHANGELOG_LINKS.source = "https://example.test/cloudroom/changelog.md";
     const signal = new AbortController().signal;
-    const fetchFn = vi.fn(async () => new Response("## 12\n\nA Room release."));
+    const fetchFn = vi.fn(async () => new Response("## 12\n\nA Cloudroom release."));
     expect(await fetchLatestChangelogEntry(fetchFn, signal)).toEqual({
       version: "12",
-      lede: [{ kind: "paragraph", text: "A Room release." }],
+      lede: [{ kind: "paragraph", text: "A Cloudroom release." }],
       sections: [],
     });
     expect(fetchFn).toHaveBeenCalledExactlyOnceWith(CHANGELOG_LINKS.source, {

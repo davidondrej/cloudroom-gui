@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { z } from "zod";
@@ -19,9 +19,19 @@ export async function previewStatus(deps: Deps) {
   } catch { return { state: "offline", count: 0, message: null }; }
 }
 
+/** The user's "Let cloud agents access this computer" choice (ADR 0113), or null until first-run setup asks. The preview helper runs Mac access. */
+const macAccessFile = (deps: Deps) => join(deps.config.dataDir, "cloudroom-mac-access.json");
+export async function macAccess(deps: Deps): Promise<boolean | null> {
+  return readFile(macAccessFile(deps), "utf8").then((text) => JSON.parse(text).enabled === true, () => null);
+}
+export async function setMacAccess(deps: Deps, enabled: boolean): Promise<void> {
+  await writeFile(macAccessFile(deps), JSON.stringify({ enabled }), { mode: 0o600 });
+  if (await readFile(join(folder(deps), "config.json")).then(() => true, () => false)) await setupPreviews(deps);
+}
+
 export async function setupPreviews(deps: Deps): Promise<void> {
   try {
-    await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", CLOUDROOM_PREVIEW_SCRIPT_PATH, "configure", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json")], { timeout: 30_000, maxBuffer: 64 * 1024 });
+    await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", CLOUDROOM_PREVIEW_SCRIPT_PATH, "configure", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json"), "--mac-access", await macAccess(deps) ? "on" : "off"], { timeout: 30_000, maxBuffer: 64 * 1024 });
   } catch { throw new ApiError(503, "cloudroom_preview_setup", "Cloud previews could not start. Inspect the private preview helper status. Cloud sessions are unaffected."); }
 }
 

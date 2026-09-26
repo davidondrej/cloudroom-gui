@@ -34,7 +34,7 @@ const SHARED_FIXTURE_ANCHORS: readonly FixtureAnchor[] = [
       'SIDEBAR_ROW_SELECTED_STATE_CLASS =',
       'SIDEBAR_ROW_OPEN_IN_SPLIT_STATE_CLASS =',
     ],
-    because: "Mock thread and settings rows keep Room's shared row geometry and rest, hover, selected, and split states.",
+    because: "Mock thread and settings rows keep Cloudroom's shared row geometry and rest, hover, selected, and split states.",
   },
   {
     file: "apps/app/src/components/sidebar/SectionSidebar.tsx",
@@ -44,7 +44,7 @@ const SHARED_FIXTURE_ANCHORS: readonly FixtureAnchor[] = [
       "CHROME_SECTION_LABEL_CLASS",
       "SIDEBAR_STANDARD_ROW_PADDING_CLASS",
     ],
-    because: "Mock sidebars use Room's shared button primitive, section-label token, padding, and project-row anatomy.",
+    because: "Mock sidebars use Cloudroom's shared button primitive, section-label token, padding, and project-row anatomy.",
   },
   {
     file: "apps/app/src/components/ui/context-selection.ts",
@@ -102,12 +102,12 @@ export const VIEW_FIXTURE_ANCHORS = {
     {
       file: "apps/app/src/views/thread-detail/ThreadDetailView.tsx",
       mustContain: ['label: "Info"', 'label: "Diff"', '<Icon name="Info" />', '<Icon name="FileDiff" />'],
-      because: "The thread projection exposes the same fixed secondary-panel tabs as Room.",
+      because: "The thread projection exposes the same fixed secondary-panel tabs as Cloudroom.",
     },
     {
       file: "apps/app/src/components/secondary-panel/ThreadMetadataContent.tsx",
       mustContain: ['appearance="flat"', "<EnvironmentRow", "<BranchRow", "<PullRequestRow"],
-      because: "The open Info panel projects Room's flat metadata card and representative environment, branch, and pull-request rows.",
+      because: "The open Info panel projects Cloudroom's flat metadata card and representative environment, branch, and pull-request rows.",
     },
     {
       file: "apps/app/src/components/promptbox/follow-up-placeholder.ts",
@@ -121,31 +121,29 @@ export const VIEW_FIXTURE_ANCHORS = {
       mustContain: [
         'title="New thread"',
         'description="Start a new conversation"',
-        'title="Automatically import my projects"',
-        'title="New project"',
-        'title="Learn what Room can do"',
+        'title="Bring your work over"',
         "hover:bg-state-hover",
       ],
-      because: "The New thread projection uses Room's current empty-welcome actions, hierarchy, and hover state.",
+      because: "The New thread projection uses Cloudroom's current empty-welcome actions, hierarchy, and hover state.",
     },
   ],
   split: [
     {
       file: "apps/app/src/views/thread-detail/SplitThreadArea.tsx",
       mustContain: ["data-split-pane-id", "data-focused", "data-pane-focus-scrim", '"bg-background/30"', "<SplitDivider"],
-      because: "The Split projection keeps Room's pane identity, focus state, divider, and inactive-pane wash.",
+      because: "The Split projection keeps Cloudroom's pane identity, focus state, divider, and inactive-pane wash.",
     },
   ],
   settings: [
     {
       file: "apps/app/src/components/settings/SettingsSidebar.tsx",
       mustContain: ['backLabel="Back to app"', "<SectionSidebarLabel>Settings</SectionSidebarLabel>", 'activeSection === section.id'],
-      because: "The Appearance projection uses Room's settings navigation hierarchy and selected-row state.",
+      because: "The Appearance projection uses Cloudroom's settings navigation hierarchy and selected-row state.",
     },
     {
       file: "apps/app/src/components/settings/settings-sections.ts",
       mustContain: ['{ icon: "Palette", id: "appearance", label: "Appearance" }'],
-      because: "The settings navigation keeps Appearance as a first-class Room settings destination.",
+      because: "The settings navigation keeps Appearance as a first-class Cloudroom settings destination.",
     },
     {
       file: "apps/app/src/views/SettingsView.tsx",
@@ -153,16 +151,16 @@ export const VIEW_FIXTURE_ANCHORS = {
         '<SettingsSection title="Appearance">',
         '<SettingsWithControl label="Theme">',
         'label="Palette"',
-        "Palettes change Room's colors, including syntax colors in diffs and file previews.",
+        "Palettes change Cloudroom's colors, including syntax colors in diffs and file previews.",
         'label="Favicon color"',
         "<SplitDimmingSetting />",
       ],
-      because: "The Appearance projection keeps Room's current theme, palette, favicon, and inactive-split controls.",
+      because: "The Appearance projection keeps Cloudroom's current theme, palette, favicon, and inactive-split controls.",
     },
     {
       file: "apps/app/src/components/ui/settings-section.tsx",
       mustContain: ["rounded-lg border border-border bg-card px-4 py-3.5", "flex flex-col gap-2.5", "text-xs leading-snug text-subtle-foreground/75"],
-      because: "The Appearance projection keeps Room's section card, responsive rows, and supporting-copy hierarchy.",
+      because: "The Appearance projection keeps Cloudroom's section card, responsive rows, and supporting-copy hierarchy.",
     },
   ],
 } as const satisfies Record<"thread" | "new" | "split" | "settings", readonly FixtureAnchor[]>;

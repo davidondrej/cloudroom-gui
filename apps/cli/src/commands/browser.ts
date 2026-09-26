@@ -311,16 +311,16 @@ export function registerBrowserCommands(
     browser
       .command("import-cookies")
       .description(
-        "Copy signed-in cookies from an installed browser into the Room browser",
+        "Copy signed-in cookies from an installed browser into the Cloudroom browser",
       ),
   )
     .requiredOption(
       "--from <source>",
-      "Source browser ID from `room browser import-sources`",
+      "Source browser ID from `cloudroom browser import-sources`",
     )
     .requiredOption(
       "--profile <directory>",
-      "Source profile directory as printed by `room browser import-sources`",
+      "Source profile directory as printed by `cloudroom browser import-sources`",
     )
     .option(
       "--into <target>",

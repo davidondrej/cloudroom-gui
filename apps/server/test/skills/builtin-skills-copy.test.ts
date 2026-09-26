@@ -44,8 +44,8 @@ describe("builtin skills copy", () => {
       targetPath,
     );
     await expect(
-      readFile(path.join(targetPath, "room-cli", "SKILL.md"), "utf8"),
-    ).resolves.toBe(await readBuiltinSkill("room-cli"));
+      readFile(path.join(targetPath, "cloudroom", "SKILL.md"), "utf8"),
+    ).resolves.toBe(await readBuiltinSkill("cloudroom"));
   });
 
   it("throws when the sentinel skill is missing beside the module", async () => {

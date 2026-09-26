@@ -287,6 +287,12 @@ export function isStandaloneBuiltinClearCommand(
   return isStandaloneBuiltinCommand(input, "clear");
 }
 
+export function isStandaloneBuiltinTeleportCommand(
+  input: readonly PromptInput[],
+): boolean {
+  return isStandaloneBuiltinCommand(input, "teleport");
+}
+
 export function createStandaloneBuiltinCompactCommandInput(): PromptInput[] {
   return [
     {

@@ -1,37 +1,37 @@
 ---
 kind: instruction
-title: Room Guide — Customization
-summary: Command reference for customizing the room app color palette, typography, keyboard shortcuts, and mobile push notifications.
+title: Cloudroom Guide — Customization
+summary: Command reference for customizing the cloudroom app color palette, typography, keyboard shortcuts, and mobile push notifications.
 intent: Explain the CLI theme surface, server-backed app customization, and push-notification device registration.
-editingNotes: Keep flags accurate against the CLI implementation. Theme details live in the room-cli skill's references/theming.md.
+editingNotes: Keep flags accurate against the CLI implementation. Theme details live in the cloudroom skill's references/theming.md.
 ---
 Customization commands
 
 Theming — the app-wide palette and typography
 
-`room theme` controls a set of CSS-variable overrides for the app palette and
+`cloudroom theme` controls a set of CSS-variable overrides for the app palette and
 typography, persisted server-side and applied live to every open window.
 Light/dark mode is a separate per-client setting the theme layers on top of.
 Custom themes live on
 disk, one folder per theme, at <bb-data-dir>/theme/<name>/theme.css (the packaged
 app uses ~/.bb/theme/…). The folder name is the theme id.
 
-  room theme list                  Built-in and custom themes; shows the active one
-  room theme dir                   Print the custom-theme directory (where to author)
-  room theme set <id> [--favicon-color <color>]
+  cloudroom theme list                  Built-in and custom themes; shows the active one
+  cloudroom theme dir                   Print the custom-theme directory (where to author)
+  cloudroom theme set <id> [--favicon-color <color>]
                                  Activate a theme, preserving the favicon color
                                  unless the flag supplies the complete selection
-  room theme show [id] [--css]     Print the active palette, or resolve <id> without
+  cloudroom theme show [id] [--css]     Print the active palette, or resolve <id> without
                                  activating it; --css dumps the CSS
-  room theme reset                 Back to the default theme; preserve favicon color
-  room theme favicon set <color>   Set favicon color; preserve the active theme
-  room theme favicon reset         Reset favicon color; preserve the active theme
+  cloudroom theme reset                 Back to the default theme; preserve favicon color
+  cloudroom theme favicon set <color>   Set favicon color; preserve the active theme
+  cloudroom theme favicon reset         Reset favicon color; preserve the active theme
 
-To author a custom theme, run `room theme dir`, write <that-dir>/<name>/theme.css,
-then `room theme set <name>`. Optional `pierre-dark.json` / `pierre-light.json`
+To author a custom theme, run `cloudroom theme dir`, write <that-dir>/<name>/theme.css,
+then `cloudroom theme set <name>`. Optional `pierre-dark.json` / `pierre-light.json`
 (or a `theme.json` `codeTheme` field) ship the matching code colors. Built-in
 palettes use the matching Shiki pair. The full design-token reference is in
-the room-cli skill (references/theming.md).
+the cloudroom skill (references/theming.md).
 
 Theme CSS can override typography as well as colors. `--font-terminal` controls
 the integrated terminal's font family independently of `--font-mono`; set it in
@@ -42,7 +42,7 @@ Favicon colors are `default`, `red`, `orange`, `yellow`, `green`, `teal`,
 appearance value forward explicitly.
 
 Hovering a palette in Settings → Appearance previews it live in that window
-without saving; `room theme show <id>` is the CLI counterpart.
+without saving; `cloudroom theme show <id>` is the CLI counterpart.
 
 Add --json to any theme command for machine-readable output.
 
@@ -76,16 +76,10 @@ Server-backed General settings
 Settings → General includes app-wide preferences stored server-side so every
 window and restart sees the same value. Keep Awake is instead owned by its
 builtin plugin: use its autosaving page under Settings → Installed plugins or run
-`room keep-awake enable` or `room keep-awake disable`. Choose every host with `Room
-keep-awake hosts all`, or name individual host ids after `room keep-awake hosts`.
-On macOS it prevents system idle sleep while room is running; closing the lid or
+`cloudroom keep-awake enable` or `cloudroom keep-awake disable`. Choose every host with `Cloudroom
+keep-awake hosts all`, or name individual host ids after `cloudroom keep-awake hosts`.
+On macOS it prevents system idle sleep while Cloudroom is running; closing the lid or
 choosing Sleep still sleeps the Mac.
-
-Concurrency limit is also owned by its builtin plugin. Its autosaving page
-under Settings → Installed plugins leaves the overall limit unlimited by default and
-uses an automatic per-host limit of one thread per available processor. Use
-`room concurrency-limit global [unlimited|<limit>]` and `Room
-concurrency-limit host <host-id> [auto|<limit>]`; 0 pauses new work.
 
 Settings → Keyboard also includes `showKeyboardHints`, which defaults to true.
 Turn it off to hide the delayed shortcut badges shown while holding Command or
@@ -93,7 +87,7 @@ Control on macOS, or Control on Windows/Linux. Shortcut commands continue to
 work.
 
 Settings → Advanced includes **Command Guard**, enabled by default for new Local
-and Cloud sessions. Use `room settings general commandGuardEnabled <true|false>`.
+and Cloud sessions. Use `cloudroom settings general commandGuardEnabled <true|false>`.
 Start a new session after changing it. Personal guards remain independent. It
 blocks common catastrophic shell commands, not every destructive action.
 
@@ -101,7 +95,7 @@ Settings → General includes `showDiagnosticEvents`, which defaults to false
 in all builds. Turn it on to show provider environment resolution and unhandled
 provider events. Warnings, errors, and model fallback stay visible. Existing
 unhandled-event preferences are preserved. Set it with
-`room settings general showDiagnosticEvents <true|false>`.
+`cloudroom settings general showDiagnosticEvents <true|false>`.
 
 Settings → General also includes `steerActiveThreadOnEnter`, which defaults to
 false (Queue). Existing saved preferences are preserved. Outside an open
@@ -113,39 +107,39 @@ Enter shortcuts for a connected Magic Keyboard.
 
 Settings → General also includes `streamerMode`, which defaults to false. Turn
 it on to hide every `customModels` entry from `~/.bb/config.json` in all model
-lists (pickers, `room provider models`, and the SDK) during a screen share. The
+lists (pickers, `cloudroom provider models`, and the SDK) during a screen share. The
 entries stay in the config file.
 
 Settings → General includes `managedBranchPrefix`, which defaults to
-`room/`. Room puts it in front of every branch name it creates for a worktree, so
-the default gives `room/fix-login-flow-thr_ab12cd34ef`. Set `sawyer/wt-` to get
-`sawyer/wt-fix-login-flow-thr_ab12cd34ef`, or clear it for no prefix. room rejects
+`cloudroom/`. Cloudroom puts it in front of every branch name it creates for a worktree, so
+the default gives `cloudroom/fix-login-flow-thr_ab12cd34ef`. Set `sawyer/wt-` to get
+`sawyer/wt-fix-login-flow-thr_ab12cd34ef`, or clear it for no prefix. cloudroom rejects
 a prefix that cannot start a valid git branch name. The new prefix applies to
-branches room creates after the change.
+branches cloudroom creates after the change.
 
-  room settings show
-  room settings ai-services
-  room settings general <key> <value>
-  room settings completed-turns [provider-id] [collapse|flat|default]
-  room settings experiment <key> <value>
-  room settings usage [--machine <id-or-name>]
-  room settings version [--force]
-  room settings reload
+  cloudroom settings show
+  cloudroom settings ai-services
+  cloudroom settings general <key> <value>
+  cloudroom settings completed-turns [provider-id] [collapse|flat|default]
+  cloudroom settings experiment <key> <value>
+  cloudroom settings usage [--machine <id-or-name>]
+  cloudroom settings version [--force]
+  cloudroom settings reload
 
-`room settings ai-services` shows the helper-inference and voice-transcription
+`cloudroom settings ai-services` shows the helper-inference and voice-transcription
 settings (`BB_INFERENCE`, `BB_INFERENCE_FALLBACK`, `BB_TRANSCRIPTION`, set with
 `bb-app config`) and the plugin-registered AI services they may name as
 `<service>/<model>`.
 
-`room settings general` accepts any key from `generalSettings` in
-`room settings show`. Boolean preferences take `true`, `false`, `on`, or `off`,
+`cloudroom settings general` accepts any key from `generalSettings` in
+`cloudroom settings show`. Boolean preferences take `true`, `false`, `on`, or `off`,
 and `null` clears a preference that can be unset.
 
-`room settings completed-turns` lists how each provider shows a finished turn:
+`cloudroom settings completed-turns` lists how each provider shows a finished turn:
 `collapse` folds the turn's work into one "Worked for" row and keeps the final
 answer visible, and `flat` keeps every step visible. Each provider has a
 default (Claude Code is `flat`, the other first-party providers `collapse`).
-`room settings completed-turns <provider-id> <collapse|flat>` overrides it for
+`cloudroom settings completed-turns <provider-id> <collapse|flat>` overrides it for
 that provider, and `default` removes the override. Settings → Providers has
 the same per-provider switch.
 
@@ -158,7 +152,7 @@ client-local; submitting stops and settles a running thread, then replaces the
 selected turn and all later conversation history while retaining workspace side
 effects. Grouped multi-message requests are not yet editable.
 
-Room releases restorable provider sessions after 30 idle minutes. The daemon
+Cloudroom releases restorable provider sessions after 30 idle minutes. The daemon
 checks for these sessions every five minutes. Active turns, commands, agents,
 workflows, and monitors keep their sessions loaded.
 
@@ -166,17 +160,17 @@ The default-off `sidebarProgressiveDisclosure` experiment shows the first five
 groups in the current sort order in **By project** and **By machine**, keeps
 attention groups visible, and reveals ten more per **Show more** click. Revealed
 groups stay visible through activity and sort-order changes.
-**Manually** is unchanged. Enable it with `room settings experiment
+**Manually** is unchanged. Enable it with `cloudroom settings experiment
 sidebarProgressiveDisclosure true`.
 
 The default-off `timelineWindowing` experiment mounts only nearby rows in long
 timelines and large expanded timeline details. Enable it with
-`room settings experiment timelineWindowing true`.
+`cloudroom settings experiment timelineWindowing true`.
 
 The default-off `multiMachinePicker` experiment uses a searchable, target-first
 environment picker for projects with at least three machines and adds search to
 machine-only pickers with more than five machines. Enable it with
-`room settings experiment multiMachinePicker true`.
+`cloudroom settings experiment multiMachinePicker true`.
 
 Thread timeline pages select complete conversation groups using
 `BB_FF_TIMELINE_WINDOW_EVENT_BUDGET` (default 1500) as a selection budget.
@@ -190,21 +184,21 @@ Server-backed keyboard shortcuts
 
 Settings → Keyboard records per-command shortcut overrides. They are persisted
 server-side, applied live to every connected window, and survive restarts.
-Reset removes an override and returns to Room's current default; Clear explicitly
+Reset removes an override and returns to Cloudroom's current default; Clear explicitly
 disables a command. `Mod` means Command on macOS and Control on Windows/Linux.
 Bindings for non-native actions apply in browser and desktop clients. Command
 contexts and native-only availability remain server-owned, and desktop menu
 accelerators for New Thread, New Window, New Tab, Close, and Settings use the
 same resolved bindings. The complete default table is in docs/configuration.md.
 
-  room settings keyboard list
-  room settings keyboard hints <true|false>
-  room settings keyboard set <command> <shortcut|disabled>
-  room settings keyboard reset [command]
+  cloudroom settings keyboard list
+  cloudroom settings keyboard hints <true|false>
+  cloudroom settings keyboard set <command> <shortcut|disabled>
+  cloudroom settings keyboard reset [command]
 
 Plugin commands use `plugin:<plugin-id>/<command-id>` as their stable binding
-ID. For example: `room settings keyboard set plugin:example/open-issue Mod+Shift+I`.
-`room settings keyboard reset plugin:example/open-issue` restores the plugin's
+ID. For example: `cloudroom settings keyboard set plugin:example/open-issue Mod+Shift+I`.
+`cloudroom settings keyboard reset plugin:example/open-issue` restores the plugin's
 default; `set ... disabled` explicitly unbinds it. The SDK supports the same IDs
 through `system.updateKeyboardSettings` and `system.config`.
 Overrides survive plugin disable/re-enable and reload. Every active plugin
@@ -222,18 +216,18 @@ The built-in Push notifications plugin sends mobile updates through Expo and
 system notifications to connected web and desktop clients. Web tabs or desktop
 windows must stay open; browser permission is requested in the plugin settings.
 
-  room push-notifications list
-  room push-notifications add --token <expo-push-token>
+  cloudroom push-notifications list
+  cloudroom push-notifications add --token <expo-push-token>
       --platform <ios|android> --label <device-name>
-  room push-notifications remove <id>
-  room push-notifications status
-  room push-notifications test <web|desktop>
-  room plugin config push-notifications set <mobileEnabled|webEnabled|desktopEnabled> <true|false>
+  cloudroom push-notifications remove <id>
+  cloudroom push-notifications status
+  cloudroom push-notifications test <web|desktop>
+  cloudroom plugin config push-notifications set <mobileEnabled|webEnabled|desktopEnabled> <true|false>
 
 `add` is an upsert by token: a known token refreshes its label and last-seen
 time and keeps its id. Expo tokens that are no longer registered are removed
-automatically after a failed delivery. Use `room plugin disable
-push-notifications` to stop delivery. Change the relay URL with `room plugin
+automatically after a failed delivery. Use `cloudroom plugin disable
+push-notifications` to stop delivery. Change the relay URL with `cloudroom plugin
 config push-notifications set expoPushUrl <url>`. Add `--json` to `list` or
 `status` for machine-readable output. The list returns token suffixes only.
 The three channel switches default to true and apply immediately across this
@@ -242,16 +236,16 @@ permission; OS notification settings still control whether a banner appears.
 
 Host files and voice transcription
 
-  room file read|write|list|paths|mkdir|move|remove ...
-  room voice transcribe <audio-file> [--prompt <context>]
+  cloudroom file read|write|list|paths|mkdir|move|remove ...
+  cloudroom voice transcribe <audio-file> [--prompt <context>]
 
 Voice transcription uses the `BB_TRANSCRIPTION` model, which defaults to
 `codex/gpt-transcribe`. Override it with
 `bb-app config set BB_TRANSCRIPTION <provider/model>`.
 
-`room file` supports `--host` for remote machines and `--root` on mutating
-commands to confine access beneath an absolute directory. `room file list` and
-`room file paths` include dot-prefixed entries; pass `--no-hidden` to skip them.
+`cloudroom file` supports `--host` for remote machines and `--root` on mutating
+commands to confine access beneath an absolute directory. `cloudroom file list` and
+`cloudroom file paths` include dot-prefixed entries; pass `--no-hidden` to skip them.
 Both skip a default set of dependency and cache directories such as
 `node_modules`, `.venv`, `.pnpm-store`, and root-relative `.claude/worktrees`;
 `--exclude <names...>` replaces that set. Entries match basenames at any depth
@@ -267,12 +261,12 @@ visibility, and the navigation and thread-list provider pickers. The sidebar
 waits for them alongside the project list, and an upgrade uploads the old
 browser-stored layout once.
 
-  room settings ui list [--json]
-  room settings ui get <key> [--json]
-  room settings ui set <key> <value> [--json]
-  room settings ui reset <key> [--json]
+  cloudroom settings ui list [--json]
+  cloudroom settings ui get <key> [--json]
+  cloudroom settings ui set <key> <value> [--json]
+  cloudroom settings ui reset <key> [--json]
 
-`room settings ui list` prints every key with its value, revision, and a short
+`cloudroom settings ui list` prints every key with its value, revision, and a short
 description. `set` takes plain strings for enum and provider keys and JSON for
 lists and `null`; it reads the current revision, writes with it, and retries
 once on a conflict. `reset` writes the default. The SDK offers
@@ -282,11 +276,12 @@ By project (`project`) is the default for `sidebar.organizationMode` when no
 value is saved. Existing server and legacy browser choices are preserved.
 
 Every thread-list header's actions menu offers New project, New section,
-Organize, and Sort by. Organize selects By project, By machine, or Custom;
-Sort by selects a field, and selecting it again reverses its arrow/direction.
+Organize, and Sort by. Organize selects By project, By machine, or Custom for the whole sidebar.
+Sort by applies only to that section (saved in `sidebar.sectionSorts`); selecting
+the same field again reverses its direction. Pinned also offers Drag order.
 `sidebar.sortDirection` accepts `ascending`, `descending`, or `default`.
 The default preserves each field's original order (newest first for dates,
-A–Z for titles). For example: `room settings ui set sidebar.sortDirection ascending`.
+A–Z for titles). For example: `cloudroom settings ui set sidebar.sortDirection ascending`.
 
 Sidebar footer actions
 
@@ -299,19 +294,19 @@ appears only when hidden actions are available and links back to customization.
 Preferences survive plugin reloads and temporarily unavailable plugins; new items
 are visible by default. Example:
 
-  room settings ui set sidebar.hiddenFooterItems '["plugin:provider-usage/usage"]'
-  room settings ui reset sidebar.hiddenFooterItems
+  cloudroom settings ui set sidebar.hiddenFooterItems '["plugin:provider-usage/usage"]'
+  cloudroom settings ui reset sidebar.hiddenFooterItems
 
 Client-local UI preferences
 
 Some Settings values live only in the current browser/client. Sidebar width
 and open state stay local because they depend on the window size. The Voice Input
 microphone picker stores the selected browser MediaDevices device id in
-localStorage as `bb.voiceInput.audioInputDeviceId`; it does not have a `room`
+localStorage as `bb.voiceInput.audioInputDeviceId`; it does not have a `cloudroom`
 command and does not change the server-side transcription model.
 
 Anonymous usage telemetry can be disabled in Settings → General → Privacy & diagnostics → Share anonymous usage data,
-or with `room settings general telemetryEnabled false`. The saved server-wide preference
+or with `cloudroom settings general telemetryEnabled false`. The saved server-wide preference
 takes effect immediately and persists across restarts. SDK callers can use
 `system.updateGeneralSettings` with `telemetryEnabled`. `BB_TELEMETRY=false`
 always disables telemetry, even when the saved preference is enabled.

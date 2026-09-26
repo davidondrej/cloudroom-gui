@@ -1,27 +1,27 @@
 # CLI, input, agents, and AI services
 
-### bb.cli — an agent-facing `room` subcommand
+### bb.cli — an agent-facing `cloudroom` subcommand
 
 One top-level command per plugin; a second `register` in one factory
 execution is rejected.
-Users and agents run `room <name> …` like any core command; the Room CLI
+Users and agents run `cloudroom <name> …` like any core command; the Cloudroom CLI
 proxies it to the server, where `run` executes. Core collisions log an
-activation warning and appear in `room plugin list` as `room plugin run <id>`.
+activation warning and appear in `cloudroom plugin list` as `cloudroom plugin run <id>`.
 
 ```ts
 bb.cli.register({
-  name: "weather", // lowercase [a-z0-9-]+; core collisions use room plugin run <id>
+  name: "weather", // lowercase [a-z0-9-]+; core collisions use cloudroom plugin run <id>
   summary: "Weather lookups",
   commands: [
     // help/skill metadata only; parsing argv is yours
     {
       name: "today",
       summary: "Today's weather",
-      usage: "room weather today <city>",
+      usage: "cloudroom weather today <city>",
     },
   ],
   async run(argv, ctx) {
-    // argv EXCLUDES the command name: `room weather today sf` → argv = ["today", "sf"]
+    // argv EXCLUDES the command name: `cloudroom weather today sf` → argv = ["today", "sf"]
     // ctx: { cwd?, threadId?, projectId?, signal }
     return { exitCode: 0, stdout: "sunny" }; // { exitCode, stdout?, stderr? }
   },
@@ -36,7 +36,7 @@ The host rejects a larger result atomically as `plugin_cli_output_too_large`;
 it never clips it. Page growing collections, cap verbose fields, and use
 file/streaming commands for large content. Caveat: under the workspace
 sandbox (Accept Edits / Approve for me), Claude's macOS sandbox permits
-loopback, so `room` CLI calls (including plugin commands) work sandboxed;
+loopback, so `cloudroom` CLI calls (including plugin commands) work sandboxed;
 Linux and other provider sandboxes may still block loopback, in which case
 those calls need escalation approval.
 
@@ -69,7 +69,7 @@ the caller cancels the request.
 To give agents standing knowledge (conventions, workflows), ship a
 `skills/` directory. For schema'd capabilities, register a native tool.
 For a short, per-resolution instruction block (e.g. "the user is viewing
-room remotely — share tunnel URLs"), use `contributeInstructions`:
+cloudroom remotely — share tunnel URLs"), use `contributeInstructions`:
 
 ```ts
 import { z } from "zod"; // runtime import — declare zod as a plugin dependency
@@ -77,7 +77,7 @@ bb.agents.registerTool({
   name: "docs_search", // [a-zA-Z0-9_-]+, unique ACROSS plugins
   description: "Search the bundled docs.",
   instructions: "Prefer docs_search over guessing conventions.", // optional, appended to thread instructions
-  // Optional row presentation (grammar v3). Without it, Room shows its normal
+  // Optional row presentation (grammar v3). Without it, Cloudroom shows its normal
   // tool name and the plugin's branding glyph. Errors/interruptions keep
   // that standard rendering so the failing tool remains identifiable.
   presentation: {
@@ -93,7 +93,7 @@ bb.agents.registerTool({
 });
 
 // All tools and manifest skills are static registrations. configure() only
-// selects this plugin's own ids when Room resolves a thread/session config.
+// selects this plugin's own ids when Cloudroom resolves a thread/session config.
 bb.agents.configure((context) => ({
   tools: context.provider.id === "codex" ? ["docs_search"] : [],
   skills: context.project.kind === "standard" ? ["repo-conventions"] : [],
@@ -107,7 +107,7 @@ bb.agents.configure((context) => ({
 // threads never receive plugin instructions.
 bb.agents.contributeInstructions(({ threadId, projectId }) => {
   if (!shouldAdviseRemoteUrls()) return null;
-  return "The user is viewing room remotely — share tunnel URLs, not localhost.";
+  return "The user is viewing cloudroom remotely — share tunnel URLs, not localhost.";
 });
 ```
 
@@ -129,14 +129,14 @@ provider bridge stamps it on every call's timeline row (the row's glyph is
 checked at ingest against this plugin's declared icons, whichever plugin
 provides the thread); it is not a frontend
 bundle hook. A state with no label — error, interrupted, or awaiting
-approval — falls back to Room's standard `Running tool …` / `Ran tool …`
+approval — falls back to Cloudroom's standard `Running tool …` / `Ran tool …`
 wording, as does omitting the field entirely.
 
 `contributeInstructions` is synchronous. It runs on `thread.start` and
 `turn.submit`, so keep it fast. Prefer `skills/` for standing knowledge. Use
 this callback only when the text must reflect live plugin state.
 
-Ordering is standard Room instructions, selected tools' static snippets,
+Ordering is standard Cloudroom instructions, selected tools' static snippets,
 `contributeInstructions` output, `configure` dynamic instructions, data-dir
 user instructions, then workspace instructions. Tool snippets are rejected at
 registration above 4096 characters; each legacy/dynamic callback contribution
@@ -160,7 +160,7 @@ throwing callback fail closed for that plugin only. Dynamic `instructions` are
 truncated to 4096 characters.
 
 Resolution happens for `thread.start` and `turn.submit`. A selected tool set
-takes effect only when the provider session is next started/resumed; Room never
+takes effect only when the provider session is next started/resumed; Cloudroom never
 hot-mutates a running provider session. Instructions follow the same rule: a
 live provider session keeps the instructions it was constructed with, and
 changed instructions apply when the session is next constructed.
@@ -174,11 +174,11 @@ inspect the side-chat origin.
 
 ### bb.experimental_aiServices — helper inference and voice transcription
 
-Room's own AI services — the server-side helper completions behind thread
+Cloudroom's own AI services — the server-side helper completions behind thread
 titles and commit messages, and voice transcription — are served by plugins.
 Register a service in `server.ts` and implement the shared contract in the
 plugin's `bb.host` entry; the user selects it with `BB_INFERENCE` /
-`BB_TRANSCRIPTION` set to `<id>/<model>` (`room settings ai-services` lists
+`BB_TRANSCRIPTION` set to `<id>/<model>` (`cloudroom settings ai-services` lists
 the options). The server reserves `openai` and every direct inference provider
 id in its current provider registry. This includes `anthropic`, `google`,
 `openrouter`, and their regional or gateway variants. Registration rejects

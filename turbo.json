@@ -528,7 +528,7 @@
       ],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/plugins/bb-guide/skills/room-cli/**",
+        "$TURBO_ROOT$/plugins/bb-guide/skills/cloudroom/**",
         "$TURBO_ROOT$/vitest.shared.ts"
       ]
     },
@@ -874,9 +874,6 @@
     "bb-plugin-automations#typecheck": {
       "dependsOn": ["@get-bb/plugin-sdk#build:types", "topo"]
     },
-    "bb-plugin-concurrency-limit#typecheck": {
-      "dependsOn": ["@get-bb/plugin-sdk#build:types", "topo"]
-    },
     "bb-plugin-environment-project-checkout#typecheck": {
       "dependsOn": ["@get-bb/plugin-sdk#build:types", "topo"]
     },
@@ -911,6 +908,9 @@
       "dependsOn": ["@get-bb/plugin-sdk#build:types", "topo"]
     },
     "bb-plugin-keep-awake#typecheck": {
+      "dependsOn": ["@get-bb/plugin-sdk#build:types", "topo"]
+    },
+    "bb-plugin-machine-ssh#typecheck": {
       "dependsOn": ["@get-bb/plugin-sdk#build:types", "topo"]
     },
     "bb-plugin-memory#typecheck": {

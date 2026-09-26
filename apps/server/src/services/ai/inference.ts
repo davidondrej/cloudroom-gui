@@ -57,7 +57,7 @@ const DEFAULT_INFERENCE_TIMEOUT_MS = 30_000;
 export const INFERENCE_POLICY = {
   hostRpcGraceMs: 1_000,
   commitMessage: { maxAttempts: 2, retryDelayMs: 0, timeoutMs: 5_000 },
-  threadMetadata: { maxAttempts: 2, retryDelayMs: 250, timeoutMs: 5_000 },
+  threadMetadata: { maxAttempts: 2, retryDelayMs: 250, timeoutMs: 10_000 },
   voiceTranscription: { maxAttempts: 2, retryDelayMs: 250, timeoutMs: 10_000 },
 } as const;
 
@@ -123,6 +123,8 @@ interface InferenceCompleteWithFallbackArgs<T extends TSchema> {
     timeoutMs: number,
   ) => Promise<Static<T> | null>;
   fallbackModel?: string;
+  /** Also try a different fallback model after non-transient failures. */
+  fallbackOnAnyError?: boolean;
   label: string;
   logContext?: JsonObject;
   maxAttempts: number;
@@ -186,7 +188,9 @@ export async function inferenceCompleteWithFallback<T extends TSchema>(
           ? error
           : new Error(`Non-Error thrown during ${args.label.toLowerCase()}`);
       const transient = isTransientInferenceError(err);
-      if (transient && attempt < maxAttempts) {
+      const switchModel =
+        args.fallbackOnAnyError === true && fallbackModel !== primaryModel;
+      if ((transient || switchModel) && attempt < maxAttempts) {
         deps.logger.info(
           {
             attempt,
@@ -199,13 +203,13 @@ export async function inferenceCompleteWithFallback<T extends TSchema>(
             fallbackModel,
             maxAttempts,
             model,
-            reason: "transient-failure",
+            reason: transient ? "transient-failure" : "failure",
             ...(err instanceof InferenceTimeoutError
               ? { timeoutMs: err.timeoutMs }
               : {}),
             ...args.logContext,
           },
-          `${args.label} failed transiently; using fallback model`,
+          `${args.label} failed${transient ? " transiently" : ""}; using fallback model`,
         );
         if (args.retryDelayMs > 0) {
           await delay(args.retryDelayMs);

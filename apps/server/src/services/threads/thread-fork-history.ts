@@ -17,10 +17,20 @@ import {
 import { resolveTurnProviderCheckpointId } from "./thread-edit-message.js";
 import type { ThreadForkDescriptor } from "./thread-startup-store.js";
 
+export type ThreadForkHistory =
+  | { kind: "thread"; sourceThreadId: string; endSequence: number }
+  | { kind: "rows"; rows: StoredEventRow[] };
+
 export interface ThreadForkPoint {
   descriptor: ThreadForkDescriptor;
-  historyEndSequence: number | null;
-  sourceThreadId: string;
+  history: ThreadForkHistory | null;
+}
+
+function threadHistory(
+  sourceThreadId: string,
+  endSequence: number,
+): ThreadForkHistory {
+  return { kind: "thread", sourceThreadId, endSequence };
 }
 
 function forkPointUnavailable(message: string): never {
@@ -115,8 +125,7 @@ function resolveAnchoredForkPoint(
       descriptor: {
         sourceProviderThreadId: completion.event.providerThreadId,
       },
-      historyEndSequence: completion.sequence,
-      sourceThreadId: args.sourceThread.id,
+      history: threadHistory(args.sourceThread.id, completion.sequence),
     };
   }
   const descriptor = resolveCheckpointForkDescriptor({
@@ -131,8 +140,7 @@ function resolveAnchoredForkPoint(
   }
   return {
     descriptor,
-    historyEndSequence: completion.sequence,
-    sourceThreadId: args.sourceThread.id,
+    history: threadHistory(args.sourceThread.id, completion.sequence),
   };
 }
 
@@ -158,8 +166,10 @@ export function resolveThreadForkPoint(
   });
   const tip: ThreadForkPoint = {
     descriptor: { sourceProviderThreadId },
-    historyEndSequence: lastCompletedTurn?.completedSequence ?? null,
-    sourceThreadId: args.sourceThread.id,
+    history:
+      lastCompletedTurn === null
+        ? null
+        : threadHistory(args.sourceThread.id, lastCompletedTurn.completedSequence),
   };
   if (
     lastCompletedTurn === null ||
@@ -214,15 +224,9 @@ function parseAcceptedClientRequestId(row: StoredEventRow): string {
   return event.clientRequestId;
 }
 
-function selectInheritedForkEventRows(
-  deps: Pick<AppDeps, "db">,
-  args: { historyEndSequence: number; sourceThreadId: string },
+export function selectInheritedHistoryRows(
+  rows: StoredEventRow[],
 ): StoredEventRow[] {
-  const rows = listStoredEventRows(deps.db, {
-    beforeSequence: args.historyEndSequence + 1,
-    threadId: args.sourceThreadId,
-    types: INHERITED_EVENT_TYPES,
-  });
   const completedTurnIds = new Set<string>();
   const acceptedClientRequestIds = new Set<string>();
   for (const row of rows) {
@@ -245,18 +249,33 @@ function selectInheritedForkEventRows(
   });
 }
 
+function listForkHistoryRows(
+  deps: Pick<AppDeps, "db">,
+  history: ThreadForkHistory,
+): StoredEventRow[] {
+  if (history.kind === "rows") {
+    return history.rows;
+  }
+  return selectInheritedHistoryRows(
+    listStoredEventRows(deps.db, {
+      beforeSequence: history.endSequence + 1,
+      threadId: history.sourceThreadId,
+      types: INHERITED_EVENT_TYPES,
+    }),
+  );
+}
+
 export function copyForkSourceHistory(
   deps: Pick<AppDeps, "db" | "hub">,
   args: {
     fork: Pick<Thread, "environmentId" | "id">;
-    historyEndSequence: number;
-    sourceThreadId: string;
+    history: ThreadForkHistory;
   },
 ): void {
-  const rows = selectInheritedForkEventRows(deps, {
-    historyEndSequence: args.historyEndSequence,
-    sourceThreadId: args.sourceThreadId,
-  }).map((row) => ({ ...row, providerThreadId: null }));
+  const rows = listForkHistoryRows(deps, args.history).map((row) => ({
+    ...row,
+    providerThreadId: null,
+  }));
   if (rows.length === 0) {
     return;
   }

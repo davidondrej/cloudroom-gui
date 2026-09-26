@@ -12,7 +12,7 @@ import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import * as fixtures from "../helpers/command-output-fixtures.js";
 import { registerThreadCommands } from "../../commands/thread/index.js";
 
-describe("room thread show command output", () => {
+describe("cloudroom thread show command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
@@ -50,7 +50,7 @@ describe("room thread show command output", () => {
     };
   }
 
-  it("room thread show prints archived timestamp for archived threads", async () => {
+  it("cloudroom thread show prints archived timestamp for archived threads", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-archived-1",
       projectId: "proj-1",
@@ -80,7 +80,7 @@ describe("room thread show command output", () => {
     expect(lines.some((line) => line.includes("Archived:"))).toBe(true);
   });
 
-  it("room thread show prints pinned timestamp for pinned threads", async () => {
+  it("cloudroom thread show prints pinned timestamp for pinned threads", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-pinned-1",
       projectId: "proj-1",
@@ -103,7 +103,7 @@ describe("room thread show command output", () => {
     expect(lines.some((line) => line.includes("Pinned:"))).toBe(true);
   });
 
-  it("room thread show --self resolves from ROOM_THREAD_ID", async () => {
+  it("cloudroom thread show --self resolves from ROOM_THREAD_ID", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-show-self");
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-show-self",
@@ -128,7 +128,7 @@ describe("room thread show command output", () => {
     expect(collectLogLines(vi.mocked(console.error))).toEqual([]);
   });
 
-  it("room thread show --work-status prints non-git environment message", async () => {
+  it("cloudroom thread show --work-status prints non-git environment message", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-show-work-status",
       projectId: "proj-1",
@@ -177,7 +177,7 @@ describe("room thread show command output", () => {
     );
   });
 
-  it("room thread show rejects combining a thread id with --self", async () => {
+  it("cloudroom thread show rejects combining a thread id with --self", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-show-self");
 
     await expect(
@@ -190,7 +190,7 @@ describe("room thread show command output", () => {
     expect(createClientMock).not.toHaveBeenCalled();
   });
 
-  it("room thread show --git-diff uses the environment base branch before the repository default", async () => {
+  it("cloudroom thread show --git-diff uses the environment base branch before the repository default", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-show-diff-base",
       projectId: "proj-1",
@@ -248,7 +248,7 @@ describe("room thread show command output", () => {
     });
   });
 
-  it("room thread show --git-diff renders an available uncommitted diff response", async () => {
+  it("cloudroom thread show --git-diff renders an available uncommitted diff response", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-show-uncommitted-diff",
       projectId: "proj-1",
@@ -313,7 +313,7 @@ describe("room thread show command output", () => {
     expect(output).toContain("diff --git a/smoke.txt b/smoke.txt");
   });
 
-  it("room thread show prints pull request details for the thread environment", async () => {
+  it("cloudroom thread show prints pull request details for the thread environment", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-show-pr",
       projectId: "proj-1",
@@ -371,7 +371,7 @@ describe("room thread show command output", () => {
     expect(output).toContain("Merge:        mergeable");
   });
 
-  it("room thread show reports a failed pull request lookup distinctly from none", async () => {
+  it("cloudroom thread show reports a failed pull request lookup distinctly from none", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-show-pr-down",
       projectId: "proj-1",
@@ -410,7 +410,7 @@ describe("room thread show command output", () => {
     expect(output).not.toContain("Pull request: none");
   });
 
-  it("room thread show --json includes pull request details", async () => {
+  it("cloudroom thread show --json includes pull request details", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-json-show-pr",
       projectId: "proj-1",
@@ -462,7 +462,7 @@ describe("room thread show command output", () => {
     });
   });
 
-  it("room thread show --json prints the thread in status payload format", async () => {
+  it("cloudroom thread show --json prints the thread in status payload format", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-json-show",
       projectId: "proj-1",

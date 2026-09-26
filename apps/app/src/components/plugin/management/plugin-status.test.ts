@@ -173,7 +173,7 @@ describe("pluginRuntimeStatusPresentation", () => {
         ),
       ),
     ).toMatchObject({
-      recovery: "Restart Room. If the files are still missing, reinstall Room.",
+      recovery: "Restart Cloudroom. If the files are still missing, reinstall Cloudroom.",
     });
     expect(
       pluginRuntimeStatusPresentation(plugin({}, { status: "missing" })),
@@ -191,7 +191,7 @@ describe("pluginRuntimeStatusPresentation", () => {
       label: "Needs configuration",
       condition: "Required settings are incomplete.",
       recovery:
-        "Complete the Configuration section; Room reloads the plugin after you save.",
+        "Complete the Configuration section; Cloudroom reloads the plugin after you save.",
     });
   });
 });

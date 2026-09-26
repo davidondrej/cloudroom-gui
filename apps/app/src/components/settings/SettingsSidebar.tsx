@@ -32,7 +32,6 @@ const VISIBLE_PLUGINS = new Set([
   "bb-guide",
   "provider-claude-code",
   "provider-codex",
-  "concurrency-limit",
   "custom-instructions",
   "keep-awake",
   "provider-retry",

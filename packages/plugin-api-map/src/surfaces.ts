@@ -39,21 +39,21 @@ export function fixtureResponsiveStrategy(
 export const SURFACE_GROUPS: SurfaceGroup[] = [
   {
     id: "app-shell",
-    title: "The Room app window",
+    title: "The Cloudroom app window",
     fixtureKind: "spatial",
     blurb:
-      "The main Room window, containing the sidebar, the conversation, and the side panel. A plugin can add rows, controls, panel tabs, and message content to the numbered regions.",
+      "The main Cloudroom window, containing the sidebar, the conversation, and the side panel. A plugin can add rows, controls, panel tabs, and message content to the numbered regions.",
     surfaces: [
       {
         id: "sidebar-navigation",
         title: "Sidebar navigation",
         summary:
-          "Replaces Room's navigation controls above the thread list with a component your plugin renders. With this, a plugin can:",
+          "Replaces Cloudroom's navigation controls above the thread list with a component your plugin renders. With this, a plugin can:",
         bullets: [
           "Arrange New thread, Search, Plugins, Skills, and plugin destinations",
-          "Activate each destination through Room, including split placement for supported items",
-          "Render Room's original controls when the plugin wants to delegate",
-          "Leave the thread list, footer, drawer, and resize handle under Room's control",
+          "Activate each destination through Cloudroom, including split placement for supported items",
+          "Render Cloudroom's original controls when the plugin wants to delegate",
+          "Leave the thread list, footer, drawer, and resize handle under Cloudroom's control",
         ],
         apiSymbols: [
           "ExperimentalSidebarNavigationRegistration",
@@ -70,11 +70,11 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         id: "nav-panel",
         title: "Full-page panels",
         summary:
-          "Adds a row to Room's sidebar that opens a page your plugin renders where threads normally appear. With this, a plugin can:",
+          "Adds a row to Cloudroom's sidebar that opens a page your plugin renders where threads normally appear. With this, a plugin can:",
         bullets: [
           "Render any React you write across that whole area",
-          "Get its own URL, so the page can be linked to and Room's back and forward buttons work",
-          "Register tabs in the panel to the right of its page, beside Room's own Browser and Terminal tabs",
+          "Get its own URL, so the page can be linked to and Cloudroom's back and forward buttons work",
+          "Register tabs in the panel to the right of its page, beside Cloudroom's own Browser and Terminal tabs",
         ],
         apiSymbols: ["PluginNavPanelRegistration"],
         firstParty: ["Automations", "Docs", "GitHub", "Tasks"],
@@ -83,13 +83,13 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         id: "thread-row-status",
         title: "Thread row status",
         summary:
-          "A small status Room can draw on a thread's row in the sidebar. With this, a plugin can:",
+          "A small status Cloudroom can draw on a thread's row in the sidebar. With this, a plugin can:",
         bullets: [
           "Give the status an icon and a label",
-          "Mark a thread as running while it works on it, and Room shimmers the icon",
-          "Mark it succeeded or failed when the work ends, and Room settles the icon",
+          "Mark a thread as running while it works on it, and Cloudroom shimmers the icon",
+          "Mark it succeeded or failed when the work ends, and Cloudroom settles the icon",
           "Set it only from an [app-wide script](content-scripts). A status needs an owner that outlives any single screen, and those scripts are the only plugin code that does",
-          "Rely on Room to clear it when the script unmounts",
+          "Rely on Cloudroom to clear it when the script unmounts",
         ],
         apiSymbols: [
           "PluginComposerThreadRowStatus",
@@ -101,11 +101,11 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         id: "thread-list",
         title: "The thread list",
         summary:
-          "Replaces the list of threads in Room's sidebar with a component your plugin renders. With this, a plugin can:",
+          "Replaces the list of threads in Cloudroom's sidebar with a component your plugin renders. With this, a plugin can:",
         bullets: [
           "Render every row, and decide the grouping, the ordering, and what each row shows",
-          "Read the same live thread data and run statuses Room's own list reads",
-          "Replace only the list. The New thread button, the search action, the plugin rows, and the sidebar footer stay Room's",
+          "Read the same live thread data and run statuses Cloudroom's own list reads",
+          "Replace only the list. The New thread button, the search action, the plugin rows, and the sidebar footer stay Cloudroom's",
         ],
         apiSymbols: [
           "PluginThreadListRegistration",
@@ -117,10 +117,10 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         id: "sidebar-footer",
         title: "Sidebar footer items",
         summary:
-          "Adds a host-rendered icon item to the bottom of Room's sidebar. With this, a plugin can:",
+          "Adds a host-rendered icon item to the bottom of Cloudroom's sidebar. With this, a plugin can:",
         bullets: [
           "Run an action, or reveal plugin-rendered content above the footer row",
-          "Let Room coordinate one open disclosure across every enabled plugin",
+          "Let Cloudroom coordinate one open disclosure across every enabled plugin",
           "Respect user ordering and visibility in Appearance; hidden actions and disclosures remain usable from More",
           "Keep navigation, tabs, data, and controls inside the plugin's disclosure component",
         ],
@@ -146,7 +146,7 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         bullets: [
           "Render a React component rather than a plain button, so it can show live state",
           "Receive the id of the thread currently on screen",
-          "Render in the same row as Room's own header controls",
+          "Render in the same row as Cloudroom's own header controls",
         ],
         apiSymbols: ["PluginThreadHeaderActionRegistration"],
         experimental: true,
@@ -171,11 +171,11 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         id: "timeline-renderers",
         title: "Timeline entry content",
         summary:
-          "Renders the expanded content of plugin-owned timeline entries while Room keeps each entry's header and controls. With this, a plugin can:",
+          "Renders the expanded content of plugin-owned timeline entries while Cloudroom keeps each entry's header and controls. With this, a plugin can:",
         bullets: [
           "Draw the expanded content beneath timeline entries created by the plugin's own provider",
-          "Receive the entry data and plugin payload, plus Room's default content as `Original`",
-          "Fall back to Room's default content automatically when the plugin is unavailable or crashes",
+          "Receive the entry data and plugin payload, plus Cloudroom's default content as `Original`",
+          "Fall back to Cloudroom's default content automatically when the plugin is unavailable or crashes",
         ],
         apiSymbols: [
           "PluginTimelineRendererRegistration",
@@ -226,11 +226,11 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         id: "code-renderers",
         title: "Code & diff renderers",
         summary:
-          "Replaces Room's source-code or diff renderer everywhere that kind of content appears. With this, a plugin can:",
+          "Replaces Cloudroom's source-code or diff renderer everywhere that kind of content appears. With this, a plugin can:",
         bullets: [
           "Register the source-code and diff replacements independently",
-          "Apply each replacement across Room's file previews, timeline and environment diffs, and plugin pages",
-          "Hand any individual render back to Room's built-in renderer, and fall back to it automatically if the plugin is unavailable or crashes",
+          "Apply each replacement across Cloudroom's file previews, timeline and environment diffs, and plugin pages",
+          "Hand any individual render back to Cloudroom's built-in renderer, and fall back to it automatically if the plugin is unavailable or crashes",
         ],
         apiSymbols: [
           "PluginSourceCodeRendererRegistration",
@@ -248,6 +248,7 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         bullets: [
           "Render the tab's contents and receive the id of the thread it was opened from",
           "Open the tab from a [message action](message-actions), from the + button in the side panel, or from its own code",
+          "Hide its + button entry with experimental_requiresFork when the thread's provider cannot fork",
         ],
         apiSymbols: ["PluginThreadPanelActionRegistration"],
         firstParty: ["Docs", "GitHub", "Side chat", "Tasks", "Workflows"],
@@ -256,10 +257,10 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         id: "file-opener",
         title: "File viewers & editors",
         summary:
-          "Registers a viewer for the file types you name, so Room opens those files there instead of its built-in preview. With this, a plugin can:",
+          "Registers a viewer for the file types you name, so Cloudroom opens those files there instead of its built-in preview. With this, a plugin can:",
         bullets: [
           "Declare the file extensions it handles, for example `.csv` or `.excalidraw`",
-          "Render its own viewer or editor whenever a file of that type is opened in Room",
+          "Render its own viewer or editor whenever a file of that type is opened in Cloudroom",
           "Receive the file's path, then read it however the plugin already reads files",
           "Reveal linked lines with experimental_lineRange, including repeated targets in an already open editor",
         ],
@@ -270,9 +271,9 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         id: "app-overlay",
         title: "App-wide overlays",
         summary:
-          "Mounts floating plugin UI across the Room app, outside route-owned layout regions. With this, a plugin can:",
+          "Mounts floating plugin UI across the Cloudroom app, outside route-owned layout regions. With this, a plugin can:",
         bullets: [
-          "Render a persistent widget once per Room window while the plugin is enabled",
+          "Render a persistent widget once per Cloudroom window while the plugin is enabled",
           "Use app-level SDK hooks and preserve their React context through portals",
           "Own the widget's chrome, position, visibility, and responsive behavior",
           "Coexist with other overlays while crashes remain isolated to the overlay that failed",
@@ -287,13 +288,13 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         id: "content-scripts",
         title: "App-wide scripts",
         summary:
-          "Runs your code inside the Room window itself, without rendering a UI of its own. With this, a plugin can:",
+          "Runs your code inside the Cloudroom window itself, without rendering a UI of its own. With this, a plugin can:",
         bullets: [
-          "Mount once per Room window and unmount when the window reloads",
+          "Mount once per Cloudroom window and unmount when the window reloads",
           "Add behavior that is not tied to one screen, such as a keyboard shortcut",
           "Set a [thread row status](thread-row-status) on any thread, for as long as the script is mounted",
-          "Add plugin-owned elements to app pages without taking ownership of Room's built-in layout",
-          "Return a cleanup function. Room calls it once on unmount, and clears any row statuses the script set",
+          "Add plugin-owned elements to app pages without taking ownership of Cloudroom's built-in layout",
+          "Return a cleanup function. Cloudroom calls it once on unmount, and clears any row statuses the script set",
         ],
         apiSymbols: [
           "PluginContentScriptRegistration",
@@ -307,15 +308,15 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
     title: "Command palette",
     fixtureKind: "spatial",
     blurb:
-      "Room's searchable command menu. A plugin can add actions that match, rank, and run alongside Room's own commands.",
+      "Cloudroom's searchable command menu. A plugin can add actions that match, rank, and run alongside Cloudroom's own commands.",
     surfaces: [
       {
         id: "command-palette-actions",
         title: "Command palette actions",
         summary:
-          "Registers a command with app.commands.register and adds a row under Plugins in Room's quick command palette. With this, a plugin can:",
+          "Registers a command with app.commands.register and adds a row under Plugins in Cloudroom's quick command palette. With this, a plugin can:",
         bullets: [
-          "Supply the row's label and run behavior; Room owns matching, ordering, and recency",
+          "Supply the row's label and run behavior; Cloudroom owns matching, ordering, and recency",
           "Offer a defaultShortcut with key and optional mod, meta, control, alt, and shift modifiers; mod means Command on macOS and Control elsewhere",
           "Let users bind or rebind every command in Keyboard Settings; conflicts offer Replace binding or Cancel, and conflicting plugin defaults stay unbound",
           "Keep saved bindings across reloads and disable/re-enable using plugin:<plugin-id>/<command-id>; palette and keyboard invocation share availability and error handling",
@@ -357,7 +358,7 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         id: "mention-provider",
         title: "Mentions",
         summary:
-          "Adds results to the menu that opens when someone types a trigger character in the prompt box. On a trigger Room does not use itself, your plugin opens that menu and owns it. With this, a plugin can:",
+          "Adds results to the menu that opens when someone types a trigger character in the prompt box. On a trigger Cloudroom does not use itself, your plugin opens that menu and owns it. With this, a plugin can:",
         bullets: [
           "Answer each keystroke after the trigger with a list of items to show",
           "Claim one or more of the trigger characters @, #, $, !, and ~. Omit them to answer the default @",
@@ -402,7 +403,7 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         summary:
           "Adds rows to the menu that opens from the + button beside the prompt box. With this, a plugin can:",
         bullets: [
-          "Supply each row's icon, label, and disabled state; Room renders the row itself",
+          "Supply each row's icon, label, and disabled state; Cloudroom renders the row itself",
           "Run a callback when someone picks the row",
           "Read and rewrite the draft prompt from that callback",
           "Send the draft at a time the person picks, through the prompt box's own send — so a scheduled message keeps its attachments, its @-mentions, and on the new-thread screen the agent and environment chosen on screen",
@@ -418,9 +419,9 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         id: "provider-picker",
         title: "Agent providers",
         summary:
-          "Adds an agent to Room's model picker and runs the threads started with it. With this, a plugin can:",
+          "Adds an agent to Cloudroom's model picker and runs the threads started with it. With this, a plugin can:",
         bullets: [
-          "Appear in the model picker beside Room's built-in providers",
+          "Appear in the model picker beside Cloudroom's built-in providers",
           "Declare what the provider supports, then serve its model list at runtime",
           "Opt into model-discovery recovery with experimental_modelDiscoveryRestart; restarting discovery never stops conversation threads",
           "Supply a small icon that appears next to its name; React icon overrides require providerKind and providerId",
@@ -457,7 +458,7 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
           "Read and rewrite the draft prompt, for example rephrasing it or inserting a template",
           "Insert an @-mention into the draft so its provider can resolve fresh context when the message is sent",
           "Lock the input while it works, and tint the whole draft while it does",
-          "Render in the same row as Room's own prompt-box buttons. If you have more than 3 plugins enabled, Room keeps the 3 most-used plugins inline and moves the rest into an overflow menu",
+          "Render in the same row as Cloudroom's own prompt-box buttons. If you have more than 3 plugins enabled, Cloudroom keeps the 3 most-used plugins inline and moves the rest into an overflow menu",
         ],
         apiSymbols: ["PluginComposerApi"],
       },
@@ -468,17 +469,17 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
     title: "Home page",
     fixtureKind: "spatial",
     blurb:
-      "The screen Room opens on, holding the new-thread composer and a side panel. A plugin can add a section below the composer, and an action in that panel that opens its own tab.",
+      "The screen Cloudroom opens on, holding the new-thread composer and a side panel. A plugin can add a section below the composer, and an action in that panel that opens its own tab.",
     surfaces: [
       {
         id: "homepage-section",
         title: "Home-screen sections",
         summary:
-          "Adds a full-width section to the page Room opens on, below the prompt box. With this, a plugin can:",
+          "Adds a full-width section to the page Cloudroom opens on, below the prompt box. With this, a plugin can:",
         bullets: [
           "Render its own component across the width of the content area",
           "Render before any thread exists, which suits shortcuts and pinned work",
-          "Render after Room's own content, in the order plugins registered",
+          "Render after Cloudroom's own content, in the order plugins registered",
         ],
         apiSymbols: ["PluginHomepageSectionRegistration"],
       },
@@ -502,19 +503,19 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
     title: "Plugin settings page",
     fixtureKind: "spatial",
     blurb:
-      "The settings page Room creates for every installed plugin. A plugin can declare fields for Room to render and add its own section below them.",
+      "The settings page Cloudroom creates for every installed plugin. A plugin can declare fields for Cloudroom to render and add its own section below them.",
     surfaces: [
       {
         id: "declarative-settings",
         title: "Settings fields",
         summary:
-          "Declares the settings your plugin needs as plain data; Room renders the form for them on the plugin's settings page and stores the values. With this, a plugin can:",
+          "Declares the settings your plugin needs as plain data; Cloudroom renders the form for them on the plugin's settings page and stores the values. With this, a plugin can:",
         bullets: [
           "Declare each field's type (text, number, toggle, choice, or project) with a label and an optional default",
           "Get the form, its validation, and autosaving without writing any UI",
           "Validate each proposed value with a synchronous, non-transforming Standard Schema through `experimental_schema`; Zod schemas qualify",
           "Render multi-line text with `experimental_multiline`",
-          "Mark a text field secret: Room stores it in a protected file on the server and never sends it to the browser",
+          "Mark a text field secret: Cloudroom stores it in a protected file on the server and never sends it to the browser",
           "Read values from server code, update them with `experimental_set`, or read non-secret values from plugin UI with `useSettings()`",
         ],
         apiSymbols: [
@@ -534,11 +535,11 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         id: "settings-section",
         title: "Custom settings section",
         summary:
-          "Renders your own React component on the plugin's settings page, below the [fields Room generated](declarative-settings). Use it for anything that is not a value in a form. With this, a plugin can:",
+          "Renders your own React component on the plugin's settings page, below the [fields Cloudroom generated](declarative-settings). Use it for anything that is not a value in a form. With this, a plugin can:",
         bullets: [
           "Render whatever UI it needs, such as a connect-account button, a test-connection result, or a preview",
           "Run in the browser, so it stores nothing itself. It calls the plugin's own backend to do that",
-          "Supply a heading and a one-line description for Room to render above it",
+          "Supply a heading and a one-line description for Cloudroom to render above it",
         ],
         apiSymbols: ["PluginSettingsSectionRegistration"],
         firstParty: ["Account Pooler", "Keep Awake", "Memory", "Remote access"],
@@ -550,13 +551,13 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
     title: "Plugin page",
     fixtureKind: "spatial",
     blurb:
-      "The page Room shows for an installed plugin under Plugins: what it is, what it registers, and whether it is healthy. A plugin can report that it needs configuring, and Room says so at the top of this page.",
+      "The page Cloudroom shows for an installed plugin under Plugins: what it is, what it registers, and whether it is healthy. A plugin can report that it needs configuring, and Cloudroom says so at the top of this page.",
     surfaces: [
       {
         id: "plugin-status",
         title: "Configuration status",
         summary:
-          "Reports that the plugin cannot run until someone configures it, so Room can say so instead of the plugin failing silently. With this, a plugin can:",
+          "Reports that the plugin cannot run until someone configures it, so Cloudroom can say so instead of the plugin failing silently. With this, a plugin can:",
         bullets: [
           "Set a needs-configuration state with a message naming what is missing",
           "Show a warning banner with that message on the plugin's page",
@@ -608,13 +609,13 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
     surfaces: [
       {
         id: "cli",
-        tagline: "Your own `room <name>` command",
-        title: "Room CLI commands",
+        tagline: "Your own `cloudroom <name>` command",
+        title: "Cloudroom CLI commands",
         summary:
-          "Registers a top-level `room <name>` command, available in the terminal and to agents. With this, a plugin can:",
+          "Registers a top-level `cloudroom <name>` command, available in the terminal and to agents. With this, a plugin can:",
         bullets: [
           "Be invoked the same way by a person at a terminal and by an agent mid-task",
-          "Receive the thread and project it was invoked from, when Room knows them",
+          "Receive the thread and project it was invoked from, when Cloudroom knows them",
           "Make the plugin usable from scripts and automations, not only from the UI",
         ],
         apiSymbols: ["PluginCli", "PluginCliResult"],
@@ -637,9 +638,9 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         tagline: "Native tools, skills, and instructions in every session",
         title: "Agent tools & skills",
         summary:
-          "Adds tools, skills, and instructions to the agent sessions Room runs. With this, a plugin can:",
+          "Adds tools, skills, and instructions to the agent sessions Cloudroom runs. With this, a plugin can:",
         bullets: [
-          "Register tools an agent calls the same way it calls Room's built-in tools",
+          "Register tools an agent calls the same way it calls Cloudroom's built-in tools",
           "Decide per thread which of its tools and skills are available",
           "Append instructions to a session's system prompt as that session starts",
         ],
@@ -657,9 +658,9 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         tagline: "Supervised services and cron schedules",
         title: "Background work",
         summary:
-          "Runs code on the Room server when no window is open. With this, a plugin can:",
+          "Runs code on the Cloudroom server when no window is open. With this, a plugin can:",
         bullets: [
-          "Register long-running services that Room starts, supervises, and restarts after a failure",
+          "Register long-running services that Cloudroom starts, supervises, and restarts after a failure",
           "Register jobs that run on a cron schedule",
           "Be told to shut down cleanly before it reloads or is disabled",
         ],
@@ -686,7 +687,7 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
           "Call its server from its UI over RPC, with arguments and results checked against a schema",
           "Publish RPC methods with experimental_discoverable and registration/method experimental_description; other plugins discover implementations and copy their published JSON Schemas using bb plugin rpc inspect",
           "Serve exact-path HTTP and WebSocket routes other systems can call, webhooks included",
-          "Push messages to every open Room window, so the UI does not have to poll",
+          "Push messages to every open Cloudroom window, so the UI does not have to poll",
         ],
         apiSymbols: [
           "PluginRpc",
@@ -760,7 +761,7 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
           "PluginDispatchEnvironmentIntent",
           "MessageDispatchHookDecision",
         ],
-        firstParty: ["Concurrency limit", "Drafts"],
+        firstParty: ["Drafts"],
         experimental: true,
       },
       {
@@ -774,17 +775,17 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
           "Use a host glyph, plugin-relative asset, declared icon, or React provider icon slot targeted by required providerKind and providerId",
           "Declare the project facts it consumes in one place — requires.projectCheckout, requires.gitCheckout, requires.gitRemote, requires.projectless — which structurally decides where the picker offers it",
           "Answer availability for a project and machine with available, setup-required, or unavailable; core probes connected machines in the background so pickers hide unsupported ones, caches the answer, and checks it afresh for the selected machine at thread creation",
-          "Declare what it needs from the request as a zod inputs schema; Room parses the request with it before the thread exists, publishes it as JSON Schema for the CLI, and hands create the parsed value as inputs",
+          "Declare what it needs from the request as a zod inputs schema; Cloudroom parses the request with it before the thread exists, publishes it as JSON Schema for the CLI, and hands create the parsed value as inputs",
           "Validate a resolved selection once before thread creation; host-dependent preflight requires connectivity, and create checks conditions that can change afterward",
           "Read the facts as typed values on the create context: host is always non-null, while projectCheckout and gitRemote are non-null exactly when required",
           "Read projectCheckout.experimental_ownsPath to distinguish core clones from user-maintained attachments; core runs environment hooks for owned paths",
           "Render its own control for those inputs beside the picked provider with app.slots.experimental_environmentProviderInputs, reporting either ready inputs or a blocked reason",
           "Use experimental_BranchPicker for a standard branch choice, or compose experimental_useBranches with experimental_useCheckoutState when it needs checkout-aware branch selection",
           "Run one idempotent long create call that returns a created directory or failure; a failed create is terminal and an explicit retry starts a new attempt on the same environment; provider policy exposes only retirement grace and path-key strategy",
-          "Let Room run the repo setup hook after an owned-path create and teardown before removal; attached paths skip both hooks; unknown hook outcomes after daemon restart block automatic cleanup",
+          "Let Cloudroom run the repo setup hook after an owned-path create and teardown before removal; attached paths skip both hooks; unknown hook outcomes after daemon restart block automatic cleanup",
           "Use core's pathKey for stable resource identity; core records it as the environment instance key",
           "Reserve a shared checkout before mutation with create.experimental_claimPath; core holds the host/path claim through attachment or cleanup",
-          "Name a branch the way Room would, from the suggestedBranchName core hands every create, and stream progress with report.step and report.log",
+          "Name a branch the way Cloudroom would, from the suggestedBranchName core hands every create, and stream progress with report.step and report.log",
           "Honor create and remove abort signals; core aborts create before asking remove to clean everything under the same path key",
           "Work on the existing enrolled machine carried by the selection, returning the path it produced",
           "Environment input controls receive target: { kind: 'existing-host', hostId } or { kind: 'new-host' }; compositions reuse the underlying control before provisioning, and backend create receives the real host",
@@ -919,12 +920,12 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         tagline: "Run code on enrolled machines",
         title: "Host workers",
         summary:
-          "Runs the plugin's code on an enrolled machine, not only on the Room server. With this, a plugin can:",
+          "Runs the plugin's code on an enrolled machine, not only on the Cloudroom server. With this, a plugin can:",
         bullets: [
-          "Ship a Node entry point Room starts on demand on the machine it calls",
+          "Ship a Node entry point Cloudroom starts on demand on the machine it calls",
           "Call that worker from its server code over typed RPC",
           "Do work that has to happen on the machine itself, such as watching files or holding a wake lock",
-          "Declare desired loopback ports once and let Room deliver retained declarations when an enrolled machine reconnects",
+          "Declare desired loopback ports once and let Cloudroom deliver retained declarations when an enrolled machine reconnects",
           "Kill whatever is still running under a directory it is about to delete, SIGTERM then SIGKILL, so a torn-down workspace leaves nothing behind",
           "Spawn host-local commands with a sanitized inherited environment",
         ],
@@ -949,7 +950,7 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         tagline: "Namespaced KV plus your own SQLite",
         title: "Storage",
         summary:
-          "Stores the plugin's data on the Room server. With this, a plugin can:",
+          "Stores the plugin's data on the Cloudroom server. With this, a plugin can:",
         bullets: [
           "Get a key-value store for small values such as flags and cursors",
           "Store internal credentials in plugin KV without exposing settings fields",
@@ -974,14 +975,14 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
       {
         id: "bb-sdk",
         tagline: "Create threads and projects from plugin code",
-        title: "The Room SDK",
+        title: "The Cloudroom SDK",
         summary:
-          "Calls Room's own API from the plugin's server code. With this, a plugin can:",
+          "Calls Cloudroom's own API from the plugin's server code. With this, a plugin can:",
         bullets: [
           "Create threads, send messages to them, and manage projects",
           "List machines and suspend, resume, or remove provider-managed machines",
           "Read recorded context usage with sdk.threads.context({ threadId }); usage is null when unavailable, and its snapshot is present only when the latest measurement includes a breakdown",
-          "Reach the same operations the [Room CLI](cli) and the Room UI use",
+          "Reach the same operations the [Cloudroom CLI](cli) and the Cloudroom UI use",
           "Have the threads it creates attributed back to the plugin",
           "Read the server's loopback URL, public app URL, and data directory when it needs server facts",
         ],
@@ -1022,7 +1023,7 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
       {
         id: "desktop-browsers",
         title: "Desktop browser control",
-        tagline: "Use your automation tool on Room-owned tabs",
+        tagline: "Use your automation tool on Cloudroom-owned tabs",
         summary:
           "Controls a selected desktop window through bb.sdk.experimental_desktopBrowsers. With this, a plugin can:",
         bullets: [
@@ -1031,7 +1032,7 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
           "Give a worker on that host a private, scoped CDP WebSocket connection for DevBrowser or agent-browser",
           "Capture or reveal a tab and release control while preserving the tab and its login",
           "Observe changed tab and control state with a disposable two-second polling subscription; report disconnect errors",
-          "List browsers installed on the desktop host and copy a profile's signed-in cookies into the personal Room browser or an automation profile",
+          "List browsers installed on the desktop host and copy a profile's signed-in cookies into the personal Cloudroom browser or an automation profile",
         ],
         apiSymbols: [
           "ExperimentalDesktopBrowsersArea",
@@ -1049,14 +1050,14 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
       },
       {
         id: "ai-services",
-        tagline: "Serve Room's helper model from your own machine",
+        tagline: "Serve Cloudroom's helper model from your own machine",
         title: "AI services",
         summary:
-          "Lets a plugin answer Room's own helper-model calls — the short model calls behind thread titles and commit messages, and the microphone button's transcription. With this, a plugin can:",
+          "Lets a plugin answer Cloudroom's own helper-model calls — the short model calls behind thread titles and commit messages, and the microphone button's transcription. With this, a plugin can:",
         bullets: [
-          "Serve those calls from an enrolled machine, so Room's helper model can be one the plugin holds the credentials for",
+          "Serve those calls from an enrolled machine, so Cloudroom's helper model can be one the plugin holds the credentials for",
           "Serve voice transcription the same way, for the microphone button in the prompt box",
-          "Appear as a choice in the AI-service settings, alongside the models Room reaches itself",
+          "Appear as a choice in the AI-service settings, alongside the models Cloudroom reaches itself",
         ],
         apiSymbols: ["PluginAiServices", "PluginAiServiceDeclaration"],
         firstParty: ["Codex provider"],
@@ -1064,21 +1065,21 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
       },
       {
         id: "host-components",
-        tagline: "Embed Room's chat and prompt box",
+        tagline: "Embed Cloudroom's chat and prompt box",
         title: "Host components",
         summary:
-          "Renders Room's conversation, prompt box, and shared app icons inside plugin pages. With this, a plugin can:",
+          "Renders Cloudroom's conversation, prompt box, and shared app icons inside plugin pages. With this, a plugin can:",
         bullets: [
           "Embed the thread view and the new-thread prompt box as components",
-          "Render message text with the same Markdown renderer Room uses",
+          "Render message text with the same Markdown renderer Cloudroom uses",
           "Resolve document links and images beside a workspace or thread-storage file with Markdown.experimental_document",
-          "Inherit Room's styling, so embedded UI matches the rest of the app",
+          "Inherit Cloudroom's styling, so embedded UI matches the rest of the app",
           "Register inline React artwork with app.experimental_icons.register({ name, component }); namespacing is recommended, but any plugin can use any name",
           "Add names or override built-in app icons; conflicts between plugins use the first plugin id in lexical order and warn, while duplicate names within one plugin reject setup",
           "Render experimental_ProviderIcon with required providerKind (agent, machine, environment), provider={provider}, and optional fallback (Code by default). Pass an existing provider record: it reads id, logoUrl, icon, and strings.iconTint, resolving the matching kind/id slot override, then legacy unscoped overrides, then declared artwork. It fetches no metadata. Marks are decorative by default; pass aria-label for a meaningful standalone image",
           "Provider icons update on plugin load/reload/unload; throwing or recursive overrides fall back to supplied artwork. Use the same component for agent, machine, and environment providers",
           "Render experimental_Icon with a name and optional fallback; missing names try the fallback, then Zap. Registered artwork receives className and should use currentColor",
-          "Return nothing from icon registration: Room replaces icons on plugin reload and restores previous definitions on unload. Manifest branding and SVG asset declarations remain separate",
+          "Return nothing from icon registration: Cloudroom replaces icons on plugin reload and restores previous definitions on unload. Manifest branding and SVG asset declarations remain separate",
           "Load the same registrations in web, desktop, and mobile's web app; manage their plugin through bb plugin build, install, reload, and remove",
         ],
         apiSymbols: [
@@ -1098,12 +1099,12 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
       },
       {
         id: "testing",
-        tagline: "Unit-test every surface without a running Room",
+        tagline: "Unit-test every surface without a running Cloudroom",
         title: "Testing harnesses",
         summary:
-          "Tests the plugin without a running Room. With this, a plugin can:",
+          "Tests the plugin without a running Cloudroom. With this, a plugin can:",
         bullets: [
-          "Run its server code against an in-process fake of the Room server",
+          "Run its server code against an in-process fake of the Cloudroom server",
           "Render its UI slots under vitest and jsdom",
           "Drive its host worker with no host daemon running",
         ],

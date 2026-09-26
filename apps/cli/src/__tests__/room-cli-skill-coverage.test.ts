@@ -10,14 +10,14 @@ import {
 
 const COMMAND_INDEX_PATH = fileURLToPath(
   new URL(
-    "../../../../plugins/bb-guide/skills/room-cli/references/command-index.md",
+    "../../../../plugins/bb-guide/skills/cloudroom/references/command-index.md",
     import.meta.url,
   ),
 );
 
 const BB_CLI_SKILL_ROOT = fileURLToPath(
   new URL(
-    "../../../../plugins/bb-guide/skills/room-cli/",
+    "../../../../plugins/bb-guide/skills/cloudroom/",
     import.meta.url,
   ),
 );
@@ -42,7 +42,7 @@ function readMarkdownTree(directory: string): string {
     .join("\n");
 }
 
-describe("room-cli skill command index", () => {
+describe("cloudroom skill command index", () => {
   it("lists every core command path", async () => {
     const program = new Command();
     const deps: CommandGroupDeps = {
@@ -56,7 +56,7 @@ describe("room-cli skill command index", () => {
 
     const index = readFileSync(COMMAND_INDEX_PATH, "utf8");
     const documented = new Set(
-      [...index.matchAll(/^- `room ([^`]+)`$/gm)].map((match) => match[1]),
+      [...index.matchAll(/^- `cloudroom ([^`]+)`$/gm)].map((match) => match[1]),
     );
     expect(documented).toEqual(new Set(commandPaths(program)));
   }, 30_000);

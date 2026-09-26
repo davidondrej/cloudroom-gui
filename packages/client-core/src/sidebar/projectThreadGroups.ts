@@ -433,6 +433,7 @@ export function buildSectionThreadList(
   compareThreads: ThreadComparator = compareStandardThreads,
   sections: readonly SidebarSectionDefinition[] = [],
   draftThreadIds: ReadonlySet<string> = new Set(),
+  compareSectionThreads?: (sectionId: string) => ThreadComparator,
 ): ProjectThreadItem[] {
   return bucketIntoSections(
     buildChronologicalThreadList(allThreads, compareThreads, draftThreadIds),
@@ -440,6 +441,7 @@ export function buildSectionThreadList(
     compareThreads,
     sections,
     draftThreadIds,
+    compareSectionThreads,
   );
 }
 
@@ -609,6 +611,7 @@ function bucketIntoSections(
   compareThreads: ThreadComparator = compareStandardThreads,
   sections: readonly SidebarSectionDefinition[] = [],
   draftThreadIds: ReadonlySet<string> = new Set(),
+  compareSectionThreads?: (sectionId: string) => ThreadComparator,
 ): ProjectThreadItem[] {
   const sectionDefinitionsById = new Map<string, SidebarSectionDefinition>();
   const orderedSections: SidebarSectionDefinition[] = [];
@@ -649,7 +652,7 @@ function bucketIntoSections(
     (section): ProjectThreadItem => {
       const children = orderSiblingItems(
         itemsBySectionId.get(section.id) ?? [],
-        compareThreads,
+        compareSectionThreads?.(section.id) ?? compareThreads,
       );
       return {
         kind: "section",

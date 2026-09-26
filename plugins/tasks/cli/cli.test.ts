@@ -81,7 +81,7 @@ function stdout(result: {
   return result.stdout;
 }
 
-describe("room tasks CLI", () => {
+describe("cloudroom tasks CLI", () => {
   it("lists seed-demo in help while retaining the explicit confirmation guard", async () => {
     const { bb, harness } = createFakePluginHost({ pluginId: "tasks" });
     await plugin(bb);
@@ -666,7 +666,7 @@ describe("room tasks CLI", () => {
       exitCode: 1,
       stdout: "",
       stderr:
-        "no tracker project is linked to Room project proj_missing; pass --project or link one with room tasks project update",
+        "no tracker project is linked to Cloudroom project proj_missing; pass --project or link one with cloudroom tasks project update",
     });
 
     await harness.dispose();
@@ -1181,7 +1181,7 @@ describe("room tasks CLI", () => {
     await harness.dispose();
   });
 
-  it("detaches a thread with `room tasks detach` and lists live threads first", async () => {
+  it("detaches a thread with `cloudroom tasks detach` and lists live threads first", async () => {
     const { bb, harness } = createFakePluginHost({
       pluginId: "tasks",
       sdk: {
@@ -1454,7 +1454,7 @@ describe("room tasks CLI", () => {
         `Failed to attach ${boomPath}: simulated blob write failure`,
       );
       expect(human.stdout).toContain(
-        `Retry with: room tasks attachment add MIX-2 --file ${boomPath}`,
+        `Retry with: cloudroom tasks attachment add MIX-2 --file ${boomPath}`,
       );
     } finally {
       await rm(directory, { recursive: true, force: true });
@@ -2034,7 +2034,7 @@ describe("room tasks CLI", () => {
     expect(result).toEqual({
       exitCode: 1,
       stdout: "",
-      stderr: 'Task project "Unlinked CLI" is not linked to a Room project',
+      stderr: 'Task project "Unlinked CLI" is not linked to a Cloudroom project',
     });
     const aliased = await harness.runCli([
       "delegate",
@@ -2043,7 +2043,7 @@ describe("room tasks CLI", () => {
       "CLI worker",
     ]);
     expect(aliased.stderr).toBe(
-      'Task project "Unlinked CLI" is not linked to a Room project',
+      'Task project "Unlinked CLI" is not linked to a Cloudroom project',
     );
     expect(harness.sdk.callsTo("threads.spawn")).toEqual([]);
 

@@ -251,7 +251,7 @@ export async function waitForCompatibleServer(
 
   return {
     kind: "unavailable",
-    reason: `Timed out after ${args.timeoutMs}ms waiting for Room server. Last probe: ${lastResult.reason}`,
+    reason: `Timed out after ${args.timeoutMs}ms waiting for Cloudroom server. Last probe: ${lastResult.reason}`,
     serverUrl: args.serverUrl,
   };
 }

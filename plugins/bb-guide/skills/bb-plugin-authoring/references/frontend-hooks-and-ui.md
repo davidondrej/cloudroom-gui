@@ -22,7 +22,7 @@ experimental_openFilePreview(options), experimental_openFileExternally(options) 
   opener opens one of the current plugin's registered `threadPanelAction` tabs
   in the current thread surface and returns whether the host accepted it; it
   returns false on surfaces without a thread side panel.
-  `openUrl` owns HTTP(S) only and returns false for schemes Room
+  `openUrl` owns HTTP(S) only and returns false for schemes Cloudroom
   leaves to normal anchor behavior. The two file methods accept an
   `ExperimentalFileOpenOptions` live-file target.
 - `useComposer()` → programmatic access to the chat composer draft (the
@@ -46,7 +46,7 @@ experimental_openFilePreview(options), experimental_openFileExternally(options) 
   for that surface. `experimental_submit({ sendAt })` submits through the
   composer's own pipeline at a future time. `experimental_submit({
 experimental_data })` submits now and carries plugin-owned JSON to dispatch
-  hooks on the initial attempt; room automatically namespaces it with the
+  hooks on the initial attempt; cloudroom automatically namespaces it with the
   calling plugin's id but does not persist it.
 - `useComposerView()` → reactive `{ scope, layout, draft, run }` for the
   composer instance that mounted an action or banner. `layout` is
@@ -57,7 +57,7 @@ experimental_data })` submits now and carries plugin-owned JSON to dispatch
   is currently rendering with. `mode` is `"light" | "dark"`, `name` is the
   registered theme name for that mode, and `theme` is the resolved **VS Code
   theme document** behind it: `{ name, type, fg, bg, colors, tokenColors }`,
-  the same document Room's own highlighter paints from. Reach for it ONLY when
+  the same document Cloudroom's own highlighter paints from. Reach for it ONLY when
   your plugin renders code with an engine of its own (Monaco, CodeMirror) and
   has to build that engine's theme; for ordinary code and diffs use
   `experimental_SourceCode` / `experimental_Diff`, which are already themed.
@@ -65,7 +65,7 @@ experimental_data })` submits now and carries plugin-owned JSON to dispatch
   previous document while a palette switch is in flight — compare `theme.name`
   with `name` to tell a settled state from one still resolving — so a consumer
   that repaints on every change never paints an unthemed frame. Do NOT
-  approximate the palette by reading Room's CSS variables: `--canvas` / `--ink`
+  approximate the palette by reading Cloudroom's CSS variables: `--canvas` / `--ink`
   carry the app chrome, not the syntax colors, and a custom palette that
   declares its own code theme would not follow.
 
@@ -93,30 +93,30 @@ banners?, richText? })`. Omitted `scopes` means all thread, queued-message,
   name from plugin CSS. Decorations are paint-only and never mutate the draft.
   `richText.onDraftChange(draft, view)` observes the debounced
   `ComposerStructuredDraft`, including mention ranges.
-- Use a vendored Room prompt icon-button recipe for native-matching action chrome
+- Use a vendored Cloudroom prompt icon-button recipe for native-matching action chrome
   and provide an accessible label. Each component/callback is isolated so one
   failing customization does not degrade the native composer. Complete
   reference: `examples/plugins/composer-customization`.
 
 UI components use vendored shadcn source that you own. The former general host
-component kit is removed. The app module still exports focused Room capability
+component kit is removed. The app module still exports focused Cloudroom capability
 components such as `ThreadChat`, `Markdown`, file links, pickers, source and
 diff viewers, and the new-thread composer.
 
 - Builtin plugins in this repo import shared UI from `@bb/shared-ui` (the
   single source of truth the app also consumes and the registry generates
   from); external and example plugins still vendor source through the registry.
-- `room plugin new` pre-vendors button, card, input, checkbox, dialog (plus
+- `cloudroom plugin new` pre-vendors button, card, input, checkbox, dialog (plus
   their support files: `lib/utils`, `lib/portal-scope`, icon,
   responsive-overlay, drawer, hooks) into `components/ui/` etc., and writes a `components.json`
   whose `@room` registry is pinned to the release tag matching the running
-  Room. Import via the `@/*` alias: `import { Button } from
-"@/components/ui/button"` (tsconfig maps it; `room plugin build` reads it).
+  Cloudroom. Import via the `@/*` alias: `import { Button } from
+"@/components/ui/button"` (tsconfig maps it; `cloudroom plugin build` reads it).
 - Add more with stock shadcn tooling: `npx shadcn add @bb/select
 @bb/table` — the BB registry carries the full stock set (~44 items:
   accordion, alert-dialog, calendar, chart, command, form, sheet, table,
-  …), generated from the Room app's own component source, so vendored code is
-  version-matched to your Room by construction. Edit the copies freely; they
+  …), generated from the Cloudroom app's own component source, so vendored code is
+  version-matched to your Cloudroom by construction. Edit the copies freely; they
   never change out from under you. Re-running `shadcn add` is the manual
   update path.
 - `toast`: `import { toast } from "sonner"` — runtime-shimmed to the host's
@@ -131,7 +131,7 @@ diff viewers, and the new-thread composer.
   overlays behaves correctly. "Import freely" is about the bundle: `tsc`
   still needs each one's declarations in `node_modules`, so every shimmed
   package is a **type-only `devDependencies` entry at the host's version**
-  (the scaffold declares all of them; `room plugin types` repins them; `bb
+  (the scaffold declares all of them; `cloudroom plugin types` repins them; `bb
 plugin types --check` reports drift). Never list one in `dependencies` —
   the build would not read it, and a git install would bundle a second
   copy of a singleton.
@@ -150,10 +150,10 @@ plugin types --check` reports drift). Never list one in `dependencies` —
   and it opts you out of any installed renderer replacement.
 - Everything else bundles from YOUR `node_modules` (hugeicons, lucide,
   non-portal radix, zod, form/calendar/chart libs): run `npm install`
-  after adding components (`room plugin new` runs the first one; `shadcn add`
+  after adding components (`cloudroom plugin new` runs the first one; `shadcn add`
   installs each item's declared deps). Users of your prebuilt artifact need no
   npm. Managed source installs do.
-- The old room extras (`EmptyState`, `PageBody`, `Spinner`) are
+- The old cloudroom extras (`EmptyState`, `PageBody`, `Spinner`) are
   gone — write your own (each is a few lines; see
   `plugins/github/components/` for reference implementations).
 
@@ -161,7 +161,7 @@ Compatibility aliases remain for one release and warn once. Use `UrlLink`
 instead of `experimental_UrlLink`. Use `BbNavigate.openUrl` instead of
 `experimental_openUrl`. Use `Original` instead of `experimental_Original` in
 thread-list, file-opener, source-renderer, and diff-renderer props. Timeline
-renderers never had the `experimental_Original` alias. Room removes these aliases
+renderers never had the `experimental_Original` alias. Cloudroom removes these aliases
 in bb 0.42.
 
 One deviation from stock shadcn: `Dialog` renders as a bottom drawer on

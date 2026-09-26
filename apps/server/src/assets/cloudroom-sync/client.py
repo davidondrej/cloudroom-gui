@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Skills/settings sync and one-way Codex login import. Project files never sync."""
+"""Skills/settings sync, one-way MCP server copy, and one-way Codex and Pi setup import. Project files never sync."""
 import argparse
 import fcntl
+import functools
 import hashlib
 import json
 import os
 from pathlib import Path
 import plistlib
+import re
 import shutil
 import ssl
 import stat
@@ -18,7 +20,7 @@ import urllib.parse
 import urllib.request
 import uuid
 
-from files import Conflict, Tree, atomic_json, excluded
+from files import MCP, Conflict, Tree, atomic_json, excluded
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -80,7 +82,7 @@ class Remote:
 
 
 def configuration_roots(roots):
-    return [r for r in roots if r['tree']['kind'] in {'skills', 'codex', 'pi', 'claude', 'cursor'}]
+    return [r for r in roots if r['tree']['kind'] in {'skills', 'codex', 'pi', 'claude', 'cursor', *MCP}]
 
 
 def import_codex(config, connection, folder):
@@ -89,6 +91,8 @@ def import_codex(config, connection, folder):
     with (folder / 'codex-import.lock').open('a') as lock:
         os.chmod(folder / 'codex-import.lock', 0o600)
         fcntl.flock(lock, fcntl.LOCK_EX)
+        if not config.get('copyLogins'):
+            return None  # The user said no in first-run setup (ADR 0130).
         remote = Remote(connection, config.get('device', ''))
         capabilities = remote.json('/v1/capabilities')
         if not capabilities.get('codex_auth_import'):
@@ -131,13 +135,118 @@ def import_codex(config, connection, folder):
         return status
 
 
+@functools.cache
+def login_shell_env():
+    """Keys exported in ~/.zshrc are invisible to this background helper, so ask the user's shell once."""
+    try:
+        output = subprocess.run([os.environ.get('SHELL') or '/bin/zsh', '-ilc', 'env -0'], capture_output=True, timeout=15, stdin=subprocess.DEVNULL).stdout
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    return dict(item.split('=', 1) for item in output.decode(errors='replace').split('\0') if '=' in item)
+
+
+def resolved(value):
+    """A Pi key as the Mac sees it, following Pi's rules: `!command` output or `$VAR` values. None when unresolved.
+    The VM cannot run Mac commands, such as Keychain lookups, or see Mac variables."""
+    if not isinstance(value, str) or not value:
+        return None
+    if value.startswith('!'):
+        try:
+            run = subprocess.run(['/bin/sh', '-c', value[1:]], capture_output=True, text=True, timeout=15, stdin=subprocess.DEVNULL)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        return run.stdout.strip() if run.returncode == 0 and run.stdout.strip() else None
+    missing = []
+    def variable(match):
+        name = match[1] or match[2]
+        found = os.environ.get(name) or login_shell_env().get(name)
+        missing.extend([] if found else [name])
+        return found or ''
+    value = re.sub(r'\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)', variable, value)
+    return None if missing else value
+
+
+def portable_provider(provider):
+    provider = dict(provider)
+    if 'apiKey' in provider:
+        provider['apiKey'] = resolved(provider['apiKey'])
+        if provider['apiKey'] is None:
+            del provider['apiKey']
+    if isinstance(provider.get('headers'), dict):
+        provider['headers'] = {name: value for name, value in ((n, resolved(v)) for n, v in provider['headers'].items()) if value is not None}
+    return provider
+
+
+def pi_file(home, name):
+    """A Pi file this user owns and nobody else can change. Login files must also be private."""
+    try:
+        fd = os.open(Path(home).expanduser() / name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        with os.fdopen(fd, 'rb') as source:
+            info = os.fstat(source.fileno())
+            if not stat.S_ISREG(info.st_mode) or info.st_mode & (0o077 if name == 'auth.json' else 0o022) or info.st_uid != os.getuid():
+                return b''
+            raw = source.read(256 * 1024 + 1)
+        return raw if len(raw) <= 256 * 1024 else b''
+    except OSError:
+        return b''
+
+
+def import_pi(config, connection, folder):
+    """Copy Pi logins the VM lacks, custom providers, and packages (ADR 0130). VM logins always win."""
+    if not config.get('copyLogins'):
+        return None  # The user said no in first-run setup.
+    home = config.get('piHome') or os.environ.get('PI_CODING_AGENT_DIR') or Path.home() / '.pi/agent'
+    files = [pi_file(home, name) for name in ('auth.json', 'models.json', 'settings.json')]
+    try:
+        logins, models, settings = (json.loads(raw) if raw else {} for raw in files)
+    except ValueError:
+        return None
+    if not all(isinstance(value, dict) for value in (logins, models, settings)):
+        return None
+    attempt = {'binding': [connection['url'].rstrip('/'), (connection.get('account') or {}).get('id')],
+               'fingerprint': hashlib.sha256(b'\0'.join(files)).hexdigest()}
+    receipt = Path(folder) / 'pi-import.json'
+    if receipt.exists() and private_json(receipt) == attempt:
+        return None
+    remote = Remote(connection, config.get('device', ''))
+    capabilities = remote.json('/v1/capabilities')
+    if not capabilities.get('pi_auth_import'):
+        return None
+    saved = set(remote.json('/v1/accounts/pi')['providers'])
+    missing = {}
+    for name, entry in logins.items():
+        if name in saved or not isinstance(entry, dict):
+            continue
+        if entry.get('type') == 'api_key':
+            entry = {**entry, 'key': resolved(entry.get('key'))}
+        if entry.get('key', True):
+            missing[name] = entry
+    result = remote.json('/v1/accounts/pi/import', missing) if missing else {'providers': sorted(saved), 'added': []}
+    providers = models.get('providers') if isinstance(models.get('providers'), dict) else {}
+    packages = settings.get('packages') if isinstance(settings.get('packages'), list) else []
+    if capabilities.get('pi_setup') and (providers or packages):
+        providers = {name: portable_provider(value) for name, value in providers.items() if isinstance(value, dict)}
+        result['setup'] = remote.json('/v1/accounts/pi/setup', {'providers': providers, 'packages': packages})
+    atomic_json(receipt, attempt)
+    return result
+
+
 def cycle(config, connection, state_dir):
     remote = Remote(connection, config['device'])
     try:
         import_codex(config, connection, state_dir)
     except (OSError, Conflict, ValueError, KeyError, TypeError):
         pass  # Login recovery must not stop independent skills/settings sync.
+    try:
+        import_pi(config, connection, state_dir)
+    except (OSError, Conflict, ValueError, KeyError, TypeError):
+        pass
     roots = configuration_roots(config['roots'])
+    capabilities = remote.json('/v1/capabilities')
+    if not capabilities.get('mcp_sync'):
+        roots = [r for r in roots if r['tree']['kind'] not in MCP]  # Older cores reject unknown roots.
+    if not (config.get('copyLogins') and capabilities.get('pi_setup')):
+        roots = [r for r in roots if r['id'] != 'extensions-pi']  # Pi extensions can register providers (ADR 0130).
     remote.json('/v1/sync', {'device': config['device']})
     details = {}
     for root in roots:
@@ -156,14 +265,17 @@ def cycle(config, connection, state_dir):
                     continue
                 left, right = local['files'].get(path), cloud['files'].get(path)
                 a, b, old = (left or {}).get('tag'), (right or {}).get('tag'), base.get(path)
+                push = tree.kind in MCP  # Mac to VM only: never edit the Mac's agent configuration.
                 if a == b:
                     base[path] = a
                     continue
-                if a != old and b != old:
+                if push and a in {None, old}:
+                    continue
+                if a != old and b != old and not push:
                     conflicts.append(path)
                     continue
                 try:
-                    if b == old:
+                    if b == old or push:
                         if left:
                             with tree.snapshot(path) as (entry, data):
                                 if entry['tag'] != a:
@@ -228,10 +340,15 @@ def discover(home):
         if (path / 'skills').is_dir():
             roots.append({'id': 'skills-' + identity, 'tree': {'root': str((path / 'skills').resolve()), 'kind': 'skills'}})
         filename = 'config.toml' if identity == 'codex' else 'cli-config.json' if identity == 'cursor' else 'settings.json'
+        if identity == 'pi' and (path / 'extensions').is_dir():
+            roots.append({'id': 'extensions-pi', 'tree': {'root': str((path / 'extensions').resolve()), 'kind': 'skills'}})
         if identity == 'cursor' and (path / 'rules').is_dir():
             roots.append({'id': 'rules-cursor', 'tree': {'root': str((path / 'rules').resolve()), 'kind': 'skills'}})
         if identity != 'shared' and (path / filename).is_file():
             roots.append({'id': 'settings-' + identity, 'tree': {'root': str(path.resolve()), 'kind': identity, 'filename': filename}})
+    for identity, path, filename in [('codex', codex, 'config.toml'), ('claude', home, '.claude.json'), ('cursor', home / '.cursor', 'mcp.json')]:
+        if (path / filename).is_file():
+            roots.append({'id': 'mcp-' + identity, 'tree': {'root': str(path.resolve()), 'kind': 'mcp-toml' if filename.endswith('.toml') else 'mcp-json', 'filename': filename}})
     return roots
 
 
@@ -269,7 +386,7 @@ def launch(folder, stop=False):
     subprocess.run(['launchctl', 'bootstrap', domain, str(path)], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
-def configure(folder, connection_file, activate=True):
+def configure(folder, connection_file, activate=True, copy_logins=None):
     folder = Path(folder).expanduser().resolve()
     folder.mkdir(mode=0o700, parents=True, exist_ok=True)
     folder.chmod(0o700)
@@ -285,6 +402,8 @@ def configure(folder, connection_file, activate=True):
             launch(folder, stop=True)
         # Keep old repository baselines and recovery copies on disk, but never use them again.
         roots = configuration_roots(old['roots']) if old else discover(Path.home())
+        # Existing installs keep their roots; only add MCP and Pi extension roots introduced later.
+        roots += [r for r in discover(Path.home()) if old and (r['tree']['kind'] in MCP or r['id'] == 'extensions-pi') and r['id'] not in {x['id'] for x in roots}]
         for name in ['client.py', 'files.py']:
             source, target = Path(__file__).parent / name, folder / name
             if source.resolve() != target.resolve():
@@ -292,7 +411,10 @@ def configure(folder, connection_file, activate=True):
                 shutil.copyfile(source, temporary); temporary.chmod(0o600); temporary.replace(target)
         legacy_home = next((r['tree']['root'] for r in (old or {}).get('roots', []) if r['id'] == 'auth-codex'), None)
         codex_home = os.environ.get('CODEX_HOME') or (old or {}).get('codexHome') or legacy_home or Path.home() / '.codex'
-        config = {'device': old['device'] if old else uuid.uuid4().hex, 'connectionFile': str(connection_file), 'binding': binding, 'roots': roots, 'codexHome': str(Path(codex_home).expanduser().resolve())}
+        pi_home = os.environ.get('PI_CODING_AGENT_DIR') or (old or {}).get('piHome') or Path.home() / '.pi/agent'
+        config = {'device': old['device'] if old else uuid.uuid4().hex, 'connectionFile': str(connection_file), 'binding': binding, 'roots': roots,
+                  'codexHome': str(Path(codex_home).expanduser().resolve()), 'piHome': str(Path(pi_home).expanduser().resolve()),
+                  'copyLogins': bool((old or {}).get('copyLogins')) if copy_logins is None else copy_logins}
         atomic_json(folder / 'config.json', config)
         if activate:
             launch(folder)
@@ -301,20 +423,21 @@ def configure(folder, connection_file, activate=True):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['configure', 'run', 'once', 'auth', 'status', 'stop'])
+    parser.add_argument('command', choices=['configure', 'run', 'once', 'auth', 'pi-auth', 'status', 'stop'])
     parser.add_argument('directory', type=Path)
     parser.add_argument('--connection', type=Path)
     parser.add_argument('--no-start', action='store_true', help='Prepare configuration without installing a background job')
+    parser.add_argument('--copy-logins', choices=['on', 'off'], help="The user's first-run choice to copy logins and model providers to the VM")
     args = parser.parse_args()
     if args.command == 'configure':
-        result = configure(args.directory, args.connection, not args.no_start)
+        result = configure(args.directory, args.connection, not args.no_start, None if args.copy_logins is None else args.copy_logins == 'on')
     elif args.command in {'run', 'once'}:
         result = run(args.directory, args.command == 'once')
-    elif args.command == 'auth':
+    elif args.command in {'auth', 'pi-auth'}:
         config_path = args.directory / 'config.json'
         config = private_json(config_path) if config_path.exists() else {}
         connection = load_connection(config) if config else private_json(args.connection)
-        result = import_codex(config, connection, args.directory)
+        result = (import_codex if args.command == 'auth' else import_pi)(config, connection, args.directory)
     elif args.command == 'stop':
         launch(args.directory.resolve(), stop=True)
         result = {'state': 'offline'}

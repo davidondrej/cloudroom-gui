@@ -389,12 +389,18 @@ function AutosavingPluginSetting({
     save.mutate(draft);
   }
 
+  function saveMultiline(): void {
+    setDraftState({ value: draft, hasNewerDraft: false });
+    save.mutate(draft);
+  }
+
   const saveError = save.isError
     ? getMutationErrorMessage({
         error: save.error,
         fallbackMessage: "Could not save this setting",
       })
     : null;
+  const isDirty = draft !== storedValue || save.isError;
   return (
     <SettingsWithControl
       label={descriptor.label}
@@ -422,6 +428,18 @@ function AutosavingPluginSetting({
           <p id={messageId} className="text-xs text-destructive" role="alert">
             {saveError}
           </p>
+        ) : null}
+        {isMultilineSetting(descriptor) ? (
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!isDirty || save.isPending}
+              onClick={saveMultiline}
+            >
+              {save.isPending ? "Saving…" : isDirty ? "Save" : "Saved"}
+            </Button>
+          </div>
         ) : null}
       </div>
     </SettingsWithControl>

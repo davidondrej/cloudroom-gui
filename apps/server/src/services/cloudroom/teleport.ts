@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { isAbsolute, join } from "node:path";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, like } from "drizzle-orm";
 import {
   cloudroomThreads,
   cloudroomCommands,
@@ -26,6 +26,7 @@ import {
 import { stopThreadForCurrentState } from "../threads/thread-lifecycle.js";
 import { resolveThreadRuntimeCommandConfig } from "../threads/thread-runtime-config.js";
 import { cloudroom, promptPayload } from "./commands.js";
+import { copyProject, planProjectCopy } from "./project-copy.js";
 import {
   CloudroomError,
   type TeleportManifest,
@@ -49,13 +50,14 @@ interface State {
   sessions: {
     threadId: string;
     nativeId: string;
-    harness: "codex" | "pi";
+    harness: Harness;
     environmentId: string;
   }[];
   attachments: string[];
   queuedIds: string[];
   queued: TeleportManifest["queued"];
   model: string;
+  sourceModel?: string;
   reasoning: string;
   serviceTier: string;
   manifest?: TeleportManifest;
@@ -64,6 +66,17 @@ interface State {
   cancelRequested?: boolean;
   stopped?: boolean;
   activationRequested?: boolean;
+}
+// GUI provider ID → cloud core harness ID.
+const HARNESSES = {
+  codex: "codex",
+  pi: "pi",
+  "claude-code": "claude-code",
+  "acp-cursor": "cursor",
+} as const;
+type Harness = (typeof HARNESSES)[keyof typeof HARNESSES];
+function harnessOf(providerId: string): Harness | undefined {
+  return HARNESSES[providerId as keyof typeof HARNESSES];
 }
 const services = new WeakMap<AppDeps["db"], Teleport>();
 export function teleports(deps: AppDeps): Teleport {
@@ -113,7 +126,37 @@ class Teleport {
     saveTeleportProgress(this.deps.db, state.threadId, progress);
     this.notify(state.threadId);
   }
-  async begin(threadId: string): Promise<TeleportProgress> {
+  private async preflight(
+    providerId: string,
+    execution: { model: string; reasoning: string; serviceTier: string },
+    retry = false,
+  ) {
+    const harness = harnessOf(providerId)!;
+    const separator = execution.model.indexOf("/");
+    const result = await (
+      await cloudroom(this.deps).teleportClient()
+    ).checkTeleport({
+      harness,
+      model:
+        harness === "pi" && separator > 0
+          ? execution.model.slice(separator + 1)
+          : execution.model,
+      reasoning: execution.reasoning,
+      service_tier: execution.serviceTier,
+    });
+    if (!result.ok)
+      throw new ApiError(
+        409,
+        result.code === "model_unavailable"
+          ? "teleport_model_unavailable"
+          : "teleport_check_failed",
+        `${retry ? "Retry did not start." : "Teleport did not start; this thread stays local."} ${result.error}`,
+      );
+  }
+  async begin(
+    threadId: string,
+    choice?: { model: string; reasoning: string },
+  ): Promise<TeleportProgress> {
     const existing = teleportProgress(this.deps.db, threadId);
     if (existing && existing.phase !== "cancelled") {
       if (existing.owner !== threadId)
@@ -124,11 +167,14 @@ class Teleport {
         );
       if (existing.phase === "complete") return existing;
       if (existing.phase === "error") {
+        const saved = this.load(existing.id);
+        await this.preflight(
+          getThread(this.deps.db, threadId)!.providerId,
+          saved,
+          true,
+        );
         if (existing.cloudStarted)
-          this.save({
-            ...this.load(existing.id),
-            retryRequestId: randomUUID(),
-          });
+          this.save({ ...saved, retryRequestId: randomUUID() });
         saveTeleportProgress(this.deps.db, threadId, {
           ...existing,
           phase: existing.cloudStarted ? "running" : "stopping",
@@ -163,11 +209,11 @@ class Teleport {
         "teleport_unavailable",
         "Teleport requires a local parent thread in its primary checkout.",
       );
-    if (thread.providerId !== "codex" && thread.providerId !== "pi")
+    if (!harnessOf(thread.providerId))
       throw new ApiError(
         409,
         "teleport_unavailable",
-        "Teleport supports Codex and Pi.",
+        "Teleport supports Codex, Pi, Claude Code, and Cursor.",
       );
     const all = [thread];
     for (let i = 0; i < all.length; i++)
@@ -187,7 +233,7 @@ class Teleport {
         env.isWorktree ||
         env.path !== environment.path ||
         !nativeId ||
-        !["codex", "pi"].includes(source.providerId)
+        !harnessOf(source.providerId)
       )
         throw new ApiError(
           409,
@@ -197,20 +243,32 @@ class Teleport {
       return {
         threadId: source.id,
         nativeId,
-        harness: source.providerId as "codex" | "pi",
+        harness: harnessOf(source.providerId)!,
         environmentId: env.id,
       };
     });
-    const execution = getLastExecutionOptions(this.deps, threadId);
-    if (!execution?.model)
+    const last = getLastExecutionOptions(this.deps, threadId);
+    if (!last?.model)
       throw new ApiError(
         409,
         "teleport_unavailable",
         "The thread has no saved model selection.",
       );
+    const execution = {
+      model: choice?.model ?? last.model,
+      reasoning: choice?.reasoning ?? last.reasoningLevel ?? "none",
+      serviceTier: last.serviceTier ?? "default",
+    };
     const queuedRows = all.flatMap((source) =>
       listQueuedThreadMessages(this.deps.db, source.id),
     );
+    if (queuedRows.some((row) => row.model !== last.model))
+      throw new ApiError(
+        409,
+        "teleport_queue_model",
+        "A queued message selects a different model. Align the queued models first; Cloud keeps one model per thread.",
+      );
+    await this.preflight(thread.providerId, execution);
     const queued = queuedRows.map((row) => {
       const content = JSON.parse(row.content) as {
         type: string;
@@ -276,9 +334,8 @@ class Teleport {
       attachments: [...attachments],
       queuedIds: queuedRows.map((row) => row.id),
       queued,
-      model: execution.model,
-      reasoning: execution.reasoningLevel ?? "none",
-      serviceTier: execution.serviceTier ?? "default",
+      ...execution,
+      ...(execution.model !== last.model ? { sourceModel: last.model } : {}),
     };
     this.deps.db.transaction((tx) => {
       if (
@@ -356,7 +413,38 @@ class Teleport {
     }
     this.launch(threadId, state.id);
   }
-  private finishCancellation(state: State) {
+  /** Stop and Archive always win: end the transfer and release the thread. */
+  abandon(threadId: string): void {
+    const progress = teleportProgress(this.deps.db, threadId);
+    if (
+      progress?.owner !== threadId ||
+      ["complete", "cancelled"].includes(progress.phase)
+    )
+      return;
+    try {
+      const state = { ...this.load(progress.id), cancelRequested: true };
+      this.save(state);
+      // After activation is requested, cloud may own the session. Keep its
+      // binding so the run can confirm ownership and stop the cloud agent.
+      const cloudMayOwn = Boolean(
+        progress.cloudStarted || state.activationRequested,
+      );
+      this.finishCancellation(state, cloudMayOwn);
+      if (cloudMayOwn && !progress.cloudStarted)
+        this.launch(threadId, state.id);
+    } catch (error) {
+      this.deps.logger.warn(
+        { threadId, error },
+        "Teleport state was unavailable during archive",
+      );
+      saveTeleportProgress(this.deps.db, threadId, {
+        ...progress,
+        phase: "cancelled",
+      });
+      this.notify(threadId);
+    }
+  }
+  private finishCancellation(state: State, keepBinding = false) {
     this.deps.db.transaction((tx) => {
       for (const source of state.sessions) {
         if (teleportProgress(tx, source.threadId)?.id !== state.id) continue;
@@ -368,14 +456,15 @@ class Teleport {
           total: 0,
         });
       }
-      tx.delete(cloudroomThreads)
-        .where(
-          and(
-            eq(cloudroomThreads.threadId, state.threadId),
-            eq(cloudroomThreads.startRequestId, `teleport_${state.id}`),
-          ),
-        )
-        .run();
+      if (!keepBinding)
+        tx.delete(cloudroomThreads)
+          .where(
+            and(
+              eq(cloudroomThreads.threadId, state.threadId),
+              eq(cloudroomThreads.startRequestId, `teleport_${state.id}`),
+            ),
+          )
+          .run();
     });
     this.notify(state.threadId);
   }
@@ -478,7 +567,7 @@ class Teleport {
           "teleport_queue_settling",
           "Waiting for the stopped local queue to settle. Teleport will retry automatically.",
         );
-      if (rows.some((row) => row.model !== state.model))
+      if (rows.some((row) => row.model !== (state.sourceModel ?? state.model)))
         throw new ApiError(
           409,
           "teleport_queue_model",
@@ -491,7 +580,7 @@ class Teleport {
       state.queued = rows.map((row, index) => {
         const prompt = promptPayload(
           state.queuedDisplay![index]!,
-          state.sessions[0]!.harness,
+          getThread(this.deps.db, state.threadId)!.providerId,
           true,
         );
         return {
@@ -664,7 +753,7 @@ class Teleport {
         ...this.load(id),
         manifest: {
           request_id: id,
-          harness: thread.providerId as "codex" | "pi",
+          harness: harnessOf(thread.providerId)!,
           native_id: capture.nativeId,
           model: provider
             ? state.model.slice(provider.length + 1)
@@ -682,13 +771,20 @@ class Teleport {
               .slice(0, 80) || "project",
           files: capture.files,
           queued: state.queued,
-          handoff: `Continue unfinished work in this same conversation; if the task is already complete, confirm that instead of redoing it. Before working, read the preserved user and project instructions in gui-history.json and the instruction files in the index. Other GUI history and child traces are reference context; read them as needed. Queued follow-ups will run separately after this continuation; do not execute them from the history file. Existing goals remain instructions, not automatic loops.\nActive goals: ${goals.join("\n") || "none"}.\nOld local workspace: ${state.workspacePath}.\nChildren: ${[...state.sessions.slice(1).map((s) => s.threadId), ...nativeChildren.keys()].join(", ") || "none"}.\nKnown unavailable local paths: ${(capture.omitted ?? []).join(", ") || "none"}.`,
+          handoff: `Continue unfinished work in this same conversation; if the task is already complete, confirm that instead of redoing it. Before working, read the preserved user and project instructions in gui-history.json and the instruction files in the index. If this project is new on the VM, Cloudroom is copying it into this folder now (a GitHub clone or an upload from the laptop, plus uncommitted edits and .env files); wait for missing files instead of recreating them. Otherwise, use Git to match the local branch and commit in git-state.txt, which also lists uncommitted tracked edits that stayed on the laptop. Untracked files mentioned in the conversation were also copied. Other GUI history and child traces are reference context; read them as needed. Queued follow-ups will run separately after this continuation; do not execute them from the history file. Existing goals remain instructions, not automatic loops.\nActive goals: ${goals.join("\n") || "none"}.\nOld local workspace: ${state.workspacePath}.\nChildren: ${[...state.sessions.slice(1).map((s) => s.threadId), ...nativeChildren.keys()].join(", ") || "none"}.\nKnown unavailable local paths: ${(capture.omitted ?? []).join(", ") || "none"}.`,
         },
       };
       this.save(state);
     }
+    const copy = await planProjectCopy(this.deps, client, state.threadId, state.manifest!.workspace, state.workspacePath);
     let remote = await client.prepareTeleport(state.manifest!);
+    if (copy) copyProject(this.deps, client, copy);
     const cancelled = async () => {
+      if (
+        teleportProgress(this.deps.db, state.threadId)?.phase === "cancelled" &&
+        binding(this.deps.db, state.threadId)?.sessionId
+      )
+        return true;
       const latest = this.load(id);
       if (!latest.cancelRequested) return false;
       remote = await client.teleportStatus(id);
@@ -771,22 +867,51 @@ class Teleport {
       if (!["native", "context"].includes(files[i]!.kind) && !(await upload(i)))
         return;
     remote = await client.teleportStatus(id);
-    if (remote.error)
+    const attempt = state.retryRequestId
+      ? `teleport_retry_${state.retryRequestId}`
+      : `teleport_${id}_0`;
+    const handoff =
+      remote.session_id && remote.phase !== "complete"
+        ? (await client.session(remote.session_id)).receipts[attempt]
+        : undefined;
+    if (handoff?.state === "failed")
+      throw new Error(
+        `The cloud agent could not continue: ${handoff.error ?? remote.error_detail ?? "the handoff turn failed"}. Fix the cause, then retry this transfer. Source history is preserved.`,
+      );
+    // Safe to close once every file arrived and the cloud agent is working,
+    // even if it has not written text yet.
+    const complete =
+      remote.phase === "complete" ||
+      (remote.files.every((f) => f.complete) &&
+        Boolean(
+          this.deps.db
+            .select({ id: events.id })
+            .from(events)
+            .where(
+              and(
+                eq(events.threadId, state.threadId),
+                eq(events.type, "item/started"),
+                like(events.data, `%"id":"teleport_${id}_%`),
+              ),
+            )
+            .get(),
+        ));
+    if (remote.error && !complete)
       throw new Error(
         remote.error === "paused_before_output"
           ? "Cloud work stopped before its first reply. Retry transfer will resume it. Source history is preserved."
           : remote.error === "no_cloud_output"
             ? "Cloud produced no reply. Fix any provider error, then retry this transfer. Source history is preserved."
-            : `Cloud conversation could not resume: ${remote.error}. Source history is preserved.`,
+            : `Cloud conversation could not resume: ${remote.error_detail ?? remote.error}. Source history is preserved.`,
       );
     this.progress(state, {
-      phase: remote.phase === "complete" ? "complete" : "running",
+      phase: complete ? "complete" : "running",
       completed: remote.files.filter((f) => f.complete).length,
       total: remote.files.length,
       cloudStarted: true,
       error: undefined,
     });
-    if (remote.phase === "complete") {
+    if (complete) {
       for (const source of state.sessions.slice(1))
         saveTeleportProgress(this.deps.db, source.threadId, {
           id,
@@ -859,6 +984,11 @@ class Teleport {
       });
     });
     this.notify(state.threadId);
+    if (getThread(this.deps.db, state.threadId)?.archivedAt) {
+      cloudroom(this.deps).archive(state.threadId);
+      this.finishCancellation(state, true);
+      throw new Error("The thread was archived; its cloud agent was stopped.");
+    }
     cloudroom(this.deps).followTeleport(state.threadId);
   }
 }

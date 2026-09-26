@@ -15,50 +15,35 @@ function textInput(text: string): PromptInput {
 }
 
 describe("thread title generation", () => {
-  it("does not generate titles for inputs shorter than five words", () => {
-    expect(shouldGenerateThreadTitle([textInput("fix")])).toBe(false);
-    expect(shouldGenerateThreadTitle([textInput("fix bug")])).toBe(false);
-    expect(shouldGenerateThreadTitle([textInput("fix the bug")])).toBe(false);
-    expect(shouldGenerateThreadTitle([textInput("fix the login bug")])).toBe(
-      false,
+  it("generates titles for any non-empty text input", () => {
+    expect(shouldGenerateThreadTitle([textInput("fix")])).toBe(true);
+    expect(shouldGenerateThreadTitle([textInput("   ")])).toBe(false);
+    expect(
+      shouldGenerateThreadTitle([{ type: "localFile", path: "/tmp/error.log" }]),
+    ).toBe(false);
+  });
+
+  it("keeps the model's casing and word count", () => {
+    expect(sanitizeGeneratedTitle("fix flaky login bug")).toBe(
+      "fix flaky login bug",
     );
   });
 
-  it("generates titles for inputs with at least five words", () => {
-    expect(
-      shouldGenerateThreadTitle([textInput("fix the flaky login bug")]),
-    ).toBe(true);
+  it("cleans quotes, trailing periods, and extra whitespace", () => {
+    expect(sanitizeGeneratedTitle(' "fix   login bug." \n')).toBe(
+      "fix login bug",
+    );
   });
 
-  it("counts words across text input parts and ignores attachments", () => {
-    const input: PromptInput[] = [
-      textInput("fix the flaky"),
-      {
-        type: "localFile",
-        path: "/tmp/error.log",
-      },
-      textInput("login bug"),
-    ];
-
-    expect(shouldGenerateThreadTitle(input)).toBe(true);
-  });
-
-  it("limits generated titles to five words", () => {
-    expect(
-      sanitizeGeneratedTitle(
-        "Investigate Extremely Long Generated Thread Title Output",
-      ),
-    ).toBe("Investigate Extremely Long Generated Thread");
+  it("caps very long titles", () => {
+    expect(sanitizeGeneratedTitle("a".repeat(200))).toHaveLength(80);
   });
 
   it("returns null for empty generated titles", () => {
     expect(sanitizeGeneratedTitle("   ")).toBeNull();
   });
 
-  it("keeps fallback derivation independent from title generation eligibility", () => {
-    const input = [textInput("fix bug")];
-
-    expect(deriveTitleFallback(input)).toBe("fix bug");
-    expect(shouldGenerateThreadTitle(input)).toBe(false);
+  it("derives the fallback title from the prompt text", () => {
+    expect(deriveTitleFallback([textInput("fix bug")])).toBe("fix bug");
   });
 });

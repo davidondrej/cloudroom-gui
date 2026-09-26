@@ -16,7 +16,7 @@ import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import * as fixtures from "../helpers/command-output-fixtures.js";
 import { registerThreadCommands } from "../../commands/thread/index.js";
 
-describe("room thread spawn command output", () => {
+describe("cloudroom thread spawn command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
@@ -26,7 +26,7 @@ describe("room thread spawn command output", () => {
     return vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   }
 
-  it("room thread spawn sends project-default when the user relies on project defaults", async () => {
+  it("cloudroom thread spawn sends project-default when the user relies on project defaults", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-1",
@@ -62,7 +62,7 @@ describe("room thread spawn command output", () => {
     ["file", "localFile", "report.pdf", "application/pdf", false],
     ["file", "localFile", "report with spaces.pdf", "application/pdf", true],
   ] as const)(
-    "room thread spawn uploads client %s paths before creating the thread",
+    "cloudroom thread spawn uploads client %s paths before creating the thread",
     async (flag, type, filename, mimeType, fileUrl) => {
       const clientDir = await mkdtemp(join(tmpdir(), "bb-cli-thread-image-"));
       try {
@@ -182,7 +182,7 @@ describe("room thread spawn command output", () => {
     },
   );
 
-  it("room thread spawn --plan opens the thread with the composer's /plan command mention", async () => {
+  it("cloudroom thread spawn --plan opens the thread with the composer's /plan command mention", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-plan",
       projectId: "proj-1",
@@ -227,7 +227,7 @@ describe("room thread spawn command output", () => {
     });
   });
 
-  it("room thread spawn requires an explicit --project", async () => {
+  it("cloudroom thread spawn requires an explicit --project", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", undefined);
     const post = vi.fn();
     const stderrWrite = captureCommanderErrors();
@@ -246,7 +246,7 @@ describe("room thread spawn command output", () => {
     expect(post).not.toHaveBeenCalled();
   });
 
-  it("room thread spawn ignores ROOM_PROJECT_ID when --project is omitted", async () => {
+  it("cloudroom thread spawn ignores ROOM_PROJECT_ID when --project is omitted", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-env");
     const post = vi.fn();
     const stderrWrite = captureCommanderErrors();
@@ -265,7 +265,7 @@ describe("room thread spawn command output", () => {
     expect(post).not.toHaveBeenCalled();
   });
 
-  it("room thread spawn lets the server resolve defaults for the personal project", async () => {
+  it("cloudroom thread spawn lets the server resolve defaults for the personal project", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-personal",
       projectId: domain.PERSONAL_PROJECT_ID,
@@ -303,7 +303,7 @@ describe("room thread spawn command output", () => {
     expect(collectLogLines(vi.mocked(console.log))).toContain("  Project:  -");
   });
 
-  it("room thread spawn forwards explicit execution overrides", async () => {
+  it("cloudroom thread spawn forwards explicit execution overrides", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-overrides",
@@ -355,7 +355,7 @@ describe("room thread spawn command output", () => {
     });
   });
 
-  it("room thread spawn forwards hidden visibility", async () => {
+  it("cloudroom thread spawn forwards hidden visibility", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-hidden",
       projectId: "proj-1",
@@ -387,7 +387,7 @@ describe("room thread spawn command output", () => {
     );
   });
 
-  it("room thread spawn allows sections for hidden workers", async () => {
+  it("cloudroom thread spawn allows sections for hidden workers", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       sectionId: "sec_work",
       id: "thread-hidden-section",
@@ -422,18 +422,18 @@ describe("room thread spawn command output", () => {
     });
   });
 
-  it("room thread spawn help lists product permission modes", async () => {
+  it("cloudroom thread spawn help lists product permission modes", async () => {
     const helpOutput = await getHelpOutput(["thread", "spawn"], register);
     expect(helpOutput).toContain("--permission-mode <mode>");
     expect(helpOutput).toContain("--visibility <visibility>");
     expect(helpOutput).toContain("Exact Git ref");
     expect(helpOutput).toContain("origin/<branch> for a remote ref");
-    expect(helpOutput).toContain("room environment providers");
-    expect(helpOutput).not.toContain("room curl");
+    expect(helpOutput).toContain("cloudroom environment providers");
+    expect(helpOutput).not.toContain("cloudroom curl");
     expect(helpOutput).toMatch(/Permission mode: accept-edits, auto, or full/);
   });
 
-  it("room thread spawn reports invalid permission mode choices", async () => {
+  it("cloudroom thread spawn reports invalid permission mode choices", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
 
     await expect(
@@ -457,7 +457,7 @@ describe("room thread spawn command output", () => {
     );
   });
 
-  it("room thread spawn normalizes deprecated workspace-write to accept-edits", async () => {
+  it("cloudroom thread spawn normalizes deprecated workspace-write to accept-edits", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-legacy-permission",
       projectId: "proj-1",
@@ -485,7 +485,7 @@ describe("room thread spawn command output", () => {
     });
   });
 
-  it("room thread spawn --json prints the raw thread", async () => {
+  it("cloudroom thread spawn --json prints the raw thread", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-json-spawn",
@@ -520,7 +520,7 @@ describe("room thread spawn command output", () => {
     ).toEqual(thread);
   });
 
-  it("room thread spawn prefixes model-catalog failures with context", async () => {
+  it("cloudroom thread spawn prefixes model-catalog failures with context", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     const post = vi.fn(async () => {
       throw new Error(
@@ -541,7 +541,7 @@ describe("room thread spawn command output", () => {
     );
   });
 
-  it("room thread spawn with --parent-thread forwards parent thread id", async () => {
+  it("cloudroom thread spawn with --parent-thread forwards parent thread id", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-2",
@@ -588,7 +588,7 @@ describe("room thread spawn command output", () => {
     });
   });
 
-  it("room thread spawn does not default parent thread id from ROOM_THREAD_ID", async () => {
+  it("cloudroom thread spawn does not default parent thread id from ROOM_THREAD_ID", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     vi.stubEnv("ROOM_THREAD_ID", "thread-context-parent");
     const thread: domain.Thread = fixtures.makeThread({
@@ -633,7 +633,7 @@ describe("room thread spawn command output", () => {
     });
   });
 
-  it("room thread spawn with --parent-self forwards ROOM_THREAD_ID as parent thread id", async () => {
+  it("cloudroom thread spawn with --parent-self forwards ROOM_THREAD_ID as parent thread id", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     vi.stubEnv("ROOM_THREAD_ID", "thread-context-parent");
     const thread: domain.Thread = fixtures.makeThread({
@@ -675,7 +675,7 @@ describe("room thread spawn command output", () => {
     );
   });
 
-  it("room thread spawn rejects --parent-self without ROOM_THREAD_ID", async () => {
+  it("cloudroom thread spawn rejects --parent-self without ROOM_THREAD_ID", async () => {
     const post = vi.fn(async () =>
       fixtures.makeThread({
         id: "thread-parent-self-missing-context",
@@ -710,7 +710,7 @@ describe("room thread spawn command output", () => {
     expect(post).not.toHaveBeenCalled();
   });
 
-  it("room thread spawn rejects combining --parent-thread and --parent-self", async () => {
+  it("cloudroom thread spawn rejects combining --parent-thread and --parent-self", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-context-parent");
     const post = vi.fn(async () =>
       fixtures.makeThread({
@@ -748,7 +748,7 @@ describe("room thread spawn command output", () => {
     expect(post).not.toHaveBeenCalled();
   });
 
-  it("room thread spawn rejects invalid parent-thread values", async () => {
+  it("cloudroom thread spawn rejects invalid parent-thread values", async () => {
     const post = vi.fn(async () =>
       fixtures.makeThread({
         id: "thread-invalid-parent",
@@ -784,7 +784,7 @@ describe("room thread spawn command output", () => {
     expect(post).not.toHaveBeenCalled();
   });
 
-  it("room thread spawn forwards a valid --environment ID", async () => {
+  it("cloudroom thread spawn forwards a valid --environment ID", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-env-1",
@@ -830,7 +830,7 @@ describe("room thread spawn command output", () => {
     });
   });
 
-  it("room thread spawn forwards an absolute --environment path as an unmanaged workspace", async () => {
+  it("cloudroom thread spawn forwards an absolute --environment path as an unmanaged workspace", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     const workspacePath = "/Users/michael/Projects/bb";
     const thread: domain.Thread = fixtures.makeThread({
@@ -882,7 +882,7 @@ describe("room thread spawn command output", () => {
     });
   });
 
-  it("room thread spawn rejects invalid non-path --environment IDs", async () => {
+  it("cloudroom thread spawn rejects invalid non-path --environment IDs", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     const post = vi.fn();
     stubServerApi({ "v1.threads.$post": post });
@@ -913,7 +913,7 @@ describe("room thread spawn command output", () => {
     expect(post).not.toHaveBeenCalled();
   });
 
-  it("room thread spawn forwards --new-environment", async () => {
+  it("cloudroom thread spawn forwards --new-environment", async () => {
     vi.stubEnv("ROOM_PROJECT_ID", "proj-1");
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-env-1",
@@ -966,7 +966,7 @@ describe("room thread spawn command output", () => {
     });
   });
 
-  it("room thread spawn targets an unambiguous machine name", async () => {
+  it("cloudroom thread spawn targets an unambiguous machine name", async () => {
     const thread = fixtures.makeThread({
       id: "thread-machine",
       projectId: "proj-1",
@@ -1013,7 +1013,7 @@ describe("room thread spawn command output", () => {
     });
   });
 
-  it("room thread spawn combines --host with an unmanaged path", async () => {
+  it("cloudroom thread spawn combines --host with an unmanaged path", async () => {
     const post = vi.fn(async () =>
       fixtures.makeThread({
         id: "thread-machine-path",
@@ -1062,7 +1062,7 @@ describe("room thread spawn command output", () => {
     });
   });
 
-  it("room thread spawn creates a managed worktree on the selected machine", async () => {
+  it("cloudroom thread spawn creates a managed worktree on the selected machine", async () => {
     const post = vi.fn(async () =>
       fixtures.makeThread({
         id: "thread-machine-worktree",
@@ -1116,7 +1116,7 @@ describe("room thread spawn command output", () => {
     });
   });
 
-  it("room thread spawn rejects selecting a machine for a reused environment", async () => {
+  it("cloudroom thread spawn rejects selecting a machine for a reused environment", async () => {
     const post = vi.fn();
     stubServerApi({ "v1.threads.$post": post });
 
@@ -1329,7 +1329,7 @@ describe("room thread spawn command output", () => {
       [
         "a provider with inputs and none given",
         ["--environment-provider", "git-worktree"],
-        "Error: The 'git-worktree' environment provider needs --environment-inputs <json>; `room environment providers --json` shows its schema.",
+        "Error: The 'git-worktree' environment provider needs --environment-inputs <json>; `cloudroom environment providers --json` shows its schema.",
       ],
       [
         "inputs given to a provider without any",

@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import { Slot } from "@radix-ui/react-slot";
 
 import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
+import { useMediaQuery } from "@bb/shared-ui/hooks/use-media-query";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { Button } from "@bb/shared-ui/button";
 import { COARSE_POINTER_HEADER_ICON_BUTTON_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
@@ -203,6 +204,13 @@ function isSidebarSwipeEdgeZoneTouch(clientX: number): boolean {
   return (
     clientX >= SIDEBAR_MOBILE_SWIPE_BROWSER_EDGE_GUARD_PX &&
     clientX < SIDEBAR_MOBILE_SWIPE_OPEN_EDGE_ZONE_PX
+  );
+}
+
+function isInsideTappableControl(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest('button, a, [role="button"]') !== null
   );
 }
 
@@ -1029,6 +1037,8 @@ const SidebarInset = React.forwardRef<
     setSuppressMobileOpenAnimation,
     setSuppressMobileCloseAnimation,
   } = useSidebar();
+  const isStandaloneApp = useMediaQuery("(display-mode: standalone)");
+  const claimsScreenEdge = isCompactViewport && isStandaloneApp;
   const swipeSessionRef = React.useRef<SidebarInsetSwipeSession | null>(null);
   const removeSwipeListenersRef = React.useRef<(() => void) | null>(null);
   const removeSwipeClickSuppressorRef = React.useRef<(() => void) | null>(null);
@@ -1300,16 +1310,26 @@ const SidebarInset = React.forwardRef<
       }
 
       const touch = event.touches.item(0);
+      if (touch == null) {
+        return;
+      }
+
+      const isScreenEdgeTouch =
+        touch.clientX < SIDEBAR_MOBILE_SWIPE_BROWSER_EDGE_GUARD_PX;
       if (
-        touch == null ||
-        touch.clientX < SIDEBAR_MOBILE_SWIPE_BROWSER_EDGE_GUARD_PX
+        isScreenEdgeTouch &&
+        (!claimsScreenEdge || isInsideTappableControl(event.target))
       ) {
         return;
+      }
+      if (isScreenEdgeTouch && event.cancelable) {
+        event.preventDefault();
       }
 
       clearSwipeSession();
 
-      const canPreventDefault = isSidebarSwipeEdgeZoneTouch(touch.clientX);
+      const canPreventDefault =
+        isScreenEdgeTouch || isSidebarSwipeEdgeZoneTouch(touch.clientX);
       swipeSessionRef.current = createSidebarInsetSwipeSession({
         kind: "touch",
         id: touch.identifier,
@@ -1333,6 +1353,7 @@ const SidebarInset = React.forwardRef<
       removeSwipeListenersRef.current = removeListeners;
     },
     [
+      claimsScreenEdge,
       clearSwipeSession,
       handleTouchEnd,
       handleTouchMove,
@@ -1407,7 +1428,7 @@ const SidebarInset = React.forwardRef<
     });
     document.addEventListener("touchstart", startTouchSwipe, {
       capture: true,
-      passive: true,
+      passive: !claimsScreenEdge,
     });
     document.addEventListener("selectionchange", cancelSwipeForTextSelection);
     return () => {
@@ -1422,7 +1443,7 @@ const SidebarInset = React.forwardRef<
         cancelSwipeForTextSelection,
       );
     };
-  }, [clearSwipeSession, startPointerSwipe, startTouchSwipe]);
+  }, [claimsScreenEdge, clearSwipeSession, startPointerSwipe, startTouchSwipe]);
 
   const handleWheelSwipe = React.useCallback(
     (event: WheelEvent) => {

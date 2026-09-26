@@ -1,8 +1,9 @@
 import { spawn } from "node:child_process";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  CLOUDROOM_UPDATE_BASE_URL,
   createDesktopReleaseConfig,
   resolveDesktopReleaseChannel,
 } from "./desktop-release-channel.mjs";
@@ -93,7 +94,9 @@ function logSigningPlan(signingPlan) {
     }
   } else if (signingPlan.mode === "keychain") {
     console.log(
-      "macOS code signing via keychain auto-discovery; artifacts stay unsigned if no identity is installed. Notarization skipped.",
+      `macOS code signing via keychain auto-discovery; artifacts stay unsigned if no identity is installed. ${
+        signingPlan.notarizationEnabled ? "Notarizing with APPLE_KEYCHAIN_PROFILE." : "Notarization skipped."
+      }`,
     );
   } else {
     logWarning(
@@ -160,10 +163,13 @@ function createSigningPlan(env) {
     };
   }
 
+  const disabled = autoDiscoveryExplicitlyDisabled(env);
   return {
-    mode: autoDiscoveryExplicitlyDisabled(env) ? "disabled" : "keychain",
+    mode: disabled ? "disabled" : "keychain",
     identityName: undefined,
-    notarizationEnabled: false,
+    // Local release builds: Developer ID from the Keychain, plus a
+    // `xcrun notarytool store-credentials` profile.
+    notarizationEnabled: !disabled && envValueIsSet(env.APPLE_KEYCHAIN_PROFILE),
   };
 }
 
@@ -195,6 +201,7 @@ function resolveElectronBuilderConfig(
   }
 
   config.mac = mac;
+  config.dmg = { ...config.dmg, sign: signingPlan.notarizationEnabled };
   config.linux = {
     ...config.linux,
     executableName: releaseConfig.linuxExecutableName,
@@ -203,7 +210,10 @@ function resolveElectronBuilderConfig(
   config.appId = releaseConfig.appId;
   config.artifactName = releaseConfig.artifactName;
   config.productName = releaseConfig.applicationName;
-  config.publish = null;
+  config.publish =
+    releaseChannel === "latest" && cloudroomVersion !== undefined && signingPlan.mode !== "ad-hoc"
+      ? { provider: "generic", url: CLOUDROOM_UPDATE_BASE_URL, channel: "latest" }
+      : null;
   if (cloudroomVersion !== undefined) {
     const bundleVersion = cloudroomBundleVersion(cloudroomVersion);
     config.artifactName = config.artifactName.replace("${version}", cloudroomVersion);
@@ -235,6 +245,39 @@ function createElectronBuilderEnv(signingPlan) {
   }
 
   return childEnv;
+}
+
+function notarytoolAuthArgs(env) {
+  if (envValueIsSet(env.APPLE_KEYCHAIN_PROFILE)) {
+    return ["--keychain-profile", env.APPLE_KEYCHAIN_PROFILE.trim()];
+  }
+  return [
+    "--apple-id", env.APPLE_ID,
+    "--password", env.APPLE_APP_SPECIFIC_PASSWORD,
+    "--team-id", env.APPLE_TEAM_ID,
+  ];
+}
+
+function runXcrun(args) {
+  return new Promise((resolveRun, rejectRun) => {
+    const child = spawn("xcrun", args, { stdio: "inherit" });
+    child.on("error", rejectRun);
+    child.on("close", (code) =>
+      code === 0 ? resolveRun() : rejectRun(new Error(`xcrun ${args[0]} ${args[1]} failed (${code})`)),
+    );
+  });
+}
+
+// electron-builder notarizes and staples only the app. Notarize the DMG too, so
+// Gatekeeper trusts the download itself, even offline.
+async function notarizeDmgs(outputDirectory, builtAfterMs) {
+  for (const name of await readdir(outputDirectory)) {
+    const dmgPath = join(outputDirectory, name);
+    if (!name.endsWith(".dmg") || (await stat(dmgPath)).mtimeMs < builtAfterMs) continue;
+    console.log(`Notarizing ${name}...`);
+    await runXcrun(["notarytool", "submit", dmgPath, ...notarytoolAuthArgs(process.env), "--wait"]);
+    await runXcrun(["stapler", "staple", dmgPath]);
+  }
 }
 
 async function readBaseConfig() {
@@ -310,8 +353,12 @@ async function main() {
   }
   await mkdir(dirname(generatedConfigPath), { recursive: true });
   await writeGeneratedConfig(config);
+  const buildStartedMs = Date.now();
   try {
     await runElectronBuilder(electronBuilderArgs, signingPlan);
+    if (process.exitCode === 0 && signingPlan.notarizationEnabled && !electronBuilderArgs.includes("--dir")) {
+      await notarizeDmgs(resolve(desktopPackageRoot, config.directories.output), buildStartedMs);
+    }
     if (process.platform === "darwin") {
       await unregisterBundle(resolve(desktopPackageRoot, config.directories.output));
     }

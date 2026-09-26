@@ -84,6 +84,7 @@ export function registerStatusCommand(
             .filter(
               (p) =>
                 p.enabled &&
+                !p.isOrphanedBuiltin &&
                 ["incompatible", "error", "missing"].includes(p.status),
             )
             .map((p) => ({ id: p.id, status: p.status }));
@@ -194,13 +195,13 @@ export function registerStatusCommand(
         if (attention.length > 0) {
           console.log("");
           console.log(
-            `${attention.length} plugin${attention.length === 1 ? "" : "s"} not running (${attention.map((p) => `${p.id}: ${p.status}`).join(", ")}). Run room plugin list.`,
+            `${attention.length} plugin${attention.length === 1 ? "" : "s"} not running (${attention.map((p) => `${p.id}: ${p.status}`).join(", ")}). Run cloudroom plugin list.`,
           );
         }
 
         if (!context.projectId && !context.threadId) {
           console.log("");
-          console.log("Tip: run room guide for help getting started.");
+          console.log("Tip: run cloudroom guide for help getting started.");
         }
       }),
     );

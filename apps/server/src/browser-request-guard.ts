@@ -147,7 +147,7 @@ export function browserRequestProblem(
   if (origin !== undefined && !isTrustedOrigin(context, deps, origin)) {
     return {
       status: 403,
-      error: `origin "${origin}" is not a local Room app origin`,
+      error: `origin "${origin}" is not a local Cloudroom app origin`,
     };
   }
 

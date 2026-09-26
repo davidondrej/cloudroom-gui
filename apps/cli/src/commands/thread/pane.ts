@@ -29,7 +29,7 @@ function resolveThreadPaneTarget(id: string | undefined): ResolvedId {
     return { id: context, source: "env" };
   }
   throw new Error(
-    "Missing thread ID. Pass <threadId> or run inside a Room thread.",
+    "Missing thread ID. Pass <threadId> or run inside a Cloudroom thread.",
   );
 }
 
@@ -39,13 +39,13 @@ export function registerPaneCommand(
 ): void {
   parent
     .command("pane")
-    .description("Control an open thread pane in connected Room apps")
+    .description("Control an open thread pane in connected Cloudroom apps")
     .usage("<maximize|restore|toggle|spotlight|clear-spotlight> [id] [options]")
     .argument(
       "<action>",
       "Pane action: maximize, restore, toggle, spotlight, or clear-spotlight",
     )
-    .argument("[id]", "Thread ID. Omit inside a Room thread.")
+    .argument("[id]", "Thread ID. Omit inside a Cloudroom thread.")
     .option("--json", "Print machine-readable JSON output")
     .action(
       action(

@@ -1,9 +1,9 @@
-Keep your notes, plans, and reports as plain Markdown files on disk, and edit them inside Room. Documents stay ordinary files in folders you choose, on this machine or on any connected host.
+Keep your notes, plans, and reports as plain Markdown files on disk, and edit them inside Cloudroom. Documents stay ordinary files in folders you choose, on this machine or on any connected host.
 
 ## What you get
 
 - A Docs panel with a folder tree, search, and a rich Markdown editor. Tables, images, and YAML frontmatter are supported.
-- Vaults. Each vault is a folder on a host. A new install starts with a Personal vault at `~/Notes`. Add vaults on other machines that are enrolled as Room hosts.
+- Vaults. Each vault is a folder on a host. A new install starts with a Personal vault at `~/Notes`. Add vaults on other machines that are enrolled as Cloudroom hosts.
 - Full HTML pages and embedded HTML blocks render in a sandboxed frame. Keep interactive reports next to your notes.
 - A Markdown opener for `.md` files from file links. Make it the default under Settings.
 - `@` mentions. Type `@` in the composer to attach a document. The agent gets its current content at send time.
@@ -11,4 +11,4 @@ Keep your notes, plans, and reports as plain Markdown files on disk, and edit th
 
 ## For agents
 
-Agents get the `docs` skill and the `room docs` command. They list vaults with `room docs vaults` and read files with `room docs read`. They edit with `room docs pull`, `room docs status`, and `room docs push`. Push uses version checks, so a concurrent edit is reported as a conflict instead of being overwritten.
+Agents get the `docs` skill and the `cloudroom docs` command. They list vaults with `cloudroom docs vaults` and read files with `cloudroom docs read`. They edit with `cloudroom docs pull`, `cloudroom docs status`, and `cloudroom docs push`. Push uses version checks, so a concurrent edit is reported as a conflict instead of being overwritten.

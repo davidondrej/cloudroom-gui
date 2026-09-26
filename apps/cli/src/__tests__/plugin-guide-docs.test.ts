@@ -19,22 +19,22 @@ function buildPluginCommand(): Command {
 }
 
 describe("plugins guide chapter", () => {
-  it("mentions every room plugin subcommand", () => {
+  it("mentions every cloudroom plugin subcommand", () => {
     const plugin = buildPluginCommand();
     const names = plugin.commands.map((command) => command.name());
     expect(names.length).toBeGreaterThan(0);
 
     const guide = renderTemplate("bbGuidePlugins", {});
     for (const name of names) {
-      const pattern = new RegExp(`room plugin (?:[a-z-]+\\|)*${name}\\b`);
+      const pattern = new RegExp(`cloudroom plugin (?:[a-z-]+\\|)*${name}\\b`);
       expect(
         guide,
-        `"room plugin ${name}" is not documented in bb-guide-plugins.md`,
+        `"cloudroom plugin ${name}" is not documented in bb-guide-plugins.md`,
       ).toMatch(pattern);
     }
   });
 
-  it("mentions every declared room plugin option flag", () => {
+  it("mentions every declared cloudroom plugin option flag", () => {
     const plugin = buildPluginCommand();
     const guide = renderTemplate("bbGuidePlugins", {});
     let optionCount = 0;
@@ -47,14 +47,14 @@ describe("plugins guide chapter", () => {
         expect(forms.length).toBeGreaterThan(0);
         expect(
           forms.some((form) => guide.includes(form)),
-          `"room plugin ${command.name()}" flag "${option.flags}" is not documented in bb-guide-plugins.md`,
+          `"cloudroom plugin ${command.name()}" flag "${option.flags}" is not documented in bb-guide-plugins.md`,
         ).toBe(true);
       }
     }
     expect(optionCount).toBeGreaterThan(0);
   });
 
-  it("mentions every room marketplace subcommand", () => {
+  it("mentions every cloudroom marketplace subcommand", () => {
     const marketplace = buildGroupCommand("marketplace");
     const names = marketplace.commands.map((command) => command.name());
     expect(names.length).toBeGreaterThan(0);
@@ -63,8 +63,8 @@ describe("plugins guide chapter", () => {
     for (const name of names) {
       expect(
         guide,
-        `"room marketplace ${name}" is not documented in bb-guide-plugins.md`,
-      ).toMatch(new RegExp(`room marketplace ${name}\\b`));
+        `"cloudroom marketplace ${name}" is not documented in bb-guide-plugins.md`,
+      ).toMatch(new RegExp(`cloudroom marketplace ${name}\\b`));
     }
   });
 });

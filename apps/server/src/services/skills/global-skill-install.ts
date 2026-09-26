@@ -17,7 +17,7 @@ import {
 } from "../hosts/online-rpc.js";
 import { resolveServerOwnedSkillCatalogEntries } from "./injected-skills.js";
 
-const GLOBAL_CLI_SKILL_NAMES: readonly string[] = ["room-cli"];
+const GLOBAL_CLI_SKILL_NAMES: readonly string[] = ["cloudroom"];
 
 const STATUS_TIMEOUT_MS = 5_000;
 
@@ -124,7 +124,7 @@ export async function readGlobalCliSkillStatus(
       } catch (error) {
         deps.logger.debug(
           { hostId: host.id, err: error },
-          "Could not read the Room CLI skill status from a machine",
+          "Could not read the Cloudroom CLI skill status from a machine",
         );
         return { ...base, status: "unknown" as const };
       }
@@ -159,7 +159,7 @@ export async function installGlobalCliSkills(
     throw new ApiError(
       500,
       "cli_skill_unavailable",
-      "The built-in Room CLI skill is unavailable on this server",
+      "The built-in Cloudroom CLI skill is unavailable on this server",
     );
   }
 
@@ -180,7 +180,7 @@ export async function installGlobalCliSkills(
       } catch (error) {
         deps.logger.warn(
           { hostId: host.id, err: error },
-          "Failed to install the Room CLI skills on a machine",
+          "Failed to install the Cloudroom CLI skills on a machine",
         );
         return {
           ok: false as const,

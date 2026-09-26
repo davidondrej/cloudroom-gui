@@ -165,7 +165,7 @@ it.each(["pi", "codex"])("recovers an idle %s stream without sending messages or
 
     streamStatus = 401;
     streams.at(-1)!.end();
-    await poll().toMatchObject({ error: "Cloudroom authentication failed", reconnecting: false });
+    await poll().toMatchObject({ error: "Cloudroom authentication failed (HTTP 401)", reconnecting: false });
     streamStatus = 200;
     await poll().toMatchObject({ error: null, reconnecting: false });
     record(1, { state: 123 });
@@ -194,7 +194,9 @@ it.each(["pi", "codex"])("recovers an idle %s stream without sending messages or
     expect(posts).toBe(1);
     expect(warn).toHaveBeenCalledWith(expect.objectContaining({ threadId: thread.id, phase: "stream", networkCode: "UND_ERR_SOCKET" }), "Cloudroom connection state changed");
     expect(warn).toHaveBeenCalledWith(expect.objectContaining({ phase: "replay", errorType: "ZodError" }), "Cloudroom connection state changed");
-    expect(JSON.stringify(warn.mock.calls)).not.toContain("SECRET-CANARY");
+    // Core error text is shown and logged (ADR 0123); auth-failure bodies are never read.
+    expect(warn).toHaveBeenCalledWith(expect.objectContaining({ phase: "stream", status: 503, message: "Cloudroom rejected the request (HTTP 503): SECRET-CANARY" }), "Cloudroom connection state changed");
+    expect(JSON.stringify(warn.mock.calls.filter(([fields]) => (fields as { status?: unknown })?.status === 401))).not.toContain("SECRET-CANARY");
   } finally {
     service.stop(); core.closeAllConnections(); await new Promise<void>(resolve => core.close(() => resolve())); await harness.cleanup();
   }
@@ -596,11 +598,11 @@ it.each([true, false, null])("starts without copying local files or waiting for 
     expect(firstMessages()).toEqual([originalMessage]);
     expect(service.queue(thread.id)).toEqual([]);
     expect(state).not.toHaveProperty("syncProgress");
-    expect(paths.some(path => path.startsWith("/v1/workspaces"))).toBe(false);
+    expect(paths.some(path => path.startsWith("/v1/workspaces"))).toBe(targetExists !== null);
     expect(requestText).toContain("Keep my message");
     expect(requestText).not.toContain("project contents");
     expect(requestText).not.toContain("SECRET-URL-CANARY");
-    expect(requestText.includes("https://github.com/example/project.git")).toBe(Boolean(targetExists));
+    expect(requestText).not.toContain("github.com/example/project");
     expect(JSON.parse(originalMessage!.data).input[0].text).toBe("Keep my message");
     expect(setup).toHaveBeenCalled();
     expect(listQueuedCommands(harness, "workspace.status")).toHaveLength(0);

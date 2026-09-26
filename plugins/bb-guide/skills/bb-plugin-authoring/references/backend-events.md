@@ -88,7 +88,7 @@ provider that tore its workspace down is asked for one again when the thread
 next needs to run, so this is where to start warming one up. Observe-only handlers run
 fire-and-forget after the transition and can never block or veto it. `thread`
 is the same DTO `GET /api/v1/threads/:id` serves. Errors are caught, logged,
-and counted in the plugin's handler stats (`room plugin list`).
+and counted in the plugin's handler stats (`cloudroom plugin list`).
 
 Lifecycle events are broadcast to all loaded plugins regardless of sidebar
 visibility.
@@ -292,10 +292,10 @@ wildcards. The handler is a Hono handler:
 `(context) => Response | Promise<Response>`.
 Auth modes:
 
-- `"local"` (default) — accepts no `Origin` header or a trusted Room app origin.
-  A non-GET mutation must use `application/json`. Use this mode for the Room
+- `"local"` (default) — accepts no `Origin` header or a trusted Cloudroom app origin.
+  A non-GET mutation must use `application/json`. Use this mode for the Cloudroom
   frontend.
-- `"token"` — requires the per-plugin token (`room plugin token <id>`;
+- `"token"` — requires the per-plugin token (`cloudroom plugin token <id>`;
   `--rotate` generates a new one, invalidating the old) via the
   `x-bb-plugin-token` header or `?token=`. Right for external scripts
   and machines you control.
@@ -419,7 +419,7 @@ bb.background.schedule("sync", "*/5 * * * *", async () => {
 - Semantics differ on throw: a service throwing `NeedsConfigurationError`
   transitions the whole plugin to `needs-configuration` and stops
   restarting until the next load; a schedule throw (any error) only lands
-  in the schedule's `last_status`/`last_error` shown by `room plugin list`.
+  in the schedule's `last_status`/`last_error` shown by `cloudroom plugin list`.
 - `NeedsConfigurationError` is matched **by name**, so no runtime import is
   needed: `throw Object.assign(new Error(msg), { name:
 "NeedsConfigurationError" })`. Pair it with `bb.status.needsConfiguration`
@@ -430,7 +430,7 @@ bb.background.schedule("sync", "*/5 * * * *", async () => {
 const initial = await settings.get();
 if (!initial.apiKey)
   bb.status.needsConfiguration(
-    "Set apiKey with `room plugin config <id>`, then reload.",
+    "Set apiKey with `cloudroom plugin config <id>`, then reload.",
   );
 ```
 

@@ -1,21 +1,25 @@
 import { createHash, randomUUID } from "node:crypto";
 import { readFile, writeFile, mkdir, stat, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { platform } from "node:os";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { createThread, getAppSettings, getProject, getThread, getThreadExecutionOverride, setThreadExecutionOverride, cloudroomThreads, cloudroomCommands, events, type DbConnection, type DbQueryConnection } from "@bb/db";
-import { encodeClientTurnRequestIdNumber, isStandaloneBuiltinCompactCommand, reasoningLevelSchema, threadQueuedMessageSchema, type Thread, type PromptInput, type ThreadEventType, type ThreadChangeKind, type ReasoningLevel } from "@bb/domain";
+import { createThread, getAppSettings, getProject, getThread, getThreadExecutionOverride, setThreadExecutionOverride, updateThread, cloudroomThreads, cloudroomCommands, events, type DbConnection, type DbQueryConnection } from "@bb/db";
+import { PERSONAL_PROJECT_ID, encodeClientTurnRequestIdNumber, isStandaloneBuiltinCompactCommand, promptInputSchema, reasoningLevelSchema, threadQueuedMessageSchema, type Thread, type PromptInput, type ThreadEventType, type ThreadChangeKind, type ReasoningLevel } from "@bb/domain";
 import type { CreateThreadRequest, SendMessageRequest, SendMessageResponse } from "@bb/server-contract";
 import { z } from "zod";
 import { ApiError } from "../../errors.js";
-import { CloudroomClient, CloudroomConnectionError, CloudroomError } from "./client.js";
-import { projectInitialPrompt, projectRecord, retractStillQueuedPrompts } from "./events.js";
+import { CloudroomClient, CloudroomConnectionError, CloudroomError, authRequiredMessages, type VmRun, type VmRunResult } from "./client.js";
+import { CLOUD_HARNESSES, isCloudProvider, projectInitialPrompt, projectRecord, retractStillQueuedPrompts, type CloudProvider } from "./events.js";
+import { mentionsOpenAISide401 } from "./codex-errors.js";
+import { codexOutage } from "./openai-status.js";
 import { buildThreadStatusChangeMetadata } from "../threads/thread-runtime-display.js";
-import { binding, bindings, command, commands, queuedPrompts, saveBinding, saveCommandState, saveStatus, effectivePrompt, teleportBlocked, type Binding, type Command } from "./store.js";
+import { prepareCloudInstructionInput, resolveCustomInstructions } from "../threads/custom-instructions.js";
+import { binding, bindings, command, commands, queuedPrompts, saveBinding, saveCommandState, saveStatus, effectivePrompt, projectCopyProgress, teleportBlocked, type Binding, type Command } from "./store.js";
+import { copyProject, planProjectCopy } from "./project-copy.js";
 import { deriveTitleFallback, shouldGenerateThreadTitle } from "../threads/title-generation.js";
 import { inferThreadMetadata } from "../threads/thread-metadata-inference.js";
-import { importCodexLogin, setupSync, stopSync, syncStatus } from "./sync.js";
+import { importCodexLogin, importPiLogin, setupSync, stopSync, syncStatus } from "./sync.js";
 import { setupPreviews, stopPreviews, previewStatus } from "./previews.js";
+import { CloudSecrets } from "./secrets.js";
 import type { AppDeps, LoggedWorkSessionDeps } from "../../types.js";
 import type { EditMessageRequest, EditMessageResponse } from "@bb/server-contract";
 
@@ -42,16 +46,19 @@ const capabilitiesSchema = z.object({
   prompt_reasoning: z.boolean().default(false),
   workspaces: z.boolean().default(false),
   direct_workspaces: z.boolean().default(false),
+  root_workspace: z.boolean().default(false),
   teleport: z.boolean().default(false),
   command_guard: z.boolean().default(false),
   codex_auth: z.boolean().default(false),
   cursor_auth: z.boolean().default(false),
+  claude_auth: z.boolean().default(false),
   codex_auth_import: z.boolean().default(false),
   sync: z.boolean().default(false),
   previews: z.boolean().default(false),
   structured_prompt: z.boolean().default(false),
   queue_edit: z.boolean().default(false),
   queue_cancel: z.boolean().default(false),
+  queue_reorder: z.boolean().default(false),
   steer: z.boolean().default(false),
   rewind: z.boolean().default(false),
   attachments: z.boolean().default(false),
@@ -68,6 +75,7 @@ const capabilitiesSchema = z.object({
     steer: z.boolean().default(false),
     compact: z.boolean().default(false),
     service_tier: z.boolean().default(false),
+    skill_mentions: z.boolean().default(false),
     rewind: z.boolean().default(false),
     attachments: z.object({ images: z.boolean(), files: z.boolean() }).optional(),
     subagents: z.boolean().default(false),
@@ -90,14 +98,11 @@ function storageMessage(storage: Storage | null): string | null {
   const bytes = storage.workspace_available_bytes === null || storage.history_available_bytes === null ? null : Math.min(storage.workspace_available_bytes, storage.history_available_bytes);
   return `Cloud disk space is critically low${bytes === null ? "" : ` (${(bytes / 1e9).toFixed(1)} GB available)`}. Work resumes automatically when space recovers. Saved messages are kept.`;
 }
-type Deps = Pick<AppDeps, "db" | "hub" | "config" | "providerRegistry"> & Partial<LoggedWorkSessionDeps>;
+type Deps = Pick<AppDeps, "db" | "hub" | "config" | "providerRegistry"> & Partial<LoggedWorkSessionDeps> & Partial<Pick<AppDeps, "pendingInteractions">>;
 const services = new WeakMap<DbConnection, CloudroomService>();
 const workspaceId = (projectId: string) => `bb_${projectId}`;
+const ROOT_WORKSPACE = "root";
 const workspaceName = (name: string) => name.replace(/[^a-zA-Z0-9_.-]/g, "-").replace(/^\.+/, "").slice(0, 80) || "project";
-function sourceRepository(remote: string | null): string | undefined {
-  const repository = remote?.match(/^(?:https:\/\/github\.com\/|git@github\.com:)([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)\/?$/)?.[1];
-  return repository ? `https://github.com/${repository}` : undefined;
-}
 
 export function cloudroom(deps: Deps): CloudroomService {
   let service = services.get(deps.db);
@@ -117,6 +122,14 @@ type PromptAttachment = { name: string; kind: "image" | "file"; localPath: strin
 
 function cloudTextContent(content: unknown): unknown {
   return Array.isArray(content) ? content.filter(part => part?.type === "text") : content;
+}
+
+function requireClaudeSkillSupport(content: unknown, capabilities: Capabilities, harness: string | undefined): void {
+  if (harness !== "claude-code" || (capabilities.structured_prompt && harnessProfile(capabilities, harness)?.skill_mentions)) return;
+  const input = z.array(promptInputSchema).parse(content ?? []);
+  if (input.some(part => part.type === "text" && part.mentions.some(({ resource }) => resource.kind === "command" && resource.source === "skill"))) {
+    throw new ApiError(409, "cloudroom_update", "Update the cloud core to load selected Claude skills. Your message is saved.");
+  }
 }
 
 export function promptPayload(input: PromptInput[], harness: string, attachmentsEnabled: boolean | { images: boolean; files: boolean }): { text: string; content: PromptInput[]; attachments: PromptAttachment[] } {
@@ -151,7 +164,7 @@ export function promptPayload(input: PromptInput[], harness: string, attachments
   return { text, content: input, attachments };
 }
 
-function coreModel(harness: "codex" | "pi" | "acp-cursor" | "claude-code", model: string, capabilities: z.infer<typeof capabilitiesSchema>): { model: string; provider?: string } {
+function coreModel(harness: CloudProvider, model: string, capabilities: z.infer<typeof capabilitiesSchema>): { model: string; provider?: string } {
   const profile = harnessProfile(capabilities, harness);
   if (!profile) throw new ApiError(400, "cloudroom_harness", `Configure ${harness} on the cloud VM first.`);
   if (harness !== "pi") return { model };
@@ -172,7 +185,7 @@ function validateReasoning(harness: string, model: string, reasoning: string, ca
 
 function validateFollowUpReasoning(harness: string, saved: Binding, reasoning: string, capabilities: Capabilities): void {
   if (reasoning === saved.reasoning) return;
-  if (harness === "acp-cursor") throw new ApiError(409, "cloudroom_launch_settings", "Cursor reasoning is fixed for this cloud session. Start a new thread to change it.");
+  if (harness === "acp-cursor" || harness === "acp-fx") throw new ApiError(409, "cloudroom_launch_settings", `${harness === "acp-fx" ? "fx" : "Cursor"} reasoning is fixed for this cloud session. Start a new thread to change it.`);
   if (harness !== "codex" && harness !== "pi" && harness !== "claude-code") throw new ApiError(400, "cloudroom_harness", "Unsupported cloud harness.");
   if (!capabilities.prompt_reasoning) throw new ApiError(409, "cloudroom_update", "Update the cloud core before changing reasoning on a follow-up.");
   validateReasoning(harness, coreModel(harness, saved.model, capabilities).model, reasoning, capabilities);
@@ -218,7 +231,8 @@ function nativeRewindBefore(db: DbQueryConnection, threadId: string, expectedReq
 }
 
 function harnessProfile(capabilities: Capabilities, harness: string) {
-  return capabilities.harnesses.find((item) => item.id === (harness === "acp-cursor" ? "cursor" : harness));
+  const id = isCloudProvider(harness) ? CLOUD_HARNESSES[harness] : harness;
+  return capabilities.harnesses.find((item) => item.id === id);
 }
 
 function commandReasoning(input: string): string | undefined {
@@ -230,8 +244,11 @@ function commandReasoning(input: string): string | undefined {
   }
 }
 
+const connectionOrReplayFailed = "Cloudroom connection or replay failed";
+
 function publicError(error: unknown): string {
-  return error instanceof CloudroomError || error instanceof ApiError ? error.message : "Cloudroom connection or replay failed";
+  if (error instanceof CloudroomError || error instanceof ApiError) return error.message;
+  return error instanceof Error ? `${connectionOrReplayFailed}: ${error.message}` : connectionOrReplayFailed;
 }
 
 function connectionFailure(error: unknown): boolean {
@@ -245,6 +262,7 @@ type ConnectionIssue = { message: string; reconnecting: boolean };
 
 class CloudroomService {
   teleportRecovery?: () => void;
+  archiveRequest?: (threadId: string) => void;
   teleportUrl = "";
   async teleportClient(threadId?: string): Promise<CloudroomClient> {
     const connection = await this.connection();
@@ -254,6 +272,11 @@ class CloudroomService {
     return new CloudroomClient(connection);
   }
   followTeleport(threadId: string): void { void this.deliver(threadId).catch(() => {}); }
+  detach(threadId: string): void {
+    this.streams.get(threadId)?.abort();
+    this.streams.delete(threadId);
+    this.connectionIssues.delete(threadId);
+  }
   private readonly streams = new Map<string, AbortController>();
   private readonly connectionIssues = new Map<string, Partial<Record<ConnectionPhase, ConnectionIssue>>>();
   private readonly deliveries = new Map<string, Promise<void>>();
@@ -268,7 +291,8 @@ class CloudroomService {
   private onboardingDue = 0;
   private reportingOnboarding = false;
   private lastCapabilities: Capabilities | null = null;
-  constructor(private readonly deps: Deps) {}
+  private readonly secrets: CloudSecrets;
+  constructor(private readonly deps: Deps) { this.secrets = new CloudSecrets(deps); }
 
   private get path() { return join(this.deps.config.dataDir, "cloudroom.json"); }
 
@@ -285,7 +309,7 @@ class CloudroomService {
 
   private async connection(): Promise<Connection> {
     const saved = await this.savedConnection();
-    if (!saved?.token) throw new ApiError(503, "cloudroom_not_configured", "Sign in to Cloudroom to connect your existing VM.");
+    if (!saved?.token) throw new ApiError(503, "cloudroom_not_configured", "Cloud is an invite-only beta. Join the waitlist at cloudroom.dev, or sign in if you're invited.");
     const { account: _account, websiteUrl: _website, onboarding: _onboarding, ...connection } = saved;
     return connectionSchema.parse(connection);
   }
@@ -382,7 +406,6 @@ class CloudroomService {
 
   async selectOnboardingProject(projectId: string): Promise<void> {
     if (!getProject(this.deps.db, projectId)) throw new ApiError(404, "project_not_found", "Project not found");
-    if (platform() !== "darwin") return;
     await this.changeConnection(async () => {
       const saved = await this.savedConnection();
       if (!saved?.account || !saved.token || saved.onboarding?.projectSelected) return;
@@ -393,7 +416,6 @@ class CloudroomService {
   }
 
   private async rememberCloudMessage(sessionId: string, requestId: string, epoch: number): Promise<void> {
-    if (platform() !== "darwin") return;
     await this.changeConnection(async () => {
       const saved = await this.savedConnection();
       if (!saved?.account || !saved.token || saved.onboarding?.firstMessage || this.epoch !== epoch) return;
@@ -404,7 +426,7 @@ class CloudroomService {
   }
 
   private async reportOnboarding(): Promise<void> {
-    if (platform() !== "darwin" || this.stopped || this.reportingOnboarding || Date.now() < this.onboardingDue) return;
+    if (this.stopped || this.reportingOnboarding || Date.now() < this.onboardingDue) return;
     this.reportingOnboarding = true;
     this.onboardingDue = Date.now() + 30_000;
     const epoch = this.epoch;
@@ -441,7 +463,7 @@ class CloudroomService {
   }
 
   private ensurePreviews(capabilities: Capabilities): Promise<void> | undefined {
-    if (!capabilities.previews || platform() !== "darwin" || this.stopped || this.previewSetupEpoch === this.epoch || Date.now() < this.previewRetryAt) return;
+    if (!capabilities.previews || this.stopped || this.previewSetupEpoch === this.epoch || Date.now() < this.previewRetryAt) return;
     const epoch = this.epoch;
     this.previewSetupEpoch = epoch;
     this.previewRetryAt = Date.now() + 30_000;
@@ -478,9 +500,23 @@ class CloudroomService {
         model: capabilities.harnesses.find((h) => h.id === "codex")?.model ?? null,
         steer: capabilities.steer, rewind: capabilities.rewind, attachments: capabilities.attachments,
         compact: capabilities.compact, queue_edit: capabilities.queue_edit, queue_cancel: capabilities.queue_cancel,
-        error: null,
+        queue_reorder: capabilities.queue_reorder, error: null,
       };
     } catch (error) { return { ready: false, account, projectId, storage, workspaces: false, repository: null, model: null, error: publicError(error) }; }
+  }
+
+  /** Mac → VM access (ADR 0113). Local agents reach this through `cloudroom vm`. */
+  async runOnVm(input: VmRun, signal?: AbortSignal): Promise<VmRunResult> {
+    try { return await new CloudroomClient(await this.connection()).runOnVm(input, signal); }
+    catch (error) { throw new ApiError(error instanceof CloudroomError && error.status === 409 ? 409 : 503, "cloudroom_vm_run", publicError(error)); }
+  }
+
+  async claudeAuth(action?: "login" | "cancel" | "complete" | "token" | "key", requestId?: string, code?: string, state?: string) {
+    const client = await this.client();
+    const capabilities = await this.capabilities(client);
+    if (!capabilities.claude_auth) throw new ApiError(409, "claude_auth_unsupported", "Update the cloud core to connect Claude from this app.");
+    try { return await client.claudeAuth(action, requestId, code, state); }
+    catch (error) { throw new ApiError(error instanceof CloudroomError && error.status === 409 ? 409 : 503, "claude_auth_unavailable", `Could not reach Claude sign-in on your VM: ${publicError(error)}`); }
   }
 
   async cursorAuth(action?: "login" | "cancel" | "key", requestId?: string, apiKey?: string) {
@@ -489,6 +525,15 @@ class CloudroomService {
     if (!capabilities.cursor_auth) throw new ApiError(409, "cursor_auth_unsupported", "Update the cloud core to connect Cursor from this app.");
     try { return await client.cursorAuth(action, requestId, apiKey); }
     catch (error) { throw new ApiError(error instanceof CloudroomError && error.status === 409 ? 409 : 503, error instanceof CloudroomError ? error.code ?? "cursor_auth_unavailable" : "cursor_auth_unavailable", publicError(error)); }
+  }
+
+  async piApiKey(provider: string, apiKey: string) {
+    const client = await this.client();
+    try { return await client.piApiKey(provider, apiKey); }
+    catch (error) {
+      if (error instanceof CloudroomError && error.status === 404) throw new ApiError(409, "pi_auth_unsupported", "Update the cloud core to set Pi keys from this app.");
+      throw new ApiError(error instanceof CloudroomError && error.status === 409 ? 409 : 503, error instanceof CloudroomError ? error.code ?? "pi_auth_unavailable" : "pi_auth_unavailable", publicError(error));
+    }
   }
 
   async codexAuth(action?: "login" | "cancel", requestId?: string) {
@@ -537,15 +582,15 @@ class CloudroomService {
     const serviceTier = input.service_tier === "fast" ? "fast" : "default";
     const initial = prompts.find(item => item.id === `first_${threadId}`);
     const issues = Object.values(this.connectionIssues.get(threadId) ?? {});
-    return { authRequired: !saved.sessionId && ["Connect your ChatGPT subscription to use Codex in Cloud. Your prompt is saved.", "Connect your Cursor account to use Cursor in Cloud. Your prompt is saved."].includes(saved.error ?? ""), starting: !saved.queuePaused && Boolean(initial && ["sending", "accepted"].includes(initial.state)), sessionId: saved.sessionId, paused: saved.queuePaused, failedStart: !saved.sessionId && initial?.state === "failed", model: saved.model, reasoning, serviceTier, error: saved.error ?? issues.find(issue => !issue.reconnecting)?.message ?? null, reconnecting: issues.some(issue => issue.reconnecting), pendingDelivery: commands(this.deps.db, threadId).filter((c) => c.state === "sending").length };
+    return { authRequired: !saved.sessionId && authRequiredMessages.has(saved.error ?? ""), starting: !saved.queuePaused && Boolean(initial && ["sending", "accepted"].includes(initial.state)), sessionId: saved.sessionId, paused: saved.queuePaused, failedStart: !saved.sessionId && initial?.state === "failed", model: saved.model, reasoning, serviceTier, error: saved.error ?? issues.find(issue => !issue.reconnecting)?.message ?? null, reconnecting: issues.some(issue => issue.reconnecting), pendingDelivery: commands(this.deps.db, threadId).filter((c) => c.state === "sending").length };
   }
 
   async create(request: CreateThreadRequest): Promise<Thread> {
     const connection = await this.connection();
     const project = getProject(this.deps.db, request.projectId);
     if (!project) throw new ApiError(404, "project_not_found", "Project not found");
-    if ((request.providerId !== "codex" && request.providerId !== "pi" && request.providerId !== "acp-cursor" && request.providerId !== "claude-code") || request.originKind || request.parentThreadId || request.sourceThreadId || request.sendAt || request.pluginSubmission || request.environment.type !== "project-default")
-      throw new ApiError(400, "cloudroom_unsupported", "Cloud supports new Codex, Pi, Cursor and Claude Code threads in a cloud folder. Forks, scheduling and native machine targets are not supported.");
+    if (!isCloudProvider(request.providerId) || request.originKind || request.parentThreadId || request.sourceThreadId || request.sendAt || request.pluginSubmission || request.environment.type !== "project-default")
+      throw new ApiError(400, "cloudroom_unsupported", "Cloud supports new Codex, Pi, Cursor, fx and Claude Code threads in a cloud folder. Forks, scheduling and native machine targets are not supported.");
     if (request.permissionMode && request.permissionMode !== "full") throw new ApiError(400, "cloudroom_unsupported", "Cloud uses the full permission mode; restricted modes are not supported.");
     if (request.startedOnBehalfOf || request.sourceSeqEnd !== undefined) throw new ApiError(400, "cloudroom_unsupported", "Cloud continuation and delegated starts are not enabled.");
     let capabilities = this.lastCapabilities;
@@ -579,7 +624,7 @@ class CloudroomService {
     }
     const remoteModel = capabilities ? coreModel(request.providerId, model, capabilities) : null;
     if (capabilities && remoteModel) validateReasoning(request.providerId, remoteModel.model, reasoning, capabilities);
-    const workspace = workspaceId(project.id);
+    const workspace = project.id === PERSONAL_PROJECT_ID ? { workspace: ROOT_WORKSPACE } : { workspace: workspaceId(project.id), workspace_name: workspaceName(project.name) };
     const providerId = request.providerId;
     const thread = this.deps.db.transaction((tx) => {
       const previous = existingThread(tx);
@@ -593,11 +638,11 @@ class CloudroomService {
       tx.insert(cloudroomThreads).values({ threadId: thread.id, coreUrl: connection.url, startRequestId, model, reasoning }).run();
       tx.insert(cloudroomCommands).values({
         id: `first_${thread.id}`, threadId: thread.id, command: "prompt",
-        input: JSON.stringify({
-          ...payload, workspace, workspace_name: workspaceName(project.name), sourceRepository: sourceRepository(project.gitRemoteUrl), provider: remoteModel?.provider,
+        input: JSON.stringify(this.snapshotInstructions(thread, "prompt", {
+          ...payload, ...workspace, provider: remoteModel?.provider,
           command_guard_enabled: getAppSettings(this.deps.db).commandGuardEnabled,
           ...(request.serviceTier && request.serviceTier !== "default" ? { service_tier: request.serviceTier } : {}),
-        }),
+        })),
         createdAt: Date.now(),
       }).run();
       projectInitialPrompt(tx, thread.id);
@@ -643,7 +688,7 @@ class CloudroomService {
     const parsed = promptPayload(payload.input, thread.providerId, capabilities.attachments && (profile?.attachments ?? true));
     const id = payload.requestId ?? randomUUID();
     if ((payload.mode === "steer" || payload.mode === "steer-if-active") && thread.status === "active" && saved.turnId) {
-      this.enqueue(thread.id, id, "steer", { target_request_id: saved.turnId, text: parsed.text });
+      this.enqueue(thread.id, id, "steer", { target_request_id: saved.turnId, text: parsed.text, content: parsed.content });
       await this.deliver(thread.id);
       return { ok: true, delivery: "sent" };
     }
@@ -680,18 +725,30 @@ class CloudroomService {
   archive(threadId: string): void {
     if (!binding(this.deps.db, threadId)) return;
     this.enqueue(threadId, randomUUID(), "stop", {});
+    this.enqueue(threadId, randomUUID(), "sleep", {});
     void this.deliver(threadId).catch(() => {});
+  }
+
+  private snapshotInstructions(thread: Pick<Thread, "id" | "projectId">, action: Command["command"], input: object): object {
+    if (!["prompt", "edit", "steer", "rewind"].includes(action)) return input;
+    const prompt = z.object({ text: z.string(), content: z.unknown().optional() }).parse(
+      action === "rewind" && "replacement" in input ? input.replacement : input,
+    );
+    const customInstructions = resolveCustomInstructions({ threadId: thread.id, projectId: thread.projectId });
+    prepareCloudInstructionInput(prompt, customInstructions);
+    return { ...input, customInstructions };
   }
 
   private enqueue(threadId: string, id: string, action: Command["command"], input: object): void {
     const previous = command(this.deps.db, id);
-    const serialized = JSON.stringify(input);
     if (previous) {
-      if (previous.threadId !== threadId || previous.command !== action || previous.input !== serialized) throw new ApiError(409, "request_conflict", "Request ID was already used with different content");
+      const { customInstructions: _instructions, workspaceContext: _workspace, ...original } = JSON.parse(previous.input);
+      if (previous.threadId !== threadId || previous.command !== action || JSON.stringify(original) !== JSON.stringify(input)) throw new ApiError(409, "request_conflict", "Request ID was already used with different content");
       return;
     }
-    if (!binding(this.deps.db, threadId)) throw new ApiError(409, "cloudroom_missing_binding", "Cloud session is unavailable");
-    this.deps.db.insert(cloudroomCommands).values({ id, threadId, command: action, input: serialized, createdAt: Date.now() }).run();
+    const thread = getThread(this.deps.db, threadId);
+    if (!thread || !binding(this.deps.db, threadId)) throw new ApiError(409, "cloudroom_missing_binding", "Cloud session is unavailable");
+    this.deps.db.insert(cloudroomCommands).values({ id, threadId, command: action, input: JSON.stringify(this.snapshotInstructions(thread, action, input)), createdAt: Date.now() }).run();
     this.notify(threadId);
   }
 
@@ -791,6 +848,45 @@ class CloudroomService {
     await this.deliver(thread.id);
   }
 
+  async reorderQueued(thread: Thread, request: { queuedMessageId: string; previousQueuedMessageId: string | null; nextQueuedMessageId: string | null }) {
+    const saved = binding(this.deps.db, thread.id);
+    const queue = this.queue(thread.id);
+    if (!saved || !queue.some((item) => item.id === request.queuedMessageId)) throw new ApiError(404, "invalid_request", "Queued message not found");
+    const capabilities = await this.capabilities(await this.client(saved));
+    if (!feature(capabilities, "queue_reorder")) throw new ApiError(409, "cloudroom_unsupported", "Update the cloud core to reorder queued messages.");
+    const order = queue.map((item) => item.id).filter((id) => id !== request.queuedMessageId);
+    const neighbor = request.previousQueuedMessageId ?? request.nextQueuedMessageId;
+    if (neighbor !== null && !order.includes(neighbor)) throw new ApiError(409, "invalid_request", "Queued message order changed");
+    order.splice(request.previousQueuedMessageId !== null ? order.indexOf(request.previousQueuedMessageId) + 1 : request.nextQueuedMessageId !== null ? order.indexOf(request.nextQueuedMessageId) : 0, 0, request.queuedMessageId);
+    if (order.every((id, index) => id === queue[index]!.id)) return queue;
+    const id = randomUUID();
+    this.enqueue(thread.id, id, "reorder", { order });
+    await this.deliver(thread.id);
+    const outcome = command(this.deps.db, id)?.state;
+    if (outcome !== "accepted" && outcome !== "completed") throw new ApiError(409, "cloudroom_command_failed", "The queue reorder was not confirmed. Refresh the queue before retrying.");
+    return this.queue(thread.id);
+  }
+
+  async sendQueued(thread: Thread, queuedMessageId: string): Promise<SendMessageResponse> {
+    const saved = binding(this.deps.db, thread.id);
+    const queue = this.queue(thread.id);
+    const queued = queue.find((item) => item.id === queuedMessageId);
+    if (!saved || !queued) throw new ApiError(404, "invalid_request", "Queued message not found");
+    const active = thread.status === "active" && saved.turnId !== null;
+    if (active && queued.content.every((part) => part.type === "text")) {
+      const capabilities = await this.capabilities(await this.client(saved));
+      if (feature(capabilities, "steer") && feature(capabilities, "queue_cancel") && harnessProfile(capabilities, thread.providerId)?.steer !== false) {
+        await this.send(thread, { mode: "steer", input: queued.content });
+        await this.cancelQueued(thread, queuedMessageId).catch(() => {});
+        return { ok: true, delivery: "sent" };
+      }
+    }
+    if (queue[0]!.id !== queuedMessageId) throw new ApiError(409, "invalid_request", "This Cloud agent sends queued messages in order. Send or delete the earlier messages first.");
+    if (active) await this.control(thread.id, "stop");
+    await this.control(thread.id, "resume");
+    return { ok: true, delivery: "queued", queuedMessage: queued };
+  }
+
   async compact(thread: Thread) {
     const saved = binding(this.deps.db, thread.id);
     if (!saved?.sessionId) throw new ApiError(409, "cloudroom_missing_binding", "Cloud session is unavailable");
@@ -834,7 +930,7 @@ class CloudroomService {
     const client = await this.client(saved);
     const capabilities = await this.capabilities(client);
     const harness = thread.providerId;
-    if (harness !== "codex" && harness !== "pi" && harness !== "acp-cursor" && harness !== "claude-code") throw new ApiError(400, "cloudroom_harness", "Unsupported cloud harness.");
+    if (!isCloudProvider(harness)) throw new ApiError(400, "cloudroom_harness", "Unsupported cloud harness.");
     validateReasoning(harness, coreModel(harness, saved.model, capabilities).model, saved.reasoning, capabilities);
     this.deps.db.transaction((tx) => {
       saveCommandState(tx, threadId, `first_${threadId}`, "sending");
@@ -863,7 +959,7 @@ class CloudroomService {
     const saved = binding(this.deps.db, threadId);
     const initial = command(this.deps.db, `first_${threadId}`);
     const backgroundPreparation = initial && z.object({ backgroundPreparation: z.boolean().optional() }).parse(JSON.parse(initial.input)).backgroundPreparation;
-    if (saved && !saved.sessionId && !backgroundPreparation && saved.error === "Cloudroom rejected the request (HTTP 409)") {
+    if (saved && !saved.sessionId && !backgroundPreparation && saved.error?.startsWith("Cloudroom rejected the request (HTTP 409)")) {
       this.failStart(threadId, "This cloud start was rejected before the app update. Your prompt is saved. Retry explicitly when ready.");
     }
   }
@@ -896,10 +992,10 @@ class CloudroomService {
       if (this.stopped || epoch !== this.epoch) return;
       this.lastCapabilities = capabilities;
       await Promise.all([
-        capabilities.sync ? setupSync(this.deps).then(() => { if (epoch === this.epoch) this.syncIssue = null; }).catch(() => { if (epoch === this.epoch) this.syncIssue = "Skills and settings sync could not start. Cloud sessions are unaffected."; }) : Promise.resolve(),
+        capabilities.sync ? setupSync(this.deps).then(() => { if (epoch === this.epoch) this.syncIssue = null; }).catch((error) => { if (epoch === this.epoch) this.syncIssue = publicError(error); }) : Promise.resolve(),
         this.ensurePreviews(capabilities),
       ]);
-    }).catch(() => { if (epoch === this.epoch) this.syncIssue = "Skills and settings sync could not start. Cloud sessions are unaffected."; });
+    }).catch((error) => { if (epoch === this.epoch) this.syncIssue = `Skills and settings sync could not start. Cloud sessions are unaffected. Cause: ${error instanceof Error ? error.message : String(error)}`; });
   }
 
   stop(): void {
@@ -943,22 +1039,26 @@ class CloudroomService {
       if (!saved.sessionId) {
         deliveringCommand = true;
         const harness = getThread(this.deps.db, threadId)?.providerId;
-        if (harness !== "codex" && harness !== "pi" && harness !== "acp-cursor" && harness !== "claude-code") throw new ApiError(409, "cloudroom_harness", "Unsupported cloud harness; native execution is blocked.");
+        if (!isCloudProvider(harness)) throw new ApiError(409, "cloudroom_harness", "Unsupported cloud harness; native execution is blocked.");
         const { model, provider } = coreModel(harness, saved.model, capabilities);
         const initial = command(this.deps.db, `first_${threadId}`);
         const options = initial ? z.object({ workspace: z.string().optional(), workspace_name: z.string().optional(), provider: z.string().optional(), command_guard_enabled: z.boolean().optional() }).parse(JSON.parse(initial.input)) : {};
-        if (options.command_guard_enabled !== false && !capabilities.command_guard) throw new ApiError(503, "cloudroom_update", "Update the cloud core to enable Command Guard. Your message is saved.");
         if (!capabilities.command_guard) delete options.command_guard_enabled;
         if (!capabilities.direct_workspaces) throw new ApiError(503, "cloudroom_update", "Update the cloud core to start agents without copying files. Your message is saved.");
+        if (options.workspace === ROOT_WORKSPACE && !capabilities.root_workspace) throw new ApiError(503, "cloudroom_update", "Update the cloud core to start agents outside a project. Your message is saved.");
         if (harness === "codex" && capabilities.codex_auth_import) await importCodexLogin(this.deps);
+        if (harness === "pi") await importPiLogin(this.deps);
+        const copy = options.workspace && options.workspace !== ROOT_WORKSPACE ? await planProjectCopy(this.deps, client, threadId, options.workspace) : null;
         if (epoch !== this.epoch) return;
-        const accepted = await client.start(saved.startRequestId, harness === "acp-cursor" ? "cursor" : harness, { model, reasoning: saved.reasoning, ...options, ...(provider ? { provider } : {}) });
+        const accepted = await client.start(saved.startRequestId, CLOUD_HARNESSES[harness], { model, reasoning: saved.reasoning, ...options, ...(provider ? { provider } : {}) });
         saveBinding(this.deps.db, threadId, { sessionId: accepted.session_id, error: null });
         saved = binding(this.deps.db, threadId)!;
+        if (copy) copyProject(this.deps, client, copy);
       }
       if (epoch !== this.epoch) return;
       const sessionId = saved.sessionId!;
       this.follow(saved, client);
+      const harness = getThread(this.deps.db, threadId)?.providerId;
       const pendingCommands = commands(this.deps.db, threadId).filter((c) => c.state === "sending");
       for (const pending of pendingCommands) {
         if (epoch !== this.epoch) return;
@@ -984,7 +1084,6 @@ class CloudroomService {
           if (pending.command === "prompt") {
             const parsed = z.object({
               text: z.string(),
-              sourceRepository: z.string().optional(),
               reasoning: z.string().optional(),
               content: z.unknown().optional(),
               attachments: z.array(z.object({
@@ -992,19 +1091,26 @@ class CloudroomService {
                 path: z.string().optional(), id: z.string().optional(),
               })).optional(),
               service_tier: z.string().optional(),
+              customInstructions: z.string().default(""),
+              workspaceContext: z.string().nullable().optional(),
             }).parse(JSON.parse(pending.input));
+            requireClaudeSkillSupport(parsed.content, capabilities, harness);
             if (parsed.attachments?.length) {
               if (!capabilities.attachments) throw new ApiError(400, "cloudroom_unsupported", "Update the cloud core to use attachments. Your message is saved.");
             }
             const attachments = capabilities.attachments
               ? await this.uploadAttachments(client, sessionId, pending.id, parsed.attachments ?? [], getThread(this.deps.db, threadId)?.projectId ?? "")
               : [];
-            const repository = parsed.sourceRepository ? sourceRepository(parsed.sourceRepository) : undefined;
-            const hint = repository ? `[Cloud workspace context]\nSource repository: ${repository}\nThis VM folder may be empty. Project files are not copied from the Mac.` : null;
-            const context = hint && Buffer.byteLength(`${parsed.text}\n\n${hint}`, "utf8") <= 32768 ? hint : null;
-            const text = context ? `${parsed.text}\n\n${context}` : parsed.text;
-            const originalContent = cloudTextContent(parsed.content);
-            const content = context && Array.isArray(originalContent) ? [...originalContent, { type: "text", text: context }] : originalContent;
+            const enriched = prepareCloudInstructionInput({ text: parsed.text, content: cloudTextContent(parsed.content) }, parsed.customInstructions);
+            let context = parsed.workspaceContext;
+            if (context === undefined) {
+              const copying = pending.id === `first_${threadId}` && ["cloning", "uploading"].includes(projectCopyProgress(this.deps.db, threadId)?.phase ?? "");
+              const hint = copying ? "[Cloud workspace context]\nThis project is new on the VM. Cloudroom is copying its files into this folder right now: a GitHub clone or an upload from the user's Mac, plus uncommitted edits and .env files. If files or instructions such as AGENTS.md are missing, wait briefly and check again instead of recreating them." : null;
+              context = hint && Buffer.byteLength(`${enriched.text}\n\n${hint}`, "utf8") <= 32768 ? hint : null;
+              this.deps.db.update(cloudroomCommands).set({ input: JSON.stringify({ ...JSON.parse(pending.input), workspaceContext: context }) }).where(eq(cloudroomCommands.id, pending.id)).run();
+            }
+            const text = context ? `${enriched.text}\n\n${context}` : enriched.text;
+            const content = context && Array.isArray(enriched.content) ? [...enriched.content, { type: "text", text: `\n${context}` }] : enriched.content;
             accepted = await client.prompt(sessionId, pending.id, text, parsed.reasoning, {
               ...(capabilities.structured_prompt && content !== undefined ? { content: content as never } : {}),
               ...(attachments.length ? { attachments: attachments as never } : {}),
@@ -1015,26 +1121,33 @@ class CloudroomService {
               target_request_id: z.string(), expected_revision: z.number(), text: z.string(),
               reasoning: z.string().optional(), content: z.unknown().optional(),
               attachments: z.array(z.object({ name: z.string(), kind: z.enum(["image", "file"]), localPath: z.string().optional(), path: z.string().optional(), id: z.string().optional() })).optional(), service_tier: z.string().optional(),
+              customInstructions: z.string().default(""),
             }).parse(JSON.parse(pending.input));
+            requireClaudeSkillSupport(parsed.content, capabilities, harness);
+            const enriched = prepareCloudInstructionInput({ text: parsed.text, content: cloudTextContent(parsed.content) }, parsed.customInstructions);
             const attachments = await this.uploadAttachments(client, sessionId, pending.id, parsed.attachments ?? [], getThread(this.deps.db, threadId)!.projectId);
-            accepted = await client.edit(sessionId, pending.id, parsed.target_request_id, parsed.expected_revision, parsed.text, {
-              ...(parsed.content === undefined ? {} : { content: cloudTextContent(parsed.content) as never }),
+            accepted = await client.edit(sessionId, pending.id, parsed.target_request_id, parsed.expected_revision, enriched.text, {
+              ...(enriched.content === undefined ? {} : { content: enriched.content as never }),
               attachments: attachments as never,
               ...(parsed.reasoning ? { reasoning: parsed.reasoning } : {}),
               ...(parsed.service_tier ? { service_tier: parsed.service_tier } : {}),
             });
           } else if (pending.command === "cancel") {
             accepted = await client.cancel(sessionId, pending.id, JSON.parse(pending.input).target_request_id);
+          } else if (pending.command === "reorder") {
+            accepted = await client.reorder(sessionId, pending.id, z.object({ order: z.array(z.string()) }).parse(JSON.parse(pending.input)).order);
           } else if (pending.command === "steer") {
-            const parsed = z.object({ target_request_id: z.string(), text: z.string() }).parse(JSON.parse(pending.input));
-            accepted = await client.steer(sessionId, pending.id, parsed.target_request_id, parsed.text);
+            const parsed = z.object({ target_request_id: z.string(), text: z.string(), customInstructions: z.string().default("") }).parse(JSON.parse(pending.input));
+            accepted = await client.steer(sessionId, pending.id, parsed.target_request_id, prepareCloudInstructionInput(parsed, parsed.customInstructions).text);
           } else if (pending.command === "compact") {
             accepted = await client.compact(sessionId, pending.id);
           } else if (pending.command === "rewind") {
-            const parsed = z.object({ before: z.string(), last_turn_id: z.string().optional(), replacement: z.object({ request_id: z.string(), text: z.string(), content: z.unknown().optional(), attachments: z.array(z.object({ name: z.string(), kind: z.enum(["image", "file"]), localPath: z.string().optional(), path: z.string().optional(), id: z.string().optional() })).optional(), reasoning: z.string().optional(), service_tier: z.string().optional() }) }).parse(JSON.parse(pending.input));
+            const parsed = z.object({ before: z.string(), last_turn_id: z.string().optional(), customInstructions: z.string().default(""), replacement: z.object({ request_id: z.string(), text: z.string(), content: z.unknown().optional(), attachments: z.array(z.object({ name: z.string(), kind: z.enum(["image", "file"]), localPath: z.string().optional(), path: z.string().optional(), id: z.string().optional() })).optional(), reasoning: z.string().optional(), service_tier: z.string().optional() }) }).parse(JSON.parse(pending.input));
+            requireClaudeSkillSupport(parsed.replacement.content, capabilities, harness);
+            const enriched = prepareCloudInstructionInput({ text: parsed.replacement.text, content: cloudTextContent(parsed.replacement.content) }, parsed.customInstructions);
             const attachments = await this.uploadAttachments(client, sessionId, parsed.replacement.request_id, parsed.replacement.attachments ?? [], getThread(this.deps.db, threadId)!.projectId);
-            accepted = await client.rewind(sessionId, pending.id, parsed.before, parsed.last_turn_id, { ...parsed.replacement, content: cloudTextContent(parsed.replacement.content) as never, attachments: attachments as never });
-          } else if (pending.command === "stop" || pending.command === "resume") {
+            accepted = await client.rewind(sessionId, pending.id, parsed.before, parsed.last_turn_id, { ...parsed.replacement, ...enriched, content: enriched.content as never, attachments: attachments as never });
+          } else if (pending.command === "stop" || pending.command === "resume" || pending.command === "sleep") {
             accepted = await client[pending.command](sessionId, pending.id);
           } else {
             throw new CloudroomError(`Unsupported cloud command ${pending.command}`);
@@ -1102,7 +1215,7 @@ class CloudroomService {
           onConnected: async () => {
             if (controller.signal.aborted) return;
             this.setConnectionIssue(saved.threadId, "stream");
-            if (saved.error === "Cloudroom connection or replay failed" && !commands(this.deps.db, saved.threadId).some(item => item.state === "sending")) {
+            if (saved.error?.startsWith(connectionOrReplayFailed) && !commands(this.deps.db, saved.threadId).some(item => item.state === "sending")) {
               const snapshot = await client.session(saved.sessionId!, controller.signal);
               if (!controller.signal.aborted && snapshot.last_sequence === saved.cursor && binding(this.deps.db, saved.threadId)?.error === saved.error && !commands(this.deps.db, saved.threadId).some(item => item.state === "sending")) {
                 saveBinding(this.deps.db, saved.threadId, { error: null });
@@ -1116,9 +1229,16 @@ class CloudroomService {
             await this.followChild(saved, client, record.data.id);
             if (controller.signal.aborted) return;
           }
+          const outage = mentionsOpenAISide401(record) && await codexOutage();
+          if (controller.signal.aborted) return;
           projecting = true;
-          const eventTypes = projectRecord(this.deps.db, saved.threadId, record);
+          // The stream replays from the saved cursor, so renames made while the app was offline apply on reconnect.
+          if (record.kind === "title") updateThread(this.deps.db, this.deps.hub, saved.threadId, { title: z.object({ title: z.string().min(1) }).parse(record.data).title });
+          const eventTypes = projectRecord(this.deps.db, saved.threadId, record, outage);
           projecting = false;
+          // Agents archive their own thread with `cloudroom thread archive --self`; like renames, this applies on reconnect.
+          if (record.kind === "archive") this.archiveRequest?.(saved.threadId);
+          if (record.kind === "secret_request") this.secrets.follow(client, saved.threadId, record);
           this.setConnectionIssue(saved.threadId, "replay");
           if (record.kind === "rewind") this.deps.hub.notifyThread(saved.threadId, ["history-rewritten"]);
           this.notify(saved.threadId, eventTypes, ["state", "receipt", "native_identity"].includes(record.kind));
@@ -1137,7 +1257,7 @@ class CloudroomService {
     const issues = this.connectionIssues.get(threadId) ?? {};
     const previous = issues[phase];
     const issue = error === undefined ? undefined : {
-      message: phase === "replay" && !(error instanceof CloudroomError) ? "Cloudroom history could not be restored. Check the server logs for details." : publicError(error),
+      message: phase === "replay" && !(error instanceof CloudroomError) ? `Cloudroom history could not be restored: ${error instanceof Error ? error.message : String(error)}` : publicError(error),
       reconnecting: phase !== "replay" && connectionFailure(error),
     };
     if (previous && !previous.reconnecting && issue?.reconnecting) return;

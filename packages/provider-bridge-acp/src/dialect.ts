@@ -1,6 +1,7 @@
 import type { DeltaItemShape } from "@bb/provider-bridge-protocol";
 import { basename } from "node:path";
 import { z } from "zod";
+import type { AcpContextEstimateTuning } from "./context-estimate.js";
 import {
   CURSOR_ACP_MAINTENANCE,
   type AcpMaintenanceDialect,
@@ -46,7 +47,9 @@ export interface AcpDialect {
     method: string,
     params: unknown,
   ): AcpClientRequestOutcome | undefined;
+  isNotice?(text: string): boolean;
   maintenance?: AcpMaintenanceDialect;
+  contextEstimate?: AcpContextEstimateTuning;
 }
 
 export interface AcpClientRequestOutcome {
@@ -194,6 +197,11 @@ export const CURSOR_ACP_DIALECT: AcpDialect = {
   classifyToolCall: cursorClassifyToolCall,
   handleClientRequest: cursorHandleClientRequest,
   maintenance: CURSOR_ACP_MAINTENANCE,
+  contextEstimate: {
+    baseTokens: 19_000,
+    charsPerToken: 3.4,
+    defaultWindowTokens: 200_000,
+  },
 };
 
 const ompBashRawInputSchema = z
@@ -368,9 +376,17 @@ export const OPENCODE_ACP_DIALECT: AcpDialect = {
   normalizeCommandEvent: normalizeOpenCodeCommandEvent,
 };
 
+export const FX_ACP_DIALECT: AcpDialect = {
+  id: "fx",
+  isNotice: (text) =>
+    text.startsWith("[context] ") ||
+    text.startsWith("skill discovery warning: "),
+};
+
 const DIALECTS_BY_ID: ReadonlyMap<string, AcpDialect> = new Map([
   [CURSOR_ACP_DIALECT.id, CURSOR_ACP_DIALECT],
   [GROK_ACP_DIALECT.id, GROK_ACP_DIALECT],
+  [FX_ACP_DIALECT.id, FX_ACP_DIALECT],
   [OMP_ACP_DIALECT.id, OMP_ACP_DIALECT],
   [OPENCODE_ACP_DIALECT.id, OPENCODE_ACP_DIALECT],
 ]);
@@ -378,6 +394,7 @@ const DIALECTS_BY_ID: ReadonlyMap<string, AcpDialect> = new Map([
 const DIALECT_IDS_BY_COMMAND: Readonly<Record<string, string>> = {
   "cursor-agent": CURSOR_ACP_DIALECT.id,
   grok: GROK_ACP_DIALECT.id,
+  fx: FX_ACP_DIALECT.id,
   omp: OMP_ACP_DIALECT.id,
   opencode: OPENCODE_ACP_DIALECT.id,
 };

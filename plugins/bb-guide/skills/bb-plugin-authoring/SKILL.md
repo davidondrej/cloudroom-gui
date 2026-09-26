@@ -1,15 +1,15 @@
 ---
 name: bb-plugin-authoring
-description: "Create or change Room plugins and Plugin SDK extensions, including CLI commands, agent tools, providers, and UI surfaces."
+description: "Create or change Cloudroom plugins and Plugin SDK extensions, including CLI commands, agent tools, providers, and UI surfaces."
 ---
 
-# Author Room plugins
+# Author Cloudroom plugins
 
-A Room plugin is a TypeScript package that can add server behavior, agent
+A Cloudroom plugin is a TypeScript package that can add server behavior, agent
 capabilities, host-rendered UI, or a frontend bundle.
 
 Use the current SDK types and repository source as the contract. This skill
-routes to detailed references, but the installed Room version decides the exact
+routes to detailed references, but the installed Cloudroom version decides the exact
 API.
 
 ## Implement and verify
@@ -18,7 +18,7 @@ Inspect the affected package and current SDK declarations to select backend,
 frontend, or both. Build the plugin and verify the affected contracts and user
 workflow. Install or reload when a live check is needed for the requested work.
 
-Use room plugin new <name> for a new plugin. The scaffold includes frontend files.
+Use cloudroom plugin new <name> for a new plugin. The scaffold includes frontend files.
 Remove `bb.app` and those files when the plugin is headless.
 
 Every new public Plugin SDK surface starts with an experimental\_ prefix and an
@@ -92,8 +92,8 @@ the same change.
 - Keep experimental names until the public API audit stabilizes them.
 - Use current names. Compatibility aliases can warn and can expire after one
   release. Removed APIs can throw.
-- Run room plugin types when SDK declaration versions can drift.
-- Run room plugin build before install, release, or marketplace submission.
+- Run cloudroom plugin types when SDK declaration versions can drift.
+- Run cloudroom plugin build before install, release, or marketplace submission.
 
 ## Verification
 

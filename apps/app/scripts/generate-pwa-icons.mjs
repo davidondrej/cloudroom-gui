@@ -138,7 +138,7 @@ for (const [suffix, color] of [
 }
 if (mismatches.length) {
   console.error(
-    `Generated Room icons are out of date:\n${mismatches.join("\n")}\nRun pnpm --filter @bb/app generate:pwa-icons.`,
+    `Generated Cloudroom icons are out of date:\n${mismatches.join("\n")}\nRun pnpm --filter @bb/app generate:pwa-icons.`,
   );
   process.exitCode = 1;
 }

@@ -12,8 +12,8 @@ import { pruneUnreferencedChunks } from "../../../scripts/build-utils.mjs";
  */
 const packageRoot = process.cwd();
 const distDir = resolve(packageRoot, "host-daemon", "dist");
-const entry = resolve(distDir, "room");
-const chunkDir = resolve(distDir, "room-chunks");
+const entry = resolve(distDir, "cloudroom");
+const chunkDir = resolve(distDir, "cloudroom-chunks");
 
 for (const [label, pathToCheck] of [
   ["bundled room CLI", entry],

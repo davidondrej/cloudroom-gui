@@ -50,7 +50,7 @@ function readLines(input, onLine) {
   });
 }
 
-// ---- JSON Schema → TypeBox (the Room tool definitions carry JSON Schema) ----
+// ---- JSON Schema → TypeBox (the Cloudroom tool definitions carry JSON Schema) ----
 
 function toJsonSchemaObject(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : null;
@@ -349,7 +349,7 @@ export default function bbExtension(pi) {
       ...currentModelScope(),
     });
     // Pi's active-tool set is session state; a resumed or forked session can
-    // predate the Room tools, so make sure every injected tool is active.
+    // predate the Cloudroom tools, so make sure every injected tool is active.
     if (tools.length > 0 && typeof pi.setActiveTools === "function") {
       const active = new Set(pi.getActiveTools?.() ?? []);
       let missing = false;

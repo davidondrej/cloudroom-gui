@@ -302,7 +302,7 @@ function generatedConversationEmptyText(
     case "agent":
       return "Sent an agent message";
     case "system":
-      return "Sent a Room system message";
+      return "Sent a Cloudroom system message";
   }
 }
 

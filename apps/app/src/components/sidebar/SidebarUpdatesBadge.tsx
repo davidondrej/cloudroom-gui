@@ -43,7 +43,9 @@ export function SidebarUpdatesBadge({ onNavigate }: SidebarUpdatesBadgeProps) {
   ).length;
   const bbUpdateCount =
     (inventory.appUpdateAvailable ? 1 : 0) +
-    (inventory.desktopUpdateReady ? 1 : 0) +
+    (inventory.desktopUpdateReady || inventory.desktopInfo?.updateAvailable
+      ? 1
+      : 0) +
     stuckDaemonCount;
 
   const staleProvidersByKey = new Map<ProviderCliKey, StaleProvider>();
@@ -75,7 +77,7 @@ export function SidebarUpdatesBadge({ onNavigate }: SidebarUpdatesBadgeProps) {
 
   const updatesRoutePath = getSettingsRoutePath("updates");
   const bbLabel =
-    bbUpdateCount === 1 ? "Room update available" : "Room updates available";
+    bbUpdateCount === 1 ? "Cloudroom update available" : "Cloudroom updates available";
   const providerLabel = `${joinNames(
     staleProviders.map((stale) => stale.displayName),
   )} ${staleProviders.length === 1 ? "update" : "updates"} available`;
@@ -93,7 +95,7 @@ export function SidebarUpdatesBadge({ onNavigate }: SidebarUpdatesBadgeProps) {
               className={CHIP_CLASS}
             >
               <Icon name="Download" className="size-3 text-muted-foreground" />
-              Room
+              Cloudroom
             </Link>
           </TooltipTrigger>
           <TooltipContent side="top">{bbLabel}</TooltipContent>

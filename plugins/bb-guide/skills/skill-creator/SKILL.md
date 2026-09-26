@@ -1,6 +1,6 @@
 ---
 name: skill-creator
-description: "Create or improve Room skills, including their triggers, instructions, and supporting resources."
+description: "Create or improve Cloudroom skills, including their triggers, instructions, and supporting resources."
 ---
 
 # Skill creator
@@ -25,7 +25,7 @@ single hyphens, with at most 64 characters. Descriptions have a 1024-character
 limit; use a short, discriminating sentence rather than filling that limit.
 Preserve supported metadata and invocation settings when editing.
 
-Room loads names and descriptions for discovery, the body when a skill is used,
+Cloudroom loads names and descriptions for discovery, the body when a skill is used,
 and supporting files when needed. New threads discover revisions; existing
 threads may retain the version they started with.
 

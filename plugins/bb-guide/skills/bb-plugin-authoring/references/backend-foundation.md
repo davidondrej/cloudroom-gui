@@ -34,12 +34,12 @@ are additive, so registering multiple listeners is supported.
 
 `bb.log.debug|info|warn|error(message: string)` — goes to the server log
 (prefixed `[plugin:<id>]`) and to the per-plugin JSONL file behind
-`room plugin logs <id> [-n N] [-f]`.
+`cloudroom plugin logs <id> [-n N] [-f]`.
 
 ### bb.settings
 
 `bb.settings.define(descriptors)` declares settings descriptors (rendered
-in Settings → Installed plugins and editable via `room plugin config <id> set <key>
+in Settings → Installed plugins and editable via `cloudroom plugin config <id> set <key>
 <value>`). Five descriptor types:
 
 ```ts
@@ -101,7 +101,7 @@ descriptors accept finite numbers and render a numeric input; use
 
 `experimental_schema` accepts a synchronous, non-transforming Standard Schema
 validator; Zod schemas qualify. It runs on the server for settings-page
-autosaves, `room plugin config`, `experimental_set`, and fake-host writes. The
+autosaves, `cloudroom plugin config`, `experimental_set`, and fake-host writes. The
 first validation issue is shown beneath the field, and the schema is not sent
 to the browser. `experimental_set` accepts only the fields defined by that
 handle, accepts `null` to unset one, fires `onChange`, and returns the handle's
@@ -301,7 +301,7 @@ published `@get-bb/plugin-sdk/host` contract such as
 `experimental_nativeRootsHostContract` is bundled from the plugin's own SDK
 install, so that plugin lists the SDK under `dependencies` (see
 "bb.providers.register — agent providers" below; every provider plugin in
-room does this). Either way the daemon never resolves the SDK or private Room
+cloudroom does this). Either way the daemon never resolves the SDK or private Cloudroom
 packages from the plugin at runtime.
 
 Pure JavaScript dependencies are bundled. For external tools, use
@@ -318,7 +318,7 @@ the server deduplicates and sorts them, owns the generation, and delivers the
 resulting set to the daemon. If an enrolled host is offline, the declaration
 stays dormant on the server and is delivered when a credentialed daemon
 session reconnects. The call fails with an actionable error if the host has no
-room connect machine enrollment or its connected daemon reports that the local
+cloudroom connect machine enrollment or its connected daemon reports that the local
 machine credential is missing.
 
 Call `await bb.hosts.ensureSharedPortTunnel(hostId)` to lazily assign and read

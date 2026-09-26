@@ -26,13 +26,13 @@ describe("resolvePermissionModeSelection", () => {
     ).toBe("full");
   });
 
-  it("prefers the auto default when the raw mode is unsupported", () => {
+  it("prefers the full default when the raw mode is unsupported", () => {
     expect(
       resolvePermissionModeSelection({
         rawPermissionMode: "accept-edits",
         permissionModes: ["auto", "full"],
       }),
-    ).toBe("auto");
+    ).toBe("full");
   });
 
   it("uses the only supported mode for full-only providers", () => {
@@ -47,6 +47,6 @@ describe("resolvePermissionModeSelection", () => {
         rawPermissionMode: "accept-edits",
         permissionModes: [],
       }),
-    ).toBe("auto");
+    ).toBe("full");
   });
 });

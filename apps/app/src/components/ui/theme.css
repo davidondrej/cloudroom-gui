@@ -304,9 +304,9 @@
   }
 
   @media (max-width: 767px) and (pointer: coarse) {
-    /* The overlay is hidden on coarse phones, so no room is reserved. */
+    /* Coarse phones always show the thread menu beside the status slot. */
     .bb-sidebar-hover-actions-row .bb-sidebar-hover-actions-inset {
-      padding-right: 0;
+      padding-right: calc(var(--spacing) * 9);
     }
 
     .bb-sidebar-hover-actions-row:hover:not(:has(:focus-visible))
@@ -906,8 +906,9 @@ body.sidebar-resizing [data-sidebar="panel"] {
  * window-drag regions separately from ordinary CSS stacking. Explicitly carve
  * every interactive portaled surface out of an underlying drag strip so a
  * menu/select/dialog that crosses split chrome keeps its visible hit target.
+ * Closed persistent drawers stay mounted full-screen, so skip closed overlays.
  */
-[data-bb-portaled-overlay] {
+[data-bb-portaled-overlay]:not([data-state="closed"]) {
   app-region: no-drag;
   -webkit-app-region: no-drag;
 }

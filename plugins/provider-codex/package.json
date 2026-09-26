@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Run Room threads with Codex.",
+  "description": "Run Cloudroom threads with Codex.",
   "engines": {
     "bb": ">=0.0",
     "bbPluginSdk": ">=0.4.90"
   },
   "bb": {
     "name": "Codex provider",
-    "description": "Run Room threads with Codex.",
+    "description": "Run Cloudroom threads with Codex.",
     "branding": {
       "icon": "./icons/codex.svg"
     },

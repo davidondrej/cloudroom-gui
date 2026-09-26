@@ -16,9 +16,11 @@ import {
   SidebarHeaderControls,
   SidebarSectionMenuItems,
 } from "./SidebarHeaderControls";
+import type { SidebarSectionId } from "@bb/client-core";
 import {
   sidebarChronologicalSortAtom,
   sidebarOrganizationModeAtom,
+  sidebarSectionSortsAtom,
   sidebarSortDirectionAtom,
 } from "./sidebarCollapsedAtoms";
 
@@ -32,11 +34,16 @@ afterEach(() => {
   viewport.compact = false;
 });
 
-function setup(label = "Pinned", section = false) {
+function setup(
+  label = "Pinned",
+  section = false,
+  sectionId: SidebarSectionId = "pinned",
+) {
   const store = createStore();
   store.set(sidebarOrganizationModeAtom, "project");
   store.set(sidebarChronologicalSortAtom, "updated");
   store.set(sidebarSortDirectionAtom, "default");
+  store.set(sidebarSectionSortsAtom, {});
   const newThread = vi.fn();
   const newProject = vi.fn();
   const newSection = vi.fn();
@@ -46,7 +53,11 @@ function setup(label = "Pinned", section = false) {
         <SidebarHeaderActionsProvider
           value={{ onNewProject: newProject, onNewSection: newSection }}
         >
-          <SidebarHeaderControls label={label} onNewThread={newThread}>
+          <SidebarHeaderControls
+            label={label}
+            sectionId={sectionId}
+            onNewThread={newThread}
+          >
             {section && (
               <SidebarSectionMenuItems onRename={vi.fn()} onRemove={vi.fn()} />
             )}
@@ -139,26 +150,31 @@ describe("sidebar header controls", () => {
     );
   });
 
-  it("toggles sort direction without closing and resets direction for a different field", async () => {
-    const { store } = setup();
-    await openMenu();
+  it("toggles sort direction for only its own section and resets direction for a different field", async () => {
+    const { store } = setup("Threads", false, "threads");
+    const threadsSort = () => store.get(sidebarSectionSortsAtom).threads;
+    await openMenu("Threads");
     await openSubmenu("Sort by");
+    expect(screen.queryByRole("menuitemradio", { name: "Drag order" })).toBeNull();
     const updated = await screen.findByRole("menuitemradio", {
       name: "Updated at, descending. Sort ascending",
     });
     fireEvent.click(updated);
-    expect(store.get(sidebarSortDirectionAtom)).toBe("ascending");
+    expect(threadsSort()).toEqual({ sort: "updated", direction: "ascending" });
     fireEvent.click(
       screen.getByRole("menuitemradio", {
         name: "Updated at, ascending. Sort descending",
       }),
     );
-    expect(store.get(sidebarSortDirectionAtom)).toBe("descending");
+    expect(threadsSort()).toEqual({ sort: "updated", direction: "descending" });
     fireEvent.click(
       screen.getByRole("menuitemradio", { name: "Alphabetical" }),
     );
-    expect(store.get(sidebarChronologicalSortAtom)).toBe("alpha");
-    expect(store.get(sidebarSortDirectionAtom)).toBe("ascending");
+    expect(threadsSort()).toEqual({ sort: "alpha", direction: "ascending" });
+    expect(Object.keys(store.get(sidebarSectionSortsAtom))).toEqual([
+      "threads",
+    ]);
+    expect(store.get(sidebarChronologicalSortAtom)).toBe("updated");
     expect(
       screen
         .getByRole("menuitemradio", {
@@ -173,12 +189,20 @@ describe("sidebar header controls", () => {
     const { store } = setup();
     fireEvent.click(screen.getByRole("button", { name: "Pinned actions" }));
     fireEvent.click(await screen.findByRole("menuitem", { name: "Sort by" }));
+    expect(
+      (
+        await screen.findByRole("menuitemradio", { name: "Drag order" })
+      ).getAttribute("aria-checked"),
+    ).toBe("false");
     fireEvent.click(
       await screen.findByRole("menuitemradio", {
         name: /Updated at\s*, descending\. Sort ascending/,
       }),
     );
-    expect(store.get(sidebarSortDirectionAtom)).toBe("ascending");
+    expect(store.get(sidebarSectionSortsAtom).pinned).toEqual({
+      sort: "updated",
+      direction: "ascending",
+    });
     expect(
       screen
         .getByRole("menuitemradio", {

@@ -172,17 +172,17 @@ describe("@task mention provider", () => {
       );
       expect(context).toContain("MEN-2 · Verify mention output — Done");
       expect(context).toMatch(/- 01[0-9A-HJKMNP-TV-Z]{24} · acceptance\.md/);
-      expect(context).toContain("Fetch with: room tasks attachment get ");
+      expect(context).toContain("Fetch with: cloudroom tasks attachment get ");
       expect(context).toContain("Sawyer · User");
       expect(context).toContain("thr_worker · Mention worker · Working");
       expect(context).toContain(
-        "You can act on this task with the room tasks CLI.",
+        "You can act on this task with the cloudroom tasks CLI.",
       );
       expect(context).toContain(
-        "first run: room tasks attach MEN-1 (attaches THIS thread so the task shows you as working)",
+        "first run: cloudroom tasks attach MEN-1 (attaches THIS thread so the task shows you as working)",
       );
-      expect(context).toContain("room tasks comment MEN-1 --body ...");
-      expect(context).toContain("room tasks update MEN-1 --status ...");
+      expect(context).toContain("cloudroom tasks comment MEN-1 --body ...");
+      expect(context).toContain("cloudroom tasks update MEN-1 --status ...");
     } finally {
       await harness.dispose();
     }

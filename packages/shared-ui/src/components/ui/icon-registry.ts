@@ -37,6 +37,7 @@ export const EXTENDED_ICON_NAMES = [
   "CornerDownRight",
   "Discord",
   "DiscordLogo",
+  "DataTransfer",
   "DateTime",
   "Github",
   "GithubLogo",

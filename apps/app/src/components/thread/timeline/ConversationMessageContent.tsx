@@ -379,7 +379,7 @@ function UserConversationMessage({
       : initiator === "system"
         ? {
             sourceKind: "system" as const,
-            sourceName: "Room",
+            sourceName: "Cloudroom",
             sourceProjectId: null,
             sourceThreadId: null,
             sourceIsPluginSideChat: false,

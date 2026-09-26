@@ -130,10 +130,10 @@ describe("Cloudroom CLI isolation and message delivery", () => {
     expect(requests.some((path) => /official_|retired_/.test(path))).toBe(false);
   });
 
-  it("advertises the room command without renaming Cloudroom", async () => {
+  it("advertises the cloudroom command without renaming Cloudroom", async () => {
     const result = await run(["--help"]);
-    expect(result.stdout).toContain("Usage: room");
-    expect(result.stdout).toContain("Room CLI - manage your Cloudroom agents");
+    expect(result.stdout).toContain("Usage: cloudroom");
+    expect(result.stdout).toContain("Cloudroom CLI - manage your local and cloud agents");
     expect(result.stdout).toContain("ROOM_SERVER_URL");
   });
 

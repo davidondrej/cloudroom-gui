@@ -116,7 +116,6 @@ import {
   collapsedProjectIdsAtom,
   collapsedSidebarSectionIdsAtom,
   sidebarChronologicalSortAtom,
-  sidebarSortDirectionAtom,
   sidebarCollapsedThreadSectionsAtom,
   sidebarCollapsedMachinesAtom,
   sidebarOrganizationModeAtom,
@@ -125,6 +124,10 @@ import {
   type SidebarOrganizationMode,
   type SidebarSectionId,
 } from "./sidebarCollapsedAtoms";
+import {
+  useSidebarSectionSort,
+  type SidebarSectionComparator,
+} from "./sidebarSectionSort";
 import { useUiPreferencesReady } from "@/lib/ui-preferences/UiPreferencesSync";
 import {
   SIDEBAR_ROW_BASE_CLASS,
@@ -651,7 +654,7 @@ function buildGroupSectionItem(
 
 function useGroupedModeThreadDnd({
   collapsedThreadIds,
-  compareThreads,
+  compareThreadsForSection,
   draftThreadIds,
   onToggleThreadCollapsed,
   order,
@@ -661,7 +664,7 @@ function useGroupedModeThreadDnd({
   threads,
 }: {
   collapsedThreadIds: Set<string>;
-  compareThreads: ThreadComparator;
+  compareThreadsForSection: SidebarSectionComparator;
   draftThreadIds: ReadonlySet<string>;
   onToggleThreadCollapsed: ToggleCollapsedId;
   order: readonly SidebarSectionId[];
@@ -692,7 +695,7 @@ function useGroupedModeThreadDnd({
     onReorderPinnedThread: pinned.onReorderPinnedThread,
   });
   return useRenderedSectionThreadDnd({
-    compareThreads,
+    compareThreadsForSection,
     draftThreadIds,
     groups: true,
     pinnedRootNodes: pinned.pinnedRootNodes,
@@ -708,7 +711,7 @@ interface ProjectModeSectionsProps
   extends BuiltInSectionRenderState, GroupedModePinnedProps {
   collapsedEnvironmentIds: Set<string>;
   collapsedThreadIds: Set<string>;
-  compareThreads: ThreadComparator;
+  compareThreadsForSection: SidebarSectionComparator;
   draftThreadIds: ReadonlySet<string>;
   effectivePinnedThreadIds: ReadonlySet<string>;
   onCreateProjectThread: (projectId: string) => void;
@@ -727,7 +730,7 @@ function ProjectModeSections({
   collapsedEnvironmentIds,
   collapsedSectionIds,
   collapsedThreadIds,
-  compareThreads,
+  compareThreadsForSection,
   draftThreadIds,
   effectivePinnedThreadIds,
   onCreateProjectThread,
@@ -859,6 +862,7 @@ function ProjectModeSections({
     showPinnedSection,
   });
   const reorderDisabled = order.length < 2;
+  const compareThreads = compareThreadsForSection("threads");
   const personalItems = useMemo(
     () =>
       buildProjectThreadGroups(personalThreads, compareThreads, draftThreadIds),
@@ -866,19 +870,20 @@ function ProjectModeSections({
   );
   const projectGroups = useMemo(
     () =>
-      projectRows.map((row) =>
-        buildGroupSectionItem(
+      projectRows.map((row) => {
+        const sectionId = buildSidebarEntitySectionId("project", row.project.id);
+        return buildGroupSectionItem(
           row.project.id,
-          buildSidebarEntitySectionId("project", row.project.id),
+          sectionId,
           row.project.name,
           row.threadListState.status === "ready"
             ? row.threadListState.threads
             : EMPTY_THREAD_LIST,
-          compareThreads,
+          compareThreadsForSection(sectionId),
           draftThreadIds,
-        ),
-      ),
-    [compareThreads, draftThreadIds, projectRows],
+        );
+      }),
+    [compareThreadsForSection, draftThreadIds, projectRows],
   );
   const projectItemsByProjectId = useMemo(
     () =>
@@ -897,7 +902,7 @@ function ProjectModeSections({
   );
   const threadDnd = useGroupedModeThreadDnd({
     collapsedThreadIds,
-    compareThreads,
+    compareThreadsForSection,
     draftThreadIds,
     onToggleThreadCollapsed,
     order: persistedOrder,
@@ -968,7 +973,7 @@ function ProjectModeSections({
             isCollapsed={collapsedProjectIds.has(row.project.id)}
             collapsedThreadIds={collapsedThreadIds}
             collapsedEnvironmentIds={collapsedEnvironmentIds}
-            compareThreads={compareThreads}
+            compareThreads={compareThreadsForSection(sectionId)}
             isLocalPathInvalid={row.isLocalPathInvalid}
             onProjectSelect={onProjectSelect}
             onCreateProjectThread={onCreateProjectThread}
@@ -987,7 +992,7 @@ function ProjectModeSections({
 interface SectionModeSectionsProps extends BuiltInSectionRenderState {
   collapsedEnvironmentIds: Set<string>;
   collapsedThreadIds: Set<string>;
-  compareThreads: ThreadComparator;
+  compareThreadsForSection: SidebarSectionComparator;
   sections: readonly SidebarSectionDefinition[];
   onCreateThreadInSection: (sectionId: string) => void;
   onProjectSelect?: () => void;
@@ -1013,7 +1018,7 @@ function SectionModeSections({
   collapsedEnvironmentIds,
   collapsedSectionIds,
   collapsedThreadIds,
-  compareThreads,
+  compareThreadsForSection,
   effectivePinnedThreadIds,
   sections,
   onCreateThreadInSection,
@@ -1074,7 +1079,7 @@ function SectionModeSections({
     <ThreadSectionMoveProvider destinations={moveDestinations}>
       <ChronologicalSectionThreadSections
         threadListState={threadListState}
-        compareThreads={compareThreads}
+        compareThreadsForSection={compareThreadsForSection}
         sections={sections}
         selectedThreadId={selectedThreadId}
         collapsedThreadIds={collapsedThreadIds}
@@ -1106,7 +1111,7 @@ interface MachineModeSectionsProps
   extends BuiltInSectionRenderState, GroupedModePinnedProps {
   collapsedEnvironmentIds: Set<string>;
   collapsedThreadIds: Set<string>;
-  compareThreads: ThreadComparator;
+  compareThreadsForSection: SidebarSectionComparator;
   draftThreadIds: ReadonlySet<string>;
   effectivePinnedThreadIds: ReadonlySet<string>;
   onProjectSelect?: () => void;
@@ -1128,7 +1133,7 @@ export function MachineModeSections({
   collapsedEnvironmentIds,
   collapsedSectionIds,
   collapsedThreadIds,
-  compareThreads,
+  compareThreadsForSection,
   draftThreadIds,
   effectivePinnedThreadIds,
   isSectionDisplayOptionsOpen,
@@ -1215,6 +1220,7 @@ export function MachineModeSections({
     showPinnedSection,
   });
   const reorderDisabled = order.length < 2;
+  const compareThreads = compareThreadsForSection("threads");
   const allThreadItems = useMemo(
     () =>
       machineSections.length === 0
@@ -1228,17 +1234,18 @@ export function MachineModeSections({
   );
   const machineGroups = useMemo(
     () =>
-      machineSections.map((section) =>
-        buildGroupSectionItem(
+      machineSections.map((section) => {
+        const sectionId = buildSidebarEntitySectionId("machine", section.key);
+        return buildGroupSectionItem(
           section.key,
-          buildSidebarEntitySectionId("machine", section.key),
+          sectionId,
           section.label,
           section.threadListState.threads,
-          compareThreads,
+          compareThreadsForSection(sectionId),
           draftThreadIds,
-        ),
-      ),
-    [compareThreads, draftThreadIds, machineSections],
+        );
+      }),
+    [compareThreadsForSection, draftThreadIds, machineSections],
   );
   const machineItemsBySectionId = useMemo(
     () =>
@@ -1253,7 +1260,7 @@ export function MachineModeSections({
   );
   const threadDnd = useGroupedModeThreadDnd({
     collapsedThreadIds,
-    compareThreads,
+    compareThreadsForSection,
     draftThreadIds,
     onToggleThreadCollapsed,
     order: persistedOrder,
@@ -1329,7 +1336,7 @@ export function MachineModeSections({
               rootItems={machineItemsBySectionId.get(sectionId)}
               threadListState={section.threadListState}
               progressiveDisclosureEnabled={progressiveDisclosureEnabled}
-              compareThreads={compareThreads}
+              compareThreads={compareThreadsForSection(sectionId)}
               variant="section"
               selectedThreadId={selectedThreadId}
               collapsedThreadIds={collapsedThreadIds}
@@ -1576,6 +1583,7 @@ function ProjectListComponent({
     return (
       <SidebarHeaderControls
         label={label}
+        sectionId={sectionId}
         onNewThread={handleCreateProjectlessThread}
         open={openSidebarMenu === menuId}
         onOpenChange={(open) => setSidebarMenuOpen(menuId, open)}
@@ -1588,19 +1596,34 @@ function ProjectListComponent({
   const [chronologicalSort, setChronologicalSort] = useAtom(
     sidebarChronologicalSortAtom,
   );
-  const sortDirection = useAtomValue(sidebarSortDirectionAtom);
   const setCollapsedSectionList = useSetAtom(
     sidebarCollapsedThreadSectionsAtom,
   );
-  const sidebarThreadComparator = useMemo<ThreadComparator>(
-    () =>
-      getSidebarThreadComparator(
-        chronologicalSort,
-        titleMentionResources,
-        sortDirection,
-      ),
-    [chronologicalSort, titleMentionResources, sortDirection],
+  const getSectionSort = useSidebarSectionSort();
+  const comparatorCache = useMemo(
+    () => new Map<string, ThreadComparator>(),
+    [titleMentionResources],
   );
+  const compareThreadsForSection = useCallback<SidebarSectionComparator>(
+    (sectionId) => {
+      const { sort, direction } = getSectionSort(sectionId);
+      const field = sort === "manual" ? "updated" : sort;
+      const cacheKey = `${field}:${direction}`;
+      let comparator = comparatorCache.get(cacheKey);
+      if (!comparator) {
+        comparator = getSidebarThreadComparator(
+          field,
+          titleMentionResources,
+          direction,
+        );
+        comparatorCache.set(cacheKey, comparator);
+      }
+      return comparator;
+    },
+    [comparatorCache, getSectionSort, titleMentionResources],
+  );
+  const isPinnedManualSort = getSectionSort("pinned").sort === "manual";
+  const pinnedReorderLocked = isPinnedReorderPending || !isPinnedManualSort;
   const collapsedThreadIds = useMemo(
     () => new Set(collapsedThreadIdList),
     [collapsedThreadIdList],
@@ -1637,10 +1660,17 @@ function ProjectListComponent({
       setChronologicalSort("updated");
     }
   }, [chronologicalSort, setChronologicalSort]);
-  const pinnedSidebarState = useMemo(
-    () => buildPinnedSidebarState({ draftThreadIds, threads }),
-    [draftThreadIds, threads],
-  );
+  const pinnedSidebarState = useMemo(() => {
+    const state = buildPinnedSidebarState({ draftThreadIds, threads });
+    if (isPinnedManualSort) return state;
+    const compare = compareThreadsForSection("pinned");
+    return {
+      ...state,
+      rootNodes: [...state.rootNodes].sort((left, right) =>
+        compare(left.thread, right.thread),
+      ),
+    };
+  }, [compareThreadsForSection, draftThreadIds, isPinnedManualSort, threads]);
   const pinnedRootThreads = useMemo(
     () => pinnedSidebarState.rootNodes.map((node) => node.thread),
     [pinnedSidebarState.rootNodes],
@@ -1770,7 +1800,7 @@ function ProjectListComponent({
       onProjectSelect={onProjectSelect}
       onToggleThreadCollapsed={toggleThreadCollapsed}
       onToggleEnvironmentCollapsed={toggleEnvironmentCollapsed}
-      isPinnedReorderPending={isPinnedReorderPending}
+      isPinnedReorderPending={pinnedReorderLocked}
       onReorderPinnedRoot={handleReorderPinnedRoot}
     />
   );
@@ -1858,7 +1888,7 @@ function ProjectListComponent({
               status={projectsState.status}
               showPinnedSection={hasPinnedSection}
               pinnedSection={pinnedSection}
-              pinnedReorderPending={isPinnedReorderPending}
+              pinnedReorderPending={pinnedReorderLocked}
               pinnedRootNodes={pinnedSidebarState.rootNodes}
               pinnedThreads={pinnedRootThreads}
               onReorderPinnedThread={handleReorderPinnedRoot}
@@ -1867,7 +1897,7 @@ function ProjectListComponent({
               collapsedSectionIds={collapsedSidebarSectionIds}
               collapsedThreadIds={collapsedThreadIds}
               collapsedEnvironmentIds={collapsedEnvironmentIds}
-              compareThreads={sidebarThreadComparator}
+              compareThreadsForSection={compareThreadsForSection}
               renderSectionDisplayOptions={renderSectionDisplayOptions}
               isSectionDisplayOptionsOpen={isSectionDisplayOptionsOpen}
               onProjectSelect={onProjectSelect}
@@ -1887,7 +1917,7 @@ function ProjectListComponent({
                 showPinnedSection={hasPinnedSection}
                 sections={sections}
                 pinnedSection={pinnedSection}
-                pinnedReorderPending={isPinnedReorderPending}
+                pinnedReorderPending={pinnedReorderLocked}
                 pinnedRootNodes={pinnedSidebarState.rootNodes}
                 pinnedThreads={pinnedRootThreads}
                 onReorderPinnedThread={handleReorderPinnedRoot}
@@ -1896,7 +1926,7 @@ function ProjectListComponent({
                 collapsedSectionIds={collapsedSidebarSectionIds}
                 collapsedThreadIds={collapsedThreadIds}
                 collapsedEnvironmentIds={collapsedEnvironmentIds}
-                compareThreads={sidebarThreadComparator}
+                compareThreadsForSection={compareThreadsForSection}
                 onProjectSelect={onProjectSelect}
                 onCreateThreadInSection={handleCreateThreadInSection}
                 onRenameSection={handleOpenRenameThreadSection}
@@ -1919,7 +1949,7 @@ function ProjectListComponent({
                 status={projectsState.status}
                 showPinnedSection={hasPinnedSection}
                 pinnedSection={pinnedSection}
-                pinnedReorderPending={isPinnedReorderPending}
+                pinnedReorderPending={pinnedReorderLocked}
                 pinnedRootNodes={pinnedSidebarState.rootNodes}
                 pinnedThreads={pinnedRootThreads}
                 onReorderPinnedThread={handleReorderPinnedRoot}
@@ -1928,7 +1958,7 @@ function ProjectListComponent({
                 collapsedSectionIds={collapsedSidebarSectionIds}
                 collapsedThreadIds={collapsedThreadIds}
                 collapsedEnvironmentIds={collapsedEnvironmentIds}
-                compareThreads={sidebarThreadComparator}
+                compareThreadsForSection={compareThreadsForSection}
                 onProjectSelect={onProjectSelect}
                 onCreateProjectThread={handleCreateProjectThread}
                 onToggleCollapsed={toggleSidebarSectionCollapsed}

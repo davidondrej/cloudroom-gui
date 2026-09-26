@@ -1,5 +1,11 @@
-import { getThread, listNonDeletedChildThreads } from "@bb/db";
-import type { Thread } from "@bb/domain";
+import {
+  getThread,
+  listNonDeletedChildThreads,
+  listQueuedThreadMessages,
+  listUnarchivedAssignedChildThreads,
+  type DbConnection,
+} from "@bb/db";
+import type { Thread, ThreadStatus } from "@bb/domain";
 import type { AppDeps } from "../../types.js";
 import { throwParentThreadInvalid } from "../lib/lifecycle-api-errors.js";
 
@@ -18,6 +24,36 @@ export function isParentNotifiableChildThread<
   T extends Pick<Thread, "parentThreadId" | "originKind">,
 >(thread: T): thread is T & { parentThreadId: string } {
   return isAgentDelegatedChildThread(thread) && thread.originKind === null;
+}
+
+const BUSY_THREAD_STATUSES: ReadonlySet<ThreadStatus> = new Set([
+  "pending",
+  "starting",
+  "active",
+  "stopping",
+]);
+
+function hasBusyDescendantThread(db: DbConnection, threadId: string): boolean {
+  return listUnarchivedAssignedChildThreads(db, {
+    parentThreadId: threadId,
+  }).some(
+    (child) =>
+      BUSY_THREAD_STATUSES.has(child.status) ||
+      hasBusyDescendantThread(db, child.id),
+  );
+}
+
+export function isHardQueueHeld(
+  db: DbConnection,
+  thread: Pick<Thread, "id" | "status">,
+): boolean {
+  return (
+    (thread.status !== "idle" && thread.status !== "pending") ||
+    listQueuedThreadMessages(db, thread.id).some(
+      (row) => row.systemNotice !== null,
+    ) ||
+    hasBusyDescendantThread(db, thread.id)
+  );
 }
 
 export type ParentThread = Pick<

@@ -132,6 +132,7 @@ export interface FollowUpComposerProps {
   mentionRanges: readonly PromptTextMention[];
   onChangeMessage: (value: string, mentionRanges: PromptTextMention[]) => void;
   onModifierSubmit: () => void;
+  onHardQueueSubmit?: () => void;
   onSubmit: () => void;
   onEscape?: () => void;
   submitLabel?: string;
@@ -158,6 +159,7 @@ export interface FollowUpPromptBoxProps {
   composer: FollowUpComposerProps | null;
   environmentSummary: ReactNode | null;
   contextWindowUsage: ContextWindowUsage | null;
+  contextWindowNote?: string | undefined;
   execution: ExecutionControlsProps;
   permission: ExecutionPermissionConfig;
   executionReadOnly?: boolean;
@@ -230,6 +232,7 @@ function FollowUpPromptBoxWithComposer({
   composer,
   environmentSummary,
   contextWindowUsage,
+  contextWindowNote,
   execution,
   permission,
   executionReadOnly,
@@ -733,6 +736,7 @@ function FollowUpPromptBoxWithComposer({
             composer.isFollowUpSubmitting ||
             (steerOnPrimarySubmit && !composer.canModifierSubmit),
           onModifierSubmit,
+          onHardQueueSubmit: composer.onHardQueueSubmit,
           title: composer.isFollowUpSubmitting
             ? "Submitting..."
             : canSubmit && composer.submitTitle !== undefined
@@ -817,7 +821,10 @@ function FollowUpPromptBoxWithComposer({
           <div className="flex shrink-0 items-center gap-2">
             {permissionControl}
             {contextWindowUsage ? (
-              <ThreadContextWindowIndicator usage={contextWindowUsage} />
+              <ThreadContextWindowIndicator
+                usage={contextWindowUsage}
+                note={contextWindowNote}
+              />
             ) : null}
           </div>
         </div>
@@ -835,7 +842,9 @@ function FollowUpPromptBoxWithComposer({
           hasPluginComposerScope={composerScope !== null}
           isPrimaryComposer={isPrimaryComposer}
           pendingInteraction={pendingInteraction}
-          showScrollToBottomButton={showScrollToBottomButton}
+          showScrollToBottomButton={
+            showScrollToBottomButton && !isWidePromptBoxCollapsed
+          }
           stack={stack}
           stackRef={stackRef}
         />

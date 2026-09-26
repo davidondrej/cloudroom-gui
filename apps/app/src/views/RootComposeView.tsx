@@ -29,7 +29,10 @@ import {
   hasProviderCliAction,
   useProviderCliInstallRunner,
 } from "@/components/provider-cli/provider-cli-install";
-import { providerCliJobKey } from "@/components/provider-cli/provider-cli-install-store";
+import {
+  autoStartProviderCliInstall,
+  providerCliJobKey,
+} from "@/components/provider-cli/provider-cli-install-store";
 import { PROJECT_CHECKOUT_ENVIRONMENT_PROVIDER_ID } from "@bb/client-core";
 import {
   encodeProviderValue,
@@ -687,6 +690,7 @@ function RootComposeSurface({
     setProviderModelReasoning,
     setPermissionMode,
     renderPromptBox,
+    connectionFooter,
   } = composer;
   const rootPanelEnvironmentId =
     parsedEnvironment?.type === "reuse"
@@ -874,6 +878,13 @@ function RootComposeSurface({
       issue: selectedProviderCliIssue,
     });
   }, [selectedProviderCliIssue, rootProjectHostId, startInstall]);
+  useEffect(() => {
+    if (selectedProviderCliIssue === null || rootProjectHostId === null) return;
+    autoStartProviderCliInstall({
+      hostId: rootProjectHostId,
+      issue: selectedProviderCliIssue,
+    });
+  }, [selectedProviderCliIssue, rootProjectHostId]);
 
   useFixedPanelTabsStorageMaintenance();
   const fixedPanelTabsState = useFixedPanelTabsState(
@@ -1972,6 +1983,7 @@ function RootComposeSurface({
         >
           <AppNavigationHostProvider capabilities={appNavigationCapabilities}>
             <RootComposeSecondaryContent
+              footer={connectionFooter}
               contentClassName={
                 showEmptyWelcome
                   ? ROOT_COMPOSE_EMPTY_WELCOME_CONTENT_CLASS
@@ -2016,14 +2028,7 @@ function RootComposeSurface({
               }}
             >
               {showEmptyWelcome ? (
-                <RootComposeEmptyWelcome
-                  onCompose={handleStartComposing}
-                  onAddProject={quickCreateProject.openCreateDialog}
-                  addProjectDisabled={
-                    !quickCreateProject.isAvailable ||
-                    quickCreateProject.isCreating
-                  }
-                />
+                <RootComposeEmptyWelcome onCompose={handleStartComposing} />
               ) : (
                 promptBox
               )}

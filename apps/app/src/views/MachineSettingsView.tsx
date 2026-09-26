@@ -65,7 +65,7 @@ import {
   getSettingsRoutePath,
 } from "@/lib/route-paths";
 
-const PRIMARY_REMOVE_DISABLED_REASON = "Room's primary machine can't be removed.";
+const PRIMARY_REMOVE_DISABLED_REASON = "Cloudroom's primary machine can't be removed.";
 
 const PERMISSION_LIMIT_DESCRIPTION =
   "Highest permission mode any thread on the selected machine may run with. Threads that ask for more resolve down to it, and a provider that supports nothing this low can't run here.";

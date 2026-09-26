@@ -378,6 +378,7 @@ export const createQueuedMessageRequestSchema = z.object({
   permissionMode: permissionModeInputSchema.optional(),
   executionInputSources: existingThreadExecutionInputSourcesSchema.optional(),
   senderThreadId: z.string().min(1).optional(),
+  hardQueue: z.boolean().optional(),
 });
 export type CreateQueuedMessageRequest = z.infer<
   typeof createQueuedMessageRequestSchema

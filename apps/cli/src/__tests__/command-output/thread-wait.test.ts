@@ -10,13 +10,13 @@ import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import * as fixtures from "../helpers/command-output-fixtures.js";
 import { registerThreadCommands } from "../../commands/thread/index.js";
 
-describe("room thread wait command output", () => {
+describe("cloudroom thread wait command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
     registerThreadCommands(program, () => "http://server");
 
-  it("room thread wait defaults to waiting for idle", async () => {
+  it("cloudroom thread wait defaults to waiting for idle", async () => {
     const get = vi.fn(async () =>
       fixtures.makeThread({
         id: "thread-wait-default",
@@ -36,7 +36,7 @@ describe("room thread wait command output", () => {
     );
   });
 
-  it("room thread wait --status succeeds when the thread is already at the requested status", async () => {
+  it("cloudroom thread wait --status succeeds when the thread is already at the requested status", async () => {
     const get = vi.fn(async () =>
       fixtures.makeThread({
         id: "thread-wait",
@@ -59,7 +59,7 @@ describe("room thread wait command output", () => {
     );
   });
 
-  it("room thread wait --status exits with timeout code when the status is not reached", async () => {
+  it("cloudroom thread wait --status exits with timeout code when the status is not reached", async () => {
     const get = vi.fn(async () =>
       fixtures.makeThread({
         id: "thread-wait-timeout",
@@ -88,7 +88,7 @@ describe("room thread wait command output", () => {
     ).rejects.toThrow("process.exit:2");
   });
 
-  it("room thread wait --status idle fails fast when the thread is stuck in error", async () => {
+  it("cloudroom thread wait --status idle fails fast when the thread is stuck in error", async () => {
     const get = vi.fn(async () =>
       fixtures.makeThread({
         id: "thread-wait-error",
@@ -109,12 +109,12 @@ describe("room thread wait command output", () => {
     ).rejects.toThrow("process.exit:4");
 
     expect(collectLogLines(vi.mocked(console.error))).toContain(
-      "Error: Thread thread-wait-error is in status error and will not reach idle by waiting alone. Inspect it with 'room thread show thread-wait-error' and recover by sending a follow-up.",
+      "Error: Thread thread-wait-error is in status error and will not reach idle by waiting alone. Inspect it with 'cloudroom thread show thread-wait-error' and recover by sending a follow-up.",
     );
     expect(get).toHaveBeenCalledTimes(1);
   });
 
-  it("room thread wait --event reports server errors instead of schema errors", async () => {
+  it("cloudroom thread wait --event reports server errors instead of schema errors", async () => {
     const waitGet = vi.fn(
       async () =>
         new Response(
@@ -149,7 +149,7 @@ describe("room thread wait command output", () => {
     expect(hasServerError).toBe(true);
   });
 
-  it("room thread wait --event --timeout 0 returns immediately when event exists", async () => {
+  it("cloudroom thread wait --event --timeout 0 returns immediately when event exists", async () => {
     const waitGet = vi.fn(
       async () =>
         new Response(

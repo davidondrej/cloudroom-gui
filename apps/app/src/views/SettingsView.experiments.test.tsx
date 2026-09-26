@@ -32,7 +32,7 @@ describe("ExperimentsSettingsSection", () => {
     expect(onChange).toHaveBeenCalledWith("changelogPreview", true);
   });
 
-  it("does not offer native BB mobile pairing as a Room experiment", () => {
+  it("does not offer native BB mobile pairing as a Cloudroom experiment", () => {
     const onChange = vi.fn();
     renderSection(onChange);
     expect(screen.queryByLabelText("Mobile app")).toBeNull();

@@ -300,7 +300,7 @@ export function createPluginRegistration(context: PluginRegistrationContext) {
       identity.sourceIntent.kind === "git"
     ) {
       throw new Error(
-        `plugin "${pluginId}" is already installed; use \`room plugin update ${pluginId}\` or remove it before reinstalling`,
+        `plugin "${pluginId}" is already installed; use \`cloudroom plugin update ${pluginId}\` or remove it before reinstalling`,
       );
     }
   }

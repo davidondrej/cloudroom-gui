@@ -66,7 +66,7 @@ function formatRequestTimeoutDuration(timeoutMs: number): string {
 export class BbRequestTimeoutError extends Error {
   constructor(timeoutMs: number) {
     super(
-      `Room request timed out after ${formatRequestTimeoutDuration(timeoutMs)}.`,
+      `Cloudroom request timed out after ${formatRequestTimeoutDuration(timeoutMs)}.`,
     );
     this.name = "BbRequestTimeoutError";
   }
@@ -263,7 +263,7 @@ function isRequestTimeoutError(
 function validateRequestTimeoutMs(timeoutMs: number): void {
   if (!Number.isFinite(timeoutMs) || timeoutMs < 0) {
     throw new RangeError(
-      "Room request timeout must be a non-negative finite number.",
+      "Cloudroom request timeout must be a non-negative finite number.",
     );
   }
 }

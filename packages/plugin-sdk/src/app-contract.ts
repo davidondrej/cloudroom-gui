@@ -651,6 +651,12 @@ export interface PluginThreadPanelActionRegistration {
    */
   layout?: "padded" | "flush";
   /**
+   * Hide the launcher row when the thread's provider cannot fork threads.
+   *
+   * Experimental: see docs/api_to_audit.md.
+   */
+  experimental_requiresFork?: boolean;
+  /**
    * Runs when the user activates the action: call your RPC methods, show a
    * toast, and/or open panel tabs via `context.openPanel`. Omitted =
    * immediately open a panel tab with defaults. Errors (sync or async) are

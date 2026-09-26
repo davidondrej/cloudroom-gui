@@ -3,9 +3,9 @@ import { action, CliExitError } from "../action.js";
 
 const REMOVED_MANAGER_COMMAND_MESSAGE = [
   "Manager threads were replaced by parent threads.",
-  "Use `room thread spawn --parent-thread <id>` to delegate work,",
-  "`room thread list --parent-thread <id>` to list child threads,",
-  "and `room thread show <id>` to inspect a thread.",
+  "Use `cloudroom thread spawn --parent-thread <id>` to delegate work,",
+  "`cloudroom thread list --parent-thread <id>` to list child threads,",
+  "and `cloudroom thread show <id>` to inspect a thread.",
 ].join(" ");
 
 interface RemovedManagerCommandOptions {

@@ -1,11 +1,11 @@
 ---
 kind: instruction
-title: Room Guide Overview
-summary: System overview and chapter index for the Room CLI guide.
-intent: Orient agents to room core concepts and help them find the right guide chapter.
+title: Cloudroom Guide Overview
+summary: System overview and chapter index for the Cloudroom CLI guide.
+intent: Orient agents to cloudroom core concepts and help them find the right guide chapter.
 editingNotes: Keep this concise. Concepts only — command details belong in chapter files.
 ---
-room is an agent orchestration tool for managing multiple agents.
+Cloudroom is an agent orchestration tool for managing multiple agents.
 
 Core concepts:
 
@@ -23,20 +23,20 @@ Context variables set automatically inside a thread environment:
 - ROOM_PROJECT_ID — current project
 - ROOM_THREAD_ID — current thread
 - ROOM_ENVIRONMENT_ID — current environment
-- ROOM_CLI — absolute path to Cloudroom's daemon-managed `room` executable; `room` re-execs to this path when needed. Official BB is separate.
+- ROOM_CLI — absolute path to Cloudroom's daemon-managed `cloudroom` executable; `cloudroom` re-execs to this path when needed. Official BB is separate.
 
-Run `room status` to see your current context (resolved project and thread IDs).
-It also warns when an enabled plugin is not running (incompatible after a Room
-upgrade, failed to load, or missing); run `room plugin list` for the detail.
+Run `cloudroom status` to see your current context (resolved project and thread IDs).
+It also warns when an enabled plugin is not running (incompatible after a Cloudroom
+upgrade, failed to load, or missing); run `cloudroom plugin list` for the detail.
 
 All commands support --json for machine-readable output.
 
-To make a repo work with room worktrees, run `room guide environments` for the
-repo-level `.bb-env-setup.sh` and `.bb-env-teardown.sh` hooks. Run `room guide
+To make a repo work with cloudroom worktrees, run `cloudroom guide environments` for the
+repo-level `.bb-env-setup.sh` and `.bb-env-teardown.sh` hooks. Run `cloudroom guide
 agent-configuration` for the data-dir and workspace files that customize agent
 behavior.
 
-Run `room guide <chapter>` for command details:
+Run `cloudroom guide <chapter>` for command details:
 
   threads              Spawning, inspecting, messaging, and managing threads
   environments         Environment lifecycle hooks, operations, commits, and merges
@@ -49,5 +49,5 @@ Run `room guide <chapter>` for command details:
   customization        Theming the app palette, settings, mobile push
                        notifications
   plugins              Installing plugins, plugin marketplaces, and their
-                       contributed room commands
+                       contributed cloudroom commands
   automations          Scheduling and editing recurring or one-shot work

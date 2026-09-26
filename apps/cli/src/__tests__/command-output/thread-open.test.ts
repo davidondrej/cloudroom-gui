@@ -46,7 +46,7 @@ function stubThreadOpenApi(args: {
   return { getEnvironment, getThread, openThread };
 }
 
-describe("room thread open command output", () => {
+describe("cloudroom thread open command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
@@ -256,7 +256,7 @@ describe("room thread open command output", () => {
     expect(help).toContain("Usage:");
     expect(help).toContain("[id] [path]");
     expect(help).toContain(
-      "Open a Room thread, optionally with a file in its panel",
+      "Open a Cloudroom thread, optionally with a file in its panel",
     );
     expect(help).toContain("--line");
     expect(help).toContain("--split <placement>");

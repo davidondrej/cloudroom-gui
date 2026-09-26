@@ -8,7 +8,7 @@ import {
 import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import { registerThreadCommands } from "../../commands/thread/index.js";
 
-describe("room thread count command output", () => {
+describe("cloudroom thread count command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
@@ -16,7 +16,7 @@ describe("room thread count command output", () => {
 
   // The ungrouped count is one number, so it prints as one number and stays
   // pipeable without --json.
-  it("room thread count prints the bare total and sends only the filters given", async () => {
+  it("cloudroom thread count prints the bare total and sends only the filters given", async () => {
     const get = vi.fn(async () => ({ total: 3 }));
     stubServerApi({ "v1.threads.count.$get": get });
 
@@ -33,7 +33,7 @@ describe("room thread count command output", () => {
 
   // "none" is the root-parent sentinel, not a thread id: it must reach the
   // route verbatim so the count excludes every child thread.
-  it("room thread count --parent none passes the root sentinel through", async () => {
+  it("cloudroom thread count --parent none passes the root sentinel through", async () => {
     const get = vi.fn(async () => ({ total: 0 }));
     stubServerApi({ "v1.threads.count.$get": get });
 
@@ -43,7 +43,7 @@ describe("room thread count command output", () => {
     expect(vi.mocked(console.log).mock.calls[0]?.[0]).toBe("0");
   });
 
-  it("room thread count --by renders one row per group, largest first, with a total", async () => {
+  it("cloudroom thread count --by renders one row per group, largest first, with a total", async () => {
     const get = vi.fn(async () => ({
       total: 6,
       groups: [
@@ -71,7 +71,7 @@ describe("room thread count command output", () => {
     expect(lines.at(-1)).toBe("Total: 6");
   });
 
-  it("room thread count --by reports an empty grouped result instead of an empty table", async () => {
+  it("cloudroom thread count --by reports an empty grouped result instead of an empty table", async () => {
     const get = vi.fn(async () => ({ total: 0, groups: [] }));
     stubServerApi({ "v1.threads.count.$get": get });
 
@@ -80,7 +80,7 @@ describe("room thread count command output", () => {
     expect(vi.mocked(console.log).mock.calls[0]?.[0]).toBe("No threads found");
   });
 
-  it("room thread count rejects an unknown --by dimension before requesting", async () => {
+  it("cloudroom thread count rejects an unknown --by dimension before requesting", async () => {
     const get = vi.fn(async () => ({ total: 0 }));
     stubServerApi({ "v1.threads.count.$get": get });
 
@@ -94,7 +94,7 @@ describe("room thread count command output", () => {
     );
   });
 
-  it("room thread count rejects an unknown --status before requesting", async () => {
+  it("cloudroom thread count rejects an unknown --status before requesting", async () => {
     const get = vi.fn(async () => ({ total: 0 }));
     stubServerApi({ "v1.threads.count.$get": get });
 
@@ -108,7 +108,7 @@ describe("room thread count command output", () => {
     );
   });
 
-  it("room thread count --json prints the raw grouped response", async () => {
+  it("cloudroom thread count --json prints the raw grouped response", async () => {
     const get = vi.fn(async () => ({
       total: 2,
       groups: [{ key: "codex", count: 2 }],

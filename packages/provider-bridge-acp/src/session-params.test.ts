@@ -399,7 +399,7 @@ gemini-3.5-flash claude-sonnet-4 gpt-5-mini gemini-2.5-flash kimi-k3 kimi-k2.7-c
 
 describe("buildAcpSessionParams skill instructions", () => {
   const SKILLS_PREAMBLE =
-    "Room skills are reusable instruction folders. When the current task matches a listed skill description, read that skill's SKILL.md at the absolute path before proceeding; you may read supporting files in the same skill directory that SKILL.md references. If a listed path does not exist, the list is stale and should be ignored.";
+    "Cloudroom skills are reusable instruction folders. When the current task matches a listed skill description, read that skill's SKILL.md at the absolute path before proceeding; you may read supporting files in the same skill directory that SKILL.md references. If a listed path does not exist, the list is stale and should be ignored.";
 
   function paramsWithOptions(
     options: Partial<AcpSessionExecutionOptions>,
@@ -449,7 +449,7 @@ describe("buildAcpSessionParams skill instructions", () => {
         "",
         SKILLS_PREAMBLE,
         "",
-        "Available Room skills:",
+        "Available Cloudroom skills:",
         "- release-notes: Use release-notes when /system_instructions tests run. (SKILL.md: /tmp/bb/runtime/global-skills/abc123/skills/release-notes/SKILL.md)",
         "- copywriting: Use when writing customer copy. (SKILL.md: /tmp/bb/runtime/global-skills/abc123/skills/copywriting/SKILL.md)",
       ].join("\n"),
@@ -477,7 +477,7 @@ describe("buildAcpSessionParams skill instructions", () => {
       instructions: [
         SKILLS_PREAMBLE,
         "",
-        "Available Room skills:",
+        "Available Cloudroom skills:",
         "- debugging: Use when debugging runtime state. (SKILL.md: /tmp/bb/runtime/global-skills/def456/skills/debugging/SKILL.md)",
       ].join("\n"),
     });

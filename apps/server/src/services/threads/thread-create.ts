@@ -385,13 +385,12 @@ async function createPendingThreadAndAttemptFirstDispatch(
   try {
     if (
       args.fork !== null &&
-      args.fork.historyEndSequence !== null &&
+      args.fork.history !== null &&
       args.request.visibility === "visible"
     ) {
       copyForkSourceHistory(deps, {
         fork: thread,
-        historyEndSequence: args.fork.historyEndSequence,
-        sourceThreadId: args.fork.sourceThreadId,
+        history: args.fork.history,
       });
     }
     const executionPlanArgs = {
@@ -506,6 +505,7 @@ export async function createThreadFromRequest(
   options: {
     providerInput?: ThreadCreateServiceRequestInput["input"];
     forkSourceEnvironmentId?: string;
+    importedFork?: ThreadForkPoint;
   } = {},
 ) {
   const project = requirePublicProjectForThreadCreate(
@@ -729,6 +729,13 @@ export async function createThreadFromRequest(
     resolvedExecutionDefaults !== null &&
     resolvedExecutionDefaults.providerId !== request.providerId
   ) {
+    if (options.importedFork) {
+      throw new ApiError(
+        409,
+        "import_provider_unavailable",
+        `Provider ${request.providerId} is unavailable for this import`,
+      );
+    }
     request.providerId = resolvedExecutionDefaults.providerId;
   }
 
@@ -744,12 +751,14 @@ export async function createThreadFromRequest(
       requestedEnvironment: request.environment,
     });
 
-  const fork = resolveForkPoint(deps, {
-    originKind: request.originKind ?? null,
-    providerId: request.providerId,
-    sourceSeqEnd: request.sourceSeqEnd,
-    sourceThread,
-  });
+  const fork =
+    options.importedFork ??
+    resolveForkPoint(deps, {
+      originKind: request.originKind ?? null,
+      providerId: request.providerId,
+      sourceSeqEnd: request.sourceSeqEnd,
+      sourceThread,
+    });
 
   if (request.originKind !== null && fork === null) {
     throw new ApiError(

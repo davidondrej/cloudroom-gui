@@ -331,7 +331,7 @@ export function RollbackNote({
       <Icon name="RotateCcw" className="mt-0.5 size-3.5 shrink-0" />
       <span>
         Your plugin data is snapshotted first — if {toVersion} fails to start,
-        Room restores {fromVersion} and its data automatically.
+        Cloudroom restores {fromVersion} and its data automatically.
       </span>
     </div>
   );
