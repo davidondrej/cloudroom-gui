@@ -375,6 +375,7 @@ describe("desktop build", () => {
       ...process.env,
       BB_DATA_DIR: join(smokeRoot, "data"),
       BB_DESKTOP_AUTO_UPDATE: "0",
+      BB_DESKTOP_HIDE_WINDOWS: "1",
       BB_DESKTOP_OPEN_DEVTOOLS: "0",
       BB_DESKTOP_VERSION_CHECK: "0",
       BB_SERVER_PORT: String(smokeServer.port),

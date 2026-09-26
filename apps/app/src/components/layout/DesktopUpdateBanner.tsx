@@ -10,14 +10,24 @@ import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
 
 const DISMISSED_VERSION_KEY = "cloudroom.update-banner.dismissed-version";
 
-// App-wide notice when the website serves a newer GUI. Dismissal lasts until the next release.
+// App-wide notice: Restart once the in-app update is ready; the website link only when the app can't update itself.
 export function DesktopUpdateBanner() {
   const { desktopApi, desktopInfo } = useDesktopUpdateInfo();
   const [dismissed, setDismissed] = useState(() =>
     rawStringLocalStorage.getItem(DISMISSED_VERSION_KEY, ""),
   );
-  const version = desktopInfo?.latestVersion ?? desktopInfo?.pendingVersion;
-  if (!desktopInfo?.updateAvailable || !version || version === dismissed) {
+  const [restarting, setRestarting] = useState(false);
+  const version = desktopInfo?.pendingVersion ?? desktopInfo?.latestVersion;
+  const ready = desktopInfo?.updateDownloaded === true && desktopApi !== null;
+  const cannotSelfUpdate =
+    desktopInfo?.autoUpdateEnabled !== true ||
+    desktopInfo.downloadState === "failed";
+  if (
+    !desktopInfo?.updateAvailable ||
+    !version ||
+    version === dismissed ||
+    (!ready && !cannotSelfUpdate)
+  ) {
     return null;
   }
 
@@ -25,7 +35,10 @@ export function DesktopUpdateBanner() {
     rawStringLocalStorage.setItem(DISMISSED_VERSION_KEY, version);
     setDismissed(version);
   };
-  const ready = desktopInfo.updateDownloaded && desktopApi !== null;
+  const restart = () => {
+    setRestarting(true);
+    void desktopApi?.installUpdate().catch(() => setRestarting(false));
+  };
 
   return (
     <div
@@ -35,19 +48,30 @@ export function DesktopUpdateBanner() {
     >
       <Icon name="Download" className="size-4 shrink-0 text-primary" />
       <span className="min-w-0 flex-1 truncate">
-        <strong>Cloudroom {version} is available.</strong> You have{" "}
-        {desktopInfo.version}. {ready ? "Relaunch to finish updating." : "Download it to get the latest fixes."}
+        {ready ? (
+          <>
+            <strong>A new version of Cloudroom is ready.</strong> Restart to
+            update. Running agents resume automatically.
+          </>
+        ) : (
+          <>
+            <strong>Cloudroom {version} is available.</strong> You have{" "}
+            {desktopInfo.version}. Download it to get the latest fixes.
+          </>
+        )}
       </span>
-      <Button
-        size="sm"
-        onClick={() =>
-          ready
-            ? void desktopApi?.installUpdate()
-            : openUrlInExternalBrowser(DESKTOP_DOWNLOAD_URL)
-        }
-      >
-        {ready ? "Relaunch" : "Download"}
-      </Button>
+      {ready ? (
+        <Button size="sm" disabled={restarting} onClick={restart}>
+          {restarting ? "Restarting…" : "Restart to update"}
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          onClick={() => openUrlInExternalBrowser(DESKTOP_DOWNLOAD_URL)}
+        >
+          Download
+        </Button>
+      )}
       <Button
         size="icon"
         variant="ghost"

@@ -39,6 +39,7 @@ export function mergeDesktopUpdateInfo(
 
   return {
     ...baseInfo,
+    autoUpdateEnabled: args.autoInfo?.autoUpdateEnabled ?? false,
     ...(nativeDownloadState === undefined
       ? {}
       : { downloadState: nativeDownloadState }),

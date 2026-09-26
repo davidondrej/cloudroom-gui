@@ -77,6 +77,7 @@ interface CreateDesktopWindowFactoryArgs {
   browserWindowCreator: DesktopBrowserWindowCreator;
   createWindowStateKey(): WindowStateKey;
   displayWorkAreas: DisplayWorkArea[] | null;
+  hideWindows?: boolean;
   icon: DesktopWindowIcon;
   isLinuxTransparent: boolean;
   isMac: boolean;
@@ -248,7 +249,9 @@ export function createDesktopWindowFactory(
       }
 
       browserWindow.once("ready-to-show", () => {
-        browserWindow.show();
+        if (!args.hideWindows) {
+          browserWindow.show();
+        }
       });
       browserWindow.on("closed", () => {
         activeWindows.delete(stateKey);

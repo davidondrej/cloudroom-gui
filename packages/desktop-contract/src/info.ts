@@ -13,6 +13,7 @@ const bbDesktopDownloadStateSchema = z.enum([
 ]);
 
 export const bbDesktopInfoSchema = z.object({
+  autoUpdateEnabled: z.boolean().optional(),
   downloadState: bbDesktopDownloadStateSchema.optional(),
   lastCheckedAt: isoUtcDateTimeSchema.nullable(),
   latestVersion: z.string().min(1).nullable(),

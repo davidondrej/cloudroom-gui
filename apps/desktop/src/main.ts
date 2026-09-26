@@ -143,6 +143,10 @@ import {
 } from "./desktop-auto-update.js";
 import { mergeDesktopUpdateInfo } from "./desktop-update-info.js";
 import {
+  resumeThreadsAfterUpdate,
+  stopThreadsForUpdate,
+} from "./desktop-update-resume.js";
+import {
   BB_DESKTOP_CHECK_FOR_UPDATES_CHANNEL,
   BB_DESKTOP_GET_INFO_CHANNEL,
   BB_DESKTOP_INFO_CHANGED_CHANNEL,
@@ -534,6 +538,8 @@ function sendDesktopWindowStateChanged(
   );
 }
 
+const hideWindowsForTests = process.env.BB_DESKTOP_HIDE_WINDOWS === "1";
+
 const desktopLogger: DesktopAutoUpdateLogger = {
   error(message) {
     process.stderr.write(`${message}\n`);
@@ -826,6 +832,15 @@ function setCurrentRuntime(runtime: DesktopRuntime | null): void {
     stopSystemConfigSync();
   } else {
     connectServerSync?.onRuntimeReady();
+  }
+  if (runtime?.ownership === "spawned") {
+    void resumeThreadsAfterUpdate({
+      logger: desktopLogger,
+      serverUrl: runtime.serverUrl,
+      userDataPath: app.getPath("userData"),
+    }).catch((error: unknown) => {
+      desktopLogger.error(`Resuming threads after the update failed: ${String(error)}`);
+    });
   }
   refreshApplicationMenu();
   if (runtime?.ownership !== "spawned") {
@@ -1620,6 +1635,15 @@ function registerDesktopUpdateIpc(): void {
       );
       return;
     }
+    if (currentRuntime?.ownership === "spawned") {
+      await stopThreadsForUpdate({
+        logger: desktopLogger,
+        serverUrl: currentRuntime.serverUrl,
+        userDataPath: app.getPath("userData"),
+      }).catch((error: unknown) => {
+        desktopLogger.error(`Stopping threads for the update failed: ${String(error)}`);
+      });
+    }
     quitting = true;
     stoppingForQuit = true;
     await finishQuit();
@@ -2147,7 +2171,9 @@ async function runDesktopApp(): Promise<void> {
   });
   assertPathExists({ label: "app icon", path: iconPath });
 
-  if (
+  if (hideWindowsForTests) {
+    app.dock?.hide();
+  } else if (
     process.platform === "darwin" &&
     app.dock !== undefined &&
     !paths.isPackaged
@@ -2400,6 +2426,7 @@ async function runDesktopApp(): Promise<void> {
       return `window-${randomUUID()}`;
     },
     displayWorkAreas: null,
+    hideWindows: hideWindowsForTests,
     icon: nativeImage.createFromPath(iconPath),
     isLinuxTransparent: hasLinuxWindowArgument({
       argument: LINUX_TRANSPARENT_WINDOW_ARGUMENT,

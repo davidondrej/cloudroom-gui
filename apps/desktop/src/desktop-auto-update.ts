@@ -87,8 +87,10 @@ export interface DesktopAutoUpdateService extends DesktopUpdateService {
 function createBaseInfo(
   currentVersion: string,
   platform: BbDesktopInfo["platform"],
+  autoUpdateEnabled: boolean,
 ): BbDesktopInfo {
   return {
+    autoUpdateEnabled,
     downloadState: "idle",
     lastCheckedAt: null,
     latestVersion: null,
@@ -168,7 +170,7 @@ export function createDesktopAutoUpdateService(
   let downloadInFlight: Promise<Array<string>> | null = null;
   const scheduler = createDesktopUpdateScheduler({
     enabled: args.enabled,
-    initialInfo: createBaseInfo(args.currentVersion, args.platform),
+    initialInfo: createBaseInfo(args.currentVersion, args.platform, args.enabled),
     now,
     runCheck,
     shouldSkipCheck,

@@ -145,6 +145,9 @@ const PROMPTBOX_MIN_HEIGHT = 68;
 const PROMPTBOX_SELECTION_REVEAL_MARGIN = 12;
 const COMPACT_PROMPT_ACTION_BUTTON_CLASS =
   "size-8 p-0 transition-all [&_[data-icon-root]]:size-4";
+// Mobile touch: bigger round icon buttons with bolder glyphs.
+const MOBILE_PROMPT_ROUND_BUTTON_CLASS =
+  "max-md:pointer-coarse:size-11 max-md:pointer-coarse:rounded-full max-md:pointer-coarse:px-0 max-md:pointer-coarse:[&_[data-icon-root]]:size-5 max-md:pointer-coarse:[&_[data-icon-root]_path]:stroke-[2]";
 const RICH_PASTE_BLOCK_TAGS = new Set([
   "ADDRESS",
   "ARTICLE",
@@ -330,7 +333,9 @@ function PromptSubmitButton({
       }}
       className={cn(
         className,
-        label !== undefined && !isCompact && "size-auto h-8 gap-1.5 px-2.5",
+        label !== undefined &&
+          !isCompact &&
+          "size-auto h-8 gap-1.5 px-2.5 max-md:pointer-coarse:size-auto max-md:pointer-coarse:h-10 max-md:pointer-coarse:px-3",
       )}
     >
       {isBusy ? (
@@ -3221,7 +3226,7 @@ export function PromptBoxInternal({
         emitAttachmentFiles(Array.from(event.dataTransfer.files));
       }}
       className={cn(
-        "group/promptbox relative w-full rounded-xl border border-border bg-background shadow-lift",
+        "group/promptbox relative w-full rounded-xl border border-border bg-background shadow-lift max-md:pointer-coarse:border-foreground/20",
         showCompactLayout && "overflow-hidden",
       )}
     >
@@ -3482,11 +3487,12 @@ export function PromptBoxInternal({
                           disabled={!canStartVoiceInput}
                           onPointerDown={handleVoicePointerDown}
                           onClick={handleVoiceClick}
-                          className={
+                          className={cn(
                             showCompactLayout
                               ? COMPACT_PROMPT_ACTION_BUTTON_CLASS
-                              : COARSE_POINTER_PROMPT_ICON_ACTION_BUTTON_CLASS
-                          }
+                              : COARSE_POINTER_PROMPT_ICON_ACTION_BUTTON_CLASS,
+                            MOBILE_PROMPT_ROUND_BUTTON_CLASS,
+                          )}
                         >
                           <Icon name="Mic" className="size-4" />
                         </Button>
@@ -3506,15 +3512,16 @@ export function PromptBoxInternal({
                         aria-label="Stop run"
                         onPointerDown={handleStopPointerDown}
                         onClick={handleStopClick}
-                        className={
+                        className={cn(
                           showCompactLayout
                             ? COMPACT_PROMPT_ACTION_BUTTON_CLASS
-                            : COARSE_POINTER_PROMPT_ICON_ACTION_BUTTON_CLASS
-                        }
+                            : COARSE_POINTER_PROMPT_ICON_ACTION_BUTTON_CLASS,
+                          MOBILE_PROMPT_ROUND_BUTTON_CLASS,
+                        )}
                       >
                         <Icon
                           name="Square"
-                          className="size-3.5 fill-current [&_*]:stroke-0"
+                          className="size-3.5 fill-current [&_*]:!stroke-0"
                         />
                       </Button>
                     ) : showVoiceAsPrimaryAction ? (
@@ -3534,6 +3541,7 @@ export function PromptBoxInternal({
                                 COARSE_POINTER_PROMPT_ACTION_BUTTON_CLASS,
                               ],
                           "transition-colors",
+                          MOBILE_PROMPT_ROUND_BUTTON_CLASS,
                         )}
                       >
                         <Icon name="Mic" className="size-4" />
@@ -3551,6 +3559,7 @@ export function PromptBoxInternal({
                                 COARSE_POINTER_PROMPT_ACTION_BUTTON_CLASS,
                               ],
                           "transition-colors",
+                          MOBILE_PROMPT_ROUND_BUTTON_CLASS,
                         )}
                         disabledReason={
                           !canSubmit
