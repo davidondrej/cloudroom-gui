@@ -1,8 +1,10 @@
 # Cloudroom GUI
 
+[Website](https://www.cloudroom.dev) · [Join the waitlist](https://www.cloudroom.dev/#waitlist) · [Changelog](https://www.cloudroom.dev/changelog) · [Security](https://www.cloudroom.dev/security)
+
 Cloudroom's desktop app, based on [BB](https://github.com/get-bb/bb). Run agents locally or connect to a compatible [Cloudroom core](https://github.com/davidondrej/cloudroom-core) for cloud execution.
 
-This is an experimental source release. Building needs no Cloudroom account or core checkout. Using the GUI currently requires an invite-enabled Cloudroom account, including for local agents. See [release notes and compatibility](docs/releases.md).
+This is an experimental source release. Building needs no Cloudroom account or core checkout. Using the GUI currently requires an invite-enabled Cloudroom account, including for local agents ([join the waitlist](https://www.cloudroom.dev/#waitlist)). See [release notes and compatibility](docs/releases.md).
 
 ## Security
 
