@@ -4,7 +4,9 @@
 
 Cloudroom's desktop app, based on [BB](https://github.com/get-bb/bb). Run agents locally or connect to a compatible [Cloudroom core](https://github.com/davidondrej/cloudroom-core) for cloud execution.
 
-This is an experimental source release. Building needs no Cloudroom account or core checkout. Using the GUI currently requires an invite-enabled Cloudroom account, including for local agents ([join the waitlist](https://www.cloudroom.dev/#waitlist)). See [release notes and compatibility](docs/releases.md).
+This is an experimental source release. Building needs no Cloudroom account or core checkout. The app works without an account: local agents need no sign-in. Cloud agents are invite-only ([join the waitlist](https://www.cloudroom.dev/#waitlist)). See [release notes and compatibility](docs/releases.md).
+
+[Download the Mac app](https://www.cloudroom.dev/download) (macOS 13+, Apple Silicon). Found a bug? [Open an issue](https://github.com/davidondrej/cloudroom-gui/issues).
 
 ## Security
 
@@ -45,7 +47,7 @@ pnpm exec turbo run dev --filter=@bb/desktop
 
 Development uses checkout-specific ports and a separate profile. The launcher prints both. Stop each command with Ctrl-C. Local agents require their own installed, authenticated provider CLIs.
 
-Use **Sign in** for hosted access. Cloud execution requires a matching core with `direct_workspaces` and `command_guard` capabilities; use public core [`source-2026-09-23`](https://github.com/davidondrej/cloudroom-core/releases/tag/source-2026-09-23) or newer. Manual connections use `POST /api/v1/cloudroom` with `url` and `token`, but do not bypass the GUI account requirement. Remote URLs require HTTPS. Keep tokens out of browser code, URLs, and Git.
+Use **Sign in** for hosted access. Cloud execution requires a matching core with `direct_workspaces` and `command_guard` capabilities; use public core [`source-2026-09-23`](https://github.com/davidondrej/cloudroom-core/releases/tag/source-2026-09-23) or newer. Manual connections use `POST /api/v1/cloudroom` with `url` and `token`, but cloud features in the app still need a signed-in account. Remote URLs require HTTPS. Keep tokens out of browser code, URLs, and Git.
 
 ## Checks
 
