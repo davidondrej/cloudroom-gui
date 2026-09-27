@@ -214,14 +214,20 @@ function admitQueuedMessage(
   return { providerThreadId };
 }
 
-import { cloudroom, isCloudThread } from "../cloudroom/commands.js";
+import { cloudExecution, cloudroom, isCloudThread } from "../cloudroom/commands.js";
 
 export async function createQueuedMessageForThread(
   deps: LoggedPendingInteractionWorkSessionDeps,
   args: CreateQueuedMessageForThreadArgs,
 ): Promise<ThreadQueuedMessage> {
   const { payload, thread } = args;
-  if (isCloudThread(thread)) return cloudroom(deps).queueMessage(thread, { ...payload, mode: "queue-if-active" });
+  if (isCloudThread(thread)) {
+    const queued = await cloudroom(deps).queueMessage(thread, { ...payload, mode: "queue-if-active" });
+    if (!payload.senderThreadId && payload.input.length > 0) {
+      captureUserMessageSentTelemetry(deps, { execution: cloudExecution(deps, thread.id), isChildThread: thread.parentThreadId !== null, messageSource: "queued_message", providerId: thread.providerId });
+    }
+    return queued;
+  }
   ensureThreadQueueIsWritable(thread);
   await validatePromptAttachmentReferences({
     dataDir: deps.config.dataDir,

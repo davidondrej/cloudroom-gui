@@ -377,6 +377,7 @@ type UserMessageSentProperties = Extract<
 export function captureUserMessageSentTelemetry(
   deps: Pick<LoggedPendingInteractionWorkSessionDeps, "telemetry">,
   args: {
+    execution?: UserMessageSentProperties["execution"];
     isChildThread: boolean;
     messageSource: UserMessageSentProperties["message_source"];
     providerId: string;
@@ -385,6 +386,7 @@ export function captureUserMessageSentTelemetry(
   deps.telemetry.capture({
     name: "user_message_sent",
     properties: {
+      execution: args.execution ?? "local",
       is_child_thread: args.isChildThread,
       message_source: args.messageSource,
       provider: args.providerId,

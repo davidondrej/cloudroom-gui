@@ -105,6 +105,14 @@ export function useTeleportLocal(threadId: string) {
   });
 }
 
+export function useCopyToMac(threadId: string) {
+  return useMutation({
+    mutationFn: () => sdk.cloudroom.copyToMac(threadId),
+    onSuccess: ({ branch }) => appToast.success(`Copied to this computer as branch ${branch}. The cloud agent keeps working.`),
+    onError: (error) => showMutationErrorToast({ error, fallbackMessage: "Could not copy to this computer" }),
+  });
+}
+
 /** "Let cloud agents access this computer" (ADR 0113). */
 export function useSetMacAccess() {
   const client = useQueryClient();

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Independent localhost previews and Mac access. Standard-library control client and native OpenSSH transport."""
+"""Independent localhost previews and Mac access. Standard-library control client; OpenSSH (VMs) or HTTPS tunnels (sandboxes)."""
 import argparse
 import base64
 import concurrent.futures
 import contextlib
 import fcntl
 import http.client
+import hashlib
 import http.server
+import io
 import ipaddress
 import json
 import os
@@ -55,52 +57,94 @@ class ControlError(ValueError):
         super().__init__('Preview control returned HTTP ' + str(code))
 
 
+OPENER = urllib.request.build_opener(NoRedirect(), urllib.request.HTTPSHandler(context=ssl.create_default_context()))
+
+
+def control(url, body, method, headers):
+    request = urllib.request.Request(url, data=json.dumps(body).encode() if body is not None else None,
+                                     method=method, headers={**headers, 'Content-Type': 'application/json'})
+    try:
+        with OPENER.open(request, timeout=5) as response:
+            raw = response.read(256 * 1024 + 1)
+            if len(raw) > 256 * 1024:
+                raise ValueError('Preview response is too large')
+            return json.loads(raw)
+    except urllib.error.HTTPError as error:
+        error.close()
+        raise ControlError(error.code) from None
+
+
+def website(connection):
+    base = connection.get('websiteUrl', 'https://www.cloudroom.dev').rstrip('/')
+    url = urllib.parse.urlsplit(base)
+    if base != 'https://www.cloudroom.dev' and not (url.scheme == 'http' and url.hostname == '127.0.0.1' and url.port and not url.path and not url.query and not url.fragment and not url.username):
+        raise ValueError('Invalid managed preview service')
+    return base
+
+
 class Core:
-    def __init__(self, config):
+    """The paired VM's core, or, with `url` and `token`, one awake cloud sandbox's core."""
+    def __init__(self, config, url=None, token=None):
         connection = private_json(config['connectionFile'])
         self.connection = connection
-        self.url = connection['url'].rstrip('/')
-        url = urllib.parse.urlsplit(self.url)
-        if (url.scheme != 'https' and not (url.scheme == 'http' and url.hostname in {'localhost', '127.0.0.1', '::1'})) or url.username or url.password or url.query or url.fragment:
+        self.sandbox = url is not None
+        self.url = (url or connection['url']).rstrip('/')
+        parts = urllib.parse.urlsplit(self.url)
+        if (parts.scheme != 'https' and not (parts.scheme == 'http' and parts.hostname in {'localhost', '127.0.0.1', '::1'})) or parts.username or parts.password or parts.query or parts.fragment:
             raise ValueError('Use an authenticated HTTPS core connection')
-        if config['binding'] != [self.url, (connection.get('account') or {}).get('id')]:
+        if not self.sandbox and config['binding'] != [self.url, (connection.get('account') or {}).get('id')]:
             raise ValueError('Preview connection belongs to another account or VM')
-        token = connection.get('token', '')
-        gate = connection.get('gateToken')
+        token = token if self.sandbox else connection.get('token', '')
+        gate = None if self.sandbox else connection.get('gateToken')
         if not token or any(ord(c) < 33 or ord(c) > 126 for c in token):
             raise ValueError('Sign in to Cloudroom again')
         if gate is not None and (not gate or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._~-' for c in gate)):
             raise ValueError('Invalid hosting credential')
         self.headers = {'Authorization': 'Bearer ' + token, **({'Cookie': '_port_auth=' + gate} if gate else {})}
-        self.opener = urllib.request.build_opener(NoRedirect(), urllib.request.HTTPSHandler(context=ssl.create_default_context()))
+        self.opener = OPENER
+        # A sandbox gets a new token on every wake, so its tunnels and streams are rebuilt.
+        self.key = (self.url, token)
 
     def prepare(self):
         account = (self.connection.get('account') or {}).get('id')
         if not account:
             return
         uuid.UUID(account)
-        website = self.connection.get('websiteUrl', 'https://www.cloudroom.dev').rstrip('/')
-        url = urllib.parse.urlsplit(website)
-        if website != 'https://www.cloudroom.dev' and not (url.scheme == 'http' and url.hostname == '127.0.0.1' and url.port and not url.path and not url.query and not url.fragment and not url.username):
-            raise ValueError('Invalid managed preview service')
         credential = base64.b64encode((account + ':' + self.connection['token']).encode()).decode()
-        return self.fetch(website + '/api/desktop/previews', {}, None, {'Authorization': 'Basic ' + credential})
+        return self.fetch(website(self.connection) + '/api/desktop/previews', {}, None, {'Authorization': 'Basic ' + credential})
 
     def request(self, path, body=None, method=None):
         return self.fetch(self.url + '/v1/previews' + path, body, method, self.headers)
 
     def fetch(self, url, body, method, headers):
-        request = urllib.request.Request(url, data=json.dumps(body).encode() if body is not None else None,
-                                        method=method, headers={**headers, 'Content-Type': 'application/json'})
-        try:
-            with self.opener.open(request, timeout=5) as response:
-                raw = response.read(256 * 1024 + 1)
-                if len(raw) > 256 * 1024:
-                    raise ValueError('Preview response is too large')
-                return json.loads(raw)
-        except urllib.error.HTTPError as error:
-            error.close()
-            raise ControlError(error.code) from None
+        return control(url, body, method, headers)
+
+
+AWAKE = {'at': 0.0, 'key': None, 'list': [], 'lock': threading.Lock()}
+
+
+def cores(config):
+    """The paired VM's core, if any, then every awake cloud sandbox's core (docs/scopes/sandboxes.md)."""
+    connection = private_json(config['connectionFile'])
+    found = [Core(config)] if connection.get('url') else []
+    account, token = (connection.get('account') or {}).get('id'), connection.get('sandboxToken')
+    if not account or not token:
+        return found
+    with AWAKE['lock']:
+        if AWAKE['key'] != (account, token) or time.monotonic() - AWAKE['at'] > 10:
+            AWAKE.update(at=time.monotonic(), key=(account, token))
+            try:
+                uuid.UUID(account)
+                credential = base64.b64encode((account + ':' + token).encode()).decode()
+                listed = control(website(connection) + '/api/desktop/sandboxes', {'action': 'awake'}, 'POST', {'Authorization': 'Basic ' + credential})
+                AWAKE['list'] = [(entry['origin'], entry['token']) for entry in listed['sandboxes']]
+            except (OSError, ValueError, KeyError, TypeError):
+                pass  # Keep the last list; sandboxes are asked again shortly.
+        awake = list(AWAKE['list'])
+    for origin, secret in awake:
+        with contextlib.suppress(ValueError):
+            found.append(Core(config, origin, secret))
+    return found
 
 
 class Upstream(http.client.HTTPConnection):
@@ -240,13 +284,95 @@ class Server(http.server.ThreadingHTTPServer):
         return connection, address
 
 
+class Relay:
+    """Sandbox previews (no SSH): each local connection becomes an HTTPS upgrade to the sandbox core, which
+    joins it to the agent's port. It mimics the SSH process interface the tunnel code expects."""
+    def __init__(self, core, port, device, path):
+        self.core, self.port, self.device, self.stopped = core, port, device, False
+        self.stderr = io.BytesIO()
+        self.listener = socket.socket(socket.AF_UNIX)
+        self.listener.bind(str(path)); os.chmod(path, 0o600); self.listener.listen(32)
+        threading.Thread(target=self.serve, daemon=True).start()
+
+    def serve(self):
+        while not self.stopped:
+            try:
+                client, _ = self.listener.accept()
+            except OSError:
+                return
+            threading.Thread(target=self.pipe, args=(client,), daemon=True).start()
+
+    def open(self):
+        url = urllib.parse.urlsplit(self.core.url)
+        remote = socket.create_connection((url.hostname, url.port or (443 if url.scheme == 'https' else 80)), timeout=10)
+        if url.scheme == 'https':
+            remote = ssl.create_default_context().wrap_socket(remote, server_hostname=url.hostname)
+        headers = ''.join(f'{key}: {value}\r\n' for key, value in self.core.headers.items())
+        remote.sendall(f'GET /v1/previews/{self.port}/tunnel?device={self.device} HTTP/1.1\r\nHost: {url.netloc}\r\n'
+                       f'Connection: Upgrade\r\nUpgrade: cloudroom-tunnel\r\n{headers}\r\n'.encode())
+        head = b''
+        while b'\r\n\r\n' not in head:
+            chunk = remote.recv(4096)
+            if not chunk or len(head) > 16384:
+                raise OSError('Preview tunnel closed')
+            head += chunk
+        status, rest = head.split(b'\r\n', 1)[0].split(), head.split(b'\r\n\r\n', 1)[1]
+        if len(status) < 2 or status[1] != b'101':
+            raise OSError('Preview tunnel refused')
+        remote.settimeout(None)
+        return remote, rest
+
+    def pipe(self, client):
+        try:
+            remote, rest = self.open()
+        except OSError:
+            client.close(); return
+        def copy(source, target):
+            with contextlib.suppress(OSError):
+                while data := source.recv(65536):
+                    target.sendall(data)
+            with contextlib.suppress(OSError):
+                target.shutdown(socket.SHUT_WR)
+        with contextlib.suppress(OSError):
+            if rest:
+                client.sendall(rest)
+        back = threading.Thread(target=copy, args=(remote, client), daemon=True)
+        back.start(); copy(client, remote); back.join()
+        client.close(); remote.close()
+
+    def poll(self):
+        return 0 if self.stopped else None
+
+    def terminate(self):
+        self.stopped = True
+        with contextlib.suppress(OSError):
+            self.listener.close()
+    kill = terminate
+
+    def wait(self, timeout=None):
+        return 0
+
+
 class Tunnel:
-    def __init__(self, folder, port, generation, device, metadata, allow_private, local_port):
+    def __init__(self, folder, core, port, generation, device, metadata, allow_private, local_port):
         self.closed = False
         self.connections = set()
         self.connections_lock = threading.Lock()
-        self.endpoint = metadata
+        self.endpoint, self.core = metadata, core
         self.port, self.generation = port, generation
+        self.relay = bool(metadata.get('tunnel'))
+        suffix = hashlib.sha256(core.url.encode()).hexdigest()[:8] if core.sandbox else ''
+        self.socket_path = folder / f'p{port}{suffix}.sock'
+        self.socket_path.unlink(missing_ok=True)
+        self.log_path = folder / f'ssh-{port}{suffix}.log'
+        self.stderr = bytearray()
+        if self.relay:
+            self.process = Relay(core, port, device, self.socket_path)
+        else:
+            self.process = self.ssh(folder, port, metadata, allow_private)
+        self.listen(port, device, local_port)
+
+    def ssh(self, folder, port, metadata, allow_private):
         address = ipaddress.ip_address(metadata['host'])
         if not address.is_global and not allow_private:
             raise ValueError('Private SSH addresses require explicit self-hosted setup')
@@ -255,19 +381,17 @@ class Tunnel:
         key = metadata.get('host_key', '')
         if len(key) != 80 or not key.startswith('ssh-ed25519 ') or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=' for c in key[12:]):
             raise ValueError('Invalid SSH host identity')
-        self.socket_path = folder / f'p{port}.sock'
-        self.socket_path.unlink(missing_ok=True)
         known = folder / 'known_hosts'
         known.write_text('cloudroom-preview ' + key + '\n'); known.chmod(0o600)
-        self.log_path = folder / f'ssh-{port}.log'
-        self.stderr = bytearray()
         command = ['/usr/bin/ssh', '-F', '/dev/null', '-N', '-T', '-i', str(folder / 'id_ed25519'),
                    '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes',
                    '-o', 'HostKeyAlias=cloudroom-preview', '-o', 'UserKnownHostsFile=' + str(known),
                    '-o', 'ExitOnForwardFailure=yes', '-o', 'ConnectTimeout=5',
                    '-o', 'ServerAliveInterval=5', '-o', 'ServerAliveCountMax=2',
                    '-L', f'{self.socket_path}:127.0.0.1:{port}', '-p', str(metadata['port']), f'cloudroom-preview@{address}']
-        self.process = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        return subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+
+    def listen(self, port, device, local_port):
         def capture():
             while data := self.process.stderr.read(1024):
                 self.stderr.extend(data)
@@ -340,26 +464,37 @@ class MacJobs:
         return config if config.get('macAccess') and not config.get('revoked') else None
 
     def serve(self):
-        delay = 2
+        """One job stream per reachable core: the VM's, and each awake sandbox's while it stays awake."""
+        self.wanted, streams = set(), {}
         while True:
-            try:
+            with contextlib.suppress(OSError, ValueError, KeyError, TypeError):
                 config = self.enabled()
-                if config:
-                    core = Core(config)
-                    request = urllib.request.Request(core.url + '/v1/mac/jobs?device=' + config['device'],
-                                                     headers={**core.headers, 'Accept': 'text/event-stream'})
-                    with core.opener.open(request, timeout=60) as stream:
-                        delay, event = 2, None
-                        for raw in stream:
-                            line = raw.decode().rstrip('\r\n')
-                            if line.startswith('event:'):
-                                event = line[6:].strip()
-                            elif line.startswith('data:') and event == 'job':
-                                threading.Thread(target=self.execute, args=(core, config['device'], json.loads(line[5:])), daemon=True).start()
-                            elif line.startswith('data:') and event == 'cancel':
-                                self.cancel(json.loads(line[5:])['id'])
-                            elif line.startswith(':') and not self.enabled():
-                                break
+                listed = {core.key: core for core in cores(config)} if config else {}
+                self.wanted = set(listed)
+                for key, core in listed.items():
+                    if key not in streams or not streams[key].is_alive():
+                        streams[key] = threading.Thread(target=self.follow, args=(core, config['device']), daemon=True)
+                        streams[key].start()
+            time.sleep(5)
+
+    def follow(self, core, device):
+        delay = 2
+        while core.key in self.wanted:
+            try:
+                request = urllib.request.Request(core.url + '/v1/mac/jobs?device=' + device,
+                                                 headers={**core.headers, 'Accept': 'text/event-stream'})
+                with core.opener.open(request, timeout=60) as stream:
+                    delay, event = 2, None
+                    for raw in stream:
+                        line = raw.decode().rstrip('\r\n')
+                        if line.startswith('event:'):
+                            event = line[6:].strip()
+                        elif line.startswith('data:') and event == 'job':
+                            threading.Thread(target=self.execute, args=(core, device, json.loads(line[5:])), daemon=True).start()
+                        elif line.startswith('data:') and event == 'cancel':
+                            self.cancel(json.loads(line[5:])['id'])
+                        elif line.startswith(':') and (not self.enabled() or core.key not in self.wanted):
+                            break
             except (OSError, ValueError, KeyError, TypeError):
                 delay = min(delay * 2, 30)
             time.sleep(delay)
@@ -438,61 +573,74 @@ def run(folder):
             while True:
                 try:
                     config = private_json(folder / 'config.json')
-                    core = Core(config)
-                    if credential != core.headers:
-                        credential, prepare_due, refresh, denied = core.headers, 0, True, None
+                    listed = cores(config)
+                    vm = next((core for core in listed if not core.sandbox), None)
+                    if vm and credential != vm.headers:
+                        credential, prepare_due, refresh, denied = vm.headers, 0, True, None
                     if config.pop('revoked', False):
                         save(folder / 'config.json', config)
-                    if refresh and time.monotonic() >= prepare_due:
+                    if vm and refresh and time.monotonic() >= prepare_due:
                         prepare_due = time.monotonic() + 60
                         try:
-                            core.prepare()
+                            vm.prepare()
                             refresh, denied = False, None
                         except (OSError, ValueError) as error:
                             if isinstance(error, ControlError) and error.code in (401, 403):
                                 denied = error
                     if denied:
                         raise denied
-                    metadata = core.request('/device', {'device': config['device'], 'public_key': identity(folder)})
-                    previews = core.request('')['previews']
-                    authenticated = time.monotonic()
                     desired = {}
-                    for entry in previews:
-                        port = entry['port']
-                        if type(port) is not int or not 1024 <= port <= 65535 or not isinstance(entry['generation'], str):
-                            raise ValueError('Invalid preview registration')
-                        desired[port] = entry['generation']
-                    failed = {port for port, tunnel in tunnels.items() if tunnel.process.poll() is not None}
+                    for core in listed:
+                        try:
+                            metadata = core.request('/device', {'device': config['device'], 'public_key': identity(folder)})
+                            for entry in core.request('')['previews']:
+                                port = entry['port']
+                                if type(port) is not int or not 1024 <= port <= 65535 or not isinstance(entry['generation'], str):
+                                    raise ValueError('Invalid preview registration')
+                                desired[(core.key, port)] = (core, entry['generation'], metadata)
+                        except (OSError, ValueError):
+                            if not core.sandbox:
+                                raise  # A sandbox may fall asleep at any moment; the others keep working.
+                    authenticated = time.monotonic()
+                    failed = {key for key, tunnel in tunnels.items() if tunnel.process.poll() is not None}
                     refresh = refresh or bool(failed)
-                    for port, tunnel in list(tunnels.items()):
-                        if desired.get(port) != tunnel.generation or port in failed or tunnel.endpoint != metadata:
-                            tunnel.close(); del tunnels[port]
-                    for port, generation in desired.items():
-                        if port not in tunnels:
-                            local_port = ports.get(str(port), port)
-                            if type(local_port) is not int or not 1024 <= local_port <= 65535:
-                                local_port = port
-                            try:
-                                tunnels[port] = Tunnel(folder, port, generation, config['device'], metadata, config.get('allowPrivateSsh', False), local_port)
-                            except OSError:
+                    for key, tunnel in list(tunnels.items()):
+                        wanted = desired.get(key)
+                        if not wanted or wanted[1] != tunnel.generation or key in failed or tunnel.endpoint != wanted[2]:
+                            tunnel.close(); del tunnels[key]
+                    for key, (core, generation, metadata) in desired.items():
+                        if key in tunnels:
+                            continue
+                        port = key[1]
+                        name = f'{urllib.parse.urlsplit(core.url).hostname}:{port}' if core.sandbox else str(port)
+                        local_port = ports.get(name, port)
+                        if type(local_port) is not int or not 1024 <= local_port <= 65535:
+                            local_port = port
+                        try:
+                            tunnels[key] = Tunnel(folder, core, port, generation, config['device'], metadata, config.get('allowPrivateSsh', False), local_port)
+                        except OSError:
+                            with contextlib.suppress(OSError, ValueError):
                                 core.request('/report', {'device': config['device'], 'port': port, 'generation': generation,
                                                          'local_port': None, 'error': 'Local preview port unavailable'})
-                                continue
-                            ports[str(port)] = tunnels[port].server.server_port
-                            save(ports_file, ports)
+                            continue
+                        ports[name] = tunnels[key].server.server_port
+                        save(ports_file, ports)
                     def report(tunnel):
                         ready = tunnel.healthy()
                         error = None
                         if not ready:
-                            if tunnel.port in failed or tunnel.process.poll() is not None:
-                                error = 'SSH connection unavailable'
+                            if tunnel.process.poll() is not None:
+                                error = 'Tunnel unavailable' if tunnel.relay else 'SSH connection unavailable'
                             elif tunnel.socket_path.exists():
                                 error = 'Cloud HTTP server unavailable'
                         try:
-                            core.request('/report', {'device': config['device'], 'port': tunnel.port, 'generation': tunnel.generation,
-                                                     'local_port': tunnel.server.server_port if ready else None, 'error': error})
+                            tunnel.core.request('/report', {'device': config['device'], 'port': tunnel.port, 'generation': tunnel.generation,
+                                                            'local_port': tunnel.server.server_port if ready else None, 'error': error})
                         except ControlError as failure:
-                            if failure.code != 409:
+                            if failure.code != 409 and not tunnel.core.sandbox:
+                                raise
+                        except (OSError, ValueError):
+                            if not tunnel.core.sandbox:
                                 raise
                         return ready
                     with concurrent.futures.ThreadPoolExecutor() as pool:
@@ -575,7 +723,8 @@ def launch(folder, stop=False):
 def configure(folder, connection_file, activate, allow_private, mac_access=None):
     folder.mkdir(mode=0o700, parents=True, exist_ok=True); folder.chmod(0o700)
     connection = private_json(connection_file)
-    binding = [connection['url'].rstrip('/'), (connection.get('account') or {}).get('id')]
+    # Sandbox-only accounts have no VM address; their cores come from the website while awake.
+    binding = [(connection.get('url') or 'sandboxes').rstrip('/'), (connection.get('account') or {}).get('id')]
     old = private_json(folder / 'config.json') if (folder / 'config.json').exists() else None
     if old and old['binding'] != binding:
         raise ValueError('Preview setup belongs to another account/core; use a separate directory')
@@ -629,7 +778,12 @@ def main():
             return
         config = private_json(folder / 'config.json')
         if not config.get('revoked', False):
-            Core(config).request('/device/' + config['device'], method='DELETE')
+            for core in cores(config):
+                if core.sandbox:
+                    with contextlib.suppress(OSError, ValueError):
+                        core.request('/device/' + config['device'], method='DELETE')
+                else:
+                    core.request('/device/' + config['device'], method='DELETE')
             config['revoked'] = True
             save(folder / 'config.json', config)
         save(folder / 'status.json', {'state': 'offline', 'checkedAt': int(time.time() * 1000)})

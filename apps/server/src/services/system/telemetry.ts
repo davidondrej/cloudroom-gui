@@ -9,11 +9,15 @@ const TELEMETRY_ID_FILE_NAME = "telemetry-id";
 
 const telemetryAppSurfaceStorage = new AsyncLocalStorage<RequestAppSurface>();
 
+/** Where a thread runs: on this computer, in its own cloud sandbox, or on the older shared cloud VM. */
+export type TelemetryExecution = "local" | "cloud_sandbox" | "cloud_vm";
+
 export type TelemetryEvent =
   | { name: "app_started" }
   | {
       name: "thread_created";
       properties: {
+        execution: TelemetryExecution;
         is_child_thread: boolean;
         provider: string;
       };
@@ -21,6 +25,7 @@ export type TelemetryEvent =
   | {
       name: "user_message_sent";
       properties: {
+        execution: TelemetryExecution;
         is_child_thread: boolean;
         message_source: "queued_message" | "thread_create" | "thread_send";
         provider: string;

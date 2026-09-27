@@ -1,4 +1,4 @@
-import { cloudroom, isCloudThread } from "../cloudroom/commands.js";
+import { cloudExecution, cloudroom, isCloudThread } from "../cloudroom/commands.js";
 import { isStandaloneBuiltinClearCommand, type Thread } from "@bb/domain";
 import type {
   SendMessageRequest,
@@ -7,7 +7,7 @@ import type {
 import type { LoggedPendingInteractionWorkSessionDeps } from "../../types.js";
 import { attemptDispatch } from "./dispatch-attempt.js";
 import { requireThreadCommandEnvironment } from "./thread-command-environment.js";
-import { sendThreadMessage } from "./thread-send.js";
+import { captureUserMessageSentTelemetry, sendThreadMessage } from "./thread-send.js";
 
 interface AcceptThreadSendRequestArgs {
   payload: SendMessageRequest;
@@ -18,7 +18,13 @@ export async function acceptThreadSendRequest(
   deps: LoggedPendingInteractionWorkSessionDeps,
   args: AcceptThreadSendRequestArgs,
 ): Promise<SendMessageResponse> {
-  if (isCloudThread(args.thread)) return cloudroom(deps).send(args.thread, args.payload);
+  if (isCloudThread(args.thread)) {
+    const response = await cloudroom(deps).send(args.thread, args.payload);
+    if (!args.payload.senderThreadId && args.payload.input.length > 0) {
+      captureUserMessageSentTelemetry(deps, { execution: cloudExecution(deps, args.thread.id), isChildThread: args.thread.parentThreadId !== null, messageSource: "thread_send", providerId: args.thread.providerId });
+    }
+    return response;
+  }
   if (isStandaloneBuiltinClearCommand(args.payload.input)) {
     const environment = await requireThreadCommandEnvironment(deps, {
       thread: args.thread,

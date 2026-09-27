@@ -127,6 +127,7 @@ class Teleport {
     this.notify(state.threadId);
   }
   private async preflight(
+    threadId: string,
     providerId: string,
     execution: { model: string; reasoning: string; serviceTier: string },
     retry = false,
@@ -134,7 +135,7 @@ class Teleport {
     const harness = harnessOf(providerId)!;
     const separator = execution.model.indexOf("/");
     const result = await (
-      await cloudroom(this.deps).teleportClient()
+      await cloudroom(this.deps).teleportClient(threadId)
     ).checkTeleport({
       harness,
       model:
@@ -169,6 +170,7 @@ class Teleport {
       if (existing.phase === "error") {
         const saved = this.load(existing.id);
         await this.preflight(
+          threadId,
           getThread(this.deps.db, threadId)!.providerId,
           saved,
           true,
@@ -190,7 +192,7 @@ class Teleport {
         "teleport_cancelling",
         "Cancellation is finishing. Retry Teleport once it settles.",
       );
-    await cloudroom(this.deps).teleportClient();
+    await cloudroom(this.deps).teleportClient(threadId);
     const thread = getThread(this.deps.db, threadId);
     const environment = thread?.environmentId
       ? getEnvironment(this.deps.db, thread.environmentId)
@@ -268,7 +270,7 @@ class Teleport {
         "teleport_queue_model",
         "A queued message selects a different model. Align the queued models first; Cloud keeps one model per thread.",
       );
-    await this.preflight(thread.providerId, execution);
+    await this.preflight(thread.id, thread.providerId, execution);
     const queued = queuedRows.map((row) => {
       const content = JSON.parse(row.content) as {
         type: string;

@@ -56,6 +56,7 @@ describe("telemetry service", () => {
       telemetry.capture({
         name: "thread_created",
         properties: {
+          execution: "local",
           is_child_thread: true,
           provider: "claude-code",
         },
@@ -64,6 +65,7 @@ describe("telemetry service", () => {
     telemetry.capture({
       name: "user_message_sent",
       properties: {
+        execution: "cloud_sandbox",
         is_child_thread: false,
         message_source: "thread_send",
         provider: "codex",
@@ -110,6 +112,7 @@ describe("telemetry service", () => {
       properties: {
         app_version: "1.2.3",
         app_surface: "web",
+        execution: "cloud_sandbox",
         is_child_thread: false,
         message_source: "thread_send",
         provider: "codex",

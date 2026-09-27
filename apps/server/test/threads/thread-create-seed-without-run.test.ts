@@ -92,6 +92,7 @@ describe("thread creation telemetry", () => {
       expect(capture).toHaveBeenCalledWith({
         name: "user_message_sent",
         properties: {
+          execution: "local",
           is_child_thread: false,
           message_source: "thread_create",
           provider: "codex",

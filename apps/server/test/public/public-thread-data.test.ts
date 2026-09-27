@@ -2543,6 +2543,7 @@ describe("public thread data routes", () => {
       expect(capture).toHaveBeenCalledWith({
         name: "user_message_sent",
         properties: {
+          execution: "local",
           is_child_thread: false,
           message_source: "queued_message",
           provider: "codex",

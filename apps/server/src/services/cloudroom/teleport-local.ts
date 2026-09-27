@@ -102,6 +102,53 @@ async function run(deps: AppDeps, threadId: string): Promise<{ conflicts: number
   return { conflicts };
 }
 
+/** Copies the cloud thread's branch and its commits into the Mac project as a local branch. The agent keeps
+ *  working, and uncommitted cloud changes stay in the cloud. The Mac's working tree is never touched. */
+export async function copyToMac(deps: AppDeps, threadId: string): Promise<{ branch: string }> {
+  const thread = getThread(deps.db, threadId);
+  const saved = binding(deps.db, threadId);
+  if (!thread || thread.executionTarget !== "cloud" || thread.parentThreadId || thread.deletedAt || !saved?.sessionId)
+    throw new ApiError(409, "copy_unavailable", "Copy to Mac needs a started cloud thread.");
+  const environment = await localEnvironment(deps, thread);
+  if (await git(environment.path, ["rev-parse", "--git-dir"]) === null)
+    throw new ApiError(409, "copy_unavailable", "This project's folder on this Mac is not a Git repository.");
+  const client = await cloudroom(deps).teleportClient(threadId);
+  const cloud = await client.sessionWorkspace(saved.sessionId);
+  const folder = await mkdtemp(join(tmpdir(), "cloudroom-copy-"));
+  try {
+    // First only the commits the remote lacks; the whole branch if this Mac lacks their base.
+    for (const full of [false, true]) {
+      const name = `.cache/cloudroom/copy-${randomUUID()}.bundle`;
+      const packed = (await vm(client, [
+        `cd ${quote(cloud.path)} || exit 1`,
+        "branch=$(git symbolic-ref --quiet --short HEAD) || { echo 'no-branch'; exit 0; }",
+        "mkdir -p ~/.cache/cloudroom",
+        `git bundle create -q ~/${name} "refs/heads/$branch"${full ? "" : " --not --remotes"} 2>/dev/null || { echo 'empty'; exit 0; }`,
+        `echo "$branch" ~/${name}`,
+      ].join("\n"))).toString().trim().split("\n").pop() ?? "";
+      if (packed === "no-branch") throw new ApiError(409, "copy_unavailable", "The cloud project is not on a branch.");
+      if (packed === "empty") continue;
+      const [branch, path] = packed.split(" ");
+      if (!branch || !path || !/^[A-Za-z0-9._/-]+$/.test(branch)) throw new Error("The cloud branch could not be packed.");
+      const file = join(folder, "branch.bundle");
+      try { await writeFile(file, await download(client, path)); }
+      finally { await vm(client, `rm -f ${quote(path)}`).catch(() => {}); }
+      if (!full && await git(environment.path, ["bundle", "verify", "-q", file]) === null) continue;
+      try { await exec("git", ["-C", environment.path, "fetch", "-q", file, `refs/heads/${branch}:refs/heads/${branch}`]); }
+      catch (error) {
+        const reason = error instanceof Error && "stderr" in error ? String(error.stderr).trim() : "";
+        throw new ApiError(409, "copy_unavailable", /checked out|rejected|non-fast-forward/.test(reason)
+          ? `Your Mac's ${branch} is checked out or has other commits. Switch branches or rename it, then retry.`
+          : `The branch could not be copied: ${reason || "git fetch failed"}`);
+      }
+      return { branch };
+    }
+    throw new ApiError(409, "copy_unavailable", "The cloud branch has no commits to copy yet.");
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+  }
+}
+
 async function localEnvironment(deps: AppDeps, thread: Thread) {
   const hostId = resolvePrimaryHostId(deps);
   if (!hostId) throw new ApiError(409, "host_unavailable", "This computer's local host is not ready.");

@@ -8,12 +8,13 @@ import { cloudroomAccount } from "./account.js";
 import { setMacAccess } from "./previews.js";
 import { setCopyLogins } from "./sync.js";
 import { teleports } from "./teleport.js";
-import { teleportBlocked, teleportProgress } from "./store.js";
+import { binding, teleportBlocked, teleportProgress } from "./store.js";
 import { browserRequestProblem } from "../../browser-request-guard.js";
 import { claudePlan, createClaudeToken } from "./claude-token.js";
 import { startClaudeVersionSync } from "./claude-version.js";
 import { importBbThreads } from "./bb-import.js";
-import { teleportingToLocal, teleportToLocal } from "./teleport-local.js";
+import { copyToMac, teleportingToLocal, teleportToLocal } from "./teleport-local.js";
+import { sandboxThread } from "./sandboxes.js";
 import { archiveThreadAndChildren } from "../threads/thread-archive.js";
 
 export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
@@ -36,11 +37,13 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   app.post("/api/v1/cloudroom/threads/:id/teleport", async context => {
     const problem = browserRequestProblem(context, deps, { requireJsonForMutation: true });
     if (problem) return context.json({ message: "Use the local Cloudroom app or CLI." }, problem.status);
-    const body = z.object({ action: z.enum(["start", "cancel", "local"]).default("start"), model: z.string().min(1).optional(), reasoning: z.string().min(1).optional() }).strict().parse(await context.req.json());
+    const body = z.object({ action: z.enum(["start", "cancel", "local", "copy", "move"]).default("start"), model: z.string().min(1).optional(), reasoning: z.string().min(1).optional() }).strict().parse(await context.req.json());
     const id = context.req.param("id");
     if (body.action === "cancel") { await teleports(deps).cancel(id); return context.json(teleportProgress(deps.db, id), 202); }
     if (body.action === "local") return context.json(await teleportToLocal(deps, id));
+    if (body.action === "copy") return context.json(await copyToMac(deps, id));
     const choice = body.model && body.reasoning ? { model: body.model, reasoning: body.reasoning } : undefined;
+    if (body.action === "move") return context.json(await moveToSandbox(deps, id, choice), 202);
     return context.json(await teleports(deps).begin(id, choice), 202);
   });
   app.post("/api/v1/cloudroom/import/bb", async context => {
@@ -175,4 +178,14 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   };
   app.use("/api/v1/threads/:id", guard);
   app.use("/api/v1/threads/:id/*", guard);
+}
+
+/** Moves a VM thread into its own sandbox (moving off Boat): Teleport to Local, then Teleport to Cloud, which picks a
+ *  sandbox. The VM keeps its copy, so moving back only needs the account switch (docs/scopes/sandboxes.md). */
+async function moveToSandbox(deps: AppDeps, threadId: string, choice?: { model: string; reasoning: string }) {
+  const saved = binding(deps.db, threadId);
+  if (!saved || sandboxThread(saved.coreUrl)) throw new ApiError(409, "cloudroom_move_unavailable", "Only a thread on your cloud VM can move to its own sandbox.");
+  if (!await cloudroom(deps).newThreadsInSandboxes()) throw new ApiError(409, "cloudroom_move_unavailable", "Cloud sandboxes are off for this account.");
+  await teleportToLocal(deps, threadId);
+  return teleports(deps).begin(threadId, choice);
 }

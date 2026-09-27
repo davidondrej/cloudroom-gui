@@ -1,4 +1,4 @@
-import { cloudroom, isCloudThread } from "../cloudroom/commands.js";
+import { cloudExecution, cloudroom, isCloudThread } from "../cloudroom/commands.js";
 import { assertEnvironmentPathAvailable } from "../environments/path-admission.js";
 import {
   deleteThread,
@@ -518,7 +518,12 @@ export async function createThreadFromRequest(
     throw new ApiError(409, "cloudroom_unsupported", "Cloud child/fork launches are not enabled; native fallback is blocked.");
   }
   if (rawRequestInput.executionTarget === "cloud") {
-    return cloudroom(deps).create({ ...rawRequestInput, origin: rawRequestInput.origin ?? "sdk", originKind: rawRequestInput.originKind ?? null });
+    const thread = await cloudroom(deps).create({ ...rawRequestInput, origin: rawRequestInput.origin ?? "sdk", originKind: rawRequestInput.originKind ?? null });
+    // Cloud threads count in the same anonymous usage events as local ones, tagged with where they run.
+    const execution = cloudExecution(deps, thread.id);
+    deps.telemetry.capture({ name: "thread_created", properties: { execution, is_child_thread: false, provider: thread.providerId } });
+    if (rawRequestInput.input.length > 0) captureUserMessageSentTelemetry(deps, { execution, isChildThread: false, messageSource: "thread_create", providerId: thread.providerId });
+    return thread;
   }
   if (rawRequestInput.origin === "plugin") {
     if (rawRequestInput.originPluginId === undefined) {
@@ -785,6 +790,7 @@ export async function createThreadFromRequest(
   deps.telemetry.capture({
     name: "thread_created",
     properties: {
+      execution: "local",
       is_child_thread: parentThread !== null,
       provider: request.providerId,
     },

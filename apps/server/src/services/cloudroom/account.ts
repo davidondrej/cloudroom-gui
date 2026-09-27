@@ -14,8 +14,9 @@ export const pendingLoginTimeoutMs = 30 * 60_000;
 const signInSchema = z.object({ projectId: z.string().min(1).optional(), websiteUrl: z.string().url().optional() }).strict();
 const handoffSchema = z.object({
   account: z.object({ id: z.string().uuid(), email: z.string().email() }).strict(),
-  connection: z.object({ url: z.string().url(), token: z.string().min(32), gateToken: z.string().regex(/^[a-zA-Z0-9._~-]{1,4096}$/).optional() }).strict(),
-}).strict();
+  connection: z.object({ url: z.string().url(), token: z.string().min(32), gateToken: z.string().regex(/^[a-zA-Z0-9._~-]{1,4096}$/).optional() }).strict().optional(),
+  sandboxes: z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) }).strict().optional(),
+}).strict().refine((handoff) => handoff.connection || handoff.sandboxes, "A VM connection or cloud sandboxes are required.");
 type Deps = Pick<AppDeps, "db" | "hub" | "config" | "providerRegistry">;
 type Pending = { server: Server; abort: AbortController; timer: ReturnType<typeof setTimeout>; claimed: boolean };
 const accounts = new WeakMap<DbConnection, CloudroomAccountService>();
@@ -132,7 +133,7 @@ export class CloudroomAccountService {
         } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
         const handoff = handoffSchema.parse(JSON.parse(Buffer.concat(chunks).toString("utf8")));
         abort.signal.throwIfAborted();
-        await cloudroom(this.deps).configure({ ...handoff.connection, projectId: input.projectId }, handoff.account, abort.signal, origin.origin);
+        await cloudroom(this.deps).configure(handoff.connection ? { ...handoff.connection, projectId: input.projectId } : null, handoff.account, abort.signal, origin.origin, handoff.sandboxes?.token);
         reply(200, "You’re done here. Everything else happens in the Cloudroom app.");
       } catch (error) {
         if (!abort.signal.aborted) {

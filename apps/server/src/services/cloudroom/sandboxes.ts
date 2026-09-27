@@ -1,0 +1,160 @@
+import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFile, stat } from "node:fs/promises";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
+import { gzipSync } from "node:zlib";
+import { z } from "zod";
+import { CloudroomConnectionError, CloudroomError } from "./client.js";
+
+export const SANDBOX_PREFIX = "sandbox:";
+export const sandboxThread = (coreUrl: string) => coreUrl.startsWith(SANDBOX_PREFIX) ? coreUrl.slice(SANDBOX_PREFIX.length) : null;
+export class SandboxAsleep extends Error {}
+
+const viewSchema = z.object({
+  thread: z.string(), state: z.enum(["new", "awake", "asleep", "archived", "deleted", "failed"]), generation: z.number(),
+  issue: z.string().nullable(), origin: z.string().url().optional(), token: z.string().optional(),
+});
+type View = z.infer<typeof viewSchema>;
+export type SandboxAccount = { website: string; userId: string; token: string };
+export type SandboxConnection = { url: string; token: string };
+/** GitHub projects also name their repository and cloud folder, so the website can build a template. */
+export type SandboxProject = { id: string; repository: string | null; folder: string };
+// A sleeping sandbox is only looked up again after this long; sending work wakes it at once.
+const RECHECK_MS = 60_000;
+// The Mac's skills and global instructions that sandboxes receive, one way (docs/scopes/sandboxes.md).
+const CONFIG_PATHS = [".agents/skills", ".claude/skills", ".claude/CLAUDE.md", ".codex/skills", ".codex/AGENTS.md", ".pi/agent/skills", ".pi/agent/AGENTS.md"];
+const CONFIG_LIMIT = 45 * 1024 * 1024;
+
+/** Each cloud thread's own sandbox, managed by the website (docs/scopes/sandboxes.md). Lookups never wake it. */
+export class SandboxDirectory {
+  private readonly views = new Map<string, { view: View; at: number }>();
+  private readonly wakes = new Map<string, Promise<View>>();
+  private uploaded = new Map<string, string>();
+  constructor(private readonly account: () => Promise<SandboxAccount | null>) {}
+
+  private async call(body: Record<string, string>, path = "sandboxes"): Promise<unknown> {
+    const account = await this.account();
+    if (!account) throw new CloudroomError("Sign in to Cloudroom to use cloud sandboxes.");
+    let response: Response;
+    try {
+      response = await fetch(`${account.website}/api/desktop/${path}`, {
+        method: "POST", redirect: "error", signal: AbortSignal.timeout(120_000),
+        headers: { "Content-Type": "application/json", Authorization: `Basic ${Buffer.from(`${account.userId}:${account.token}`).toString("base64")}` },
+        body: JSON.stringify(body),
+      });
+    } catch (error) { throw new CloudroomConnectionError(`Cloudroom could not reach the website to manage this thread's sandbox: ${error instanceof Error ? error.message : String(error)}`); }
+    const value = await response.json().catch(() => ({})) as { error?: unknown };
+    if (!response.ok) {
+      const message = typeof value.error === "string" ? value.error : `The website returned HTTP ${response.status}.`;
+      if (response.status === 409 && /busy/i.test(message)) throw new CloudroomConnectionError(message);
+      throw new CloudroomError(message, response.status >= 500 ? null : response.status);
+    }
+    return value;
+  }
+
+  private remember(view: View): View {
+    this.views.set(view.thread, { view, at: Date.now() });
+    return view;
+  }
+
+  /** The thread's Core, or null while it sleeps. `wake` starts it; only callers with work to send pass true. */
+  async connection(thread: string, project: SandboxProject, wake: boolean): Promise<SandboxConnection | null> {
+    const cached = this.views.get(thread);
+    let view = cached?.view;
+    if (!view || (view.state !== "awake" && (wake || Date.now() - cached!.at > RECHECK_MS))) {
+      view = this.remember(viewSchema.parse(await this.call({ action: "register", thread, project: project.id, ...(project.repository ? { repository: project.repository, folder: project.folder } : {}) })));
+    }
+    if (view.state === "awake" && view.origin && view.token) return { url: view.origin, token: view.token };
+    if (!wake) return null;
+    let pending = this.wakes.get(thread);
+    if (!pending) {
+      pending = this.call({ action: "wake", thread }).then(value => this.remember(viewSchema.parse(value))).finally(() => this.wakes.delete(thread));
+      this.wakes.set(thread, pending);
+    }
+    const woken = await pending;
+    if (!woken.origin || !woken.token) throw new CloudroomError(woken.issue ?? "The sandbox did not start.");
+    return { url: woken.origin, token: woken.token };
+  }
+
+  private mode: { on: boolean; at: number } | null = null;
+  /** Whether the account's new cloud threads get sandboxes. Unknown (website unreachable) keeps the last answer. */
+  async forNewThreads(): Promise<boolean> {
+    if (this.mode && Date.now() - this.mode.at < RECHECK_MS) return this.mode.on;
+    try { this.mode = { on: z.object({ sandboxes: z.boolean() }).parse(await this.call({ action: "mode" })).sandboxes, at: Date.now() }; }
+    catch { return this.mode?.on ?? true; }
+    return this.mode.on;
+  }
+
+  /** A broken stream or failed request may mean the sandbox went to sleep; look it up again next time. */
+  forget(thread: string): void { this.views.delete(thread); }
+
+  async archive(thread: string): Promise<void> { this.forget(thread); await this.call({ action: "archive", thread }); }
+  async restore(thread: string): Promise<void> { this.forget(thread); await this.call({ action: "restore", thread }); }
+  async remove(thread: string): Promise<void> { this.forget(thread); await this.call({ action: "remove", thread }); }
+
+  /** Saves a login for every sandbox of this account (ADR 0145), skipping values already uploaded. */
+  async saveLogin(name: "claude" | "codex" | "pi" | "github", value: string): Promise<void> {
+    const digest = createHash("sha256").update(value).digest("hex");
+    if (this.uploaded.get(name) === digest) return;
+    await this.call({ name, value }, "logins");
+    this.uploaded.set(name, digest);
+  }
+
+  /** Which logins the website holds for this account's sandboxes. */
+  async logins(): Promise<Record<"claude" | "codex" | "pi" | "github", boolean>> {
+    return z.object({ claude: z.boolean(), codex: z.boolean(), pi: z.boolean(), github: z.boolean() }).parse(await this.call({ action: "status" }, "logins"));
+  }
+
+  private copiedAt = 0;
+  /** Copies this Mac's Codex, Pi, and GitHub logins when the user allowed it (ADRs 0128, 0130). At most once a minute. */
+  async copyMacLogins(): Promise<void> {
+    if (Date.now() - this.copiedAt < RECHECK_MS) return;
+    this.copiedAt = Date.now();
+    const codexHome = process.env.CODEX_HOME || join(homedir(), ".codex");
+    const piHome = process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi/agent");
+    const files = [["codex", join(codexHome, "auth.json")], ["pi", join(piHome, "auth.json")]] as const;
+    // One failed login never stops the others; all failures are reported together.
+    const failed: string[] = [];
+    const save = (name: "codex" | "pi" | "github", value: string) => this.saveLogin(name, value).catch((error: unknown) => { failed.push(`${name}: ${error instanceof Error ? error.message : String(error)}`); });
+    for (const [name, path] of files) {
+      const value = await readFile(path, "utf8").catch(() => null);
+      if (!value) continue;
+      try { JSON.parse(value); } catch { continue; }
+      await save(name, value);
+    }
+    const run = (command: string, args: string[]) => promisify(execFile)(command, args, { timeout: 10_000 }).then(result => result.stdout.trim(), () => "");
+    const github = await run("gh", ["auth", "token", "--hostname", "github.com"]);
+    // Agents commit as the user, with the Mac's Git identity.
+    const [name, email] = await Promise.all([run("git", ["config", "--global", "user.name"]), run("git", ["config", "--global", "user.email"])]);
+    if (github) await save("github", JSON.stringify({ token: github, ...(name ? { name } : {}), ...(email ? { email } : {}) }));
+    if (failed.length) throw new CloudroomError(`Some logins could not be copied to cloud sandboxes. ${failed.join("; ")}`);
+  }
+
+  private configAt = 0;
+  private configDigest = "";
+  /** Uploads this Mac's skills and instructions when they change, then pushes them to awake sandboxes. At most once a minute. */
+  async copyMacConfig(): Promise<void> {
+    if (Date.now() - this.configAt < RECHECK_MS) return;
+    this.configAt = Date.now();
+    const home = homedir();
+    const present = (await Promise.all(CONFIG_PATHS.map(path => stat(join(home, path)).then(() => path, () => null)))).filter((path): path is string => path !== null);
+    if (!present.length) return;
+    // ustar has no access times, so unchanged files give the same digest. Links are followed: sandboxes lack the targets.
+    const { stdout } = await promisify(execFile)("tar", ["-c", "-h", "--format", "ustar", "--exclude", ".git", "--exclude", "node_modules", "--exclude", ".DS_Store", "-C", home, ...present],
+      { encoding: "buffer", maxBuffer: 4 * CONFIG_LIMIT, timeout: 30_000, env: { ...process.env, COPYFILE_DISABLE: "1" } });
+    const digest = createHash("sha256").update(stdout).digest("hex");
+    if (digest === this.configDigest) return;
+    const body = gzipSync(stdout);
+    if (body.length > CONFIG_LIMIT) throw new CloudroomError("Your skills are too large to copy to cloud sandboxes.");
+    const { url } = z.object({ url: z.string().url() }).parse(await this.call({ action: "upload" }, "config"));
+    const response = await fetch(url, { method: "PUT", redirect: "error", headers: { "Content-Type": "application/gzip", "x-upsert": "true" }, body, signal: AbortSignal.timeout(120_000) });
+    if (!response.ok) throw new CloudroomError(`Your skills could not be copied to cloud sandboxes (HTTP ${response.status}).`);
+    this.configDigest = digest;
+    // Awake sandboxes get the change now; sleeping ones apply it when they wake.
+    await this.call({ action: "push" }, "config").catch((error: unknown) => {
+      throw new CloudroomError(`Your skills were saved, but awake sandboxes could not get them yet: ${error instanceof Error ? error.message : String(error)}`);
+    });
+  }
+}

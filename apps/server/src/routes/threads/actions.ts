@@ -581,6 +581,7 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
     unarchiveThread(deps.db, deps.hub, thread.id);
     const unarchivedThread = getThread(deps.db, thread.id);
     if (unarchivedThread !== null) {
+      if (isCloudThread(unarchivedThread)) void cloudroom(deps).restore(unarchivedThread.id).catch((error: unknown) => deps.logger.warn({ threadId: unarchivedThread.id, error: error instanceof Error ? error.message : String(error) }, "The thread's sandbox could not be restored"));
       if (!isCloudThread(unarchivedThread) && unarchivedThread.environmentId !== null)
         refreshProviderRetirement(deps, unarchivedThread.environmentId);
       emitPluginThreadUnarchived(unarchivedThread);

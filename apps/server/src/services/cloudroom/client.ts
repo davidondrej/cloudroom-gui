@@ -96,6 +96,7 @@ const rejectionMessages: Record<string, string> = {
   invalid_workspace: "The cloud folder could not be selected. Check its name and saved mapping.",
   storage_blocked: "Cloud storage is temporarily blocking new work. Your request will retry.",
   service_stopping: "Cloud is restarting. Your request will retry.",
+  service_draining: "The cloud sandbox is going to sleep. Your request will wake it and retry.",
   model_catalog_unavailable: "Cloud model discovery is unavailable. Your request will retry.",
   invalid_service_tier: "This service tier is unavailable for the cloud model.",
   invalid_attachment: "The attachment could not be stored on Cloud.",
@@ -104,7 +105,7 @@ const rejectionMessages: Record<string, string> = {
 };
 // Thread errors with these messages ask the user to connect an account, not retry blindly.
 export const authRequiredMessages = new Set([rejectionMessages.codex_auth_required, rejectionMessages.cursor_auth_required, rejectionMessages.claude_auth_required]);
-const transientRejections = new Set(["storage_blocked", "service_stopping", "model_catalog_unavailable", "codex_auth_unavailable", "claude_auth_unavailable", "cursor_auth_unavailable"]);
+const transientRejections = new Set(["storage_blocked", "service_stopping", "service_draining", "model_catalog_unavailable", "codex_auth_unavailable", "claude_auth_unavailable", "cursor_auth_unavailable"]);
 
 export class CloudroomError extends Error {
   readonly status: number | null;
@@ -162,7 +163,7 @@ async function rejection(response: Response): Promise<{ code: string | null; err
     if (typeof body?.code === "string" && Object.hasOwn(rejectionMessages, body.code)) return { code: body.code, error };
     const legacy: Record<string, string> = {
       "invalid reasoning effort": "invalid_reasoning_effort", "invalid model": "invalid_model",
-      "storage unsafe; new execution is blocked": "storage_blocked", "service is stopping": "service_stopping",
+      "storage unsafe; new execution is blocked": "storage_blocked", "service is stopping": "service_stopping", "service is draining": "service_draining",
     };
     return { code: error !== null && Object.hasOwn(legacy, error) ? legacy[error] : null, error };
   } catch { return none; }

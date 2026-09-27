@@ -12,7 +12,8 @@ import type { CloudroomClient } from "./client.js";
 import { saveProjectCopyProgress } from "./store.js";
 
 type Deps = Pick<AppDeps, "db" | "hub">;
-export type ProjectCopyJob = { threadId: string; workspace: string; localPath: string; repository: string | null };
+// `key` is the copy target: one folder on a shared VM, or one per thread sandbox.
+export type ProjectCopyJob = { threadId: string; workspace: string; key: string; localPath: string; repository: string | null };
 
 const exec = promisify(execFile);
 const CHUNK = 16 * 1024 * 1024;
@@ -27,24 +28,24 @@ export function githubRepository(remote: string | null): string | null {
   return repository ? `https://github.com/${repository}` : null;
 }
 
-export async function planProjectCopy(deps: Deps, client: CloudroomClient, threadId: string, workspace: string, localPath?: string): Promise<ProjectCopyJob | null> {
+export async function planProjectCopy(deps: Deps, client: CloudroomClient, threadId: string, workspace: string, localPath?: string, key = workspace): Promise<ProjectCopyJob | null> {
   try {
     const project = getProject(deps.db, getThread(deps.db, threadId)?.projectId ?? "");
-    if (!project || copying.has(workspace)) return null;
+    if (!project || copying.has(key)) return null;
     const sources = listProjectSourcesByProjectIds(deps.db, [project.id]).filter((source) => existsSync(source.path));
     const path = localPath ?? (sources.find((source) => source.isDefault) ?? sources[0])?.path;
     if (!path) return null;
     const existing = await client.workspace(workspace);
     if (existing && (await client.runOnVm({ command: `[ -z "$(ls -A -- ${quote(existing.path)} 2>/dev/null | grep -Fvx .cloudroom)" ]`, stdin: "" })).code !== 0) return null;
-    return { threadId, workspace, localPath: path, repository: githubRepository(project.gitRemoteUrl) };
+    return { threadId, workspace, key, localPath: path, repository: githubRepository(project.gitRemoteUrl) };
   } catch {
     return null;
   }
 }
 
-export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCopyJob): void {
-  if (copying.has(job.workspace)) return;
-  copying.add(job.workspace);
+export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCopyJob, done?: () => void): void {
+  if (copying.has(job.key)) return;
+  copying.add(job.key);
   const report = (progress: ProjectCopyProgress) => {
     saveProjectCopyProgress(deps.db, job.threadId, progress);
     deps.hub.notifyThread(job.threadId, ["status-changed"]);
@@ -53,9 +54,9 @@ export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCop
   };
   report({ phase: job.repository ? "cloning" : "uploading", completed: 0, total: 0 });
   void run(client, job, report)
-    .then(() => report({ phase: "complete", completed: 0, total: 0 }))
+    .then(() => { report({ phase: "complete", completed: 0, total: 0 }); done?.(); })
     .catch((error: unknown) => report({ phase: "error", completed: 0, total: 0, error: (error instanceof Error ? error.message : String(error)).slice(0, 500) }))
-    .finally(() => copying.delete(job.workspace));
+    .finally(() => copying.delete(job.key));
 }
 
 async function run(client: CloudroomClient, job: ProjectCopyJob, report: (progress: ProjectCopyProgress) => void): Promise<void> {

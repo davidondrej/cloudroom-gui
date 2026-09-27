@@ -38,7 +38,7 @@ import { useThreadActions } from "./ThreadActionsProvider";
 import { useThreadSectionMove } from "./ThreadSectionMoveProvider";
 import { sdk } from "@/lib/sdk";
 import { showMutationErrorToast } from "@/lib/mutation-errors";
-import { useTeleportLocal } from "@/hooks/queries/cloudroom-queries";
+import { useCopyToMac, useTeleportLocal } from "@/hooks/queries/cloudroom-queries";
 import { showCloudWaitlist, useCloudLocked } from "@/hooks/useCloudLocked";
 
 interface ThreadActionsMenuBaseProps {
@@ -76,6 +76,15 @@ interface ThreadActionsMenuItemsProps extends ThreadActionsMenuBaseProps {
 export function canTeleportLocalThread(thread: Thread): boolean {
   return thread.executionTarget === "cloud" && !thread.parentThreadId && thread.archivedAt == null && ["codex", "pi", "claude-code"].includes(thread.providerId) && (!thread.teleport || ["complete", "cancelled", "error"].includes(thread.teleport.phase));
 }
+
+/** Each cloud thread works on its own branch; the user decides how the work comes back (docs/scopes/sandboxes.md). */
+export function canReturnCloudWork(thread: Thread): boolean {
+  return thread.executionTarget === "cloud" && !thread.parentThreadId && thread.archivedAt == null && thread.deletedAt == null;
+}
+const RETURN_PROMPTS = {
+  pr: "Commit all your work on this thread's branch, push the branch to origin, and open a pull request into the default branch with gh. Reply with the pull request link.",
+  main: "Commit all your work on this thread's branch, merge it into the default branch, and push that branch to origin. If the merge conflicts, stop and tell me. Reply with the pushed commit.",
+} as const;
 
 export function canTeleportThread(thread: Thread): boolean {
   return thread.executionTarget !== "cloud" && !thread.parentThreadId && thread.archivedAt == null && ["codex", "pi", "claude-code", "acp-cursor"].includes(thread.providerId) && (!thread.teleport || ["cancelled", "error"].includes(thread.teleport.phase));
@@ -217,6 +226,11 @@ function ThreadActionsMenuItems({
   };
   const canTeleport = canTeleportThread(thread);
   const teleportLocal = useTeleportLocal(thread.id);
+  const copyToMac = useCopyToMac(thread.id);
+  const askAgent = async (text: string) => {
+    try { await sdk.threads.send({ threadId: thread.id, mode: "auto", input: [{ type: "text", text, mentions: [] }] }); }
+    catch (error) { showMutationErrorToast({ error, fallbackMessage: "Could not send the request" }); }
+  };
 
   if (isDrawer && compactStep === "move") {
     return (
@@ -234,6 +248,13 @@ function ThreadActionsMenuItems({
     <>
       {canTeleport && <ActionMenuItem surface={surface} icon="Cloud" disabled={teleportPending} onSelect={() => void startTeleport()}>Teleport to Cloud</ActionMenuItem>}
       {canTeleportLocalThread(thread) && <ActionMenuItem surface={surface} icon="Laptop" disabled={teleportLocal.isPending} onSelect={() => teleportLocal.mutate()}>Teleport to Local</ActionMenuItem>}
+      {canReturnCloudWork(thread) && (
+        <>
+          <ActionMenuItem surface={surface} icon="GitPullRequestArrow" onSelect={() => void askAgent(RETURN_PROMPTS.pr)}>Open pull request</ActionMenuItem>
+          <ActionMenuItem surface={surface} icon="GitMerge" onSelect={() => void askAgent(RETURN_PROMPTS.main)}>Push to main</ActionMenuItem>
+          <ActionMenuItem surface={surface} icon="GitBranch" disabled={copyToMac.isPending} onSelect={() => copyToMac.mutate()}>Copy branch to Mac</ActionMenuItem>
+        </>
+      )}
       {responsiveActions.length > 0 ? (
         <>
           {responsiveActions.map((action) => (

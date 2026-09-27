@@ -9,6 +9,17 @@ import { rawStringLocalStorage } from "@/lib/browser-storage";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
 
 const DISMISSED_VERSION_KEY = "cloudroom.update-banner.dismissed-version";
+const HEIGHT_VAR = "--bb-update-banner-height";
+
+// Window-pinned controls (e.g. the home right-panel toggle) read this to sit below the banner.
+function publishBannerHeight(element: HTMLDivElement | null) {
+  if (!element) return;
+  const style = document.documentElement.style;
+  style.setProperty(HEIGHT_VAR, `${element.offsetHeight}px`);
+  return () => {
+    style.removeProperty(HEIGHT_VAR);
+  };
+}
 
 // App-wide notice: Restart once the in-app update is ready; the website link only when the app can't update itself.
 export function DesktopUpdateBanner() {
@@ -42,6 +53,7 @@ export function DesktopUpdateBanner() {
 
   return (
     <div
+      ref={publishBannerHeight}
       role="status"
       data-testid="desktop-update-banner"
       className="flex shrink-0 items-center gap-3 border-b border-primary/30 bg-primary/10 px-4 py-2 text-sm"
