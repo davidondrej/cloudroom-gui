@@ -569,7 +569,14 @@ function installLocalCapabilityHeaderInjection(): void {
     return cachedToken;
   };
   session.defaultSession.webRequest.onBeforeSendHeaders(
-    { urls: ["http://localhost/api/v1*", "http://127.0.0.1/api/v1*"] },
+    {
+      urls: [
+        "http://localhost/api/v1*",
+        "http://127.0.0.1/api/v1*",
+        "ws://localhost/ws*",
+        "ws://127.0.0.1/ws*",
+      ],
+    },
     (details, callback) => {
       const token = resolveToken();
       const requestHeaders = { ...details.requestHeaders };

@@ -1,10 +1,7 @@
 import { chmodSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { join } from "node:path";
-import {
-  PUBLIC_API_CAPABILITY_FILE_NAME,
-  readCapabilityCookie,
-} from "@bb/config/public-api-capability";
+import { PUBLIC_API_CAPABILITY_FILE_NAME } from "@bb/config/public-api-capability";
 
 export { PUBLIC_API_CAPABILITY_FILE_NAME };
 const CAPABILITY_TOKEN_BYTES = 32;
@@ -34,7 +31,7 @@ export function presentedCapability(
       }
     }
   }
-  return readCapabilityCookie({ cookieHeader: header("cookie") });
+  return undefined;
 }
 
 export function loadOrCreatePublicApiCapability(args: {

@@ -141,11 +141,12 @@ describe.skipIf(skipReason !== null)(
       expect(status).toBe(401);
     });
 
-    it("refuses the capability bootstrap to the non-loopback peer", async () => {
+    it("gates the former bootstrap path for the non-loopback peer", async () => {
+      // No issuance route exists; the gate 401s the path before any fallback.
       const status = await requestStatus({
         path: "/api/v1/system/capability-bootstrap",
       });
-      expect(status).toBe(403);
+      expect(status).toBe(401);
     });
   },
 );
