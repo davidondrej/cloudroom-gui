@@ -103,6 +103,8 @@ import {
   disposePluginHostWorkers,
 } from "./services/plugins/plugin-host-rpc.js";
 
+// Plugin wire HTTP routes (see the capability gate below for the carve-out
+// rationale — they carry their own credential per TG5 / ME-1).
 const PLUGIN_WIRE_HTTP_PATH = /^\/api\/v1\/plugins\/[^/]+\/http(?:\/|$)/u;
 import { rankAcceptedAssetEncodings } from "./asset-content-encoding.js";
 import { apiJsonCompression } from "./api-response-compression.js";
@@ -661,21 +663,6 @@ export function createApp(
       : null;
   const publicApi = new Hono();
   publicApi.use("*", async (context, next) => {
-    if (PLUGIN_WIRE_HTTP_PATH.test(context.req.path)) {
-      return next();
-    }
-    if (
-      publicApiCapability !== null &&
-      !publicApiCapability.verify(
-        presentedCapability((name) => context.req.header(name)),
-      )
-    ) {
-      throw new ApiError(
-        401,
-        "missing_or_invalid_capability",
-        "Provide the per-install capability token in the x-bb-capability header or as a Bearer token",
-      );
-    }
     const problem = browserRequestProblem(context, deps);
     if (problem !== null) {
       throw new ApiError(problem.status, "forbidden_origin", problem.error);
@@ -705,6 +692,34 @@ export function createApp(
   registerPluginCatalogRoutes(publicApi, pluginCatalogService);
   registerPluginRoutes(publicApi, deps, pluginService, upgradeWebSocket);
   registerSkillsRegistryRoutes(publicApi, deps);
+  // Capability gate for every /api/v1 route. Registered on the root app —
+  // not the publicApi sub-app — so coverage does not depend on which Hono
+  // instance a route is mounted on or on registration order across them
+  // (cloudroom routes mount on the root app; see installCloudroomRoutes).
+  // Must stay registered before any /api/v1 route registration below.
+  app.use("/api/v1/*", async (context, next) => {
+    if (PLUGIN_WIRE_HTTP_PATH.test(context.req.path)) {
+      // Deliberate, security-significant carve-out: plugin wire HTTP routes
+      // authenticate with their own x-bb-plugin-token credential (TG5, audit
+      // ME-1 / requirement B3), not the per-install capability. Do not treat
+      // this exemption as an oversight when adding routes under it.
+      return next();
+    }
+    if (
+      publicApiCapability !== null &&
+      !publicApiCapability.verify(
+        presentedCapability((name) => context.req.header(name)),
+      )
+    ) {
+      throw new ApiError(
+        401,
+        "missing_or_invalid_capability",
+        "Provide the per-install capability token in the x-bb-capability header or as a Bearer token",
+      );
+    }
+    return next();
+  });
+
   installCloudroomRoutes(app, deps);
   app.route("/api/v1", publicApi);
   app.use("/api/v1/*", () => {

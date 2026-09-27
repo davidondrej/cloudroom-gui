@@ -124,6 +124,39 @@ describe("public api capability middleware", () => {
     });
     expect(allowedStatus).toBe(101);
   });
+
+  it("gate covers every registered /api/v1 route (route enumeration)", async () => {
+    await withTestHarness(
+      { requirePublicApiCapability: true },
+      async (harness) => {
+        // Round-1 finding: routes registered on the root app (cloudroom)
+        // bypassed a gate that lived on the publicApi sub-app. This test
+        // enumerates every mounted /api/v1 route from the final app object,
+        // so coverage cannot depend on registration order or mount point.
+        const wirePath = /^\/api\/v1\/plugins\/[^/]+\/http(?:\/|$)/u;
+        const paths = [
+          ...new Set(
+            harness.app.routes
+              .filter(
+                (route) =>
+                  route.method !== "ALL" && route.path.startsWith("/api/v1"),
+              )
+              .map((route) => route.path),
+          ),
+        ].filter((path) => !wirePath.test(path));
+
+        // Sanity: the enumeration must actually see a real route set,
+        // including the cloudroom mounts that escaped the round-1 gate.
+        expect(paths.length).toBeGreaterThan(10);
+        expect(paths).toContain("/api/v1/cloudroom/account");
+
+        for (const path of paths) {
+          const response = await harness.app.request(path);
+          expect(response.status).toBe(401);
+        }
+      },
+    );
+  });
 });
 
 async function upgradeStatus(
