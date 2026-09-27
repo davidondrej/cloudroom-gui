@@ -29,6 +29,16 @@ const RECHECK_MS = 60_000;
 const CONFIG_PATHS = [".agents/skills", ".claude/skills", ".claude/CLAUDE.md", ".codex/skills", ".codex/AGENTS.md", ".pi/agent/skills", ".pi/agent/AGENTS.md"];
 const CONFIG_LIMIT = 45 * 1024 * 1024;
 
+function contentDigest(tar: Buffer): string {
+  const hash = createHash("sha256");
+  for (let at = 0; at + 512 <= tar.length && tar[at] !== 0;) {
+    const end = at + 512 + Math.ceil(Number.parseInt(tar.toString("latin1", at + 124, at + 136).replace(/\0/g, "").trim() || "0", 8) / 512) * 512;
+    hash.update(tar.subarray(at, at + 136)).update(tar.subarray(at + 156, end));
+    at = end;
+  }
+  return hash.digest("hex");
+}
+
 /** Each cloud thread's own sandbox, managed by the website (docs/scopes/sandboxes.md). Lookups never wake it. */
 export class SandboxDirectory {
   private readonly views = new Map<string, { view: View; at: number }>();
@@ -99,6 +109,11 @@ export class SandboxDirectory {
     return this.mode.on;
   }
 
+  /** What the account's cloud offers, read by the website from a running spare or sandbox. Null until one runs. */
+  async capabilities(): Promise<unknown> {
+    return z.object({ capabilities: z.unknown() }).parse(await this.call({ action: "capabilities" })).capabilities ?? null;
+  }
+
   wokeSince(thread: string, at: number): boolean { return (this.wakeStarts.get(thread) ?? 0) >= at; }
 
   private warmed: { project: string; at: number } | null = null;
@@ -165,10 +180,10 @@ export class SandboxDirectory {
     const home = homedir();
     const present = (await Promise.all(CONFIG_PATHS.map(path => stat(join(home, path)).then(() => path, () => null)))).filter((path): path is string => path !== null);
     if (!present.length) return;
-    // ustar has no access times, so unchanged files give the same digest. Links are followed: sandboxes lack the targets.
+    // Links are followed: sandboxes lack the targets. The digest skips file times, since Claude Code re-saves unchanged skills at every start.
     const { stdout } = await promisify(execFile)("tar", ["-c", "-h", "--format", "ustar", "--exclude", ".git", "--exclude", "node_modules", "--exclude", ".DS_Store", "-C", home, ...present],
       { encoding: "buffer", maxBuffer: 4 * CONFIG_LIMIT, timeout: 30_000, env: { ...process.env, COPYFILE_DISABLE: "1" } });
-    const digest = createHash("sha256").update(stdout).digest("hex");
+    const digest = contentDigest(stdout);
     if (digest === this.configDigest) return;
     const body = gzipSync(stdout);
     if (body.length > CONFIG_LIMIT) throw new CloudroomError("Your skills are too large to copy to cloud sandboxes.");

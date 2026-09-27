@@ -36,14 +36,24 @@ export const cloudroomStatusSchema = z.object({
     steer: z.boolean().optional(),
     compact: z.boolean().optional(),
     rewind: z.boolean().optional(),
-  })).default([]),
+  })).nullable().default([]),
 });
 
 const CORE_HARNESS_IDS: Record<string, string> = { "acp-cursor": "cursor", "acp-fx": "fx" };
 
 export function cloudHarness(status: z.infer<typeof cloudroomStatusSchema> | undefined, harness: string | undefined) {
   const id = harness === undefined ? undefined : (CORE_HARNESS_IDS[harness] ?? harness);
-  return status?.harnesses.find((item) => item.id === id);
+  return status?.harnesses?.find((item) => item.id === id);
+}
+
+/** Whether Cloud has told us what it offers. Unknown (a new account before its first sandbox) must not block sends. */
+export function cloudCatalogKnown(status: z.infer<typeof cloudroomStatusSchema> | undefined): boolean {
+  return status?.ready === true && status.harnesses !== null;
+}
+
+const HARNESS_NAMES: Record<string, string> = { "claude-code": "Claude Code", codex: "Codex", pi: "Pi", cursor: "Cursor", fx: "fx" };
+export function cloudHarnessNames(status: z.infer<typeof cloudroomStatusSchema> | undefined): string {
+  return (status?.harnesses ?? []).map((item) => HARNESS_NAMES[item.id] ?? item.id).join(", ") || "none";
 }
 
 export function cloudServiceTierSupported(status: z.infer<typeof cloudroomStatusSchema> | undefined, harness: string | undefined): boolean {

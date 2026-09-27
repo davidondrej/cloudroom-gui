@@ -142,7 +142,7 @@ it("moving back to the VM: new threads start on the VM while sandbox threads sta
     expect(await service.cursorAuth()).toMatchObject({ state: "limited" });
     await service.cursorAuth("key", undefined, "key_cursor");
     expect(savedLogins).toContain("cursor");
-    await vi.waitFor(async () => expect((await service.status()).harnesses.map(h => h.id)).toEqual(["codex"]));
+    await vi.waitFor(async () => expect((await service.status()).harnesses?.map(h => h.id)).toEqual(["codex"]));
     sandboxesOn = false;
     (service.sandboxes as unknown as { mode: null }).mode = null;
     const onVm = await start("moved-back");

@@ -3,19 +3,13 @@ import { isBackgroundAgentTaskType } from "@bb/domain";
 import type { TimelineWorkflowWorkRow } from "@bb/server-contract";
 import { useResizeObserver } from "usehooks-ts";
 import { AnimatedBody } from "@/components/promptbox/banner/AnimatedBody";
-import {
-  PROMPT_STACK_CARD_HEADER_BUTTON_CLASS,
-  PROMPT_STACK_CARD_ROW_HEIGHT,
-  PromptStackCard,
-  PromptStackCardChevron,
-} from "@/components/promptbox/banner/PromptStackCard";
+import { PromptStackCardChevron } from "@/components/promptbox/banner/PromptStackCard";
 import { LiveDurationText } from "@/components/thread/timeline/LiveDurationText";
 import { Icon } from "@bb/shared-ui/icon";
 import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
 import {
   activityIconClass,
   activityMetaClass,
-  activityRowClass,
   activityTextClass,
 } from "@bb/shared-ui/activity-row-styles";
 import { cn } from "@bb/shared-ui/lib/utils";
@@ -24,6 +18,9 @@ const BODY_ID = "thread-background-commands-card-body";
 const TOGGLE_ID = "thread-background-commands-card-toggle";
 const COMPACT_PROMPT_SHELL_MAX_WIDTH_REM = 34;
 const DEFAULT_ROOT_FONT_SIZE_PX = 16;
+// Borderless, compact row so background work stays subtle above the composer.
+const ROW_CLASS =
+  "flex min-h-6 w-full min-w-0 items-center gap-1.5 rounded-md px-3 py-0.5 text-xs text-foreground";
 
 function isCompactPromptShellWidth(width: number): boolean {
   const parsedRootFontSize =
@@ -190,12 +187,7 @@ export function ThreadBackgroundCommandsCard({
   const groupLabel = backgroundActivityGroupLabel(commands);
 
   return (
-    <PromptStackCard
-      rootRef={cardRef}
-      ariaLabel={groupLabel}
-      className="overflow-hidden"
-      style={{ minHeight: PROMPT_STACK_CARD_ROW_HEIGHT }}
-    >
+    <section ref={cardRef} aria-label={groupLabel} className="overflow-hidden">
       <div className="flex items-center">
         {canExpand ? (
           <button
@@ -209,9 +201,9 @@ export function ThreadBackgroundCommandsCard({
                 : backgroundActivityAriaLabel(primary, groupLabel)
             }
             onClick={onToggle}
-            className={activityRowClass(
-              "active",
-              PROMPT_STACK_CARD_HEADER_BUTTON_CLASS,
+            className={cn(
+              ROW_CLASS,
+              "cursor-pointer transition-colors hover:bg-background/60",
             )}
           >
             <Icon
@@ -238,10 +230,7 @@ export function ThreadBackgroundCommandsCard({
           </button>
         ) : (
           <div
-            className={activityRowClass(
-              "active",
-              "flex min-h-8 w-full min-w-0 cursor-default items-center gap-1.5 rounded-none px-3 py-1.5 text-xs text-foreground",
-            )}
+            className={cn(ROW_CLASS, "cursor-default")}
             aria-label={backgroundActivityAriaLabel(primary)}
           >
             <Icon
@@ -307,6 +296,6 @@ export function ThreadBackgroundCommandsCard({
           </div>
         </AnimatedBody>
       ) : null}
-    </PromptStackCard>
+    </section>
   );
 }

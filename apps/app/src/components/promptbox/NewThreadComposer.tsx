@@ -2,6 +2,8 @@ import { ClaudeConnectionButton } from "@/components/ClaudeConnection";
 import {
   useCloudroomConnection,
   cloudHarness,
+  cloudCatalogKnown,
+  cloudHarnessNames,
   cloudReasoningLevels,
   cloudServiceTierSupported,
   cloudroomRequestId,
@@ -791,7 +793,8 @@ export function NewThreadComposer({
   const selectedThreadModel = activeModel?.model ?? selectedModel;
   const cloudLevels = cloudReasoningLevels(cloudConnection.data, selectedProviderId, selectedThreadModel);
   const cloudFastSupported = executionTarget === "cloud" && cloudServiceTierSupported(cloudConnection.data, selectedProviderId);
-  const availableReasoningOptions = executionTarget === "cloud" && cloudConnection.data?.ready ? reasoningOptions.filter((option) => cloudLevels.includes(option.value)) : reasoningOptions;
+  const cloudKnown = executionTarget === "cloud" && cloudCatalogKnown(cloudConnection.data);
+  const availableReasoningOptions = cloudKnown ? reasoningOptions.filter((option) => cloudLevels.includes(option.value)) : reasoningOptions;
 
   const promptDraft = usePromptDraftStorage(draftStorage);
   const textEffects = useComposerTextEffects(promptDraft.storageKey);
@@ -1481,21 +1484,24 @@ export function NewThreadComposer({
     selectedThreadModel,
     submissionEnvironmentUnavailable: submissionEnvironment === null,
   });
+  // Shown as a banner too, so an unavailable agent is never a silent greyed-out button.
+  const cloudBlockedReason = !cloudKnown || cloudHarness(cloudConnection.data, selectedProviderId)
+    ? null
+    : selectedProviderId === "claude-code"
+      ? "Claude Code is not configured in Cloud yet."
+      : `${selectedProviderDisplayName ?? "This agent"} isn't available in Cloud. Available: ${cloudHarnessNames(cloudConnection.data)}.`;
   const submitDisabledReason =
     executionTarget === "cloud"
-      ? (cloudConnection.data?.ready && !cloudHarness(cloudConnection.data, selectedProviderId)
-          ? selectedProviderId === "claude-code"
-            ? "Claude Code is not configured on this Cloud VM"
-            : "Select a harness supported by your Cloud VM"
-          : !selectedThreadModel || isLoadingModels
+      ? (cloudBlockedReason
+          ?? (!selectedThreadModel || isLoadingModels
             ? "Select a model"
-            : cloudConnection.data?.ready && !cloudLevels.includes(reasoningLevel)
+            : cloudKnown && !cloudLevels.includes(reasoningLevel)
               ? "Select a reasoning level supported by the cloud model"
             : isSubmitting || isUploading || isCopyingAttachments
               ? "Preparing your message"
               : promptInput.length === 0
                 ? "Type a message first"
-                : null)
+                : null))
       : localSubmitDisabledReason;
   const submitDraft = useCallback(
     async (
@@ -1744,7 +1750,11 @@ export function NewThreadComposer({
             environmentProviderInputsSlot,
             machineProviderInputsSlot: machineProviderInputs.control,
             banner:
-              executionTarget === "cloud" ? null : (
+              executionTarget === "cloud" ? (
+                cloudBlockedReason === null ? null : (
+                  <ProviderRequirementBanner title="Not available in Cloud" description={cloudBlockedReason} action={null} />
+                )
+              ) : (
                 (options.banner ??
                 (machineServerAccessReason !== null ? (
                   <ProviderRequirementBanner
@@ -1895,6 +1905,7 @@ export function NewThreadComposer({
       supportsServiceTier,
       cloudFastSupported,
       submitDisabledReason,
+      cloudBlockedReason,
       machineServerAccessReason,
       setupRequiredProvider,
       environmentSetupRequiredReason,

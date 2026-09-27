@@ -353,6 +353,18 @@ class CloudroomService {
     if (changed) await writeFile(this.capabilitiesPath, JSON.stringify(capabilities), { mode: 0o600 }).catch(() => {});
   }
 
+  private nextCapabilitiesAsk = 0;
+  /** Asks the website what the cloud offers, so a new account knows before its first sandbox runs. The saved copy is
+   *  only a fallback: ask every minute, or every 15 s until a spare can answer. */
+  private async learnSandboxCapabilities(): Promise<void> {
+    if (Date.now() < this.nextCapabilitiesAsk) return;
+    this.nextCapabilitiesAsk = Date.now() + 15_000;
+    const raw = await this.sandboxes.capabilities();
+    if (!raw) return;
+    await this.rememberCapabilities(capabilitiesSchema.parse(raw), true);
+    this.nextCapabilitiesAsk = Date.now() + 60_000;
+  }
+
   private async savedCapabilities(): Promise<Capabilities | null> {
     if (this.sandboxCapabilities) return this.sandboxCapabilities;
     try { this.sandboxCapabilities = capabilitiesSchema.parse(JSON.parse(await readFile(this.capabilitiesPath, "utf8"))); }
@@ -582,11 +594,13 @@ class CloudroomService {
       projectId = saved?.projectId ?? null;
       if (saved?.sandboxToken && saved.account && await this.newThreadsInSandboxes()) {
         // New threads start in sandboxes, which sleep between tasks; report their latest capabilities, never a VM's.
+        // Null harnesses mean unknown: the composer then lets the sandbox decide instead of blocking.
+        void this.learnSandboxCapabilities().catch(() => {});
         const capabilities = await this.savedCapabilities();
         // The preview helper reaches every awake sandbox through the website (docs/scopes/sandboxes.md).
         if (capabilities) void this.ensurePreviews(capabilities);
         return {
-          ready: true, account: saved.account, projectId, storage: null, harnesses: capabilities?.harnesses ?? [], sync: null,
+          ready: true, account: saved.account, projectId, storage: null, harnesses: capabilities?.harnesses ?? null, sync: null,
           previews: capabilities?.previews ? { ...await previewStatus(this.deps), issue: this.previewIssue } : null,
           workspaces: true, teleport: capabilities?.teleport ?? false, repository: null,
           model: capabilities?.harnesses.find((h) => h.id === "codex")?.model ?? null,

@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@bb/shared-ui/button";
 import { Icon } from "@bb/shared-ui/icon";
+import { Popover, PopoverContent, PopoverTrigger } from "@bb/shared-ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@bb/shared-ui/tooltip";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { SidebarMenuItem } from "@/components/ui/sidebar";
@@ -31,6 +32,15 @@ export function CloudroomSignInButton() {
     },
     onError: (error) => appToast.error(error.message),
   });
+  const [menuOpen, setMenuOpen] = useState(false);
+  const logout = useMutation({
+    mutationFn: () => sdk.cloudroom.logout(),
+    onSuccess: () => {
+      setMenuOpen(false);
+      return queryClient.invalidateQueries({ queryKey: ["cloudroom-account"] });
+    },
+    onError: (error) => appToast.error(error.message),
+  });
   const signInError = status.data?.signInError;
   const accountId = status.data?.account?.id;
   useEffect(() => { if (signInError) appToast.error(signInError); }, [signInError]);
@@ -46,20 +56,27 @@ export function CloudroomSignInButton() {
   const signingIn = status.data?.signingIn === true;
   const label = checking || account ? "Account" : signingIn ? "Cancel sign-in" : "Sign in";
   const tooltip = account ? `Account (${account.email})` : signingIn ? "Cancel sign-in" : checking ? "Checking your account" : "Sign in to Cloudroom";
+  const button = <Button variant="ghost" className={cn(FOOTER_ICON_BUTTON_CLASS, "data-[state=open]:bg-state-active data-[state=open]:text-foreground")} aria-label={label} disabled={action.isPending || checking} onClick={account ? undefined : () => action.mutate()}>
+    {checking || signingIn || action.isPending ? <Icon name="Loading" className="animate-spin" aria-hidden /> : <Icon name="UserRound" aria-hidden />}
+    {!checking && !account && !signingIn && <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-destructive" aria-hidden />}
+  </Button>;
   return <>
     <SidebarMenuItem data-footer-item="cloudroom-account">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" className={FOOTER_ICON_BUTTON_CLASS} aria-label={label} disabled={action.isPending || checking} onClick={() => {
-            if (account) void navigate(getSettingsRoutePath("machines"));
-            else action.mutate();
-          }}>
-            {checking || signingIn || action.isPending ? <Icon name="Loading" className="animate-spin" aria-hidden /> : <Icon name="UserRound" aria-hidden />}
-            {!checking && !account && !signingIn && <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-destructive" aria-hidden />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="top">{tooltip}</TooltipContent>
-      </Tooltip>
+      <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+        <Tooltip>
+          <TooltipTrigger asChild>{account ? <PopoverTrigger asChild>{button}</PopoverTrigger> : button}</TooltipTrigger>
+          <TooltipContent side="top">{tooltip}</TooltipContent>
+        </Tooltip>
+        {account && <PopoverContent side="top" align="start" sideOffset={6} mobileTitle="Account" aria-label="Account" className="w-64 p-3">
+          <p className="text-xs text-muted-foreground">Signed in as</p>
+          <p className="truncate text-sm font-medium">{account.email}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{status.data?.ready ? "Cloud connected" : "Cloud unavailable"}</p>
+          <div className="mt-3 flex flex-col gap-1 border-t pt-2">
+            <Button variant="ghost" size="sm" className="justify-start" onClick={() => { setMenuOpen(false); void navigate(getSettingsRoutePath("machines")); }}>Account settings</Button>
+            <Button variant="ghost" size="sm" className="justify-start text-destructive hover:text-destructive" disabled={logout.isPending} onClick={() => logout.mutate()}>Log out</Button>
+          </div>
+        </PopoverContent>}
+      </Popover>
     </SidebarMenuItem>
     {account && <SidebarMenuItem>
       <Tooltip>

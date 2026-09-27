@@ -737,6 +737,7 @@ interface BbAppUpdateRowsProps {
   onRelaunchDesktop: (() => void) | null;
   onRetryDesktop: (() => void) | null;
   isChecking?: boolean;
+  isRelaunching?: boolean;
 }
 
 export function BbAppUpdateRows({
@@ -746,6 +747,7 @@ export function BbAppUpdateRows({
   onRelaunchDesktop,
   onRetryDesktop,
   isChecking = false,
+  isRelaunching = false,
 }: BbAppUpdateRowsProps) {
   const settledStatus = isChecking ? (
     <RowStateControl live state="in-progress" />
@@ -793,6 +795,7 @@ export function BbAppUpdateRows({
           buttonLeading={<BbLogo className="size-3" />}
           buttonLabel="Relaunch"
           actionLabel="Relaunch Cloudroom to finish updating"
+          loading={isRelaunching}
           onClick={() => onRelaunchDesktop?.()}
         />,
       );
@@ -1258,6 +1261,7 @@ export function UpdatesSettingsSection({
     getAppUpdateCheckSnapshot,
   );
   const now = useNow(30_000);
+  const [isRelaunching, setIsRelaunching] = useState(false);
   const { failuresByJobKey, queuedJobKeys, runningJobKey, startInstall } =
     useProviderCliInstallRunner();
 
@@ -1438,11 +1442,14 @@ export function UpdatesSettingsSection({
                     desktopInfo={desktopInfo}
                     isDesktop={isDesktop}
                     isChecking={isChecking}
+                    isRelaunching={isRelaunching}
                     onRelaunchDesktop={
                       desktopApi === null || showFallbackBbStatus
                         ? null
                         : () => {
+                            setIsRelaunching(true);
                             void desktopApi.installUpdate().catch((error) => {
+                              setIsRelaunching(false);
                               appToast.error("Relaunch failed", {
                                 description: checkErrorDescription(error),
                               });
