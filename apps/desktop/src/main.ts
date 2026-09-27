@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { accessSync, constants as fsConstants } from "node:fs";
+import { accessSync, constants as fsConstants, readFileSync } from "node:fs";
 import { arch, homedir, release, type as osType } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import {
@@ -23,6 +23,7 @@ import {
   APP_SURFACE_DESKTOP,
   APP_SURFACE_ENV_NAME,
 } from "@bb/config/app-surface";
+import { publicApiCapabilityFilePath } from "@bb/config/public-api-capability";
 import type { ConnectCredential } from "@bb/connect-client";
 import type { AppKeybindings } from "@bb/domain";
 import {
@@ -542,6 +543,43 @@ const desktopLogger: DesktopAutoUpdateLogger = {
     process.stderr.write(`${message}\n`);
   },
 };
+
+function installLocalCapabilityHeaderInjection(): void {
+  // The local server may require a per-install capability on /api/v1
+  // (BB_REQUIRE_PUBLIC_API_CAPABILITY). Inject it into loopback API requests
+  // from the token file the server writes; absent file = flag off = no-op.
+  let cachedToken: string | undefined;
+  let tokenResolved = false;
+  const resolveToken = (): string | undefined => {
+    if (!tokenResolved) {
+      tokenResolved = true;
+      try {
+        const filePath = publicApiCapabilityFilePath({
+          dataDir: resolveDataDirFromEnv({
+            env: process.env,
+            homeDir: homedir(),
+          }),
+        });
+        const token = readFileSync(filePath, "utf8").trim();
+        cachedToken = token.length > 0 ? token : undefined;
+      } catch {
+        cachedToken = undefined;
+      }
+    }
+    return cachedToken;
+  };
+  session.defaultSession.webRequest.onBeforeSendHeaders(
+    { urls: ["http://localhost/api/v1*", "http://127.0.0.1/api/v1*"] },
+    (details, callback) => {
+      const token = resolveToken();
+      const requestHeaders = { ...details.requestHeaders };
+      if (token !== undefined) {
+        requestHeaders["x-bb-capability"] = token;
+      }
+      callback({ requestHeaders });
+    },
+  );
+}
 
 function resolveDataDirFromEnv(args: ResolveDataDirFromEnvArgs): string {
   const rawDataDir = args.env.BB_DATA_DIR?.trim();
@@ -2340,6 +2378,8 @@ async function runDesktopApp(): Promise<void> {
       return currentRuntime?.serverUrl ?? builtinServerUrl;
     },
   });
+  installLocalCapabilityHeaderInjection();
+
   if (desktopUpdateSupport.versionCheck) {
     desktopUpdateService.start();
   }

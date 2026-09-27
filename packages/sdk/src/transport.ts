@@ -45,8 +45,11 @@ export interface BbSdkContext {}
 
 export interface CreateHttpTransportArgs {
   baseUrl?: string;
+  capability?: string;
   fetch?: FetchImplementation;
   realtimeUrl?: string;
   runtime: BbSdkRuntime;
   websocket?: BbRealtimeSocketFactory;
 }
+
+export const PUBLIC_API_CAPABILITY_HEADER_NAME = "x-bb-capability";

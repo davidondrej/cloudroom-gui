@@ -78,7 +78,7 @@ interface ResolvePortFromEnvArgs {
   name: string;
 }
 
-const BB_PROD_DATA_DIR_NAME = ".gui-cloudroom";
+export const BB_PROD_DATA_DIR_NAME = ".gui-cloudroom";
 const BB_DEV_DATA_ROOT_DIR = ".gui-cloudroom-dev";
 export const BB_PROD_SERVER_PORT = 39886;
 export const BB_PROD_HOST_DAEMON_PORT = 39887;

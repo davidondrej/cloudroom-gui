@@ -178,6 +178,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
     injectWebSocket,
     pluginCatalogService,
     pluginService,
+    publicApiCapabilityToken,
   } = createApp(
     {
       appVersion,
@@ -266,6 +267,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
 
   pluginService.bindSdk({
     baseUrl: `http://127.0.0.1:${serverConfig.BB_SERVER_PORT}`,
+    capability: publicApiCapabilityToken,
   });
   void pluginService
     .start()

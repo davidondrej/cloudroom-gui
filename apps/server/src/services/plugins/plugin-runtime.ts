@@ -1805,8 +1805,11 @@ export function createPluginRuntime(context: PluginRuntimeContext) {
     return { outcome: "found", value };
   }
 
-  function bindSdk(args: { baseUrl: string }): void {
-    boundSdk = createNodeBbSdk({ baseUrl: args.baseUrl });
+  function bindSdk(args: { baseUrl: string; capability?: string }): void {
+    boundSdk = createNodeBbSdk({
+      baseUrl: args.baseUrl,
+      capability: args.capability,
+    });
     boundLoopbackBaseUrl = args.baseUrl;
   }
 

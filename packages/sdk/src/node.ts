@@ -20,6 +20,7 @@ import type {
 
 export interface CreateNodeTransportArgs {
   baseUrl?: string;
+  capability?: string;
   cliConfig?: CliConfig;
   fetch?: FetchImplementation;
   realtimeUrl?: string;
@@ -50,6 +51,7 @@ export function createNodeTransport(
 ): BbSdkTransport {
   return createHttpTransport({
     baseUrl: args.baseUrl ?? resolveCliConfig(args.cliConfig).ROOM_SERVER_URL,
+    capability: args.capability,
     fetch:
       args.fetch ??
       createRequestTimeoutFetch({

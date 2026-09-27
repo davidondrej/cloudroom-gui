@@ -140,6 +140,13 @@ describe.skipIf(skipReason !== null)(
       const status = await requestStatus({ path: "/api/v1/hosts" });
       expect(status).toBe(401);
     });
+
+    it("refuses the capability bootstrap to the non-loopback peer", async () => {
+      const status = await requestStatus({
+        path: "/api/v1/system/capability-bootstrap",
+      });
+      expect(status).toBe(403);
+    });
   },
 );
 

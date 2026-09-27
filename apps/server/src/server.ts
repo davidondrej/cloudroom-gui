@@ -62,6 +62,7 @@ import {
 } from "./internal/auth.js";
 import {
   captureTrustedRemoteAddress,
+  getTrustedRemoteAddress,
   resolveRequestAppSurface,
 } from "./request-context.js";
 import { runEventLoopWork } from "./services/system/event-loop-work.js";
@@ -106,8 +107,14 @@ import {
 // Plugin wire HTTP routes (see the capability gate below for the carve-out
 // rationale — they carry their own credential per TG5 / ME-1).
 const PLUGIN_WIRE_HTTP_PATH = /^\/api\/v1\/plugins\/[^/]+\/http(?:\/|$)/u;
+// Credential-issuance endpoint for loopback browser clients (the login route
+// of the capability system). Exempt from the capability gate like the wire
+// paths; it grants nothing to non-loopback peers and serves no data.
+const CAPABILITY_BOOTSTRAP_PATH = "/api/v1/system/capability-bootstrap";
 import { rankAcceptedAssetEncodings } from "./asset-content-encoding.js";
 import { apiJsonCompression } from "./api-response-compression.js";
+import { isLoopbackAddress, isLoopbackHostname } from "@bb/config/loopback";
+import { formatCapabilityCookie } from "@bb/config/public-api-capability";
 import {
   loadOrCreatePublicApiCapability,
   presentedCapability,
@@ -124,6 +131,7 @@ interface ServerApp {
   injectWebSocket: ReturnType<typeof createNodeWebSocket>["injectWebSocket"];
   pluginService: PluginService;
   pluginCatalogService: PluginCatalogService;
+  publicApiCapabilityToken?: string;
 }
 
 interface CloseWebSocketServerArgs {
@@ -698,11 +706,18 @@ export function createApp(
   // (cloudroom routes mount on the root app; see installCloudroomRoutes).
   // Must stay registered before any /api/v1 route registration below.
   app.use("/api/v1/*", async (context, next) => {
-    if (PLUGIN_WIRE_HTTP_PATH.test(context.req.path)) {
-      // Deliberate, security-significant carve-out: plugin wire HTTP routes
-      // authenticate with their own x-bb-plugin-token credential (TG5, audit
-      // ME-1 / requirement B3), not the per-install capability. Do not treat
-      // this exemption as an oversight when adding routes under it.
+    if (
+      PLUGIN_WIRE_HTTP_PATH.test(context.req.path) ||
+      context.req.path === CAPABILITY_BOOTSTRAP_PATH
+    ) {
+      // Deliberate, security-significant carve-outs:
+      // 1. Plugin wire HTTP routes authenticate with their own
+      //    x-bb-plugin-token credential (TG5, audit ME-1 / requirement B3).
+      // 2. The capability bootstrap endpoint is the credential-issuance route
+      //    (the login route of this system): it grants a capability cookie to
+      //    loopback socket peers only, serves no data, and requires a loopback
+      //    Host header — see the handler below. Do not add carve-outs without
+      //    this class of justification.
       return next();
     }
     if (
@@ -719,6 +734,36 @@ export function createApp(
     }
     return next();
   });
+
+  if (publicApiCapability !== null) {
+    // Issues the capability cookie to browser clients. Two loopback checks —
+    // the socket peer address AND the Host header — so a DNS-rebinding
+    // request (attacker host resolving to 127.0.0.1) cannot obtain it: the
+    // socket would be loopback but the Host would not be. The cookie is
+    // HttpOnly + SameSite=Strict, so it never reaches JS and never travels
+    // cross-site. The token itself is never served in a body.
+    app.get(CAPABILITY_BOOTSTRAP_PATH, (context) => {
+      const hostHeader = context.req.header("host");
+      const hostHostname = hostHeader?.split(":", 1)[0] ?? "";
+      const remoteAddress = getTrustedRemoteAddress(context);
+      if (
+        remoteAddress === undefined ||
+        !isLoopbackAddress(remoteAddress) ||
+        !isLoopbackHostname(hostHostname)
+      ) {
+        throw new ApiError(
+          403,
+          "forbidden_remote",
+          "Capability bootstrap is available only from the server machine",
+        );
+      }
+      context.header(
+        "Set-Cookie",
+        formatCapabilityCookie({ token: publicApiCapability.token }),
+      );
+      return context.body(null, 204);
+    });
+  }
 
   installCloudroomRoutes(app, deps);
   app.route("/api/v1", publicApi);
@@ -860,5 +905,6 @@ export function createApp(
     injectWebSocket,
     pluginService,
     pluginCatalogService,
+    publicApiCapabilityToken: publicApiCapability?.token,
   };
 }
