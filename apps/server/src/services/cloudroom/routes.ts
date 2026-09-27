@@ -59,6 +59,7 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   app.post("/api/v1/cloudroom/account/project", async (context) => {
     const input = z.object({ projectId: z.string().min(1) }).strict().parse(await context.req.json());
     await cloudroom(deps).selectOnboardingProject(input.projectId);
+    void cloudroom(deps).warmSandbox(input.projectId).catch(() => {});
     return context.json({ ok: true });
   });
   app.get("/api/v1/cloudroom/account", async (context) => context.json(await cloudroomAccount(deps).status()));

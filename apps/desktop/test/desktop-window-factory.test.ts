@@ -66,9 +66,14 @@ class FakeDesktopWindowWebContents implements DesktopWindowWebContents {
   public readonly replacedMisspellings: string[] = [];
   public windowOpenHandler: DesktopWindowOpenHandler | null = null;
   public readonly zoomFactors: number[] = [];
+  public url = "";
 
   constructor(id: number) {
     this.id = id;
+  }
+
+  getURL(): string {
+    return this.url;
   }
 
   openDevTools(options: DesktopWindowOpenDevToolsOptions): void {
@@ -167,6 +172,7 @@ class FakeDesktopWindow implements DesktopBrowserWindow {
 
   async loadURL(url: string): Promise<void> {
     this.loadedUrls.push(url);
+    this.webContents.url = url;
   }
 
   maximize(): void {
@@ -282,6 +288,7 @@ describe("desktop window factory", () => {
         },
         isFullScreen: false,
         isMaximized: false,
+        route: "/",
         stateKey: "main",
       },
       {
@@ -293,6 +300,7 @@ describe("desktop window factory", () => {
         },
         isFullScreen: false,
         isMaximized: false,
+        route: "/",
         stateKey: "window-second",
       },
     ]);

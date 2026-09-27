@@ -54,7 +54,10 @@ export function cloudReasoningLevels(status: z.infer<typeof cloudroomStatusSchem
   const profile = cloudHarness(status, harness);
   if (profile?.models === null) return [];
   const remoteModel = harness === "pi" && model ? model.slice(model.indexOf("/") + 1) : model;
-  return (profile?.models ? profile.models.find((item) => item.model === remoteModel)?.reasoning_levels : profile?.reasoning_levels) ?? [];
+  if (!profile?.models) return profile?.reasoning_levels ?? [];
+  const levels = profile.models.find((item) => item.model === remoteModel)?.reasoning_levels;
+  // Claude runs exact models its catalog omits, such as claude-opus-5-5[1m]; core allows any VM level (ADR 0133).
+  return levels ?? (harness === "claude-code" && remoteModel ? [...new Set(profile.models.flatMap((item) => item.reasoning_levels))] : []);
 }
 export function cloudFeatureSupported(status: z.infer<typeof cloudroomStatusSchema> | undefined, harness: string, feature: "steer" | "compact" | "rewind"): boolean {
   const profile = cloudHarness(status, harness);

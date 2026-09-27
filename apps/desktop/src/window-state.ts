@@ -30,6 +30,7 @@ const persistedWindowStateSchema = z.object({
 });
 
 const persistedWindowStateEntrySchema = persistedWindowStateSchema.extend({
+  route: z.string().startsWith("/").optional(),
   stateKey: z.string().min(1),
 });
 
@@ -70,6 +71,7 @@ export interface StatefulBrowserWindow {
 
 export interface PersistBrowserWindowStateSnapshot {
   browserWindow: StatefulBrowserWindow;
+  route: string | null;
   stateKey: WindowStateKey;
 }
 
@@ -96,6 +98,7 @@ interface RemovePersistedWindowStateEntryArgs {
 
 interface CreatePersistedWindowStateEntryArgs {
   browserWindow: StatefulBrowserWindow;
+  route: string | null;
   stateKey: WindowStateKey;
 }
 
@@ -254,6 +257,7 @@ function createPersistedWindowStateEntry(
     bounds: browserWindowBounds(args.browserWindow),
     isFullScreen: args.browserWindow.isFullScreen(),
     isMaximized: args.browserWindow.isMaximized(),
+    ...(args.route === null ? {} : { route: args.route }),
     stateKey: args.stateKey,
   };
 }
@@ -294,6 +298,7 @@ export async function persistBrowserWindowStates(
       entries.push(
         createPersistedWindowStateEntry({
           browserWindow: snapshot.browserWindow,
+          route: snapshot.route,
           stateKey: snapshot.stateKey,
         }),
       );

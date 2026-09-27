@@ -102,11 +102,14 @@ it("moving back to the VM: new threads start on the VM while sandbox threads sta
   const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
   const service = cloudroom(harness.deps);
   let sandboxesOn = true;
+  const savedLogins: string[] = [];
   const coreServer = createServer(async (req, res) => {
     const json = (value: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(value)); };
     if (req.url === "/v1/health") return json({});
     if (req.url === "/v1/ready") return json({ ready: true });
-    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code", stop: true, resume: true, launch_settings: true, workspaces: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: "codex", model: "test-model" }] });
+    // The VM runs Cursor; sandboxes (token t…) do not.
+    const vm = req.headers.authorization === `Bearer ${"v".repeat(64)}`;
+    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code", stop: true, resume: true, launch_settings: true, workspaces: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: "codex", model: "test-model" }, ...(vm ? [{ id: "cursor", model: "default" }] : [])] });
     if (req.url?.includes("/stream?")) { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.end(); return; }
     const input = await body(req);
     if (req.url === "/v1/sessions") return json({ session_id: `cr_${input.request_id}`, receipt: { request_id: input.request_id, command: "start", input, state: "accepted" }, saving: {} }, 202);
@@ -116,7 +119,7 @@ it("moving back to the VM: new threads start on the VM while sandbox threads sta
   const websiteServer = createServer(async (req, res) => {
     const input = await body(req);
     res.writeHead(200, { "Content-Type": "application/json" });
-    if (req.url === "/api/desktop/logins") return res.end(JSON.stringify({ claude: false, codex: false, pi: false, github: false }));
+    if (req.url === "/api/desktop/logins") { if (input.name) savedLogins.push(input.name); return res.end(JSON.stringify({ saved: true, claude: false, codex: false, pi: false, github: false, cursor: false })); }
     if (input.action === "mode") return res.end(JSON.stringify({ sandboxes: sandboxesOn }));
     res.end(JSON.stringify({ thread: input.thread, state: "awake", generation: 1, issue: null, origin: coreUrl, token: "t".repeat(64) }));
   });
@@ -132,6 +135,14 @@ it("moving back to the VM: new threads start on the VM while sandbox threads sta
     await service.configure({ url: coreUrl, token: "v".repeat(64) }, { id: "11111111-1111-4111-8111-111111111111", email: "vm@example.com" }, undefined, websiteUrl, "a".repeat(64));
     const inSandbox = await start("with-sandboxes");
     expect(inSandbox.coreUrl).toBe(`sandbox:${inSandbox.threadId}`);
+    // An account that still has a VM connects Claude for its sandboxes too, where its new threads run.
+    await service.claudeAuth("token", undefined, "sk-ant-oat01-test", "max");
+    expect(savedLogins).toContain("claude");
+    // Cursor too, with an API key. The picker offers what sandboxes run, never the VM's harnesses.
+    expect(await service.cursorAuth()).toMatchObject({ state: "limited" });
+    await service.cursorAuth("key", undefined, "key_cursor");
+    expect(savedLogins).toContain("cursor");
+    await vi.waitFor(async () => expect((await service.status()).harnesses.map(h => h.id)).toEqual(["codex"]));
     sandboxesOn = false;
     (service.sandboxes as unknown as { mode: null }).mode = null;
     const onVm = await start("moved-back");

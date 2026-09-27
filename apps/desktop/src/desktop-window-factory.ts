@@ -43,6 +43,7 @@ export interface DesktopWindowOpenDevToolsOptions {
 
 export interface DesktopWindowWebContents extends DesktopContextMenuWebContents {
   id: number;
+  getURL(): string;
   openDevTools(options: DesktopWindowOpenDevToolsOptions): void;
   setWindowOpenHandler(handler: DesktopWindowOpenHandler): void;
   setZoomFactor(factor: number): void;
@@ -191,6 +192,27 @@ function createWindowOptions(
   };
 }
 
+// App page path (e.g. "/threads/thr_abc") to reopen after a restart.
+// Loading and error views are data: URLs, so they have no route.
+function routeFromUrl(url: string): string | null {
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    return null;
+  }
+  const parsed = new URL(url);
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+}
+
+function applyRoute(url: string, route: string): string {
+  const parsed = new URL(url);
+  const target = new URL(route, parsed);
+  parsed.pathname = target.pathname;
+  if (target.search !== "") {
+    parsed.search = target.search;
+  }
+  parsed.hash = target.hash;
+  return parsed.toString();
+}
+
 async function loadUrlIntoWindow(args: LoadUrlIntoWindowArgs): Promise<void> {
   args.browserWindow.webContents.setZoomFactor(1);
   try {
@@ -209,6 +231,17 @@ export function createDesktopWindowFactory(
 ): DesktopWindowFactory {
   const activeWindows = new Map<WindowStateKey, DesktopBrowserWindow>();
   const pendingStateKeys = new Set<WindowStateKey>();
+  const pendingRoutes = new Map<WindowStateKey, string>();
+
+  // The first app page load after a restart reopens the saved route.
+  function urlForWindow(stateKey: WindowStateKey, url: string): string {
+    const route = pendingRoutes.get(stateKey);
+    if (route === undefined || routeFromUrl(url) === null) {
+      return url;
+    }
+    pendingRoutes.delete(stateKey);
+    return applyRoute(url, route);
+  }
 
   async function createWindow(
     createArgs: CreateDesktopWindowArgs,
@@ -255,6 +288,7 @@ export function createDesktopWindowFactory(
       });
       browserWindow.on("closed", () => {
         activeWindows.delete(stateKey);
+        pendingRoutes.delete(stateKey);
         if (!args.isQuitting()) {
           void removePersistedWindowState({
             stateKey,
@@ -270,7 +304,7 @@ export function createDesktopWindowFactory(
       if (createArgs.initialUrl !== null) {
         await loadUrlIntoWindow({
           browserWindow,
-          url: createArgs.initialUrl,
+          url: urlForWindow(stateKey, createArgs.initialUrl),
         });
       }
 
@@ -297,6 +331,9 @@ export function createDesktopWindowFactory(
 
     const restoredWindows: DesktopBrowserWindow[] = [];
     for (const entry of entries) {
+      if (entry.route !== undefined) {
+        pendingRoutes.set(entry.stateKey, entry.route);
+      }
       restoredWindows.push(
         await createWindow({
           initialUrl: restoreArgs.initialUrl,
@@ -309,11 +346,11 @@ export function createDesktopWindowFactory(
 
   async function loadUrl(args: LoadDesktopWindowsUrlArgs): Promise<void> {
     const loadPromises: Promise<void>[] = [];
-    for (const browserWindow of activeWindows.values()) {
+    for (const [stateKey, browserWindow] of activeWindows.entries()) {
       loadPromises.push(
         loadUrlIntoWindow({
           browserWindow,
-          url: args.url,
+          url: urlForWindow(stateKey, args.url),
         }),
       );
     }
@@ -340,7 +377,11 @@ export function createDesktopWindowFactory(
   async function persistOpenWindows(): Promise<void> {
     const snapshots: PersistBrowserWindowStateSnapshot[] = [];
     for (const [stateKey, browserWindow] of activeWindows.entries()) {
-      snapshots.push({ browserWindow, stateKey });
+      const route =
+        routeFromUrl(browserWindow.webContents.getURL()) ??
+        pendingRoutes.get(stateKey) ??
+        null;
+      snapshots.push({ browserWindow, route, stateKey });
     }
 
     await persistBrowserWindowStates({

@@ -30,6 +30,7 @@ export interface PersistedWindowState {
 }
 
 export interface PersistedWindowStateEntry extends PersistedWindowState {
+  route?: string;
   stateKey: WindowStateKey;
 }
 

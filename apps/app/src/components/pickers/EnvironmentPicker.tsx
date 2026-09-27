@@ -1165,6 +1165,7 @@ function EnvironmentMenuItem({
           alignIconWithMachine
             ? "!size-full"
             : COARSE_POINTER_COMPACT_ICON_SIZE_SHRINK_CLASS,
+          icon === "Cloud" && "text-primary [&_path]:stroke-[1.9]",
         )}
       />
     ) : (

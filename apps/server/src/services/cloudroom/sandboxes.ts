@@ -19,6 +19,8 @@ const viewSchema = z.object({
 type View = z.infer<typeof viewSchema>;
 export type SandboxAccount = { website: string; userId: string; token: string };
 export type SandboxConnection = { url: string; token: string };
+/** Logins the website keeps for every sandbox of an account (ADR 0145). */
+export type SandboxLogin = "claude" | "codex" | "pi" | "github" | "cursor";
 /** GitHub projects also name their repository and cloud folder, so the website can build a template. */
 export type SandboxProject = { id: string; repository: string | null; folder: string };
 // A sleeping sandbox is only looked up again after this long; sending work wakes it at once.
@@ -99,6 +101,14 @@ export class SandboxDirectory {
 
   wokeSince(thread: string, at: number): boolean { return (this.wakeStarts.get(thread) ?? 0) >= at; }
 
+  private warmed: { project: string; at: number } | null = null;
+  /** Asks the website to keep a hot spare sandbox for this project's next cloud thread. At most once a minute per project. */
+  async warm(project: SandboxProject): Promise<void> {
+    if (this.warmed?.project === project.id && Date.now() - this.warmed.at < RECHECK_MS) return;
+    this.warmed = { project: project.id, at: Date.now() };
+    await this.call({ action: "warm", project: project.id, ...(project.repository ? { repository: project.repository, folder: project.folder } : {}) });
+  }
+
   /** A broken stream or failed request may mean the sandbox went to sleep; look it up again next time. */
   forget(thread: string): void { this.views.delete(thread); }
 
@@ -107,7 +117,7 @@ export class SandboxDirectory {
   async remove(thread: string): Promise<void> { this.forget(thread); await this.call({ action: "remove", thread }); }
 
   /** Saves a login for every sandbox of this account (ADR 0145), skipping values already uploaded. */
-  async saveLogin(name: "claude" | "codex" | "pi" | "github", value: string): Promise<void> {
+  async saveLogin(name: SandboxLogin, value: string): Promise<void> {
     const digest = createHash("sha256").update(value).digest("hex");
     if (this.uploaded.get(name) === digest) return;
     await this.call({ name, value }, "logins");
@@ -115,11 +125,13 @@ export class SandboxDirectory {
   }
 
   /** Which logins the website holds for this account's sandboxes. */
-  async logins(): Promise<Record<"claude" | "codex" | "pi" | "github", boolean>> {
-    return z.object({ claude: z.boolean(), codex: z.boolean(), pi: z.boolean(), github: z.boolean() }).parse(await this.call({ action: "status" }, "logins"));
+  async logins(): Promise<Record<SandboxLogin, boolean>> {
+    // Missing names mean an older website that cannot hold that login yet.
+    return z.object({ claude: z.boolean(), codex: z.boolean(), pi: z.boolean(), github: z.boolean(), cursor: z.boolean().default(false) }).parse(await this.call({ action: "status" }, "logins"));
   }
 
   private copiedAt = 0;
+  get loginsCopied(): boolean { return this.copiedAt > 0; }
   /** Copies this Mac's Codex, Pi, and GitHub logins when the user allowed it (ADRs 0128, 0130). At most once a minute. */
   async copyMacLogins(): Promise<void> {
     if (Date.now() - this.copiedAt < RECHECK_MS) return;

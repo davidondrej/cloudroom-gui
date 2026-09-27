@@ -20,7 +20,7 @@ import { inferThreadMetadata } from "../threads/thread-metadata-inference.js";
 import { copyLogins, importCodexLogin, importPiLogin, setupSync, stopSync, syncStatus } from "./sync.js";
 import { setupPreviews, stopPreviews, previewStatus } from "./previews.js";
 import { CloudSecrets } from "./secrets.js";
-import { SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread } from "./sandboxes.js";
+import { SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject } from "./sandboxes.js";
 import type { AppDeps, LoggedWorkSessionDeps } from "../../types.js";
 import type { EditMessageRequest, EditMessageResponse } from "@bb/server-contract";
 
@@ -185,7 +185,9 @@ function coreModel(harness: CloudProvider, model: string, capabilities: z.infer<
 function validateReasoning(harness: string, model: string, reasoning: string, capabilities: z.infer<typeof capabilitiesSchema>): void {
   const profile = harnessProfile(capabilities, harness);
   if (profile?.models === null) throw new ApiError(503, "model_catalog_unavailable", "Cloud model discovery is unavailable. Try again when the cloud harness is ready.");
-  const levels = profile?.models ? profile.models.find((item) => item.model === model)?.reasoning_levels : profile?.reasoning_levels;
+  // Claude runs exact models its catalog omits, such as claude-opus-5-5[1m]; core allows any VM level (ADR 0133).
+  const anyLevel = harness === "claude-code" ? [...new Set(profile?.models?.flatMap((item) => item.reasoning_levels))] : undefined;
+  const levels = profile?.models ? (profile.models.find((item) => item.model === model)?.reasoning_levels ?? anyLevel) : profile?.reasoning_levels;
   if (profile?.models && !levels) throw new ApiError(400, "invalid_model", "This model is unavailable on Cloud. Refresh the model selection.");
   if (!levels?.includes(reasoning)) throw new ApiError(400, "invalid_reasoning_effort", "This reasoning level is unavailable for the cloud model. Select a supported level.");
 }
@@ -310,6 +312,8 @@ class CloudroomService {
   private onboardingDue = 0;
   private reportingOnboarding = false;
   private lastCapabilities: Capabilities | null = null;
+  /** What sandboxes run, kept apart from a VM's: an account with both starts new threads in sandboxes. */
+  private sandboxCapabilities: Capabilities | null = null;
   private readonly secrets: CloudSecrets;
   readonly sandboxes: SandboxDirectory;
   constructor(private readonly deps: Deps) {
@@ -340,18 +344,20 @@ class CloudroomService {
 
   private get capabilitiesPath() { return join(this.deps.config.dataDir, "cloudroom-capability-cache.json"); }
 
-  /** Sandboxes sleep, so remember the latest capabilities for the model picker. */
-  private async rememberCapabilities(capabilities: Capabilities): Promise<void> {
-    const changed = JSON.stringify(this.lastCapabilities) !== JSON.stringify(capabilities);
+  /** Sandboxes sleep, so remember the latest sandbox capabilities for the model picker. */
+  private async rememberCapabilities(capabilities: Capabilities, sandbox: boolean): Promise<void> {
     this.lastCapabilities = capabilities;
+    if (!sandbox) return;
+    const changed = JSON.stringify(this.sandboxCapabilities) !== JSON.stringify(capabilities);
+    this.sandboxCapabilities = capabilities;
     if (changed) await writeFile(this.capabilitiesPath, JSON.stringify(capabilities), { mode: 0o600 }).catch(() => {});
   }
 
   private async savedCapabilities(): Promise<Capabilities | null> {
-    if (this.lastCapabilities) return this.lastCapabilities;
-    try { this.lastCapabilities = capabilitiesSchema.parse(JSON.parse(await readFile(this.capabilitiesPath, "utf8"))); }
+    if (this.sandboxCapabilities) return this.sandboxCapabilities;
+    try { this.sandboxCapabilities = capabilitiesSchema.parse(JSON.parse(await readFile(this.capabilitiesPath, "utf8"))); }
     catch { return null; }
-    return this.lastCapabilities;
+    return this.sandboxCapabilities;
   }
 
   private get path() { return join(this.deps.config.dataDir, "cloudroom.json"); }
@@ -394,9 +400,12 @@ class CloudroomService {
   private async client(saved?: Binding, wake = true): Promise<CloudroomClient> {
     const sandbox = saved ? sandboxThread(saved.coreUrl) : null;
     if (sandbox) {
-      if (wake) await Promise.all([this.uploadMacLogins(), this.uploadMacConfig()]);
-      const project = getProject(this.deps.db, getThread(this.deps.db, sandbox)?.projectId ?? PERSONAL_PROJECT_ID);
-      const found = await this.sandboxes.connection(sandbox, { id: project?.id ?? PERSONAL_PROJECT_ID, repository: project && project.id !== PERSONAL_PROJECT_ID ? githubRepository(project.gitRemoteUrl) : null, folder: workspaceName(project?.name ?? "project") }, wake);
+      if (wake) {
+        void this.uploadMacConfig();
+        const logins = this.uploadMacLogins();
+        if (!this.sandboxes.loginsCopied) await logins;
+      }
+      const found = await this.sandboxes.connection(sandbox, this.sandboxProject(getThread(this.deps.db, sandbox)?.projectId), wake);
       if (!found) throw new SandboxAsleep();
       return new CloudroomClient(found);
     }
@@ -476,6 +485,18 @@ class CloudroomService {
       }
       await stopSync(this.deps);
     });
+  }
+
+  private sandboxProject(projectId = PERSONAL_PROJECT_ID): SandboxProject {
+    const project = getProject(this.deps.db, projectId);
+    return { id: project?.id ?? PERSONAL_PROJECT_ID, repository: project && project.id !== PERSONAL_PROJECT_ID ? githubRepository(project.gitRemoteUrl) : null, folder: workspaceName(project?.name ?? "project") };
+  }
+
+  async warmSandbox(projectId: string): Promise<void> {
+    if (!await this.newThreadsInSandboxes()) return;
+    await this.uploadMacLogins();
+    void this.uploadMacConfig();
+    await this.sandboxes.warm(this.sandboxProject(projectId));
   }
 
   async selectOnboardingProject(projectId: string): Promise<void> {
@@ -559,8 +580,8 @@ class CloudroomService {
       const saved = await this.savedConnection();
       account = saved?.token ? saved.account ?? null : null;
       projectId = saved?.projectId ?? null;
-      if (saved?.sandboxToken && saved.account && !saved.token) {
-        // Sandboxes sleep between tasks; report the latest capabilities instead of waking one.
+      if (saved?.sandboxToken && saved.account && await this.newThreadsInSandboxes()) {
+        // New threads start in sandboxes, which sleep between tasks; report their latest capabilities, never a VM's.
         const capabilities = await this.savedCapabilities();
         // The preview helper reaches every awake sandbox through the website (docs/scopes/sandboxes.md).
         if (capabilities) void this.ensurePreviews(capabilities);
@@ -600,10 +621,10 @@ class CloudroomService {
     catch (error) { throw new ApiError(error instanceof CloudroomError && error.status === 409 ? 409 : 503, "cloudroom_vm_run", publicError(error)); }
   }
 
-  /** Sandbox accounts keep logins on the website, and every sandbox receives them when it wakes (ADR 0145). */
-  private async sandboxLogin(name: "claude" | "codex"): Promise<CodexAuthStatus | null> {
-    const saved = await this.savedConnection();
-    if (!saved?.sandboxToken || !saved.account || saved.token) return null;
+  /** Sandbox accounts keep logins on the website, and every sandbox receives them when it wakes (ADR 0145).
+   *  This includes accounts that still have a VM: their new threads run in sandboxes. */
+  private async sandboxLogin(name: "claude" | "codex" | "cursor"): Promise<CodexAuthStatus | null> {
+    if (!await this.newThreadsInSandboxes()) return null;
     const logins = await this.sandboxes.logins().catch((error: unknown) => { throw new ApiError(503, `${name}_auth_unavailable`, publicError(error)); });
     return { state: logins[name] ? "connected" : "missing", email: null, plan: null, message: null, login_id: null, verification_url: null, user_code: null };
   }
@@ -622,8 +643,13 @@ class CloudroomService {
       if (action === "token" && code) await this.sandboxes.saveLogin("claude", JSON.stringify({ token: code, ...(state ? { plan: state } : {}) }));
       else if (action === "key" && code) await this.sandboxes.saveLogin("claude", JSON.stringify({ apiKey: code }));
       else if (action === "login" || action === "complete") throw new ApiError(409, "claude_auth_unsupported", "Cloud sandboxes connect Claude with a one-year token from this Mac. Use Connect Claude.");
+      if ((action === "token" || action === "key") && code && (await this.savedConnection())?.token) await this.vmClaudeAuth(action, requestId, code, state).catch(error => this.warn("Claude could not be connected on the VM", error));
       return action === "token" || action === "key" ? { ...sandbox, state: "connected" as const } : sandbox;
     }
+    return this.vmClaudeAuth(action, requestId, code, state);
+  }
+
+  private async vmClaudeAuth(action?: "login" | "cancel" | "complete" | "token" | "key", requestId?: string, code?: string, state?: string) {
     const client = await this.client();
     const capabilities = await this.capabilities(client);
     if (!capabilities.claude_auth) throw new ApiError(409, "claude_auth_unsupported", "Update the cloud core to connect Claude from this app.");
@@ -632,6 +658,20 @@ class CloudroomService {
   }
 
   async cursorAuth(action?: "login" | "cancel" | "key", requestId?: string, apiKey?: string) {
+    const sandbox = await this.sandboxLogin("cursor");
+    if (sandbox) {
+      if (action === "login") throw new ApiError(409, "cursor_auth_unsupported", "Cloud sandboxes connect Cursor with an API key. Use a Cursor API key instead.");
+      if (action !== "key") return sandbox.state === "connected" ? sandbox : { ...sandbox, state: "limited" as const, message: "Cloud sandboxes use a Cursor user API key. Create one in your Cursor dashboard, then paste it below." };
+      const key = apiKey?.trim() ?? "";
+      if (!/^[\x21-\x7e]{1,4096}$/.test(key)) throw new ApiError(400, "invalid_request", "Enter a valid Cursor API key.");
+      await this.sandboxes.saveLogin("cursor", JSON.stringify({ apiKey: key }));
+      if ((await this.savedConnection())?.token) await this.vmCursorAuth(action, requestId, key).catch(error => this.warn("Cursor could not be connected on the VM", error));
+      return { ...sandbox, state: "connected" as const };
+    }
+    return this.vmCursorAuth(action, requestId, apiKey);
+  }
+
+  private async vmCursorAuth(action?: "login" | "cancel" | "key", requestId?: string, apiKey?: string) {
     const client = await this.client();
     const capabilities = await this.capabilities(client);
     if (!capabilities.cursor_auth) throw new ApiError(409, "cursor_auth_unsupported", "Update the cloud core to connect Cursor from this app.");
@@ -746,7 +786,8 @@ class CloudroomService {
       return getThread(this.deps.db, previous.id)!;
     }
     const remoteModel = capabilities ? coreModel(request.providerId, model, capabilities) : null;
-    if (capabilities && remoteModel) validateReasoning(request.providerId, remoteModel.model, reasoning, capabilities);
+    // A sleeping sandbox's saved catalog may predate a login (say, Cursor's key); its Core checks the model at start.
+    if (capabilities && remoteModel && !(sandbox && profile?.models === null)) validateReasoning(request.providerId, remoteModel.model, reasoning, capabilities);
     const workspace = project.id === PERSONAL_PROJECT_ID ? { workspace: ROOT_WORKSPACE } : { workspace: workspaceId(project.id), workspace_name: workspaceName(project.name) };
     const providerId = request.providerId;
     const thread = this.deps.db.transaction((tx) => {
@@ -1195,7 +1236,7 @@ class CloudroomService {
       }
       const capabilities = await this.capabilities(client);
       if (epoch !== this.epoch) return;
-      await this.rememberCapabilities(capabilities);
+      await this.rememberCapabilities(capabilities, Boolean(sandboxThread(saved.coreUrl)));
       if (!saved.sessionId) {
         deliveringCommand = true;
         const harness = getThread(this.deps.db, threadId)?.providerId;

@@ -463,9 +463,12 @@ export function NewThreadComposer({
   const isProjectless = isProjectlessProjectId(projectId);
   useEffect(() => {
     if (executionTarget !== "cloud" || !cloudConnection.data?.ready) return;
-    void fetchWithAppSurface("/api/v1/cloudroom/account/project", {
+    const select = () => void fetchWithAppSurface("/api/v1/cloudroom/account/project", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ projectId }),
     }).catch(() => {});
+    select();
+    const timer = setInterval(() => { if (document.visibilityState === "visible") select(); }, 5 * 60_000);
+    return () => clearInterval(timer);
   }, [executionTarget, projectId, cloudConnection.data?.ready]);
   const currentProject = useMemo(() => {
     if (isProjectless) {
