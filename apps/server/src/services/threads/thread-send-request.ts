@@ -19,9 +19,10 @@ export async function acceptThreadSendRequest(
   args: AcceptThreadSendRequestArgs,
 ): Promise<SendMessageResponse> {
   if (isCloudThread(args.thread)) {
+    const sentAt = Date.now();
     const response = await cloudroom(deps).send(args.thread, args.payload);
     if (!args.payload.senderThreadId && args.payload.input.length > 0) {
-      captureUserMessageSentTelemetry(deps, { execution: cloudExecution(deps, args.thread.id), isChildThread: args.thread.parentThreadId !== null, messageSource: "thread_send", providerId: args.thread.providerId, threadId: args.thread.id });
+      captureUserMessageSentTelemetry(deps, { execution: cloudExecution(deps, args.thread.id), isChildThread: args.thread.parentThreadId !== null, messageSource: "thread_send", providerId: args.thread.providerId, sentAt, threadId: args.thread.id });
     }
     return response;
   }

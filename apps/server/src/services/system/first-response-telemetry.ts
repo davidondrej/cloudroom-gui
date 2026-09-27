@@ -69,6 +69,7 @@ export function installFirstResponseTelemetry(
 export function noteMessageSent(
   threadId: string,
   message: Omit<SentMessage, "afterSequence" | "sentAt">,
+  sentAt = Date.now(),
 ): void {
   if (!tracker) return;
   const latest = tracker.db
@@ -89,7 +90,7 @@ export function noteMessageSent(
     tracker.pending.delete(threadId);
     return;
   }
-  tracker.pending.set(threadId, { ...message, afterSequence: latest?.sequence ?? 0, sentAt: Date.now() });
+  tracker.pending.set(threadId, { ...message, afterSequence: latest?.sequence ?? 0, sentAt });
 }
 
 function hasOutputAfter(db: DbConnection, threadId: string, afterSequence: number): boolean {

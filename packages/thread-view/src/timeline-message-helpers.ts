@@ -25,7 +25,8 @@ export function isTimelineUngroupableMessage(
   if (message.kind === "assistant-text") {
     return message.isLegacyUserMessage === true;
   }
-  return false;
+  // A generated image is a result the user asked for, not background work.
+  return message.kind === "image-generation";
 }
 
 export function isSingletonContextManagementOperation(

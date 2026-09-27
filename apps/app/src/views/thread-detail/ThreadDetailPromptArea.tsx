@@ -3,9 +3,9 @@ import { TeleportNotice } from "@/components/thread/TeleportNotice";
 import { TeleportCheckCard } from "@/components/thread/TeleportCheckCard";
 import { ProjectCopyNotice } from "@/components/thread/ProjectCopyNotice";
 import { FixPrompt } from "@/components/ui/fix-prompt";
-import { cloudLoginFixPrompt, cloudThreadFixPrompt } from "@/lib/fix-prompts";
+import { cloudThreadFixPrompt } from "@/lib/fix-prompts";
 import { canTeleportLocalThread, canTeleportThread } from "@/components/thread/ThreadActionsMenu";
-import { ClaudeConnectionButton } from "@/components/ClaudeConnection";
+import { ClaudeCloudSignIn } from "@/components/ClaudeConnection";
 import { openCodexConnection, openCursorConnection } from "@/components/CodexConnectionPanel";
 import {
   useCallback,
@@ -442,7 +442,7 @@ export function ThreadDetailPromptArea({
   const claudeThread = thread.providerId === "claude-code";
   const openCloudConnection = thread.providerId === "acp-cursor" ? openCursorConnection : openCodexConnection;
   useEffect(() => {
-    // Claude connects through its own popover in the cloud notice below.
+    // Claude connects through its own sign-in card in the cloud notice below.
     if (cloudState.data?.authRequired && !claudeThread) openCloudConnection(authThreadId);
   }, [cloudState.data?.authRequired, claudeThread, authThreadId, openCloudConnection]);
   const cloudWorkspace = useCloudroomThreadWorkspace(
@@ -2333,16 +2333,27 @@ export function ThreadDetailPromptArea({
   const cloudStarting = isCloud && !cloudError && !cloudState.data?.paused && !cloudState.data?.failedStart &&
     (cloudState.data?.starting ?? ["pending", "starting"].includes(thread.status));
   const cloudReconnecting = !cloudError && cloudState.data?.reconnecting;
-  const cloudFixPrompt = cloudState.data?.authRequired
-    ? cloudLoginFixPrompt(thread.id, thread.providerId)
-    : cloudError || cloudState.data?.failedStart ? cloudThreadFixPrompt(thread.id, thread.providerId, cloudError) : null;
-  const cloudNotice = isCloud && !shouldHideComposer && (cloudError || cloudReconnecting || cloudState.data?.failedStart || cloudState.data?.paused) ? (
+  const cloudFixPrompt = cloudError || cloudState.data?.failedStart ? cloudThreadFixPrompt(thread.id, thread.providerId, cloudError) : null;
+  const cloudAuthNotice = isCloud && !shouldHideComposer && cloudState.data?.authRequired ? (
+    <PromptStackCard ariaLabel="Connect your account" className="w-full max-w-sm justify-self-center p-3 text-xs">
+      {claudeThread ? <ClaudeCloudSignIn onContinue={() => retryCloudStart.mutate()} continuing={retryCloudStart.isPending} /> : (
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <p className="text-sm font-medium">Connect {thread.providerId === "acp-cursor" ? "Cursor" : "Codex"} to start</p>
+            <p className="text-muted-foreground">Your message is saved.</p>
+          </div>
+          <Button type="button" size="sm" className="h-7 text-xs" onClick={() => openCloudConnection(thread.id)}>Connect</Button>
+        </div>
+      )}
+      {retryCloudStart.error && <p role="alert" className="mt-2 text-destructive">{retryCloudStart.error.message}</p>}
+    </PromptStackCard>
+  ) : null;
+  const cloudNotice = cloudAuthNotice ?? (isCloud && !shouldHideComposer && (cloudError || cloudReconnecting || cloudState.data?.failedStart || cloudState.data?.paused) ? (
     <PromptStackCard ariaLabel="Cloud thread status" className="space-y-2 p-3 text-xs">
       {cloudError && <div role="alert" className="whitespace-pre-wrap break-words text-destructive">{cloudError}</div>}
       {cloudReconnecting && <div role="status" className="text-muted-foreground">Reconnecting…</div>}
       <div className="flex items-center gap-2">
-        {cloudState.data?.authRequired && claudeThread && <ClaudeConnectionButton target="cloud" presentation="notice" defaultOpen />}
-        {cloudState.data?.authRequired && !claudeThread ? <Button type="button" size="sm" variant="outline" onClick={() => openCloudConnection(thread.id)}>Connect {thread.providerId === "acp-cursor" ? "Cursor" : "Codex"}</Button> : cloudState.data?.failedStart && <Button type="button" size="sm" variant="outline" disabled={retryCloudStart.isPending} onClick={() => retryCloudStart.mutate()}>Retry start</Button>}
+        {cloudState.data?.failedStart && <Button type="button" size="sm" variant="outline" disabled={retryCloudStart.isPending} onClick={() => retryCloudStart.mutate()}>Retry start</Button>}
         {cloudState.isError && <Button type="button" size="sm" variant="outline" disabled={cloudState.isFetching} onClick={() => void cloudState.refetch()}>Reconnect</Button>}
         {cloudState.data?.paused && <>
           <span className="text-muted-foreground">Queue paused</span>
@@ -2355,7 +2366,7 @@ export function ThreadDetailPromptArea({
       </div>
       {cloudFixPrompt && <FixPrompt prompt={cloudFixPrompt} />}
     </PromptStackCard>
-  ) : null;
+  ) : null);
 
   const bottomContent = (
     <FollowUpPromptBox

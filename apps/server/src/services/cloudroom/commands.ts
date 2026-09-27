@@ -312,6 +312,8 @@ class CloudroomService {
   private onboardingDue = 0;
   private reportingOnboarding = false;
   private lastCapabilities: Capabilities | null = null;
+  private claudeConnected: boolean | null = null;
+  private readonly resumingStarts = new Set<string>();
   /** What sandboxes run, kept apart from a VM's: an account with both starts new threads in sandboxes. */
   private sandboxCapabilities: Capabilities | null = null;
   private readonly secrets: CloudSecrets;
@@ -652,6 +654,35 @@ class CloudroomService {
   }
 
   async claudeAuth(action?: "login" | "cancel" | "complete" | "token" | "key", requestId?: string, code?: string, state?: string) {
+    const status = await this.claudeAuthStatus(action, requestId, code, state);
+    const connected = status.state === "connected";
+    // The code sign-in finishes in the background, so a status check that first sees Claude connected also resumes.
+    if (connected && (action || !this.claudeConnected)) this.resumeClaudeStarts();
+    this.claudeConnected = connected;
+    return status;
+  }
+
+  /** Starts that waited for a Claude sign-in continue on their own. Later tries cover a login still reaching an awake sandbox. */
+  private resumeClaudeStarts(): void {
+    const waiting = (threadId: string) => {
+      const saved = binding(this.deps.db, threadId);
+      const thread = getThread(this.deps.db, threadId);
+      return Boolean(saved && !saved.sessionId && authRequiredMessages.has(saved.error ?? "") && thread?.providerId === "claude-code" && !thread.archivedAt && !thread.deletedAt);
+    };
+    for (const { threadId } of bindings(this.deps.db)) {
+      if (this.resumingStarts.has(threadId) || !waiting(threadId)) continue;
+      this.resumingStarts.add(threadId);
+      void (async () => {
+        for (const wait of [0, 3_000, 10_000]) {
+          await new Promise(resolve => setTimeout(resolve, wait).unref());
+          if (this.stopped || !waiting(threadId)) return;
+          await this.retryStart(threadId).catch(error => this.warn("Cloud start could not continue after Claude sign-in", error, { threadId }));
+        }
+      })().finally(() => this.resumingStarts.delete(threadId));
+    }
+  }
+
+  private async claudeAuthStatus(action?: "login" | "cancel" | "complete" | "token" | "key", requestId?: string, code?: string, state?: string) {
     const sandbox = await this.sandboxLogin("claude");
     if (sandbox) {
       if (action === "token" && code) await this.sandboxes.saveLogin("claude", JSON.stringify({ token: code, ...(state ? { plan: state } : {}) }));
@@ -1137,12 +1168,16 @@ class CloudroomService {
     this.holdRejectedStart(threadId);
     const saved = binding(this.deps.db, threadId);
     const thread = getThread(this.deps.db, threadId);
-    if (!saved || !thread || thread.archivedAt || thread.deletedAt || saved.sessionId || command(this.deps.db, `first_${threadId}`)?.state !== "failed") throw new ApiError(409, "cloudroom_retry", "Only a rejected cloud start can be retried here.");
+    const first = command(this.deps.db, `first_${threadId}`)?.state;
+    if (saved && !saved.sessionId && (first === "sending" || first === "accepted")) return;
+    if (!saved || !thread || thread.archivedAt || thread.deletedAt || saved.sessionId || first !== "failed") throw new ApiError(409, "cloudroom_retry", "Only a rejected cloud start can be retried here.");
     const client = await this.client(saved);
     const capabilities = await this.capabilities(client);
     const harness = thread.providerId;
     if (!isCloudProvider(harness)) throw new ApiError(400, "cloudroom_harness", "Unsupported cloud harness.");
     validateReasoning(harness, coreModel(harness, saved.model, capabilities).model, saved.reasoning, capabilities);
+    // A retry can start from the sign-in resume and a click at once; only the first one past the awaits sends.
+    if (command(this.deps.db, `first_${threadId}`)?.state !== "failed") return;
     this.deps.db.transaction((tx) => {
       saveCommandState(tx, threadId, `first_${threadId}`, "sending");
       saveBinding(tx, threadId, { error: null });
@@ -1215,6 +1250,7 @@ class CloudroomService {
   stop(): void {
     this.epoch++;
     this.previewRetryAt = 0;
+    this.claudeConnected = null;
     this.stopped = true;
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
@@ -1248,9 +1284,11 @@ class CloudroomService {
         this.follow(saved, client);
         if (!commands(this.deps.db, threadId).some(c => c.state === "sending")) { this.setConnectionIssue(threadId, "delivery"); return; }
       }
-      const capabilities = await this.capabilities(client);
+      const known = !saved.sessionId && sandboxThread(saved.coreUrl) ? await this.savedCapabilities() : null;
+      const firstStartCapabilities = known && harnessProfile(known, getThread(this.deps.db, threadId)?.providerId ?? "") ? known : null;
+      const capabilities = firstStartCapabilities ?? await this.capabilities(client);
       if (epoch !== this.epoch) return;
-      await this.rememberCapabilities(capabilities, Boolean(sandboxThread(saved.coreUrl)));
+      if (!firstStartCapabilities) await this.rememberCapabilities(capabilities, Boolean(sandboxThread(saved.coreUrl)));
       if (!saved.sessionId) {
         deliveringCommand = true;
         const harness = getThread(this.deps.db, threadId)?.providerId;

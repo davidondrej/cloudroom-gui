@@ -382,6 +382,7 @@ export function captureUserMessageSentTelemetry(
     isChildThread: boolean;
     messageSource: UserMessageSentProperties["message_source"];
     providerId: string;
+    sentAt?: number;
     threadId: string;
   },
 ): void {
@@ -389,7 +390,7 @@ export function captureUserMessageSentTelemetry(
     execution: args.execution ?? "local",
     isChildThread: args.isChildThread,
     provider: args.providerId,
-  });
+  }, args.sentAt);
   deps.telemetry.capture({
     name: "user_message_sent",
     properties: {

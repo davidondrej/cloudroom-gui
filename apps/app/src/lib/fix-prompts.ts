@@ -14,12 +14,6 @@ export const cloudThreadFixPrompt = (threadId: string, agent: string, error?: st
     `Investigate with \`cloudroom thread show ${threadId}\` and \`cloudroom vm run '<command>'\` on my cloud VM.`,
   );
 
-export const cloudLoginFixPrompt = (threadId: string, agent: string) =>
-  fixPrompt(
-    `My Cloudroom Cloud thread ${threadId} needs ${agent} signed in on my cloud VM.`,
-    "Check it with `cloudroom cloud status --json` and `cloudroom vm run '<command>'`, then help me sign in there without pasting tokens into chat.",
-  );
-
 export const syncFixPrompt = (state: string, issue?: string | null) =>
   fixPrompt(
     `Cloudroom's automatic sync between this computer and my cloud VM is not working (state: ${state})${said(issue)}`,

@@ -34,6 +34,8 @@ import { isPreStartThreadStatus } from "./thread-status.js";
 import { cloudroom, isCloudThread } from "../cloudroom/commands.js";
 import { teleports } from "../cloudroom/teleport.js";
 
+type ThreadRow = ReturnType<typeof listNonDeletedChildThreads>[number];
+
 interface ArchiveThreadEnvironment {
   hostId: string;
   id: string;
@@ -158,19 +160,16 @@ export function archiveEnvironmentThreads(
   return archivedThreadIds;
 }
 
-export function archiveThreadAndChildren(
-  deps: AppDeps,
-  args: ArchiveThreadAndChildrenArgs,
-): string[] {
-  type ArchiveCandidate = Pick<
-    Thread,
-    "id" | "environmentId" | "status" | "archivedAt" | "executionTarget"
-  >;
-  const pending: { thread: ArchiveCandidate; expanded: boolean }[] = [
-    { thread: args.parentThread, expanded: false },
+/** Lists a thread plus its child threads and hidden forks, children first. */
+export function listThreadWithDescendants<T extends Pick<Thread, "id">>(
+  deps: Pick<AppDeps, "db">,
+  root: T,
+): (T | ThreadRow)[] {
+  const pending: { thread: T | ThreadRow; expanded: boolean }[] = [
+    { thread: root, expanded: false },
   ];
   const visited = new Set<string>();
-  const threads: ArchiveCandidate[] = [];
+  const threads: (T | ThreadRow)[] = [];
 
   while (pending.length > 0) {
     const entry = pending.pop();
@@ -179,9 +178,7 @@ export function archiveThreadAndChildren(
     }
     const { thread, expanded } = entry;
     if (expanded) {
-      if (thread.archivedAt === null) {
-        threads.push(thread);
-      }
+      threads.push(thread);
       continue;
     }
     if (visited.has(thread.id)) {
@@ -201,6 +198,16 @@ export function archiveThreadAndChildren(
       pending.push({ thread: descendant, expanded: false });
     }
   }
+  return threads;
+}
+
+export function archiveThreadAndChildren(
+  deps: AppDeps,
+  args: ArchiveThreadAndChildrenArgs,
+): string[] {
+  const threads = listThreadWithDescendants(deps, args.parentThread).filter(
+    (thread) => thread.archivedAt === null,
+  );
   const archivedThreadIds: string[] = [];
 
   for (const thread of threads) {

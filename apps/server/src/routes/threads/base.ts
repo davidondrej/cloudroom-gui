@@ -48,6 +48,7 @@ import {
 import { listRunningThreadsWithIntendedHosts } from "../../services/threads/dispatch-attempt.js";
 import { dispatchThreadRenameCommand } from "../../services/threads/thread-commands.js";
 import { requestThreadStorageDeletion } from "../../services/threads/thread-lifecycle.js";
+import { listThreadWithDescendants } from "../../services/threads/thread-archive.js";
 import { createThreadFromRequest } from "../../services/threads/thread-create.js";
 import { createThreadForkFromRequest } from "../../services/threads/thread-fork.js";
 import { requireChildThreadsConfirmation } from "../../services/threads/child-thread-confirmation.js";
@@ -480,19 +481,22 @@ export function registerThreadBaseRoutes(app: Hono, deps: AppDeps): void {
       deps,
       thread,
     });
-    const deletedThread = markThreadDeleted(deps.db, deps.hub, {
-      threadId: thread.id,
-    });
-    if (deletedThread) emitPluginThreadDeleted(deletedThread);
-    cancelAbandonedProviderCreations(deps, thread.id);
-    deps.terminalSessions.closeDeletedThreadTerminals({ threadId: thread.id });
-    if (thread.environmentId === null) {
-      requestThreadStorageDeletion(deps, thread, null);
-      return context.json({ ok: true });
+    // Delete child threads and hidden forks too, the same set archive covers.
+    for (const target of listThreadWithDescendants(deps, thread)) {
+      const deletedThread = markThreadDeleted(deps.db, deps.hub, {
+        threadId: target.id,
+      });
+      if (deletedThread) emitPluginThreadDeleted(deletedThread);
+      cancelAbandonedProviderCreations(deps, target.id);
+      deps.terminalSessions.closeDeletedThreadTerminals({
+        threadId: target.id,
+      });
+      const environment =
+        target.environmentId === null
+          ? null
+          : getEnvironment(deps.db, target.environmentId);
+      requestThreadStorageDeletion(deps, target, environment);
     }
-
-    const environment = requireEnvironment(deps.db, thread.environmentId);
-    requestThreadStorageDeletion(deps, thread, environment);
     return context.json({ ok: true });
   });
 }

@@ -56,10 +56,9 @@ export function CloudroomAccountSettings() {
       {status.data?.signingIn ? <>
         <p role="status">Finish signing in and confirm your account in the browser.</p>
         <div className="flex gap-2">{signInUrl && <Button variant="outline" onClick={() => openUrlInExternalBrowser(signInUrl)}>Open browser again</Button>}<Button variant="outline" disabled={action.isPending} onClick={() => action.mutate("cancel")}>Cancel sign-in</Button></div>
-      </> : <div className="flex gap-2">{status.data?.account ? <>
-        <Button variant="outline" disabled={action.isPending} onClick={() => action.mutate("logout")}>Sign out of this app</Button>
-        <Button variant="ghost" onClick={() => void refresh()}>Check connection</Button>
-      </> : <Button disabled={action.isPending || status.isPending || status.isError} onClick={() => action.mutate("sign-in")}>Sign in to Cloudroom</Button>}</div>}
+      </> : <div className="flex gap-2">{status.data?.account
+        ? <Button variant="outline" disabled={action.isPending} onClick={() => action.mutate("logout")}>Sign out of this app</Button>
+        : <Button disabled={action.isPending || status.isPending || status.isError} onClick={() => action.mutate("sign-in")}>Sign in to Cloudroom</Button>}</div>}
       {ready && <div className="flex items-center justify-between gap-3 border-t pt-3"><span>Codex</span><Button variant="outline" onClick={() => openCodexConnection()}>Manage connection</Button></div>}
       {ready && <div className="flex items-center justify-between gap-3 border-t pt-3"><span>Cursor</span><Button variant="outline" onClick={() => openCursorConnection()}>Manage connection</Button></div>}
       <p className="text-xs text-muted-foreground">Signing out leaves cloud agents running and preserves local history. To switch accounts, sign out first. Existing cloud threads stay bound to their original account and VM.</p>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "@bb/shared-ui/button";
@@ -99,12 +99,10 @@ export function ClaudeConnectionButton({
   hostId,
   environmentId,
   presentation = "footer",
-  defaultOpen = false,
 }: ClaudeConnectionTarget & {
-  presentation?: "settings" | "footer" | "notice";
-  defaultOpen?: boolean;
+  presentation?: "settings" | "footer";
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState(false);
   const client = useQueryClient();
   const auth = useClaudeConnection({ target, hostId, environmentId });
   const connected = auth.data?.state === "connected";
@@ -124,13 +122,7 @@ export function ClaudeConnectionButton({
       <PopoverTrigger asChild>
         <Button
           type="button"
-          variant={
-            presentation === "settings"
-              ? "default"
-              : presentation === "notice"
-                ? "outline"
-                : "ghost"
-          }
+          variant={presentation === "settings" ? "default" : "ghost"}
           size={presentation === "settings" ? "default" : "sm"}
           className={
             presentation === "footer"
@@ -174,12 +166,50 @@ export function ClaudeConnectionButton({
   return popover;
 }
 
+export function ClaudeCloudSignIn({
+  onContinue,
+  continuing,
+}: {
+  onContinue: () => void;
+  continuing: boolean;
+}) {
+  const auth = useClaudeConnection({ target: "cloud" });
+  if (auth.data?.state === "connected")
+    return (
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <span>Claude is connected.</span>
+        <Button
+          type="button"
+          size="sm"
+          className="h-7 text-xs"
+          disabled={continuing}
+          onClick={onContinue}
+        >
+          {continuing ? "Starting…" : "Continue"}
+        </Button>
+      </div>
+    );
+  return (
+    <ClaudeConnectionPanel
+      target={{ target: "cloud" }}
+      heading={
+        <div>
+          <p className="text-sm font-medium">Connect Claude to start</p>
+          <p className="text-muted-foreground">Your message is saved.</p>
+        </div>
+      }
+    />
+  );
+}
+
 function ClaudeConnectionPanel({
   target,
   onClose,
+  heading,
 }: {
   target: ClaudeConnectionTarget;
-  onClose: () => void;
+  onClose?: () => void;
+  heading?: ReactNode;
 }) {
   const [code, setCode] = useState("");
   const [manual, setManual] = useState(false);
@@ -237,22 +267,26 @@ function ClaudeConnectionPanel({
   return (
     <div className="space-y-2 text-xs">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium">
-          Connect Claude{" "}
-          <span className="font-normal text-muted-foreground">
-            · {target.target === "cloud" ? "Cloud" : "Local"}
-          </span>
-        </p>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="Close"
-          className="size-6 shrink-0"
-          onClick={onClose}
-        >
-          <Icon name="X" className="size-3.5" />
-        </Button>
+        {heading ?? (
+          <p className="text-sm font-medium">
+            Connect Claude{" "}
+            <span className="font-normal text-muted-foreground">
+              · {target.target === "cloud" ? "Cloud" : "Local"}
+            </span>
+          </p>
+        )}
+        {onClose && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Close"
+            className="size-6 shrink-0"
+            onClick={onClose}
+          >
+            <Icon name="X" className="size-3.5" />
+          </Button>
+        )}
       </div>
       {error && (
         <p role="alert" className="text-destructive">

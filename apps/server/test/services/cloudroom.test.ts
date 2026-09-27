@@ -269,7 +269,7 @@ it.each(["invalid_reasoning_effort", "codex_auth_required"])("holds rejected clo
   const address = core.address();
   if (!address || typeof address === "string") throw new Error("fixture did not listen");
   const request = (path: string, body?: unknown) => harness.app.request(`/api/v1${path}`, { method: body === undefined ? "GET" : "POST", headers: { "Content-Type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
-  const input = { executionTarget: "cloud", requestId: "max-start", projectId: project.id, providerId: "codex", origin: "app", model: "test-model", reasoningLevel: "max", environment: { type: "project-default" }, input: [{ type: "text", text: "Keep this exact prompt", mentions: [] }] };
+  const input = { executionTarget: "cloud", requestId: "max-start", title: "Rejected start", projectId: project.id, providerId: "codex", origin: "app", model: "test-model", reasoningLevel: "max", environment: { type: "project-default" }, input: [{ type: "text", text: "Keep this exact prompt", mentions: [] }] };
   try {
     await service.configure({ url: `http://127.0.0.1:${address.port}`, token: "x".repeat(40), projectId: project.id });
     const invalid = await request("/threads", { ...input, reasoningLevel: "ultra" });
@@ -570,7 +570,7 @@ it.each([true, false, null])("starts without copying local files or waiting for 
   try {
     await service.configure({ url: `http://127.0.0.1:${address.port}`, token: "fixture-" + "x".repeat(40), projectId: project.id });
     available = false;
-    const created = await harness.app.request('/api/v1/threads', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ executionTarget:'cloud', requestId:'background-start', projectId:project.id, providerId:'codex', origin:'app', model:'test-model', reasoningLevel:'high', environment:{type:'project-default'}, input:[{type:'text',text:'Keep my message',mentions:[]}] }) });
+    const created = await harness.app.request('/api/v1/threads', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ executionTarget:'cloud', requestId:'background-start', title:'Background start', projectId:project.id, providerId:'codex', origin:'app', model:'test-model', reasoningLevel:'high', environment:{type:'project-default'}, input:[{type:'text',text:'Keep my message',mentions:[]}] }) });
     expect(created.status, await created.clone().text()).toBe(201);
     const thread = await created.json();
     expect(starts).toBe(0);

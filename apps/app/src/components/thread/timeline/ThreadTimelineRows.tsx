@@ -1595,7 +1595,8 @@ function TimelineExpandableRowView({
       leadingIconStyle={leadingIconStyle}
       autoExpanded={
         liveAutoExpandedRowIds.has(row.id) ||
-        initialAutoExpandedRowIds.has(row.id)
+        initialAutoExpandedRowIds.has(row.id) ||
+        (row.kind === "work" && row.workKind === "image-generation")
       }
       forceExpanded={searchExpandedRowIds.has(row.id)}
       terminalAutoExpanded={terminalAutoExpandedRowIds.has(row.id)}

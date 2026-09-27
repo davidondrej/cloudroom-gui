@@ -222,9 +222,10 @@ export async function createQueuedMessageForThread(
 ): Promise<ThreadQueuedMessage> {
   const { payload, thread } = args;
   if (isCloudThread(thread)) {
+    const sentAt = Date.now();
     const queued = await cloudroom(deps).queueMessage(thread, { ...payload, mode: "queue-if-active" });
     if (!payload.senderThreadId && payload.input.length > 0) {
-      captureUserMessageSentTelemetry(deps, { execution: cloudExecution(deps, thread.id), isChildThread: thread.parentThreadId !== null, messageSource: "queued_message", providerId: thread.providerId, threadId: thread.id });
+      captureUserMessageSentTelemetry(deps, { execution: cloudExecution(deps, thread.id), isChildThread: thread.parentThreadId !== null, messageSource: "queued_message", providerId: thread.providerId, sentAt, threadId: thread.id });
     }
     return queued;
   }

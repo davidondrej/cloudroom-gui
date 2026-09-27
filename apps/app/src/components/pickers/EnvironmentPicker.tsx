@@ -399,6 +399,9 @@ export function EnvironmentPickerUI({
                 className={cn(
                   COARSE_POINTER_COMPACT_ICON_SIZE_SHRINK_CLASS,
                   isLoading && "animate-spin",
+                  !isLoading &&
+                    selected.icon === "Cloud" &&
+                    "text-primary [&_path]:stroke-[1.9]",
                 )}
               />
             ) : (
