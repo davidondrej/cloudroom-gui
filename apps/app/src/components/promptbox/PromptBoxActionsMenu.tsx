@@ -182,6 +182,7 @@ export function PromptBoxActionsMenu({
             COARSE_POINTER_PROMPT_ICON_ACTION_BUTTON_CLASS,
             CHROME_SUBTLE_ICON_BUTTON_FOREGROUND_CLASS,
             "-ml-1.5",
+            "max-md:pointer-coarse:size-11 max-md:pointer-coarse:rounded-full max-md:pointer-coarse:px-0 max-md:pointer-coarse:text-foreground max-md:pointer-coarse:[&_[data-icon-root]]:size-6 max-md:pointer-coarse:[&_[data-icon-root]_path]:stroke-[1.75]",
           )}
         >
           <Icon name="Plus" className="size-4" />

@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
-import { basename, dirname, isAbsolute, join, sep } from "node:path";
+import { basename, dirname, extname, isAbsolute, join, sep } from "node:path";
 import { promisify } from "node:util";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import {
@@ -37,6 +37,7 @@ const VM_SESSIONS: Record<Harness, string> = {
   "claude-code": "$HOME/.claude/projects",
 };
 const CHUNK = 8 * 1024 * 1024;
+const VIEWABLE = /\.(png|jpe?g|gif|webp|heic|svg|pdf|zip|txt|md|csv|json|mp4|mov|mp3|wav)$/i;
 const exec = promisify(execFile);
 const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
 const moving = new Set<string>();
@@ -147,6 +148,24 @@ export async function copyToMac(deps: AppDeps, threadId: string): Promise<{ bran
   } finally {
     await rm(folder, { recursive: true, force: true });
   }
+}
+
+export async function openOnMac(deps: AppDeps, threadId: string, path: string): Promise<{ path: string }> {
+  if (getThread(deps.db, threadId)?.executionTarget !== "cloud")
+    throw new ApiError(409, "open_unavailable", "Only cloud threads have cloud files.");
+  const client = await cloudroom(deps).threadClient(threadId);
+  if ((await vm(client, `[ -f ${quote(path)} ] && echo file || echo missing`)).toString().trim() !== "file")
+    throw new ApiError(404, "cloud_file_missing", `${path} is not a file in the cloud.`);
+  const data = await download(client, path);
+  const folder = join(homedir(), "Downloads");
+  await mkdir(folder, { recursive: true });
+  const name = basename(path);
+  const stem = name.slice(0, name.length - extname(name).length);
+  let target = join(folder, name);
+  for (let copy = 2; existsSync(target); copy++) target = join(folder, `${stem} ${copy}${extname(name)}`);
+  await writeFile(target, data, { flag: "wx" });
+  await exec("open", VIEWABLE.test(target) ? [target] : ["-R", target]);
+  return { path: target };
 }
 
 async function localEnvironment(deps: AppDeps, thread: Thread) {

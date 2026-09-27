@@ -522,7 +522,7 @@ export async function createThreadFromRequest(
     // Cloud threads count in the same anonymous usage events as local ones, tagged with where they run.
     const execution = cloudExecution(deps, thread.id);
     deps.telemetry.capture({ name: "thread_created", properties: { execution, is_child_thread: false, provider: thread.providerId } });
-    if (rawRequestInput.input.length > 0) captureUserMessageSentTelemetry(deps, { execution, isChildThread: false, messageSource: "thread_create", providerId: thread.providerId });
+    if (rawRequestInput.input.length > 0) captureUserMessageSentTelemetry(deps, { execution, isChildThread: false, messageSource: "thread_create", providerId: thread.providerId, threadId: thread.id });
     return thread;
   }
   if (rawRequestInput.origin === "plugin") {
@@ -803,6 +803,7 @@ export async function createThreadFromRequest(
       isChildThread: parentThread !== null,
       messageSource: "thread_create",
       providerId: request.providerId,
+      threadId: thread.id,
     });
   }
   return thread;

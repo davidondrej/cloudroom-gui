@@ -224,7 +224,7 @@ export async function createQueuedMessageForThread(
   if (isCloudThread(thread)) {
     const queued = await cloudroom(deps).queueMessage(thread, { ...payload, mode: "queue-if-active" });
     if (!payload.senderThreadId && payload.input.length > 0) {
-      captureUserMessageSentTelemetry(deps, { execution: cloudExecution(deps, thread.id), isChildThread: thread.parentThreadId !== null, messageSource: "queued_message", providerId: thread.providerId });
+      captureUserMessageSentTelemetry(deps, { execution: cloudExecution(deps, thread.id), isChildThread: thread.parentThreadId !== null, messageSource: "queued_message", providerId: thread.providerId, threadId: thread.id });
     }
     return queued;
   }
@@ -285,6 +285,7 @@ export async function createQueuedMessageForThread(
       isChildThread: thread.parentThreadId !== null,
       messageSource: "queued_message",
       providerId: thread.providerId,
+      threadId: thread.id,
     });
   }
   if (currentThread.status === "idle" && providerThreadId !== null) {

@@ -253,10 +253,7 @@ export async function createTestAppHarness(
   pendingInteractions.start();
   const appVersion =
     appVersionService ??
-    createAppVersionService({
-      config,
-      logger,
-    });
+    createAppVersionService({ config });
   const deps: ServerAppDeps = {
     appVersion,
     bbAppManagedConfig,

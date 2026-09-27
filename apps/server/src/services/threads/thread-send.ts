@@ -75,6 +75,7 @@ import {
   type GroupedPrompt,
   type PromptWithGroups,
 } from "./deferred-first-turn-context.js";
+import { noteMessageSent } from "../system/first-response-telemetry.js";
 import type { TelemetryEvent } from "../system/telemetry.js";
 
 type SendThreadMessageMode = SendMessageRequest["mode"];
@@ -381,8 +382,14 @@ export function captureUserMessageSentTelemetry(
     isChildThread: boolean;
     messageSource: UserMessageSentProperties["message_source"];
     providerId: string;
+    threadId: string;
   },
 ): void {
+  noteMessageSent(args.threadId, {
+    execution: args.execution ?? "local",
+    isChildThread: args.isChildThread,
+    provider: args.providerId,
+  });
   deps.telemetry.capture({
     name: "user_message_sent",
     properties: {
@@ -606,6 +613,7 @@ async function sendThreadMessageWithoutContextClear(
         isChildThread: thread.parentThreadId !== null,
         messageSource: "thread_send",
         providerId: thread.providerId,
+        threadId: thread.id,
       });
     }
     return;
@@ -733,6 +741,7 @@ async function sendThreadMessageWithoutContextClear(
         isChildThread: thread.parentThreadId !== null,
         messageSource: "thread_send",
         providerId: thread.providerId,
+        threadId: thread.id,
       });
     }
     return;
@@ -801,6 +810,7 @@ async function sendThreadMessageWithoutContextClear(
       isChildThread: thread.parentThreadId !== null,
       messageSource: "thread_send",
       providerId: thread.providerId,
+      threadId: thread.id,
     });
   }
 }

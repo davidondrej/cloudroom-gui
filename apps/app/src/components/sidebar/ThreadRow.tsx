@@ -764,7 +764,8 @@ function ThreadRowComponent({
                 }
                 className={cn(
                   SIDEBAR_HOVER_ACTIONS_FADE_CLASS,
-                  "absolute inset-0 flex items-center justify-center",
+                  // Coarse phones: status sits left of the always-visible menu.
+                  "absolute inset-0 flex items-center justify-center max-md:pointer-coarse:-translate-x-full",
                 )}
               >
                 {splitIndicator.miniMap ? (
@@ -800,7 +801,7 @@ function ThreadRowComponent({
                 }
                 className={cn(
                   SIDEBAR_HOVER_ACTIONS_CLASS,
-                  "absolute inset-y-0 right-0 z-10 flex items-center justify-end max-md:pointer-coarse:right-full",
+                  "absolute inset-y-0 right-0 z-10 flex items-center justify-end",
                 )}
               >
                 <SidebarRowControls
@@ -816,7 +817,10 @@ function ThreadRowComponent({
                 >
                   <ThreadActionsMenu
                     thread={thread}
-                    triggerClassName={SIDEBAR_CONTROL_BUTTON_CLASS}
+                    triggerClassName={cn(
+                      SIDEBAR_CONTROL_BUTTON_CLASS,
+                      "max-md:pointer-coarse:opacity-50 max-md:pointer-coarse:data-[state=open]:opacity-100",
+                    )}
                     onOpenInSplit={splitAvailable ? openInSplit : undefined}
                     onOpenChange={setIsDropdownActionsOpen}
                   />

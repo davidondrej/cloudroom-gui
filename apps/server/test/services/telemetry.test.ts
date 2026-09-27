@@ -46,6 +46,7 @@ describe("telemetry service", () => {
       appSurface: "web",
       appVersion: "1.2.3",
       dataDir,
+      desktopVersion: "v66",
       telemetryEnabled: true,
       enabled: true,
       logger: createTestLogger(),
@@ -95,6 +96,7 @@ describe("telemetry service", () => {
         app_version: "1.2.3",
         app_surface: "web",
         arch: process.arch,
+        cloudroom_version: "v66",
         platform: process.platform,
       },
     });

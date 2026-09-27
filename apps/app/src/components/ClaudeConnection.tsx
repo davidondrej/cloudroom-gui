@@ -137,7 +137,7 @@ export function ClaudeConnectionButton({
               ? "h-7 text-xs text-muted-foreground hover:text-foreground"
               : "shrink-0"
           }
-          aria-label={`${label} · ${target === "cloud" ? "Cloud Primary" : "Local"}`}
+          aria-label={`${label} · ${target === "cloud" ? "Cloud" : "Local"}`}
         >
           {label}
         </Button>
@@ -162,7 +162,7 @@ export function ClaudeConnectionButton({
         <div>
           <p className="text-sm font-medium">
             Claude Code ·{" "}
-            {target === "cloud" ? "Cloud Primary" : "Local Primary"}
+            {target === "cloud" ? "Cloud" : "Local Primary"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             Use your existing Claude subscription.

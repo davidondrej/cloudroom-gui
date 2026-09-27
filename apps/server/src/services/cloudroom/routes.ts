@@ -13,7 +13,7 @@ import { browserRequestProblem } from "../../browser-request-guard.js";
 import { claudePlan, createClaudeToken } from "./claude-token.js";
 import { startClaudeVersionSync } from "./claude-version.js";
 import { importBbThreads } from "./bb-import.js";
-import { copyToMac, teleportingToLocal, teleportToLocal } from "./teleport-local.js";
+import { copyToMac, openOnMac, teleportingToLocal, teleportToLocal } from "./teleport-local.js";
 import { sandboxThread } from "./sandboxes.js";
 import { archiveThreadAndChildren } from "../threads/thread-archive.js";
 
@@ -45,6 +45,10 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     const choice = body.model && body.reasoning ? { model: body.model, reasoning: body.reasoning } : undefined;
     if (body.action === "move") return context.json(await moveToSandbox(deps, id, choice), 202);
     return context.json(await teleports(deps).begin(id, choice), 202);
+  });
+  app.post("/api/v1/cloudroom/threads/:id/open-file", async context => {
+    const input = z.object({ path: z.string().regex(/^\/[^\0]*$/).max(4096) }).strict().parse(await context.req.json());
+    return context.json(await openOnMac(deps, context.req.param("id"), input.path));
   });
   app.post("/api/v1/cloudroom/import/bb", async context => {
     const problem = browserRequestProblem(context, deps, { requireJsonForMutation: true });

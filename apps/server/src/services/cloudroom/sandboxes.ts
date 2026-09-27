@@ -31,6 +31,9 @@ const CONFIG_LIMIT = 45 * 1024 * 1024;
 export class SandboxDirectory {
   private readonly views = new Map<string, { view: View; at: number }>();
   private readonly wakes = new Map<string, Promise<View>>();
+  private readonly wakeStarts = new Map<string, number>();
+  // After a failed wake, wait before asking again: 5 s, doubling to 5 minutes. Delivery retries every tick otherwise.
+  private readonly backoff = new Map<string, { until: number; delay: number }>();
   private uploaded = new Map<string, string>();
   constructor(private readonly account: () => Promise<SandboxAccount | null>) {}
 
@@ -68,9 +71,16 @@ export class SandboxDirectory {
     }
     if (view.state === "awake" && view.origin && view.token) return { url: view.origin, token: view.token };
     if (!wake) return null;
+    const waiting = this.backoff.get(thread);
+    if (waiting && Date.now() < waiting.until) throw new CloudroomConnectionError(`The cloud sandbox could not start. Retrying in ${Math.ceil((waiting.until - Date.now()) / 1000)} seconds.`);
     let pending = this.wakes.get(thread);
     if (!pending) {
-      pending = this.call({ action: "wake", thread }).then(value => this.remember(viewSchema.parse(value))).finally(() => this.wakes.delete(thread));
+      this.wakeStarts.set(thread, Date.now());
+      pending = this.call({ action: "wake", thread }).then(value => this.remember(viewSchema.parse(value))).then(view => { this.backoff.delete(thread); return view; }, error => {
+        const delay = Math.min((this.backoff.get(thread)?.delay ?? 2_500) * 2, 300_000);
+        this.backoff.set(thread, { until: Date.now() + delay, delay });
+        throw error;
+      }).finally(() => this.wakes.delete(thread));
       this.wakes.set(thread, pending);
     }
     const woken = await pending;
@@ -86,6 +96,8 @@ export class SandboxDirectory {
     catch { return this.mode?.on ?? true; }
     return this.mode.on;
   }
+
+  wokeSince(thread: string, at: number): boolean { return (this.wakeStarts.get(thread) ?? 0) >= at; }
 
   /** A broken stream or failed request may mean the sandbox went to sleep; look it up again next time. */
   forget(thread: string): void { this.views.delete(thread); }

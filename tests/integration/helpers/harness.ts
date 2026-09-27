@@ -244,10 +244,7 @@ async function startIntegrationServer(
     terminalSessions,
   });
   pendingInteractions.start();
-  const appVersion = createAppVersionService({
-    config,
-    logger: testLogger,
-  });
+  const appVersion = createAppVersionService({ config });
   const serverDeps = {
     appVersion,
     bbAppManagedConfig,

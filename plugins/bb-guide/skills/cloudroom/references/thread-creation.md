@@ -78,8 +78,7 @@ worktree` only; a provider takes its branch through `--environment-inputs`.
   installer stores the account machine credential locally and configures
   both the daemon protocol and agent-launched `cloudroom` CLI to traverse the account
   gate; revoke a lost machine from the getbb.app dashboard. It uses
-  the server's exact `/install/bb-app.tgz` artifact and uses the npm registry
-  only on a 404. It installs under the enrollment's cloudroom data directory, without
+  the server's exact `/install/bb-app.tgz` artifact and never falls back to npm. It installs under the enrollment's cloudroom data directory, without
   `sudo` or a global npm configuration, and enables daemon `--auto-update`.
   Newer protocol mismatches update that private install with a persisted
   exponential retry backoff from 5 seconds to 5 minutes, then let

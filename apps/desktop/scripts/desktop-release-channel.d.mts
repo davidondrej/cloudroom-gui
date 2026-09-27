@@ -30,7 +30,3 @@ export function resolveDesktopBuildPlatform(
 export function createDesktopReleaseConfig(
   channel: DesktopReleaseChannel,
 ): DesktopReleaseConfig;
-
-export function createDesktopUpdateReleaseBaseUrl(
-  releaseTag: DesktopReleaseConfig["releaseTag"],
-): string;

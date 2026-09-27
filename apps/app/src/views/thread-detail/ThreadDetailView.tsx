@@ -8,7 +8,7 @@ import {
 } from "react";
 import { nanoid } from "nanoid";
 import { useSystemProviderInfo } from "@/hooks/queries/system-queries";
-import { useCloudroomConnection, cloudFeatureSupported } from "@/hooks/queries/cloudroom-queries";
+import { useCloudroomConnection, cloudFeatureSupported, useOpenCloudFile } from "@/hooks/queries/cloudroom-queries";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { useDesktopBrowserReveal } from "@/lib/use-desktop-browser-reveal";
@@ -1218,6 +1218,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     environment?.status === "ready" &&
     connectedHostIds.has(environment.hostId);
   const isCloudThread = thread?.executionTarget === "cloud";
+  const { mutate: openCloudFile } = useOpenCloudFile(threadId);
   const createThreadInEnvironment = useCreateThreadInEnvironment({
     projectId,
     environmentId: thread?.environmentId ?? "",
@@ -2050,6 +2051,10 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
       if (resolution.kind === "app-route") {
         return false;
       }
+      if (resolution.kind === "open-cloud-path") {
+        openCloudFile(resolution.path);
+        return true;
+      }
       if (resolution.kind === "error") {
         appToast.error("Failed to open file locally", {
           description: resolution.description,
@@ -2090,7 +2095,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
       );
       return true;
     },
-    [openHostFile, openStorageFile, openWorkspaceFile],
+    [openCloudFile, openHostFile, openStorageFile, openWorkspaceFile],
   );
   const handleOpenTimelineLocalFileLink = useCallback(
     (
@@ -2098,6 +2103,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
       options?: ThreadSecondaryPanelFileOpenOptions,
     ) => {
       const resolution = resolveThreadLocalFileLink({
+        cloudThread: isCloudThread,
         hostFileLinksAvailable:
           thread?.environmentId !== null && thread?.environmentId !== undefined,
         link,
@@ -2141,6 +2147,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     },
     [
       handleTimelineLocalFileLinkResolution,
+      isCloudThread,
       refetchThreadStorageFiles,
       thread?.environmentId,
       threadStorageRootPath,

@@ -981,7 +981,7 @@ describe("environment follow-up summary", () => {
     renderPromptArea({ thread: makeThread({ executionTarget: "cloud", environmentId: null }) });
 
     expect(screen.getByTestId("thread-environment-summary").textContent).toBe(
-      `CEO · Cloud Primary · ${branchLabel}`,
+      `CEO · Cloud · ${branchLabel}`,
     );
   });
 

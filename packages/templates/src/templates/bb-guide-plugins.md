@@ -470,10 +470,8 @@ The BB Marketplace also publishes install counts beside its
 manifest, at https://getbb.app/marketplace/v1/stats.json. cloudroom re-reads that
 file on every refresh — the counts move while the manifest sits unchanged —
 and shows them in the store and in the Installs column of `cloudroom plugin search`.
-The number is how many Cloudroom installations reported installing the plugin
-through anonymous telemetry, so it undercounts: telemetry is opt-out and only
-production builds report. No third-party marketplace has counts; cloudroom measures
-them itself rather than repeating a publisher's claim.
+BB computes these counts; Cloudroom only displays them. No third-party
+marketplace has counts.
 
 BB Official entries use the same counts. cloudroom finds each count in the Cloudroom
 Community `stats.json` file by the plugin id.
@@ -604,18 +602,8 @@ a machine, cloudroom downloads a pinned esbuild + Tailwind set into
 `<dataDir>/plugins/toolchain-<versions>/` and reuses it afterwards. Installing
 a prebuilt npm plugin never triggers that download.
 
-To build a plugin yourself — in CI, or to check it compiles without a running
-Cloudroom — depend on the published `bb-app` package and call the CLI:
-
-```jsonc
-// your plugin's package.json
-"devDependencies": { "bb-app": "^0.35.1" },
-"scripts": { "build": "cloudroom plugin build" }
-```
-
-`cloudroom plugin build` talks to no server. Depending on `bb-app@X` builds with
-exactly that release's shim configuration, so the bundle cannot be built
-against a mismatched host runtime. Cache the toolchain directory in CI to skip
+To build a plugin yourself, run `cloudroom plugin build` with Cloudroom
+installed. It talks to no server. Cache the toolchain directory in CI to skip
 the download on later runs. Only `cloudroom plugin dev` needs a running Cloudroom, because
 it reloads the installed plugin after each rebuild.
 
@@ -846,7 +834,7 @@ type-only devDependencies, or rewriting types/ for a plugin that still
 vendors them. Run it in a cloned or older plugin, and `Cloudroom
 plugin types --check` in CI. `cloudroom plugin build` and `cloudroom plugin dev` keep a
 vendored plugin in step for you. Need a symbol the types
-don't explain? Clone the repo: https://github.com/get-bb/bb. The API in
+don't explain? Clone the repo: https://github.com/davidondrej/cloudroom-gui. The API in
 one line each — bb.log (plugin-scoped logger behind `cloudroom plugin logs`);
 bb.settings.define (declarative settings incl. secrets, editable via
 `cloudroom plugin config`); bb.storage.kv (JSON rows ≤256KB) and

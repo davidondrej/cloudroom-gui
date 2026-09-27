@@ -285,6 +285,11 @@ class CloudroomService {
     this.teleportUrl = connection.url;
     return new CloudroomClient(connection);
   }
+  async threadClient(threadId: string): Promise<CloudroomClient> {
+    const saved = binding(this.deps.db, threadId);
+    if (!saved) throw new ApiError(409, "cloudroom_thread_unstarted", "This cloud thread has not started yet.");
+    return this.client(saved);
+  }
   followTeleport(threadId: string): void { void this.deliver(threadId).catch(() => {}); }
   detach(threadId: string): void {
     this.streams.get(threadId)?.abort();

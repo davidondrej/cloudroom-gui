@@ -26,7 +26,6 @@ import { LIST_HOVER_TRANSITION } from "@bb/shared-ui/motion";
 import { MachineStatusDot } from "@/components/machines/MachineStatusDot";
 import {
   CLOUDROOM_CLOUD_PRIMARY,
-  CLOUDROOM_CLOUD_WORKTREE,
   cloudroomEnvironmentPresentation,
 } from "@/lib/cloudroom-environment-label";
 import { REUSE_ENVIRONMENT_ICON_NAME } from "@/lib/environment-workspace-display";
@@ -278,7 +277,7 @@ export function EnvironmentPickerUI({
       provider.machineProviderId &&
       provider.requires.projectless === projectless,
   );
-  const cloudLabel = projectless ? "Cloud" : CLOUDROOM_CLOUD_PRIMARY;
+  const cloudLabel = CLOUDROOM_CLOUD_PRIMARY;
   const selected = useMemo((): SelectedEnvironment => {
     if (cloud?.selected) {
       return {
@@ -557,17 +556,6 @@ export function EnvironmentPickerUI({
                         handleOpenChange(false);
                       }}
                     />
-                    {projectless ? null : (
-                      <EnvironmentMenuItem
-                        value="cloud:worktree"
-                        label={CLOUDROOM_CLOUD_WORKTREE}
-                        icon="Cloud"
-                        selected={false}
-                        description="Cloud worktrees are not supported yet"
-                        disabled
-                        onSelect={() => {}}
-                      />
-                    )}
                   </CommandGroup>
                 </>
               ) : isMachineMenu && availableMachines ? (

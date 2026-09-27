@@ -269,6 +269,7 @@ function PromptSubmitButton({
   onTouchSubmit,
   title,
 }: PromptSubmitButtonProps) {
+  const isPointerCoarse = usePointerCoarse();
   const touchRef = useRef<{ pointerId: number; x: number; y: number } | null>(
     null,
   );
@@ -342,7 +343,10 @@ function PromptSubmitButton({
         <Icon name="Spinner" className="size-4 animate-spin" />
       ) : (
         <>
-          <Icon name={icon ?? "CornerDownLeft"} className="size-4" />
+          <Icon
+            name={icon ?? (isPointerCoarse ? "ArrowUp" : "CornerDownLeft")}
+            className="size-4"
+          />
           {label !== undefined && !isCompact ? (
             <span data-promptbox-submit-label="">{label}</span>
           ) : null}
@@ -3226,7 +3230,9 @@ export function PromptBoxInternal({
         emitAttachmentFiles(Array.from(event.dataTransfer.files));
       }}
       className={cn(
-        "group/promptbox relative w-full rounded-xl border border-border bg-background shadow-lift max-md:pointer-coarse:border-foreground/20",
+        "group/promptbox relative w-full rounded-xl border border-border bg-background shadow-lift",
+        // Mobile: soft, rounded iOS-style card.
+        "max-md:pointer-coarse:rounded-[26px] max-md:pointer-coarse:border-foreground/15 max-md:pointer-coarse:shadow-[0_6px_24px_-8px_rgb(0_0_0/0.18)]",
         showCompactLayout && "overflow-hidden",
       )}
     >
@@ -3337,7 +3343,7 @@ export function PromptBoxInternal({
               <div
                 role="status"
                 aria-label={loadingLabel}
-                className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-background text-muted-foreground"
+                className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[inherit] bg-background text-muted-foreground"
               >
                 <Icon name="Spinner" className="size-5 animate-spin motion-reduce:animate-none" aria-hidden />
                 <span className="sr-only">{loadingLabel}</span>

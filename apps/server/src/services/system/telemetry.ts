@@ -32,6 +32,16 @@ export type TelemetryEvent =
       };
     }
   | {
+      name: "first_response";
+      properties: {
+        execution: TelemetryExecution;
+        is_child_thread: boolean;
+        ms: number;
+        provider: string;
+        sandbox_woke: boolean | null;
+      };
+    }
+  | {
       name: "plugin_installed";
       properties: {
         plugin_id: string | null;
@@ -51,6 +61,8 @@ interface CreateTelemetryServiceArgs {
   appSurface: AppSurface;
   appVersion: string;
   dataDir: string;
+  /** Cloudroom release stamp, like "v66". Unset outside the desktop app. */
+  desktopVersion?: string | undefined;
   enabled: boolean;
   telemetryEnabled: boolean;
   logger: ServerLogger;
@@ -92,6 +104,7 @@ export async function createTelemetryService(
   const commonProperties = {
     app_version: args.appVersion,
     arch: process.arch,
+    cloudroom_version: args.desktopVersion ?? null,
     platform: process.platform,
   };
   return {

@@ -135,8 +135,8 @@ install/update, one at a time
 --machine <id-or-name> Limit to one machine
 --json Print per-target results as JSON
 
-`cloudroom updates apply` covers provider CLIs only. Update bb-app itself with the
-printed upgrade command (`npx bb-app@latest`) or the desktop app's relaunch;
+`cloudroom updates apply` covers provider CLIs only. Update Cloudroom itself by
+relaunching the desktop app or downloading it from https://www.cloudroom.dev;
 connected daemons then follow the server version automatically.
 
 Machine selectors accept either an exact machine ID or an unambiguous machine

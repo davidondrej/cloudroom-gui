@@ -65,11 +65,9 @@ the current engine values and the entries for its generated surfaces.
   plugin with `bb.host` must publish its host bundle and metadata. Users of
   prebuilt artifacts need no npm, but managed Git and npm installs need npm on
   `PATH`.
-- Building yourself (CI, or verifying a build without a running bb): add
-  `bb-app` to `devDependencies` and set `"build": "cloudroom plugin build"`.
-  `cloudroom plugin build` needs no running server, but the manifest still needs
-  `bb.server`. Depending on `bb-app@X` builds
-  against exactly that release's shim configuration. cloudroom downloads its build
+- Building yourself (CI, or verifying a build without a running Cloudroom): run
+  `cloudroom plugin build` with Cloudroom installed. It needs no running server,
+  but the manifest still needs `bb.server`. cloudroom downloads its build
   toolchain on first use, so cache `<dataDir>/plugins/toolchain-*` in CI.
 - `bb.skills` (optional) — relocates the auto-imported skills directories
   (default `skills/`; `[]` opts out). Every `skills/<name>/SKILL.md` is

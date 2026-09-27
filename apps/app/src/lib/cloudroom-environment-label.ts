@@ -2,7 +2,7 @@ import type { IconName } from "@bb/shared-ui/icon";
 
 export const CLOUDROOM_LOCAL_PRIMARY = "Local Primary";
 export const CLOUDROOM_LOCAL_WORKTREE = "Local Worktree";
-export const CLOUDROOM_CLOUD_PRIMARY = "Cloud Primary";
+export const CLOUDROOM_CLOUD_PRIMARY = "Cloud";
 export const CLOUDROOM_CLOUD_WORKTREE = "Cloud Worktree";
 
 export function cloudroomEnvironmentPresentation(

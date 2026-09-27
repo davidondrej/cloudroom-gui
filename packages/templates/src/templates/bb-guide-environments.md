@@ -190,8 +190,6 @@ Remote access (cloudroom connect):
   Pairing returns immediately: the Cloudroom SERVER redeems the code, stores the
   credential, and holds the tunnel itself — so it stays up as long as Cloudroom is
   running and reconnects on restart (no foreground process).
-  Without an installed Cloudroom, pair via npm:
-  `npx -p bb-app@latest cloudroom connect --code <code> --server <url>`.
 
   In a source checkout, `pnpm dev` automatically points the unpaired Connect
   settings and code-only pairing at that worktree's local Cloud origin through

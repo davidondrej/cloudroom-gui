@@ -4,7 +4,7 @@ import { reasoningLevelSchema, serviceTierSchema } from "@bb/domain";
 import { fetchWithAppSurface } from "@/lib/app-surface";
 import { sdk } from "@/lib/sdk";
 import { appToast } from "@/components/ui/app-toast";
-import { showMutationErrorToast } from "@/lib/mutation-errors";
+import { getMutationErrorMessage, showMutationErrorToast } from "@/lib/mutation-errors";
 
 export const cloudroomStatusSchema = z.object({
   ready: z.boolean(),
@@ -110,6 +110,15 @@ export function useCopyToMac(threadId: string) {
     mutationFn: () => sdk.cloudroom.copyToMac(threadId),
     onSuccess: ({ branch }) => appToast.success(`Copied to this computer as branch ${branch}. The cloud agent keeps working.`),
     onError: (error) => showMutationErrorToast({ error, fallbackMessage: "Could not copy to this computer" }),
+  });
+}
+
+export function useOpenCloudFile(threadId: string) {
+  return useMutation({
+    mutationFn: (path: string) => sdk.cloudroom.openCloudFile(threadId, path),
+    onMutate: () => appToast.loading("Downloading from the cloud"),
+    onSuccess: ({ path }, _path, toastId) => appToast.success(`Saved to ${path.replace(/^\/Users\/[^/]+/, "~")}`, { id: toastId }),
+    onError: (error, _path, toastId) => appToast.error("Could not open the cloud file", { id: toastId, description: getMutationErrorMessage({ error, fallbackMessage: "The download failed." }) }),
   });
 }
 

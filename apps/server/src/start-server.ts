@@ -26,6 +26,7 @@ import {
 } from "./services/system/periodic-sweeps.js";
 import { installProviderModelCatalogPrewarm } from "./services/providers/provider-model-catalog-prewarm.js";
 import { createProviderRegistryService } from "./services/providers/provider-registry.js";
+import { installFirstResponseTelemetry } from "./services/system/first-response-telemetry.js";
 import { createTelemetryService } from "./services/system/telemetry.js";
 import { TerminalSessionLifecycle } from "./services/terminals/terminal-session-lifecycle.js";
 import { createLifecycleDedupers } from "./lifecycle-dedupers.js";
@@ -125,6 +126,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
     appSurface: serverConfig.BB_APP_SURFACE,
     appVersion: serverConfig.BB_APP_VERSION,
     dataDir: serverConfig.BB_DATA_DIR,
+    desktopVersion: process.env.BB_DESKTOP_VERSION,
     enabled: serverConfig.BB_TELEMETRY && isProduction,
     telemetryEnabled: getAppSettings(db).telemetryEnabled,
     logger,
@@ -159,8 +161,6 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
   const appVersion = createAppVersionService({
     config: runtimeConfig,
     desktopVersion: process.env.BB_DESKTOP_VERSION,
-    logger,
-    updatesEnabled: false,
   });
   const {
     app,
@@ -198,6 +198,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
     machineAuth, pluginHostArtifacts, aiServices, skillTreeRegistry, telemetry, pendingInteractions,
   });
   cloud.start();
+  const stopFirstResponseTelemetry = installFirstResponseTelemetry({ db, hub, telemetry }, (threadId, at) => cloud.sandboxes.wokeSince(threadId, at));
 
   const sweepDeps = {
     config: runtimeConfig,
@@ -273,6 +274,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
       providerModelCatalogPrewarm.stop();
       eventLoopStallMonitor.stop();
       cloud.stop();
+      stopFirstResponseTelemetry();
       clearInterval(sweepInterval);
       pluginCatalogService.stopPeriodicRefresh();
       await pluginService.stopPeriodicUpdateChecks();
