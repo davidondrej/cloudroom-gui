@@ -25,7 +25,9 @@ import {
 import { WorkspaceChangesList } from "@/components/thread/WorkspaceChangesList";
 import {
   formatChangeSummary,
+  formatWorkspaceChangedFilesLabel,
   renderChangeSummary,
+  renderChangeTally,
   toChangeTally,
   type WorkspaceChangedFileSelection,
   type WorkspaceChangedFilesSection,
@@ -180,6 +182,10 @@ const CONTEXT_BANNER_CARD_CLASS = cn(
 );
 const CONTEXT_BANNER_ROW_CLASS =
   "flex items-center gap-0.5 p-0.5 text-xs text-muted-foreground";
+const MINIMAL_GIT_BANNER_CLASS = cn(
+  "relative z-10 ml-auto mr-3 w-fit min-w-0 sm:mr-4",
+  "[[data-app-composer]_&:last-child]:-mb-5 [[data-app-composer]_&:last-child]:pb-3",
+);
 
 function ChildThreadIcon({ className }: { className?: string }) {
   return (
@@ -679,6 +685,106 @@ function ActiveChildThreadsCard({
   );
 }
 
+function MinimalGitBanner({
+  gitSection,
+  isExpanded,
+  onToggle,
+}: {
+  gitSection: ThreadPromptGitSection;
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
+  const { changedFiles, mergeBase } = gitSection;
+  const tally = toChangeTally(changedFiles.stats);
+  const prefix = KIND_PREFIX[changedFiles.kind];
+  const mergeBaseCandidates = mergeBase
+    ? getMergeBaseBranchCandidateGroups({
+        mergeBaseBranch: mergeBase.branch,
+        mergeBaseBranchRef: mergeBase.branchRef,
+        mergeBaseBranchOptions: mergeBase.options,
+        remoteMergeBaseBranchOptions: mergeBase.remoteOptions,
+      })
+    : null;
+  return (
+    <section
+      aria-label="Thread context before sending"
+      className={MINIMAL_GIT_BANNER_CLASS}
+    >
+      <div className="flex justify-end">
+        <button
+          type="button"
+          id={SECTION_IDS.git.toggle}
+          aria-expanded={isExpanded}
+          aria-controls={SECTION_IDS.git.body}
+          aria-label={`Changed files: ${prefix}, ${formatChangeSummary(tally)}`}
+          title={`${prefix} · ${formatChangeSummary(tally)}`}
+          onClick={onToggle}
+          className={cn(
+            "flex min-h-6 cursor-pointer items-center gap-1 rounded px-1.5 text-2xs transition-[color,opacity]",
+            isExpanded
+              ? "text-foreground"
+              : "text-muted-foreground opacity-75 hover:opacity-100",
+          )}
+        >
+          {renderChangeTally(tally)}
+          <Icon
+            name="ChevronDown"
+            className={cn(
+              "size-3 shrink-0 text-subtle-foreground transition-transform duration-200",
+              isExpanded && "rotate-180",
+            )}
+            aria-hidden="true"
+          />
+        </button>
+      </div>
+      <AnimatedBody
+        collapsedBorder="none"
+        seamless
+        id={SECTION_IDS.git.body}
+        labelledBy={SECTION_IDS.git.toggle}
+        isExpanded={isExpanded}
+      >
+        <div className="flex items-center gap-1.5 px-1 pb-1 text-2xs text-muted-foreground">
+          <span className="min-w-0 truncate">
+            {prefix} ·{" "}
+            {formatWorkspaceChangedFilesLabel(changedFiles.files.length)}
+          </span>
+          {mergeBase && mergeBaseCandidates ? (
+            <span className="ml-auto flex shrink-0 items-center gap-1">
+              <Icon
+                name="GitMerge"
+                className="size-3 shrink-0"
+                aria-hidden="true"
+              />
+              <BranchPicker
+                value={mergeBase.branch}
+                options={mergeBaseCandidates.options}
+                remoteOptions={mergeBaseCandidates.remoteOptions}
+                variant="minimal"
+                emphasizeTriggerValue={false}
+                loading={mergeBase.optionsLoading}
+                onChange={mergeBase.onChange}
+                onOpenChange={mergeBase.onPickerOpenChange}
+                onSearchQueryChange={mergeBase.onSearchQueryChange}
+                className="max-w-[10rem]"
+                muted
+                popoverAlign="end"
+              />
+            </span>
+          ) : null}
+        </div>
+        <WorkspaceChangesList
+          files={changedFiles.files}
+          className="max-h-32 px-1 pb-1"
+          onFileClick={(file) =>
+            gitSection.onPromptBannerFileClick({ file, section: changedFiles })
+          }
+        />
+      </AnimatedBody>
+    </section>
+  );
+}
+
 interface ReadOnlyContextBannerProps {
   iconName: IconName;
   statusAriaLabel: string;
@@ -828,41 +934,6 @@ export function ThreadPromptContextBanner({
       </>
     ) : null;
 
-  const mergeBaseCandidates =
-    showGit && gitSection.mergeBase
-      ? getMergeBaseBranchCandidateGroups({
-          mergeBaseBranch: gitSection.mergeBase.branch,
-          mergeBaseBranchRef: gitSection.mergeBase.branchRef,
-          mergeBaseBranchOptions: gitSection.mergeBase.options,
-          remoteMergeBaseBranchOptions: gitSection.mergeBase.remoteOptions,
-        })
-      : { options: [], remoteOptions: [] };
-  const segmentAction =
-    hasSingleVisibleSegment && showGit && gitSection.mergeBase ? (
-      <BannerActionSlot hideInCompact>
-        <Icon
-          name="GitMerge"
-          className="size-3.5 shrink-0"
-          aria-hidden="true"
-        />
-        <span className="shrink-0">Merge base</span>
-        <BranchPicker
-          value={gitSection.mergeBase.branch}
-          options={mergeBaseCandidates.options}
-          remoteOptions={mergeBaseCandidates.remoteOptions}
-          variant="minimal"
-          emphasizeTriggerValue={false}
-          loading={gitSection.mergeBase.optionsLoading}
-          onChange={gitSection.mergeBase.onChange}
-          onOpenChange={gitSection.mergeBase.onPickerOpenChange}
-          onSearchQueryChange={gitSection.mergeBase.onSearchQueryChange}
-          className="max-w-[10rem]"
-          muted
-          popoverAlign="end"
-        />
-      </BannerActionSlot>
-    ) : null;
-
   const isParentThreadOnly = showParentThread && !showGit && !showPullRequest;
 
   const pullRequest = pullRequestSection?.pullRequest ?? null;
@@ -895,7 +966,13 @@ export function ThreadPromptContextBanner({
     ) : null;
 
   const compactContextBanner =
-    visibleSegmentCount > 0 ? (
+    hasSingleVisibleSegment && showGit ? (
+      <MinimalGitBanner
+        gitSection={gitSection}
+        isExpanded={isGitExpanded}
+        onToggle={() => onToggleSection("git")}
+      />
+    ) : visibleSegmentCount > 0 ? (
       <PromptStackCard
         ariaLabel="Thread context before sending"
         className={CONTEXT_BANNER_CARD_CLASS}
@@ -960,7 +1037,6 @@ export function ThreadPromptContextBanner({
             />
           ) : null}
           {pullRequestAction}
-          {segmentAction}
         </div>
         {showParentThread && parentThreadSection && !isParentThreadOnly ? (
           <ParentThreadSectionBody

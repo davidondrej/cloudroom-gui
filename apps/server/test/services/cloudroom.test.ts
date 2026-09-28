@@ -94,6 +94,7 @@ it("reports storage before models and preserves transiently blocked messages thr
     await expect.poll(() => prompts.length).toBe(1);
     rejectPrompt = true;
     await request(`/threads/${thread.id}/send`, { requestId: "storage-follow", mode: "auto", input: [{ type: "text", text: "Keep this follow-up", mentions: [] }] });
+    await expect.poll(() => prompts.filter(id => id === "storage-follow").length).toBe(1);
     expect(harness.db.select().from(cloudroomCommands).all().find(c => c.id === "storage-follow")?.state).toBe("sending");
     level = "blocked";
     expect((await request(`/threads/${thread.id}/timeline`)).status).toBe(200);
@@ -813,6 +814,76 @@ it("shows a Cloud follow-up in the chat at once, like Local, and queues the next
     expect(chat()).toEqual(["start", "now"]);
     expect(service.queue(thread.id).map((item) => item.id)).toEqual(["next"]);
   } finally {
+    service.stop();
+    core.closeAllConnections();
+    await new Promise<void>((resolve) => core.close(() => resolve()));
+    await harness.cleanup();
+  }
+});
+
+it("queues Cloud follow-ups at once while the cloud is still starting, then delivers them in order", async () => {
+  const harness = await createTestAppHarness();
+  const { host } = seedHostSession(harness.deps);
+  const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
+  const service = cloudroom(harness.deps);
+  const prompts: string[] = [];
+  const records: object[] = [];
+  const streams = new Set<ServerResponse>();
+  let release = () => {};
+  let starting: Promise<void> | null = null;
+  let holdCapabilities = false;
+  const record = (kind: string, data: object) => {
+    const value = { sequence: records.length + 1, timestamp_ms: 1700000000000 + records.length, session_id: "cr_slow", kind, data };
+    records.push(value);
+    for (const stream of streams) stream.write(`id: ${value.sequence}\nevent: record\ndata: ${JSON.stringify(value)}\n\n`);
+  };
+  const core = createServer(async (req, res) => {
+    const json = (body: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(body)); };
+    if (req.url === "/v1/health") return json({});
+    if (req.url === "/v1/capabilities") {
+      if (holdCapabilities && starting) await starting;
+      return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: "codex", model: "test-model" }] });
+    }
+    if (req.url === "/v1/ready") return json({ ready: true });
+    if (req.url?.includes("/stream?")) {
+      res.writeHead(200, { "Content-Type": "text/event-stream" });
+      const after = Number(new URL(req.url, "http://fixture").searchParams.get("after"));
+      for (const [index, value] of records.entries()) if (index + 1 > after) res.write(`id: ${index + 1}\nevent: record\ndata: ${JSON.stringify(value)}\n\n`);
+      res.flushHeaders(); streams.add(res); res.on("close", () => streams.delete(res)); return;
+    }
+    let text = ""; for await (const chunk of req) text += chunk;
+    const body = JSON.parse(text);
+    if (req.url === "/v1/sessions") {
+      if (starting) await starting;
+      record("native_identity", { id: "native" });
+      record("state", { state: "idle" });
+      return json({ session_id: "cr_slow", receipt: { request_id: body.request_id, command: "start", state: "completed", input: {} }, saving: {} }, 202);
+    }
+    prompts.push(body.request_id);
+    const receipt = { request_id: body.request_id, command: "prompt", state: "accepted", input: { text: body.text } };
+    record("receipt", receipt);
+    json({ session_id: "cr_slow", receipt, saving: {} }, 202);
+  });
+  core.listen(0, "127.0.0.1"); await once(core, "listening");
+  const address = core.address();
+  if (!address || typeof address === "string") throw new Error("fixture did not listen");
+  const send = async (threadId: string, text: string) => (await harness.app.request(`/api/v1/threads/${threadId}/send`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestId: text, mode: "auto", input: [{ type: "text", text, mentions: [] }] }) })).json();
+  const quick = <T,>(work: Promise<T>) => Promise.race([work, new Promise<"blocked">((resolve) => setTimeout(() => resolve("blocked"), 1500))]);
+  try {
+    await service.configure({ url: `http://127.0.0.1:${address.port}`, token: "x".repeat(40), projectId: project.id });
+    starting = new Promise((resolve) => { release = resolve; });
+    const created = await harness.app.request("/api/v1/threads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ executionTarget: "cloud", requestId: "slow-start", projectId: project.id, providerId: "codex", origin: "app", model: "test-model", reasoningLevel: "high", environment: { type: "project-default" }, input: [{ type: "text", text: "start", mentions: [] }] }) });
+    const thread = await created.json();
+    holdCapabilities = true;
+    expect(getThread(harness.db, thread.id)?.status).toBe("pending");
+    expect(await quick(send(thread.id, "second"))).toMatchObject({ delivery: "queued" });
+    expect(await quick(send(thread.id, "third"))).toMatchObject({ delivery: "queued" });
+    expect(service.queue(thread.id).map((item) => item.id)).toEqual(["second", "third"]);
+    expect(prompts).toEqual([]);
+    release();
+    await expect.poll(() => prompts, { timeout: 5000 }).toEqual([`first_${thread.id}`, "second", "third"]);
+  } finally {
+    release();
     service.stop();
     core.closeAllConnections();
     await new Promise<void>((resolve) => core.close(() => resolve()));

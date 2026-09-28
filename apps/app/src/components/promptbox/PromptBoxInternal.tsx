@@ -481,7 +481,6 @@ type MentionMenuPlacement = "top" | "bottom";
 
 interface PromptBoxInternalProps {
   id?: string;
-  loadingLabel?: string;
   value: string;
   mentionRanges: readonly PromptTextMention[];
   onChange: (value: string, mentionRanges: PromptTextMention[]) => void;
@@ -1202,7 +1201,6 @@ function isIPadHardwareEnterCandidate(event: KeyboardEvent): boolean {
 
 export function PromptBoxInternal({
   id,
-  loadingLabel,
   value,
   mentionRanges,
   onChange,
@@ -3339,16 +3337,6 @@ export function PromptBoxInternal({
               layout={editorLayout}
               resolveMentionLink={mentionResolveLink}
             />
-            {loadingLabel && !value.trim() && attachments.length === 0 && !showVoiceActionGroup ? (
-              <div
-                role="status"
-                aria-label={loadingLabel}
-                className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[inherit] bg-background text-muted-foreground"
-              >
-                <Icon name="Spinner" className="size-5 animate-spin motion-reduce:animate-none" aria-hidden />
-                <span className="sr-only">{loadingLabel}</span>
-              </div>
-            ) : null}
           </div>
 
           {showTypeaheadMenu ? (

@@ -2334,8 +2334,6 @@ export function ThreadDetailPromptArea({
   );
 
   const cloudError = retryCloudStart.error?.message ?? cloudState.error?.message ?? cloudState.data?.error;
-  const cloudStarting = isCloud && !cloudError && !cloudState.data?.paused && !cloudState.data?.failedStart &&
-    (cloudState.data?.starting ?? ["pending", "starting"].includes(thread.status));
   const cloudReconnecting = !cloudError && cloudState.data?.reconnecting;
   const cloudFixPrompt = cloudError || cloudState.data?.failedStart ? cloudThreadFixPrompt(thread.id, thread.providerId, cloudError) : null;
   const cloudAuthNotice = isCloud && !shouldHideComposer && cloudState.data?.authRequired ? (
@@ -2375,7 +2373,6 @@ export function ThreadDetailPromptArea({
   const bottomContent = (
     <FollowUpPromptBox
       id={THREAD_DETAIL_COMPOSER_TEXTAREA_ID}
-      loadingLabel={cloudStarting ? "Starting cloud thread" : undefined}
       attachments={bottomAttachmentsConfig}
       stack={<>{!isCloud && !teleporting && <TeleportCheckCard pending={teleport.isPending} error={teleport.error} models={[...modelOptions, ...moreModelOptions]} reasoning={reasoningLevel} usedTokens={contextWindowUsage?.usedTokens ?? null} levelsFor={(model) => cloudReasoningLevels(cloudConnection.data, thread.providerId, model)} onTeleport={(choice) => teleport.mutate(choice)} onDismiss={teleport.reset} />}{thread.teleport && <TeleportNotice thread={thread} pendingDelivery={cloudState.data?.pendingDelivery} paused={cloudState.data?.paused} sending={sendMessage.isPending} />}{thread.projectCopy && <ProjectCopyNotice thread={thread} />}{cloudNotice}{!isCloud && !shouldHideComposer && <LocalSignInNotice threadId={thread.id} providerId={thread.providerId} hostId={environmentHostId} environmentId={thread.environmentId} authFailed={providerAuthFailed} />}{pendingInteractionNode ? pendingInteractionStack : promptStack}</>}
       pendingInteraction={pendingInteractionNode}

@@ -995,6 +995,14 @@ describe("environment follow-up summary", () => {
 });
 
 describe("ThreadDetailPromptArea", () => {
+  it("keeps the composer usable while a new cloud thread starts, so follow-ups can be queued", () => {
+    const queryKey = ["cloudroom-thread", "thr_1"];
+    testQueryClient.setQueryDefaults(queryKey, { staleTime: Infinity });
+    testQueryClient.setQueryData(queryKey, { sessionId: null, starting: true, paused: false, model: "gpt-6-astra", reasoning: "medium", error: null, pendingDelivery: 1 });
+    renderPromptArea({ thread: makeThread({ executionTarget: "cloud", status: "pending" }) });
+    expect(screen.getByTestId("submit-mode").textContent).not.toBe(":");
+  });
+
   it("clears the neutral reconnect notice while idle and keeps genuine errors visible", async () => {
     const queryKey = ["cloudroom-thread", "thr_1"];
     testQueryClient.setQueryDefaults(queryKey, { staleTime: Infinity });

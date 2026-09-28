@@ -152,7 +152,6 @@ type ContextWindowUsage = ComponentProps<
 
 export interface FollowUpPromptBoxProps {
   id?: string;
-  loadingLabel?: string;
   attachments: AttachmentsConfig;
   stack: ReactNode | null;
   activePromptMode?: ThreadTimelineActivePromptMode | null;
@@ -225,7 +224,6 @@ function FollowUpPromptBoxStackOnly({
 
 function FollowUpPromptBoxWithComposer({
   id,
-  loadingLabel,
   attachments,
   stack,
   activePromptMode = null,
@@ -704,7 +702,6 @@ function FollowUpPromptBoxWithComposer({
     >
       <PromptBoxWithScrollAnchor
         id={id}
-        loadingLabel={loadingLabel}
         promptBoxRef={promptBoxRef}
         voice={voice}
         minHeight={elasticTextareaMinHeight}

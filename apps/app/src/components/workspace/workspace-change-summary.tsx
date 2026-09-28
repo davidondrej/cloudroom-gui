@@ -24,7 +24,7 @@ export function toChangeTally(stats: WorkspaceChangeStats): ChangeTally {
   };
 }
 
-function formatWorkspaceChangedFilesLabel(changedFiles: number): string {
+export function formatWorkspaceChangedFilesLabel(changedFiles: number): string {
   return `${changedFiles} file${changedFiles === 1 ? "" : "s"}`;
 }
 
@@ -56,6 +56,17 @@ export function formatChangeSummary(tally: ChangeTally): string {
         removed: tally.deletions,
       },
     )}`
+  );
+}
+
+export function renderChangeTally(tally: ChangeTally): ReactNode {
+  return (
+    formatChangeSummaryWithoutLineStats(tally) ?? (
+      <DiffStatsTally
+        insertions={tally.insertions}
+        deletions={tally.deletions}
+      />
+    )
   );
 }
 

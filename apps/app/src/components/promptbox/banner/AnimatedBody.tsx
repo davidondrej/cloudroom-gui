@@ -6,6 +6,7 @@ interface AnimatedBodyProps {
   labelledBy: string;
   isExpanded: boolean;
   collapsedBorder: "reserve" | "none";
+  seamless?: boolean;
   children: ReactNode;
 }
 
@@ -14,6 +15,7 @@ export function AnimatedBody({
   labelledBy,
   isExpanded,
   collapsedBorder,
+  seamless = false,
   children,
 }: AnimatedBodyProps) {
   const [hasRealizedBody, setHasRealizedBody] = useState(isExpanded);
@@ -31,14 +33,17 @@ export function AnimatedBody({
       className={cn(
         "grid overflow-hidden transition-[grid-template-rows,opacity,border-color] duration-200 ease-out",
         isExpanded
-          ? "grid-rows-[1fr] border-t border-border opacity-100"
+          ? cn(
+              "grid-rows-[1fr] opacity-100",
+              !seamless && "border-t border-border",
+            )
           : cn(
               "pointer-events-none w-0 min-w-full grid-rows-[0fr] opacity-0",
               collapsedBorder === "reserve" && "border-t border-transparent",
             ),
       )}
     >
-      <div className="overflow-hidden bg-popover">
+      <div className={cn("overflow-hidden", !seamless && "bg-popover")}>
         {isBodyRealized ? children : null}
       </div>
     </section>

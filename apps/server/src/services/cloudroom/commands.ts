@@ -919,7 +919,8 @@ class CloudroomService {
         throw new ApiError(503, error instanceof CloudroomError ? error.code ?? "cloudroom_unavailable" : "cloudroom_unavailable", publicError(error));
       }
     };
-    const fast = saved.sessionId && !saved.queuePaused && ["idle", "error", "active"].includes(thread.status);
+    const starting = !saved.sessionId && ["pending", "starting"].includes(thread.status);
+    const fast = starting || (saved.sessionId && !saved.queuePaused && ["idle", "error", "active"].includes(thread.status));
     const known = fast ? sandboxThread(saved.coreUrl) ? await this.savedCapabilities() : this.lastCapabilities : null;
     const validated = steer || previous ? null : reasoning;
     let parsed: ReturnType<typeof promptPayload>;
@@ -1320,11 +1321,12 @@ class CloudroomService {
         this.follow(saved, client);
         if (!commands(this.deps.db, threadId).some(c => c.state === "sending")) { this.setConnectionIssue(threadId, "delivery"); return; }
       }
-      const known = !saved.sessionId && sandboxThread(saved.coreUrl) ? await this.savedCapabilities() : null;
-      const firstStartCapabilities = known && harnessProfile(known, getThread(this.deps.db, threadId)?.providerId ?? "") ? known : null;
-      const capabilities = firstStartCapabilities ?? await this.capabilities(client);
+      const sandbox = sandboxThread(saved.coreUrl);
+      const known = sandbox ? await this.savedCapabilities() : null;
+      const cached = known && harnessProfile(known, getThread(this.deps.db, threadId)?.providerId ?? "") ? known : null;
+      const capabilities = cached ?? await this.capabilities(client);
       if (epoch !== this.epoch) return;
-      if (!firstStartCapabilities) await this.rememberCapabilities(capabilities, Boolean(sandboxThread(saved.coreUrl)));
+      if (!cached) await this.rememberCapabilities(capabilities, Boolean(sandbox));
       if (!saved.sessionId) {
         deliveringCommand = true;
         const harness = getThread(this.deps.db, threadId)?.providerId;
@@ -1335,9 +1337,8 @@ class CloudroomService {
         if (!capabilities.command_guard) delete options.command_guard_enabled;
         if (!capabilities.direct_workspaces) throw new ApiError(503, "cloudroom_update", "Update the cloud core to start agents without copying files. Your message is saved.");
         if (options.workspace === ROOT_WORKSPACE && !capabilities.root_workspace) throw new ApiError(503, "cloudroom_update", "Update the cloud core to start agents outside a project. Your message is saved.");
-        if (harness === "codex" && capabilities.codex_auth_import) await importCodexLogin(this.deps);
+        if (harness === "codex" && capabilities.codex_auth_import && !sandbox) await importCodexLogin(this.deps);
         if (harness === "pi") await importPiLogin(this.deps);
-        const sandbox = sandboxThread(saved.coreUrl);
         const copy = options.workspace && options.workspace !== ROOT_WORKSPACE ? await planProjectCopy(this.deps, client, threadId, options.workspace, undefined, sandbox ? `${sandbox}:${options.workspace}` : options.workspace) : null;
         if (epoch !== this.epoch) return;
         const accepted = await client.start(saved.startRequestId, CLOUD_HARNESSES[harness], { model, reasoning: saved.reasoning, ...options, ...(provider ? { provider } : {}) });

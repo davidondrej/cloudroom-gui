@@ -574,23 +574,6 @@ describe("suppressPromptEditorAnchorActivation", () => {
 });
 
 describe("PromptBoxInternal controlled value sync", () => {
-  it("shows startup progress inside an empty editor without covering a draft", () => {
-    const props = createPromptBoxProps({ loadingLabel: "Starting cloud thread" });
-    const view = render(<PromptBoxInternal {...props} />);
-    const editor = view.container.querySelector('[contenteditable="true"]');
-    const progress = screen.getByRole("status", { name: "Starting cloud thread" });
-    expect(progress.closest("[data-promptbox-input-region]")).not.toBeNull();
-    expect(editor?.getAttribute("contenteditable")).toBe("true");
-
-    view.rerender(<PromptBoxInternal {...props} value="Keep my draft" />);
-    expect(screen.queryByRole("status", { name: "Starting cloud thread" })).toBeNull();
-    expect(view.container.querySelector('[contenteditable="true"]')).toBe(editor);
-    expect(editor?.textContent).toContain("Keep my draft");
-
-    view.rerender(<PromptBoxInternal {...props} loadingLabel={undefined} />);
-    expect(screen.queryByRole("status", { name: "Starting cloud thread" })).toBeNull();
-  });
-
   it("compares cloned mention values without serializing the prompt text", () => {
     const resource = {
       kind: "path" as const,
