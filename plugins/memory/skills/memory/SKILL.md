@@ -15,8 +15,8 @@ memories for the current Cloudroom project. The index contains summaries only.
 
 When a memory summary may be relevant, inspect it instead of guessing:
 
-1. Search with `cloudroom memory search "<query>" --scope all --json`.
-2. Read the selected record with `cloudroom memory get <id> --scope all --json`.
+1. Search with `room-cli memory search "<query>" --scope all --json`.
+2. Read the selected record with `room-cli memory get <id> --scope all --json`.
 3. Treat remembered facts as potentially stale. Verify drift-prone facts when
    doing so is cheap or consequential.
 
@@ -44,7 +44,7 @@ When scope is ambiguous, use project scope. Global scope must be explicit.
 Create a memory with:
 
 ```bash
-cloudroom memory add --scope project \
+room-cli memory add --scope project \
   --name <stable-kebab-name> \
   --summary "<one-line routing summary>" \
   --details "<complete durable detail>" \
@@ -59,7 +59,7 @@ Before creating a likely-overlapping memory, search by its proposed name and
 topic. Update an existing record instead of creating a contradiction:
 
 ```bash
-cloudroom memory update <id> --expected-version <version> \
+room-cli memory update <id> --expected-version <version> \
   --summary "<new summary>" \
   --details "<new details>" \
   --reason "<why the memory changed>" \
@@ -69,7 +69,7 @@ cloudroom memory update <id> --expected-version <version> \
 Forget a revoked or invalid memory with:
 
 ```bash
-cloudroom memory forget <id> --expected-version <version> \
+room-cli memory forget <id> --expected-version <version> \
   --reason "<why it no longer applies>" --json
 ```
 

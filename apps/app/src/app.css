@@ -807,6 +807,37 @@
   }
 }
 
+@keyframes bb-teleport-up {
+  0% {
+    transform: translateY(90%) scale(0.7);
+    opacity: 0;
+  }
+  40%,
+  60% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-90%) scale(0.7);
+    opacity: 0;
+  }
+}
+
+.bb-teleport-up {
+  animation: bb-teleport-up 1.2s ease-in-out infinite;
+}
+
+.bb-teleport-down {
+  animation: bb-teleport-up 1.2s ease-in-out infinite reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bb-teleport-up,
+  .bb-teleport-down {
+    animation: none;
+  }
+}
+
 /* Browse hero (Plugins → Browse plugins): the archetype chips orbiting the mini bb
  * window drift slowly so the hero reads as alive without competing with the
  * composer sitting in the middle of it. Duration and delay are per-chip custom

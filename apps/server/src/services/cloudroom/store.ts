@@ -3,7 +3,7 @@ import { cloudroomCommands, cloudroomThreads, threads, threadPluginMetadata, typ
 import type { ProjectCopyProgress } from "@bb/domain";
 
 export type TeleportProgress = {
-  id: string; owner: string; phase: "stopping" | "uploading" | "running" | "complete" | "cancelled" | "error" | "cancelling";
+  id: string; owner: string; phase: "checking" | "stopping" | "uploading" | "running" | "complete" | "cancelled" | "error" | "cancelling";
   completed: number; total: number; error?: string; cloudStarted?: boolean;
 };
 const teleportNamespace = "cloudroom.teleport";
@@ -14,7 +14,7 @@ export function teleportProgress(db: DbQueryConnection, threadId: string): Telep
 }
 export function teleportBlocked(db: DbQueryConnection, threadId: string): boolean {
   const progress = teleportProgress(db, threadId);
-  return Boolean(progress && !["complete", "cancelled"].includes(progress.phase));
+  return Boolean(progress && !["checking", "complete", "cancelled"].includes(progress.phase));
 }
 export function saveTeleportProgress(db: DbQueryConnection, threadId: string, value: TeleportProgress): void {
   db.insert(threadPluginMetadata).values({ threadId, pluginId: teleportNamespace, metadataJson: JSON.stringify(value) })

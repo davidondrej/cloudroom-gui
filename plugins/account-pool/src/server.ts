@@ -228,7 +228,7 @@ export function createAccountPoolPlugin(
     });
     if ((await accounts.list()).every((account) => !account.enabled)) {
       bb.status.needsConfiguration(
-        "Add and enable a Claude or Codex account with `cloudroom pool account add`.",
+        "Add and enable a Claude or Codex account with `room-cli pool account add`.",
       );
     }
     const cacheMissReports: CacheMissController = {
@@ -451,7 +451,7 @@ async function inspectDisableState(
   if (!disabled) return null;
   const warnings = await operations.routedThreadsWithoutLocalLogin();
   if (warnings.length === 0) return null;
-  return `Account Pooler disabled with ${warnings.length} recently routed thread${warnings.length === 1 ? "" : "s"} on machines without a local Claude login. Run cloudroom pool status before disabling to inspect them.`;
+  return `Account Pooler disabled with ${warnings.length} recently routed thread${warnings.length === 1 ? "" : "s"} on machines without a local Claude login. Run room-cli pool status before disabling to inspect them.`;
 }
 
 function cacheMissLogMessage(report: CacheMissReport): string {

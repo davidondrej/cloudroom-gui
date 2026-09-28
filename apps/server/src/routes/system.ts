@@ -270,6 +270,7 @@ export function registerSystemRoutes(
       ...settings,
       telemetryEnabled: settings.telemetryEnabled ?? current.telemetryEnabled,
       commandGuardEnabled: settings.commandGuardEnabled ?? current.commandGuardEnabled,
+      systemPromptEnabled: settings.systemPromptEnabled ?? current.systemPromptEnabled,
       showDiagnosticEvents:
         diagnosticValue === undefined ||
         (showUnhandledProviderEvents !== undefined &&

@@ -27,6 +27,7 @@ import {
 import { installProviderModelCatalogPrewarm } from "./services/providers/provider-model-catalog-prewarm.js";
 import { createProviderRegistryService } from "./services/providers/provider-registry.js";
 import { installFirstResponseTelemetry } from "./services/system/first-response-telemetry.js";
+import { installTitleRecheck } from "./services/threads/title-recheck.js";
 import { installAuthFailureTelemetry } from "./services/system/auth-failure-telemetry.js";
 import { createTelemetryService } from "./services/system/telemetry.js";
 import { TerminalSessionLifecycle } from "./services/terminals/terminal-session-lifecycle.js";
@@ -221,6 +222,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
   };
   const providerModelCatalogPrewarm =
     installProviderModelCatalogPrewarm(sweepDeps);
+  const stopTitleRecheck = installTitleRecheck(sweepDeps, cloud.sandboxes);
   await runStartupRecoverySweep(sweepDeps).catch((error) => {
     logger.error({ err: error }, "Startup recovery sweep failed");
   });
@@ -278,6 +280,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
       cloud.stop();
       stopFirstResponseTelemetry();
       stopAuthFailureTelemetry();
+      stopTitleRecheck();
       clearInterval(sweepInterval);
       pluginCatalogService.stopPeriodicRefresh();
       await pluginService.stopPeriodicUpdateChecks();

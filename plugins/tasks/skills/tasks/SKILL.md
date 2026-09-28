@@ -5,7 +5,7 @@ description: "Work on or manage records in Cloudroom Tasks, including task keys 
 
 # Tasks
 
-Use the `cloudroom tasks` CLI to understand the assigned task, keep its record useful,
+Use the `room-cli tasks` CLI to understand the assigned task, keep its record useful,
 and report the outcome where the work is tracked.
 
 For task dispatch and execution presets, read
@@ -16,16 +16,16 @@ For task dispatch and execution presets, read
 1. Find and read the task before acting:
 
    ```sh
-   cloudroom tasks show ABC-12
+   room-cli tasks show ABC-12
    ```
 
    The detail includes the description, status, priority, labels, subtasks,
    comments, attachments, attached worker threads, and the GitHub pull
    requests those threads produced (from environment metadata, with state
    open/draft/merged/closed). Use
-   `cloudroom tasks show ABC-12 --json` when the result will drive commands or code.
+   `room-cli tasks show ABC-12 --json` when the result will drive commands or code.
 
-   For project-wide discovery, `cloudroom tasks list` returns at most 100 rows by
+   For project-wide discovery, `room-cli tasks list` returns at most 100 rows by
    default. Pass `--limit 1-500`; in JSON, continue with `nextCursor` via the
    same filters/sort and `--cursor <value>`. A task-list mutation makes an old
    cursor stale, so restart without it.
@@ -33,7 +33,7 @@ For task dispatch and execution presets, read
 2. Fetch every relevant attachment before making assumptions about it:
 
    ```sh
-   cloudroom tasks attachment get <attachment-id> --out <path>
+   room-cli tasks attachment get <attachment-id> --out <path>
    ```
 
 3. Do the work. Post one substantive comment at each meaningful milestone,
@@ -41,7 +41,7 @@ For task dispatch and execution presets, read
    or a concrete blocker:
 
    ```sh
-   cloudroom tasks comment ABC-12 --body "Implemented the change; focused validation now passes."
+   room-cli tasks comment ABC-12 --body "Implemented the change; focused validation now passes."
    ```
 
    Add `--notify` only when the new comment should be delivered to the thread
@@ -55,8 +55,8 @@ For task dispatch and execution presets, read
    screenshots, patches, or generated files:
 
    ```sh
-   cloudroom tasks attachment add ABC-12 --file ./report.md
-   cloudroom tasks attachment add ABC-12 --file ./screenshot.png
+   room-cli tasks attachment add ABC-12 --file ./report.md
+   room-cli tasks attachment add ABC-12 --file ./screenshot.png
    ```
 
    Read `references/attachments.md` for comment attachments, initial files,
@@ -66,12 +66,12 @@ For task dispatch and execution presets, read
    met, or `in_review` when required review remains:
 
    ```sh
-   cloudroom tasks update ABC-12 --status in_review
+   room-cli tasks update ABC-12 --status in_review
    ```
 
-   Change task hierarchy with `cloudroom tasks update ABC-12 --parent ABC-10`, using
+   Change task hierarchy with `room-cli tasks update ABC-12 --parent ABC-10`, using
    either a task key or ID for the parent. Promote a subtask to the top level
-   with `cloudroom tasks update ABC-12 --no-parent`; the two parent flags cannot be
+   with `room-cli tasks update ABC-12 --no-parent`; the two parent flags cannot be
    combined.
 
    If the work cannot proceed, leave the status accurate and comment with the
@@ -82,15 +82,15 @@ For task dispatch and execution presets, read
    delegated from Tasks, attach it yourself so the task shows the active work:
 
    ```sh
-   cloudroom tasks attach ABC-12
+   room-cli tasks attach ABC-12
    ```
 
    When a thread is done with a task (hand-off, respawned replacement, or a
-   predecessor that died), detach it so `cloudroom tasks threads ABC-12` stays
+   predecessor that died), detach it so `room-cli tasks threads ABC-12` stays
    accurate. Omit `--thread` to detach the current thread:
 
    ```sh
-   cloudroom tasks detach ABC-12 --thread thr_dead_predecessor
+   room-cli tasks detach ABC-12 --thread thr_dead_predecessor
    ```
 
 ## Link tasks in responses

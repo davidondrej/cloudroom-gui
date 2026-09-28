@@ -13,14 +13,14 @@ other. Nothing needs a restart.
 
 Theme Preview is visualization and validation only. It never creates, writes,
 forks, repairs, or deletes a theme resource. Create and update `theme.css` from
-the separate agent thread; use the existing `cloudroom theme` commands to locate,
+the separate agent thread; use the existing `room-cli theme` commands to locate,
 inspect, and activate themes. Validation reports inconsistent or inaccessible
 results, but it never changes authored values.
 
 ## Where themes live
 
 ```sh
-cloudroom theme dir          # the custom-theme directory, e.g. ~/.bb/theme
+room-cli theme dir          # the custom-theme directory, e.g. ~/.bb/theme
 ```
 
 One directory per theme, one file inside it:
@@ -32,7 +32,7 @@ One directory per theme, one file inside it:
 `<name>` is the theme id: lowercase, letters, digits and dashes, a single path
 segment. Create the directory and the file and it is listed immediately — the
 Theme Preview dropdown picks it up on its next catalog refresh while the panel
-is open, and `cloudroom theme list` shows it at once.
+is open, and `room-cli theme list` shows it at once.
 
 ## File shape
 
@@ -86,8 +86,8 @@ two top-level blocks so tooling can read them.
 ## Apply and iterate
 
 ```sh
-cloudroom theme set <name>   # activate it app-wide
-cloudroom theme show         # what is active now
+room-cli theme set <name>   # activate it app-wide
+room-cli theme show         # what is active now
 ```
 
 Or activate it from the Theme Preview dropdown and use the adjacent mode

@@ -371,40 +371,37 @@ describe("desktop auto-update service", () => {
     });
   });
 
-  it("holds a downloaded update by skipping re-checks that would tear down its staging", async () => {
+  it("keeps checking after a download but only re-downloads for a newer release", async () => {
     const updater = new DesktopAutoUpdaterAdapterStub();
     updater.updateCheckResult = createUpdateCheckResult("0.0.2");
-    let currentTime = Date.parse(checkedAt);
     const service = createDesktopAutoUpdateService({
       currentVersion: "0.0.1",
       enabled: true,
       forceDevUpdateConfig: false,
       logger: createLogger(createLoggerMessages()),
-      now: () => currentTime,
+      now: () => Date.parse(checkedAt),
       platform: "macos",
       updater,
     });
 
-    await service.checkForUpdates();
-    expect(updater.checkForUpdatesCalls).toBe(1);
-
+    updater.emitUpdateAvailable(createUpdateInfo("0.0.2"));
+    await Promise.resolve();
     updater.emitUpdateDownloaded(createDownloadedEvent("0.0.2"));
-    await service.checkForUpdates();
-    currentTime += 16 * 60 * 1000;
-    await service.checkAfterActive();
+    expect(updater.downloadUpdateCalls).toBe(1);
 
+    // Re-downloading the staged version would make Squirrel.Mac replace its
+    // finished staging, so the same release must not download again.
+    await service.checkForUpdates();
+    updater.emitUpdateAvailable(createUpdateInfo("0.0.2"));
     expect(updater.checkForUpdatesCalls).toBe(1);
-    expect(service.getInfo()).toEqual({
-      autoUpdateEnabled: true,
-      downloadState: "downloaded",
-      lastCheckedAt: checkedAt,
-      latestVersion: "0.0.2",
+    expect(updater.downloadUpdateCalls).toBe(1);
+    expect(service.getInfo()).toMatchObject({
       pendingVersion: "0.0.2",
-      platform: "macos",
-      updateAvailable: true,
       updateDownloaded: true,
-      version: "0.0.1",
     });
+
+    updater.emitUpdateAvailable(createUpdateInfo("0.0.3"));
+    expect(updater.downloadUpdateCalls).toBe(2);
   });
 
   it("does not initialize electron-updater in dev mode without the override", async () => {

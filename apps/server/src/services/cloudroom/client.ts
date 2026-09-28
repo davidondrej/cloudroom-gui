@@ -15,7 +15,7 @@ export type TeleportFile = { path: string; size: number; sha256: string; kind: "
 export type TeleportManifest = {
   request_id: string; harness: Harness; native_id: string; model: string; provider: string | null; reasoning: string | null;
   workspace: string; workspace_name: string; files: TeleportFile[]; handoff: string;
-  service_tier?: string | null; command_guard_enabled?: boolean;
+  service_tier?: string | null; command_guard_enabled?: boolean; system_prompt?: string;
   queued: (string | { text: string; reasoning?: string; service_tier?: string })[];
 };
 export type TeleportStatus = {
@@ -547,7 +547,7 @@ export class CloudroomClient {
     }
   }
 
-  start(id: string, harness: Harness = "codex", options: { model?: string; reasoning?: string; workspace?: string; workspace_name?: string; provider?: string; command_guard_enabled?: boolean } = {}) {
+  start(id: string, harness: Harness = "codex", options: { model?: string; reasoning?: string; workspace?: string; workspace_name?: string; provider?: string; command_guard_enabled?: boolean; system_prompt?: string } = {}) {
     if (harness !== "codex" && harness !== "pi" && harness !== "cursor" && harness !== "claude-code" && harness !== "fx")
       throw new CloudroomError("Unsupported Cloudroom harness");
     return this.#command("/v1/sessions", "start", { request_id: id, harness, ...options });

@@ -1,27 +1,27 @@
 # CLI, input, agents, and AI services
 
-### bb.cli — an agent-facing `cloudroom` subcommand
+### bb.cli — an agent-facing `room-cli` subcommand
 
 One top-level command per plugin; a second `register` in one factory
 execution is rejected.
-Users and agents run `cloudroom <name> …` like any core command; the Cloudroom CLI
+Users and agents run `room-cli <name> …` like any core command; the Cloudroom CLI
 proxies it to the server, where `run` executes. Core collisions log an
-activation warning and appear in `cloudroom plugin list` as `cloudroom plugin run <id>`.
+activation warning and appear in `room-cli plugin list` as `room-cli plugin run <id>`.
 
 ```ts
 bb.cli.register({
-  name: "weather", // lowercase [a-z0-9-]+; core collisions use cloudroom plugin run <id>
+  name: "weather", // lowercase [a-z0-9-]+; core collisions use room-cli plugin run <id>
   summary: "Weather lookups",
   commands: [
     // help/skill metadata only; parsing argv is yours
     {
       name: "today",
       summary: "Today's weather",
-      usage: "cloudroom weather today <city>",
+      usage: "room-cli weather today <city>",
     },
   ],
   async run(argv, ctx) {
-    // argv EXCLUDES the command name: `cloudroom weather today sf` → argv = ["today", "sf"]
+    // argv EXCLUDES the command name: `room-cli weather today sf` → argv = ["today", "sf"]
     // ctx: { cwd?, threadId?, projectId?, signal }
     return { exitCode: 0, stdout: "sunny" }; // { exitCode, stdout?, stderr? }
   },
@@ -36,7 +36,7 @@ The host rejects a larger result atomically as `plugin_cli_output_too_large`;
 it never clips it. Page growing collections, cap verbose fields, and use
 file/streaming commands for large content. Caveat: under the workspace
 sandbox (Accept Edits / Approve for me), Claude's macOS sandbox permits
-loopback, so `cloudroom` CLI calls (including plugin commands) work sandboxed;
+loopback, so `room-cli` CLI calls (including plugin commands) work sandboxed;
 Linux and other provider sandboxes may still block loopback, in which case
 those calls need escalation approval.
 
@@ -178,7 +178,7 @@ Cloudroom's own AI services — the server-side helper completions behind thread
 titles and commit messages, and voice transcription — are served by plugins.
 Register a service in `server.ts` and implement the shared contract in the
 plugin's `bb.host` entry; the user selects it with `BB_INFERENCE` /
-`BB_TRANSCRIPTION` set to `<id>/<model>` (`cloudroom settings ai-services` lists
+`BB_TRANSCRIPTION` set to `<id>/<model>` (`room-cli settings ai-services` lists
 the options). The server reserves `openai` and every direct inference provider
 id in its current provider registry. This includes `anthropic`, `google`,
 `openrouter`, and their regional or gateway variants. Registration rejects

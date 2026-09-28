@@ -12,10 +12,10 @@ Write the instructions as plain text or Markdown. Leave the field empty to add n
 
 ## For agents and scripts
 
-Use the `cloudroom instructions` command:
+Use the `room-cli instructions` command:
 
-- `cloudroom instructions get` prints the current text.
-- `cloudroom instructions set <text...>` replaces it.
-- `cloudroom instructions clear` removes it.
+- `room-cli instructions get` prints the current text.
+- `room-cli instructions set <text...>` replaces it.
+- `room-cli instructions clear` removes it.
 
 Add `--json` for machine-readable output.

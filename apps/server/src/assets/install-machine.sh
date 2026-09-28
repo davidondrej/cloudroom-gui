@@ -381,20 +381,20 @@ legacy_service_slug=$(printf '%s' "$server_host" | tr '.' '-')
 # serve several bb servers and a full local bb install keeps ~/.bb to itself.
 data_dir=${BB_DATA_DIR:-"$HOME/.bb-machines/$server_host"}
 mkdir -p "$HOME/.local/bin"
-if [ ! -e "$HOME/.local/bin/cloudroom" ] && [ ! -L "$HOME/.local/bin/cloudroom" ]; then
+if [ ! -e "$HOME/.local/bin/room-cli" ] && [ ! -L "$HOME/.local/bin/room-cli" ]; then
   shim_file=$(mktemp "$HOME/.local/bin/.bb-machine.XXXXXX")
   node_path_quoted=$(printf '%s' "${node_bin%/*}" | sed "s/'/'\\''/g")
   printf '#!/bin/sh\nPATH=\047%s\047:"$PATH"\nexport PATH\n' "$node_path_quoted" > "$shim_file"
-  cli_path_quoted=$(printf '%s' "$data_dir/npm/bin/cloudroom" | sed "s/'/'\\''/g")
+  cli_path_quoted=$(printf '%s' "$data_dir/npm/bin/room-cli" | sed "s/'/'\\''/g")
   cat >> "$shim_file" <<'BB_MACHINE_EXPLICIT_DATA'
-if [ -n "${ROOM_DATA_DIR:-}" ] && [ -x "$ROOM_DATA_DIR/npm/bin/cloudroom" ]; then
-  exec "$ROOM_DATA_DIR/npm/bin/cloudroom" "$@"
+if [ -n "${ROOM_DATA_DIR:-}" ] && [ -x "$ROOM_DATA_DIR/npm/bin/room-cli" ]; then
+  exec "$ROOM_DATA_DIR/npm/bin/room-cli" "$@"
 fi
 BB_MACHINE_EXPLICIT_DATA
   printf 'if [ -x \047%s\047 ]; then exec \047%s\047 "$@"; fi\n' "$cli_path_quoted" "$cli_path_quoted" >> "$shim_file"
   cat >> "$shim_file" <<'BB_MACHINE_CLI'
 unset ROOM_DATA_DIR
-for candidate in "$HOME"/.bb-machines/*/npm/bin/cloudroom; do
+for candidate in "$HOME"/.bb-machines/*/npm/bin/room-cli; do
   if [ -x "$candidate" ]; then exec "$candidate" "$@"; fi
 done
 if [ "${1:-}" = machine ] && [ "${2:-}" = uninstall ]; then exit 0; fi
@@ -402,8 +402,8 @@ printf '%s\n' 'No installed Cloudroom machine CLI is available.' >&2
 exit 1
 BB_MACHINE_CLI
   chmod 755 "$shim_file"
-  if ! ln "$shim_file" "$HOME/.local/bin/cloudroom" 2>/dev/null; then
-    if [ ! -e "$HOME/.local/bin/cloudroom" ] && [ ! -L "$HOME/.local/bin/cloudroom" ]; then
+  if ! ln "$shim_file" "$HOME/.local/bin/room-cli" 2>/dev/null; then
+    if [ ! -e "$HOME/.local/bin/room-cli" ] && [ ! -L "$HOME/.local/bin/room-cli" ]; then
       rm -f "$shim_file"
       fail_step "Could not publish the machine CLI shim."
       exit 1
@@ -557,7 +557,7 @@ package_headers="$package_dir/headers"
 host_artifact_digest_file="$data_dir/host-artifact.sha256"
 installed_artifact_digest=
 if [ -x "$machine_npm_prefix/bin/bb-app" ] && \
-   [ -x "$machine_npm_prefix/bin/cloudroom" ] && \
+   [ -x "$machine_npm_prefix/bin/room-cli" ] && \
    [ -f "$machine_npm_prefix/lib/node_modules/bb-app/host-daemon/dist/daemon-bundle.mjs" ]; then
   installed_artifact_digest=$(node -e '
     const fs = require("node:fs");
@@ -668,8 +668,8 @@ if [ -n "$bb_app_npm_prefix" ]; then
   fi
 fi
 
-bb_cli="${bb_app%/*}/cloudroom"
-if [ ! -x "$bb_cli" ]; then bb_cli=$(command -v room || true); fi
+bb_cli="${bb_app%/*}/room-cli"
+if [ ! -x "$bb_cli" ]; then bb_cli=$(command -v room-cli || true); fi
 if [ -n "$bootstrap_env" ]; then
   if [ -z "$bb_cli" ]; then
     fail_step "The installed build does not provide the machine enrollment CLI."

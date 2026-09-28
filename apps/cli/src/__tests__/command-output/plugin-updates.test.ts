@@ -48,7 +48,7 @@ function jsonResponse(value: object, status = 200): Response {
   });
 }
 
-describe("cloudroom plugin update commands", () => {
+describe("room-cli plugin update commands", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
@@ -214,10 +214,10 @@ describe("cloudroom plugin update commands", () => {
 
     const output = collectLogPayloads(vi.mocked(console.log)).join("\n");
     expect(output).toContain(
-      'command: cloudroom plugin run shadower — Shadow threads (core command "cloudroom thread" takes precedence)',
+      'command: room-cli plugin run shadower — Shadow threads (core command "room-cli thread" takes precedence)',
     );
-    expect(output).toContain("command: cloudroom notes — Take notes");
-    expect(output).not.toContain('core command "cloudroom notes"');
+    expect(output).toContain("command: room-cli notes — Take notes");
+    expect(output).not.toContain('core command "room-cli notes"');
   });
 
   it("skips pinned plugins with manual reinstall guidance", async () => {

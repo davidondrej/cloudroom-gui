@@ -181,7 +181,7 @@ async function refreshPluginTypes(
     );
   }
   console.log(
-    "This plugin vendors types/ — `cloudroom plugin migrate` switches it to the @get-bb/plugin-sdk npm package.",
+    "This plugin vendors types/ — `room-cli plugin migrate` switches it to the @get-bb/plugin-sdk npm package.",
   );
 }
 
@@ -191,7 +191,7 @@ function warnIfSdkPinIsStale(pin: string | null): void {
   if (pin === null || !EXACT_VERSION_PATTERN.test(pin)) return;
   if (pin === PLUGIN_SDK_VERSION) return;
   console.warn(
-    `This plugin pins @get-bb/plugin-sdk ${pin}; this Cloudroom's SDK is ${PLUGIN_SDK_VERSION} — \`cloudroom plugin types\` updates the pin.`,
+    `This plugin pins @get-bb/plugin-sdk ${pin}; this Cloudroom's SDK is ${PLUGIN_SDK_VERSION} — \`room-cli plugin types\` updates the pin.`,
   );
 }
 
@@ -249,7 +249,7 @@ async function requirePluginManifest(
   }
   if (typeof manifest.bb?.server !== "string") {
     console.error(
-      `${rootDir} is not a cloudroom plugin — package.json has no "bb.server" entry.`,
+      `${rootDir} is not a room-cli plugin — package.json has no "bb.server" entry.`,
     );
     process.exit(1);
   }
@@ -392,14 +392,14 @@ async function installScaffoldDependencies(
     );
   } catch (cause) {
     console.warn(
-      `Could not run npm install — run it in the plugin directory before \`cloudroom plugin build\`.${npmFailureDetail(cause)}`,
+      `Could not run npm install — run it in the plugin directory before \`room-cli plugin build\`.${npmFailureDetail(cause)}`,
     );
     return false;
   }
   const problem = await unresolvedScaffoldPackages(targetDir);
   if (problem !== null) {
     console.warn(
-      `npm install reported success but ${problem} — run \`npm install --include=dev\` in the plugin directory before \`cloudroom plugin build\`.`,
+      `npm install reported success but ${problem} — run \`npm install --include=dev\` in the plugin directory before \`room-cli plugin build\`.`,
     );
     return false;
   }
@@ -693,7 +693,7 @@ function printPlugin(plugin: PluginEntry): void {
     const collisionNote = RESERVED_BB_CLI_COMMANDS.includes(
       plugin.cliCommand.name,
     )
-      ? ` (core command "cloudroom ${plugin.cliCommand.name}" takes precedence)`
+      ? ` (core command "room-cli ${plugin.cliCommand.name}" takes precedence)`
       : "";
     console.log(
       `  command: ${pluginCliCall(plugin.id, plugin.cliCommand.name)} — ${plugin.cliCommand.summary}${collisionNote}`,
@@ -1221,7 +1221,7 @@ export function registerPluginCommands(
             if (!shouldAttempt) {
               if (result.outcome === "pinned") {
                 console.log(
-                  `${result.id}: skipped — pinned${detail ? ` (${detail})` : ""}; remove and reinstall with a tracking npm range, git branch, or git semver range to receive updates (remove deletes the plugin's settings, secrets, and schedules). A local path plugin updates with \`cloudroom plugin reload\`; move it with \`cloudroom plugin install path:<new directory>\`.`,
+                  `${result.id}: skipped — pinned${detail ? ` (${detail})` : ""}; remove and reinstall with a tracking npm range, git branch, or git semver range to receive updates (remove deletes the plugin's settings, secrets, and schedules). A local path plugin updates with \`room-cli plugin reload\`; move it with \`room-cli plugin install path:<new directory>\`.`,
                 );
               } else if (result.outcome === "incompatible") {
                 console.log(
@@ -1300,7 +1300,7 @@ export function registerPluginCommands(
         if (!installed) {
           console.log("  npm install --include=dev");
         }
-        console.log("  cloudroom plugin install .");
+        console.log("  room-cli plugin install .");
       }),
     );
 
@@ -1339,15 +1339,15 @@ export function registerPluginCommands(
             if (pending.pin !== null || pending.movedFromDependencies) {
               console.error(
                 pending.pin === null
-                  ? 'Move "@get-bb/plugin-sdk" from dependencies to devDependencies — cloudroom provides its runtime (`cloudroom plugin types` does it for you).'
-                  : `Set "@get-bb/plugin-sdk" to ${PLUGIN_SDK_VERSION} in devDependencies and re-run npm install (\`cloudroom plugin types\` does it for you).`,
+                  ? 'Move "@get-bb/plugin-sdk" from dependencies to devDependencies — cloudroom provides its runtime (`room-cli plugin types` does it for you).'
+                  : `Set "@get-bb/plugin-sdk" to ${PLUGIN_SDK_VERSION} in devDependencies and re-run npm install (\`room-cli plugin types\` does it for you).`,
               );
             }
             for (const shim of pending.shimmedTypePins) {
               console.error(
                 shim.movedFromDependencies
-                  ? `Move "${shim.name}" from dependencies to devDependencies at ${shim.to} — cloudroom shims it at runtime and never bundles it (\`cloudroom plugin types\` does it for you).`
-                  : `Set "${shim.name}" to ${shim.to} in devDependencies — the version this cloudroom shims at runtime (\`cloudroom plugin types\` does it for you).`,
+                  ? `Move "${shim.name}" from dependencies to devDependencies at ${shim.to} — cloudroom shims it at runtime and never bundles it (\`room-cli plugin types\` does it for you).`
+                  : `Set "${shim.name}" to ${shim.to} in devDependencies — the version this cloudroom shims at runtime (\`room-cli plugin types\` does it for you).`,
               );
             }
             process.exit(1);
@@ -1398,7 +1398,7 @@ export function registerPluginCommands(
         if (opts.check) {
           if (files.some((file) => file.outcome === "stale")) {
             console.error(
-              "Declarations are out of date — run `cloudroom plugin types` to refresh them.",
+              "Declarations are out of date — run `room-cli plugin types` to refresh them.",
             );
             process.exit(1);
           }
@@ -1450,7 +1450,7 @@ export function registerPluginCommands(
         });
         if (!samePlan(plan, confirmedPlan)) {
           console.error(
-            "The plugin changed while awaiting confirmation — nothing was written. Re-run `cloudroom plugin migrate` to see the current plan.",
+            "The plugin changed while awaiting confirmation — nothing was written. Re-run `room-cli plugin migrate` to see the current plan.",
           );
           process.exit(1);
         }
@@ -1523,7 +1523,7 @@ export function registerPluginCommands(
         );
         if (!entry) {
           console.error(
-            `This directory is not installed as a plugin — run \`cloudroom plugin install ${path ?? "."}\` first, then re-run \`cloudroom plugin dev\`.`,
+            `This directory is not installed as a plugin — run \`room-cli plugin install ${path ?? "."}\` first, then re-run \`room-cli plugin dev\`.`,
           );
           process.exit(1);
         }
@@ -1702,15 +1702,15 @@ export function registerPluginCommands(
           ) {
             console.error(
               actionName === "set"
-                ? "Usage: cloudroom plugin config <id> set <key> <value>"
-                : "Usage: cloudroom plugin config <id> unset <key>",
+                ? "Usage: room-cli plugin config <id> set <key> <value>"
+                : "Usage: room-cli plugin config <id> unset <key>",
             );
             process.exit(1);
           }
           let parsedValue: string | number | boolean | null = null;
           if (actionName === "set") {
             if (value === undefined) {
-              console.error("Usage: cloudroom plugin config <id> set <key> <value>");
+              console.error("Usage: room-cli plugin config <id> set <key> <value>");
               process.exit(1);
             }
             const current = pluginSettingsResultSchema.parse(
@@ -1770,7 +1770,7 @@ export function registerPluginCommands(
   plugin
     .command("run <id> [args...]")
     .description(
-      "Run a plugin's CLI command (explicit form of `cloudroom <command> ...`)",
+      "Run a plugin's CLI command (explicit form of `room-cli <command> ...`)",
     )
     .passThroughOptions()
     .allowUnknownOption()

@@ -10,11 +10,11 @@ An automation is a scheduled task. When due it runs in one of two modes:
 agent Spawn a thread or re-prompt a target thread with a configured prompt.
 script Run a stored server-side script and capture stdout/stderr/exit.
 
-Use the top-level `cloudroom automation` command. The CLI routes it to this plugin.
+Use the top-level `room-cli automation` command. The CLI routes it to this plugin.
 
 Pass `--project` explicitly for every automation command. Inside a thread, automations are stamped origin `agent` and record the creating thread automatically. Automation-spawned threads cannot create automations.
 
-Personal supports automations with `--project proj_personal`. Use `cloudroom project list --include-personal --json` to include it in discovery; an empty default project list does not mean Personal is unavailable.
+Personal supports automations with `--project proj_personal`. Use `room-cli project list --include-personal --json` to include it in discovery; an empty default project list does not mean Personal is unavailable.
 
 Choosing a mode:
 
@@ -27,7 +27,7 @@ Use `agent` when the run needs reasoning: summarize a feed, pick interesting ite
 Creating:
 
 ```bash
-cloudroom automation create --project <id> --name "..." [schedule flags] [mode flags]
+room-cli automation create --project <id> --name "..." [schedule flags] [mode flags]
 ```
 
 For creation flags and mode-specific defaults, read
@@ -39,14 +39,14 @@ injected variables, or diagnose retries, timeouts, restarts, and silent runs.
 Managing:
 
 ```bash
-cloudroom automation list --project <id>
-cloudroom automation show <automationId> --project <id>
-cloudroom automation update <automationId> --project <id> [--name <name>] [schedule flags] [complete execution flags | partial agent update flags]
-cloudroom automation pause <automationId> --project <id>
-cloudroom automation resume <automationId> --project <id>
-cloudroom automation run <automationId> --project <id> [--idempotency-key <key>]
-cloudroom automation runs <automationId> --project <id> [--limit <count>] [--output <runId>]
-cloudroom automation delete <automationId> --project <id> --yes
+room-cli automation list --project <id>
+room-cli automation show <automationId> --project <id>
+room-cli automation update <automationId> --project <id> [--name <name>] [schedule flags] [complete execution flags | partial agent update flags]
+room-cli automation pause <automationId> --project <id>
+room-cli automation resume <automationId> --project <id>
+room-cli automation run <automationId> --project <id> [--idempotency-key <key>]
+room-cli automation runs <automationId> --project <id> [--limit <count>] [--output <runId>]
+room-cli automation delete <automationId> --project <id> --yes
 ```
 
 For partial updates, mode replacement, execution targets, or damaged records,

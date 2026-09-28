@@ -49,10 +49,10 @@ export const bundleTargets = [
     banner: NODE_ESM_REQUIRE_BANNER,
     entryPoint: resolve(workspaceRoot, "apps", "cli", "src", "index.ts"),
     executable: true,
-    label: "cloudroom cli",
-    outfile: resolve(packageRoot, "dist", "cloudroom"),
+    label: "room-cli",
+    outfile: resolve(packageRoot, "dist", "room-cli"),
     // The CLI `import()`s each command group on demand; chunks land in
-    // dist/cloudroom-chunks, which packages/bb-app ships next to this entry.
+    // dist/room-cli-chunks, which packages/bb-app ships next to this entry.
     splitting: true,
     // The packaged CLI has no workspace on disk, so `bb plugin types` for a
     // vendored-layout plugin gets the SDK declarations inlined (see

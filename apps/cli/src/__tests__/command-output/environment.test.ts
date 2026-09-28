@@ -11,7 +11,7 @@ import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import * as fixtures from "../helpers/command-output-fixtures.js";
 import { registerEnvironmentCommands } from "../../commands/environment.js";
 
-describe("cloudroom environment command output", () => {
+describe("room-cli environment command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
@@ -101,7 +101,7 @@ describe("cloudroom environment command output", () => {
     expect(help).not.toContain("squash-merge");
   });
 
-  it("cloudroom environment providers lists selectable ids and required inputs", async () => {
+  it("room-cli environment providers lists selectable ids and required inputs", async () => {
     stubServerApi({
       "v1.system.environment-providers.$get": vi.fn(async () => ({
         providers: [
@@ -158,7 +158,7 @@ describe("cloudroom environment command output", () => {
     ]);
   });
 
-  it("cloudroom environment providers requests eligibility for a project and machine", async () => {
+  it("room-cli environment providers requests eligibility for a project and machine", async () => {
     const getProviders = vi.fn(async () => ({ providers: [] }));
     stubServerApi({
       "v1.hosts.$get": vi.fn(async () => [
@@ -192,7 +192,7 @@ describe("cloudroom environment command output", () => {
     });
   });
 
-  it("cloudroom environment providers prints each provider's availability on the chosen machine", async () => {
+  it("room-cli environment providers prints each provider's availability on the chosen machine", async () => {
     const provider = {
       displayName: "Provider",
       description: "Prepare a workspace for this thread.",
@@ -263,7 +263,7 @@ describe("cloudroom environment command output", () => {
     ]);
   });
 
-  it("cloudroom environment list names the provider that produced each row", async () => {
+  it("room-cli environment list names the provider that produced each row", async () => {
     const list = vi.fn(async () => [
       fixtures.makeEnvironment({
         id: "env-worktree",
@@ -289,7 +289,7 @@ describe("cloudroom environment command output", () => {
     ]);
   });
 
-  it("cloudroom environment list names invalid --limit as a non-negative integer", async () => {
+  it("room-cli environment list names invalid --limit as a non-negative integer", async () => {
     const list = vi.fn(async () => []);
     stubServerApi({ "v1.environments.$get": list });
 
@@ -303,7 +303,7 @@ describe("cloudroom environment command output", () => {
     expect(list).not.toHaveBeenCalled();
   });
 
-  it("cloudroom environment list names invalid --offset as a non-negative integer", async () => {
+  it("room-cli environment list names invalid --offset as a non-negative integer", async () => {
     const list = vi.fn(async () => []);
     stubServerApi({ "v1.environments.$get": list });
 
@@ -317,7 +317,7 @@ describe("cloudroom environment command output", () => {
     expect(list).not.toHaveBeenCalled();
   });
 
-  it("cloudroom environment delete reports requested cleanup and its lifecycle", async () => {
+  it("room-cli environment delete reports requested cleanup and its lifecycle", async () => {
     const remove = vi.fn(async () => ({ ok: true as const }));
     const get = vi.fn(async () =>
       fixtures.makeEnvironment({
@@ -344,7 +344,7 @@ describe("cloudroom environment command output", () => {
     ]);
   });
 
-  it("cloudroom environment status inspects an arbitrary environment id", async () => {
+  it("room-cli environment status inspects an arbitrary environment id", async () => {
     const get = vi.fn(async () => ({
       outcome: "available",
       workspace: workspaceStatus,
@@ -377,7 +377,7 @@ describe("cloudroom environment command output", () => {
     );
   });
 
-  it("cloudroom environment status --json preserves the canonical response", async () => {
+  it("room-cli environment status --json preserves the canonical response", async () => {
     const response = {
       outcome: "available",
       workspace: workspaceStatus,
@@ -418,7 +418,7 @@ describe("cloudroom environment command output", () => {
     expect(lines.some((line) => line.startsWith("Deletions:"))).toBe(false);
   });
 
-  it("cloudroom environment status explains non-git environments", async () => {
+  it("room-cli environment status explains non-git environments", async () => {
     stubServerApi({
       "v1.environments.:id.status.$get": vi.fn(async () => ({
         outcome: "not_applicable",
@@ -434,7 +434,7 @@ describe("cloudroom environment command output", () => {
     );
   });
 
-  it("cloudroom environment pull-request show reports absence and presence", async () => {
+  it("room-cli environment pull-request show reports absence and presence", async () => {
     const get = vi
       .fn()
       .mockResolvedValueOnce({ outcome: "absent" })
@@ -470,7 +470,7 @@ describe("cloudroom environment command output", () => {
     );
   });
 
-  it("cloudroom environment pull-request show --json preserves the outcome", async () => {
+  it("room-cli environment pull-request show --json preserves the outcome", async () => {
     stubServerApi({
       "v1.environments.:id.pull-request.$get": vi.fn(async () => ({
         outcome: "absent",
@@ -487,7 +487,7 @@ describe("cloudroom environment command output", () => {
     ).toEqual({ outcome: "absent" });
   });
 
-  it("cloudroom environment pull-request show reports a failed lookup", async () => {
+  it("room-cli environment pull-request show reports a failed lookup", async () => {
     stubServerApi({
       "v1.environments.:id.pull-request.$get": vi.fn(async () => ({
         outcome: "unavailable",
@@ -505,7 +505,7 @@ describe("cloudroom environment command output", () => {
     ]);
   });
 
-  it("cloudroom environment branches returns local and remote results", async () => {
+  it("room-cli environment branches returns local and remote results", async () => {
     const get = vi.fn(async () => ({
       branches: ["main", "release"],
       branchesTruncated: false,
@@ -542,7 +542,7 @@ describe("cloudroom environment command output", () => {
     ]);
   });
 
-  it("cloudroom environment paths targets the environment and path kinds", async () => {
+  it("room-cli environment paths targets the environment and path kinds", async () => {
     const response = {
       paths: [
         {
@@ -587,7 +587,7 @@ describe("cloudroom environment command output", () => {
     ]);
   });
 
-  it("cloudroom environment diff prints summary, full diff, and truncation", async () => {
+  it("room-cli environment diff prints summary, full diff, and truncation", async () => {
     const get = vi.fn(async () => ({
       outcome: "available",
       diff: {
@@ -625,7 +625,7 @@ describe("cloudroom environment command output", () => {
     ]);
   });
 
-  it("cloudroom environment diff-files --json preserves binary and initial patch metadata", async () => {
+  it("room-cli environment diff-files --json preserves binary and initial patch metadata", async () => {
     const response = {
       outcome: "available",
       files: [
@@ -675,7 +675,7 @@ describe("cloudroom environment command output", () => {
     ).toEqual(response);
   });
 
-  it("cloudroom environment diff-files reports a truncated file list", async () => {
+  it("room-cli environment diff-files reports a truncated file list", async () => {
     stubServerApi({
       "v1.environments.:id.diff.files.$get": vi.fn(async () => ({
         outcome: "available",
@@ -716,7 +716,7 @@ describe("cloudroom environment command output", () => {
     ]);
   });
 
-  it("cloudroom environment diff-file distinguishes text and binary content", async () => {
+  it("room-cli environment diff-file distinguishes text and binary content", async () => {
     const get = vi
       .fn()
       .mockResolvedValueOnce({
@@ -791,7 +791,7 @@ describe("cloudroom environment command output", () => {
     ]);
   });
 
-  it("cloudroom environment diff-patch preserves patch paths and truncation", async () => {
+  it("room-cli environment diff-patch preserves patch paths and truncation", async () => {
     const post = vi.fn(async () => ({
       outcome: "available",
       patches: [
@@ -842,7 +842,7 @@ describe("cloudroom environment command output", () => {
     ]);
   });
 
-  it("cloudroom environment diff explains non-git results", async () => {
+  it("room-cli environment diff explains non-git results", async () => {
     stubServerApi({
       "v1.environments.:id.diff.$get": vi.fn(async () => ({
         outcome: "not_applicable",
@@ -915,7 +915,7 @@ describe("cloudroom environment command output", () => {
     );
   });
 
-  it("cloudroom environment commit prefixes failures with environment context", async () => {
+  it("room-cli environment commit prefixes failures with environment context", async () => {
     const post = vi.fn(async () => {
       throw new Error("HTTP 500: boom");
     });
@@ -930,7 +930,7 @@ describe("cloudroom environment command output", () => {
     );
   });
 
-  it("cloudroom environment commit posts the action without a thread id", async () => {
+  it("room-cli environment commit posts the action without a thread id", async () => {
     const post = vi.fn(async () => ({
       ok: true,
       action: "commit",
@@ -948,7 +948,7 @@ describe("cloudroom environment command output", () => {
     });
   });
 
-  it("cloudroom environment update sets the merge base branch", async () => {
+  it("room-cli environment update sets the merge base branch", async () => {
     const environment = fixtures.makeEnvironment({
       id: "env-update-1",
       projectId: "proj-1",
@@ -983,7 +983,7 @@ describe("cloudroom environment command output", () => {
     );
   });
 
-  it("cloudroom environment update clears the merge base branch", async () => {
+  it("room-cli environment update clears the merge base branch", async () => {
     const environment = fixtures.makeEnvironment({
       id: "env-update-2",
       projectId: "proj-1",
@@ -1009,7 +1009,7 @@ describe("cloudroom environment command output", () => {
     );
   });
 
-  it("cloudroom environment update renames the environment", async () => {
+  it("room-cli environment update renames the environment", async () => {
     const environment = fixtures.makeEnvironment({
       id: "env-update-name",
       projectId: "proj-1",
@@ -1044,7 +1044,7 @@ describe("cloudroom environment command output", () => {
     );
   });
 
-  it("cloudroom environment update clears the environment name", async () => {
+  it("room-cli environment update clears the environment name", async () => {
     const environment = fixtures.makeEnvironment({
       id: "env-clear-name",
       projectId: "proj-1",
@@ -1068,7 +1068,7 @@ describe("cloudroom environment command output", () => {
     expect(collectLogLines(vi.mocked(console.log))).toContain("Name cleared");
   });
 
-  it("cloudroom environment update sets name and merge base together", async () => {
+  it("room-cli environment update sets name and merge base together", async () => {
     const environment = fixtures.makeEnvironment({
       id: "env-update-combined",
       projectId: "proj-1",
@@ -1106,7 +1106,7 @@ describe("cloudroom environment command output", () => {
     );
   });
 
-  it("cloudroom environment update rejects name and clear-name together", async () => {
+  it("room-cli environment update rejects name and clear-name together", async () => {
     const patch = vi.fn();
     stubServerApi({ "v1.environments.:id.$patch": patch });
 
@@ -1130,7 +1130,7 @@ describe("cloudroom environment command output", () => {
     expect(patch).not.toHaveBeenCalled();
   });
 
-  it("cloudroom environment update rejects an empty name", async () => {
+  it("room-cli environment update rejects an empty name", async () => {
     const patch = vi.fn();
     stubServerApi({ "v1.environments.:id.$patch": patch });
 
@@ -1147,7 +1147,7 @@ describe("cloudroom environment command output", () => {
     expect(patch).not.toHaveBeenCalled();
   });
 
-  it("cloudroom environment update --json prints the updated environment", async () => {
+  it("room-cli environment update --json prints the updated environment", async () => {
     const environment = fixtures.makeEnvironment({
       id: "env-json-update",
       projectId: "proj-1",

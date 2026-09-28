@@ -9,12 +9,12 @@ Provider commands
 
 Providers are agent backends (e.g., codex, claude-code). Each supports different models.
 
-  cloudroom provider list [--machine <id-or-name> | --environment <id>]
+  room-cli provider list [--machine <id-or-name> | --environment <id>]
                                           List available providers
-  cloudroom provider models [providerId] [--machine <id-or-name> | --environment <id>] [--restart]
+  room-cli provider models [providerId] [--machine <id-or-name> | --environment <id>] [--restart]
                                           List models for a provider
 
-Cloud Codex uses a separate VM login. Check it with `cloudroom cloud codex status --json`; start official device-code sign-in with `cloudroom cloud codex login --request-id ID`, or cancel that attempt with `cloudroom cloud codex cancel ID`. Keep the temporary code private. Verify `connected` before retrying a saved task. This does not authenticate Pi or switch local accounts.
+Cloud Codex uses a separate VM login. Check it with `room-cli cloud codex status --json`; start official device-code sign-in with `room-cli cloud codex login --request-id ID`, or cancel that attempt with `room-cli cloud codex cancel ID`. Keep the temporary code private. Verify `connected` before retrying a saved task. This does not authenticate Pi or switch local accounts.
 
 Use these before spawning threads if you are unsure which provider or model to use.
 `--host` is an alias for `--machine`. Machine and environment selectors are
@@ -26,7 +26,7 @@ the explicitly requested provider or Codex, then resolves the model marked
 default by that provider on the target machine (falling back to the first
 catalog model when none is marked).
 
-`cloudroom provider models acp-cursor --restart` restarts Cursor's model-discovery
+`room-cli provider models acp-cursor --restart` restarts Cursor's model-discovery
 process and reloads its models. It preserves conversation threads, credentials,
 and project files. Use it when model loading fails; it does not repair login
 or installation problems. Other providers must explicitly support this action.
@@ -74,11 +74,11 @@ Automatic waits default to a maximum of six hours. Longer reset windows are not
 scheduled. Set `maximumWait` to `24 hours` or `No limit` under the plugin
 settings, or run:
 
-  cloudroom plugin config provider-retry set maximumWait "24 hours"
+  room-cli plugin config provider-retry set maximumWait "24 hours"
 
-  cloudroom provider-retry status [thread-id] [--json]    Inspect pending retries
-  cloudroom provider-retry cancel <thread-id> [--json]    Cancel an automatic retry
-  cloudroom provider-retry retry <thread-id> [--json]     Send a pending retry now
+  room-cli provider-retry status [thread-id] [--json]    Inspect pending retries
+  room-cli provider-retry cancel <thread-id> [--json]    Cancel an automatic retry
+  room-cli provider-retry retry <thread-id> [--json]     Send a pending retry now
 
 A pending retry is a queued row on the thread, so it survives a server restart
 and appears above the composer with its reason and time. Credit and
@@ -91,7 +91,7 @@ or forked provider sessions.
 
 Claude Code runs without its Claude in Chrome browser tools under cloudroom by
 default. Enable them with
-`cloudroom plugin config provider-claude-code set chromeEnabled true`. The host needs
+`room-cli plugin config provider-claude-code set chromeEnabled true`. The host needs
 the Chrome extension and a claude.ai login. A change restarts the thread's
 Claude process before its next turn and keeps the conversation.
 
@@ -106,15 +106,15 @@ roots such as .agents/skills and .claude/skills when the provider supports them.
 It also includes project ancestor roots for providers that search to the Git
 repository root. Configured Pi, omp, Grok, and Hermes directories are included.
 Enabled provider plugins also contribute skills to the selected provider's `/`
-command menu. `cloudroom skill list` shows native skills for Claude Code, Codex, and
+command menu. `room-cli skill list` shows native skills for Claude Code, Codex, and
 Cursor.
 
 ACP providers discover models from the agent itself. For acp-opencode, the
 list mirrors the OpenCode catalog, so a custom model from the OpenCode config
 appears automatically. Discover and select one with:
 
-  cloudroom provider models acp-opencode --environment "$ROOM_ENVIRONMENT_ID"
-  cloudroom thread spawn --provider acp-opencode --model <provider/model>
+  room-cli provider models acp-opencode --environment "$ROOM_ENVIRONMENT_ID"
+  room-cli thread spawn --provider acp-opencode --model <provider/model>
 
 cloudroom applies the selected model to the ACP session before the first prompt.
 

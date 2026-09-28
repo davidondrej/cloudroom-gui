@@ -916,7 +916,7 @@ export function ThreadDetailPromptArea({
     [fallbackIdentity, selectedProviderId, setSelectedProviderId, beginHandoff],
   );
   const handleHandoffSelect = useCallback(
-    (selection: ModelReasoningPickerHandoffSelection) => {
+    (selection: Parameters<typeof setProviderModelReasoning>[0]) => {
       if (fallbackIdentity !== null) {
         setOverriddenFallbackIdentity(fallbackIdentity);
       }
@@ -924,6 +924,17 @@ export function ThreadDetailPromptArea({
       setProviderModelReasoning(selection);
     },
     [beginHandoff, fallbackIdentity, setProviderModelReasoning],
+  );
+  // A harness can't change mid-thread, so another harness starts a handoff.
+  const handleSelectModel = useCallback(
+    (selection: { providerId: string; model: string }) => {
+      if (selection.providerId === selectedProviderId) {
+        handleModelChange(selection.model);
+        return;
+      }
+      handleHandoffSelect(selection);
+    },
+    [handleHandoffSelect, handleModelChange, selectedProviderId],
   );
   useEffect(() => {
     if (isHandoffSelection) {
@@ -1703,6 +1714,7 @@ export function ThreadDetailPromptArea({
         onExit: exitHandoff,
         onSelect: handleHandoffSelect,
       },
+      selectModel: handleSelectModel,
     }),
     [
       effectiveSelectedModel,
@@ -1710,6 +1722,7 @@ export function ThreadDetailPromptArea({
       isCloud,
       hasMultipleProviders,
       handleHandoffSelect,
+      handleSelectModel,
       beginHandoff,
       isHandoffSelection,
       exitHandoff,
@@ -1739,6 +1752,7 @@ export function ThreadDetailPromptArea({
   const compactExecutionConfig = useMemo(() => {
     const {
       handoff: _handoff,
+      selectModel: _selectModel,
       provider: { onChange: _onProviderChange, ...lockedProvider },
       ...lockedExecution
     } = bottomExecutionConfig;
@@ -2374,7 +2388,7 @@ export function ThreadDetailPromptArea({
     <FollowUpPromptBox
       id={THREAD_DETAIL_COMPOSER_TEXTAREA_ID}
       attachments={bottomAttachmentsConfig}
-      stack={<>{!isCloud && !teleporting && <TeleportCheckCard pending={teleport.isPending} error={teleport.error} models={[...modelOptions, ...moreModelOptions]} reasoning={reasoningLevel} usedTokens={contextWindowUsage?.usedTokens ?? null} levelsFor={(model) => cloudReasoningLevels(cloudConnection.data, thread.providerId, model)} onTeleport={(choice) => teleport.mutate(choice)} onDismiss={teleport.reset} />}{thread.teleport && <TeleportNotice thread={thread} pendingDelivery={cloudState.data?.pendingDelivery} paused={cloudState.data?.paused} sending={sendMessage.isPending} />}{thread.projectCopy && <ProjectCopyNotice thread={thread} />}{cloudNotice}{!isCloud && !shouldHideComposer && <LocalSignInNotice threadId={thread.id} providerId={thread.providerId} hostId={environmentHostId} environmentId={thread.environmentId} authFailed={providerAuthFailed} />}{pendingInteractionNode ? pendingInteractionStack : promptStack}</>}
+      stack={<>{!isCloud && !teleporting && <TeleportCheckCard error={teleport.error} models={[...modelOptions, ...moreModelOptions]} reasoning={reasoningLevel} usedTokens={contextWindowUsage?.usedTokens ?? null} levelsFor={(model) => cloudReasoningLevels(cloudConnection.data, thread.providerId, model)} onTeleport={(choice) => teleport.mutate(choice)} onDismiss={teleport.reset} />}{thread.teleport && <TeleportNotice thread={thread} pendingDelivery={cloudState.data?.pendingDelivery} paused={cloudState.data?.paused} sending={sendMessage.isPending} />}{thread.projectCopy && <ProjectCopyNotice thread={thread} />}{cloudNotice}{!isCloud && !shouldHideComposer && <LocalSignInNotice threadId={thread.id} providerId={thread.providerId} hostId={environmentHostId} environmentId={thread.environmentId} authFailed={providerAuthFailed} />}{pendingInteractionNode ? pendingInteractionStack : promptStack}</>}
       pendingInteraction={pendingInteractionNode}
       activePromptMode={isHandoffSelection ? null : activePromptMode}
       composer={shouldHideComposer || teleporting || transferredChild || movingToLocal ? null : bottomComposerConfig}
@@ -2390,6 +2404,7 @@ export function ThreadDetailPromptArea({
         ...bottomExecutionConfig,
         lockModelSelection: true,
         handoff: undefined,
+        selectModel: undefined,
         provider: { ...bottomExecutionConfig.provider, selectedId: thread.providerId, hasMultiple: false },
         model: { ...bottomExecutionConfig.model, active: cloudState.data ? { model: cloudState.data.model } : null, isLoading: !cloudState.data, options: [...modelOptions, ...moreModelOptions], moreOptions: [], loadFailed: false, loadError: null },
         reasoning: { ...bottomExecutionConfig.reasoning, value: cloudReasoning, options: cloudFollowUpReasoningOptions, onChange: handleReasoningChange },

@@ -11,4 +11,4 @@ Keep your notes, plans, and reports as plain Markdown files on disk, and edit th
 
 ## For agents
 
-Agents get the `docs` skill and the `cloudroom docs` command. They list vaults with `cloudroom docs vaults` and read files with `cloudroom docs read`. They edit with `cloudroom docs pull`, `cloudroom docs status`, and `cloudroom docs push`. Push uses version checks, so a concurrent edit is reported as a conflict instead of being overwritten.
+Agents get the `docs` skill and the `room-cli docs` command. They list vaults with `room-cli docs vaults` and read files with `room-cli docs read`. They edit with `room-cli docs pull`, `room-cli docs status`, and `room-cli docs push`. Push uses version checks, so a concurrent edit is reported as a conflict instead of being overwritten.

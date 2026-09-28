@@ -9,13 +9,13 @@ Project commands
 
 A project maps to a code repository. All threads belong to a project.
 
-  cloudroom project list                         List ordinary projects
+  room-cli project list                         List ordinary projects
     --include-personal                    Also include the personal project
-  cloudroom project history <id>                 List prompt history
-  cloudroom project reorder <id>                 Reorder in the sidebar
+  room-cli project history <id>                 List prompt history
+  room-cli project reorder <id>                 Reorder in the sidebar
     --after <id>                          Previous project, or omit for start
     --before <id>                         Next project, or omit for end
-  cloudroom project create --name "..." [options]
+  room-cli project create --name "..." [options]
     --root <path>                         Project source path
     --machine <id-or-name>                Bind the path to a connected machine
     --host <id-or-name>                   Alias for --machine
@@ -24,21 +24,21 @@ A project maps to a code repository. All threads belong to a project.
   binds --root to that machine. Omitting the selector preserves the existing
   local CLI machine fallback (normally the primary machine).
 
-  cloudroom project show <id>                    Show project details
+  room-cli project show <id>                    Show project details
     Accepts proj_personal to inspect Personal.
-  cloudroom project update <id>                  Update a project
+  room-cli project update <id>                  Update a project
     --name <name>                         New name
 
-  cloudroom project delete <id>                  Delete project and all threads
+  room-cli project delete <id>                  Delete project and all threads
     --yes                                 Skip confirmation
 
 Discovery:
 
-  cloudroom project branches <id> --host <id>   List branches for a machine source
-  cloudroom project paths <id>                   Search workspace paths
-  cloudroom project files <id>                   List workspace files
-  cloudroom project content <id> <path>          Read file content (binary is base64)
-  cloudroom project commands <id> --provider <id>
+  room-cli project branches <id> --host <id>   List branches for a machine source
+  room-cli project paths <id>                   Search workspace paths
+  room-cli project files <id>                   List workspace files
+  room-cli project content <id> <path>          Read file content (binary is base64)
+  room-cli project commands <id> --provider <id>
                                           List commands and skills
     --machine <id-or-name>                Target project source machine
     --host <id-or-name>                   Alias for --machine
@@ -55,11 +55,11 @@ Discovery:
 
 Attachments:
 
-  cloudroom project attachment upload <id>       Upload bytes from the CLI machine
+  room-cli project attachment upload <id>       Upload bytes from the CLI machine
     --client-file <path>                  Path read on this CLI machine
     --filename <name>                     Attachment filename override
     --mime-type <type>                    MIME override (otherwise inferred)
-  cloudroom project attachment download <id> <attachment-path>
+  room-cli project attachment download <id> <attachment-path>
     --client-file <path>                  Destination on this CLI machine
 
   Uploads use multipart bytes and return a server-managed attachment DTO. Pass
@@ -74,7 +74,7 @@ Sources:
 
   Projects can have multiple machine-local path sources.
 
-  cloudroom project source add <projectId>       Add a source
+  room-cli project source add <projectId>       Add a source
     --path <path>                         Local path
     --clone                               Clone the project's Git remote
     --remote-url <url>                    Git remote override for --clone
@@ -85,16 +85,16 @@ Sources:
   Explicit project source selectors must name a connected machine. Omitting
   the selector preserves the same local CLI machine fallback as project create.
 
-  cloudroom project source update <projectId> <sourceId>
+  room-cli project source update <projectId> <sourceId>
     --path <path>
     --default
 
-  cloudroom project source delete <projectId> <sourceId>
+  room-cli project source delete <projectId> <sourceId>
 
 Project source deletion remains available while a project is pending deletion so providers can finish cleanup. A live project must retain at least one source; a deleting project may remove its last source.
 
 Workspace file and path searches honor Git ignore rules, including local and
 global exclusions. Tracked files and non-ignored untracked files remain
 searchable, including hidden files. Non-Git workspaces use filesystem listings.
-Use `cloudroom file list|paths` for filesystem listings that include ignored files,
+Use `room-cli file list|paths` for filesystem listings that include ignored files,
 subject to their explicit exclusion options.

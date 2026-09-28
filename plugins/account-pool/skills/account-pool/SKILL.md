@@ -5,9 +5,9 @@ description: "Configure or diagnose Account Pooler accounts, authentication, quo
 
 # Account Pooler
 
-Use `cloudroom pool` for this plugin's accounts and routes. Inspect current state with
-`cloudroom pool status --json` and `cloudroom pool account list --json` before changing routing.
-Use `cloudroom pool --help` for available commands.
+Use `room-cli pool` for this plugin's accounts and routes. Inspect current state with
+`room-cli pool status --json` and `room-cli pool account list --json` before changing routing.
+Use `room-cli pool --help` for available commands.
 
 For account login/import, secret handling, quota refresh, routing settings,
 ordering, failover, or cache miss debugging, read

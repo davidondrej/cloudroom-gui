@@ -5,7 +5,7 @@
 This skill is a guide, not the contract. For an exact signature or a symbol it
 does not cover:
 
-1. **`cloudroom plugin types`**, run in the plugin directory (or given its path),
+1. **`room-cli plugin types`**, run in the plugin directory (or given its path),
    syncs that plugin's SDK surface to the running Cloudroom — no server needed. For a
    plugin that depends on the npm package it repins the exact
    `@get-bb/plugin-sdk` devDependency to this Cloudroom's SDK version and brings the
@@ -47,11 +47,11 @@ Users can install third-party plugins directly from a local path, npm package,
 or Git repository:
 
 ```sh
-cloudroom plugin install ./bb-plugin-notes
-cloudroom plugin install npm:bb-plugin-notes@^1.0.0
-cloudroom plugin install https://github.com/acme/bb-plugin-notes
-cloudroom plugin install git:https://github.com/acme/bb-plugin-notes.git@main
-cloudroom plugin install git:https://github.com/acme/bb-plugin-notes.git@^1.2.0
+room-cli plugin install ./bb-plugin-notes
+room-cli plugin install npm:bb-plugin-notes@^1.0.0
+room-cli plugin install https://github.com/acme/bb-plugin-notes
+room-cli plugin install git:https://github.com/acme/bb-plugin-notes.git@main
+room-cli plugin install git:https://github.com/acme/bb-plugin-notes.git@^1.2.0
 ```
 
 A bare HTTP(S) repository URL tracks its default branch. Use the `git:` form
@@ -64,7 +64,7 @@ user confirms that exact source and version.
 
 Tag each release `vX.Y.Z` and users can install a range instead of a ref:
 cloudroom reads the repository's tags, installs the highest release the range allows,
-and `cloudroom plugin update` moves them to later releases in the same range.
+and `room-cli plugin update` moves them to later releases in the same range.
 Prereleases stay out unless the range names one. Give each plugin of a
 multi-plugin repository its own tag prefix — `notes/v1.2.3` — and users add
 `--tag-prefix notes/`.
@@ -96,9 +96,9 @@ file is an index only — it never overrides a plugin's identity, branding,
 entry points, or engine ranges. Users install one plugin at a time:
 
 ```sh
-cloudroom plugin install git:https://github.com/acme/bb-plugins.git@main --plugin notes
-cloudroom plugin install git:https://github.com/acme/bb-plugins.git@main --subdirectory plugins/notes
-cloudroom plugin install path:. --plugin notes
+room-cli plugin install git:https://github.com/acme/bb-plugins.git@main --plugin notes
+room-cli plugin install git:https://github.com/acme/bb-plugins.git@main --subdirectory plugins/notes
+room-cli plugin install path:. --plugin notes
 ```
 
 `--subdirectory` works without a collection manifest; `--plugin` resolves an
@@ -150,12 +150,12 @@ own origin.
 Host it three ways, and users add whichever fits:
 
 ```sh
-cloudroom marketplace add https://plugins.acme.dev/marketplace.json
-cloudroom marketplace add git:github.com/acme/bb-marketplace@main
-cloudroom marketplace add path:/work/acme-marketplace
-cloudroom marketplace list
-cloudroom marketplace refresh acme-plugins
-cloudroom marketplace remove acme-plugins
+room-cli marketplace add https://plugins.acme.dev/marketplace.json
+room-cli marketplace add git:github.com/acme/bb-marketplace@main
+room-cli marketplace add path:/work/acme-marketplace
+room-cli marketplace list
+room-cli marketplace refresh acme-plugins
+room-cli marketplace remove acme-plugins
 ```
 
 `list` shows configured catalogs. `refresh` updates discovery metadata and
@@ -184,7 +184,7 @@ State the outcome the user gets.
 
 `PLUGIN_OVERVIEW.md` beside package.json holds the long-form description. The
 detail page shows it in an Overview section under the lead paragraph, in the
-app and on the public getbb.app marketplace. `cloudroom plugin new` scaffolds one, the
+app and on the public getbb.app marketplace. `room-cli plugin new` scaffolds one, the
 BB Marketplace requires one, and a plugin that is only installed from
 a local path or a private source still reads better with one.
 
@@ -214,4 +214,4 @@ Follow these rules. Marketplace CI rejects a file that breaks one.
 Lead with the outcome, then sections such as What you get, How it works, and
 Requirements. Name every cost: an external service, an account, a separate
 install, or a limited operating system. Name agent surfaces with their exact
-tool or `cloudroom` command names in inline code.
+tool or `room-cli` command names in inline code.

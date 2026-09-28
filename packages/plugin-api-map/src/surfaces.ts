@@ -609,10 +609,10 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
     surfaces: [
       {
         id: "cli",
-        tagline: "Your own `cloudroom <name>` command",
+        tagline: "Your own `room-cli <name>` command",
         title: "Cloudroom CLI commands",
         summary:
-          "Registers a top-level `cloudroom <name>` command, available in the terminal and to agents. With this, a plugin can:",
+          "Registers a top-level `room-cli <name>` command, available in the terminal and to agents. With this, a plugin can:",
         bullets: [
           "Be invoked the same way by a person at a terminal and by an agent mid-task",
           "Receive the thread and project it was invoked from, when Cloudroom knows them",

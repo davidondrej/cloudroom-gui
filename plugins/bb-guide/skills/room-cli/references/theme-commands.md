@@ -2,7 +2,7 @@
 
 ## Theming
 
-- `cloudroom theme` controls the **app-wide color palette** — a set of CSS-variable
+- `room-cli theme` controls the **app-wide color palette** — a set of CSS-variable
   overrides persisted server-side and applied live to every open window. This is
   the _palette_ only; light/dark _mode_ is a separate per-client setting that the
   palette layers on top of.
@@ -12,23 +12,23 @@
   `<bb-data-dir>/skills/<name>/`.
 - All theme commands support `--json`.
 - Commands:
-  - `cloudroom theme list` — built-in and custom themes and which palette is active.
-  - `cloudroom theme dir` — print the absolute custom-theme directory (where to create
+  - `room-cli theme list` — built-in and custom themes and which palette is active.
+  - `room-cli theme dir` — print the absolute custom-theme directory (where to create
     `<name>/theme.css`). Use this instead of guessing the path.
-  - `cloudroom theme set <id> [--favicon-color <color>]` — activate a built-in
+  - `room-cli theme set <id> [--favicon-color <color>]` — activate a built-in
     (`default`, `nord`, `dracula`, `solarized`, `gruvbox`, `catppuccin`), custom,
     or plugin-contributed theme. Without the flag it preserves the favicon
     color; with the flag it updates the complete appearance selection.
-  - `cloudroom theme show [id] [--css]` — print the active palette, or resolve a
+  - `room-cli theme show [id] [--css]` — print the active palette, or resolve a
     built-in, custom, or plugin theme by id without activating it. For a custom
     or plugin theme, `--css` prints its CSS. For a built-in theme, it reports
     that Cloudroom bundles the CSS. Settings → Appearance previews a palette live on
     hover without saving; this command is the CLI counterpart.
-  - `cloudroom theme reset` — back to `default` while preserving the favicon color.
-  - `cloudroom theme favicon set <color>` — set the favicon color while preserving the
+  - `room-cli theme reset` — back to `default` while preserving the favicon color.
+  - `room-cli theme favicon set <color>` — set the favicon color while preserving the
     active theme. Colors: `default`, `red`, `orange`, `yellow`, `green`, `teal`,
     `blue`, `purple`, `pink`.
-  - `cloudroom theme favicon reset` — reset the favicon color to `default` while
+  - `room-cli theme favicon reset` — reset the favicon color to `default` while
     preserving the active theme.
 
 ### Creating or editing a custom theme
@@ -36,11 +36,11 @@
 This is the Cloudroom habit: custom app-theme work belongs in
 `<bb-data-dir>/theme/<name>/theme.css` — never a stray `.css` file elsewhere.
 
-1. Find the directory: `cloudroom theme dir` (e.g. `~/.bb/theme`).
+1. Find the directory: `room-cli theme dir` (e.g. `~/.bb/theme`).
 2. Write the stylesheet to `<that-dir>/<name>/theme.css` (create the folder). Use
    a name of at most 64 characters. Start with a letter or digit. After that,
    use letters, digits, dots, underscores, or hyphens. Avoid a built-in ID.
-3. Activate it: `cloudroom theme set <name>`. Changes apply live to every open window.
+3. Activate it: `room-cli theme set <name>`. Changes apply live to every open window.
 
 Code colors follow the active palette. Built-in palettes use the matching
 Shiki pair (Nord, Dracula, Solarized, Gruvbox, Catppuccin). To restyle diffs

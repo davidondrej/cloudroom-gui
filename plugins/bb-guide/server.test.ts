@@ -12,40 +12,28 @@ const bundledSkills = readdirSync(new URL("./skills", import.meta.url), {
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name);
 
-it("keeps the introduction and skill switches independent across reloads", async () => {
+it("keeps the skill switches across reloads", async () => {
   const { bb, harness } = createFakePluginHost({
     pluginId: "bb-guide",
     agentSkillIds: bundledSkills,
   });
   try {
     await plugin(bb);
-    const instructions = () =>
-      harness.registrations.instructionProvider?.({
-        threadId: "thr_test",
-        projectId: "proj_test",
-      });
     const skills = async () =>
       (
         await harness.behavior.resolveAgentConfiguration(
           makePluginAgentConfigurationContext(),
         )
       ).skills;
-    expect(instructions()).toContain("You are working inside Cloudroom");
     expect((await skills()).sort()).toEqual([...bundledSkills].sort());
-    await harness.behavior.setSettings({
-      introduction: false,
-      pluginAuthoring: false,
-    });
-    expect(instructions()).toBeNull();
-    expect(await skills()).toEqual(["cloudroom", "skill-creator"]);
+    await harness.behavior.setSettings({ pluginAuthoring: false });
+    expect(await skills()).toEqual(["room-cli", "skill-creator"]);
     await harness.behavior.setSettings({ skills: false });
     expect(await skills()).toEqual([]);
     await harness.lifecycle.reload(plugin);
-    expect(instructions()).toBeNull();
     expect(await skills()).toEqual([]);
-    await harness.behavior.setSettings({ introduction: true, skills: true });
-    expect(instructions()).toContain("cloudroom status");
-    expect(await skills()).toEqual(["cloudroom", "skill-creator"]);
+    await harness.behavior.setSettings({ skills: true });
+    expect(await skills()).toEqual(["room-cli", "skill-creator"]);
   } finally {
     await harness.lifecycle.dispose();
   }
@@ -54,8 +42,8 @@ it("keeps the introduction and skill switches independent across reloads", async
 describe("individual skill selection", () => {
   it.each([
     ["bbCli", ["bb-plugin-authoring", "skill-creator"]],
-    ["pluginAuthoring", ["cloudroom", "skill-creator"]],
-    ["skillCreator", ["cloudroom", "bb-plugin-authoring"]],
+    ["pluginAuthoring", ["room-cli", "skill-creator"]],
+    ["skillCreator", ["room-cli", "bb-plugin-authoring"]],
   ])("disables %s", async (key, expected) => {
     const { bb, harness } = createFakePluginHost({
       pluginId: "bb-guide",

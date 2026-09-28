@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { reasoningLevelSchema, serviceTierSchema } from "@bb/domain";
+import { reasoningLevelSchema, serviceTierSchema, type Thread } from "@bb/domain";
 import { fetchWithAppSurface } from "@/lib/app-surface";
 import { sdk } from "@/lib/sdk";
 import { appToast } from "@/components/ui/app-toast";
@@ -102,6 +102,7 @@ export function useCloudroomThreadWorkspace(threadId: string, enabled: boolean) 
 export function useTeleportThread(threadId: string) {
   const client = useQueryClient();
   return useMutation({
+    mutationKey: ["cloudroom", "teleport", threadId],
     mutationFn: (input: "start" | "cancel" | { model: string; reasoning: string }) =>
       typeof input === "string" ? sdk.cloudroom.teleport(threadId, input) : sdk.cloudroom.teleport(threadId, "start", input),
     onSettled: () => client.invalidateQueries(),
@@ -111,11 +112,20 @@ export function useTeleportThread(threadId: string) {
 export function useTeleportLocal(threadId: string) {
   const client = useQueryClient();
   return useMutation({
+    mutationKey: ["cloudroom", "teleport-local", threadId],
     mutationFn: () => sdk.cloudroom.teleportLocal(threadId),
     onSuccess: ({ conflicts }) => appToast.success(conflicts ? `Moved to this computer. ${conflicts} files could not be merged safely; the cloud versions are in .cloudroom/teleport/.` : "Moved to this computer."),
     onError: (error) => showMutationErrorToast({ error, fallbackMessage: "Could not teleport to Local" }),
     onSettled: () => client.invalidateQueries(),
   });
+}
+
+export function useTeleportDirection(thread: Pick<Thread, "id" | "teleport">): "cloud" | "local" | null {
+  const toCloud = useIsMutating({ mutationKey: ["cloudroom", "teleport", thread.id], predicate: (mutation) => mutation.state.variables !== "cancel" }) > 0;
+  const toLocal = useIsMutating({ mutationKey: ["cloudroom", "teleport-local", thread.id] }) > 0;
+  if (toLocal) return "local";
+  if (toCloud || (thread.teleport && !["complete", "cancelled", "error"].includes(thread.teleport.phase))) return "cloud";
+  return null;
 }
 
 export function useCopyToMac(threadId: string) {

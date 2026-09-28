@@ -248,7 +248,7 @@ const SETTINGS_DROPDOWN_CONTENT_CLASS =
   "min-w-[var(--radix-dropdown-menu-trigger-width)]";
 
 const CREATE_CUSTOM_PALETTE_PROMPT =
-  "Create a custom Cloudroom palette. First run `cloudroom theme dir` to find the custom theme directory. Ask me for the palette name and visual direction, then create `<theme-dir>/<name>/theme.css` with light and dark theme variables compatible with Cloudroom's theme tokens.";
+  "Create a custom Cloudroom palette. First run `room-cli theme dir` to find the custom theme directory. Ask me for the palette name and visual direction, then create `<theme-dir>/<name>/theme.css` with light and dark theme variables compatible with Cloudroom's theme tokens.";
 const PALETTE_SETTING_DESCRIPTION =
   "Palettes change Cloudroom's colors, including syntax colors in diffs and file previews. Choose a built-in palette or create one from a prompt.";
 
@@ -1236,6 +1236,20 @@ export function SettingsView() {
             disabled={systemConfigQuery.data === undefined || updateGeneralSettingsMutation.isPending}
             onCheckedChange={(enabled) => updateGeneralSettingsMutation.mutate({ ...generalSettings, commandGuardEnabled: enabled })}
             aria-label="Command Guard"
+          />
+        </SettingsWithControl>
+        {updateGeneralSettingsMutation.error && <p role="alert">{updateGeneralSettingsMutation.error.message}</p>}
+      </SettingsSection>
+    );
+  } else if (activeSection === "system-prompt") {
+    content = (
+      <SettingsSection title="System prompt" description="Cloudroom's built-in instructions for every Local and Cloud agent: how Cloudroom works, Git rules, and building defaults. Project and custom instructions still apply. Start a new session after changing this setting.">
+        <SettingsWithControl label="Cloudroom system prompt" description="Recommended. Turn off only if your own instructions cover this.">
+          <Switch
+            checked={generalSettings.systemPromptEnabled}
+            disabled={systemConfigQuery.data === undefined || updateGeneralSettingsMutation.isPending}
+            onCheckedChange={(enabled) => updateGeneralSettingsMutation.mutate({ ...generalSettings, systemPromptEnabled: enabled })}
+            aria-label="Cloudroom system prompt"
           />
         </SettingsWithControl>
         {updateGeneralSettingsMutation.error && <p role="alert">{updateGeneralSettingsMutation.error.message}</p>}

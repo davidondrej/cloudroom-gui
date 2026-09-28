@@ -92,7 +92,7 @@ export default async function plugin(bb: BbPluginApi) {
     if (!recent) return null;
     return (
       `The user is currently viewing this Cloudroom remotely at ${status.url}. ` +
-      "Port shares work from a thread on any enrolled host: when you start an HTTP server they should see, run `cloudroom connect expose <port>` from that thread. " +
+      "Port shares work from a thread on any enrolled host: when you start an HTTP server they should see, run `room-cli connect expose <port>` from that thread. " +
       "The command returns the correct public URL for the thread's host; give it to them as a markdown link because a localhost URL will not work remotely."
     );
   });

@@ -3,7 +3,7 @@
 ## Frontend (`bb.app` entry)
 
 `app.tsx` default-exports `definePluginApp` from `@get-bb/plugin-sdk/app`.
-React and the SDK are **never bundled** — `cloudroom plugin build` shims them to
+React and the SDK are **never bundled** — `room-cli plugin build` shims them to
 the host's shared runtime, so the bundle only works inside bb.
 
 ```tsx

@@ -41,10 +41,24 @@ export interface FastModeCommandSuggestion {
   description: string;
 }
 
+export interface ModelShortcutCommandSuggestion {
+  kind: "model-shortcut";
+  name: string;
+  description: string;
+}
+
+export interface LocationCommandSuggestion {
+  kind: "location";
+  name: "local" | "cloud";
+  description: string;
+}
+
 type ComposerCommandSuggestion =
   | ProviderCommandSuggestion
   | ReasoningCommandSuggestion
-  | FastModeCommandSuggestion;
+  | FastModeCommandSuggestion
+  | ModelShortcutCommandSuggestion
+  | LocationCommandSuggestion;
 
 export type ComposerCommandMenuState =
   | Exclude<CommandMenuState, { kind: "results" }>
@@ -169,9 +183,20 @@ function getMentionKey(item: PromptMentionSuggestion): string {
   return JSON.stringify([item.kind, item.sectionId]);
 }
 
-type CommandSectionKind = ProviderCommandSection | "reasoning" | "fast-mode";
+type CommandSectionKind =
+  | ProviderCommandSection
+  | "reasoning"
+  | "fast-mode"
+  | "model-shortcut"
+  | "location";
 
 function getCommandSectionLabel(kind: CommandSectionKind): string {
+  if (kind === "location") {
+    return "Location";
+  }
+  if (kind === "model-shortcut") {
+    return "Models";
+  }
   if (kind === "fast-mode") {
     return "Fast mode";
   }
@@ -190,8 +215,20 @@ function getCommandSectionLabel(kind: CommandSectionKind): string {
 const ROW_ICON_CLASS = "size-3.5 shrink-0 text-muted-foreground";
 
 function getCommandIcon(item: ComposerCommandSuggestion): ReactNode {
+  if (item.kind === "location") {
+    return (
+      <Icon
+        name={item.name === "cloud" ? "Cloud" : "Laptop"}
+        className={ROW_ICON_CLASS}
+        aria-hidden
+      />
+    );
+  }
   if (item.kind === "fast-mode") {
     return <Icon name="Zap" className={ROW_ICON_CLASS} aria-hidden />;
+  }
+  if (item.kind === "model-shortcut") {
+    return <Icon name="Bot" className={ROW_ICON_CLASS} aria-hidden />;
   }
   if (item.kind === "reasoning") {
     return <Icon name="Brain" className={ROW_ICON_CLASS} aria-hidden />;
@@ -225,7 +262,12 @@ function getCommandKey(item: ProviderCommandSuggestion): string {
 }
 
 export function typeaheadSuggestionKey(item: TypeaheadSuggestion): string {
-  if (item.kind === "reasoning" || item.kind === "fast-mode") {
+  if (
+    item.kind === "reasoning" ||
+    item.kind === "fast-mode" ||
+    item.kind === "model-shortcut" ||
+    item.kind === "location"
+  ) {
     return JSON.stringify([item.kind, item.name]);
   }
   return item.kind === "command" ? getCommandKey(item) : getMentionKey(item);
@@ -451,11 +493,7 @@ function CommandResults({
       groupSections({
         suggestions,
         sectionKind: (item): CommandSectionKind =>
-          item.kind === "fast-mode"
-            ? "fast-mode"
-            : item.kind === "reasoning"
-              ? "reasoning"
-              : providerCommandSection(item),
+          item.kind === "command" ? providerCommandSection(item) : item.kind,
         sectionLabel: getCommandSectionLabel,
       }),
     [suggestions],

@@ -59,7 +59,7 @@ export function debugSandbox(
     const stored = await bb.storage.kv.get<unknown>(`debug/${sandboxId}`);
     if (stored === undefined)
       throw new Error(
-        "Unknown debug sandbox; use an ID returned by cloudroom modal sandbox run",
+        "Unknown debug sandbox; use an ID returned by room-cli modal sandbox run",
       );
     const record = recordSchema.parse(stored);
     const { client } = await resolve();

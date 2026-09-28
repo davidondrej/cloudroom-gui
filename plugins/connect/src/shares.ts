@@ -252,7 +252,7 @@ export class ShareRegistry {
     const credential = this.options.getCredential();
     if (credential === null) {
       throw new SharePortError(
-        "this Cloudroom server is not connected to getbb.app — run `cloudroom connect` for how to pair",
+        "this Cloudroom server is not connected to getbb.app — run `room-cli connect` for how to pair",
       );
     }
     if (host.isServer) this.serverHostId = host.id;
@@ -474,7 +474,7 @@ export class ShareRegistry {
 
   private unavailableReason(share: RestoredShare, error: unknown): string {
     if (error instanceof ShareHostNotFoundError) {
-      return `Host ${error.hostId} was removed. Run \`cloudroom connect unexpose ${share.port} --host ${error.hostId}\` to prune this share.`;
+      return `Host ${error.hostId} was removed. Run \`room-cli connect unexpose ${share.port} --host ${error.hostId}\` to prune this share.`;
     }
     return error instanceof SharePortError
       ? error.message

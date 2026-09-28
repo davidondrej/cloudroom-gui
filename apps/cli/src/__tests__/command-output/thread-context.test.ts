@@ -8,7 +8,7 @@ import {
 import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import { registerThreadCommands } from "../../commands/thread/index.js";
 
-describe("cloudroom thread context", () => {
+describe("room-cli thread context", () => {
   setupCommandOutputTestEnvironment();
   const register: CommandRegistrar = (program) =>
     registerThreadCommands(program, () => "http://server");

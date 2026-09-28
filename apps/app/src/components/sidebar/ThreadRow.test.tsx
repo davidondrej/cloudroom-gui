@@ -9,6 +9,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { createStore, Provider } from "jotai";
 import type { ThreadListEntry } from "@bb/domain";
@@ -78,6 +79,8 @@ const DEFAULT_OPTIONS: ThreadRowOptions = {
   isCompact: false,
 };
 
+const queryClient = new QueryClient();
+
 function ThreadRowTestHarness({
   crossProjectId = null,
   hasComposerDraft = false,
@@ -103,20 +106,22 @@ function ThreadRowTestHarness({
     : EMPTY_SIDEBAR_THREAD_SHORTCUT_KEYS;
 
   return (
-    <MemoryRouter>
-      <TooltipProvider>
-        <SidebarThreadShortcutKeysContext.Provider value={shortcutKeys}>
-          <ThreadRow
-            projectId={thread.projectId}
-            thread={thread}
-            crossProjectId={crossProjectId}
-            isActive={isActive}
-            hasComposerDraft={hasComposerDraft}
-            options={options}
-          />
-        </SidebarThreadShortcutKeysContext.Provider>
-      </TooltipProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <TooltipProvider>
+          <SidebarThreadShortcutKeysContext.Provider value={shortcutKeys}>
+            <ThreadRow
+              projectId={thread.projectId}
+              thread={thread}
+              crossProjectId={crossProjectId}
+              isActive={isActive}
+              hasComposerDraft={hasComposerDraft}
+              options={options}
+            />
+          </SidebarThreadShortcutKeysContext.Provider>
+        </TooltipProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 

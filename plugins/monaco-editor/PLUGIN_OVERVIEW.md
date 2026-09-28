@@ -1,4 +1,4 @@
-Edit a file in Cloudroom instead of only reading it. It applies to every place where Cloudroom opens a file: chat links, the file search, and `cloudroom thread open`. The editor is Monaco, the editor from VS Code.
+Edit a file in Cloudroom instead of only reading it. It applies to every place where Cloudroom opens a file: chat links, the file search, and `room-cli thread open`. The editor is Monaco, the editor from VS Code.
 
 ## What you get
 

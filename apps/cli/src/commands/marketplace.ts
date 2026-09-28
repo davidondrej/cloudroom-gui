@@ -58,7 +58,7 @@ export function registerMarketplaceCommands(
         console.log(`Added marketplace ${added.name}:`);
         printMarketplace(added);
         console.log(
-          `Adding a marketplace installs nothing. Install an entry with \`cloudroom plugin install <id>@${added.name}\`.`,
+          `Adding a marketplace installs nothing. Install an entry with \`room-cli plugin install <id>@${added.name}\`.`,
         );
       }),
     );

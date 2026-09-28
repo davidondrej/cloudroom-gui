@@ -9,7 +9,7 @@ import {
 } from "../helpers/command-output-harness.js";
 import { registerSkillCommands } from "../../commands/skill.js";
 
-describe("cloudroom skill commands", () => {
+describe("room-cli skill commands", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>

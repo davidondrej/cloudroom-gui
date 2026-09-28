@@ -44,6 +44,7 @@ import { getThreadReadToggleAction } from "@bb/client-core";
 import { getRootComposeRoutePath, getThreadRoutePath } from "@/lib/route-paths";
 import { getDesktopBrowserApi } from "@/lib/bb-desktop";
 import { useRouteNavigate } from "@/components/ui/app-route-anchor";
+import { getSidebarThreadNavigationTargets } from "@/components/sidebar/sidebarThreadShortcuts";
 
 export interface ThreadActionsContextValue {
   archiveThreadAndChildren: (thread: Thread) => void;
@@ -298,9 +299,23 @@ export function ThreadActionsProvider({
         (response) => {
           const navigateAwayIfArchived = () => {
             const viewed = viewedThreadIdRef.current;
-            if (viewed && response.archivedThreadIds.includes(viewed)) {
-              navigate(getRootComposeRoutePath());
-            }
+            if (!viewed || !response.archivedThreadIds.includes(viewed)) return;
+            // Land on the bottom thread of the same project, in sidebar order.
+            const fallback = getSidebarThreadNavigationTargets(document.body)
+              .filter(
+                (target) =>
+                  target.projectId === thread.projectId &&
+                  !response.archivedThreadIds.includes(target.threadId),
+              )
+              .at(-1);
+            navigate(
+              fallback
+                ? getThreadRoutePath({
+                    projectId: thread.projectId,
+                    threadId: fallback.threadId,
+                  })
+                : getRootComposeRoutePath(),
+            );
           };
           syncNavigationAfterClose(
             closePanesForThreads(response.archivedThreadIds),

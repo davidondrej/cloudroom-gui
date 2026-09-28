@@ -189,6 +189,11 @@
       "types": "./src/components/ui/skeleton.tsx",
       "default": "./src/components/ui/skeleton.tsx"
     },
+    "./slider": {
+      "source": "./src/components/ui/slider.tsx",
+      "types": "./src/components/ui/slider.tsx",
+      "default": "./src/components/ui/slider.tsx"
+    },
     "./switch": {
       "source": "./src/components/ui/switch.tsx",
       "types": "./src/components/ui/switch.tsx",

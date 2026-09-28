@@ -1,6 +1,6 @@
 # Thread, project, environment, and machine creation
 
-For Cloud, use `cloudroom thread spawn --project PROJECT --machine cloud --provider codex --model MODEL --request-id UNIQUE_ID --prompt "Task"` (or `--provider pi`). Reuse the request ID after an unconfirmed submission. Cloud forks, children, native-machine/worktree options, and scheduling are not enabled. Attachment support depends on the connected core/harness; inspect `cloudroom cloud status --json` and verify the agent reads the file. The native environment workflows below apply to Local threads.
+For Cloud, use `room-cli thread spawn --project PROJECT --machine cloud --provider codex --model MODEL --request-id UNIQUE_ID --prompt "Task"` (or `--provider pi`). Reuse the request ID after an unconfirmed submission. Cloud forks, children, native-machine/worktree options, and scheduling are not enabled. Attachment support depends on the connected core/harness; inspect `room-cli cloud status --json` and verify the agent reads the file. The native environment workflows below apply to Local threads.
 
 ## Spawning Threads
 
@@ -11,7 +11,7 @@ For Cloud, use `cloudroom thread spawn --project PROJECT --machine cloud --provi
   options or forks. Attachments and fast service tier require the corresponding
   connected-core/harness capability.
 
-- Use `cloudroom thread spawn --project <project-id> --prompt "..."` to create another
+- Use `room-cli thread spawn --project <project-id> --prompt "..."` to create another
   thread. Pass the intended project explicitly; the CLI does not infer it from
   context variables. Omitted execution flags use remembered project defaults;
   without a remembered model, cloudroom resolves the selected provider and its reported
@@ -19,14 +19,14 @@ For Cloud, use `cloudroom thread spawn --project PROJECT --machine cloud --provi
 - Select a target with `--environment`, `--new-environment`, `--base-branch`,
   or `--machine`. Select execution with `--provider`, `--model`,
   `--reasoning-level`, `--service-tier`, and `--permission-mode`.
-- List plugin-provisioned environment choices with `cloudroom environment providers`. Add `--project <id>` and optionally `--machine <id>` to omit providers whose declared requirements are unmet. Without a machine, the project listing includes providers structurally eligible on any persistent machine. Git inspection and plugin availability run only for the selected provider and machine during thread creation. `--json` includes each provider's `description` and `icon`, its `requires` facts and its `inputs` JSON Schema or null.
+- List plugin-provisioned environment choices with `room-cli environment providers`. Add `--project <id>` and optionally `--machine <id>` to omit providers whose declared requirements are unmet. Without a machine, the project listing includes providers structurally eligible on any persistent machine. Git inspection and plugin availability run only for the selected provider and machine during thread creation. `--json` includes each provider's `description` and `icon`, its `requires` facts and its `inputs` JSON Schema or null.
   Pass the selected ID to `--environment-provider`. Add
   `--environment-inputs <json>` only when the provider's schema does not accept
   an empty object; otherwise the CLI supplies `{}` when the flag is omitted.
   `--machine` picks the existing machine.
-- List machine providers with `cloudroom machine providers`. Create a
+- List machine providers with `room-cli machine providers`. Create a
   new provider machine with
-  `cloudroom thread spawn --new-machine <provider-id> --environment-provider <id>`.
+  `room-cli thread spawn --new-machine <provider-id> --environment-provider <id>`.
   For Modal's composed environment, use `--environment-provider modal-sandbox`
   without machine selectors; `--machine-inputs <json>` configures that composed
   machine with optional configured names such as
@@ -51,7 +51,7 @@ worktree` only; a provider takes its branch through `--environment-inputs`.
   keeps handoff active. Use `cloudroom thread spawn --provider PROVIDER --model MODEL
 --environment ENV_ID --prompt 'Continue from @thread:THREAD_ID ...'` for the
   same thread creation through the CLI, or `threads.spawn` through the SDK.
-- Use `cloudroom thread fork <source-thread-id>` to clone a provider session. The
+- Use `room-cli thread fork <source-thread-id>` to clone a provider session. The
   fork inherits the source conversation in its timeline. It creates an idle
   fork in the source environment by default; add `--prompt`, select an existing
   environment with `--environment`, or create a fresh personal workspace or
@@ -63,33 +63,33 @@ worktree` only; a provider takes its branch through `--environment-inputs`.
   inherits the source thread unless explicitly overridden.
 - Pass `--visibility hidden` for background/plugin workers that should remain
   out of sidebar organization without contributing unread/pending favicon
-  attention. `cloudroom thread list` excludes them by
+  attention. `room-cli thread list` excludes them by
   default; pass `--include-hidden` when a hidden worker must be discovered.
   Direct-ID lifecycle and messaging operations remain available. A root thread
   is visible by default; a child thread inherits its parent's visibility, so a
   hidden thread's subagents are hidden too. Pass `--visibility` to override the
   inherited value. A hidden child still reports its turns and blockers to its
   parent thread; only forks and side chats stay silent. Promote or hide an
-  existing thread with `cloudroom thread update <id> --visibility visible|hidden`.
-- Stop a finished hidden worker with `cloudroom thread stop <id>` to release its agent
+  existing thread with `room-cli thread update <id> --visibility visible|hidden`.
+- Stop a finished hidden worker with `room-cli thread stop <id>` to release its agent
   runtime promptly. Archive it first when it no longer belongs in active thread
   lists. Stop preserves the thread and supports a later resume.
 - Add remote execution machines from Settings → Machines. Its one-line
   installer stores the account machine credential locally and configures
-  both the daemon protocol and agent-launched `cloudroom` CLI to traverse the account
+  both the daemon protocol and agent-launched `room-cli` CLI to traverse the account
   gate; revoke a lost machine from the getbb.app dashboard. It uses
   the server's exact `/install/bb-app.tgz` artifact and never falls back to npm. It installs under the enrollment's cloudroom data directory, without
   `sudo` or a global npm configuration, and enables daemon `--auto-update`.
   Newer protocol mismatches update that private install with a persisted
   exponential retry backoff from 5 seconds to 5 minutes, then let
   launchd/systemd restart the daemon. Auto-update never downgrades. To bypass a
-  transient backoff, use `cloudroom machine retry-update <id-or-name>`. Remove
+  transient backoff, use `room-cli machine retry-update <id-or-name>`. Remove
   `--auto-update` from the service definition and reload it to opt out.
-- Run `cloudroom machine list` to see machine names, IDs, type, connection status, and
+- Run `room-cli machine list` to see machine names, IDs, type, connection status, and
   last seen time (`--json` returns the raw host list). It shows persistent
   machines; pass `--all` to include the disposable sandboxes environment
   providers create per thread. Use `--machine <id-or-name>`
-  (alias `--host`) on `cloudroom thread spawn` to run in a personal or unmanaged
+  (alias `--host`) on `room-cli thread spawn` to run in a personal or unmanaged
   workspace, or combine it with `--new-environment worktree`. Do not combine a
   machine selector with an existing environment ID, which already owns its
   machine.
@@ -99,38 +99,38 @@ worktree` only; a provider takes its branch through `--environment-inputs`.
   that supports no mode under it. Only the owner can change it, on the machine
   page at Settings → Machines → the machine — there is no CLI, SDK, or API
   surface that sets it, and machine credentials are refused — so read it from
-  `cloudroom machine list --json` or `cloudroom machine show` and ask the user to change it
+  `room-cli machine list --json` or `room-cli machine show` and ask the user to change it
   in the app.
-- `cloudroom machine providers`, `show`, `join-code`, `rename`, `retry-update`,
+- `room-cli machine providers`, `show`, `join-code`, `rename`, `retry-update`,
   `suspend`, `resume`, `retry-cleanup`, and `remove` cover the Settings →
-  Machines lifecycle. Use `cloudroom machine provider-cli status|install` to inspect
+  Machines lifecycle. Use `room-cli machine provider-cli status|install` to inspect
   or install provider CLIs on a selected machine.
-- `cloudroom updates` runs the default `cloudroom updates status` action. It aggregates Cloudroom and provider
+- `room-cli updates` runs the default `room-cli updates status` action. It aggregates Cloudroom and provider
   CLI update state across every machine — the CLI counterpart of Settings →
-  Updates. `cloudroom updates apply [--machine <id-or-name>]` runs every available
+  Updates. `room-cli updates apply [--machine <id-or-name>]` runs every available
   provider CLI install/update sequentially; update bb-app itself with the
   printed upgrade command or the desktop relaunch.
-- Use `cloudroom project create --name <name> --root <path> --machine <id-or-name>`
+- Use `room-cli project create --name <name> --root <path> --machine <id-or-name>`
   to bind a new project's local path to a connected enrolled machine. Use
   `--host` as an alias. Without a selector, the CLI asks its local host daemon.
-- `cloudroom project list` preserves the ordinary-project-only default. Pass
+- `room-cli project list` preserves the ordinary-project-only default. Pass
   `--include-personal` when the singleton personal project must be discoverable.
-- Use `cloudroom project source add <project-id> --machine <id-or-name> --path <path>`
+- Use `room-cli project source add <project-id> --machine <id-or-name> --path <path>`
   to register a path on another connected machine. It uses the same selector
   resolution and fallback as project create. Use `--clone` instead of `--path`
   to clone the project's remote there; `--remote-url` and `--target-path` are
   optional clone overrides.
-- `cloudroom project paths|files|content|commands` accept `--machine <id-or-name>`
+- `room-cli project paths|files|content|commands` accept `--machine <id-or-name>`
   (`--host` alias) or `--environment <id>`, but not both. An environment uses
   its owning machine and workspace; an explicit machine uses that machine's
   project source; omitting both intentionally uses the primary machine source.
-  `cloudroom project content --json` returns UTF-8 text or base64 binary content with
+  `room-cli project content --json` returns UTF-8 text or base64 binary content with
   an explicit `contentEncoding`.
   Project/environment file and path searches honor Git ignore rules, retaining
   tracked and non-ignored untracked files, including hidden files. Non-Git
-  workspaces use filesystem listing. `cloudroom file list|paths` can inspect ignored
+  workspaces use filesystem listing. `room-cli file list|paths` can inspect ignored
   files, subject to their exclusion options.
-- Use `cloudroom project attachment upload <project-id> --client-file <path>` when the
+- Use `room-cli project attachment upload <project-id> --client-file <path>` when the
   bytes live on the CLI machine, including when the CLI and cloudroom server are on
   different hosts. It reads locally and sends multipart bytes through the
   configured `ROOM_SERVER_URL` (and its enrolled-machine authentication proxy),
@@ -143,16 +143,16 @@ worktree` only; a provider takes its branch through `--environment-inputs`.
 download <project-id> <attachment-path> --client-file <path>` writes existing
   attachment bytes on the CLI machine. There is no project-attachment list or
   per-file remove API.
-- `cloudroom project history|reorder` exposes project prompt recall and sidebar order.
-- Use `cloudroom project show|update|delete` for one project. Use `cloudroom project source
+- `room-cli project history|reorder` exposes project prompt recall and sidebar order.
+- Use `room-cli project show|update|delete` for one project. Use `cloudroom project source
 update|delete` for one source. Use `cloudroom project branches` for branch data.
 - Direct environment inspection accepts any environment ID: use `cloudroom environment
 status|branches|paths|diff|diff-files|diff-file|diff-patch <id>` and `bb
 environment pull-request show <id>`. Diff commands require an explicit target
   and the matching merge-base or commit flags; all support `--json`.
-- `cloudroom environment pull-request ready|draft|merge` manages pull-request state;
-  `cloudroom environment archive-threads` bulk-archives an environment's threads.
-- Use `cloudroom environment show|update|commit` for environment metadata
+- `room-cli environment pull-request ready|draft|merge` manages pull-request state;
+  `room-cli environment archive-threads` bulk-archives an environment's threads.
+- Use `room-cli environment show|update|commit` for environment metadata
   and Git changes. Check live help before a commit or merge.
 - Spawned child threads inherit permission from explicit flags, then the
   parent thread's last execution, then project defaults. The parent's mode is
@@ -171,8 +171,8 @@ environment pull-request show <id>`. Diff commands require an explicit target
 - A parent can live in a different project. Pass `--project <other-id>` with
   `--parent-self` to delegate work in another repository; the child still
   reports back to its parent and stays under its parent's permission ceiling.
-- If provider or model choice matters, inspect options with `cloudroom provider list`
-  and `cloudroom provider models <provider-id>`. Both accept `--machine <id-or-name>`
+- If provider or model choice matters, inspect options with `room-cli provider list`
+  and `room-cli provider models <provider-id>`. Both accept `--machine <id-or-name>`
   (alias `--host`) or `--environment <id>` to inspect the machine where work
   will run; the selectors cannot be combined. With neither selector they
   intentionally inspect the primary machine. Model lists answer from the
@@ -181,7 +181,7 @@ environment pull-request show <id>`. Diff commands require an explicit target
   answering from its last stored list. Check `cloudroom machine provider-cli status MACHINE
 --json` for installed executables. Installed does not mean authenticated; a Claude
   login error requires the user to run `claude` and `/login`.
-- If Cursor's model list fails, `cloudroom provider models acp-cursor --restart`
+- If Cursor's model list fails, `room-cli provider models acp-cursor --restart`
   restarts model discovery and reloads the list on the selected machine. It
   does not stop threads, reinstall the CLI, or change credentials.
 - Top-level `customModels` in the same `config.json` registers extra picker
@@ -197,7 +197,7 @@ Give spawned threads clear prompts: objective, constraints, expected deliverable
 validation to perform, and what to report back. Ask for outcome, changed files
 or artifacts, validation performed, and blockers.
 
-`cloudroom environment show <id>` includes the core-owned lifecycle phase, retirement deadline, and teardown status/attempt/message. Archive or delete the last live thread to begin its provider's retirement grace; unarchive cancels pending retirement. Teardown failures retry automatically. Checkout policy keeps its directory indefinitely.
+`room-cli environment show <id>` includes the core-owned lifecycle phase, retirement deadline, and teardown status/attempt/message. Archive or delete the last live thread to begin its provider's retirement grace; unarchive cancels pending retirement. Teardown failures retry automatically. Checkout policy keeps its directory indefinitely.
 
 ### Standalone machine creation
 
@@ -209,7 +209,7 @@ Creation is durable. `--no-wait` returns the host ID; `cloudroom machine show
 <host-id>` inspects it and `cloudroom machine remove <host-id>` cancels it. SIGINT
 stops following and exits with status 130 while creation continues.
 
-`cloudroom machine show <id-or-name> --json` includes `providerDetails` inventory and
+`room-cli machine show <id-or-name> --json` includes `providerDetails` inventory and
 estimates when available. Suspend requires idle threads and no open terminals;
 empty machines use the provider’s opt-in idle timeout. Resume waits for pending
 suspension and leaves an already-active machine active.
@@ -224,11 +224,11 @@ service, releasing its port reservation and deleting its private files.
 
 ### Private machine enrollment
 
-Use `cloudroom machine enroll --bootstrap-file <path>` or `--bootstrap-env <NAME>` on a machine that already has the CLI. Core prepares the versioned bundle; transport it through a private file or environment/stdin, never command arguments, logs, resource JSON, or a transcript. Enrollment refuses a different existing host/server identity and succeeds without another exchange when the same identity is already enrolled. The installer accepts `--bootstrap-env <NAME>` and invokes this command after installing bb. Machine state defaults to `~/.bb-machines/<server-host>`; an explicit `ROOM_DATA_DIR` must be isolated from the default BB instance. For remote non-login commands, discover `cloudroom` on PATH and fall back to `~/.local/bin/cloudroom`.
+Use `room-cli machine enroll --bootstrap-file <path>` or `--bootstrap-env <NAME>` on a machine that already has the CLI. Core prepares the versioned bundle; transport it through a private file or environment/stdin, never command arguments, logs, resource JSON, or a transcript. Enrollment refuses a different existing host/server identity and succeeds without another exchange when the same identity is already enrolled. The installer accepts `--bootstrap-env <NAME>` and invokes this command after installing bb. Machine state defaults to `~/.bb-machines/<server-host>`; an explicit `ROOM_DATA_DIR` must be isolated from the default BB instance. For remote non-login commands, discover `room-cli` on PATH and fall back to `~/.local/bin/cloudroom`.
 
 Delivered enrollment bundles from v1 remain valid until their expiry. The CLI accepts both file and environment forms, upgrades the bundle to v2 headers locally, and persists legacy Connect redemption before enrollment so a retry reuses it. The installer upgrades v1 environment bundles before authenticated artifact downloads.
 
-The core `manual` provider appears as Manual machine setup. `cloudroom machine create --provider manual` waits for the enrollment command to become ready, prints it once, and follows; `--no-wait` returns the creating host ID. Commands are no longer available after enrollment or removal. Manual machines never suspend or retire automatically. Removal revokes access; run the original installer with `--uninstall --host-id <id>` on the target using its original data directory.
+The core `manual` provider appears as Manual machine setup. `room-cli machine create --provider manual` waits for the enrollment command to become ready, prints it once, and follows; `--no-wait` returns the creating host ID. Commands are no longer available after enrollment or removal. Manual machines never suspend or retire automatically. Removal revokes access; run the original installer with `--uninstall --host-id <id>` on the target using its original data directory.
 
 For paths a provider owns, cloudroom runs `.bb-env-setup.sh` after create and
 `.bb-env-teardown.sh` before remove on that machine, with separate 15-minute
@@ -238,12 +238,12 @@ hooks. A fresh core clone on a new machine is owned and runs the hooks. Provider
 core hooks themselves.
 Thread startup does not validate agent credentials, fingerprint the checkout, or install agent CLIs.
 
-`cloudroom machine list --json` includes lifecycle phase, progress, and any suspension or resume error.
+`room-cli machine list --json` includes lifecycle phase, progress, and any suspension or resume error.
 Maintenance interrupts active turns and closes terminals before saving. Submit a
 new continuation turn after restore; interrupted turns are never reported successful.
 
 Resuming a machine restores its provider state without rerunning environment setup.
 
-Personal file access: `cloudroom project paths|files|content proj_personal` requires
+Personal file access: `room-cli project paths|files|content proj_personal` requires
 an explicit `--environment <id>` belonging to Personal. Personal has no default
 project source; the selected environment must be ready.

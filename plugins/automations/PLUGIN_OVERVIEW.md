@@ -9,6 +9,6 @@ Schedule work once or on a repeat, and let Cloudroom run it while you do somethi
 
 ## For agents
 
-Agents get the `automations` skill and the `cloudroom automation` command: `create`, `list`, `show`, `update`, `pause`, `resume`, `run`, `runs`, and `delete`. All commands accept `--json`. Threads that an automation starts cannot create automations.
+Agents get the `automations` skill and the `room-cli automation` command: `create`, `list`, `show`, `update`, `pause`, `resume`, `run`, `runs`, and `delete`. All commands accept `--json`. Threads that an automation starts cannot create automations.
 
 Scripts run on the machine that hosts the Cloudroom server. Agent runs use the providers you already have installed.

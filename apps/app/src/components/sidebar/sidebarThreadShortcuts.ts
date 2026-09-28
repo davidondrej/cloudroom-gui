@@ -64,7 +64,7 @@ function collectSidebarThreadTargets(
         element,
         key: String(targets.length + 1),
         threadId,
-        projectId: null,
+        projectId: element.dataset.sidebarProjectId ?? null,
       });
     } else {
       const encoded = element.getAttribute(SIDEBAR_WINDOWED_NAV_ATTRIBUTE);

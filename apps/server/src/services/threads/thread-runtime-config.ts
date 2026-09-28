@@ -40,6 +40,7 @@ import {
 import { resolveDeprecatedWorkspaceProvisionType } from "../environments/environment-response.js";
 
 import {
+  cloudroomSystemPrompt,
   CUSTOM_INSTRUCTIONS_PLUGIN_ID,
   PLUGIN_INSTRUCTION_MAX_CHARS,
 } from "./custom-instructions.js";
@@ -226,7 +227,8 @@ export async function resolveThreadRuntimeCommandConfig(
   const dynamicTools = dynamicToolContributions.map(
     (contribution) => contribution.tool,
   );
-  const instructionSections: string[] = [];
+  const systemPrompt = cloudroomSystemPrompt(deps.db);
+  const instructionSections: string[] = systemPrompt ? [systemPrompt] : [];
   for (const contribution of dynamicToolContributions) {
     if (!contribution.instructions) continue;
     if (contribution.pluginId === null) {

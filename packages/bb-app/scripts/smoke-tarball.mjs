@@ -383,7 +383,7 @@ async function smokeNpxEntrypoint(tarballPath) {
 }
 
 async function packTarball() {
-  const chunkDir = join(packageRoot, "host-daemon", "dist", "cloudroom-chunks");
+  const chunkDir = join(packageRoot, "host-daemon", "dist", "room-cli-chunks");
   const liveChunk = readdirSync(chunkDir).find((name) => name.endsWith(".js"));
   if (liveChunk === undefined) {
     throw new Error("Built bb-app has no CLI chunk to exercise");
@@ -413,7 +413,7 @@ async function packTarball() {
     ) {
       throw new Error(`Unexpected npm pack entry: ${stdout}`);
     }
-    const staleChunkPath = `host-daemon/dist/cloudroom-chunks/${staleChunkName}`;
+    const staleChunkPath = `host-daemon/dist/room-cli-chunks/${staleChunkName}`;
     if (entry.files.some((file) => file.path === staleChunkPath)) {
       throw new Error(`npm pack included stale CLI chunk ${staleChunkPath}`);
     }
@@ -750,7 +750,7 @@ async function smokeHelpCommands(binDir) {
     label: "bb-app help",
   });
   await runCommand({
-    ...createInstalledBinInvocation(binDir, "cloudroom", ["--help"]),
+    ...createInstalledBinInvocation(binDir, "room-cli", ["--help"]),
     label: "bb cli help",
   });
   await runCommand({
@@ -899,7 +899,7 @@ async function smokeInstalledRepack(installedPackageDir) {
   });
   const [packed] = JSON.parse(stdout);
   if (!Array.isArray(packed?.files)) throw new Error("Invalid npm pack output");
-  const chunkPrefix = "host-daemon/dist/cloudroom-chunks/";
+  const chunkPrefix = "host-daemon/dist/room-cli-chunks/";
   const liveChunks = readdirSync(join(installedPackageDir, chunkPrefix))
     .filter((name) => name.endsWith(".js"))
     .map((name) => `${chunkPrefix}${name}`)
@@ -923,7 +923,7 @@ async function smokeBuiltinPluginsRunning({ binDir, cliEnv }) {
   // expected builtin settles into "running".
   while (Date.now() <= deadline) {
     const stdout = await runCommand({
-      ...createInstalledBinInvocation(binDir, "cloudroom", [
+      ...createInstalledBinInvocation(binDir, "room-cli", [
         "plugin",
         "list",
         "--json",
@@ -1027,7 +1027,7 @@ async function smokeFullStackAttempt(binDir, sdkDir, attempt) {
       ROOM_SERVER_URL: serverUrl,
     };
     await runCommand({
-      ...createInstalledBinInvocation(binDir, "cloudroom", ["status"]),
+      ...createInstalledBinInvocation(binDir, "room-cli", ["status"]),
       env: cliEnv,
       label: "bb cli status",
     });

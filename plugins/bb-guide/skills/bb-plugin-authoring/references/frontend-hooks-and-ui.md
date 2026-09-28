@@ -106,7 +106,7 @@ diff viewers, and the new-thread composer.
 - Builtin plugins in this repo import shared UI from `@bb/shared-ui` (the
   single source of truth the app also consumes and the registry generates
   from); external and example plugins still vendor source through the registry.
-- `cloudroom plugin new` pre-vendors button, card, input, checkbox, dialog (plus
+- `room-cli plugin new` pre-vendors button, card, input, checkbox, dialog (plus
   their support files: `lib/utils`, `lib/portal-scope`, icon,
   responsive-overlay, drawer, hooks) into `components/ui/` etc., and writes a `components.json`
   whose `@room` registry is pinned to the release tag matching the running
@@ -131,7 +131,7 @@ diff viewers, and the new-thread composer.
   overlays behaves correctly. "Import freely" is about the bundle: `tsc`
   still needs each one's declarations in `node_modules`, so every shimmed
   package is a **type-only `devDependencies` entry at the host's version**
-  (the scaffold declares all of them; `cloudroom plugin types` repins them; `bb
+  (the scaffold declares all of them; `room-cli plugin types` repins them; `bb
 plugin types --check` reports drift). Never list one in `dependencies` —
   the build would not read it, and a git install would bundle a second
   copy of a singleton.
@@ -150,7 +150,7 @@ plugin types --check` reports drift). Never list one in `dependencies` —
   and it opts you out of any installed renderer replacement.
 - Everything else bundles from YOUR `node_modules` (hugeicons, lucide,
   non-portal radix, zod, form/calendar/chart libs): run `npm install`
-  after adding components (`cloudroom plugin new` runs the first one; `shadcn add`
+  after adding components (`room-cli plugin new` runs the first one; `shadcn add`
   installs each item's declared deps). Users of your prebuilt artifact need no
   npm. Managed source installs do.
 - The old cloudroom extras (`EmptyState`, `PageBody`, `Spinner`) are

@@ -2208,12 +2208,12 @@ describe("bb-app launcher", () => {
     expect(metadata.files).toContain(
       "host-daemon/dist/bb-plugin-host-worker.mjs",
     );
-    expect(metadata.files).toContain("host-daemon/dist/room");
-    expect(metadata.files).toContain("host-daemon/dist/cloudroom-chunks");
+    expect(metadata.files).toContain("host-daemon/dist/room-cli");
+    expect(metadata.files).toContain("host-daemon/dist/room-cli-chunks");
     expect(metadata.os).toEqual(["darwin", "linux"]);
   });
 
-  it("requires the bundled CLI's chunk directory next to host-daemon/dist/room", () => {
+  it("requires the bundled CLI's chunk directory next to host-daemon/dist/room-cli", () => {
     const packageRoot = mkdtempSync(join(tmpdir(), "bb-app-artifacts-"));
     try {
       const context = resolveBbAppStartContext({
@@ -2224,7 +2224,7 @@ describe("bb-app launcher", () => {
       for (const artifact of [
         context.serverEntry,
         context.daemonEntry,
-        join(context.daemonBundleDir, "room"),
+        join(context.daemonBundleDir, "room-cli"),
         join(context.daemonBundleDir, "bb-provider-bridge-worker.mjs"),
         join(context.daemonBundleDir, "bb-parcel-watcher-child.mjs"),
         join(context.daemonBundleDir, "bb-plugin-host-worker.mjs"),
@@ -2235,10 +2235,10 @@ describe("bb-app launcher", () => {
       }
 
       const missingChunks =
-        /^Missing bundled room CLI chunks at .*\/host-daemon\/dist\/cloudroom-chunks\. Rebuild bb-app/;
+        /^Missing bundled room CLI chunks at .*\/host-daemon\/dist\/room-cli-chunks\. Rebuild bb-app/;
       expect(() => assertBbAppArtifacts(context)).toThrow(missingChunks);
 
-      const chunkDir = join(context.daemonBundleDir, "cloudroom-chunks");
+      const chunkDir = join(context.daemonBundleDir, "room-cli-chunks");
       mkdirSync(chunkDir);
       expect(() => assertBbAppArtifacts(context)).toThrow(missingChunks);
 
@@ -2265,11 +2265,11 @@ describe("bb-app launcher", () => {
     );
     const packageRoot = mkdtempSync(join(tmpdir(), "bb-app-prune-"));
     try {
-      const chunkDir = join(packageRoot, "host-daemon", "dist", "cloudroom-chunks");
+      const chunkDir = join(packageRoot, "host-daemon", "dist", "room-cli-chunks");
       mkdirSync(chunkDir, { recursive: true });
       writeFileSync(
-        join(packageRoot, "host-daemon", "dist", "room"),
-        'import"./cloudroom-chunks/chunk-LIVE.js";\n',
+        join(packageRoot, "host-daemon", "dist", "room-cli"),
+        'import"./room-cli-chunks/chunk-LIVE.js";\n',
       );
       writeFileSync(join(chunkDir, "chunk-LIVE.js"), "export var a=1;\n");
       writeFileSync(join(chunkDir, "chunk-STALE.js"), "export var s=1;\n");
@@ -2278,7 +2278,7 @@ describe("bb-app launcher", () => {
         JSON.stringify({
           name: "bb-app-prune-fixture",
           version: "0.0.1",
-          files: ["host-daemon/dist/room", "host-daemon/dist/cloudroom-chunks"],
+          files: ["host-daemon/dist/room-cli", "host-daemon/dist/room-cli-chunks"],
         }),
       );
 

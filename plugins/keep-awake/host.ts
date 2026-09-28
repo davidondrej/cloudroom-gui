@@ -74,7 +74,7 @@ export function createKeepAwakeHostEntry(deps: KeepAwakeHostDependencies) {
     }
     let next: KeepAwakeChild;
     try {
-      next = deps.spawn(CAFFEINATE_COMMAND, ["-i", "-w", String(deps.pid)], {
+      next = deps.spawn(CAFFEINATE_COMMAND, ["-d", "-i", "-s", "-w", String(deps.pid)], {
         stdio: "ignore",
       });
     } catch {

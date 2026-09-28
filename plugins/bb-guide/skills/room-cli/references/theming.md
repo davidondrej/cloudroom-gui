@@ -23,10 +23,10 @@ that handles both modes.
 
 A custom theme is a folder under the app data dir:
 `<bb-data-dir>/theme/<name>/theme.css` (the packaged app uses `~/.bb/theme/…`).
-The folder name is the theme id. Run `cloudroom theme dir` to print the exact directory
+The folder name is the theme id. Run `room-cli theme dir` to print the exact directory
 rather than guessing it. Always put custom app-theme CSS here — not in a stray
 `.css` file elsewhere in a repo. To edit a theme, change its `theme.css` in place
-and re-run `cloudroom theme set <name>` (or just re-select it) to re-apply.
+and re-run `room-cli theme set <name>` (or just re-select it) to re-apply.
 
 ## Model
 
@@ -252,12 +252,12 @@ and semantics:
 
 ## Applying a theme
 
-1. `cloudroom theme dir` — print the custom-theme directory (e.g. `~/.bb/theme`).
+1. `room-cli theme dir` — print the custom-theme directory (e.g. `~/.bb/theme`).
 2. Write your stylesheet to `<that-dir>/<name>/theme.css`. Start the name with
    a letter or digit. Use at most 64 letters, digits, dots, underscores, or
    hyphens.
-3. `cloudroom theme set <name>` — activate it. To edit later, change the file in place
-   and re-run `cloudroom theme set <name>`.
+3. `room-cli theme set <name>` — activate it. To edit later, change the file in place
+   and re-run `room-cli theme set <name>`.
 
 ## Code themes (diffs and file previews)
 
@@ -288,7 +288,7 @@ Or name the files in `theme.json`:
 Each side is a bundled Shiki / Pierre name, or a folder-relative `.json` file
 with `{ name, type, colors, tokenColors }`. See https://diffs.com/theme.
 
-There is no separate code-theme setting. `cloudroom theme show` prints the resolved
+There is no separate code-theme setting. `room-cli theme show` prints the resolved
 Pierre names for the active palette.
 
 Changes apply live to every open window — no reload needed.

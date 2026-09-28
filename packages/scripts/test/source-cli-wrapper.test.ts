@@ -35,7 +35,7 @@ function buildCleanEnv(): NodeJS.ProcessEnv {
 
 function runSourceRoom(args: string[]): Promise<SourceCliResult> {
   return new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn("pnpm", ["--silent", "room", ...args], {
+    const child = spawn("pnpm", ["--silent", "room-cli", ...args], {
       cwd: repoRoot,
       env: buildCleanEnv(),
     });

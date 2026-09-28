@@ -434,7 +434,7 @@ describe("prepareRuntimeShellEnv", () => {
       }),
     ).toEqual({
       PATH: `/tmp/bb-bin${delimiter}/usr/bin`,
-      ROOM_CLI: path.resolve("/tmp/bb-bin", "cloudroom"),
+      ROOM_CLI: path.resolve("/tmp/bb-bin", "room-cli"),
       ROOM_SERVER_URL: "http://127.0.0.1:3334",
       ROOM_HOST_DAEMON_PORT: "3002",
     });
@@ -465,7 +465,7 @@ describe("prepareRuntimeShellEnv", () => {
       }),
     ).toEqual({
       PATH: `/tmp/bb-bin${delimiter}/usr/local/bin:/usr/bin`,
-      ROOM_CLI: path.resolve("/tmp/bb-bin", "cloudroom"),
+      ROOM_CLI: path.resolve("/tmp/bb-bin", "room-cli"),
       ROOM_SERVER_URL: "http://127.0.0.1:3334",
       ROOM_HOST_DAEMON_PORT: "3002",
     });
@@ -480,7 +480,7 @@ describe("prepareRuntimeShellEnv", () => {
       }),
     ).toEqual({
       PATH: `/tmp/bb-bin${delimiter}/usr/bin`,
-      ROOM_CLI: path.resolve("/tmp/bb-bin", "cloudroom"),
+      ROOM_CLI: path.resolve("/tmp/bb-bin", "room-cli"),
       ROOM_SERVER_URL: "http://127.0.0.1:3334",
     });
   });

@@ -7,40 +7,40 @@ export const commands = [
     summary:
       "Open an isolated desktop or local headless session; --tab explicitly hands off an existing tab",
     usage:
-      "cloudroom browser-automation open --backend desktop --machine <host-id> --desktop <instance-id> [--tab <tab-id>] [--thread <id>] [--json] | open --backend local --headless --machine <host-id> [--thread <id>] [--json]",
+      "room-cli browser-automation open --backend desktop --machine <host-id> --desktop <instance-id> [--tab <tab-id>] [--thread <id>] [--json] | open --backend local --headless --machine <host-id> [--thread <id>] [--json]",
   },
   {
     name: "list",
     summary: "List this thread's browser sessions",
-    usage: "cloudroom browser-automation list [--thread <id>] [--json]",
+    usage: "room-cli browser-automation list [--thread <id>] [--json]",
   },
   {
     name: "run",
     summary: "Run a trusted DevBrowser script; runs serialize per session",
     usage:
-      "cloudroom browser-automation run <session-id> (--script <code> | --script-file <path> --script-host <host-id>) [--timeout-ms <1000..120000>] [--thread <id>] [--json]",
+      "room-cli browser-automation run <session-id> (--script <code> | --script-file <path> --script-host <host-id>) [--timeout-ms <1000..120000>] [--thread <id>] [--json]",
   },
   {
     name: "pages",
     summary: "Inspect persistent named pages",
-    usage: "cloudroom browser-automation pages <session-id> [--thread <id>] [--json]",
+    usage: "room-cli browser-automation pages <session-id> [--thread <id>] [--json]",
   },
   {
     name: "screenshot",
     summary: "Save a bounded JPEG in session tmp; return its path and host ID",
     usage:
-      "cloudroom browser-automation screenshot <session-id> [--page <name>] [--thread <id>] [--json]",
+      "room-cli browser-automation screenshot <session-id> [--page <name>] [--thread <id>] [--json]",
   },
   {
     name: "stop",
     summary:
       "Cancel queued and running work and release control; open a new session to resume",
-    usage: "cloudroom browser-automation stop <session-id> [--thread <id>] [--json]",
+    usage: "room-cli browser-automation stop <session-id> [--thread <id>] [--json]",
   },
   {
     name: "close",
     summary: "Dispose owned browsers and tabs, preserving handed-off tabs",
-    usage: "cloudroom browser-automation close <session-id> [--thread <id>] [--json]",
+    usage: "room-cli browser-automation close <session-id> [--thread <id>] [--json]",
   },
 ];
 const methodSchema = z.enum([

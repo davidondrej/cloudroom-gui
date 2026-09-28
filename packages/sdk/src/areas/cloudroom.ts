@@ -56,8 +56,8 @@ export interface CloudroomArea {
   signIn(input?: { projectId?: string; websiteUrl?: string }): Promise<{ url: string }>;
   setMacAccess(enabled: boolean): Promise<void>;
   setCopyLogins(enabled: boolean): Promise<void>;
-  /** Mac → VM: runs a shell command as the VM agent account. Input and output bytes are hex. */
-  runOnVm(input: { command: string; stdin?: string; cwd?: string }): Promise<{ code: number | null; stdout: string; stderr: string; truncated: boolean }>;
+  /** Mac → cloud: runs a shell command as the agent account of the VM, or of `threadId`'s sandbox. Input and output bytes are hex. */
+  runOnVm(input: { command: string; stdin?: string; cwd?: string; threadId?: string }): Promise<{ code: number | null; stdout: string; stderr: string; truncated: boolean }>;
   cancel(): Promise<void>;
   logout(): Promise<void>;
   threadWorkspace(threadId: string, signal?: AbortSignal): Promise<CloudroomThreadWorkspace | null>;

@@ -34,12 +34,18 @@ import {
   DEFAULT_COMPOSER_SCOPE,
   PromptBoxInternal,
   promptFastModeCommand,
+  promptModelShortcuts,
   type AttachmentsConfig,
   type HistoryConfig,
   type PromptBoxAction,
   type PromptBoxHandle,
+  type PromptLocationCommand,
   type TypeaheadConfig,
 } from "@/components/promptbox/PromptBoxInternal";
+import {
+  CLOUDROOM_CLOUD_PRIMARY,
+  CLOUDROOM_LOCAL_PRIMARY,
+} from "@/lib/cloudroom-environment-label";
 import { usePromptModePermissionDisplay } from "@/components/promptbox/usePromptModePermissionDisplay";
 import { usePromptVoice } from "@/components/promptbox/usePromptVoice";
 import { useOptionalPaneContext } from "@/views/thread-detail/PaneContext";
@@ -145,6 +151,45 @@ interface NewThreadPromptBoxUIProps {
 
   project?: NewThreadProjectConfig;
   execution: ExecutionControlsProps;
+}
+
+function promptLocationCommands(
+  environment: NewThreadEnvironmentConfig,
+  projectless: boolean,
+): PromptLocationCommand[] | undefined {
+  const { cloud, host, onSelectProvider } = environment;
+  if (projectless || !cloud || environment.disabled) return undefined;
+  const commands: PromptLocationCommand[] = [];
+  const hostId =
+    host?.type !== "ephemeral" && host?.status === "connected"
+      ? host.id
+      : null;
+  const hostProviders =
+    hostId === null
+      ? undefined
+      : environment.providersByHostId === undefined
+        ? environment.providers
+        : environment.providersByHostId.get(hostId);
+  const localPrimary = hostProviders?.find(
+    (provider) =>
+      provider.id === "project-checkout" &&
+      provider.availability?.status !== "unavailable",
+  );
+  if (hostId !== null && localPrimary && onSelectProvider) {
+    commands.push({
+      name: "local",
+      description: `Switch to ${CLOUDROOM_LOCAL_PRIMARY}`,
+      onSelect: () => onSelectProvider(localPrimary, hostId),
+    });
+  }
+  if (cloud.unavailableReason === null) {
+    commands.push({
+      name: "cloud",
+      description: `Switch to ${CLOUDROOM_CLOUD_PRIMARY}`,
+      onSelect: cloud.onSelect,
+    });
+  }
+  return commands.length > 0 ? commands : undefined;
 }
 
 function getNewThreadPromptPlaceholder(isProjectless: boolean): string {
@@ -327,6 +372,17 @@ const DefaultNewThreadComposer = memo(function DefaultNewThreadComposer({
             ? undefined
             : promptFastModeCommand(execution.serviceTier)
         }
+        modelShortcuts={
+          execution.disabled ||
+          execution.model.isLoading ||
+          execution.model.loadFailed
+            ? undefined
+            : promptModelShortcuts(execution)
+        }
+        locationCommands={promptLocationCommands(
+          modeConfig.environment,
+          isProjectlessPrompt,
+        )}
         mentionMenuPlacement="bottom"
         attachments={attachments}
         promptActions={promptActions}

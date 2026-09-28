@@ -139,7 +139,7 @@ export function formatWorkflowNotification(
   maximumBytes: number,
 ): string {
   const prefix = `[cloudroom workflow finished · ${run.id}]\n\nRun ${run.id} (${run.name}) ${run.status}.\n`;
-  const suffix = `\nRun \`cloudroom workflows status ${run.id}\` for authoritative details.`;
+  const suffix = `\nRun \`room-cli workflows status ${run.id}\` for authoritative details.`;
   const detail =
     run.status === "succeeded"
       ? `Result: ${run.resultJson ?? "null"}`
@@ -156,7 +156,7 @@ export function formatWorkflowNotification(
     return `${prefix}${utf8Prefix(detail, available)}${marker}${suffix}`;
   }
   return utf8Prefix(
-    `[cloudroom workflow ${run.id}] ${run.status} — run cloudroom workflows status ${run.id}`,
+    `[cloudroom workflow ${run.id}] ${run.status} — run room-cli workflows status ${run.id}`,
     maximumBytes,
   );
 }

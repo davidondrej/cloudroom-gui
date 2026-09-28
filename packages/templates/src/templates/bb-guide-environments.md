@@ -85,9 +85,9 @@ Making your repo work with bb:
   dependencies in .bb-env-setup.sh instead of listing them here.
 
   For files that customize agent instructions and skills (AGENTS.md,
-  .bb/AGENTS.md, .bb/skills/), run `cloudroom guide agent-configuration`.
+  .bb/AGENTS.md, .bb/skills/), run `room-cli guide agent-configuration`.
 
-  cloudroom environment providers                List registered environment providers in picker order:
+  room-cli environment providers                List registered environment providers in picker order:
                                           Project checkout, Worktree, then other installed providers
                                           by display name; includes id, name, the `requires` facts (host,
                                           projectCheckout, gitCheckout, gitRemote, projectless), and whether
@@ -95,7 +95,7 @@ Making your repo work with bb:
     --project <id>                        Filter by structural eligibility for this project
     --machine <id-or-name>               Scope structural eligibility to this machine
     --host <id-or-name>                  Alias for --machine
-  cloudroom environment list                     List environments that are not destroyed
+  room-cli environment list                     List environments that are not destroyed
     --project <id>                        Only environments in this project
     --provider <id>                       Only environments this environment provider produced
     --host <id-or-name>                   Only environments on this machine
@@ -106,53 +106,53 @@ Making your repo work with bb:
                                           ready, error, destroyed (the only way to see
                                           destroyed rows)
     --limit <n> / --offset <n>            Page through the rows, oldest first
-  cloudroom environment delete <id>              Request provider cleanup; refused while threads are
+  room-cli environment delete <id>              Request provider cleanup; refused while threads are
                                           live or stopping. The command returns with cleanup
                                           requested; lifecycle becomes destroyed only after
                                           provider removal completes
-  cloudroom environment show <id>                Show environment details (path, branch, status, lifecycle, retirement deadline and teardown attempts)
+  room-cli environment show <id>                Show environment details (path, branch, status, lifecycle, retirement deadline and teardown attempts)
 
-  cloudroom environment status <id>              Show workspace status
+  room-cli environment status <id>              Show workspace status
     --merge-base-branch <branch>          Include merge-base status
 
-  cloudroom environment branches <id>            List local and remote branches
+  room-cli environment branches <id>            List local and remote branches
     --query <query>                       Filter branch names
     --limit <count>                       Limit local and remote results
 
-  cloudroom environment paths <id>               Search workspace paths
+  room-cli environment paths <id>               Search workspace paths
     --query <query>                       Fuzzy path query
     --limit <count>                       Maximum results
     --files                               Include only files unless combined with --directories
     --directories                         Include only directories unless combined with --files
 
-  cloudroom environment diff <id>                Show file summary and full git diff
-  cloudroom environment diff-files <id>          List changed-file metadata
+  room-cli environment diff <id>                Show file summary and full git diff
+  room-cli environment diff-files <id>          List changed-file metadata
     --target <target>                     uncommitted, branch_committed, all, or commit (required)
     --merge-base-branch <branch>          Required for branch_committed and all
     --sha <sha>                           Required for commit
 
-  cloudroom environment diff-file <id>           Read one side of a changed file
+  room-cli environment diff-file <id>           Read one side of a changed file
     --target <target>                     Diff target (required)
     --path <path>                         Repository-relative path (required)
     --side <old|new>                      File side (required)
     --merge-base-ref <sha>                Required for branch_committed and all
     --sha <sha>                           Required for commit
 
-  cloudroom environment diff-patch <id>          Fetch selected file patches
+  room-cli environment diff-patch <id>          Fetch selected file patches
     --target <target>                     Diff target (required)
     --path <path>                         Changed path; repeat for multiple files (required)
     --merge-base-branch <branch>          Required for branch_committed and all
     --sha <sha>                           Required for commit
 
-  cloudroom environment update <id>              Update environment metadata
+  room-cli environment update <id>              Update environment metadata
     --merge-base-branch <branch>          Set merge-base branch override
     --clear-merge-base-branch             Clear merge-base override
     --name <name>                         Set display name
     --clear-name                          Clear display name
 
-  cloudroom environment commit <id>              Create a commit in the environment
+  room-cli environment commit <id>              Create a commit in the environment
 
-  cloudroom environment archive-threads <id>     Archive all threads in an environment
+  room-cli environment archive-threads <id>     Archive all threads in an environment
 
   When the last thread of a worktree environment is archived, the worktree
   plugin waits five minutes and then tears it down: it runs
@@ -165,10 +165,10 @@ Making your repo work with bb:
   teardown. Move your own shells out of the worktree first if you want to
   keep them.
 
-  cloudroom environment pull-request show <id>   Inspect a pull request
-  cloudroom environment pull-request ready <id>  Mark a pull request ready
-  cloudroom environment pull-request draft <id>  Convert a pull request to draft
-  cloudroom environment pull-request merge <id>  Merge a pull request
+  room-cli environment pull-request show <id>   Inspect a pull request
+  room-cli environment pull-request ready <id>  Mark a pull request ready
+  room-cli environment pull-request draft <id>  Convert a pull request to draft
+  room-cli environment pull-request merge <id>  Merge a pull request
     --method <method>                     merge, squash, or rebase
 
 Every inspection command accepts an arbitrary environment ID and supports
@@ -183,7 +183,7 @@ Remote access (cloudroom connect):
   generates, then run it here to
   pair:
 
-  cloudroom connect --code <code> --server https://<handle>.getbb.app
+  room-cli connect --code <code> --server https://<handle>.getbb.app
     --code <code>          One-time pairing code from the dashboard
     --server <url>         https://<handle>.getbb.app (from the dashboard)
 
@@ -196,17 +196,17 @@ Remote access (cloudroom connect):
   `BB_DEV_CONNECT_BASE_URL`. Explicit `--server` and `--base-url` targets still
   win, so the dev cloudroom can also pair with getbb.app.
 
-  cloudroom connect status                       Show the server's connect status
-  cloudroom connect off                          Disconnect and forget the pairing
-  cloudroom connect expose <port> [--host <name-or-id>]    Share a host's HTTP port
-  cloudroom connect unexpose <port> [--host <name-or-id>]  Stop sharing on that host
-  cloudroom connect shares [--host <name-or-id>]           List that host's shares
-  cloudroom connect servers                      List every Cloudroom server on this account (handle, url, live)
-  cloudroom connect machine-code                 Mint a one-time code that pairs the cloudroom mobile app
+  room-cli connect status                       Show the server's connect status
+  room-cli connect off                          Disconnect and forget the pairing
+  room-cli connect expose <port> [--host <name-or-id>]    Share a host's HTTP port
+  room-cli connect unexpose <port> [--host <name-or-id>]  Stop sharing on that host
+  room-cli connect shares [--host <name-or-id>]           List that host's shares
+  room-cli connect servers                      List every Cloudroom server on this account (handle, url, live)
+  room-cli connect machine-code                 Mint a one-time code that pairs the cloudroom mobile app
                                           (needs the mobileApp experiment)
 
   Port sharing works from threads on any enrolled host. In a thread,
-  `cloudroom connect expose <port>` resolves the thread environment's host; outside a
+  `room-cli connect expose <port>` resolves the thread environment's host; outside a
   thread it defaults to the server host. `--host <name-or-id>` overrides that
   choice for expose, unexpose, and shares. Server-host URLs use
   `https://<server-label>--<port>.getbb.app`; machine-host URLs use
@@ -215,14 +215,14 @@ Remote access (cloudroom connect):
   the owner's getbb.app account can open the URL; it is not a public internet
   link. Agents should run expose from the thread that started the server, share
   the returned URL, and unexpose from the same thread when it stops.
-  `cloudroom connect status` shows all shares with host + URL. `shares --json` returns
+  `room-cli connect status` shows all shares with host + URL. `shares --json` returns
   the resolved `host` and rows with `hostId`, `hostName`, `port`, and `url`.
 
   The cloudroom mobile app pairs with a paired cloudroom through cloudroom connect. Turn on the
-  `mobileApp` experiment first (`cloudroom settings experiment mobileApp true`, or
+  `mobileApp` experiment first (`room-cli settings experiment mobileApp true`, or
   Settings → Experiments → Mobile app); the surfaces below stay hidden without
   it. Settings → Remote access → Add mobile device shows a QR code plus the code as text;
-  `cloudroom connect machine-code` prints the same code, server URL, apex, and expiry
+  `room-cli connect machine-code` prints the same code, server URL, apex, and expiry
   (`--json` for `{code, serverUrl, apex, expiresAt}`). The phone scans or
   types the code and enrolls as a connect machine on the account with its own
   revocable credential (it appears in the getbb.app dashboard machine list).
@@ -231,16 +231,16 @@ Remote access (cloudroom connect):
 
   Remote access is owned by the builtin "connect" plugin (Plugins → connect
   shows the URL, QR code, mobile pairing, and shared ports). Disabling the
-  plugin (`cloudroom plugin disable connect`) cuts off all remote access; re-enable
-  with `cloudroom plugin enable connect`.
+  plugin (`room-cli plugin disable connect`) cuts off all remote access; re-enable
+  with `room-cli plugin enable connect`.
 
-Core owns environment retirement and teardown. After the last live thread is archived or deleted, the provider policy sets the retirement deadline. `cloudroom environment show <id>` reports lifecycle phase and teardown status, attempt and failure message. Failed teardown retries automatically; checkout environments do not retire.
+Core owns environment retirement and teardown. After the last live thread is archived or deleted, the provider policy sets the retirement deadline. `room-cli environment show <id>` reports lifecycle phase and teardown status, attempt and failure message. Failed teardown retries automatically; checkout environments do not retire.
 
-Explicit environment or project deletion bypasses the retirement grace, including the never-retire policy. Provider cleanup retains the host, path and resource until removal completes; inspect progress with `cloudroom environment show <id>`.
+Explicit environment or project deletion bypasses the retirement grace, including the never-retire policy. Provider cleanup retains the host, path and resource until removal completes; inspect progress with `room-cli environment show <id>`.
 
-`cloudroom environment providers --json` includes each choice’s `description` and `icon`, as well as its label, inputs, and availability.
+`room-cli environment providers --json` includes each choice’s `description` and `icon`, as well as its label, inputs, and availability.
 
-`cloudroom environment providers --project <id>` omits providers whose declared requirements are unmet on every persistent machine, and reports each provider's `machineAvailability` per machine in `--json`. Add `--machine <id>` to scope structural eligibility to that machine and print its availability: `available`, `setup-required`, `unavailable` with the plugin's reason, or `unknown` while the background probe has not answered. Listing never waits on a machine; probes run in the background, are cached for ten minutes per project and machine, and are checked afresh for the selected provider and machine during thread creation.
+`room-cli environment providers --project <id>` omits providers whose declared requirements are unmet on every persistent machine, and reports each provider's `machineAvailability` per machine in `--json`. Add `--machine <id>` to scope structural eligibility to that machine and print its availability: `available`, `setup-required`, `unavailable` with the plugin's reason, or `unknown` while the background probe has not answered. Listing never waits on a machine; probes run in the background, are cached for ten minutes per project and machine, and are checked afresh for the selected provider and machine during thread creation.
 
 Cloudroom source checkout startup
 
@@ -256,4 +256,4 @@ Cloudroom source checkout startup
   instance still serves those paths. Keep the serving checkout path stable to
   preserve its data and ports. See `docs/debugging-and-qa.md` for the restart
   sequence and source programmatic helpers. These are repository maintenance
-  commands, not environment lifecycle hooks or installed `cloudroom` commands.
+  commands, not environment lifecycle hooks or installed `room-cli` commands.

@@ -392,7 +392,7 @@ export const threadQueuedMessageSchema = z.object({
 export type ThreadQueuedMessage = z.infer<typeof threadQueuedMessageSchema>;
 
 export const teleportProgressSchema = z.object({
-  id: z.string(), owner: z.string(), phase: z.enum(["stopping", "uploading", "running", "complete", "cancelled", "error", "cancelling"]),
+  id: z.string(), owner: z.string(), phase: z.enum(["checking", "stopping", "uploading", "running", "complete", "cancelled", "error", "cancelling"]),
   completed: z.number(), total: z.number(), error: z.string().optional(), cloudStarted: z.boolean().optional(),
 });
 export type TeleportProgress = z.infer<typeof teleportProgressSchema>;

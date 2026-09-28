@@ -98,8 +98,11 @@ interface ModelReasoningSelection {
   serviceTier?: ServiceTier;
 }
 
-interface ProviderModelReasoningSelection extends ModelReasoningSelection {
+// Omitting reasoningLevel keeps that provider's last-selected level.
+interface ProviderModelReasoningSelection
+  extends Omit<ModelReasoningSelection, "reasoningLevel"> {
   providerId: string;
+  reasoningLevel?: ReasoningLevel;
 }
 
 type ProviderModelReasoningSelectionSetter = (
@@ -747,15 +750,21 @@ export function useThreadCreationOptions(
           serviceTier: rawServiceTier,
         });
       }
+      const rememberedSelection =
+        localProviderSelectionsRef.current.get(providerId);
       const nextTier =
         nextServiceTier ??
         (providerId === effectiveProviderId
           ? rawServiceTier
-          : localProviderSelectionsRef.current.get(providerId)?.serviceTier ??
-            "default");
+          : rememberedSelection?.serviceTier ?? "default");
+      const resolvedReasoningLevel =
+        nextReasoningLevel ??
+        (providerId === effectiveProviderId
+          ? reasoningLevel
+          : rememberedSelection?.reasoningLevel ?? reasoningLevel);
       localProviderSelectionsRef.current.set(providerId, {
         model,
-        reasoningLevel: nextReasoningLevel,
+        reasoningLevel: resolvedReasoningLevel,
         serviceTier: nextTier,
       });
       setLocalProvidersUsingDefaults((current) => {
@@ -768,7 +777,7 @@ export function useThreadCreationOptions(
         ...currentSelections,
         selectedProviderId: providerId,
         selectedModel: model,
-        reasoningLevel: nextReasoningLevel,
+        reasoningLevel: resolvedReasoningLevel,
         serviceTier: nextTier,
       }));
     },

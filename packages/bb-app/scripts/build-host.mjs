@@ -59,9 +59,9 @@ await buildNodeEsmEntry({
 });
 await buildNodeEsmEntry({
   cleanDist: false,
-  entryPoint: resolve(packageRoot, "src", "bin", "cloudroom.ts"),
+  entryPoint: resolve(packageRoot, "src", "bin", "room-cli.ts"),
   executable: true,
-  outfile: resolve(hostPackageRoot, "dist", "cloudroom.js"),
+  outfile: resolve(hostPackageRoot, "dist", "room-cli.js"),
   packageRoot: hostPackageRoot,
   sourcemap: false,
 });
@@ -76,17 +76,17 @@ await buildNodeEsmEntry({
 
 await mkdir(hostDaemonTarget, { recursive: true });
 await copyFile(
-  resolve(hostDaemonSource, "cloudroom"),
-  resolve(hostDaemonTarget, "cloudroom"),
+  resolve(hostDaemonSource, "room-cli"),
+  resolve(hostDaemonTarget, "room-cli"),
 );
-await chmod(resolve(hostDaemonTarget, "cloudroom"), 0o755);
+await chmod(resolve(hostDaemonTarget, "room-cli"), 0o755);
 await copyDirectory({
-  from: resolve(hostDaemonSource, "cloudroom-chunks"),
-  to: resolve(hostDaemonTarget, "cloudroom-chunks"),
+  from: resolve(hostDaemonSource, "room-cli-chunks"),
+  to: resolve(hostDaemonTarget, "room-cli-chunks"),
 });
 await pruneUnreferencedChunks({
-  chunkDir: resolve(hostDaemonTarget, "cloudroom-chunks"),
-  entry: resolve(hostDaemonTarget, "cloudroom"),
+  chunkDir: resolve(hostDaemonTarget, "room-cli-chunks"),
+  entry: resolve(hostDaemonTarget, "room-cli"),
 });
 for (const fileName of hostDaemonFiles) {
   await copyFile(
@@ -109,7 +109,7 @@ await writeFile(
       type: "module",
       os: sourcePackageJson.os,
       bin: {
-        cloudroom: "dist/cloudroom.js",
+        "room-cli": "dist/room-cli.js",
         "bb-app": "dist/bb-app.js",
         "bb-host-daemon": "dist/bb-host-daemon.js",
       },

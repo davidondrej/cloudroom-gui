@@ -34,7 +34,7 @@ are additive, so registering multiple listeners is supported.
 
 `bb.log.debug|info|warn|error(message: string)` — goes to the server log
 (prefixed `[plugin:<id>]`) and to the per-plugin JSONL file behind
-`cloudroom plugin logs <id> [-n N] [-f]`.
+`room-cli plugin logs <id> [-n N] [-f]`.
 
 ### bb.settings
 
@@ -101,7 +101,7 @@ descriptors accept finite numbers and render a numeric input; use
 
 `experimental_schema` accepts a synchronous, non-transforming Standard Schema
 validator; Zod schemas qualify. It runs on the server for settings-page
-autosaves, `cloudroom plugin config`, `experimental_set`, and fake-host writes. The
+autosaves, `room-cli plugin config`, `experimental_set`, and fake-host writes. The
 first validation issue is shown beneath the field, and the schema is not sent
 to the browser. `experimental_set` accepts only the fields defined by that
 handle, accepts `null` to unset one, fires `onChange`, and returns the handle's

@@ -1930,12 +1930,12 @@ function requiredHostArtifactPaths(context: BbAppStartContext): ArtifactPath[] {
     {
       kind: "file",
       label: "bundled room CLI",
-      path: join(context.daemonBundleDir, "cloudroom"),
+      path: join(context.daemonBundleDir, "room-cli"),
     },
     {
       kind: "chunk-dir",
       label: "bundled room CLI chunks",
-      path: join(context.daemonBundleDir, "cloudroom-chunks"),
+      path: join(context.daemonBundleDir, "room-cli-chunks"),
     },
     {
       kind: "file",
@@ -2334,7 +2334,7 @@ export function createServerEnv(args: CreateServerEnvArgs): NodeJS.ProcessEnv {
     ...args.env,
     BB_APP_VERSION: args.context.appVersion,
     [APP_SURFACE_ENV_NAME]: resolveServerAppSurface(args.env),
-    ROOM_CLI: join(args.context.daemonBundleDir, "cloudroom"),
+    ROOM_CLI: join(args.context.daemonBundleDir, "room-cli"),
     ROOM_SERVER_URL: args.context.serverUrl,
     ROOM_DATA_DIR: args.context.dataDir,
     ROOM_HOST_DAEMON_PORT: String(args.context.daemonPort),

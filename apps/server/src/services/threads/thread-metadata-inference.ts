@@ -8,6 +8,7 @@ import {
 } from "./title-generation.js";
 import { runtimeErrorLogFields } from "../lib/error-log-fields.js";
 import { INFERENCE_POLICY } from "../ai/inference.js";
+import { noteGeneratedTitle } from "./title-recheck.js";
 
 interface ThreadMetadataInferenceArgs {
   input: PromptInput[];
@@ -94,6 +95,9 @@ export async function inferThreadMetadata(
         threadId: args.threadId,
         title: outcome.metadata.title,
       });
+      if (titleApplied) {
+        noteGeneratedTitle(args.threadId, outcome.metadata.title, args.input);
+      }
     } catch (error) {
       deps.logger.warn(
         {

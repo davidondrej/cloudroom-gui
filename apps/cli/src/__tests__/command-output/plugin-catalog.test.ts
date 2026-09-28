@@ -109,7 +109,7 @@ function json(value: object, status = 200): Response {
   });
 }
 
-describe("cloudroom plugin catalog", () => {
+describe("room-cli plugin catalog", () => {
   setupCommandOutputTestEnvironment();
   const register: CommandRegistrar = (program) =>
     registerPluginCommands(program, () => "http://server");

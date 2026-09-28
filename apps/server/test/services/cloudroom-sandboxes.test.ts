@@ -42,7 +42,7 @@ it("gives each cloud thread its own sandbox, wakes it only for work, and archive
   const websiteServer = createServer(async (req, res) => {
     const json = (value: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(value)); };
     const input = await body(req);
-    website.push({ action: input.action ?? input.name, thread: input.thread, auth: req.headers.authorization });
+    website.push({ action: input.action ?? input.name, thread: input.thread, project: input.project, auth: req.headers.authorization });
     if (req.url === "/api/desktop/logins") return json({ claude: false, codex: false, pi: false, github: false });
     if (input.action === "wake") state = "awake";
     if (input.action === "archive") state = "archived";
@@ -65,7 +65,9 @@ it("gives each cloud thread its own sandbox, wakes it only for work, and archive
     const saved = () => harness.deps.db.select().from(cloudroomThreads).get()!;
     expect(saved().coreUrl).toBe(`sandbox:${thread.id}`);
     await waitFor(() => saved().sessionId === "cr_one", "cloud start");
-    expect(website.map(call => call.action)).toEqual(expect.arrayContaining(["register", "wake"]));
+    // One website call registers and wakes the new thread's sandbox.
+    expect(website.filter(call => call.thread === thread.id).map(call => call.action)).toEqual(["wake"]);
+    expect(website.find(call => call.action === "wake")?.project).toBe(project.id);
     expect(website.every(call => call.auth === `Basic ${Buffer.from(`${account.id}:${"a".repeat(64)}`).toString("base64")}`)).toBe(true);
     expect(core.find(call => call.path === "/v1/sessions")?.auth).toBe(`Bearer ${"t".repeat(64)}`);
 

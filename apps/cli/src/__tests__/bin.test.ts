@@ -42,10 +42,10 @@ describe("cloudroom bin wrapper", () => {
       JSON.stringify({ name: "cloudroom", private: true }),
     );
     await copyFile(
-      join(repoRoot, "apps", "cli", "bin", "cloudroom"),
-      join(fakeBinDir, "cloudroom"),
+      join(repoRoot, "apps", "cli", "bin", "room-cli"),
+      join(fakeBinDir, "room-cli"),
     );
-    await chmod(join(fakeBinDir, "cloudroom"), 0o755);
+    await chmod(join(fakeBinDir, "room-cli"), 0o755);
     return fakeRepoRoot;
   }
 
@@ -79,7 +79,7 @@ NODE
 `);
 
     const result = await execFileAsync(
-      join(fakeRepoRoot, "apps", "cli", "bin", "cloudroom"),
+      join(fakeRepoRoot, "apps", "cli", "bin", "room-cli"),
       ["status", "--json"],
       {
         cwd: fakeRepoRoot,
@@ -114,7 +114,7 @@ exit 42
     );
 
     const result = await execFileAsync(
-      join(fakeRepoRoot, "apps", "cli", "bin", "cloudroom"),
+      join(fakeRepoRoot, "apps", "cli", "bin", "room-cli"),
       ["--help"],
       {
         cwd: fakeRepoRoot,

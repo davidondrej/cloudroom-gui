@@ -105,7 +105,7 @@ function formatAttachments(
     .map(
       (attachment) =>
         `- ${attachment.id} · ${attachment.fileName}\n` +
-        `  Fetch with: cloudroom tasks attachment get ${attachment.id} --out <path>`,
+        `  Fetch with: room-cli tasks attachment get ${attachment.id} --out <path>`,
     )
     .join("\n");
 }
@@ -184,7 +184,7 @@ ${formatThreads(store.tasks.listTaskThreads(task.id))}
 
 ## Action contract
 
-You can act on this task with the cloudroom tasks CLI. If you begin working on it, first run: cloudroom tasks attach ${task.key} (attaches THIS thread so the task shows you as working). Comment substantive updates via cloudroom tasks comment ${task.key} --body ... and set status via cloudroom tasks update ${task.key} --status ...
+You can act on this task with the room-cli tasks CLI. If you begin working on it, first run: room-cli tasks attach ${task.key} (attaches THIS thread so the task shows you as working). Comment substantive updates via room-cli tasks comment ${task.key} --body ... and set status via room-cli tasks update ${task.key} --status ...
 `;
 }
 

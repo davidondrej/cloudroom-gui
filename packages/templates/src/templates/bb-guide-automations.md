@@ -7,14 +7,14 @@ intent: Help agents create, edit, inspect, and run automations through the CLI.
 Automations schedule recurring or one-shot work. Agent automations run a prompt
 in a thread; script automations run stored code without model usage.
 
-  cloudroom automation list --project <id>
-  cloudroom automation show <automationId> --project <id>
-  cloudroom automation create --project <id> --name <name> <schedule> <execution>
-  cloudroom automation update <automationId> --project <id> [changes]
-  cloudroom automation pause|resume <automationId> --project <id>
-  cloudroom automation run <automationId> --project <id>
-  cloudroom automation runs <automationId> --project <id> [--limit <count>]
-  cloudroom automation delete <automationId> --project <id> --yes
+  room-cli automation list --project <id>
+  room-cli automation show <automationId> --project <id>
+  room-cli automation create --project <id> --name <name> <schedule> <execution>
+  room-cli automation update <automationId> --project <id> [changes]
+  room-cli automation pause|resume <automationId> --project <id>
+  room-cli automation run <automationId> --project <id>
+  room-cli automation runs <automationId> --project <id> [--limit <count>]
+  room-cli automation delete <automationId> --project <id> --yes
 
 Schedules:
 
@@ -67,7 +67,7 @@ record in the Automations panel takes you through the standard editor, where
 you can add the prompt while reviewing its other settings. The same repair is
 available through the CLI:
 
-  cloudroom automation update <automationId> --project <id> --prompt "<prompt>"
+  room-cli automation update <automationId> --project <id> --prompt "<prompt>"
 
 Writes remain strict. Run, pause, and resume reject damaged records; update
 succeeds only when the resulting complete record is canonical.

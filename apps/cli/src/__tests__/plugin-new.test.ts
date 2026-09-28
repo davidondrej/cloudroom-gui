@@ -40,7 +40,7 @@ describe("resolveNewPluginTarget", () => {
   });
 });
 
-describe.sequential("cloudroom plugin new dependency install", () => {
+describe.sequential("room-cli plugin new dependency install", () => {
   const originalCwd = process.cwd();
   let workDir: string;
   let logged: string[];

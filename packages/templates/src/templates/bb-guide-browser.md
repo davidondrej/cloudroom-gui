@@ -1,8 +1,8 @@
 # Built-in browser automation
 
-`cloudroom browser` is the experimental core API for automation integrations controlling Cloudroom desktop tabs. The Browser Automation plugin adds its own script/session commands; another plugin can use the same core connection independently.
+`room-cli browser` is the experimental core API for automation integrations controlling Cloudroom desktop tabs. The Browser Automation plugin adds its own script/session commands; another plugin can use the same core connection independently.
 
-Start with `cloudroom browser instances --host <host-id> --json`. For every tab/control operation provide `--host <host-id> --instance <instance-id> --generation <generation> --thread <thread-id>`. The browser host can differ from the agent host. Never infer an active desktop window.
+Start with `room-cli browser instances --host <host-id> --json`. For every tab/control operation provide `--host <host-id> --instance <instance-id> --generation <generation> --thread <thread-id>`. The browser host can differ from the agent host. Never infer an active desktop window.
 
 - `tabs`: list native tabs and their control state.
 - `create [--url <http(s)-url>] [--reveal]`: create a tab with a separate automation profile. Defaults: hidden, about:blank.

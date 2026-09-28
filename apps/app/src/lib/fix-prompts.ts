@@ -1,5 +1,5 @@
 const CLI_PATH =
-  "/Applications/Cloudroom.app/Contents/Resources/app.asar.unpacked/node_modules/bb-app/host-daemon/dist/cloudroom";
+  "/Applications/Cloudroom.app/Contents/Resources/app.asar.unpacked/node_modules/bb-app/host-daemon/dist/room-cli";
 const RELEASES_URL = "https://github.com/davidondrej/cloudroom-gui/releases";
 
 const said = (text?: string | null) =>
@@ -11,31 +11,31 @@ const fixPrompt = (problem: string, look: string) =>
 export const cloudThreadFixPrompt = (threadId: string, agent: string, error?: string | null) =>
   fixPrompt(
     `My Cloudroom Cloud thread ${threadId} (${agent}) failed${said(error)}`,
-    `Investigate with \`cloudroom thread show ${threadId}\` and \`cloudroom vm run '<command>'\` on my cloud VM.`,
+    `Investigate with \`room-cli thread show ${threadId}\` and \`room-cli vm run '<command>'\` on my cloud VM.`,
   );
 
 export const syncFixPrompt = (state: string, issue?: string | null) =>
   fixPrompt(
     `Cloudroom's automatic sync between this computer and my cloud VM is not working (state: ${state})${said(issue)}`,
-    "Check `cloudroom cloud status --json`, ~/.gui-cloudroom/cloudroom-sync/, and the logs in ~/.gui-cloudroom/logs/.",
+    "Check `room-cli cloud status --json`, ~/.gui-cloudroom/cloudroom-sync/, and the logs in ~/.gui-cloudroom/logs/.",
   );
 
 export const projectFilesFixPrompt = (threadId: string, error?: string | null) =>
   fixPrompt(
     `Cloudroom could not move my work to the cloud for thread ${threadId}${said(error)}`,
-    `Check \`cloudroom thread show ${threadId}\` and \`cloudroom cloud thread-workspace ${threadId}\`, then copy any missing project files with \`cloudroom vm push\`.`,
+    `Check \`room-cli thread show ${threadId}\` and \`room-cli cloud thread-workspace ${threadId}\`, then copy any missing project files with \`room-cli vm push\`.`,
   );
 
 export const cloudUnavailableFixPrompt = (error?: string | null) =>
   fixPrompt(
     `My Cloudroom desktop app cannot reach my cloud VM${said(error)}`,
-    "Check `cloudroom cloud status --json`, then run `cloudroom vm run 'systemctl status cloudroom --no-pager; df -h'` if the VM answers.",
+    "Check `room-cli cloud status --json`, then run `room-cli vm run 'systemctl status cloudroom --no-pager; df -h'` if the VM answers.",
   );
 
 export const crashFixPrompt = (error: string) =>
   fixPrompt(
     `The Cloudroom desktop app crashed${said(error)}`,
-    "Check the logs in ~/.gui-cloudroom/logs/ and `cloudroom status --json`.",
+    "Check the logs in ~/.gui-cloudroom/logs/ and `room-cli status --json`.",
   );
 
 export const appUpdateFixPrompt = (current: string, latest: string | null) =>

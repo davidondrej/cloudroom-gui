@@ -246,7 +246,7 @@ target? })`. Inside the fixed-tab component,
   "Open with …" choice; matching files opened in the right panel then
   render your component in a plugin tab instead of the built-in preview —
   this includes links clicked in rendered markdown, the file picker, and
-  `cloudroom thread open`. `source` is
+  `room-cli thread open`. `source` is
   `{ kind: "workspace" | "host" | "thread-storage", threadId, environmentId,
 projectId, experimental_hostId? }` (nullable fields). The optional host ID
   selects a project-backed workspace host and persists in opener-tab parameters.

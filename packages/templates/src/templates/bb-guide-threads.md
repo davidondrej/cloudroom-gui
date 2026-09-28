@@ -11,7 +11,7 @@ Every command supports --json for machine-readable output.
 
 Spawning:
 
-  cloudroom thread spawn --project <id> --prompt "..." [options]
+  room-cli thread spawn --project <id> --prompt "..." [options]
 
     --prompt <prompt>              Initial prompt (required)
     --title <title>                Thread title
@@ -26,7 +26,7 @@ Spawning:
     --base-branch <branch>         Exact Git ref for a new managed worktree
                                    (--new-environment worktree only)
     --environment-provider <id>    Run on an environment provider by id (list them with
-                                   `cloudroom environment providers`). The provider
+                                   `room-cli environment providers`). The provider
                                    provisions where the thread runs; its steps show in the
                                    thread's workspace-setup block. Its `requires` names the
                                    facts it consumes: `host` takes --machine (the local
@@ -35,7 +35,7 @@ Spawning:
                                    commits; `gitRemote` needs a project remote;
                                    `projectless` serves only threads with no project.
     --environment-inputs <json>    JSON value for an --environment-provider that declares
-                                   inputs; `cloudroom environment providers --json` prints each
+                                   inputs; `room-cli environment providers --json` prints each
                                    provider's inputs as JSON Schema (null when it takes
                                    none). Required when the provider declares inputs,
                                    refused when it does not
@@ -56,7 +56,7 @@ Spawning:
   Cloud requires --provider codex or pi and --model. It uses the project's
   cloud folder and full permissions. Sends queue in the core. Stop pauses the
   queue; sending its first queued message explicitly resumes it. Inspect
-  cloudroom cloud status --json for core/harness support for steering,
+  room-cli cloud status --json for core/harness support for steering,
   attachments, compaction, message editing, queue changes, and fast service tier.
   Native environment options, worktrees, scheduling, and forks remain unsupported.
   An idle status does not prove a queued message completed; verify its output.
@@ -103,7 +103,7 @@ Handoff:
 
 Forking:
 
-  cloudroom thread fork <source-thread-id> [options]
+  room-cli thread fork <source-thread-id> [options]
 
     --prompt <prompt>              Optional first prompt; omit for an idle fork
     --source-seq-end <seq>         Fork after the source turn containing this event sequence (tip by default)
@@ -133,7 +133,7 @@ Forking:
 
 Editing a sent message:
 
-  cloudroom thread edit-message <id> --message "Replacement text"
+  room-cli thread edit-message <id> --message "Replacement text"
     --self                              Target the current thread (ROOM_THREAD_ID)
     --expected-request-sequence <seq>   Select the message and reject a stale target
 
@@ -148,7 +148,7 @@ Editing a sent message:
 
 Listing:
 
-  cloudroom thread list                           List open (unarchived) threads
+  room-cli thread list                           List open (unarchived) threads
     --project <id>                         Filter by project
     --environment <id>                     Filter by environment
     --parent-thread <id>                   Filter by parent thread
@@ -164,11 +164,11 @@ Listing:
   personal project shows "-". Use --json for the full thread records.
   An archived thread is never open, whatever its status says.
 
-  cloudroom thread search <query> [--limit <1-50>]
+  room-cli thread search <query> [--limit <1-50>]
                                              Search threads and messages
-  cloudroom thread history <id>                   List prompt history
+  room-cli thread history <id>                   List prompt history
 
-  cloudroom thread count                          Count threads without listing them
+  room-cli thread count                          Count threads without listing them
     --status <status>                      Count threads in this status: pending, idle, starting, active, stopping, error
     --host <id>                            Count threads whose environment is on this machine
     --provider <id>                        Count threads running on this provider
@@ -177,22 +177,22 @@ Listing:
     --by <dimension>                       Group the count by host, provider, or project
 
   Counting happens in the database, so use it instead of listing threads and
-  counting rows: `cloudroom thread list` pages a bounded window and would miscount.
+  counting rows: `room-cli thread list` pages a bounded window and would miscount.
   Archived, deleted, and hidden threads are excluded. Without --by the command
   prints one number; with --by it prints a count per group (threads with no
   host/provider/project group under "-") followed by the total.
 
 Sections:
 
-  cloudroom thread section list
-  cloudroom thread section create <name>
-  cloudroom thread section rename <id> <name>
-  cloudroom thread section delete <id> [--yes]
+  room-cli thread section list
+  room-cli thread section create <name>
+  room-cli thread section rename <id> <name>
+  room-cli thread section delete <id> [--yes]
 
 Inspecting:
 
-  cloudroom thread context [id]                   Show recorded context usage and available breakdown (--self, --json)
-  cloudroom thread show [id]                      Show thread details and pull request status
+  room-cli thread context [id]                   Show recorded context usage and available breakdown (--self, --json)
+  room-cli thread show [id]                      Show thread details and pull request status
     --self                                 Target current thread
     --work-status                          Include git working-tree status
     --git-diff                             Include git diff
@@ -202,7 +202,7 @@ Inspecting:
 
   Shows pull request status for the attached environment branch when available.
 
-  cloudroom thread log [id]                       Show thread event log
+  room-cli thread log [id]                       Show thread event log
     --self                                 Target current thread
     --format <format>                      Output format: json, minimal, verbose
     --limit <count>                        Max entries: events for json (oldest first, default 100);
@@ -215,10 +215,10 @@ Inspecting:
   walks a consistent history snapshot and joins paginated group contents.
   Appends stay outside that walk; rerun the command if a history edit invalidates it.
 
-  cloudroom thread output [id]                    Get the final output of a thread
+  room-cli thread output [id]                    Get the final output of a thread
     --self                                 Target current thread
 
-  cloudroom thread wait <id>                      Wait for a thread status or event (defaults to --status idle)
+  room-cli thread wait <id>                      Wait for a thread status or event (defaults to --status idle)
     --status <status>                      Wait for this status
     --event <type>                         Wait for this event type
     --timeout <seconds>                    Timeout in seconds (default: 1200 / 20 min)
@@ -229,11 +229,11 @@ Opening threads and files in the app:
   In chat, reference a thread as @thread:thr_abc123, substituting its actual ID.
   Cloudroom renders the correct project-aware link; do not construct thread URLs manually.
 
-  cloudroom thread open <path>                    Open a file in the current Cloudroom thread panel
-  cloudroom thread open <thread-id> [path]        Open a thread, optionally with a panel file
+  room-cli thread open <path>                    Open a file in the current Cloudroom thread panel
+  room-cli thread open <thread-id> [path]        Open a thread, optionally with a panel file
     --line <number>                        Line number to focus
     --split <placement>                    right, down, left, top, or replace
-  cloudroom thread pane <action> [thread-id]      Maximize, restore, toggle, spotlight, or clear spotlight
+  room-cli thread pane <action> [thread-id]      Maximize, restore, toggle, spotlight, or clear spotlight
 
   Inside a Cloudroom thread, ROOM_THREAD_ID selects the current thread automatically and
   the thread ID argument is omitted for file-only opens. Pass an explicit thread
@@ -251,7 +251,7 @@ Opening threads and files in the app:
 
 Messaging:
 
-  cloudroom thread tell <id> <message>            Send a follow-up message
+  room-cli thread tell <id> <message>            Send a follow-up message
     --mode <mode>                          Message mode: steer, queue, or auto; default: Local steer, Cloud queue
     --model <model>                        Model override for this turn
     --reasoning-level <level>              Reasoning level override
@@ -277,16 +277,16 @@ Messaging:
   sends, so the agent proposes a plan for approval before executing (Claude
   Code and Codex threads). Plain "/plan ..." text is not recognized; it reaches
   the provider as literal text. Approve or deny the proposed plan with
-  `cloudroom thread interactions`; `cloudroom thread cancel-plan` leaves Plan mode early.
+  `room-cli thread interactions`; `room-cli thread cancel-plan` leaves Plan mode early.
   SDK callers build the same input with
   `createBuiltinPlanCommandTextInput(text)` from `@bb/sdk` and pass it as
   `input` to `threads.spawn` or `threads.send`.
 
-  cloudroom thread stop [id]                      Stop work and release the agent runtime
-  cloudroom thread compact [id]                   Request compaction of an idle or errored thread's context
-  cloudroom thread clear [id]                     Clear model context for an idle or failed thread
-  cloudroom thread cancel-plan [id]               Exit the provider's active Plan mode
-  cloudroom thread clear-goal [id]                Clear the provider's active Goal
+  room-cli thread stop [id]                      Stop work and release the agent runtime
+  room-cli thread compact [id]                   Request compaction of an idle or errored thread's context
+  room-cli thread clear [id]                     Clear model context for an idle or failed thread
+  room-cli thread cancel-plan [id]               Exit the provider's active Plan mode
+  room-cli thread clear-goal [id]                Clear the provider's active Goal
     --self                                 Target current thread
 
   `thread compact` enqueues the same structured /compact turn used by the
@@ -298,7 +298,7 @@ Messaging:
 
 Ownership:
 
-  cloudroom thread update [id]                    Update thread metadata
+  room-cli thread update [id]                    Update thread metadata
     --self                                 Target current thread
     --title <title>                        Set title
     --parent-thread <id>                   Assign to a parent thread
@@ -317,24 +317,24 @@ Ownership:
   validates them against that provider's current model catalog, applies them on
   the next turn, and keeps using them on later turns until changed.
 
-  cloudroom thread read [id]                      Mark read
-  cloudroom thread unread [id]                    Mark unread
-  cloudroom thread reorder-pinned <id> [--after <id>] [--before <id>]
+  room-cli thread read [id]                      Mark read
+  room-cli thread unread [id]                    Mark unread
+  room-cli thread reorder-pinned <id> [--after <id>] [--before <id>]
 
 Interactions:
 
-  cloudroom thread interactions list [id]         List a thread's pending and past interactions
-  cloudroom thread interactions show <interaction-id> [id]
+  room-cli thread interactions list [id]         List a thread's pending and past interactions
+  room-cli thread interactions show <interaction-id> [id]
                                            Show one interaction (approval details, questions, or a plugin form's data)
-  cloudroom thread interactions approve <interaction-id> [id]
+  room-cli thread interactions approve <interaction-id> [id]
                                            Allow a command, file-change, plan, or tool-use approval
-  cloudroom thread interactions deny <interaction-id> [id]
+  room-cli thread interactions deny <interaction-id> [id]
                                            Deny an approval
-  cloudroom thread interactions grant <interaction-id> [id] --scope turn|session
+  room-cli thread interactions grant <interaction-id> [id] --scope turn|session
                                            Grant a permission interaction
-  cloudroom thread interactions answer <interaction-id> [id] --choice <questionId=value> --text <questionId=text>
+  room-cli thread interactions answer <interaction-id> [id] --choice <questionId=value> --text <questionId=text>
                                            Answer a provider's user question
-  cloudroom thread interactions respond <interaction-id> [id] --value '<json>'
+  room-cli thread interactions respond <interaction-id> [id] --value '<json>'
                                            Answer a plugin form: a plugin's own request, or a request the agent raised through a provider (kind `<pluginId>/<name>`)
     --self                                 Target current thread (every subcommand)
     --json                                 Machine-readable output (every subcommand)
@@ -345,13 +345,13 @@ Interactions:
 
 Queued messages:
 
-  cloudroom thread queue list [<thread-id>] [--wait-holder plugin:<plugin-id>]
-  cloudroom thread queue create <thread-id> <message>
-  cloudroom thread queue update <thread-id> <message-id> <message> [--file <path>] [--image <path>]
-  cloudroom thread queue send <thread-id> <message-id> [--mode auto|steer]
-  cloudroom thread queue reorder <thread-id> <message-id> [--after <id>] [--before <id>]
-  cloudroom thread queue group <thread-id> <boundary-id> --prefix <comma-separated-ids>
-  cloudroom thread queue delete <thread-id> <message-id>
+  room-cli thread queue list [<thread-id>] [--wait-holder plugin:<plugin-id>]
+  room-cli thread queue create <thread-id> <message>
+  room-cli thread queue update <thread-id> <message-id> <message> [--file <path>] [--image <path>]
+  room-cli thread queue send <thread-id> <message-id> [--mode auto|steer]
+  room-cli thread queue reorder <thread-id> <message-id> [--after <id>] [--before <id>]
+  room-cli thread queue group <thread-id> <boundary-id> --prefix <comma-separated-ids>
+  room-cli thread queue delete <thread-id> <message-id>
 
   The `Sender` column identifies agent threads and system notices; user messages
   leave it blank. The SDK and `--json` include `initiator` and `senderThreadId`.
@@ -378,12 +378,12 @@ Queued messages:
 
 Persisted panel tabs:
 
-  cloudroom thread tabs show <thread-id>
-  cloudroom thread tabs set <thread-id> --expected-revision <n> --tabs-json '<json>'
+  room-cli thread tabs show <thread-id>
+  room-cli thread tabs set <thread-id> --expected-revision <n> --tabs-json '<json>'
 
 Lifecycle:
 
-  cloudroom thread retry [id]                     Retry the thread's failed turn
+  room-cli thread retry [id]                     Retry the thread's failed turn
     --self                                 Target current thread
     --turn <requestId>                     Retry this turn request id specifically; fails when it is not the thread's failed turn
     --send-at <when>                       Dispatch at an ISO 8601 timestamp or a duration from now (30s, 10m, 2h, 7d)
@@ -400,7 +400,7 @@ Lifecycle:
   failed or a turn that already has a retry queued. Without --send-at the retry
   is attempted now, and may still queue behind a busy thread or a plugin.
 
-  cloudroom thread archive [id]                   Archive a thread (and children/hidden forks)
+  room-cli thread archive [id]                   Archive a thread (and children/hidden forks)
     --self                                 Archive current thread
 
   `thread stop` preserves the thread history, metadata, environment, and future
@@ -410,20 +410,20 @@ Lifecycle:
   releases an idle runtime adds no interruption: it leaves the timeline and any
   pending interaction of that thread untouched.
 
-  cloudroom thread unarchive [id]                 Unarchive a thread
+  room-cli thread unarchive [id]                 Unarchive a thread
     --self                                 Unarchive current thread
 
-  cloudroom thread delete <id>                    Delete permanently
+  room-cli thread delete <id>                    Delete permanently
     --yes                                  Skip confirmation
 
   Deleting a thread removes its record immediately, but provider-owned
-  environment cleanup is asynchronous. Use `cloudroom environment show <id>` to
+  environment cleanup is asynchronous. Use `room-cli environment show <id>` to
   inspect teardown until the lifecycle reaches destroyed.
 
 Read-only commands require a thread ID or --self where supported.
 Mutating thread lifecycle and messaging commands require an explicit ID or --self.
 
-`cloudroom thread context [id]` reads the latest stored context measurement without
+`room-cli thread context [id]` reads the latest stored context measurement without
 starting a provider request. Use `--self` for the current thread and `--json` for
 `{ usage: ... }` (`null` when unavailable). Claude Code refreshes the estimated
 breakdown after turns and compaction when its SDK supports context inspection.

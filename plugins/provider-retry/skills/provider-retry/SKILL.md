@@ -10,8 +10,8 @@ Codex or Claude Code subscription-window limit with a reset time, it queues the
 original input verbatim for after the window opens, marked agent-only.
 
 A pending retry is an ordinary durable queued row and survives restart. Inspect
-it with `cloudroom thread queue list <thread-id>` and inspect the failed turn before
+it with `room-cli thread queue list <thread-id>` and inspect the failed turn before
 manually retrying it; avoid duplicating an existing queued retry.
 
-Use the core `cloudroom thread retry` command for an intentional manual retry. Follow
+Use the core `room-cli thread retry` command for an intentional manual retry. Follow
 its live help for selection and scheduling flags.

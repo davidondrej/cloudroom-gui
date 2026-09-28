@@ -807,7 +807,7 @@ function serverEntrySource(packageName: string): string {
 // the tiny defineRpcContract runtime helper; the API type remains type-only.
 //
 // The example is a todo list. One store in bb.storage.kv serves three
-// surfaces: the Example todos page (app.tsx, over RPC), the \`cloudroom ${id}\` CLI
+// surfaces: the Example todos page (app.tsx, over RPC), the \`room-cli ${id}\` CLI
 // command (below), and the skill in skills/example-todos/SKILL.md that tells
 // agents how to use that command. A write from any surface publishes a realtime signal so
 // every open page refetches.
@@ -851,7 +851,7 @@ export default async function plugin(bb: BbPluginApi) {
   bb.log.info("loaded");
 
   // Declarative settings — rendered in Cloudroom's settings UI and editable with
-  // \`cloudroom plugin config ${id}\`. Add \`secret: true\` for values like API keys.
+  // \`room-cli plugin config ${id}\`. Add \`secret: true\` for values like API keys.
   // Settings are read once per load: reload the plugin after changing one.
   const settings = bb.settings.define({
     showDone: {
@@ -914,16 +914,16 @@ export default async function plugin(bb: BbPluginApi) {
     todos_remove: async ({ id }) => ({ removed: await removeTodo(id) }),
   });
 
-  // The \`cloudroom ${id}\` command: what agents (and you) use from a shell. Parsing
+  // The \`room-cli ${id}\` command: what agents (and you) use from a shell. Parsing
   // argv is plugin-owned; \`commands\` is metadata Cloudroom renders into help and
   // the generated plugin-commands skill without running plugin code.
   const usage = [
     "Usage:",
-    "  cloudroom ${id} list [--json]",
-    "  cloudroom ${id} add <title> [--json]",
-    "  cloudroom ${id} done <todo-id> [--json]",
-    "  cloudroom ${id} undo <todo-id> [--json]",
-    "  cloudroom ${id} remove <todo-id> [--json]",
+    "  room-cli ${id} list [--json]",
+    "  room-cli ${id} add <title> [--json]",
+    "  room-cli ${id} done <todo-id> [--json]",
+    "  room-cli ${id} undo <todo-id> [--json]",
+    "  room-cli ${id} remove <todo-id> [--json]",
   ].join("\\n");
   function formatTodo(todo: Todo): string {
     return \`[\${todo.done ? "x" : " "}] \${todo.id}  \${todo.title}\`;
@@ -932,26 +932,26 @@ export default async function plugin(bb: BbPluginApi) {
     name: "${id}",
     summary: "Manage the ${name} plugin's example todo list",
     commands: [
-      { name: "list", summary: "List todos", usage: "cloudroom ${id} list [--json]" },
+      { name: "list", summary: "List todos", usage: "room-cli ${id} list [--json]" },
       {
         name: "add",
         summary: "Add a todo",
-        usage: "cloudroom ${id} add <title> [--json]",
+        usage: "room-cli ${id} add <title> [--json]",
       },
       {
         name: "done",
         summary: "Mark a todo done",
-        usage: "cloudroom ${id} done <todo-id> [--json]",
+        usage: "room-cli ${id} done <todo-id> [--json]",
       },
       {
         name: "undo",
         summary: "Mark a todo not done",
-        usage: "cloudroom ${id} undo <todo-id> [--json]",
+        usage: "room-cli ${id} undo <todo-id> [--json]",
       },
       {
         name: "remove",
         summary: "Remove a todo",
-        usage: "cloudroom ${id} remove <todo-id> [--json]",
+        usage: "room-cli ${id} remove <todo-id> [--json]",
       },
     ],
     async run(argv) {
@@ -963,7 +963,7 @@ export default async function plugin(bb: BbPluginApi) {
       });
       const notFound = (missingId: string) => ({
         exitCode: 1,
-        stderr: \`No todo with id \${missingId}. Run "cloudroom ${id} list" to see ids.\`,
+        stderr: \`No todo with id \${missingId}. Run "room-cli ${id} list" to see ids.\`,
       });
       const todoId = args[0];
       switch (command) {
@@ -1033,7 +1033,7 @@ function appEntrySource(packageName: string): string {
   const id = derivePluginId(packageName);
   return `// ${packageName} — a Cloudroom plugin frontend entry.
 //
-// Compiled by \`cloudroom plugin build\` into dist/app.js + dist/app.css. React and
+// Compiled by \`room-cli plugin build\` into dist/app.js + dist/app.css. React and
 // @get-bb/plugin-sdk/app are provided by the Cloudroom app at load time (never bundled),
 // so this file must be loaded by Cloudroom, not imported directly.
 //
@@ -1041,7 +1041,7 @@ function appEntrySource(packageName: string): string {
 // model), edit freely. Add more from the BB registry with
 // \`npx shadcn add @bb/<name>\` (see components.json) — dropdowns, tables,
 // the full shadcn set, version-matched to this Cloudroom install. Run
-// \`npm install\` once before \`cloudroom plugin build\`.
+// \`npm install\` once before \`room-cli plugin build\`.
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { definePluginApp, useRealtime, useRpc } from "@get-bb/plugin-sdk/app";
@@ -1070,7 +1070,7 @@ function useTodos() {
     refetch();
   }, [refetch]);
   // server.ts publishes after every write — from this page, another window,
-  // or \`cloudroom ${id} add\` run by an agent — so the list never goes stale.
+  // or \`room-cli ${id} add\` run by an agent — so the list never goes stale.
   useRealtime("todos-changed", refetch);
   return { rpc, todos, error, report, refetch };
 }
@@ -1154,7 +1154,7 @@ function TodosPage() {
     <div className="h-full min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto box-border w-full max-w-3xl px-4 pb-4 pt-3 md:px-5 md:pt-4">
         <p className="text-sm text-muted-foreground">
-          Agents keep this list with <code>cloudroom ${id}</code>; the skill in{" "}
+          Agents keep this list with <code>room-cli ${id}</code>; the skill in{" "}
           <code>skills/example-todos</code> tells them how.
         </p>
         <form onSubmit={add} className="mt-4 flex items-center gap-2">
@@ -1180,7 +1180,7 @@ function TodosPage() {
           ) : todos.length === 0 ? (
             <EmptyState>
               Nothing to do. Add one above, or run{" "}
-              <code>cloudroom ${id} add "Ship it"</code>.
+              <code>room-cli ${id} add "Ship it"</code>.
             </EmptyState>
           ) : (
             <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card px-4">
@@ -1216,7 +1216,7 @@ function TodosPage() {
 // The default export must be definePluginApp(...); Cloudroom interprets it after
 // loading the bundle. navPanel adds a page to the left sidebar; register
 // other UI under app.slots and composer actions, plus-menu rows, banners, or
-// rich-text rules with app.composer.customize(...) (see the cloudroom guide's
+// rich-text rules with app.composer.customize(...) (see the room-cli guide's
 // plugins chapter).
 export default definePluginApp((app) => {
   app.slots.navPanel({
@@ -1259,34 +1259,34 @@ function skillSource(packageName: string): string {
   const name = pluginNameOf(packageName);
   return `---
 name: example-todos
-description: Read and update the ${name} plugin's example todo list with the \`cloudroom ${id}\` CLI. Use when the user asks to add, complete, reopen, remove, or review todos, or when the steps of a task should be tracked as todos.
+description: Read and update the ${name} plugin's example todo list with the \`room-cli ${id}\` CLI. Use when the user asks to add, complete, reopen, remove, or review todos, or when the steps of a task should be tracked as todos.
 ---
 
 # Example todos
 
 The ${name} plugin keeps one todo list. The Example todos page in the Cloudroom sidebar and
-the \`cloudroom ${id}\` command read and write the same list, so a change from either
+the \`room-cli ${id}\` command read and write the same list, so a change from either
 side shows in the other at once.
 
 ## Commands
 
 | Command | Effect |
 | --- | --- |
-| \`cloudroom ${id} list\` | Show every todo with its id. \`[x]\` marks a done todo. |
-| \`cloudroom ${id} add <title>\` | Add a todo. Quote a title that has spaces. |
-| \`cloudroom ${id} done <todo-id>\` | Mark a todo done. |
-| \`cloudroom ${id} undo <todo-id>\` | Mark a todo not done. |
-| \`cloudroom ${id} remove <todo-id>\` | Delete a todo. |
+| \`room-cli ${id} list\` | Show every todo with its id. \`[x]\` marks a done todo. |
+| \`room-cli ${id} add <title>\` | Add a todo. Quote a title that has spaces. |
+| \`room-cli ${id} done <todo-id>\` | Mark a todo done. |
+| \`room-cli ${id} undo <todo-id>\` | Mark a todo not done. |
+| \`room-cli ${id} remove <todo-id>\` | Delete a todo. |
 
 Add \`--json\` to any command when the output drives code.
 
 ## Procedure
 
-1. Run \`cloudroom ${id} list\` before you change the list. Use the ids it prints;
+1. Run \`room-cli ${id} list\` before you change the list. Use the ids it prints;
    never guess an id.
 2. Add todos one at a time with a short title that starts with a verb:
-   \`cloudroom ${id} add "Write the release notes"\`.
-3. When you finish a todo, mark it done: \`cloudroom ${id} done <todo-id>\`. Do not
+   \`room-cli ${id} add "Write the release notes"\`.
+3. When you finish a todo, mark it done: \`room-cli ${id} done <todo-id>\`. Do not
    remove a todo to mark it done.
 4. Remove a todo only when the user asks for it or when it duplicates
    another todo.
@@ -1294,10 +1294,10 @@ Add \`--json\` to any command when the output drives code.
 
 ## Rules
 
-- Change the list only through \`cloudroom ${id}\`. Do not edit bb.db or the plugin's
+- Change the list only through \`room-cli ${id}\`. Do not edit bb.db or the plugin's
   storage directly.
 - A non-zero exit with "No todo with id" means the id is stale: run
-  \`cloudroom ${id} list\` again.
+  \`room-cli ${id} list\` again.
 `;
 }
 
@@ -1310,7 +1310,7 @@ your agent threads.
 
 - An **Example todos** page in the left sidebar that adds, completes, and
   removes todos.
-- A \`cloudroom ${id}\` command that does the same from a terminal.
+- A \`room-cli ${id}\` command that does the same from a terminal.
 - Live updates, so a change made in one place reaches every open page at once.
 
 ## How it works
@@ -1321,9 +1321,9 @@ key, or external service.
 
 ## For agents
 
-The bundled skill tells an agent to read the list with \`cloudroom ${id} list\`, add
-one todo at a time with \`cloudroom ${id} add\`, and close finished work with
-\`cloudroom ${id} done\`.
+The bundled skill tells an agent to read the list with \`room-cli ${id} list\`, add
+one todo at a time with \`room-cli ${id} add\`, and close finished work with
+\`room-cli ${id} done\`.
 `;
 }
 
@@ -1334,18 +1334,18 @@ function readmeSource(packageName: string): string {
 A Cloudroom plugin that keeps a todo list. It shows every surface a plugin can own:
 
 - \`server.ts\` — the backend: a todo store in \`bb.storage.kv\`, RPC methods
-  for the page, a \`cloudroom ${id}\` CLI command, a setting, and a realtime signal
+  for the page, a \`room-cli ${id}\` CLI command, a setting, and a realtime signal
   that keeps every open page current.
 - \`app.tsx\` — the frontend: an **Example todos** page in the left sidebar
   (\`app.slots.navPanel\`) built from the vendored components.
 - \`skills/example-todos/SKILL.md\` — a skill that tells agents how to keep the list
-  with \`cloudroom ${id}\`. Cloudroom imports it into agent threads automatically.
+  with \`room-cli ${id}\`. Cloudroom imports it into agent threads automatically.
 - \`PLUGIN_OVERVIEW.md\` — the store listing text: a longer version of
   \`bb.description\` that the plugin detail page shows under it. See
   [Store listing](#store-listing).
 
 Try it: install the plugin, open **Example todos** in the sidebar, then run
-\`cloudroom ${id} add "Ship it"\` in a terminal. The page updates at once.
+\`room-cli ${id} add "Ship it"\` in a terminal. The page updates at once.
 
 ## UI components
 
@@ -1358,13 +1358,13 @@ via the pinned ref in \`components.json\`):
 npx shadcn add @bb/select @bb/table
 \`\`\`
 
-Run \`npm install\` once before \`cloudroom plugin build\` — the vendored components'
+Run \`npm install\` once before \`room-cli plugin build\` — the vendored components'
 npm deps bundle into your dist. React, and BB-shimmed packages like the
 radix portal primitives and \`sonner\` (\`import { toast } from "sonner"\`
 reaches Cloudroom's own toaster), are provided by the Cloudroom app at runtime and never
 bundled. Every shimmed package is declared in \`devDependencies\` at the
 host's version so those imports typecheck; keep them there (never in
-\`dependencies\`, which would bundle a second copy), and \`cloudroom plugin types\`
+\`dependencies\`, which would bundle a second copy), and \`room-cli plugin types\`
 repins them alongside the SDK. Ship \`dist/\` (npm tarball or committed for
 git installs) so people installing your plugin never need npm.
 
@@ -1387,13 +1387,13 @@ git installs) so people installing your plugin never need npm.
   \`>=${PLUGIN_SDK_VERSION}\`). Cloudroom reads this as a floor, not a ceiling: a later
   SDK in the same major still loads your plugin.
 - \`dependencies\` — every package your source imports that Cloudroom does not provide.
-  \`cloudroom plugin build\` inlines them into \`dist/\`, and git installs resolve this
+  \`room-cli plugin build\` inlines them into \`dist/\`, and git installs resolve this
   list alone, so a build-required package here rather than in
   \`devDependencies\` is what keeps your plugin installable. \`devDependencies\`
   is for types and tooling only (Cloudroom shims React, the portal primitives, and
   \`@get-bb/plugin-sdk\` at runtime — never bundle them).
 
-Run \`cloudroom plugin build\` before publishing git/npm installs. It writes
+Run \`room-cli plugin build\` before publishing git/npm installs. It writes
 \`dist/server.js\` + \`server.meta.json\` and \`app.js\` / \`app.css\` /
 \`app.meta.json\`. Each \`*.meta.json\` stamps SDK major/version,
 \`artifactFormatVersion\`, \`pluginId\`, \`pluginVersion\`, and
@@ -1417,28 +1417,28 @@ shows both directly above.
 
 ## Install
 
-From this directory (\`cloudroom plugin new\` already ran the install; a fresh clone
+From this directory (\`room-cli plugin new\` already ran the install; a fresh clone
 needs it):
 
 \`\`\`
 npm install
-cloudroom plugin install .
+room-cli plugin install .
 \`\`\`
 
 After editing sources, reload:
 
 \`\`\`
-cloudroom plugin reload ${id}
+room-cli plugin reload ${id}
 \`\`\`
 
-Or let \`cloudroom plugin dev\` rebuild and reload on every save.
+Or let \`room-cli plugin dev\` rebuild and reload on every save.
 
 ## Configure
 
 \`\`\`
-cloudroom plugin config ${id}
-cloudroom plugin config ${id} set showDone false
-cloudroom plugin reload ${id}
+room-cli plugin config ${id}
+room-cli plugin config ${id} set showDone false
+room-cli plugin reload ${id}
 \`\`\`
 
 ## Types & API reference
@@ -1461,8 +1461,8 @@ The SDK surface grows with every Cloudroom release, so the pin has to track the 
 actually run:
 
 \`\`\`
-cloudroom plugin types          # sync this plugin's SDK surface to the running Cloudroom
-cloudroom plugin types --check  # CI: fail when it does not match
+room-cli plugin types          # sync this plugin's SDK surface to the running Cloudroom
+room-cli plugin types --check  # CI: fail when it does not match
 \`\`\`
 
 Ask Cloudroom to write plugins for you: the \`bb-plugin-authoring\` skill documents

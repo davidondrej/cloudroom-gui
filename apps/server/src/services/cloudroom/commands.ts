@@ -8,11 +8,11 @@ import type { CreateThreadRequest, SendMessageRequest, SendMessageResponse } fro
 import { z } from "zod";
 import { ApiError } from "../../errors.js";
 import { CloudroomClient, CloudroomConnectionError, CloudroomError, authRequiredMessages, type CodexAuthStatus, type VmRun, type VmRunResult } from "./client.js";
-import { CLOUD_HARNESSES, isCloudProvider, projectFollowUp, projectInitialPrompt, projectRecord, retractStillQueuedPrompts, type CloudProvider } from "./events.js";
+import { CLOUD_HARNESSES, HARNESS_NAMES, appendStartProgress, isCloudProvider, projectFollowUp, projectInitialPrompt, projectRecord, retractStillQueuedPrompts, type CloudProvider, type StartStep } from "./events.js";
 import { mentionsOpenAISide401 } from "./codex-errors.js";
 import { codexOutage } from "./openai-status.js";
 import { buildThreadStatusChangeMetadata } from "../threads/thread-runtime-display.js";
-import { prepareCloudInstructionInput, resolveCustomInstructions } from "../threads/custom-instructions.js";
+import { cloudroomSystemPrompt, prepareCloudInstructionInput, resolveCustomInstructions } from "../threads/custom-instructions.js";
 import { binding, bindings, command, commands, queuedPrompts, saveBinding, saveCommandState, saveStatus, effectivePrompt, projectCopyProgress, teleportBlocked, unstartedTurn, type Binding, type Command } from "./store.js";
 import { copyProject, githubRepository, planProjectCopy } from "./project-copy.js";
 import { deriveTitleFallback, shouldGenerateThreadTitle } from "../threads/title-generation.js";
@@ -51,6 +51,7 @@ const capabilitiesSchema = z.object({
   root_workspace: z.boolean().default(false),
   teleport: z.boolean().default(false),
   command_guard: z.boolean().default(false),
+  system_prompt: z.boolean().default(false),
   codex_auth: z.boolean().default(false),
   cursor_auth: z.boolean().default(false),
   claude_auth: z.boolean().default(false),
@@ -105,6 +106,7 @@ const services = new WeakMap<DbConnection, CloudroomService>();
 const workspaceId = (projectId: string) => `bb_${projectId}`;
 const ROOT_WORKSPACE = "root";
 const workspaceName = (name: string) => name.replace(/[^a-zA-Z0-9_.-]/g, "-").replace(/^\.+/, "").slice(0, 80) || "project";
+const cloudStep = (sandbox: boolean, status: StartStep["status"] = "started"): StartStep => ({ key: "cloud", text: sandbox ? "Starting cloud sandbox" : "Connecting to cloud VM", status });
 
 export function cloudroom(deps: Deps): CloudroomService {
   let service = services.get(deps.db);
@@ -647,10 +649,16 @@ class CloudroomService {
     } catch (error) { return { ready: false, account, projectId, storage, workspaces: false, repository: null, model: null, error: publicError(error) }; }
   }
 
-  /** Mac → VM access (ADR 0113). Local agents reach this through `cloudroom vm`. */
-  async runOnVm(input: VmRun, signal?: AbortSignal): Promise<VmRunResult> {
-    try { return await new CloudroomClient(await this.connection()).runOnVm(input, signal); }
-    catch (error) { throw new ApiError(error instanceof CloudroomError && error.status === 409 ? 409 : 503, "cloudroom_vm_run", publicError(error)); }
+  /** Mac → cloud access (ADR 0113). Local agents reach this through `room-cli vm`.
+   *  `threadId` picks a Cloud thread's sandbox and wakes it; without one, only the account's VM can run it. */
+  async runOnVm(input: VmRun, threadId?: string, signal?: AbortSignal): Promise<VmRunResult> {
+    const saved = threadId ? binding(this.deps.db, threadId) ?? undefined : undefined;
+    if (threadId && !saved) throw new ApiError(404, "cloudroom_vm_run", "This is not a Cloud thread. Pass the ID of a Cloud thread.");
+    try { return await (await this.client(saved)).runOnVm(input, signal); }
+    catch (error) {
+      if (error instanceof ApiError && error.body.code === "cloudroom_sandbox_only") throw new ApiError(409, "cloudroom_vm_run", "Pass --thread <id> to pick which Cloud thread's sandbox runs this.");
+      throw new ApiError(error instanceof CloudroomError && error.status === 409 ? 409 : 503, "cloudroom_vm_run", publicError(error));
+    }
   }
 
   /** Sandbox accounts keep logins on the website, and every sandbox receives them when it wakes (ADR 0145).
@@ -873,11 +881,13 @@ class CloudroomService {
         input: JSON.stringify(this.snapshotInstructions(thread, "prompt", {
           ...payload, ...workspace, provider: remoteModel?.provider,
           command_guard_enabled: getAppSettings(this.deps.db).commandGuardEnabled,
+          system_prompt: cloudroomSystemPrompt(this.deps.db),
           ...(request.serviceTier && request.serviceTier !== "default" ? { service_tier: request.serviceTier } : {}),
         })),
         createdAt: Date.now(),
       }).run();
       projectInitialPrompt(tx, thread.id);
+      appendStartProgress(tx, thread.id, [cloudStep(Boolean(sandbox))], "active", true);
       if (!request.title && shouldGenerateThreadTitle(request.input)) {
         tx.insert(cloudroomCommands).values({
           id: `title_${thread.id}`, threadId: thread.id, command: "title",
@@ -886,7 +896,7 @@ class CloudroomService {
       }
       return thread;
     });
-    this.notify(thread.id, ["client/turn/requested"]);
+    this.notify(thread.id, ["client/turn/requested", "system/thread-provisioning"]);
     void this.selectOnboardingProject(project.id).catch(() => {});
     this.start();
     void this.deliver(thread.id).catch(() => {});
@@ -992,12 +1002,15 @@ class CloudroomService {
     try {
       const client = await this.client(saved, false);
       const workspace = await client.sessionWorkspace(saved.sessionId);
+      if (create) this.progress(threadId, [{ key: "workspace", text: `Using workspace: ${workspace.path}`, status: "completed" }]);
       if (!workspace.head) return;
       const quoted = `'${name}'`;
       const script = create
         ? `current=$(git symbolic-ref --quiet --short HEAD) || exit 0; case "$current" in cloudroom/*) ;; *) git pull -q --ff-only 2>/dev/null; git checkout -q -b ${quoted} ;; esac`
         : `current=$(git symbolic-ref --quiet --short HEAD) || exit 0; case "$current" in cloudroom/*) [ "$current" = ${quoted} ] || git rev-parse -q --verify "$current@{upstream}" >/dev/null || git branch -m ${quoted} ;; esac`;
-      await client.runOnVm({ command: script, cwd: workspace.path });
+      const result = await client.runOnVm({ command: `${script}\ngit symbolic-ref --quiet --short HEAD`, cwd: workspace.path });
+      const branch = Buffer.from(result.stdout, "hex").toString().trim().split("\n").at(-1);
+      if (branch) this.progress(threadId, [{ key: "branch", text: `Using branch: ${branch}`, status: "completed" }]);
     } catch { /* A missing branch never blocks the agent; the next title change retries. */ }
   }
 
@@ -1218,7 +1231,9 @@ class CloudroomService {
       saveCommandState(tx, threadId, `first_${threadId}`, "sending");
       saveBinding(tx, threadId, { error: null });
       saveStatus(tx, threadId, "pending");
+      appendStartProgress(tx, threadId, [cloudStep(Boolean(sandboxThread(saved.coreUrl)))], "active", true);
     });
+    this.notify(threadId, ["system/thread-provisioning"]);
     this.start();
     await this.deliver(threadId);
   }
@@ -1228,8 +1243,13 @@ class CloudroomService {
       saveCommandState(tx, threadId, `first_${threadId}`, "failed");
       saveBinding(tx, threadId, { error: message });
       saveStatus(tx, threadId, "error");
+      appendStartProgress(tx, threadId, [{ key: "error", text: message, status: "failed" }], "failed");
     });
-    this.notify(threadId);
+    this.notify(threadId, ["system/thread-provisioning"]);
+  }
+
+  private progress(threadId: string, steps: StartStep[], block?: "completed"): void {
+    if (this.deps.db.transaction((tx) => appendStartProgress(tx, threadId, steps, block))) this.notify(threadId, ["system/thread-provisioning"], false);
   }
 
   private retractQueuedHistory(threadId: string): void {
@@ -1331,20 +1351,28 @@ class CloudroomService {
         deliveringCommand = true;
         const harness = getThread(this.deps.db, threadId)?.providerId;
         if (!isCloudProvider(harness)) throw new ApiError(409, "cloudroom_harness", "Unsupported cloud harness; native execution is blocked.");
+        this.progress(threadId, [cloudStep(Boolean(sandbox), "completed"), { key: "agent", text: `Starting ${HARNESS_NAMES[harness]}`, status: "started" }]);
         const { model, provider } = coreModel(harness, saved.model, capabilities);
         const initial = command(this.deps.db, `first_${threadId}`);
-        const options = initial ? z.object({ workspace: z.string().optional(), workspace_name: z.string().optional(), provider: z.string().optional(), command_guard_enabled: z.boolean().optional() }).parse(JSON.parse(initial.input)) : {};
+        const options = initial ? z.object({ workspace: z.string().optional(), workspace_name: z.string().optional(), provider: z.string().optional(), command_guard_enabled: z.boolean().optional(), system_prompt: z.string().optional() }).parse(JSON.parse(initial.input)) : {};
         if (!capabilities.command_guard) delete options.command_guard_enabled;
+        if (!capabilities.system_prompt) delete options.system_prompt;
         if (!capabilities.direct_workspaces) throw new ApiError(503, "cloudroom_update", "Update the cloud core to start agents without copying files. Your message is saved.");
         if (options.workspace === ROOT_WORKSPACE && !capabilities.root_workspace) throw new ApiError(503, "cloudroom_update", "Update the cloud core to start agents outside a project. Your message is saved.");
         if (harness === "codex" && capabilities.codex_auth_import && !sandbox) await importCodexLogin(this.deps);
         if (harness === "pi") await importPiLogin(this.deps);
-        const copy = options.workspace && options.workspace !== ROOT_WORKSPACE ? await planProjectCopy(this.deps, client, threadId, options.workspace, undefined, sandbox ? `${sandbox}:${options.workspace}` : options.workspace) : null;
-        if (epoch !== this.epoch) return;
-        const accepted = await client.start(saved.startRequestId, CLOUD_HARNESSES[harness], { model, reasoning: saved.reasoning, ...options, ...(provider ? { provider } : {}) });
+        const [copy, accepted] = await Promise.all([
+          options.workspace && options.workspace !== ROOT_WORKSPACE ? planProjectCopy(this.deps, client, threadId, options.workspace, undefined, sandbox ? `${sandbox}:${options.workspace}` : options.workspace) : null,
+          client.start(saved.startRequestId, CLOUD_HARNESSES[harness], { model, reasoning: saved.reasoning, ...options, ...(provider ? { provider } : {}) }),
+        ]);
         saveBinding(this.deps.db, threadId, { sessionId: accepted.session_id, error: null });
         saved = binding(this.deps.db, threadId)!;
-        if (copy) copyProject(this.deps, client, copy, () => void this.ensureBranch(threadId, true));
+        const files: StartStep[] = copy ? [{ key: "files", text: copy.repository ? `Cloning ${copy.repository.replace("https://github.com/", "")}` : "Copying project from your Mac", status: "started" }] : [];
+        this.progress(threadId, [{ key: "agent", status: "completed" }, ...files], "completed");
+        if (copy) copyProject(this.deps, client, copy, (error) => {
+          this.progress(threadId, [{ key: "files", status: error ? "failed" : "completed" }]);
+          if (!error) void this.ensureBranch(threadId, true);
+        });
         else if (sandbox) void this.ensureBranch(threadId, true);
       }
       if (epoch !== this.epoch) return;

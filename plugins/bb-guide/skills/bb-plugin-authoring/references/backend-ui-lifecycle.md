@@ -41,7 +41,7 @@ ships as a `skills/` entry instead.
 ### bb.status
 
 `bb.status.needsConfiguration(message)` — mark the plugin
-`needs-configuration` (shown in `cloudroom plugin list` and the UI) instead of
+`needs-configuration` (shown in `room-cli plugin list` and the UI) instead of
 failing. Cleared on the next load.
 
 ### bb.onDispose and the reload lifecycle

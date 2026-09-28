@@ -59,6 +59,8 @@ export interface ExecutionControlsProps {
   serviceTier?: ExecutionServiceTierConfig;
   reasoning: ExecutionReasoningConfig;
   handoff?: ModelReasoningPickerHandoff;
+  // Switches provider and model in one step; used by /opus and /astra.
+  selectModel?: (selection: { providerId: string; model: string }) => void;
   disabled?: boolean;
   lockModelSelection?: boolean;
 }

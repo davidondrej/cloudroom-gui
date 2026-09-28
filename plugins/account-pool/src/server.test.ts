@@ -1125,7 +1125,7 @@ describe("Account Pool plugin", () => {
       }),
     ).resolves.toBeNull();
     expect(host.harness.inspection.needsConfigurationMessages).toEqual([
-      "Add and enable a Claude or Codex account with `cloudroom pool account add`.",
+      "Add and enable a Claude or Codex account with `room-cli pool account add`.",
     ]);
     const hello = helloResponse();
     expect(hello.status).toBe(200);
@@ -1790,7 +1790,7 @@ describe("Account Pool plugin", () => {
     expect(fixture.host.harness.inspection.logEntries).toContainEqual({
       level: "warn",
       message:
-        "Account Pooler disabled with 1 recently routed thread on machines without a local Claude login. Run cloudroom pool status before disabling to inspect them.",
+        "Account Pooler disabled with 1 recently routed thread on machines without a local Claude login. Run room-cli pool status before disabling to inspect them.",
     });
   });
 
@@ -6527,7 +6527,7 @@ describe("Account Pool cache miss debugging", () => {
     ).toMatchObject({
       exitCode: 0,
       stdout:
-        "No cache miss reports. Enable reporting with cloudroom pool config set cacheMissDebug true.\n",
+        "No cache miss reports. Enable reporting with room-cli pool config set cacheMissDebug true.\n",
     });
     const listedOff = await fixture.host.harness.behavior.runCli([
       "cache-miss",
@@ -6630,8 +6630,8 @@ describe("Account Pool cache miss debugging", () => {
       "cache-miss",
       "--help",
     ]);
-    expect(help.stdout).toContain("cloudroom pool cache-miss list [--json]");
-    expect(help.stdout).toContain("cloudroom pool cache-miss clear");
+    expect(help.stdout).toContain("room-cli pool cache-miss list [--json]");
+    expect(help.stdout).toContain("room-cli pool cache-miss clear");
     expect(
       (
         await fixture.host.harness.behavior.runCli([

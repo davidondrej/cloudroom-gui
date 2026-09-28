@@ -260,6 +260,7 @@ import { useThreadGitActions } from "./useThreadGitActions";
 import { useSendSideChatMessageToMain } from "./useSendSideChatMessageToMain";
 import { useThreadReadTracking } from "@/hooks/useThreadReadTracking";
 import { useThreadUnreadDividerState } from "./useThreadUnreadDividerState";
+import { useAutoOpenGeneratedImages } from "./useAutoOpenGeneratedImages";
 import {
   buildTerminalSyncedSecondaryFileTabs,
   getRetainedTerminalTabId,
@@ -2155,6 +2156,42 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
       workspacePreviewRootPath,
     ],
   );
+  const handleAutoOpenImage = useCallback(
+    (link: ThreadTimelineLocalFileLink) => {
+      const { kind } = resolveThreadLocalFileLink({
+        cloudThread: isCloudThread,
+        hostFileLinksAvailable:
+          thread?.environmentId !== null && thread?.environmentId !== undefined,
+        link,
+        threadStorageRootPath,
+        workspaceRootPath: workspacePreviewRootPath,
+      });
+      if (
+        kind === "open-workspace-path" ||
+        kind === "open-thread-storage-path" ||
+        kind === "open-host-path"
+      ) {
+        handleOpenTimelineLocalFileLink(link, { viewer: "builtin" });
+      }
+    },
+    [
+      handleOpenTimelineLocalFileLink,
+      isCloudThread,
+      thread?.environmentId,
+      threadStorageRootPath,
+      workspacePreviewRootPath,
+    ],
+  );
+  useAutoOpenGeneratedImages({
+    enabled: isFocused && !renderSecondaryPanelAsDrawer,
+    isTurnRunning:
+      thread !== undefined &&
+      isRunningThreadRuntimeDisplayStatus(thread.runtime.displayStatus),
+    openImage: handleAutoOpenImage,
+    rows: timelineLoading ? null : timelineRows,
+    threadId,
+    workspaceRootPath: workspacePreviewRootPath,
+  });
   const handleOpenTimelineLink = useCallback<ThreadTimelineLinkHandler>(
     ({ href }) => handleOpenUrlByPreference(href),
     [handleOpenUrlByPreference],

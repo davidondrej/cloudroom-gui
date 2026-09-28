@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Control the Cloudroom introduction and bundled agent skills.",
+  "description": "Control the bundled Cloudroom agent skills.",
   "engines": {
     "bb": ">=0.0"
   },
   "bb": {
     "name": "Cloudroom guide",
-    "description": "Control the Cloudroom introduction and bundled agent skills.",
+    "description": "Control the bundled Cloudroom agent skills.",
     "branding": {
       "icon": "Explore"
     },

@@ -56,7 +56,7 @@ const ACTIVE_THREAD_STATUSES = new Set(["starting", "working"]);
 const DEFAULT_PROJECT_COLOR = "blue";
 const DEFAULT_LABEL_COLOR = "gray";
 
-const ROOT_HELP = `Usage: cloudroom tasks <command> [options]
+const ROOT_HELP = `Usage: room-cli tasks <command> [options]
 
 Commands:
   status                         Show plugin status
@@ -76,57 +76,57 @@ Commands:
   threads                        List threads attached to a task
   seed-demo                      Create sample data (requires --yes)
 
-Run cloudroom tasks <command> --help for command usage.`;
+Run room-cli tasks <command> --help for command usage.`;
 
 const PROJECT_HELP = `Usage:
-  cloudroom tasks project create --name <name> [--prefix X] [--folder <id-or-name>] [--link-bb-project <proj_id>] [--color <color>] [--json]
-  cloudroom tasks project list [--json]
-  cloudroom tasks project show <prefix-or-id> [--json]
-  cloudroom tasks project update <prefix-or-id> [--name <name>] [--color <color>] [--folder <id-or-name> | --no-folder] [--link-bb-project <proj_id> | --unlink-bb-project] [--rename-prefix X] [--json]`;
+  room-cli tasks project create --name <name> [--prefix X] [--folder <id-or-name>] [--link-bb-project <proj_id>] [--color <color>] [--json]
+  room-cli tasks project list [--json]
+  room-cli tasks project show <prefix-or-id> [--json]
+  room-cli tasks project update <prefix-or-id> [--name <name>] [--color <color>] [--folder <id-or-name> | --no-folder] [--link-bb-project <proj_id> | --unlink-bb-project] [--rename-prefix X] [--json]`;
 
 const FOLDER_HELP = `Usage:
-  cloudroom tasks folder create --name <name> [--parent <id-or-name>] [--json]
-  cloudroom tasks folder list [--json]
-  cloudroom tasks folder update <id-or-name> [--name <name>] [--parent <id-or-name> | --no-parent] [--json]
-  cloudroom tasks folder delete <id-or-name> [--json]
+  room-cli tasks folder create --name <name> [--parent <id-or-name>] [--json]
+  room-cli tasks folder list [--json]
+  room-cli tasks folder update <id-or-name> [--name <name>] [--parent <id-or-name> | --no-parent] [--json]
+  room-cli tasks folder delete <id-or-name> [--json]
 
 Deleting a folder moves its projects and subfolders to the top level. No
 tasks are deleted.`;
 
 const CREATE_HELP =
-  "Usage: cloudroom tasks create [--project <prefix-or-id>] --title <title> [--description <markdown> | --description-file <path>] [--priority <priority>] [--label <name>]... [--due YYYY-MM-DD] [--parent <key-or-id>] [--attach <path>]... [--machine <id-or-name>] [--json]";
-const LIST_HELP = `Usage: cloudroom tasks list [--project <prefix-or-id>] [--status <status>]... [--priority <priority>]... [--label <name>]... [--active] [--search <query>] [--sort manual|priority|due] [--limit <1-${TASKS_PAGE_MAX_LIMIT}>] [--cursor <opaque>] [--json]`;
-const SHOW_HELP = "Usage: cloudroom tasks show <key-or-id> [--json]";
+  "Usage: room-cli tasks create [--project <prefix-or-id>] --title <title> [--description <markdown> | --description-file <path>] [--priority <priority>] [--label <name>]... [--due YYYY-MM-DD] [--parent <key-or-id>] [--attach <path>]... [--machine <id-or-name>] [--json]";
+const LIST_HELP = `Usage: room-cli tasks list [--project <prefix-or-id>] [--status <status>]... [--priority <priority>]... [--label <name>]... [--active] [--search <query>] [--sort manual|priority|due] [--limit <1-${TASKS_PAGE_MAX_LIMIT}>] [--cursor <opaque>] [--json]`;
+const SHOW_HELP = "Usage: room-cli tasks show <key-or-id> [--json]";
 const UPDATE_HELP =
-  "Usage: cloudroom tasks update <key-or-id> [--status <status>] [--priority <priority>] [--title <title>] [--description <markdown> | --description-file <path>] [--due YYYY-MM-DD | --no-due] [--parent <key-or-id> | --no-parent] [--add-label <name>]... [--remove-label <name>]... [--machine <id-or-name>] [--json]";
+  "Usage: room-cli tasks update <key-or-id> [--status <status>] [--priority <priority>] [--title <title>] [--description <markdown> | --description-file <path>] [--due YYYY-MM-DD | --no-due] [--parent <key-or-id> | --no-parent] [--add-label <name>]... [--remove-label <name>]... [--machine <id-or-name>] [--json]";
 const COMMENT_HELP =
-  "Usage: cloudroom tasks comment <key-or-id> (--body <markdown> | --body-file <path>) [--author <name>] [--machine <id-or-name>] [--notify] [--json]";
+  "Usage: room-cli tasks comment <key-or-id> (--body <markdown> | --body-file <path>) [--author <name>] [--machine <id-or-name>] [--notify] [--json]";
 const LABEL_HELP = `Usage:
-  cloudroom tasks label create --project <prefix-or-id> --name <name> [--color <color>] [--json]
-  cloudroom tasks label list --project <prefix-or-id> [--json]
-  cloudroom tasks label delete --project <prefix-or-id> <name-or-id> [--json]`;
+  room-cli tasks label create --project <prefix-or-id> --name <name> [--color <color>] [--json]
+  room-cli tasks label list --project <prefix-or-id> [--json]
+  room-cli tasks label delete --project <prefix-or-id> <name-or-id> [--json]`;
 const ATTACHMENT_HELP = `Usage:
-  cloudroom tasks attachment add <key-or-comment-id> --file <path> [--name <name>] [--machine <id-or-name>] [--json]
-  cloudroom tasks attachment get <attachment-id> --out <path> [--machine <id-or-name>] [--json]
-  cloudroom tasks attachment list <key> [--json]
-  cloudroom tasks attachment remove <attachment-id> [--remove-references] [--json]
+  room-cli tasks attachment add <key-or-comment-id> --file <path> [--name <name>] [--machine <id-or-name>] [--json]
+  room-cli tasks attachment get <attachment-id> --out <path> [--machine <id-or-name>] [--json]
+  room-cli tasks attachment list <key> [--json]
+  room-cli tasks attachment remove <attachment-id> [--remove-references] [--json]
 
 File paths are read from and written to the invoking machine: the thread's
 machine when run inside an agent thread, otherwise the server's machine.
 Pass --machine to target another enrolled machine explicitly.`;
 const PRESET_HELP = `Usage:
-  cloudroom tasks preset list [--json]
-  cloudroom tasks preset show <name-or-id> [--json]
-  cloudroom tasks preset create --name <name> --provider <id> --model <id> --reasoning <level> --permission <accept-edits|auto|full> [--service-tier default|fast|none] [--environment project-default|worktree] [--base-branch <branch>] [--machine <id-or-name>] [--instructions <text>] [--json]
-  cloudroom tasks preset update <name-or-id> [--name <name>] [--provider <id>] [--model <id>] [--reasoning <level>] [--permission <accept-edits|auto|full>] [--service-tier default|fast|none] [--environment project-default|worktree] [--base-branch <branch>] [--machine <id-or-name>] [--instructions <text>] [--json]
-  cloudroom tasks preset delete <name-or-id> [--json]`;
+  room-cli tasks preset list [--json]
+  room-cli tasks preset show <name-or-id> [--json]
+  room-cli tasks preset create --name <name> --provider <id> --model <id> --reasoning <level> --permission <accept-edits|auto|full> [--service-tier default|fast|none] [--environment project-default|worktree] [--base-branch <branch>] [--machine <id-or-name>] [--instructions <text>] [--json]
+  room-cli tasks preset update <name-or-id> [--name <name>] [--provider <id>] [--model <id>] [--reasoning <level>] [--permission <accept-edits|auto|full>] [--service-tier default|fast|none] [--environment project-default|worktree] [--base-branch <branch>] [--machine <id-or-name>] [--instructions <text>] [--json]
+  room-cli tasks preset delete <name-or-id> [--json]`;
 const DISPATCH_HELP =
-  "Usage: cloudroom tasks dispatch <key> --preset <name> [--instructions <extra>] [--json]";
+  "Usage: room-cli tasks dispatch <key> --preset <name> [--instructions <extra>] [--json]";
 const ATTACH_HELP =
-  "Usage: cloudroom tasks attach <key> [--thread <thread-id>] [--json]";
+  "Usage: room-cli tasks attach <key> [--thread <thread-id>] [--json]";
 const DETACH_HELP =
-  "Usage: cloudroom tasks detach <key> [--thread <thread-id>] [--json]";
-const THREADS_HELP = "Usage: cloudroom tasks threads <key> [--json]";
+  "Usage: room-cli tasks detach <key> [--thread <thread-id>] [--json]";
+const THREADS_HELP = "Usage: room-cli tasks threads <key> [--json]";
 
 interface PluginStatus {
   name: string;
@@ -310,7 +310,7 @@ async function defaultProject(
   );
   if (matches.length === 0) {
     throw new CliError(
-      `no tracker project is linked to Cloudroom project ${ctx.projectId}; pass --project or link one with cloudroom tasks project update`,
+      `no tracker project is linked to Cloudroom project ${ctx.projectId}; pass --project or link one with room-cli tasks project update`,
     );
   }
   if (matches.length > 1) {
@@ -617,7 +617,7 @@ async function runProject(
 
   if (action === "list") {
     assertAllowed(args, []);
-    requirePositionals(args, 0, "cloudroom tasks project list [--json]");
+    requirePositionals(args, 0, "room-cli tasks project list [--json]");
     const projects = await listProjects(domain);
     const folders = tasksRpcContract.listFolders.output.parse(
       await domain.listFolders(tasksRpcContract.listFolders.input.parse(null)),
@@ -632,7 +632,7 @@ async function runProject(
     const [address] = requirePositionals(
       args,
       1,
-      "cloudroom tasks project show <prefix-or-id> [--json]",
+      "room-cli tasks project show <prefix-or-id> [--json]",
     );
     const project = await resolveProject(domain, address!);
     const folder = project.folderId
@@ -659,7 +659,7 @@ async function runProject(
     const [address] = requirePositionals(
       args,
       1,
-      "cloudroom tasks project update <prefix-or-id> [options] [--json]",
+      "room-cli tasks project update <prefix-or-id> [options] [--json]",
     );
     const project = await resolveProject(domain, address!);
     const folderAddress = option(args, "folder");
@@ -757,7 +757,7 @@ async function runFolder(
     requirePositionals(
       args,
       0,
-      "cloudroom tasks folder create --name <name> [options]",
+      "room-cli tasks folder create --name <name> [options]",
     );
     const parentAddress = option(args, "parent");
     const parent = parentAddress
@@ -778,7 +778,7 @@ async function runFolder(
 
   if (action === "list") {
     assertAllowed(args, []);
-    requirePositionals(args, 0, "cloudroom tasks folder list [--json]");
+    requirePositionals(args, 0, "room-cli tasks folder list [--json]");
     const result = tasksRpcContract.listFolders.output.parse(
       await domain.listFolders(tasksRpcContract.listFolders.input.parse(null)),
     );
@@ -805,7 +805,7 @@ async function runFolder(
     const [address] = requirePositionals(
       args,
       1,
-      "cloudroom tasks folder update <id-or-name> [options] [--json]",
+      "room-cli tasks folder update <id-or-name> [options] [--json]",
     );
     const folder = await resolveFolder(domain, address!);
     const parentAddress = option(args, "parent");
@@ -857,7 +857,7 @@ async function runFolder(
     const [address] = requirePositionals(
       args,
       1,
-      "cloudroom tasks folder delete <id-or-name> [--json]",
+      "room-cli tasks folder delete <id-or-name> [--json]",
     );
     const folder = await resolveFolder(domain, address!);
     const result = tasksRpcContract.deleteFolder.output.parse(
@@ -1000,7 +1000,7 @@ async function runCreate(
         ...(failedAttachments.length > 0
           ? failedAttachments.map(
               (failure) =>
-                `Retry with: cloudroom tasks attachment add ${task.key} --file ${failure.path}`,
+                `Retry with: room-cli tasks attachment add ${task.key} --file ${failure.path}`,
             )
           : []),
       ].join("\n");
@@ -1412,7 +1412,7 @@ async function runLabel(domain: TasksDomain, argv: string[]): Promise<string> {
     requirePositionals(
       args,
       0,
-      "cloudroom tasks label create --project <project> --name <name>",
+      "room-cli tasks label create --project <project> --name <name>",
     );
     const project = await resolveProject(
       domain,
@@ -1434,7 +1434,7 @@ async function runLabel(domain: TasksDomain, argv: string[]): Promise<string> {
 
   if (action === "list") {
     assertAllowed(args, ["project"]);
-    requirePositionals(args, 0, "cloudroom tasks label list --project <project>");
+    requirePositionals(args, 0, "room-cli tasks label list --project <project>");
     const project = await resolveProject(
       domain,
       requireOption(args, "project"),
@@ -1454,7 +1454,7 @@ async function runLabel(domain: TasksDomain, argv: string[]): Promise<string> {
     const [address] = requirePositionals(
       args,
       1,
-      "cloudroom tasks label delete --project <project> <name-or-id>",
+      "room-cli tasks label delete --project <project> <name-or-id>",
     );
     const project = await resolveProject(
       domain,
@@ -1494,7 +1494,7 @@ async function runAttachment(
     const [ownerAddress] = requirePositionals(
       args,
       1,
-      "cloudroom tasks attachment add <key-or-comment-id> --file <path> [--name <name>] [--machine <id-or-name>] [--json]",
+      "room-cli tasks attachment add <key-or-comment-id> --file <path> [--name <name>] [--machine <id-or-name>] [--json]",
     );
     const sourceOption = requireOption(args, "file");
     const sourcePath = resolve(ctx.cwd ?? process.cwd(), sourceOption);
@@ -1529,7 +1529,7 @@ async function runAttachment(
     const [attachmentId] = requirePositionals(
       args,
       1,
-      "cloudroom tasks attachment get <attachment-id> --out <path> [--machine <id-or-name>] [--json]",
+      "room-cli tasks attachment get <attachment-id> --out <path> [--machine <id-or-name>] [--json]",
     );
     const outOption = requireOption(args, "out");
     const outPath = resolve(ctx.cwd ?? process.cwd(), outOption);
@@ -1549,7 +1549,7 @@ async function runAttachment(
     const [address] = requirePositionals(
       args,
       1,
-      "cloudroom tasks attachment list <key> [--json]",
+      "room-cli tasks attachment list <key> [--json]",
     );
     const task = await resolveTask(domain, address!);
     const comments = tasksRpcContract.listComments.output.parse(
@@ -1577,7 +1577,7 @@ async function runAttachment(
     const [attachmentId] = requirePositionals(
       args,
       1,
-      "cloudroom tasks attachment remove <attachment-id> [--remove-references] [--json]",
+      "room-cli tasks attachment remove <attachment-id> [--remove-references] [--json]",
     );
     const result = tasksRpcContract.deleteAttachment.output.parse(
       await domain.deleteAttachment(
@@ -1607,7 +1607,7 @@ async function runPreset(domain: TasksDomain, argv: string[]): Promise<string> {
 
   if (action === "list") {
     assertAllowed(args, []);
-    requirePositionals(args, 0, "cloudroom tasks preset list [--json]");
+    requirePositionals(args, 0, "room-cli tasks preset list [--json]");
     const presets = await listPresets(domain);
     return args.flags.has("json")
       ? JSON.stringify({ presets })
@@ -1647,7 +1647,7 @@ async function runPreset(domain: TasksDomain, argv: string[]): Promise<string> {
     const [address] = requirePositionals(
       args,
       1,
-      "cloudroom tasks preset show <name-or-id> [--json]",
+      "room-cli tasks preset show <name-or-id> [--json]",
     );
     const preset = resolvePreset(await listPresets(domain), address!);
     return args.flags.has("json")
@@ -1730,7 +1730,7 @@ async function runPreset(domain: TasksDomain, argv: string[]): Promise<string> {
     const [address] = requirePositionals(
       args,
       1,
-      "cloudroom tasks preset update <name-or-id> [options] [--json]",
+      "room-cli tasks preset update <name-or-id> [options] [--json]",
     );
     const preset = resolvePreset(await listPresets(domain), address!);
     const environmentOption = option(args, "environment");
@@ -1779,7 +1779,7 @@ async function runPreset(domain: TasksDomain, argv: string[]): Promise<string> {
     const [address] = requirePositionals(
       args,
       1,
-      "cloudroom tasks preset delete <name-or-id> [--json]",
+      "room-cli tasks preset delete <name-or-id> [--json]",
     );
     const preset = resolvePreset(await listPresets(domain), address!);
     const result = tasksRpcContract.deletePreset.output.parse(
@@ -1949,7 +1949,7 @@ export function registerTasksCli(
       {
         name: "status",
         summary: "Show the Tasks plugin name and version",
-        usage: "cloudroom tasks status [--json]",
+        usage: "room-cli tasks status [--json]",
       },
       {
         name: "project",
@@ -2024,7 +2024,7 @@ export function registerTasksCli(
       {
         name: "seed-demo",
         summary: "Create sample folders, projects, labels, tasks, and comments",
-        usage: "cloudroom tasks seed-demo --yes [--json]",
+        usage: "room-cli tasks seed-demo --yes [--json]",
       },
     ],
     async run(argv, ctx): Promise<PluginCliResult> {
@@ -2038,7 +2038,7 @@ export function registerTasksCli(
           case "status": {
             const args = parseArgs(rest);
             assertAllowed(args, []);
-            requirePositionals(args, 0, "cloudroom tasks status [--json]");
+            requirePositionals(args, 0, "room-cli tasks status [--json]");
             stdout = args.flags.has("json")
               ? JSON.stringify(status)
               : `${status.name} ${status.version}`;
@@ -2093,7 +2093,7 @@ export function registerTasksCli(
           case "seed-demo": {
             const args = parseArgs(rest);
             assertAllowed(args, [], ["yes"]);
-            requirePositionals(args, 0, "cloudroom tasks seed-demo --yes [--json]");
+            requirePositionals(args, 0, "room-cli tasks seed-demo --yes [--json]");
             if (!args.flags.has("yes")) {
               throw new CliError(
                 "seed-demo creates sample data; re-run with --yes",
@@ -2114,7 +2114,7 @@ export function registerTasksCli(
           }
           default:
             throw new CliError(
-              `unknown command: ${command}; run cloudroom tasks --help`,
+              `unknown command: ${command}; run room-cli tasks --help`,
             );
         }
         return { exitCode: 0, stdout };

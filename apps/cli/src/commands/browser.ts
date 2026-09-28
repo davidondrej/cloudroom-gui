@@ -316,11 +316,11 @@ export function registerBrowserCommands(
   )
     .requiredOption(
       "--from <source>",
-      "Source browser ID from `cloudroom browser import-sources`",
+      "Source browser ID from `room-cli browser import-sources`",
     )
     .requiredOption(
       "--profile <directory>",
-      "Source profile directory as printed by `cloudroom browser import-sources`",
+      "Source profile directory as printed by `room-cli browser import-sources`",
     )
     .option(
       "--into <target>",

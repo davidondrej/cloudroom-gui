@@ -33,11 +33,11 @@ ROOM_CLI               The absolute Cloudroom CLI path, when available
 
 The plugin does not inject `BB_ENVIRONMENT_ID` or `BB_HOST_DAEMON_PORT`.
 
-The plugin resolves `cloudroom` from `ROOM_CLI`, the internal `BB_CLI_DIR`, `PATH`, and
+The plugin resolves `room-cli` from `ROOM_CLI`, the internal `BB_CLI_DIR`, `PATH`, and
 common macOS install paths. It adds the selected directory to `PATH`.
 
-If it cannot find `cloudroom`, the script still starts with a warning. A later
-`cloudroom` call then fails normally.
+If it cannot find `room-cli`, the script still starts with a warning. A later
+`room-cli` call then fails normally.
 
 ## Execution safety
 

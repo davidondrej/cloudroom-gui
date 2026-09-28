@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 import { commandGuardBlockReason } from "@get-bb/plugin-sdk/internal/command-guard";
 import { cloudroomCommands, cloudroomThreads, deleteThreadEventSuffixInTransaction, events, threadConversationOutlines, threadSearchSegments, getThread, type DbConnection, type DbQueryConnection, type DbTransaction, type AppendStoredThreadEventArgs } from "@bb/db";
 import { and, desc, eq } from "drizzle-orm";
-import { appendThreadEventsInTransaction } from "../threads/thread-events.js";
-import { reasoningLevelSchema, threadEventSchema, threadScope, turnScope, encodeClientTurnRequestIdNumber, type ThreadEvent } from "@bb/domain";
+import { appendThreadEventsInTransaction, appendThreadProvisioningEventInTransaction } from "../threads/thread-events.js";
+import { reasoningLevelSchema, threadEventSchema, threadScope, turnScope, encodeClientTurnRequestIdNumber, type ProvisioningTranscriptEntry, type SystemThreadProvisioningStatus, type ThreadEvent } from "@bb/domain";
 import { z } from "zod";
 import { CloudroomError, type SessionRecord } from "./client.js";
 import { codexErrorFields } from "./codex-errors.js";
@@ -15,6 +15,7 @@ const nativeFrame = z.object({ method: z.string(), params: object.optional() });
 export const CLOUD_HARNESSES = { codex: "codex", pi: "pi", "claude-code": "claude-code", "acp-cursor": "cursor", "acp-fx": "fx" } as const;
 export type CloudProvider = keyof typeof CLOUD_HARNESSES;
 export const isCloudProvider = (id: string | undefined): id is CloudProvider => id !== undefined && Object.hasOwn(CLOUD_HARNESSES, id);
+export const HARNESS_NAMES: Record<CloudProvider, string> = { codex: "Codex", pi: "Pi", "claude-code": "Claude Code", "acp-cursor": "Cursor", "acp-fx": "fx" };
 const isAcpProvider = (id: string | undefined): id is "acp-cursor" | "acp-fx" => id === "acp-cursor" || id === "acp-fx";
 const bbRequestId = (id: string) => encodeClientTurnRequestIdNumber({ value: createHash("sha256").update(id).digest().readUIntBE(0, 6) });
 
@@ -66,6 +67,34 @@ export function projectInitialPrompt(tx: DbTransaction, threadId: string): boole
       !(request.state === "sending" || request.state === "accepted" || (request.state === "failed" && !saved.sessionId)) ||
       requestedTurns(tx, threadId).has(bbRequestId(request.id))) return false;
   appendPrompt(tx, saved, request);
+  return true;
+}
+
+export type StartStep = { key: string; text?: string; status: "started" | "completed" | "failed" };
+type StartProgress = { provisioningId: string; status: SystemThreadProvisioningStatus; entries: ProvisioningTranscriptEntry[] };
+
+/** A cloud start writes the same event as a local one, so it gets the same "Provisioning thread" block.
+ *  `open` begins a new block; other steps join the latest one, and finished steps show how long they took. */
+export function appendStartProgress(tx: DbTransaction, threadId: string, steps: StartStep[], block: "active" | "completed" | "failed" = "active", open = false): boolean {
+  const rows = tx.select({ data: events.data }).from(events)
+    .where(and(eq(events.threadId, threadId), eq(events.type, "system/thread-provisioning"))).orderBy(events.sequence).all()
+    .map((row) => JSON.parse(row.data) as StartProgress);
+  const latest = open ? undefined : rows.at(-1);
+  if (!open && !latest) return false;
+  const provisioningId = latest?.provisioningId ?? `cloud-start:${threadId}:${Date.now()}`;
+  const known = new Map(rows.filter((row) => row.provisioningId === provisioningId).flatMap((row) => row.entries).map((entry) => [entry.key, entry]));
+  const now = Date.now();
+  const unfinished: StartStep[] = block === "failed" ? [...known.values()].filter((entry) => entry.status === "started").map(({ key }) => ({ key, status: "failed" })) : [];
+  const entries = [...unfinished, ...steps].flatMap(({ key, text, status }): ProvisioningTranscriptEntry[] => {
+    const previous = known.get(key);
+    const label = text ?? previous?.text;
+    if (!label || (previous?.status === status && previous.text === label)) return [];
+    const startedAt = previous?.startedAt ?? now;
+    return [{ type: "step", key, text: label, status, startedAt, ...(previous && status !== "started" ? { metadata: { durationMs: now - startedAt } } : {}) }];
+  });
+  const status = latest?.status === "completed" ? "completed" : block;
+  if (!entries.length && latest?.status === status) return false;
+  appendThreadProvisioningEventInTransaction(tx, { threadId, environmentId: null, provisioningId, status, entries });
   return true;
 }
 

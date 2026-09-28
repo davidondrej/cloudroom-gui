@@ -7,6 +7,7 @@ editingNotes: Callers use tool-call structured output; the model calls a `result
 variables:
   cleanedPrompt: User prompt text with noisy tokens removed and length-clamped.
   rules: The user's thread naming rules from Settings → Thread naming.
+  agentReply: Optional. The agent's first reply, length-clamped, when renaming a vague title after the first turn.
 ---
 You name threads in a coding app from the user's first message.
 Call the `result` tool with:
@@ -19,3 +20,8 @@ Title the problem or goal, not the tools the user mentions.
 
 Task:
 {{cleanedPrompt}}
+{{#if agentReply}}
+
+The agent's first reply. Use it to name the concrete subject:
+{{agentReply}}
+{{/if}}

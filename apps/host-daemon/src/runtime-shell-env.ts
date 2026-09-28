@@ -57,7 +57,7 @@ const USER_SHELL_ENV_TIMEOUT_MS = 3_000;
 const USER_SHELL_ENV_FORCE_KILL_AFTER_MS = 1_000;
 
 function getDefaultCliExecutablePath(): string {
-  return fileURLToPath(new URL("../../cli/bin/cloudroom", import.meta.url));
+  return fileURLToPath(new URL("../../cli/bin/room-cli", import.meta.url));
 }
 
 function getDefaultCliRuntimePath(): string {
@@ -439,7 +439,7 @@ export async function resolveLocalBbExecutablePath(
 export function resolveBbExecutablePathInDirectory(
   bbExecutableDirectory: string,
 ): string {
-  return resolve(bbExecutableDirectory, "cloudroom");
+  return resolve(bbExecutableDirectory, "room-cli");
 }
 
 export function prepareRuntimeShellEnv(

@@ -8,7 +8,7 @@ description: "Configure or troubleshoot ACP agent discovery, custom models, skil
 Known agents can be discovered automatically when their CLI is installed on the
 host: `opencode`, `omp`, `grok`, and `hermes` appear as `acp-opencode`, `acp-omp`,
 `acp-grok`, and `acp-hermes-agent`. Inspect the target host's catalog with
-`cloudroom provider list` and `cloudroom provider models <provider-id>` using its environment
+`room-cli provider list` and `room-cli provider models <provider-id>` using its environment
 or machine selector.
 
 Cursor project skills come from `.cursor/skills`, which can link to
@@ -18,6 +18,6 @@ ACP agents may reject unlisted model IDs. OpenCode requires models in its own
 configuration; Cloudroom discovers them there. OpenCode agents are session modes, not
 models selectable through Cloudroom's model field.
 
-OpenCode ACP supports the core `cloudroom thread compact` command; Cursor ACP does not
+OpenCode ACP supports the core `room-cli thread compact` command; Cursor ACP does not
 expose compatible compaction. Check the actual agent's capabilities before
 attempting provider-specific recovery.

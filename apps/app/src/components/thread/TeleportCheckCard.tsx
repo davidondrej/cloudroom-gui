@@ -15,8 +15,7 @@ export function claudeContextWindow(model: string): number | null {
   return model.endsWith("[1m]") ? 1_000_000 : 200_000;
 }
 
-export function TeleportCheckCard({ pending, error, models, reasoning, usedTokens, levelsFor, onTeleport, onDismiss }: {
-  pending: boolean;
+export function TeleportCheckCard({ error, models, reasoning, usedTokens, levelsFor, onTeleport, onDismiss }: {
   error: Error | null;
   models: ModelPickerOption[];
   reasoning: string;
@@ -31,7 +30,7 @@ export function TeleportCheckCard({ pending, error, models, reasoning, usedToken
   });
   const [model, setModel] = useState<string | null>(null);
   const [level, setLevel] = useState<string | null>(null);
-  if (!pending && !error) return null;
+  if (!error) return null;
   const pickModel = error instanceof BbHttpError && error.code === "teleport_model_unavailable";
   const selected = choices.find((choice) => choice.option.value === model) ?? choices[0];
   const levels = selected?.levels ?? [];
@@ -47,20 +46,18 @@ export function TeleportCheckCard({ pending, error, models, reasoning, usedToken
     <PromptStackCard ariaLabel="Teleport check" className="ml-auto mr-3 w-fit max-w-[calc(100%-1.5rem)] overflow-hidden sm:mr-4" style={{ minHeight: PROMPT_STACK_CARD_ROW_HEIGHT }}>
       <div className="flex items-center gap-0.5 p-0.5 text-xs">
         <div role="status" className={cn("flex min-w-0 items-center gap-1.5", PROMPT_STACK_INLAY_SEGMENT_CLASS)}>
-          <Icon name={pending ? "Spinner" : "AlertCircle"} aria-hidden className={cn("size-3.5 shrink-0", pending ? "animate-spin text-foreground" : "text-destructive")} />
-          <span className="shrink-0 text-foreground">{pending ? "Checking Cloud" : "Teleport did not start"}</span>
-          <span className="min-w-0 truncate text-muted-foreground">{pending ? "Making sure Cloud can run this exact model…" : "This thread stays local."}</span>
+          <Icon name="AlertCircle" aria-hidden className="size-3.5 shrink-0 text-destructive" />
+          <span className="shrink-0 text-foreground">Teleport did not start</span>
+          <span className="min-w-0 truncate text-muted-foreground">This thread stays local.</span>
         </div>
-        {!pending && (
-          <BannerActionSlot hideInTiny={false}>
-            {pickModel && selected && effort && (
-              <PromptBannerActionButton onClick={() => onTeleport({ model: selected.option.value, reasoning: effort })}>Teleport with this model</PromptBannerActionButton>
-            )}
-            <button type="button" aria-label="Dismiss" className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground" onClick={onDismiss}>
-              <Icon name="CircleX" className="size-4" aria-hidden />
-            </button>
-          </BannerActionSlot>
-        )}
+        <BannerActionSlot hideInTiny={false}>
+          {pickModel && selected && effort && (
+            <PromptBannerActionButton onClick={() => onTeleport({ model: selected.option.value, reasoning: effort })}>Teleport with this model</PromptBannerActionButton>
+          )}
+          <button type="button" aria-label="Dismiss" className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground" onClick={onDismiss}>
+            <Icon name="CircleX" className="size-4" aria-hidden />
+          </button>
+        </BannerActionSlot>
       </div>
       {message && <p role="alert" className="whitespace-pre-wrap break-words px-3 pb-2 text-xs text-destructive">{message}</p>}
       {pickModel && (

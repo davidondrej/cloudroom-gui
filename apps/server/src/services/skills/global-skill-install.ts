@@ -17,7 +17,7 @@ import {
 } from "../hosts/online-rpc.js";
 import { resolveServerOwnedSkillCatalogEntries } from "./injected-skills.js";
 
-const GLOBAL_CLI_SKILL_NAMES: readonly string[] = ["cloudroom"];
+const GLOBAL_CLI_SKILL_NAMES: readonly string[] = ["room-cli"];
 
 const STATUS_TIMEOUT_MS = 5_000;
 

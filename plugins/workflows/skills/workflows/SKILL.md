@@ -25,8 +25,8 @@ data. Worker threads retain normal workspace tools and permissions.
 Check an explicit model selection with:
 
 ```sh
-cloudroom provider list --environment "$ROOM_ENVIRONMENT_ID" --json
-cloudroom provider models <provider-id> --environment "$ROOM_ENVIRONMENT_ID" --json
+room-cli provider list --environment "$ROOM_ENVIRONMENT_ID" --json
+room-cli provider models <provider-id> --environment "$ROOM_ENVIRONMENT_ID" --json
 ```
 
 Do not guess model identifiers or partial selection tuples.
@@ -76,8 +76,8 @@ structured worker must return its value through the workflow result tool.
 Validate and run with the same source selector:
 
 ```sh
-cloudroom workflows validate --file .bb/workflows/review-change.js
-cloudroom workflows run --file .bb/workflows/review-change.js --args '{"items":[]}'
+room-cli workflows validate --file .bb/workflows/review-change.js
+room-cli workflows run --file .bb/workflows/review-change.js --args '{"items":[]}'
 ```
 
 The agent tool accepts script, scriptPath, or name. The CLI accepts --script,

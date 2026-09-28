@@ -476,17 +476,18 @@ function formatProvisioningTranscriptEntryLines(
 function provisioningTerminalDetailLine(
   message: TimelineOperationMessage,
 ): string | null {
+  const endedAt = message.completedAt ?? message.createdAt;
   if (
     message.opType !== "thread-provisioning" ||
     message.status === "pending" ||
     message.status === undefined ||
     message.startedAt === undefined ||
-    message.createdAt < message.startedAt
+    endedAt < message.startedAt
   ) {
     return null;
   }
 
-  const elapsedMs = message.createdAt - message.startedAt;
+  const elapsedMs = endedAt - message.startedAt;
   if (elapsedMs <= 1_000) {
     return null;
   }

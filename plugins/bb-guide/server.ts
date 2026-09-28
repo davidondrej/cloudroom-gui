@@ -1,15 +1,7 @@
 import type { BbPluginApi } from "@get-bb/plugin-sdk";
-import { renderTemplate } from "@bb/templates";
 
 export default async function plugin(bb: BbPluginApi) {
   const settings = bb.settings.define({
-    introduction: {
-      type: "boolean",
-      label: "Send Cloudroom introduction",
-      description:
-        "Tell agents about the Cloudroom CLI, threads, and clickable links. Applies to new agent sessions.",
-      default: true,
-    },
     skills: {
       type: "boolean",
       label: "Enable bundled skills",
@@ -39,16 +31,11 @@ export default async function plugin(bb: BbPluginApi) {
   settings.onChange((next) => {
     current = next;
   });
-  bb.agents.contributeInstructions(() =>
-    current.introduction
-      ? renderTemplate("standardAgentAppendInstructions", {})
-      : null,
-  );
   bb.agents.configure(() => ({
     tools: [],
     skills: current.skills
       ? [
-          ...(current.bbCli ? ["cloudroom"] : []),
+          ...(current.bbCli ? ["room-cli"] : []),
           ...(current.pluginAuthoring ? ["bb-plugin-authoring"] : []),
           ...(current.skillCreator ? ["skill-creator"] : []),
         ]

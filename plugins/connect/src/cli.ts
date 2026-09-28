@@ -69,15 +69,15 @@ function helpText(): string {
     "",
     "  1. Sign in at https://getbb.app and claim a handle.",
     "  2. Copy the connect command from the dashboard and run it here:",
-    "       cloudroom connect --code <code> --server https://<handle>.getbb.app",
+    "       room-cli connect --code <code> --server https://<handle>.getbb.app",
     "",
-    "  cloudroom connect status              Show remote-access status",
-    "  cloudroom connect off                 Disconnect and forget the pairing (re-pairing needs a new code)",
-    "  cloudroom connect expose <port> [--host <name-or-id>]    Share a port from the thread's host",
-    "  cloudroom connect unexpose <port> [--host <name-or-id>]  Stop sharing a port on that host",
-    "  cloudroom connect shares [--host <name-or-id>]           List shares for the thread's host",
-    "  cloudroom connect servers             List servers on this account (from getbb.app)",
-    "  cloudroom connect machine-code        Legacy native-device enrollment (not used by the PWA)",
+    "  room-cli connect status              Show remote-access status",
+    "  room-cli connect off                 Disconnect and forget the pairing (re-pairing needs a new code)",
+    "  room-cli connect expose <port> [--host <name-or-id>]    Share a port from the thread's host",
+    "  room-cli connect unexpose <port> [--host <name-or-id>]  Stop sharing a port on that host",
+    "  room-cli connect shares [--host <name-or-id>]           List shares for the thread's host",
+    "  room-cli connect servers             List servers on this account (from getbb.app)",
+    "  room-cli connect machine-code        Legacy native-device enrollment (not used by the PWA)",
     "",
     "For the Cloudroom mobile app, open your remote URL in a phone browser and add it to your home screen.",
     "The server holds the tunnel; it stays up while Cloudroom is running.",
@@ -86,7 +86,7 @@ function helpText(): string {
 
 function formatStatus(status: ConnectStatus): string {
   if (!status.paired) {
-    return "Not paired\nPair from the getbb.app dashboard — run `cloudroom connect` for a how-to.";
+    return "Not paired\nPair from the getbb.app dashboard — run `room-cli connect` for a how-to.";
   }
   const lines = [`${status.handle}  ${status.url}  ${status.state}`];
   if (status.lastError !== null && status.state !== "connected") {
@@ -108,7 +108,7 @@ function asJson(value: unknown): string {
 }
 
 function notPairedError(): string {
-  return "this Cloudroom server is not connected to getbb.app — run `cloudroom connect` for how to pair";
+  return "this Cloudroom server is not connected to getbb.app — run `room-cli connect` for how to pair";
 }
 
 function machineCodeErrorText(
@@ -126,7 +126,7 @@ function machineCodeErrorText(
 }
 
 function mobilePairingDisabledError(): string {
-  return "Legacy native-device pairing is off. The Cloudroom PWA uses your browser login, not a pairing code. For an existing native BB client, enable pairing with `cloudroom settings experiment mobileApp true`.";
+  return "Legacy native-device pairing is off. The Cloudroom PWA uses your browser login, not a pairing code. For an existing native BB client, enable pairing with `room-cli settings experiment mobileApp true`.";
 }
 
 function formatMachineCode(payload: MobilePairingPayload): string {
@@ -161,39 +161,39 @@ export function registerConnectCli(args: {
       {
         name: "status",
         summary: "Show remote-access status",
-        usage: "cloudroom connect status [--json]",
+        usage: "room-cli connect status [--json]",
       },
       {
         name: "off",
         summary: "Disconnect and forget the pairing",
-        usage: "cloudroom connect off [--json]",
+        usage: "room-cli connect off [--json]",
       },
       {
         name: "expose",
         summary: "Share an HTTP port from an enrolled host",
-        usage: "cloudroom connect expose <port> [--host <name-or-id>] [--json]",
+        usage: "room-cli connect expose <port> [--host <name-or-id>] [--json]",
       },
       {
         name: "unexpose",
         summary: "Stop sharing an HTTP port from a host",
         usage:
-          "cloudroom connect unexpose <port> [--host <name-or-id>] [--json]",
+          "room-cli connect unexpose <port> [--host <name-or-id>] [--json]",
       },
       {
         name: "shares",
         summary: "List shared ports and their public URLs",
-        usage: "cloudroom connect shares [--host <name-or-id>] [--json]",
+        usage: "room-cli connect shares [--host <name-or-id>] [--json]",
       },
       {
         name: "servers",
         summary: "List every Cloudroom server on this account",
-        usage: "cloudroom connect servers [--json]",
+        usage: "room-cli connect servers [--json]",
       },
       {
         name: "machine-code",
         summary:
           "Legacy native-device enrollment; not used by the Cloudroom PWA",
-        usage: "cloudroom connect machine-code [--json]",
+        usage: "room-cli connect machine-code [--json]",
       },
     ],
     async run(argv, ctx): Promise<PluginCliResult> {
@@ -227,7 +227,7 @@ export function registerConnectCli(args: {
             return {
               exitCode: 1,
               stderr:
-                "Usage: cloudroom connect expose <port> [--host <name-or-id>] [--json]\n",
+                "Usage: room-cli connect expose <port> [--host <name-or-id>] [--json]\n",
             };
           }
           const parsed = parseFlags(argv.slice(2));
@@ -257,7 +257,7 @@ export function registerConnectCli(args: {
             return {
               exitCode: 1,
               stderr:
-                "Usage: cloudroom connect unexpose <port> [--host <name-or-id>] [--json]\n",
+                "Usage: room-cli connect unexpose <port> [--host <name-or-id>] [--json]\n",
             };
           }
           const parsed = parseFlags(argv.slice(2));

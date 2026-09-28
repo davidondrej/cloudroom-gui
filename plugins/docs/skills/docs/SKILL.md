@@ -6,7 +6,7 @@ description: "Read, edit, or save documents in Cloudroom Docs vaults, including 
 # Docs
 
 Docs is the user's filesystem-first document library. Documents can live on
-the primary machine or another connected host, but the `cloudroom docs` command
+the primary machine or another connected host, but the `room-cli docs` command
 handles that routing through named vaults.
 
 ## Access documents
@@ -14,13 +14,13 @@ handles that routing through named vaults.
 Start with the smallest useful lookup:
 
 ```sh
-cloudroom docs vaults --json
-cloudroom docs list --vault <vault-id> --json
-cloudroom docs read <path> --vault <vault-id>
+room-cli docs vaults --json
+room-cli docs list --vault <vault-id> --json
+room-cli docs read <path> --vault <vault-id>
 ```
 
 Use the path and vault exactly as returned. Paths are relative to the vault;
-do not guess an absolute host path or inspect the vault outside `cloudroom docs`.
+do not guess an absolute host path or inspect the vault outside `room-cli docs`.
 
 ## Docs @-mentions
 
@@ -41,23 +41,23 @@ Docs is a good destination for durable plans, specifications, write-ups, and
 HTML artifacts the user should be able to reopen.
 
 ```sh
-cloudroom docs pull plans/release-plan.md --vault personal --into ./docs-work
+room-cli docs pull plans/release-plan.md --vault personal --into ./docs-work
 # Edit ./docs-work/plans/release-plan.md with normal file tools.
-cloudroom docs status ./docs-work --diff
-cloudroom docs push ./docs-work
+room-cli docs status ./docs-work --diff
+room-cli docs push ./docs-work
 ```
 
-`cloudroom docs status` exits 0 when no changes exist. It exits 4 when it finds
+`room-cli docs status` exits 0 when no changes exist. It exits 4 when it finds
 changes that the output describes. Exit 4 is a successful status result.
-Review that output, then run `cloudroom docs push` as a separate command. Do not
+Review that output, then run `room-cli docs push` as a separate command. Do not
 connect the status and push commands with `&&`.
 
 Pull a folder subtree with `--folder`, or the whole selected vault with
 `--all`:
 
 ```sh
-cloudroom docs pull plans --folder --vault personal --into ./docs-work
-cloudroom docs pull --all --vault personal --into ./docs-work
+room-cli docs pull plans --folder --vault personal --into ./docs-work
+room-cli docs pull --all --vault personal --into ./docs-work
 ```
 
 Always edit the pulled files with ordinary workspace tools, then run `status`

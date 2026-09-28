@@ -79,7 +79,7 @@ icons by its namespaced glyph (`"<pluginId>/<name>"`, an entry of
 `bb.branding.experimental_icons`; the plugin id must be this plugin's and
 the name declared, else the plugin fails to load). A path-shaped SVG is
 served as declared behind `nosniff` and a `default-src 'none'` CSP; it is
-not in the manifest, so `cloudroom plugin build` cannot check it — keep it free of
+not in the manifest, so `room-cli plugin build` cannot check it — keep it free of
 the script vectors the build refuses in a logo. A path or a declared
 icon is served to clients as a `logoUrl` and drawn as a `currentColor`
 mask, so a monochrome mark follows the cloudroom theme (and the declared
@@ -128,15 +128,15 @@ other surface. Disabling the plugin removes the provider (open threads show a
 provider-unavailable state instead of erroring). The provider picker lists
 providers in plugin install order (bundled first-party plugins first); the
 user reorders them and picks a default in Settings → Providers
-(`cloudroom settings general providerOrder '["my-agent","codex"]'` and
-`cloudroom settings general defaultProviderId my-agent`).
+(`room-cli settings general providerOrder '["my-agent","codex"]'` and
+`room-cli settings general defaultProviderId my-agent`).
 
 `completedTurnDisplay` sets how the timeline shows your provider's finished
 turns by default: `"collapse"` (the default) folds the work into one "Worked
 for" row and keeps the final answer visible, and `"flat"` keeps every row
 visible. Pick `"flat"` when your agent narrates its work in text the user
 should keep reading after the turn ends. The user can override it per
-provider (`cloudroom settings completed-turns my-agent collapse`).
+provider (`room-cli settings completed-turns my-agent collapse`).
 
 `experimental_bridgeOptions` must be a plain JSON object no larger than 64
 KiB. It is validated and frozen at registration, then carried on every bridge

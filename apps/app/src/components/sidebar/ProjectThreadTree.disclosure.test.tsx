@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ThreadListEntry } from "@bb/domain";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@bb/shared-ui/tooltip";
 import { ProjectThreadTree } from "./ProjectRow";
 import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
@@ -51,22 +52,25 @@ function renderThreadTree(
     selectedThreadId?: string;
   } = {},
 ) {
+  const queryClient = new QueryClient();
   const tree = (entries: ThreadListEntry[]) => (
-    <TooltipProvider>
-      <MemoryRouter>
-        <ProjectThreadTree
-          threadListState={{ status: "ready", threads: entries }}
-          progressiveDisclosureEnabled={progressiveDisclosureEnabled}
-          compareThreads={() => 0}
-          selectedThreadId={selectedThreadId}
-          collapsedThreadIds={new Set()}
-          collapsedEnvironmentIds={new Set()}
-          variant="section"
-          onToggleThreadCollapsed={vi.fn()}
-          onToggleEnvironmentCollapsed={vi.fn()}
-        />
-      </MemoryRouter>
-    </TooltipProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <MemoryRouter>
+          <ProjectThreadTree
+            threadListState={{ status: "ready", threads: entries }}
+            progressiveDisclosureEnabled={progressiveDisclosureEnabled}
+            compareThreads={() => 0}
+            selectedThreadId={selectedThreadId}
+            collapsedThreadIds={new Set()}
+            collapsedEnvironmentIds={new Set()}
+            variant="section"
+            onToggleThreadCollapsed={vi.fn()}
+            onToggleEnvironmentCollapsed={vi.fn()}
+          />
+        </MemoryRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
   const view = render(tree(threads));
   return {

@@ -2,30 +2,30 @@ The builtin Account Pooler plugin is disabled by default. Enable it, add Claude
 or Codex credentials, and inspect its proxy routes and account quota with:
 
 ```sh
-cloudroom plugin enable account-pool
-cloudroom pool account add --provider claude --login
-printf '%s\n' "$CLAUDE_AUTH_CODE" | cloudroom pool account login-complete --session <id> --code-stdin
-cloudroom pool account add --provider codex --login
-cloudroom pool account login-poll --session <id>
-cloudroom pool account add --provider claude --import
-cloudroom pool account add --provider codex --import
-printf '%s\n' "$ANTHROPIC_API_KEY" | cloudroom pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]
-cloudroom pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]
-cloudroom pool account list [--json]
-cloudroom pool account remove <id>
-cloudroom pool account enable <id>
-cloudroom pool account disable <id>
-cloudroom pool account priority <id> <n>
-cloudroom pool account reorder <claude|codex> <id>...
-cloudroom pool account refresh <id>
-cloudroom pool status [--json]
-cloudroom pool routing <claude|codex> [--off]
-cloudroom pool config
-cloudroom pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>
-cloudroom pool cache-miss list [--json]
-cloudroom pool cache-miss clear
-cloudroom pool token rotate --machine <id-or-name>
-cloudroom pool bypass <thread-id> [--off]
+room-cli plugin enable account-pool
+room-cli pool account add --provider claude --login
+printf '%s\n' "$CLAUDE_AUTH_CODE" | room-cli pool account login-complete --session <id> --code-stdin
+room-cli pool account add --provider codex --login
+room-cli pool account login-poll --session <id>
+room-cli pool account add --provider claude --import
+room-cli pool account add --provider codex --import
+printf '%s\n' "$ANTHROPIC_API_KEY" | room-cli pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]
+room-cli pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]
+room-cli pool account list [--json]
+room-cli pool account remove <id>
+room-cli pool account enable <id>
+room-cli pool account disable <id>
+room-cli pool account priority <id> <n>
+room-cli pool account reorder <claude|codex> <id>...
+room-cli pool account refresh <id>
+room-cli pool status [--json]
+room-cli pool routing <claude|codex> [--off]
+room-cli pool config
+room-cli pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>
+room-cli pool cache-miss list [--json]
+room-cli pool cache-miss clear
+room-cli pool token rotate --machine <id-or-name>
+room-cli pool bypass <thread-id> [--off]
 ```
 
 Claude `--login` starts a PKCE session, prints a browser URL and session ID,
@@ -51,14 +51,14 @@ process arguments, shell history, and agent transcripts. Prefer `--import` for
 an existing Claude Code login. The CLI Codex import path reads
 `~/.codex/auth.json` on the Cloudroom server host. OAuth quota refreshes on add or
 enable and every five minutes while an account is idle. Use
-`cloudroom pool account refresh <id>` to request an immediate refresh for one account.
+`room-cli pool account refresh <id>` to request an immediate refresh for one account.
 Account tables add columns for observed model-family buckets; JSON status
 exposes their utilization, reset, status, observation time, and source under
 `familyWeekly`. Selection skips an account whose requested family is spent
 while retaining it for other families. A present `metadata.user_id` account
-UUID is aligned with the selected OAuth account. Use `cloudroom pool config` to
+UUID is aligned with the selected OAuth account. Use `room-cli pool config` to
 inspect the full routing configuration and
-`cloudroom pool config set <key> <value>` to update one value. The upstream URL keys
+`room-cli pool config set <key> <value>` to update one value. The upstream URL keys
 are QA-only overrides; `switchThreshold` must be greater than 0 and at most 1.
 
 Accounts run sequentially per provider: lower priority numbers first, with ties
@@ -75,9 +75,9 @@ and the pool retains the 4,096 most recently used pins.
 
 Drag an account’s handle in Account Pooler settings (or focus the handle and use
 Space, arrow keys, and Space again), or
-`cloudroom pool account reorder <claude|codex> <id>...`, to set the complete order for
+`room-cli pool account reorder <claude|codex> <id>...`, to set the complete order for
 one provider. Include disabled accounts too. Reordering changes the next failover
-sequence without moving the current account. `cloudroom pool account priority <id> <n>`
+sequence without moving the current account. `room-cli pool account priority <id> <n>`
 sets an individual priority; the same operations are available through the
 `account.reorder` and `account.setPriority` plugin RPCs.
 
@@ -89,8 +89,8 @@ pooler routing through its environment. The parent contributes
 provider routing variables, and the nested server enables the pooler on first run
 when it sees them.
 
-`cloudroom pool parent` reports the detected parent, the current mode, and which
-providers the parent can serve. `cloudroom pool parent proxy` and `cloudroom pool parent
+`room-cli pool parent` reports the detected parent, the current mode, and which
+providers the parent can serve. `room-cli pool parent proxy` and `cloudroom pool parent
 isolate` set the mode; `cloudroom pool config` shows it as `parentMode`.
 
 In `proxy` mode the nested server runs its own hub and mints its own machine
@@ -104,13 +104,13 @@ In `isolate` mode the nested server contributes empty routing variables, which
 overrides the inherited values so threads fall back to that instance's own
 accounts or to each provider's own credentials.
 
-Proxied traffic authenticates as the parent machine's token, so `cloudroom pool status`
+Proxied traffic authenticates as the parent machine's token, so `room-cli pool status`
 on the parent attributes it to the parent host rather than to the nested
 instance.
 
 ## Cache miss debugging
 
-Turn on reports with `cloudroom pool config set cacheMissDebug true` or the cache miss
+Turn on reports with `room-cli pool config set cacheMissDebug true` or the cache miss
 debugging switch in Account Pooler settings; `false` is the default. While it is
 on, the hub follows successful Claude `/v1/messages` and Codex `/v1/responses`
 requests that carry a provider session id and report usage. Claude requests
@@ -167,7 +167,7 @@ A report lists every cause that applies, in this order:
   previous request this one started. The provider likely evicted the entry or
   routed the request to another backend.
 
-`cloudroom pool cache-miss list` prints each report's time, provider, model, session
+`room-cli pool cache-miss list` prints each report's time, provider, model, session
 id, host, account, token counts, causes, and the divergent segment with
 indented excerpts. For a modified segment it prints the start both excerpts
 share once as `unchanged:`, then `before:` and `after:` from the first
@@ -176,7 +176,7 @@ line breaks as real line breaks and highlights the text from the first
 difference on. `--json` prints
 `{ "reports": [...], "cacheMissDebug": <boolean>, "forwardsToParent": <boolean> }`
 with the full excerpts, so a script can tell an empty list from reporting that
-is off or left to a parent pool. `cloudroom pool cache-miss clear` removes the
+is off or left to a parent pool. `room-cli pool cache-miss clear` removes the
 reports. The `cacheMiss.list` and `cacheMiss.clear` plugin RPCs return the same
 reports.
 
@@ -200,6 +200,6 @@ account id, missed and expected tokens, cause kinds, and divergence path, but
 no prompt text or account labels.
 
 A nested server in `proxy` mode does not analyze the traffic it forwards.
-`cloudroom pool cache-miss list` there says so, and its `--json` output sets
+`room-cli pool cache-miss list` there says so, and its `--json` output sets
 `forwardsToParent` to `true`. Enable `cacheMissDebug` on the parent pool that
 owns the accounts.

@@ -10,7 +10,7 @@ ships runtime JavaScript and portable
 declarations for all three testing entrypoints. A current scaffold already declares
 `@get-bb/plugin-sdk` as an exact devDependency, so the harness is on disk after
 `npm install`; an older plugin that still vendors `types/` must add that
-devDependency (or run `cloudroom plugin migrate`) before tests can import the harness.
+devDependency (or run `room-cli plugin migrate`) before tests can import the harness.
 Either way, install its optional peers too: `better-sqlite3` for backend tests,
 and React, React DOM, and Testing Library for frontend tests. Add jsdom as a
 test-runner development dependency.
@@ -210,17 +210,17 @@ arbitration. Use a live loop for those host boundaries.
 
 ### Live loop against a running Cloudroom
 
-- `cloudroom plugin dev` is the loop: save → rebuild declared `bb.app` and `bb.host`
+- `room-cli plugin dev` is the loop: save → rebuild declared `bb.app` and `bb.host`
   artifacts → reload; open app pages pick new UI up live and
   host workers move to the new generation on their next call. Build/reload
   failures print and keep watching. The dev loop writes readable (unminified)
-  `dist/app.js` + `app.css`; `cloudroom plugin build` and installs minify them.
-- `cloudroom plugin list` shows status, services, schedules (with last_error),
-  handler stats, and the CLI command; `cloudroom plugin logs <id> -f` follows
+  `dist/app.js` + `app.css`; `room-cli plugin build` and installs minify them.
+- `room-cli plugin list` shows status, services, schedules (with last_error),
+  handler stats, and the CLI command; `room-cli plugin logs <id> -f` follows
   `bb.log` output. Use `--json` only when live help lists that option.
 - Exercise wire surfaces directly: `curl -X POST -H "content-type:
 application/json" -d '{}' <server>/api/v1/plugins/<id>/rpc/<method>`,
-  `cloudroom <command> …` for the CLI, `cloudroom plugin run <id> …` as the explicit form.
+  `room-cli <command> …` for the CLI, `room-cli plugin run <id> …` as the explicit form.
 - Keep pure logic in plain functions/modules so it is unit-testable without
   a cloudroom server; the factory file should mostly wire registrations.
 
@@ -231,7 +231,7 @@ BB Official plugins in `plugins/` (a cloudroom checkout):
   Tabs/Select/DropdownMenu/Badge/Skeleton + sonner toast throughout (in-repo
   plugins import `@bb/shared-ui`; out-of-repo authors vendor the same
   components from the registry), background sync service, rpc + realtime,
-  project setting, a `cloudroom github` CLI command, and agent-spawn buttons.
+  project setting, a `room-cli github` CLI command, and agent-spawn buttons.
 - `docs` (stable plugin id `simple-notes`) — multi-host Docs vaults over
   `bb.sdk.files`, with a Tiptap
   markdown WYSIWYG, nested navigation, images and sandboxed HTML, CLI/HTTP
@@ -258,7 +258,7 @@ Remaining reference examples in `examples/plugins/`:
 - `storage.migrate` is append-only by statement index.
 - Settings saves do not reload healthy or degraded plugins; live `onChange`
   listeners receive those updates. A save automatically retries load when the
-  plugin is `needs-configuration`; `cloudroom plugin reload <id>` remains available
+  plugin is `needs-configuration`; `room-cli plugin reload <id>` remains available
   for other recovery cases.
 - Descriptors without `default` produce `| undefined` values.
 - Thread events are observe-only; there are exactly seven
@@ -280,7 +280,7 @@ Remaining reference examples in `examples/plugins/`:
   mid-session; cross-plugin tool-name collisions drop the later registration.
 - RPC results must be strict JSON values and pass their output schema;
   realtime payloads must survive JSON.stringify.
-- Handler stats shown by `cloudroom plugin list` persist across reloads (reset on
+- Handler stats shown by `room-cli plugin list` persist across reloads (reset on
   remove).
 - The frontend Tailwind pass emits default-theme utilities only — style
   with host token classes, no custom `@theme` colors, no hand-set oklch.
@@ -292,8 +292,8 @@ Remaining reference examples in `examples/plugins/`:
   scaffold tsconfig typechecks both `server.ts` and `app.tsx`.
 - The declarations you read are pinned to one SDK version, not a live view:
   new plugins get them from the exact `@get-bb/plugin-sdk` devDependency, older
-  ones from a vendored `types/*.d.ts` copy. Run `cloudroom plugin types` before
+  ones from a vendored `types/*.d.ts` copy. Run `room-cli plugin types` before
   trusting either — it repins the devDependency or rewrites `types/` as
   appropriate — and never fall back to a minified `dist/` bundle — see
-  "Looking up the exact API". `cloudroom plugin migrate` moves an older plugin off the
+  "Looking up the exact API". `room-cli plugin migrate` moves an older plugin off the
   vendored copy, but only when the user asks for it.

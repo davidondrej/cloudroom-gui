@@ -40,6 +40,7 @@ import {
   DEFAULT_COMPOSER_SCOPE,
   PromptBoxInternal,
   promptFastModeCommand,
+  promptModelShortcuts,
   type AttachmentsConfig,
   type HistoryConfig,
   type PromptBoxAction,
@@ -773,6 +774,15 @@ function FollowUpPromptBoxWithComposer({
           execution.model.loadFailed
             ? undefined
             : promptFastModeCommand(execution.serviceTier)
+        }
+        modelShortcuts={
+          execution.disabled ||
+          executionControlsDisabled ||
+          isLoadingExecutionOptions ||
+          execution.model.isLoading ||
+          execution.model.loadFailed
+            ? undefined
+            : promptModelShortcuts(execution)
         }
         attachments={attachments}
         promptActions={promptActions}

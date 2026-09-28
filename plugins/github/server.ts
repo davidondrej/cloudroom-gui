@@ -12,7 +12,7 @@ const CLOSED_PR_PAGE = 30;
 
 const GH_HINT =
   "Install the GitHub CLI (https://cli.github.com) and run `gh auth login`, " +
-  "then `cloudroom plugin reload github`.";
+  "then `room-cli plugin reload github`.";
 
 const repoNameSchema = z.string().regex(/^[\w.-]+\/[\w.-]+$/);
 const itemNumberSchema = z.number().int().positive();

@@ -64,6 +64,7 @@ import {
   INERT_TYPEAHEAD_COMMAND_CONFIG,
   PromptBoxInternal,
   promptFastModeCommand,
+  promptModelShortcuts,
   arePromptEditorValuesEqual,
   suppressPromptEditorAnchorActivation,
   type PromptBoxAction,
@@ -278,6 +279,7 @@ function renderPromptBox(
     commandSuggestions?: TypeaheadConfig["command"]["suggestions"];
     reasoning?: PromptBoxProps["reasoning"];
     fastMode?: PromptBoxProps["fastMode"];
+    modelShortcuts?: PromptBoxProps["modelShortcuts"];
     commandOverrides?: Partial<TypeaheadConfig["command"]>;
     onAttachFiles?: (files: File[]) => Promise<void> | void;
   } = {},
@@ -316,6 +318,7 @@ function renderPromptBox(
         }}
         reasoning={options.reasoning}
         fastMode={options.fastMode}
+        modelShortcuts={options.modelShortcuts}
         mentionMenuPlacement="bottom"
         attachments={{ onAttachFiles: options.onAttachFiles }}
         promptActions={promptActions}
@@ -4803,6 +4806,30 @@ describe("PromptBoxInternal fast mode command", () => {
 
     await waitFor(() => expect(onToggle).toHaveBeenCalledTimes(1));
     expect(latestValue(changes)).toBe("");
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("switches to Opus with Enter without sending or losing the draft", async () => {
+    const selectModel = vi.fn();
+    const modelShortcuts = promptModelShortcuts({
+      provider: { options: [{ value: "claude-code", label: "Claude Code" }] },
+      selectModel,
+    });
+    expect(modelShortcuts?.map(({ name }) => name)).toEqual(["opus"]);
+    const { changes, onSubmit, promptBoxRef } = renderPromptBox(
+      "Review this /opus",
+      { modelShortcuts },
+    );
+    await focusPromptEnd(promptBoxRef);
+    fireEvent.keyDown(getPromptEditorElement(), { key: "Enter" });
+
+    await waitFor(() =>
+      expect(selectModel).toHaveBeenCalledWith({
+        providerId: "claude-code",
+        model: "claude-opus-5-5[1m]",
+      }),
+    );
+    expect(latestValue(changes)).toBe("Review this ");
     expect(onSubmit).not.toHaveBeenCalled();
   });
 

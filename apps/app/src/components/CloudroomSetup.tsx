@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@bb/shared-ui/button";
 import { Switch } from "@bb/shared-ui/switch";
@@ -44,46 +44,59 @@ export function CloudroomSetup() {
       closeOnBackdropClick={false}
       labelledBy={titleId}
       describedBy={descriptionId}
-      backdropClassName="bg-black/25 backdrop-blur-xs"
-      contentClassName="inset-0 m-auto h-fit w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-xl p-8 shadow-2xl [&>[data-persistent-drawer-handle]]:hidden"
+      backdropClassName="bg-black/40 backdrop-blur-sm"
+      contentClassName="inset-0 m-auto h-fit w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-xl p-0 shadow-2xl [&>[data-persistent-drawer-handle]]:hidden"
     >
-      <div className="space-y-6 text-base">
-        <h2 id={titleId} className="text-2xl font-semibold">Set up Cloudroom</h2>
-        {askMacAccess && (
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <p className="font-medium">Let cloud agents use this computer</p>
-              <p id={descriptionId} className="text-muted-foreground">They get much more powerful. You can turn this off later.</p>
-            </div>
-            <Switch checked={macAccess} onCheckedChange={setMacAccess} aria-label="Let cloud agents use this computer" />
-          </div>
-        )}
-        {askCopyLogins && (
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <p className="font-medium">Copy my logins to my cloud computer</p>
-              <p id={askMacAccess ? undefined : descriptionId} className="text-muted-foreground">Your agent logins, API keys, and custom model providers, so cloud agents work right away.</p>
-            </div>
-            <Switch checked={copyLogins} onCheckedChange={setCopyLogins} aria-label="Copy my logins to my cloud computer" />
-          </div>
-        )}
-        {ready && (
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1">
-              <p className="font-medium">{codexConnected ? "Codex connected ✓" : "Connect Codex"}</p>
-              <p className="text-muted-foreground">{codexConnected ? codex.data?.email : "Use your ChatGPT plan."}</p>
-            </div>
-            {!codexConnected && (
-              <Button variant="outline" disabled={saving || codex.isPending} onClick={() => finish(() => openCodexConnection())}>
-                Connect
-              </Button>
-            )}
-          </div>
-        )}
-        <Button size="lg" className="w-full text-base" disabled={saving} onClick={() => finish()}>
+      <div className="h-px bg-gradient-to-r from-transparent via-primary to-transparent" />
+      <div className="p-7">
+        <h2 id={titleId} className="text-3xl font-semibold tracking-tight">Set up Cloudroom</h2>
+        <div className="mt-6 divide-y divide-border/60 rounded-lg border border-border/60 bg-muted/20">
+          {askMacAccess && (
+            <SetupRow title="Let cloud agents use this computer" description="Far more powerful agents. Turn off anytime." descriptionId={descriptionId}>
+              <Switch checked={macAccess} onCheckedChange={setMacAccess} aria-label="Let cloud agents use this computer" />
+            </SetupRow>
+          )}
+          {askCopyLogins && (
+            <SetupRow title="Copy my logins to the cloud" description="Agent logins, API keys, and model providers." descriptionId={askMacAccess ? undefined : descriptionId}>
+              <Switch checked={copyLogins} onCheckedChange={setCopyLogins} aria-label="Copy my logins to the cloud" />
+            </SetupRow>
+          )}
+          {ready && (
+            <SetupRow title={codexConnected ? "Codex" : "Connect Codex"} description={codexConnected ? codex.data?.email : "Use your ChatGPT plan."}>
+              {codexConnected ? (
+                <span className="flex items-center gap-1.5 text-xs font-medium">
+                  <span className="size-1.5 rounded-full bg-primary shadow-[0_0_8px_var(--color-primary)]" />
+                  Connected
+                </span>
+              ) : (
+                <Button variant="outline" size="sm" disabled={saving || codex.isPending} onClick={() => finish(() => openCodexConnection())}>
+                  Connect
+                </Button>
+              )}
+            </SetupRow>
+          )}
+        </div>
+        <Button size="lg" className="mt-6 w-full text-base" disabled={saving} onClick={() => finish()}>
           {saving ? "Saving…" : "Start using Cloudroom"}
         </Button>
       </div>
     </PersistentResponsiveDrawerShell>
+  );
+}
+
+function SetupRow({ title, description, descriptionId, children }: {
+  title: string;
+  description?: string | null;
+  descriptionId?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-6 px-4 py-3.5">
+      <div className="min-w-0 space-y-0.5">
+        <p className="text-sm font-medium">{title}</p>
+        <p id={descriptionId} className="truncate text-xs text-muted-foreground">{description}</p>
+      </div>
+      {children}
+    </div>
   );
 }

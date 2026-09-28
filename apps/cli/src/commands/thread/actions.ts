@@ -607,7 +607,7 @@ function describeThreadTellOutcome(
 ): string {
   if (response.delivery === "queued") {
     // The server says WHY it is waiting, so the CLI does not have to guess
-    // from the flags it happened to send. `cloudroom thread queue list` shows the
+    // from the flags it happened to send. `room-cli thread queue list` shows the
     // same reason for the row afterwards.
     return `Thread ${threadId} message queued (${describeQueueWait(response.queuedMessage)}); it dispatches when that clears`;
   }

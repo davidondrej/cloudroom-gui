@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "type": "module",
   "bin": {
-    "cloudroom": "./bin/cloudroom",
+    "room-cli": "./bin/room-cli",
     "title": "./bin/title"
   },
   "scripts": {

@@ -111,7 +111,7 @@ export function registerRpcAndCli(
     return dockerfileSchema.parse(result.content);
   }
   const usage =
-    "Usage: cloudroom modal machine inspect HOST_ID [--json] | cloudroom modal account inspect [--json] | cloudroom modal image show [--json] | cloudroom modal image set --file PATH [--json] | cloudroom modal image reset [--json] | cloudroom modal image build [--json] | cloudroom modal sandbox run [--json] | cloudroom modal sandbox exec ID [--json] -- COMMAND... | cloudroom modal sandbox stop ID [--json]";
+    "Usage: room-cli modal machine inspect HOST_ID [--json] | room-cli modal account inspect [--json] | room-cli modal image show [--json] | room-cli modal image set --file PATH [--json] | room-cli modal image reset [--json] | room-cli modal image build [--json] | room-cli modal sandbox run [--json] | room-cli modal sandbox exec ID [--json] -- COMMAND... | room-cli modal sandbox stop ID [--json]";
   type CliResult = {
     exitCode: number;
     stdout?: string;
@@ -252,47 +252,47 @@ export function registerRpcAndCli(
       {
         name: "machine-inspect",
         summary: "Inspect Modal compute and the last saved snapshot",
-        usage: "cloudroom modal machine inspect HOST_ID [--json]",
+        usage: "room-cli modal machine inspect HOST_ID [--json]",
       },
       {
         name: "image-build",
         summary: "Build or reuse the saved image",
-        usage: "cloudroom modal image build [--json]",
+        usage: "room-cli modal image build [--json]",
       },
       {
         name: "sandbox-run",
         summary: "Run the saved image in a 30-minute debug sandbox",
-        usage: "cloudroom modal sandbox run [--json]",
+        usage: "room-cli modal sandbox run [--json]",
       },
       {
         name: "sandbox-exec",
         summary: "Execute a command in a debug sandbox",
-        usage: "cloudroom modal sandbox exec ID [--json] -- COMMAND...",
+        usage: "room-cli modal sandbox exec ID [--json] -- COMMAND...",
       },
       {
         name: "sandbox-stop",
         summary: "Stop a debug sandbox",
-        usage: "cloudroom modal sandbox stop ID [--json]",
+        usage: "room-cli modal sandbox stop ID [--json]",
       },
       {
         name: "image-show",
         summary: "Show the Dockerfile used for new machines",
-        usage: "cloudroom modal image show [--json]",
+        usage: "room-cli modal image show [--json]",
       },
       {
         name: "image-set",
         summary: "Save a Dockerfile for future machines",
-        usage: "cloudroom modal image set --file PATH [--json]",
+        usage: "room-cli modal image set --file PATH [--json]",
       },
       {
         name: "image-reset",
         summary: "Restore the bundled Dockerfile",
-        usage: "cloudroom modal image reset [--json]",
+        usage: "room-cli modal image reset [--json]",
       },
       {
         name: "account-inspect",
         summary: "Test the configured Modal account",
-        usage: "cloudroom modal account inspect [--json]",
+        usage: "room-cli modal account inspect [--json]",
       },
     ],
     async run(argv, context) {

@@ -228,7 +228,7 @@ export function registerUpdatesCommands(
           );
           console.log(
             hasManualUpdates
-              ? "No updates cloudroom can apply. Run cloudroom updates status for manual updates."
+              ? "No updates cloudroom can apply. Run room-cli updates status for manual updates."
               : "Everything is up to date.",
           );
           return;

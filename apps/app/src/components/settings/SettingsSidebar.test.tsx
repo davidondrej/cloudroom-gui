@@ -115,6 +115,7 @@ describe("SettingsSidebarContent navigation", () => {
       "Projects",
       "Plugin marketplaces",
       "Command Guard",
+      "System prompt",
       "Experiments",
       "Community",
       ...advancedPlugins.map((entry) => entry.label),

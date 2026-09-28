@@ -20,30 +20,35 @@ async function readStdin(): Promise<Buffer> {
   return Buffer.concat(chunks);
 }
 
-/** Runs on the VM and fails with its error output unless the command succeeds. */
-async function runOnVm(url: string, command: string, stdin = Buffer.alloc(0)): Promise<Buffer> {
-  const result = await createCliBbSdk(url).cloudroom.runOnVm({ command, stdin: stdin.toString("hex") });
+type VmTarget = { thread?: string };
+const THREAD_OPTION = ["--thread <id>", "Cloud thread whose sandbox to use; required unless you have a cloud VM"] as const;
+
+/** Runs on the VM or sandbox and fails with its error output unless the command succeeds. */
+async function runOnVm(url: string, target: VmTarget, command: string, stdin = Buffer.alloc(0)): Promise<Buffer> {
+  const result = await createCliBbSdk(url).cloudroom.runOnVm({ command, stdin: stdin.toString("hex"), threadId: target.thread });
   if (result.truncated) throw new Error("Transfer exceeded the 16 MiB limit.");
   if (result.code !== 0) throw new Error(Buffer.from(result.stderr, "hex").toString() || `VM command failed (${result.code})`);
   return Buffer.from(result.stdout, "hex");
 }
 
 export function registerVmCommands(program: Command, getUrl: () => string): void {
-  const vm = program.command("vm").description("Run commands and copy files on your cloud VM, as its agent account");
-  vm.command("run <command>").description("Run a shell command on the VM (quote it). Exits with its code.")
-    .option("--cwd <dir>", "VM folder, relative to the agent home")
+  const vm = program.command("vm").description("Run commands and copy files on your cloud VM or a Cloud thread's sandbox, as its agent account");
+  vm.command("run <command>").description("Run a shell command on the VM or sandbox (quote it). Exits with its code.")
+    .option(...THREAD_OPTION)
+    .option("--cwd <dir>", "Folder, relative to the agent home")
     .option("--stdin", "Forward standard input")
-    .action(action(async (command: string, options: { cwd?: string; stdin?: boolean }) => {
+    .action(action(async (command: string, options: VmTarget & { cwd?: string; stdin?: boolean }) => {
       const stdin = options.stdin ? await readStdin() : Buffer.alloc(0);
-      const result = await createCliBbSdk(getUrl()).cloudroom.runOnVm({ command, stdin: stdin.toString("hex"), cwd: options.cwd });
+      const result = await createCliBbSdk(getUrl()).cloudroom.runOnVm({ command, stdin: stdin.toString("hex"), cwd: options.cwd, threadId: options.thread });
       process.stdout.write(Buffer.from(result.stdout, "hex"));
       process.stderr.write(Buffer.from(result.stderr, "hex"));
       if (result.truncated) process.stderr.write("Output exceeded 16 MiB and was truncated.\n");
       process.exitCode = result.code ?? 1;
     }));
-  vm.command("pull <vm-path> [local-folder]").description("Copy a VM file or folder to this Mac (default: current folder)")
-    .action(action(async (source: string, target = ".") => {
-      const archive = await runOnVm(getUrl(), `p=${quote(source)}; cd -- "$(dirname -- "$p")" && tar -czf - -- "$(basename -- "$p")"`);
+  vm.command("pull <vm-path> [local-folder]").description("Copy a VM or sandbox file or folder to this Mac (default: current folder)")
+    .option(...THREAD_OPTION)
+    .action(action(async (source: string, target = ".", options: VmTarget = {}) => {
+      const archive = await runOnVm(getUrl(), options, `p=${quote(source)}; cd -- "$(dirname -- "$p")" && tar -czf - -- "$(basename -- "$p")"`);
       await mkdir(target, { recursive: true });
       await new Promise<void>((resolve, reject) => {
         const tar = spawn("tar", ["-xzf", "-", "-C", target], { stdio: ["pipe", "inherit", "inherit"] });
@@ -52,11 +57,12 @@ export function registerVmCommands(program: Command, getUrl: () => string): void
       });
       console.log(JSON.stringify({ copied: source, to: target }));
     }));
-  vm.command("push <local-path> [vm-folder]").description("Copy a file or folder from this Mac to the VM (default: agent home)")
-    .action(action(async (source: string, target = "~") => {
+  vm.command("push <local-path> [vm-folder]").description("Copy a file or folder from this Mac to the VM or sandbox (default: agent home)")
+    .option(...THREAD_OPTION)
+    .action(action(async (source: string, target = "~", options: VmTarget = {}) => {
       const { stdout } = await promisify(execFile)("tar", ["--no-xattrs", "-czf", "-", "-C", dirname(source), "--", basename(source)],
         { encoding: "buffer", maxBuffer: 16 * 1024 * 1024, env: { ...process.env, COPYFILE_DISABLE: "1" } });
-      await runOnVm(getUrl(), `d=${quote(target)}; mkdir -p -- "$d" && tar -xzf - -C "$d"`, stdout);
+      await runOnVm(getUrl(), options, `d=${quote(target)}; mkdir -p -- "$d" && tar -xzf - -C "$d"`, stdout);
       console.log(JSON.stringify({ copied: source, to: target }));
     }));
 }
@@ -87,7 +93,7 @@ export function registerCloudCommands(program: Command, getUrl: () => string): v
   }));
   codex.command("login").requiredOption("--request-id <id>", "Reuse this ID after an uncertain response").option("--json", "Print JSON").action(action(async (options: JsonOutputOptions & { requestId: string }) => {
     const result = await createCliBbSdk(getUrl()).cloudroom.codexLogin(options.requestId);
-    if (!outputJson(options, result)) console.log(result.state === "waiting" ? `Open ${result.verification_url}\nEnter code: ${result.user_code}\nRun cloudroom cloud codex status to verify.` : result.message ?? result.state);
+    if (!outputJson(options, result)) console.log(result.state === "waiting" ? `Open ${result.verification_url}\nEnter code: ${result.user_code}\nRun room-cli cloud codex status to verify.` : result.message ?? result.state);
   }));
   codex.command("cancel <request-id>").option("--json", "Print JSON").action(action(async (id: string, options: JsonOutputOptions) => {
     const result = await createCliBbSdk(getUrl()).cloudroom.cancelCodexLogin(id);
@@ -100,7 +106,7 @@ export function registerCloudCommands(program: Command, getUrl: () => string): v
   }));
   cursor.command("login").requiredOption("--request-id <id>", "Reuse this ID after an uncertain response").option("--json", "Print JSON").action(action(async (options: JsonOutputOptions & { requestId: string }) => {
     const result = await createCliBbSdk(getUrl()).cloudroom.cursorLogin(options.requestId);
-    if (!outputJson(options, result)) console.log(result.verification_url ? `Open ${result.verification_url}` : `${result.message ?? result.state}\nRun cloudroom cloud cursor status for the sign-in link.`);
+    if (!outputJson(options, result)) console.log(result.verification_url ? `Open ${result.verification_url}` : `${result.message ?? result.state}\nRun room-cli cloud cursor status for the sign-in link.`);
   }));
   cursor.command("cancel <request-id>").option("--json", "Print JSON").action(action(async (id: string, options: JsonOutputOptions) => {
     const result = await createCliBbSdk(getUrl()).cloudroom.cancelCursorLogin(id);

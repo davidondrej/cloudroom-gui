@@ -39,7 +39,7 @@ import { useThreadSectionMove } from "./ThreadSectionMoveProvider";
 import { sdk } from "@/lib/sdk";
 import { openTeleportLogin } from "@/components/CodexConnectionPanel";
 import { showMutationErrorToast } from "@/lib/mutation-errors";
-import { useCopyToMac, useTeleportLocal } from "@/hooks/queries/cloudroom-queries";
+import { useCopyToMac, useTeleportLocal, useTeleportThread } from "@/hooks/queries/cloudroom-queries";
 import { showCloudWaitlist, useCloudLocked } from "@/hooks/useCloudLocked";
 
 interface ThreadActionsMenuBaseProps {
@@ -216,14 +216,12 @@ function ThreadActionsMenuItems({
   const isArchived = thread.archivedAt != null;
   const isPinned = thread.pinnedAt !== null;
   const threadName = getThreadDisplayTitle(thread);
-  const [teleportPending, setTeleportPending] = useState(false);
+  const teleport = useTeleportThread(thread.id);
   const cloudLocked = useCloudLocked();
   const startTeleport = async () => {
     if (cloudLocked) return showCloudWaitlist();
-    setTeleportPending(true);
-    try { await sdk.cloudroom.teleport(thread.id); }
+    try { await teleport.mutateAsync("start"); }
     catch (error) { if (!openTeleportLogin(error, thread.providerId)) showMutationErrorToast({ error, fallbackMessage: "Could not start Teleport" }); }
-    finally { setTeleportPending(false); }
   };
   const canTeleport = canTeleportThread(thread);
   const teleportLocal = useTeleportLocal(thread.id);
@@ -247,7 +245,7 @@ function ThreadActionsMenuItems({
 
   return (
     <>
-      {canTeleport && <ActionMenuItem surface={surface} icon="Cloud" disabled={teleportPending} onSelect={() => void startTeleport()}>Teleport to Cloud</ActionMenuItem>}
+      {canTeleport && <ActionMenuItem surface={surface} icon="Cloud" disabled={teleport.isPending} onSelect={() => void startTeleport()}>Teleport to Cloud</ActionMenuItem>}
       {canTeleportLocalThread(thread) && <ActionMenuItem surface={surface} icon="Laptop" disabled={teleportLocal.isPending} onSelect={() => teleportLocal.mutate()}>Teleport to Local</ActionMenuItem>}
       {canReturnCloudWork(thread) && (
         <>

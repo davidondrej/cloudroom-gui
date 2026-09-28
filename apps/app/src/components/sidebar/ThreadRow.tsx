@@ -23,6 +23,7 @@ import {
   ThreadArchiveQuickAction,
 } from "@/components/thread/ThreadActionsMenu";
 import { useThreadActions } from "@/components/thread/ThreadActionsProvider";
+import { useTeleportDirection } from "@/hooks/queries/cloudroom-queries";
 import { useInlineThreadTitle } from "@/components/thread/InlineThreadTitle";
 import {
   COARSE_POINTER_COMPACT_ROW_HEIGHT_CLASS,
@@ -655,6 +656,7 @@ function ThreadRowComponent({
 
   const rowLinkRef = useRef<HTMLAnchorElement>(null);
   const showCloudIcon = thread.executionTarget === "cloud" && (!thread.teleport || ["complete", "cancelled"].includes(thread.teleport.phase));
+  const teleportDirection = useTeleportDirection(thread);
   const rowContent = (
     <>
       <NavLink
@@ -662,6 +664,7 @@ function ThreadRowComponent({
         to={getThreadRoutePath({ projectId, threadId: thread.id })}
         data-sidebar-thread-shortcut-target=""
         data-sidebar-thread-id={thread.id}
+        data-sidebar-project-id={projectId}
         onClick={(event) => {
           if (isEditing) {
             event.preventDefault();
@@ -693,16 +696,31 @@ function ThreadRowComponent({
           !shortcut && SIDEBAR_HOVER_ACTIONS_INSET_CLASS,
         )}
       >
-        <Icon
-          name={showCloudIcon ? "Cloud" : "Laptop"}
-          aria-label={
-            thread.teleport && !["complete", "cancelled"].includes(thread.teleport.phase) ? "Teleport in progress" : thread.executionTarget === "cloud" ? "Cloud thread" : "Local thread"
-          }
-          className={cn(
-            "pointer-events-none size-3.5 shrink-0",
-            showCloudIcon ? "text-primary [&_path]:stroke-[1.9]" : "text-muted-foreground opacity-50",
-          )}
-        />
+        {teleportDirection ? (
+          <span
+            role="img"
+            aria-label={teleportDirection === "cloud" ? "Teleporting to Cloud" : "Teleporting to Local"}
+            className="pointer-events-none size-3.5 shrink-0 overflow-hidden"
+          >
+            <Icon
+              name={teleportDirection === "cloud" ? "ArrowUp" : "ArrowDown"}
+              aria-hidden
+              className={cn(
+                "size-3.5 text-primary [&_path]:stroke-[1.9]",
+                teleportDirection === "cloud" ? "bb-teleport-up" : "bb-teleport-down",
+              )}
+            />
+          </span>
+        ) : (
+          <Icon
+            name={showCloudIcon ? "Cloud" : "Laptop"}
+            aria-label={thread.executionTarget === "cloud" ? "Cloud thread" : "Local thread"}
+            className={cn(
+              "pointer-events-none size-3.5 shrink-0",
+              showCloudIcon ? "text-primary [&_path]:stroke-[1.9]" : "text-muted-foreground opacity-50",
+            )}
+          />
+        )}
         {isEditing ? (
           <span className="relative z-10 min-w-0 flex-1 overflow-visible">
             {editor}

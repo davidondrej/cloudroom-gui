@@ -25,6 +25,6 @@ export const RESERVED_BB_CLI_COMMANDS: readonly string[] = [
 
 export function pluginCliCall(pluginId: string, name: string): string {
   if (RESERVED_BB_CLI_COMMANDS.includes(name))
-    return `cloudroom plugin run ${pluginId}`;
-  return `cloudroom ${name}`;
+    return `room-cli plugin run ${pluginId}`;
+  return `room-cli ${name}`;
 }

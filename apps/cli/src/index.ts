@@ -15,7 +15,7 @@ maybeReexecViaRoomCli();
 const program = new Command();
 
 program
-  .name("cloudroom")
+  .name("room-cli")
   .description("Cloudroom CLI - manage your local and cloud agents")
   .enablePositionalOptions()
   .version(resolveBbCliVersion());
@@ -65,8 +65,8 @@ async function tryPluginCommandProxy(
     );
     if (disabledId !== null) {
       console.error(
-        `cloudroom ${candidate} is provided by the "${disabledId}" plugin, which is disabled — ` +
-          `run \`cloudroom plugin enable ${disabledId}\` or enable it in Plugins.`,
+        `room-cli ${candidate} is provided by the "${disabledId}" plugin, which is disabled — ` +
+          `run \`room-cli plugin enable ${disabledId}\` or enable it in Plugins.`,
       );
       process.exit(1);
     }
@@ -78,7 +78,7 @@ async function tryPluginCommandProxy(
     command !== undefined &&
     argv.slice(1).some((arg) => arg === "--help" || arg === "-h")
   ) {
-    console.log(command.usage.replace(/^(bb|room) /, "cloudroom "));
+    console.log(command.usage.replace(/^(bb|room|cloudroom) /, "room-cli "));
     process.exit(0);
   }
   process.exit(await proxy.runPluginCliCommand(getUrl(), match.pluginId, argv));
@@ -111,10 +111,10 @@ Current context:
   ROOM_SERVER_URL: ${context.serverUrl}
 
 Quick start:
-  cloudroom status
-  cloudroom project list
-  cloudroom thread show <id>
-  cloudroom thread spawn --project <id> --provider codex --prompt "..."
+  room-cli status
+  room-cli project list
+  room-cli thread show <id>
+  room-cli thread spawn --project <id> --provider codex --prompt "..."
 `;
   });
 

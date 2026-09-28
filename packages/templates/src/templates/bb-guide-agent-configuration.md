@@ -48,21 +48,21 @@ Skills (.bb/skills/):
   A project skill overrides a user or plugin skill with the same name. Two
   skills with the same name within one source collide and are both dropped.
 
-  Use `cloudroom skill list` to inspect installed and discovered skills and copy the
-  opaque skill ID. `cloudroom skill show|files <skill-id>` reads that exact skill;
-  `cloudroom skill show <skill-id> --json` returns the revision required by `cloudroom skill
+  Use `room-cli skill list` to inspect installed and discovered skills and copy the
+  opaque skill ID. `room-cli skill show|files <skill-id>` reads that exact skill;
+  `room-cli skill show <skill-id> --json` returns the revision required by `cloudroom skill
   update <skill-id> --revision <sha256>`. `cloudroom skill delete <skill-id>` and
   update are restricted to editable, user-owned skills. These workspace-scoped
   commands default to `ROOM_PROJECT_ID`, then the personal project; pass
   `--project` or `--environment` when a different workspace is required.
 
-  Use `cloudroom skill search` to browse skills.sh, `cloudroom skill registry detail
+  Use `room-cli skill search` to browse skills.sh, `cloudroom skill registry detail
   <registry-skill-id>` to inspect metadata and the bounded file preview, and
-  `cloudroom skill install <registry-skill-id>` to install that canonical registry
+  `room-cli skill install <registry-skill-id>` to install that canonical registry
   identity into cloudroom user skills. Registry commands are server-wide and do not
   accept workspace selectors.
 
-  Use `cloudroom skill install-cli-skills` to copy Cloudroom's built-in CLI skills into a
+  Use `room-cli skill install-cli-skills` to copy Cloudroom's built-in CLI skills into a
   machine's global agent skill roots (`~/.agents/skills` and
   `~/.claude/skills`) so agents running outside cloudroom can drive it. It installs on
   every connected machine unless you pass `--machine <id-or-name>`, which is
@@ -70,7 +70,7 @@ Skills (.bb/skills/):
   only when more than one is enrolled. Machines install independently, so the
   command reports each machine's outcome and exits non-zero if any failed. The
   install replaces a previously installed copy of the same skill and leaves
-  other skills alone. `cloudroom skill cli-skills-status` reports whether each machine
+  other skills alone. `room-cli skill cli-skills-status` reports whether each machine
   is installed, out of date, missing, or unknown (disconnected or unreachable);
   the settings row shows the same as a badge.
 
@@ -83,11 +83,11 @@ Cloudroom guide plugin:
   plugins → Cloudroom guide exposes introduction, a master skills switch, and one
   switch per skill. All default to true. Use:
 
-    cloudroom plugin config bb-guide set introduction false
-    cloudroom plugin config bb-guide set skills false
-    cloudroom plugin config bb-guide set bbCli false
-    cloudroom plugin config bb-guide set pluginAuthoring false
-    cloudroom plugin config bb-guide set skillCreator false
+    room-cli plugin config bb-guide set introduction false
+    room-cli plugin config bb-guide set skills false
+    room-cli plugin config bb-guide set bbCli false
+    room-cli plugin config bb-guide set pluginAuthoring false
+    room-cli plugin config bb-guide set skillCreator false
 
   Changes apply when agent configuration is next assembled. They do not erase
   existing conversation text or disable independently installed copies.
@@ -97,5 +97,5 @@ Connect agent instructions:
   Settings → Installed plugins → Connect → Tell agents about remote access
   controls the message telling remotely used agents to expose public server
   links. It defaults to true and still requires active/recent remote usage.
-  Use `cloudroom plugin config connect set sendRemoteInstructions false` to turn it
+  Use `room-cli plugin config connect set sendRemoteInstructions false` to turn it
   off. Port sharing remains available.

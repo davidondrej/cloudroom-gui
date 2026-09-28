@@ -7,11 +7,11 @@ contains `url`, `token`, and `projectId`, with permissions `0600`. Configure it
 through `POST /api/v1/cloudroom`; remote core URLs require HTTPS. See
 [Cloudroom](cloudroom.md) for the pilot's setup, supported operations, and limits.
 
-Cloud Codex first reuses an existing local file-backed login when the VM has none. **Connect Codex** is the fallback; ongoing two-way token-file sync remains disabled. Use `cloudroom cloud codex status --json`, `login --request-id ID`, or `cancel ID`; see [the login flow](cloudroom.md#connect-codex). No environment variable or API key is required.
+Cloud Codex first reuses an existing local file-backed login when the VM has none. **Connect Codex** is the fallback; ongoing two-way token-file sync remains disabled. Use `room-cli cloud codex status --json`, `login --request-id ID`, or `cancel ID`; see [the login flow](cloudroom.md#connect-codex). No environment variable or API key is required.
 
 ## Cloudroom CLI
 
-Use `cloudroom`, not official BB's `bb`. Standalone `cloudroom` defaults to `http://127.0.0.1:39886` and daemon port `39887`. `cloudroom status --json` reports the selected server and profile. The same backend controls Local and Cloud threads.
+Use `room-cli`, not official BB's `bb`. Standalone `room-cli` defaults to `http://127.0.0.1:39886` and daemon port `39887`. `room-cli status --json` reports the selected server and profile. The same backend controls Local and Cloud threads.
 
 Cloudroom supplies these automatically to Local agent shells and thread-scoped terminals:
 
@@ -218,9 +218,9 @@ connected, permitted clients; it does not confirm OS display.
 
 The builtin Keep Awake plugin has one autosaving configuration page with an
 enable switch and an all-or-selected host picker. On selected macOS hosts it
-runs `/usr/bin/caffeinate -i -w <worker-pid>` while enabled, preventing system
-idle sleep while bb is running. It only blocks idle sleep: closing a laptop lid
-or choosing Sleep manually still sleeps the Mac. Configure it from an agent or
+runs `/usr/bin/caffeinate -d -i -s -w <worker-pid>` while enabled, keeping the
+display and system awake while bb is running (`-s` applies on power only).
+Closing a laptop lid or choosing Sleep manually still sleeps the Mac. Configure it from an agent or
 terminal with:
 
 ```sh
@@ -234,7 +234,7 @@ bb keep-awake hosts <host-id>...
 The **Command Guard** toggle in Settings → Advanced → Command Guard defaults to on. It blocks a
 small set of catastrophic shell-command patterns in new Local Codex/Pi/Claude
 Code sessions and Cloud Codex/Pi sessions. Use
-`cloudroom settings general commandGuardEnabled <true|false>` or the existing
+`room-cli settings general commandGuardEnabled <true|false>` or the existing
 `system.updateGeneralSettings` API. Start a new session after changing it.
 Personal guards and running commands are unchanged. Cloud starts require a core
 with `command_guard` support when enabled. This is accident prevention, not a
@@ -258,7 +258,7 @@ queued message waits and then runs when the agent stops. A steer message goes
 to the agent during the current run. The picker defaults to "Queue": Enter
 queues and Command+Enter steers. "Steer" swaps them. Ctrl+Enter is the same
 modifier shortcut on Windows and Linux. Existing saved preferences are preserved.
-Set it with `cloudroom settings general steerActiveThreadOnEnter <true|false>`,
+Set it with `room-cli settings general steerActiveThreadOnEnter <true|false>`,
 where `true` is "Steer".
 
 The "Streamer mode" toggle in Settings → General hides every `customModels`

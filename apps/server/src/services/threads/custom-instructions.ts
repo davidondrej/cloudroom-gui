@@ -4,6 +4,8 @@ import {
   isStandaloneBuiltinTeleportCommand,
   type PromptInput,
 } from "@bb/domain";
+import { getAppSettings, type DbConnection } from "@bb/db";
+import { renderTemplate } from "@bb/templates";
 import { ApiError } from "../../errors.js";
 import { listPluginInstructionContributions } from "../plugins/plugin-agent-contributions.js";
 
@@ -11,6 +13,12 @@ export const CUSTOM_INSTRUCTIONS_PLUGIN_ID = "custom-instructions";
 export const PLUGIN_INSTRUCTION_MAX_CHARS = 4096;
 
 type Context = { threadId: string; projectId: string };
+
+export function cloudroomSystemPrompt(db: DbConnection): string | undefined {
+  return getAppSettings(db).systemPromptEnabled
+    ? renderTemplate("standardAgentAppendInstructions", {})
+    : undefined;
+}
 type Input = { input: PromptInput[]; inputGroups?: PromptInput[][] };
 
 export function resolveCustomInstructions(context: Context): string {

@@ -37,30 +37,30 @@ interface ParsedFlags {
 
 const HELP = [
   "Usage:",
-  "  cloudroom pool account add --provider claude --import [--label <text>] [--priority <n>]",
-  "  cloudroom pool account add --provider codex --import [--label <text>] [--priority <n>]",
-  "  cloudroom pool account add --provider claude --login",
-  "  cloudroom pool account add --provider codex --login",
-  "  cloudroom pool account login-poll --session <id>",
-  "  printf '%s\\n' \"$CLAUDE_AUTH_CODE\" | cloudroom pool account login-complete --session <id> --code-stdin",
-  "  cloudroom pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]",
-  "  cloudroom pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]  Unsafe: exposes the key in process arguments.",
-  "  cloudroom pool account list [--json]",
-  "  cloudroom pool account remove <id>",
-  "  cloudroom pool account enable <id>",
-  "  cloudroom pool account disable <id>",
-  "  cloudroom pool account priority <id> <n>",
-  "  cloudroom pool account reorder <claude|codex> <id>...",
-  "  cloudroom pool account refresh <id>",
-  "  cloudroom pool status [--json]",
-  "  cloudroom pool routing <claude|codex> [--off]",
-  "  cloudroom pool config",
-  "  cloudroom pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>",
-  "  cloudroom pool cache-miss list [--json]",
-  "  cloudroom pool cache-miss clear",
-  "  cloudroom pool parent [proxy|isolate]",
-  "  cloudroom pool token rotate --machine <id-or-name>",
-  "  cloudroom pool bypass <thread-id> [--off]",
+  "  room-cli pool account add --provider claude --import [--label <text>] [--priority <n>]",
+  "  room-cli pool account add --provider codex --import [--label <text>] [--priority <n>]",
+  "  room-cli pool account add --provider claude --login",
+  "  room-cli pool account add --provider codex --login",
+  "  room-cli pool account login-poll --session <id>",
+  "  printf '%s\\n' \"$CLAUDE_AUTH_CODE\" | room-cli pool account login-complete --session <id> --code-stdin",
+  "  room-cli pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]",
+  "  room-cli pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]  Unsafe: exposes the key in process arguments.",
+  "  room-cli pool account list [--json]",
+  "  room-cli pool account remove <id>",
+  "  room-cli pool account enable <id>",
+  "  room-cli pool account disable <id>",
+  "  room-cli pool account priority <id> <n>",
+  "  room-cli pool account reorder <claude|codex> <id>...",
+  "  room-cli pool account refresh <id>",
+  "  room-cli pool status [--json]",
+  "  room-cli pool routing <claude|codex> [--off]",
+  "  room-cli pool config",
+  "  room-cli pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>",
+  "  room-cli pool cache-miss list [--json]",
+  "  room-cli pool cache-miss clear",
+  "  room-cli pool parent [proxy|isolate]",
+  "  room-cli pool token rotate --machine <id-or-name>",
+  "  room-cli pool bypass <thread-id> [--off]",
   "",
   "Accounts run sequentially by priority, then order added. The current fallback stays active until unavailable.",
   "When this Cloudroom server runs inside another Cloudroom server's thread, parent proxy routes its pooled traffic through that parent; isolate neutralises the inherited routing.",
@@ -260,7 +260,7 @@ function formatCacheMissReports(
       return "No cache miss reports. This Cloudroom server forwards pooled traffic to its parent Account Pooler, which does the analysis; enable cacheMissDebug on the parent.";
     return enabled
       ? "No large cache misses observed yet."
-      : "No cache miss reports. Enable reporting with cloudroom pool config set cacheMissDebug true.";
+      : "No cache miss reports. Enable reporting with room-cli pool config set cacheMissDebug true.";
   }
   return reports.map(formatCacheMissReport).join("\n\n");
 }
@@ -339,101 +339,101 @@ export function registerPoolCli(
         summary:
           "Sign in to Claude or Codex, import credentials, or add an Anthropic API key",
         usage:
-          "cloudroom pool account add --provider <claude|codex> --login\nroom pool account add --provider <claude|codex> --import [--label <text>] [--priority <n>]\nroom pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]\nUnsafe compatibility form: cloudroom pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]",
+          "room-cli pool account add --provider <claude|codex> --login\nroom pool account add --provider <claude|codex> --import [--label <text>] [--priority <n>]\nroom pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]\nUnsafe compatibility form: room-cli pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]",
       },
       {
         name: "account-login-poll",
         summary: "Wait for a Codex device-code login to complete",
-        usage: "cloudroom pool account login-poll --session <id>",
+        usage: "room-cli pool account login-poll --session <id>",
       },
       {
         name: "account-login-complete",
         summary: "Complete a Claude browser login with its manual code",
         usage:
-          "printf '%s\\n' \"$CLAUDE_AUTH_CODE\" | cloudroom pool account login-complete --session <id> --code-stdin",
+          "printf '%s\\n' \"$CLAUDE_AUTH_CODE\" | room-cli pool account login-complete --session <id> --code-stdin",
       },
       {
         name: "account-list",
         summary: "List pool accounts and observed quota",
-        usage: "cloudroom pool account list [--json]",
+        usage: "room-cli pool account list [--json]",
       },
       {
         name: "account-remove",
         summary: "Remove an account and its secret token file",
-        usage: "cloudroom pool account remove <id>",
+        usage: "room-cli pool account remove <id>",
       },
       {
         name: "account-enable",
         summary: "Enable an account",
-        usage: "cloudroom pool account enable <id>",
+        usage: "room-cli pool account enable <id>",
       },
       {
         name: "account-disable",
         summary: "Disable an account",
-        usage: "cloudroom pool account disable <id>",
+        usage: "room-cli pool account disable <id>",
       },
       {
         name: "account-priority",
         summary: "Set an account's position in the failover priority order",
-        usage: "cloudroom pool account priority <id> <n>",
+        usage: "room-cli pool account priority <id> <n>",
       },
       {
         name: "account-reorder",
         summary: "Set the complete failover order for one provider",
-        usage: "cloudroom pool account reorder <claude|codex> <id>...",
+        usage: "room-cli pool account reorder <claude|codex> <id>...",
       },
       {
         name: "account-refresh",
         summary: "Refresh one account's observed usage",
-        usage: "cloudroom pool account refresh <id>",
+        usage: "room-cli pool account refresh <id>",
       },
       {
         name: "status",
         summary: "Show hub, machine token, routing, and account status",
-        usage: "cloudroom pool status [--json]",
+        usage: "room-cli pool status [--json]",
       },
       {
         name: "routing",
         summary: "Enable or disable pooled routing for one provider",
-        usage: "cloudroom pool routing <claude|codex> [--off]",
+        usage: "room-cli pool routing <claude|codex> [--off]",
       },
       {
         name: "config",
         summary: "Show Account Pooler configuration",
-        usage: "cloudroom pool config",
+        usage: "room-cli pool config",
       },
       {
         name: "config-set",
         summary: "Update one Account Pooler configuration value",
         usage:
-          "cloudroom pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>",
+          "room-cli pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>",
       },
       {
         name: "cache-miss-list",
         summary:
           "List recent large prompt cache misses and their likely causes",
-        usage: "cloudroom pool cache-miss list [--json]",
+        usage: "room-cli pool cache-miss list [--json]",
       },
       {
         name: "cache-miss-clear",
         summary: "Clear recorded prompt cache miss reports",
-        usage: "cloudroom pool cache-miss clear",
+        usage: "room-cli pool cache-miss clear",
       },
       {
         name: "parent",
         summary:
           "Show or set how this instance uses a parent Cloudroom server's Account Pooler",
-        usage: "cloudroom pool parent [proxy|isolate]",
+        usage: "room-cli pool parent [proxy|isolate]",
       },
       {
         name: "token-rotate",
         summary: "Rotate one machine's Account Pooler bearer token",
-        usage: "cloudroom pool token rotate --machine <id-or-name>",
+        usage: "room-cli pool token rotate --machine <id-or-name>",
       },
       {
         name: "bypass",
         summary: "Bypass Account Pooler routing for one thread",
-        usage: "cloudroom pool bypass <thread-id> [--off]",
+        usage: "room-cli pool bypass <thread-id> [--off]",
       },
     ],
     async run(argv, ctx): Promise<PluginCliResult> {
@@ -517,7 +517,7 @@ export function registerPoolCli(
                   `Session ID: ${started.sessionId}`,
                   "",
                   "After authorizing, wait for the account to be added with:",
-                  `cloudroom pool account login-poll --session ${started.sessionId}`,
+                  `room-cli pool account login-poll --session ${started.sessionId}`,
                 ].join("\n")}\n`,
               };
             }
@@ -531,7 +531,7 @@ export function registerPoolCli(
                 `Session ID: ${started.sessionId}`,
                 "",
                 "After signing in, pipe the code shown on the final page into:",
-                `printf '%s\\n' \"$CLAUDE_AUTH_CODE\" | cloudroom pool account login-complete --session ${started.sessionId} --code-stdin`,
+                `printf '%s\\n' \"$CLAUDE_AUTH_CODE\" | room-cli pool account login-complete --session ${started.sessionId} --code-stdin`,
               ].join("\n")}\n`,
             };
           }

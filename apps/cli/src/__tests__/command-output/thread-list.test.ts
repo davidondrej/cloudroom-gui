@@ -10,13 +10,13 @@ import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import * as fixtures from "../helpers/command-output-fixtures.js";
 import { registerThreadCommands } from "../../commands/thread/index.js";
 
-describe("cloudroom thread list command output", () => {
+describe("room-cli thread list command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
     registerThreadCommands(program, () => "http://server");
 
-  it("cloudroom thread list supports parent-thread filtering", async () => {
+  it("room-cli thread list supports parent-thread filtering", async () => {
     const list = vi.fn(async () => []);
     stubServerApi({ "v1.threads.$get": list });
 
@@ -41,7 +41,7 @@ describe("cloudroom thread list command output", () => {
     });
   });
 
-  it("cloudroom thread list opts into hidden threads explicitly", async () => {
+  it("room-cli thread list opts into hidden threads explicitly", async () => {
     const list = vi.fn(async () => []);
     stubServerApi({ "v1.threads.$get": list });
 
@@ -52,7 +52,7 @@ describe("cloudroom thread list command output", () => {
     });
   });
 
-  it("cloudroom thread list shows only archived threads with --archived", async () => {
+  it("room-cli thread list shows only archived threads with --archived", async () => {
     const list = vi.fn(async () => []);
     stubServerApi({ "v1.threads.$get": list });
 
@@ -63,7 +63,7 @@ describe("cloudroom thread list command output", () => {
     });
   });
 
-  it("cloudroom thread list rejects --archived with --include-archived", async () => {
+  it("room-cli thread list rejects --archived with --include-archived", async () => {
     const list = vi.fn(async () => []);
     stubServerApi({ "v1.threads.$get": list });
 
@@ -77,7 +77,7 @@ describe("cloudroom thread list command output", () => {
     expect(list).not.toHaveBeenCalled();
   });
 
-  it("cloudroom thread list rejects invalid parent-thread values", async () => {
+  it("room-cli thread list rejects invalid parent-thread values", async () => {
     const list = vi.fn(async () => []);
     stubServerApi({ "v1.threads.$get": list });
 
@@ -101,7 +101,7 @@ describe("cloudroom thread list command output", () => {
     expect(list).not.toHaveBeenCalled();
   });
 
-  it("cloudroom thread list renders archived status in the shared borderless table", async () => {
+  it("room-cli thread list renders archived status in the shared borderless table", async () => {
     const list = vi.fn(async () => [
       fixtures.makeThread({
         id: "thread-archived-1",
@@ -130,7 +130,7 @@ describe("cloudroom thread list command output", () => {
     ]);
   });
 
-  it("cloudroom thread list renders pinned status in the shared borderless table", async () => {
+  it("room-cli thread list renders pinned status in the shared borderless table", async () => {
     const list = vi.fn(async () => [
       fixtures.makeThread({
         id: "thread-pinned-1",
@@ -154,7 +154,7 @@ describe("cloudroom thread list command output", () => {
     );
   });
 
-  it("cloudroom thread list hides the personal project label", async () => {
+  it("room-cli thread list hides the personal project label", async () => {
     const list = vi.fn(async () => [
       fixtures.makeThread({
         id: "thread-personal-1",
@@ -183,7 +183,7 @@ describe("cloudroom thread list command output", () => {
     ]);
   });
 
-  it("cloudroom thread list prints the thread title, fallback, and project name (#1648)", async () => {
+  it("room-cli thread list prints the thread title, fallback, and project name (#1648)", async () => {
     const list = vi.fn(async () => [
       fixtures.makeThread({
         id: "thr_a9niqhjj9c",
@@ -239,7 +239,7 @@ describe("cloudroom thread list command output", () => {
     expect(output).toMatch(/thr_unknownproj\s+x+…\s+proj_missing\s+idle/);
   });
 
-  it("cloudroom thread list --json does not fetch projects", async () => {
+  it("room-cli thread list --json does not fetch projects", async () => {
     const list = vi.fn(async () => []);
     const projects = vi.fn(async () => []);
     stubServerApi({ "v1.threads.$get": list, "v1.projects.$get": projects });
@@ -249,7 +249,7 @@ describe("cloudroom thread list command output", () => {
     expect(projects).not.toHaveBeenCalled();
   });
 
-  it("cloudroom thread list ignores ROOM_PROJECT_ID when --project is omitted", async () => {
+  it("room-cli thread list ignores ROOM_PROJECT_ID when --project is omitted", async () => {
     const list = vi.fn(async () => []);
     stubServerApi({ "v1.threads.$get": list });
 
@@ -261,7 +261,7 @@ describe("cloudroom thread list command output", () => {
     });
   });
 
-  it("cloudroom thread list does not infer parent-thread from ROOM_THREAD_ID", async () => {
+  it("room-cli thread list does not infer parent-thread from ROOM_THREAD_ID", async () => {
     const list = vi.fn(async () => []);
 
     stubServerApi({ "v1.threads.$get": list });

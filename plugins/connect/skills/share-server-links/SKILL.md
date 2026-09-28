@@ -9,8 +9,8 @@ When you start an HTTP server the user should open, give them a connect share
 URL — not a localhost URL. Shares work from threads running on any enrolled
 host, and the command resolves the thread's host automatically.
 
-1. Check pairing: run `cloudroom connect status --json`. If not paired / not
-   connected, give the localhost URL and mention that `cloudroom connect` enables
+1. Check pairing: run `room-cli connect status --json`. If not paired / not
+   connected, give the localhost URL and mention that `room-cli connect` enables
    remote URLs once paired from the getbb.app dashboard.
 2. From the thread that started the HTTP server, run `cloudroom connect expose
 <port>`. It prints that host's share URL. Use `--host <name-or-id>` only
@@ -18,9 +18,9 @@ host, and the command resolves the thread's host automatically.
    sharing defaults to the machine running the Cloudroom server.
 3. Give the returned URL to the user as a markdown link. It works for viewers
    who have the owner's getbb.app session; it is not a public internet link.
-4. When the server stops, run `cloudroom connect unexpose <port>` from the same
+4. When the server stops, run `room-cli connect unexpose <port>` from the same
    thread (or with the same `--host`) so the share is cleaned up. Use
-   `cloudroom connect shares [--host <name-or-id>]` to inspect that host's shares.
+   `room-cli connect shares [--host <name-or-id>]` to inspect that host's shares.
 
 Server-host shares use `https://<server-label>--<port>.<base-domain>` through
 the server tunnel. Other enrolled hosts use
@@ -32,7 +32,7 @@ remove and re-add it under Settings > Machines.
 
 Settings → Installed plugins → Connect has a "Tell agents about remote access"
 toggle, enabled by default. Use
-`cloudroom plugin config connect set sendRemoteInstructions false` to suppress the
+`room-cli plugin config connect set sendRemoteInstructions false` to suppress the
 remote-access message, or `true` to restore it. This controls only the message;
 sharing still works. The message otherwise requires active or recent remote
 usage. Changes apply when session instructions are next assembled.

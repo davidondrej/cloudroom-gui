@@ -85,7 +85,7 @@ function setTty(value: boolean): void {
   });
 }
 
-describe("cloudroom plugin migrate", () => {
+describe("room-cli plugin migrate", () => {
   it("prints the plan and changes nothing without --yes on a non-TTY", async () => {
     await writeVendoredPlugin();
     setTty(false);
@@ -216,7 +216,7 @@ describe("cloudroom plugin migrate", () => {
   });
 });
 
-describe("cloudroom plugin dev stale-pin warning", () => {
+describe("room-cli plugin dev stale-pin warning", () => {
   function stubEmptyPluginList(): void {
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify({ plugins: [] }), {
@@ -269,7 +269,7 @@ describe("cloudroom plugin dev stale-pin warning", () => {
   });
 });
 
-describe("cloudroom plugin types on a package-layout plugin", () => {
+describe("room-cli plugin types on a package-layout plugin", () => {
   it("repoints an outdated pin to the running host's SDK version", async () => {
     await writeManifest({
       name: "bb-plugin-modern",

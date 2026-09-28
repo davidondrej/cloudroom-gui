@@ -14,4 +14,4 @@ The panel reads the theme catalog from Cloudroom and from installed plugins that
 
 ## For agents
 
-The bundled `bb-theme-authoring` skill explains the theme file layout, the token groups, and the checks to run. Agents use the built-in `cloudroom theme dir`, `cloudroom theme list`, `cloudroom theme set`, and `cloudroom theme show` commands. Work in a split: the agent edits `theme.css` on one side and you watch the preview on the other.
+The bundled `bb-theme-authoring` skill explains the theme file layout, the token groups, and the checks to run. Agents use the built-in `room-cli theme dir`, `room-cli theme list`, `room-cli theme set`, and `room-cli theme show` commands. Work in a split: the agent edits `theme.css` on one side and you watch the preview on the other.

@@ -48,7 +48,7 @@ function makeHost(overrides: Record<string, unknown> = {}) {
   };
 }
 
-describe("cloudroom terminal command output", () => {
+describe("room-cli terminal command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>

@@ -4,8 +4,8 @@ import type {
   BbDesktopInfoUnsubscribe,
 } from "@bb/desktop-contract";
 
-const DESKTOP_UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
-export const DESKTOP_UPDATE_ACTIVE_MIN_INTERVAL_MS = 15 * 60 * 1000;
+const DESKTOP_UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+export const DESKTOP_UPDATE_ACTIVE_MIN_INTERVAL_MS = 60 * 1000;
 
 export interface DesktopUpdateService {
   checkAfterActive(): Promise<BbDesktopInfo | null>;
@@ -25,7 +25,6 @@ interface CreateDesktopUpdateSchedulerArgs {
   initialInfo: BbDesktopInfo;
   now: () => number;
   runCheck(checkedAt: string): Promise<void>;
-  shouldSkipCheck?: () => boolean;
 }
 
 function areDesktopInfoValuesEqual(
@@ -65,9 +64,6 @@ export function createDesktopUpdateScheduler(
 
   async function checkForUpdates(): Promise<BbDesktopInfo> {
     if (!args.enabled) {
-      return currentInfo;
-    }
-    if (args.shouldSkipCheck?.()) {
       return currentInfo;
     }
     if (inflight !== null) {

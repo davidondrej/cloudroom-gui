@@ -173,12 +173,7 @@ export function createDesktopAutoUpdateService(
     initialInfo: createBaseInfo(args.currentVersion, args.platform, args.enabled),
     now,
     runCheck,
-    shouldSkipCheck,
   });
-
-  function shouldSkipCheck(): boolean {
-    return scheduler.getInfo().updateDownloaded;
-  }
 
   function applyUpdateAvailable(applyArgs: ApplyUpdateAvailableArgs): void {
     scheduler.updateInfo({
@@ -294,13 +289,19 @@ export function createDesktopAutoUpdateService(
     args.updater.setAutoInstallOnAppQuit(true);
     args.updater.setForceDevUpdateConfig(args.forceDevUpdateConfig);
     args.updater.onUpdateAvailable((info) => {
-      args.logger.info(
-        `Desktop auto-update available: ${info.version}; downloading in background.`,
-      );
       applyUpdateAvailable({
         checkedAt: formatCheckedAt(now),
         version: info.version,
       });
+      // Re-downloading the staged version makes Squirrel.Mac replace its
+      // finished staging with a partial one, so Relaunch installs nothing.
+      // Only a newer release may replace the staged update.
+      if (info.version === scheduler.getInfo().pendingVersion) {
+        return;
+      }
+      args.logger.info(
+        `Desktop auto-update available: ${info.version}; downloading in background.`,
+      );
       startDownload();
     });
     args.updater.onUpdateDownloaded((event) => {

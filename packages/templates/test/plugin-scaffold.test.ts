@@ -94,7 +94,7 @@ describe("scaffoldPlugin SDK dependency", () => {
       join(targetDir, "PLUGIN_OVERVIEW.md"),
       "utf8",
     );
-    expect(overview).toContain("cloudroom todo list");
+    expect(overview).toContain("room-cli todo list");
     expect(overview).toMatch(/^[^#]/u);
     expect([...overview].length).toBeGreaterThan(700);
     expect([...overview].length).toBeLessThanOrEqual(4000);
@@ -123,21 +123,21 @@ describe("scaffoldPlugin SDK dependency", () => {
     expect(pkg.bb.name).toBe("Scoped");
 
     const readme = await readFile(join(targetDir, "README.md"), "utf8");
-    expect(readme).toContain("cloudroom plugin reload scoped");
-    expect(readme).toContain("cloudroom plugin config scoped");
+    expect(readme).toContain("room-cli plugin reload scoped");
+    expect(readme).toContain("room-cli plugin config scoped");
 
     const server = await readFile(join(targetDir, "server.ts"), "utf8");
-    expect(server).toContain("cloudroom plugin config scoped");
-    expect(server).not.toContain("cloudroom plugin config @acme/");
+    expect(server).toContain("room-cli plugin config scoped");
+    expect(server).not.toContain("room-cli plugin config @acme/");
     expect(server).toContain('name: "scoped"');
-    expect(server).toContain("cloudroom scoped list");
+    expect(server).toContain("room-cli scoped list");
     const app = await readFile(join(targetDir, "app.tsx"), "utf8");
-    expect(app).toContain("cloudroom scoped add");
+    expect(app).toContain("room-cli scoped add");
     const skill = await readFile(
       join(targetDir, "skills", "example-todos", "SKILL.md"),
       "utf8",
     );
-    expect(skill).toContain("cloudroom scoped list");
+    expect(skill).toContain("room-cli scoped list");
     expect(skill).not.toContain("@acme/");
   });
 });

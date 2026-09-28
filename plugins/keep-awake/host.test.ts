@@ -40,7 +40,7 @@ describe("builtin Keep Awake host entry", () => {
     expect(spawn).toHaveBeenCalledOnce();
     expect(spawn).toHaveBeenCalledWith(
       "/usr/bin/caffeinate",
-      ["-i", "-w", "1234"],
+      ["-d", "-i", "-s", "-w", "1234"],
       { stdio: "ignore" },
     );
     expect(harness.experimental_getRetainedWorkerLeaseCount()).toBe(1);

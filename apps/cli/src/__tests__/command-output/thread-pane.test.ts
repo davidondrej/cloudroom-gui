@@ -8,7 +8,7 @@ import {
 } from "../helpers/command-output-harness.js";
 import { registerThreadCommands } from "../../commands/thread/index.js";
 
-describe("cloudroom thread pane command output", () => {
+describe("room-cli thread pane command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>

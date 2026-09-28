@@ -43,7 +43,7 @@ export async function planProjectCopy(deps: Deps, client: CloudroomClient, threa
   }
 }
 
-export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCopyJob, done?: () => void): void {
+export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCopyJob, done?: (error?: string) => void): void {
   if (copying.has(job.key)) return;
   copying.add(job.key);
   const report = (progress: ProjectCopyProgress) => {
@@ -55,7 +55,11 @@ export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCop
   report({ phase: job.repository ? "cloning" : "uploading", completed: 0, total: 0 });
   void run(client, job, report)
     .then(() => { report({ phase: "complete", completed: 0, total: 0 }); done?.(); })
-    .catch((error: unknown) => report({ phase: "error", completed: 0, total: 0, error: (error instanceof Error ? error.message : String(error)).slice(0, 500) }))
+    .catch((error: unknown) => {
+      const message = (error instanceof Error ? error.message : String(error)).slice(0, 500);
+      report({ phase: "error", completed: 0, total: 0, error: message });
+      done?.(message);
+    })
     .finally(() => copying.delete(job.key));
 }
 

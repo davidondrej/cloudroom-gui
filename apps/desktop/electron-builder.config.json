@@ -41,6 +41,11 @@
     "icon": "assets/icon.icns",
     "identity": null,
     "notarize": false,
+    "extendInfo": {
+      "NSDesktopFolderUsageDescription": "Cloudroom agents read and write files you ask them to work on.",
+      "NSDocumentsFolderUsageDescription": "Cloudroom agents read and write files you ask them to work on.",
+      "NSDownloadsFolderUsageDescription": "Cloudroom agents read and write files you ask them to work on."
+    },
     "extraResources": [
       {
         "from": ".bundled-runtimes/python",

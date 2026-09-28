@@ -6,8 +6,10 @@ import { expect, it, vi } from "vitest";
 import * as sync from "../../src/services/cloudroom/sync.js";
 import { listQueuedCommands } from "../helpers/commands.js";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
+import { saveTeleportProgress } from "../../src/services/cloudroom/store.js";
+import { teleports } from "../../src/services/cloudroom/teleport.js";
 import { createTestAppHarness } from "../helpers/test-app.js";
-import { seedEnvironment, seedHostSession, seedPrimaryHost, seedProjectWithSource, seedThread } from "../helpers/seed.js";
+import { seedEnvironment, seedHostSession, seedPrimaryHost, seedProjectWithSource, seedThread, seedThreadRuntimeState } from "../helpers/seed.js";
 import { createThread, getThread, setProjectGitRemoteUrlIfMissing, events, cloudroomThreads, cloudroomCommands } from "@bb/db";
 
 it("forwards Cursor login and keys without creating conversation records", async () => {
@@ -1003,6 +1005,46 @@ it.each(["codex", "pi"])("edits and cancels queued Cloud %s prompts, then steers
       expect(payload.attachments.map(part => part.kind)).toEqual(["image", "file"]);
       expect(payload.attachments.every(part => part.path.startsWith("/code/test/.cloudroom/attachments/"))).toBe(true);
     }
+  } finally {
+    service.stop(); core.closeAllConnections(); await new Promise<void>((resolve) => core.close(() => resolve())); await harness.cleanup();
+  }
+});
+
+it("shows Teleport the moment it starts, and never leaves a failed or interrupted check stuck", async () => {
+  const harness = await createTestAppHarness();
+  const { host } = seedHostSession(harness.deps);
+  const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
+  const environment = seedEnvironment(harness.deps, { hostId: host.id, projectId: project.id });
+  const thread = seedThread(harness.deps, { projectId: project.id, environmentId: environment.id });
+  seedThreadRuntimeState(harness.deps, { threadId: thread.id, environmentId: environment.id, providerThreadId: "native-1", model: "test-model" });
+  const service = cloudroom(harness.deps);
+  const heldChecks: ((body: unknown) => void)[] = [];
+  const core = createServer(async (req, res) => {
+    const json = (body: unknown) => { res.writeHead(req.method === "POST" ? 202 : 200, { "Content-Type": "application/json" }); res.end(JSON.stringify(body)); };
+    if (req.url === "/v1/health") return json({});
+    if (req.url === "/v1/ready") return json({ ready: true });
+    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/test", stop: true, resume: true, launch_settings: true, teleport: true, harnesses: [{ id: "codex", model: "test-model" }] });
+    if (req.url === "/v1/teleports/check") return void heldChecks.push(json);
+    res.writeHead(404); res.end();
+  });
+  core.listen(0, "127.0.0.1"); await once(core, "listening");
+  const address = core.address(); if (!address || typeof address === "string") throw new Error("fixture did not listen");
+  const api = (path: string, body?: unknown) => harness.app.request(`/api/v1${path}`, body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const phase = async () => ((await (await api(`/threads/${thread.id}`)).json()) as { teleport?: { phase: string } }).teleport?.phase;
+  try {
+    await service.configure({ url: `http://127.0.0.1:${address.port}`, token: "x".repeat(40) });
+    const started = api(`/cloudroom/threads/${thread.id}/teleport`, { action: "start" });
+    await vi.waitFor(() => expect(heldChecks).toHaveLength(1));
+    expect(await phase()).toBe("checking");
+    expect((await api(`/cloudroom/threads/${thread.id}/teleport`, { action: "start" })).status).toBe(409);
+    heldChecks[0]!({ ok: false, code: "model_unavailable", error: "Cloud cannot run test-model." });
+    expect((await started).status).toBe(409);
+    expect(await phase()).toBe("cancelled");
+    expect(getThread(harness.db, thread.id)?.executionTarget).not.toBe("cloud");
+
+    saveTeleportProgress(harness.db, thread.id, { id: "interrupted", owner: thread.id, phase: "checking", completed: 0, total: 0 });
+    teleports(harness.deps).recover();
+    expect(await phase()).toBe("cancelled");
   } finally {
     service.stop(); core.closeAllConnections(); await new Promise<void>((resolve) => core.close(() => resolve())); await harness.cleanup();
   }

@@ -78,7 +78,7 @@ function formatAttachments(
     .map(
       (attachment) =>
         `- ${attachment.fileName} · ${attachment.id}\n` +
-        `  Fetch with: cloudroom tasks attachment get ${attachment.id} --out <path>`,
+        `  Fetch with: room-cli tasks attachment get ${attachment.id} --out <path>`,
     )
     .join("\n");
 }
@@ -109,7 +109,7 @@ export function buildSeedPrompt(input: SeedPromptInput): string {
     markdownSection("Recent comments", formatComments(input.recentComments)),
     markdownSection(
       "Report-back contract",
-      `You are working on task ${input.task.key}. Use the cloudroom tasks CLI: comment substantive updates (cloudroom tasks comment ${input.task.key} --body ...), attach result artifacts, set status when done (cloudroom tasks update ${input.task.key} --status in_review) or explain blockage in a comment. Your thread is already attached to the task.`,
+      `You are working on task ${input.task.key}. Use the room-cli tasks CLI: comment substantive updates (room-cli tasks comment ${input.task.key} --body ...), attach result artifacts, set status when done (room-cli tasks update ${input.task.key} --status in_review) or explain blockage in a comment. Your thread is already attached to the task.`,
     ),
   ];
 

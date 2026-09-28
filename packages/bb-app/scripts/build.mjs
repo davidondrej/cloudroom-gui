@@ -38,7 +38,7 @@ async function buildPublicSdkDeclarations() {
 
 const entrypoints = [
   ["bb-app", "bb-app.js"],
-  ["cloudroom", "cloudroom.js"],
+  ["room-cli", "room-cli.js"],
   ["bb-server", "bb-server.js"],
   ["bb-host-daemon", "bb-host-daemon.js"],
 ];
@@ -87,11 +87,11 @@ await copyBuildOutput({
   label: "@bb/host-daemon dist",
   to: resolve(packageRoot, "host-daemon", "dist"),
 });
-// The bb CLI is code-split into host-daemon/dist/cloudroom-chunks. A turbo cache hit
+// The bb CLI is code-split into host-daemon/dist/room-cli-chunks. A turbo cache hit
 // restores apps/host-daemon/dist without clearing it first, so the copy can
 // carry an earlier build's hashed chunks; ship only the ones `bb` reaches.
 await assertPathExists(
-  resolve(packageRoot, "host-daemon", "dist", "cloudroom-chunks"),
+  resolve(packageRoot, "host-daemon", "dist", "room-cli-chunks"),
   "bundled room CLI chunks",
 );
 const pruneRun = await execFileAsync(

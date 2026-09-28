@@ -9,7 +9,7 @@ import {
 import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import { registerSettingsCommands } from "../../commands/settings.js";
 
-describe("cloudroom settings commands", () => {
+describe("room-cli settings commands", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>

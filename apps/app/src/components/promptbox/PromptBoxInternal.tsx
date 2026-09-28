@@ -126,6 +126,8 @@ import {
   type ComposerCommandMenuState,
   type ComposerTypeaheadMenuState,
   type FastModeCommandSuggestion,
+  type LocationCommandSuggestion,
+  type ModelShortcutCommandSuggestion,
   type ReasoningCommandSuggestion,
   type TypeaheadSuggestion,
 } from "./mentions/MentionMenu";
@@ -477,6 +479,50 @@ export function promptFastModeCommand(
   };
 }
 
+export interface PromptModelShortcut {
+  name: string;
+  description: string;
+  onSelect: () => void;
+}
+
+const MODEL_SHORTCUTS = [
+  {
+    name: "opus",
+    providerId: "claude-code",
+    model: "claude-opus-5-5[1m]",
+    label: "Opus 5.5 in Claude Code",
+  },
+  {
+    name: "astra",
+    providerId: "codex",
+    model: "gpt-6-astra",
+    label: "GPT-6 Astra in Codex",
+  },
+] as const;
+
+export function promptModelShortcuts({
+  provider,
+  selectModel,
+}: Pick<ExecutionControlsProps, "provider" | "selectModel">):
+  | PromptModelShortcut[]
+  | undefined {
+  if (!selectModel) return undefined;
+  const shortcuts = MODEL_SHORTCUTS.filter(({ providerId }) =>
+    provider.options?.some((option) => option.value === providerId),
+  ).map(({ name, providerId, model, label }) => ({
+    name,
+    description: `Switch to ${label}`,
+    onSelect: () => selectModel({ providerId, model }),
+  }));
+  return shortcuts.length > 0 ? shortcuts : undefined;
+}
+
+export interface PromptLocationCommand {
+  name: LocationCommandSuggestion["name"];
+  description: string;
+  onSelect: () => void;
+}
+
 type MentionMenuPlacement = "top" | "bottom";
 
 interface PromptBoxInternalProps {
@@ -500,6 +546,8 @@ interface PromptBoxInternalProps {
   typeahead: TypeaheadConfig;
   reasoning?: ExecutionControlsProps["reasoning"];
   fastMode?: PromptFastMode;
+  modelShortcuts?: readonly PromptModelShortcut[];
+  locationCommands?: readonly PromptLocationCommand[];
   mentionMenuPlacement: MentionMenuPlacement;
   attachments?: AttachmentsConfig;
   promptActions?: readonly PromptBoxAction[];
@@ -1220,6 +1268,8 @@ export function PromptBoxInternal({
   typeahead,
   reasoning,
   fastMode,
+  modelShortcuts,
+  locationCommands,
   mentionMenuPlacement,
   attachments: attachmentConfig = {},
   promptActions,
@@ -1265,7 +1315,12 @@ export function PromptBoxInternal({
   } = typeahead.command;
   const commandTriggerChar =
     providerCommandTrigger ??
-    (reasoning?.options.length || fastMode ? "/" : null);
+    (reasoning?.options.length ||
+    fastMode ||
+    modelShortcuts?.length ||
+    locationCommands?.length
+      ? "/"
+      : null);
   const onCommandEditorFocusRef = useRef(onCommandEditorFocus);
   useEffect(() => {
     onCommandEditorFocusRef.current = onCommandEditorFocus;
@@ -2175,6 +2230,32 @@ export function PromptBoxInternal({
       },
     ];
   }, [activeCommandQuery, fastMode]);
+  const modelShortcutSuggestions = useMemo<
+    ModelShortcutCommandSuggestion[]
+  >(() => {
+    const query = activeCommandQuery.trim().toLowerCase();
+    return (modelShortcuts ?? [])
+      .filter(({ name, description }) =>
+        `${name} ${description}`.toLowerCase().includes(query),
+      )
+      .map(({ name, description }) => ({
+        kind: "model-shortcut",
+        name,
+        description,
+      }));
+  }, [activeCommandQuery, modelShortcuts]);
+  const locationSuggestions = useMemo<LocationCommandSuggestion[]>(() => {
+    const query = activeCommandQuery.trim().toLowerCase();
+    return (locationCommands ?? [])
+      .filter(({ name, description }) =>
+        `${name} ${description}`.toLowerCase().includes(query),
+      )
+      .map(({ name, description }) => ({
+        kind: "location",
+        name,
+        description,
+      }));
+  }, [activeCommandQuery, locationCommands]);
   const reasoningSuggestions = useMemo<ReasoningCommandSuggestion[]>(() => {
     const query = activeCommandQuery.trim().toLowerCase();
     return (reasoning?.options ?? [])
@@ -2189,7 +2270,9 @@ export function PromptBoxInternal({
   }, [activeCommandQuery, reasoning?.options]);
   const orderedCommandSuggestions = useMemo(
     () => [
+      ...locationSuggestions,
       ...fastModeSuggestions,
+      ...modelShortcutSuggestions,
       ...reasoningSuggestions,
       ...orderCommandSuggestions(commandSuggestions, activeCommandQuery),
     ],
@@ -2197,6 +2280,8 @@ export function PromptBoxInternal({
       activeCommandQuery,
       commandSuggestions,
       fastModeSuggestions,
+      locationSuggestions,
+      modelShortcutSuggestions,
       reasoningSuggestions,
     ],
   );
@@ -2230,7 +2315,10 @@ export function PromptBoxInternal({
           : { kind: "results", results: mentionResults };
 
   const commandMenuState: ComposerCommandMenuState =
-    fastModeSuggestions.length > 0 || reasoningSuggestions.length > 0
+    locationSuggestions.length > 0 ||
+    fastModeSuggestions.length > 0 ||
+    modelShortcutSuggestions.length > 0 ||
+    reasoningSuggestions.length > 0
       ? { kind: "results", suggestions: orderedCommandSuggestions }
       : commandLoading
         ? { kind: "loading" }
@@ -2442,14 +2530,12 @@ export function PromptBoxInternal({
     [activeTrigger, insertPromptMentionPill, onCommandQueryChange],
   );
 
-  const applyReasoningSuggestion = useCallback(
-    (item: ReasoningCommandSuggestion) => {
+  // Local commands (location, fast, models, reasoning) change settings
+  // instead of inserting text, so they only remove the typed trigger.
+  const runLocalCommand = useCallback(
+    (action: () => void) => {
       const currentEditor = editorRef.current;
-      if (
-        !currentEditor?.isEditable ||
-        activeTrigger?.kind !== "command" ||
-        !reasoning?.options.some((option) => option.value === item.name)
-      )
+      if (!currentEditor?.isEditable || activeTrigger?.kind !== "command")
         return;
 
       currentEditor
@@ -2457,42 +2543,34 @@ export function PromptBoxInternal({
         .focus()
         .deleteRange({ from: activeTrigger.from, to: activeTrigger.to })
         .run();
-      reasoning.onChange(item.name);
+      action();
       scheduleRevealEditorSelection();
     },
-    [activeTrigger, reasoning, scheduleRevealEditorSelection],
-  );
-
-  const applyFastModeSuggestion = useCallback(
-    (item: FastModeCommandSuggestion) => {
-      const currentEditor = editorRef.current;
-      if (
-        !currentEditor?.isEditable ||
-        activeTrigger?.kind !== "command" ||
-        item.name !== "fast" ||
-        !fastMode
-      )
-        return;
-
-      currentEditor
-        .chain()
-        .focus()
-        .deleteRange({ from: activeTrigger.from, to: activeTrigger.to })
-        .run();
-      fastMode.onToggle();
-      scheduleRevealEditorSelection();
-    },
-    [activeTrigger, fastMode, scheduleRevealEditorSelection],
+    [activeTrigger, scheduleRevealEditorSelection],
   );
 
   const applyTrigger = useCallback(
     (item: TypeaheadSuggestion) => {
+      if (item.kind === "location") {
+        const command = locationCommands?.find(
+          ({ name }) => name === item.name,
+        );
+        if (command) runLocalCommand(command.onSelect);
+        return;
+      }
       if (item.kind === "fast-mode") {
-        applyFastModeSuggestion(item);
+        if (fastMode) runLocalCommand(fastMode.onToggle);
+        return;
+      }
+      if (item.kind === "model-shortcut") {
+        const shortcut = modelShortcuts?.find(({ name }) => name === item.name);
+        if (shortcut) runLocalCommand(shortcut.onSelect);
         return;
       }
       if (item.kind === "reasoning") {
-        applyReasoningSuggestion(item);
+        if (reasoning?.options.some(({ value }) => value === item.name)) {
+          runLocalCommand(() => reasoning.onChange(item.name));
+        }
         return;
       }
       if (item.kind === "command") {
@@ -2503,9 +2581,12 @@ export function PromptBoxInternal({
     },
     [
       applyCommandSuggestion,
-      applyFastModeSuggestion,
       applyMentionSuggestion,
-      applyReasoningSuggestion,
+      fastMode,
+      locationCommands,
+      modelShortcuts,
+      reasoning,
+      runLocalCommand,
     ],
   );
 

@@ -283,8 +283,8 @@ export function BrowserSettingsSectionContent({
       </SettingsSection>
       {supported ? (
         <p className="mt-4 text-xs text-subtle-foreground/75">
-          Also from the CLI: <code>cloudroom browser import-sources</code> and{" "}
-          <code>cloudroom browser import-cookies</code>.
+          Also from the CLI: <code>room-cli browser import-sources</code> and{" "}
+          <code>room-cli browser import-cookies</code>.
         </p>
       ) : null}
       {dialogSource && desktopBrowser ? (

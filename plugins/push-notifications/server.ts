@@ -44,7 +44,7 @@ function parseAddArguments(
     return {
       ok: false,
       message:
-        "Usage: cloudroom push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>",
+        "Usage: room-cli push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>",
     };
   }
   const values = new Map<string, string>();
@@ -60,7 +60,7 @@ function parseAddArguments(
       return {
         ok: false,
         message:
-          "Usage: cloudroom push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>",
+          "Usage: room-cli push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>",
       };
     }
     values.set(key, value);
@@ -227,28 +227,28 @@ export function createPushNotificationsPlugin(
           name: "test",
           summary:
             "Send a test to connected web or desktop clients with permission",
-          usage: "cloudroom push-notifications test <web|desktop>",
+          usage: "room-cli push-notifications test <web|desktop>",
         },
         {
           name: "list",
           summary: "List registered push devices",
-          usage: "cloudroom push-notifications list [--json]",
+          usage: "room-cli push-notifications list [--json]",
         },
         {
           name: "add",
           summary: "Register or refresh an Expo push device",
           usage:
-            "cloudroom push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>",
+            "room-cli push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>",
         },
         {
           name: "remove",
           summary: "Remove a registered push device",
-          usage: "cloudroom push-notifications remove <id>",
+          usage: "room-cli push-notifications remove <id>",
         },
         {
           name: "status",
           summary: "Show push delivery status",
-          usage: "cloudroom push-notifications status [--json]",
+          usage: "room-cli push-notifications status [--json]",
         },
       ],
       async run(argv) {
@@ -316,7 +316,7 @@ export function createPushNotificationsPlugin(
         return {
           exitCode: 1,
           stderr:
-            "Usage: cloudroom push-notifications <list|add|remove|status|test> [options]",
+            "Usage: room-cli push-notifications <list|add|remove|status|test> [options]",
         };
       },
     });

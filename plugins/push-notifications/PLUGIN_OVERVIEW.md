@@ -17,11 +17,11 @@ Channel switches apply to this server and save immediately. Browser permission i
 
 ## CLI and SDK
 
-- `cloudroom push-notifications list [--json]`: registered mobile devices, with redacted tokens.
-- `cloudroom push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>`: register or refresh a mobile device.
-- `cloudroom push-notifications remove <id>`: remove a mobile device.
-- `cloudroom push-notifications status [--json]`: channel switches, mobile relay, subscription count, and last mobile send result.
-- `cloudroom push-notifications test <web|desktop>`: broadcast a test to connected clients of that type. Fails if the channel is disabled.
-- `cloudroom plugin config push-notifications set <mobileEnabled|webEnabled|desktopEnabled> <true|false>`: change a channel.
+- `room-cli push-notifications list [--json]`: registered mobile devices, with redacted tokens.
+- `room-cli push-notifications add --token <expo-push-token> --platform <ios|android> --label <device-label>`: register or refresh a mobile device.
+- `room-cli push-notifications remove <id>`: remove a mobile device.
+- `room-cli push-notifications status [--json]`: channel switches, mobile relay, subscription count, and last mobile send result.
+- `room-cli push-notifications test <web|desktop>`: broadcast a test to connected clients of that type. Fails if the channel is disabled.
+- `room-cli plugin config push-notifications set <mobileEnabled|webEnabled|desktopEnabled> <true|false>`: change a channel.
 
 Agents can use the SDK’s plugin settings API for the same switches and `sdk.plugins.callRpc({ pluginId: "push-notifications", method: "notifications.test", input: { channel: "web" }, outputSchema: z.object({ ok: z.literal(true) }) })` to send a test. RPC input is validated by `pushNotificationsRpcContract`. Permission requests still require a click in the target client.

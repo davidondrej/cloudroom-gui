@@ -25,6 +25,7 @@ import {
 } from "../threads/thread-events.js";
 import { stopThreadForCurrentState } from "../threads/thread-lifecycle.js";
 import { resolveThreadRuntimeCommandConfig } from "../threads/thread-runtime-config.js";
+import { cloudroomSystemPrompt } from "../threads/custom-instructions.js";
 import { cloudroom, promptPayload } from "./commands.js";
 import { copyProject, planProjectCopy } from "./project-copy.js";
 import {
@@ -168,6 +169,12 @@ class Teleport {
           "teleport_in_progress",
           "This child belongs to its parent's Teleport transfer.",
         );
+      if (existing.phase === "checking")
+        throw new ApiError(
+          409,
+          "teleport_in_progress",
+          "Teleport is already starting.",
+        );
       if (existing.phase === "complete") return existing;
       if (existing.phase === "error") {
         const saved = this.load(existing.id);
@@ -194,7 +201,6 @@ class Teleport {
         "teleport_cancelling",
         "Cancellation is finishing. Retry Teleport once it settles.",
       );
-    await cloudroom(this.deps).teleportClient(threadId);
     const thread = getThread(this.deps.db, threadId);
     const environment = thread?.environmentId
       ? getEnvironment(this.deps.db, thread.environmentId)
@@ -272,7 +278,29 @@ class Teleport {
         "teleport_queue_model",
         "A queued message selects a different model. Align the queued models first; Cloud keeps one model per thread.",
       );
-    await this.preflight(thread.id, thread.providerId, execution);
+    if (binding(this.deps.db, threadId))
+      throw new ApiError(
+        409,
+        "teleport_in_progress",
+        "This thread already has cloud ownership metadata.",
+      );
+    const id = randomUUID();
+    saveTeleportProgress(this.deps.db, threadId, {
+      id,
+      owner: threadId,
+      phase: "checking",
+      completed: 0,
+      total: 0,
+    });
+    this.notify(threadId);
+    try {
+      await this.preflight(thread.id, thread.providerId, execution);
+    } catch (error) {
+      this.dropChecking(threadId, id);
+      throw error;
+    }
+    const checked = teleportProgress(this.deps.db, threadId)!;
+    if (checked.id !== id || checked.phase !== "checking") return checked;
     const queued = queuedRows.map((row) => {
       const content = JSON.parse(row.content) as {
         type: string;
@@ -329,7 +357,7 @@ class Teleport {
       }
     }
     const state: State = {
-      id: randomUUID(),
+      id,
       threadId,
       hostId: environment.hostId,
       environmentId: environment.id,
@@ -342,21 +370,6 @@ class Teleport {
       ...(execution.model !== last.model ? { sourceModel: last.model } : {}),
     };
     this.deps.db.transaction((tx) => {
-      if (
-        teleportProgress(tx, threadId)?.phase &&
-        teleportProgress(tx, threadId)?.phase !== "cancelled"
-      )
-        throw new ApiError(
-          409,
-          "teleport_in_progress",
-          "Teleport is already in progress.",
-        );
-      if (binding(tx, threadId))
-        throw new ApiError(
-          409,
-          "teleport_in_progress",
-          "This thread already has cloud ownership metadata.",
-        );
       tx.insert(cloudroomThreads)
         .values({
           threadId,
@@ -397,6 +410,8 @@ class Teleport {
         "teleport_unavailable",
         "No parent transfer to cancel.",
       );
+    if (progress.phase === "checking")
+      return this.dropChecking(threadId, progress.id);
     if (progress.cloudStarted || progress.phase === "complete")
       throw new ApiError(
         409,
@@ -425,6 +440,8 @@ class Teleport {
       ["complete", "cancelled"].includes(progress.phase)
     )
       return;
+    if (progress.phase === "checking")
+      return this.dropChecking(threadId, progress.id);
     try {
       const state = { ...this.load(progress.id), cancelRequested: true };
       this.save(state);
@@ -474,7 +491,17 @@ class Teleport {
   }
   recover(): void {
     for (const { threadId, progress } of pendingTeleports(this.deps.db))
-      this.launch(threadId, progress.id);
+      if (progress.phase === "checking") this.dropChecking(threadId, progress.id);
+      else this.launch(threadId, progress.id);
+  }
+  private dropChecking(threadId: string, id: string): void {
+    const progress = teleportProgress(this.deps.db, threadId);
+    if (progress?.id !== id || progress.phase !== "checking") return;
+    saveTeleportProgress(this.deps.db, threadId, {
+      ...progress,
+      phase: "cancelled",
+    });
+    this.notify(threadId);
   }
   private launch(threadId: string, id: string) {
     if (this.active.has(threadId)) return;
@@ -767,6 +794,9 @@ class Teleport {
           service_tier: state.serviceTier,
           command_guard_enabled: getAppSettings(this.deps.db)
             .commandGuardEnabled,
+          ...(capability.system_prompt === true
+            ? { system_prompt: cloudroomSystemPrompt(this.deps.db) }
+            : {}),
           workspace: `bb_${thread.projectId}`,
           workspace_name:
             project.name

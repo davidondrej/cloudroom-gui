@@ -588,7 +588,7 @@ describe("delegation seed prompt", () => {
       ## Attachments
 
       - delegation-notes.md · 01J00000000000000000000006
-        Fetch with: cloudroom tasks attachment get 01J00000000000000000000006 --out <path>
+        Fetch with: room-cli tasks attachment get 01J00000000000000000000006 --out <path>
 
       ## Recent comments
 
@@ -602,7 +602,7 @@ describe("delegation seed prompt", () => {
 
       ## Report-back contract
 
-      You are working on task TASK-1. Use the cloudroom tasks CLI: comment substantive updates (cloudroom tasks comment TASK-1 --body ...), attach result artifacts, set status when done (cloudroom tasks update TASK-1 --status in_review) or explain blockage in a comment. Your thread is already attached to the task.
+      You are working on task TASK-1. Use the room-cli tasks CLI: comment substantive updates (room-cli tasks comment TASK-1 --body ...), attach result artifacts, set status when done (room-cli tasks update TASK-1 --status in_review) or explain blockage in a comment. Your thread is already attached to the task.
 
       ## Preset instructions
 

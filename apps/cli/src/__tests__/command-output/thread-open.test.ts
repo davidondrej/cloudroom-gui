@@ -46,7 +46,7 @@ function stubThreadOpenApi(args: {
   return { getEnvironment, getThread, openThread };
 }
 
-describe("cloudroom thread open command output", () => {
+describe("room-cli thread open command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>

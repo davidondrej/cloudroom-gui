@@ -5,8 +5,8 @@ every window and client sees the same value.
 
 ## Setting values
 
-- `cloudroom settings general <key> <value>` accepts any key listed under
-  `generalSettings` in `cloudroom settings show`. Boolean preferences take `true`,
+- `room-cli settings general <key> <value>` accepts any key listed under
+  `generalSettings` in `room-cli settings show`. Boolean preferences take `true`,
   `false`, `on`, or `off`; `null` clears a preference that can be unset.
 - Unknown keys and values of the wrong shape are rejected; the error names the
   keys cloudroom knows.
@@ -20,18 +20,18 @@ every window and client sees the same value.
   `sidebar.threadListProvider`).
 - `sidebar.organizationMode` defaults to By project (`project`) when unset;
   existing server and legacy browser choices are preserved.
-- `cloudroom settings ui list [--json]` prints every key with its value, revision,
-  and description; `cloudroom settings ui get <key> [--json]` prints one.
-- `cloudroom settings ui set <key> <value> [--json]` takes a plain string for enum
+- `room-cli settings ui list [--json]` prints every key with its value, revision,
+  and description; `room-cli settings ui get <key> [--json]` prints one.
+- `room-cli settings ui set <key> <value> [--json]` takes a plain string for enum
   and provider keys and JSON for lists or `null`; it reads the current
   revision, writes with it, and retries once on a conflict.
-- `cloudroom settings ui reset <key> [--json]` writes the default and advances the
+- `room-cli settings ui reset <key> [--json]` writes the default and advances the
   revision.
 
 ## Keyboard shortcuts
 
 - `showKeyboardHints` defaults to true. Set it with
-  `cloudroom settings keyboard hints <true|false|on|off>` to control whether
+  `room-cli settings keyboard hints <true|false|on|off>` to control whether
   delayed shortcut badges appear while holding Command or Control. It does not
   disable the shortcuts themselves.
 - Settings → Keyboard records sparse per-command chord overrides. `Mod` means
@@ -49,14 +49,14 @@ every window and client sees the same value.
 ## Command Guard
 
 Settings → Advanced → Command Guard is on by default. Set `commandGuardEnabled` with
-`cloudroom settings general commandGuardEnabled <true|false|on|off>`.
+`room-cli settings general commandGuardEnabled <true|false|on|off>`.
 Start a new Local or Cloud session afterward. Personal guards remain active.
 This blocks common catastrophic shell commands; it is not a sandbox.
 
 ## Diagnostic events
 
 - `showDiagnosticEvents` defaults to false in all builds. Set it with
-  `cloudroom settings general showDiagnosticEvents <true|false|on|off>`.
+  `room-cli settings general showDiagnosticEvents <true|false|on|off>`.
 - Enables provider environment resolution and unhandled provider events in the
   timeline. Warnings, errors, and model fallback stay visible regardless.
 - Existing unhandled-provider-events preferences carry over to this setting.
@@ -65,7 +65,7 @@ This blocks common catastrophic shell commands; it is not a sandbox.
 
 - `steerActiveThreadOnEnter` defaults to false (Queue). Existing saved
   preferences are preserved. Set it with
-  `cloudroom settings general steerActiveThreadOnEnter <true|false|on|off>`.
+  `room-cli settings general steerActiveThreadOnEnter <true|false|on|off>`.
 - Outside an open composer typeahead menu, disabling it makes Enter queue a
   follow-up and Command+Enter steer the active turn. When enabled, those
   actions are reversed.
@@ -76,9 +76,9 @@ This blocks common catastrophic shell commands; it is not a sandbox.
 ## Streamer mode
 
 - `streamerMode` defaults to false. Set it with
-  `cloudroom settings general streamerMode <true|false|on|off>`.
+  `room-cli settings general streamerMode <true|false|on|off>`.
 - When enabled, every `customModels` entry from `~/.bb/config.json` is hidden
-  in all model lists: the pickers, `cloudroom provider models`, and
+  in all model lists: the pickers, `room-cli provider models`, and
   `sdk.providers.models`. Use it during a screen share so a private or
   early-access model id does not appear.
 - The entries stay in `config.json`. A thread request that names a hidden model
@@ -91,7 +91,7 @@ This blocks common catastrophic shell commands; it is not a sandbox.
 ## New branch prefix
 
 - `managedBranchPrefix` defaults to `bb/`. Set it with
-  `cloudroom settings general managedBranchPrefix <prefix>`.
+  `room-cli settings general managedBranchPrefix <prefix>`.
 - cloudroom puts the prefix in front of every branch name it creates for a managed
   worktree or a new checkout branch, so the default gives
   `bb/fix-login-flow-thr_ab12cd34ef`.
@@ -115,21 +115,21 @@ This blocks common catastrophic shell commands; it is not a sandbox.
   and leave the final answer visible (`collapse`), or keep every step visible
   (`flat`). Each provider declares a default: Claude Code is `flat`; every
   other first-party provider is `collapse`.
-- `cloudroom settings completed-turns [--json]` lists every provider with its current
+- `room-cli settings completed-turns [--json]` lists every provider with its current
   display and whether it comes from your setting or the provider default.
-- `cloudroom settings completed-turns <provider-id> <collapse|flat|default>` sets the
+- `room-cli settings completed-turns <provider-id> <collapse|flat|default>` sets the
   display for one provider; `default` removes your setting so the provider
   default applies again. Settings → Providers has the same switch per
   provider.
 - The overrides are stored in `providerCompletedTurnDisplay`, a map of provider
   ID to `collapse` or `flat`. The setting applies to every thread of that
   provider, including finished turns in existing threads, the conversation
-  outline, and `cloudroom thread log`.
+  outline, and `room-cli thread log`.
 
 ## Message edits
 
 - Eligible accepted root user messages can be edited without enabling an
-  experiment. Use `cloudroom thread edit-message` or the message editor in the app.
+  experiment. Use `room-cli thread edit-message` or the message editor in the app.
 
 ## Provider session release
 
@@ -140,19 +140,19 @@ This blocks common catastrophic shell commands; it is not a sandbox.
 
 - The `mobileApp` experiment defaults to false while the cloudroom mobile app is in
   early access.
-- Enable it with `cloudroom settings experiment mobileApp true`. It shows the
+- Enable it with `room-cli settings experiment mobileApp true`. It shows the
   **Add mobile device** card under Settings → Remote access.
 
 ## Changelog preview
 
 - The `changelogPreview` experiment defaults to false.
-- Enable it with `cloudroom settings experiment changelogPreview true` to show the
+- Enable it with `room-cli settings experiment changelogPreview true` to show the
   latest release notes on Settings → Updates.
 
 ## Sidebar progressive disclosure
 
 - The `sidebarProgressiveDisclosure` experiment defaults to false.
-- Enable it with `cloudroom settings experiment sidebarProgressiveDisclosure true`.
+- Enable it with `room-cli settings experiment sidebarProgressiveDisclosure true`.
 - In **By project** and **By machine**, it shows the first five groups in the
   current sort order, keeps attention groups visible, and reveals ten more per
   **Show more** click. Revealed groups stay visible through activity and
@@ -161,31 +161,31 @@ This blocks common catastrophic shell commands; it is not a sandbox.
 ## Timeline windowing
 
 - The `timelineWindowing` experiment defaults to false.
-- Enable it with `cloudroom settings experiment timelineWindowing true`.
+- Enable it with `room-cli settings experiment timelineWindowing true`.
 - It keeps stable timeline wrappers while mounting only rows near the active
   main or nested detail scrollport.
 
 ## Multi-machine picker
 
 - The `multiMachinePicker` experiment defaults to false.
-- Enable it with `cloudroom settings experiment multiMachinePicker true`.
+- Enable it with `room-cli settings experiment multiMachinePicker true`.
 - Projects with at least three machines use a searchable, target-first
   environment picker. Machine-only pickers add search when they contain more
   than five machines.
 
-Machine access: `cloudroom settings general machineServerUrl https://bb.example.com`
+Machine access: `room-cli settings general machineServerUrl https://bb.example.com`
 sets the server URL reachable by machines. Set `null` to use BB_EXTERNAL_URL.
-`cloudroom settings general defaultMachineAccess direct` selects direct access;
+`room-cli settings general defaultMachineAccess direct` selects direct access;
 `connect` selects bb Cloud; `null` selects the first registered access provider,
 or direct when none is registered. An unpaired provider remains selected and
-reports setup required. `cloudroom settings show --json` includes serverAccess with the
+reports setup required. `room-cli settings show --json` includes serverAccess with the
 effective direct URL, its source and provider availability. Availability is refreshed
 on each read, with failed or timed-out checks reported as unavailable. It does
 not acquire a machine grant. These grants carry runtime
 requests, including account-pool traffic, after enrolment.
 
 Automatic machine GitHub credentials are enabled by default. Use
-`cloudroom settings general machineGitCredentialsEnabled false` to stop forwarding the
+`room-cli settings general machineGitCredentialsEnabled false` to stop forwarding the
 server gh credentials to machines; `true` enables them again. In Machines →
 Advanced settings, the automatic GH_TOKEN switch controls the same setting.
 This does not log the server out or suppress an explicit custom GH_TOKEN.
@@ -196,9 +196,9 @@ Both are string lists shared across clients. Keys are `builtin:settings`,
 `builtin:report-bug`, or `plugin:<encoded pluginId>/<encoded registrationId>`.
 Right-click Hide moves an action into More; Settings → Appearance → Sidebar footer
 restores visibility and drag-reorders actions. CLI example:
-`cloudroom settings ui set sidebar.hiddenFooterItems '["plugin:provider-usage/usage"]'`.
-Use `cloudroom settings ui reset sidebar.hiddenFooterItems` to show everything again.
+`room-cli settings ui set sidebar.hiddenFooterItems '["plugin:provider-usage/usage"]'`.
+Use `room-cli settings ui reset sidebar.hiddenFooterItems` to show everything again.
 
-Disable anonymous usage telemetry with `cloudroom settings general telemetryEnabled false`
+Disable anonymous usage telemetry with `room-cli settings general telemetryEnabled false`
 or Settings → General → Privacy & diagnostics → Share anonymous usage data. This server-wide preference
 applies immediately and persists across restarts. `BB_TELEMETRY=false` overrides it.

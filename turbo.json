@@ -528,7 +528,7 @@
       ],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/plugins/bb-guide/skills/cloudroom/**",
+        "$TURBO_ROOT$/plugins/bb-guide/skills/room-cli/**",
         "$TURBO_ROOT$/vitest.shared.ts"
       ]
     },

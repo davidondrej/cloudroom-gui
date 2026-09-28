@@ -239,7 +239,7 @@ export function registerSkillCommands(
     .requiredOption("--file <path>", "Local SKILL.md to upload")
     .requiredOption(
       "--revision <sha256>",
-      "Revision returned by cloudroom skill show --json",
+      "Revision returned by room-cli skill show --json",
     )
     .action(
       action(async (skillId: string, options: SkillUpdateOptions) => {

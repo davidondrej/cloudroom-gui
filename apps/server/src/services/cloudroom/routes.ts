@@ -76,8 +76,8 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   app.post("/api/v1/cloudroom/vm/run", async (context) => {
     const problem = browserRequestProblem(context, deps, { requireJsonForMutation: true });
     if (problem) return context.json({ message: "Use the local Cloudroom app or CLI." }, problem.status);
-    const input = z.object({ command: z.string().min(1).max(65536), stdin: z.string().max(32 * 1024 * 1024).regex(/^(?:[0-9a-f]{2})*$/).optional(), cwd: z.string().min(1).max(4096).optional() }).strict().parse(await context.req.json());
-    return context.json(await cloudroom(deps).runOnVm(input, context.req.raw.signal));
+    const { threadId, ...input } = z.object({ command: z.string().min(1).max(65536), stdin: z.string().max(32 * 1024 * 1024).regex(/^(?:[0-9a-f]{2})*$/).optional(), cwd: z.string().min(1).max(4096).optional(), threadId: z.string().min(1).max(200).optional() }).strict().parse(await context.req.json());
+    return context.json(await cloudroom(deps).runOnVm(input, threadId, context.req.raw.signal));
   });
   app.get("/api/v1/cloudroom/account/claude", async context => context.json(await cloudroom(deps).claudeAuth()));
   app.post("/api/v1/cloudroom/account/claude/setup-token", async context => {

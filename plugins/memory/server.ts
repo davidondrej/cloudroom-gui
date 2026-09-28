@@ -760,8 +760,8 @@ function renderCatalog(store: MemoryStore, projectId: string): string {
   const { memories, total } = store.list("all", projectId, MAX_RESULT_LIMIT);
   const header = [
     "Memory index",
-    "The entries below are summaries, not full records. Use `cloudroom memory search <query> --scope all --json` and `cloudroom memory get <id> --json` to progressively disclose details.",
-    "You may proactively save durable learning with `cloudroom memory add`. Use project scope for repository-specific facts and global scope only for broadly applicable user preferences or workflows. Never store secrets, transient status, guesses, or rules already guaranteed by AGENTS.md.",
+    "The entries below are summaries, not full records. Use `room-cli memory search <query> --scope all --json` and `room-cli memory get <id> --json` to progressively disclose details.",
+    "You may proactively save durable learning with `room-cli memory add`. Use project scope for repository-specific facts and global scope only for broadly applicable user preferences or workflows. Never store secrets, transient status, guesses, or rules already guaranteed by AGENTS.md.",
     "",
   ].join("\n");
   if (memories.length === 0) return `${header}No memories are stored yet.`;
@@ -782,7 +782,7 @@ function renderCatalog(store: MemoryStore, projectId: string): string {
     const finalShown = finalLines.length;
     footer =
       finalShown < total
-        ? `\nShowing ${finalShown} of ${total}; run \`cloudroom memory catalog --scope all --json\` for the rest.`
+        ? `\nShowing ${finalShown} of ${total}; run \`room-cli memory catalog --scope all --json\` for the rest.`
         : "";
     if (
       `${header}${finalLines.join("\n")}${footer}`.length <= CATALOG_MAX_CHARS
@@ -796,13 +796,13 @@ function renderCatalog(store: MemoryStore, projectId: string): string {
 
 const USAGE = [
   "Usage:",
-  "  cloudroom memory catalog [--scope all|project|global] [--limit N] [--json]",
-  "  cloudroom memory search <query...> [--scope all|project|global] [--limit N] [--json]",
-  "  cloudroom memory get <id-or-name> [--scope all|project|global] [--json]",
-  "  cloudroom memory add --scope project|global --name NAME --summary TEXT --details TEXT --reason TEXT [--kind KIND] [--tag TAG]... [--importance 0-100] [--pinned] [--json]",
-  "  cloudroom memory update <id> --expected-version N --reason TEXT [--summary TEXT] [--details TEXT] [--kind KIND] [--tag TAG]... [--importance 0-100] [--pinned true|false] [--json]",
-  "  cloudroom memory forget <id> --expected-version N --reason TEXT [--json]",
-  "  cloudroom memory history <id> [--limit N] [--json]",
+  "  room-cli memory catalog [--scope all|project|global] [--limit N] [--json]",
+  "  room-cli memory search <query...> [--scope all|project|global] [--limit N] [--json]",
+  "  room-cli memory get <id-or-name> [--scope all|project|global] [--json]",
+  "  room-cli memory add --scope project|global --name NAME --summary TEXT --details TEXT --reason TEXT [--kind KIND] [--tag TAG]... [--importance 0-100] [--pinned] [--json]",
+  "  room-cli memory update <id> --expected-version N --reason TEXT [--summary TEXT] [--details TEXT] [--kind KIND] [--tag TAG]... [--importance 0-100] [--pinned true|false] [--json]",
+  "  room-cli memory forget <id> --expected-version N --reason TEXT [--json]",
+  "  room-cli memory history <id> [--limit N] [--json]",
 ].join("\n");
 
 function jsonOutput(value: unknown): string {
@@ -922,41 +922,41 @@ export default async function plugin(bb: BbPluginApi) {
         name: "catalog",
         summary: "List compact memory summaries",
         usage:
-          "cloudroom memory catalog [--scope all|project|global] [--limit N] [--json]",
+          "room-cli memory catalog [--scope all|project|global] [--limit N] [--json]",
       },
       {
         name: "search",
         summary: "Search memory summaries and details",
         usage:
-          "cloudroom memory search <query...> [--scope all|project|global] [--limit N] [--json]",
+          "room-cli memory search <query...> [--scope all|project|global] [--limit N] [--json]",
       },
       {
         name: "get",
         summary: "Read one complete memory",
         usage:
-          "cloudroom memory get <id-or-name> [--scope all|project|global] [--json]",
+          "room-cli memory get <id-or-name> [--scope all|project|global] [--json]",
       },
       {
         name: "add",
         summary: "Save a project or global memory",
         usage:
-          "cloudroom memory add --scope project|global --name NAME --summary TEXT --details TEXT --reason TEXT [options]",
+          "room-cli memory add --scope project|global --name NAME --summary TEXT --details TEXT --reason TEXT [options]",
       },
       {
         name: "update",
         summary: "Update a memory with version checking",
         usage:
-          "cloudroom memory update <id> --expected-version N --reason TEXT [options]",
+          "room-cli memory update <id> --expected-version N --reason TEXT [options]",
       },
       {
         name: "forget",
         summary: "Soft-delete a memory with version checking",
-        usage: "cloudroom memory forget <id> --expected-version N --reason TEXT",
+        usage: "room-cli memory forget <id> --expected-version N --reason TEXT",
       },
       {
         name: "history",
         summary: "Show a memory's version history",
-        usage: "cloudroom memory history <id> [--limit N] [--json]",
+        usage: "room-cli memory history <id> [--limit N] [--json]",
       },
     ],
     async run(argv, ctx) {

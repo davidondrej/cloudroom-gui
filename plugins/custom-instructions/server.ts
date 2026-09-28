@@ -48,17 +48,17 @@ export default async function plugin(bb: BbPluginApi) {
       {
         name: "get",
         summary: "Print the current custom instructions",
-        usage: "cloudroom instructions get [--json]",
+        usage: "room-cli instructions get [--json]",
       },
       {
         name: "set",
         summary: "Replace the custom instructions",
-        usage: "cloudroom instructions set <text...> [--json]",
+        usage: "room-cli instructions set <text...> [--json]",
       },
       {
         name: "clear",
         summary: "Clear the custom instructions",
-        usage: "cloudroom instructions clear [--json]",
+        usage: "room-cli instructions clear [--json]",
       },
     ],
     async run(argv) {
@@ -103,7 +103,7 @@ export default async function plugin(bb: BbPluginApi) {
       }
       return {
         exitCode: 1,
-        stderr: "Usage: cloudroom instructions get|set <text...>|clear [--json]",
+        stderr: "Usage: room-cli instructions get|set <text...>|clear [--json]",
       };
     },
   });

@@ -16,13 +16,13 @@ interface RetryRequest {
   json: { turnRequestId: string | null; sendAt: number | null; reason: string };
 }
 
-describe("cloudroom thread action command output", () => {
+describe("room-cli thread action command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
     registerThreadCommands(program, () => "http://server");
 
-  it("cloudroom thread archive sends the thread id from args", async () => {
+  it("room-cli thread archive sends the thread id from args", async () => {
     const archivePost = vi.fn(async () => ({
       ok: true,
       archivedThreadIds: ["thread-archive-1"],
@@ -39,7 +39,7 @@ describe("cloudroom thread action command output", () => {
     );
   });
 
-  it("cloudroom thread archive reports related threads when cascading", async () => {
+  it("room-cli thread archive reports related threads when cascading", async () => {
     const archivePost = vi.fn(async () => ({
       ok: true,
       archivedThreadIds: ["thread-child-1", "thread-archive-1"],
@@ -56,7 +56,7 @@ describe("cloudroom thread action command output", () => {
     );
   });
 
-  it("cloudroom thread archive --self resolves from ROOM_THREAD_ID", async () => {
+  it("room-cli thread archive --self resolves from ROOM_THREAD_ID", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-archive-2");
     const archivePost = vi.fn(async () => ({
       ok: true,
@@ -71,7 +71,7 @@ describe("cloudroom thread action command output", () => {
     });
   });
 
-  it("cloudroom thread archive prefixes failures with thread context", async () => {
+  it("room-cli thread archive prefixes failures with thread context", async () => {
     const archivePost = vi.fn(async () => {
       throw new Error("HTTP 404: missing");
     });
@@ -89,7 +89,7 @@ describe("cloudroom thread action command output", () => {
     });
   });
 
-  it("cloudroom thread unarchive --self resolves from ROOM_THREAD_ID", async () => {
+  it("room-cli thread unarchive --self resolves from ROOM_THREAD_ID", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-unarchive-1");
     const unarchivePost = vi.fn(async () => ({ ok: true }));
     stubServerApi({ "v1.threads.:id.unarchive.$post": unarchivePost });
@@ -104,7 +104,7 @@ describe("cloudroom thread action command output", () => {
     );
   });
 
-  it("cloudroom thread edit-message targets the latest editable message by default", async () => {
+  it("room-cli thread edit-message targets the latest editable message by default", async () => {
     const submitEdit = vi.fn(async () => ({
       ok: true,
       operationId: "edit-op-server",
@@ -131,7 +131,7 @@ describe("cloudroom thread action command output", () => {
     );
   });
 
-  it("cloudroom thread edit-message preserves an agent caller when targeting another thread", async () => {
+  it("room-cli thread edit-message preserves an agent caller when targeting another thread", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-agent-caller");
     const submitEdit = vi.fn(async () => ({
       ok: true,
@@ -163,7 +163,7 @@ describe("cloudroom thread action command output", () => {
     });
   });
 
-  it("cloudroom thread edit-message accepts an explicit stale-edit guard", async () => {
+  it("room-cli thread edit-message accepts an explicit stale-edit guard", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-edit-self");
     const submitEdit = vi.fn(async () => ({
       ok: true,
@@ -201,7 +201,7 @@ describe("cloudroom thread action command output", () => {
     });
   });
 
-  it("cloudroom thread edit-message rejects a partially numeric request sequence", async () => {
+  it("room-cli thread edit-message rejects a partially numeric request sequence", async () => {
     const submitEdit = vi.fn();
     stubServerApi({ "v1.threads.:id.edit-message.$post": submitEdit });
 
@@ -226,7 +226,7 @@ describe("cloudroom thread action command output", () => {
     );
   });
 
-  it("cloudroom thread pin sends the thread id from args", async () => {
+  it("room-cli thread pin sends the thread id from args", async () => {
     const pinnedThread = fixtures.makeThread({
       id: "thread-pin-1",
       projectId: "proj-1",
@@ -246,7 +246,7 @@ describe("cloudroom thread action command output", () => {
     );
   });
 
-  it("cloudroom thread unpin --self resolves from ROOM_THREAD_ID", async () => {
+  it("room-cli thread unpin --self resolves from ROOM_THREAD_ID", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-unpin-1");
     const unpinnedThread = fixtures.makeThread({
       id: "thread-unpin-1",
@@ -267,7 +267,7 @@ describe("cloudroom thread action command output", () => {
     );
   });
 
-  it("cloudroom thread delete prompts before deleting", async () => {
+  it("room-cli thread delete prompts before deleting", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-delete-1",
       projectId: "proj-1",
@@ -300,7 +300,7 @@ describe("cloudroom thread action command output", () => {
     );
   });
 
-  it("cloudroom thread delete cancels when confirmation is declined", async () => {
+  it("room-cli thread delete cancels when confirmation is declined", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-delete-2",
       projectId: "proj-1",
@@ -325,7 +325,7 @@ describe("cloudroom thread action command output", () => {
     );
   });
 
-  it("cloudroom thread delete --yes skips confirmation (requires explicit id)", async () => {
+  it("room-cli thread delete --yes skips confirmation (requires explicit id)", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-delete-3",
       projectId: "proj-1",
@@ -353,7 +353,7 @@ describe("cloudroom thread action command output", () => {
     });
   });
 
-  it("cloudroom thread delete forwards explicit child-thread confirmation", async () => {
+  it("room-cli thread delete forwards explicit child-thread confirmation", async () => {
     const thread: domain.Thread = fixtures.makeThread({
       id: "thread-delete-children",
       projectId: "proj-1",
@@ -386,7 +386,7 @@ describe("cloudroom thread action command output", () => {
     });
   });
 
-  it("cloudroom thread stop lets the server no-op when the thread is already idle", async () => {
+  it("room-cli thread stop lets the server no-op when the thread is already idle", async () => {
     const get = vi.fn(async () =>
       fixtures.makeThread({
         id: "thread-stop-idle",
@@ -412,7 +412,7 @@ describe("cloudroom thread action command output", () => {
     expect(stopPost).toHaveBeenCalledTimes(1);
   });
 
-  it("cloudroom thread stop lets the server no-op when the thread is in error", async () => {
+  it("room-cli thread stop lets the server no-op when the thread is in error", async () => {
     const get = vi.fn(async () =>
       fixtures.makeThread({
         id: "thread-stop-error",
@@ -438,7 +438,7 @@ describe("cloudroom thread action command output", () => {
     expect(stopPost).toHaveBeenCalledTimes(1);
   });
 
-  it("cloudroom thread stop still stops active threads", async () => {
+  it("room-cli thread stop still stops active threads", async () => {
     const get = vi.fn(async () =>
       fixtures.makeThread({
         id: "thread-stop-active",
@@ -463,7 +463,7 @@ describe("cloudroom thread action command output", () => {
     expect(stopPost).toHaveBeenCalledTimes(1);
   });
 
-  it("cloudroom thread compact calls the manual compaction endpoint", async () => {
+  it("room-cli thread compact calls the manual compaction endpoint", async () => {
     const post = vi.fn(async () => ({ ok: true }));
     stubServerApi({ "v1.threads.:id.compact.$post": post });
 
@@ -475,7 +475,7 @@ describe("cloudroom thread action command output", () => {
     );
   });
 
-  it("cloudroom thread clear invokes the context clear action", async () => {
+  it("room-cli thread clear invokes the context clear action", async () => {
     const post = vi.fn(async () => ({ ok: true }));
     stubServerApi({ "v1.threads.:id.context.clear.$post": post });
 
@@ -491,7 +491,7 @@ describe("cloudroom thread action command output", () => {
     ["cancel-plan", "plan.cancel", "exited Plan mode"],
     ["clear-goal", "goal.clear", "cleared its Goal"],
   ])(
-    "cloudroom thread %s calls the authoritative banner action",
+    "room-cli thread %s calls the authoritative banner action",
     async (command, route, output) => {
       const post = vi.fn(async () => ({ ok: true }));
       stubServerApi({ [`v1.threads.:id.${route}.$post`]: post });
@@ -504,7 +504,7 @@ describe("cloudroom thread action command output", () => {
       );
     },
   );
-  it("cloudroom thread retry defaults the turn and the reason at the boundary", async () => {
+  it("room-cli thread retry defaults the turn and the reason at the boundary", async () => {
     const retryPost = vi.fn(async () => ({
       ok: true,
       delivery: "sent",
@@ -526,7 +526,7 @@ describe("cloudroom thread action command output", () => {
     );
   });
 
-  it("cloudroom thread retry names the turn, the instant and the reason when asked", async () => {
+  it("room-cli thread retry names the turn, the instant and the reason when asked", async () => {
     const retryPost = vi.fn(async (_request: RetryRequest) => ({
       ok: true,
       delivery: "queued",
@@ -557,7 +557,7 @@ describe("cloudroom thread action command output", () => {
     expect(call?.param).toEqual({ id: "thread-retry-2" });
     expect(call?.json.turnRequestId).toBe("creq_3333333333");
     expect(call?.json.reason).toBe("Rate limited");
-    // `--send-at` is the same grammar `cloudroom thread tell` uses: a duration from
+    // `--send-at` is the same grammar `room-cli thread tell` uses: a duration from
     // now becomes an absolute instant at the boundary.
     expect(call?.json.sendAt).toBeGreaterThan(Date.now());
     expect(collectLogLines(vi.mocked(console.log)).join("\n")).toContain(

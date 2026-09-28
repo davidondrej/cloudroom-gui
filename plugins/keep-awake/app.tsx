@@ -145,11 +145,11 @@ function KeepAwakeSettings() {
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0">
           <h3 className="text-sm font-medium text-foreground">
-            Prevent idle sleep
+            Prevent sleep
           </h3>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Keep selected Macs awake while Cloudroom is running. Closing the lid or
-            choosing Sleep still sleeps the Mac.
+            Keep selected Macs and their screens awake while Cloudroom is running.
+            Closing the lid or choosing Sleep still sleeps the Mac.
           </p>
         </div>
         <Switch

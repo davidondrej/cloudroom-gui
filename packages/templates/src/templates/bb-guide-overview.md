@@ -23,20 +23,20 @@ Context variables set automatically inside a thread environment:
 - ROOM_PROJECT_ID — current project
 - ROOM_THREAD_ID — current thread
 - ROOM_ENVIRONMENT_ID — current environment
-- ROOM_CLI — absolute path to Cloudroom's daemon-managed `cloudroom` executable; `cloudroom` re-execs to this path when needed. Official BB is separate.
+- ROOM_CLI — absolute path to Cloudroom's daemon-managed `room-cli` executable; `room-cli` re-execs to this path when needed. Official BB is separate.
 
-Run `cloudroom status` to see your current context (resolved project and thread IDs).
+Run `room-cli status` to see your current context (resolved project and thread IDs).
 It also warns when an enabled plugin is not running (incompatible after a Cloudroom
-upgrade, failed to load, or missing); run `cloudroom plugin list` for the detail.
+upgrade, failed to load, or missing); run `room-cli plugin list` for the detail.
 
 All commands support --json for machine-readable output.
 
-To make a repo work with cloudroom worktrees, run `cloudroom guide environments` for the
+To make a repo work with cloudroom worktrees, run `room-cli guide environments` for the
 repo-level `.bb-env-setup.sh` and `.bb-env-teardown.sh` hooks. Run `cloudroom guide
 agent-configuration` for the data-dir and workspace files that customize agent
 behavior.
 
-Run `cloudroom guide <chapter>` for command details:
+Run `room-cli guide <chapter>` for command details:
 
   threads              Spawning, inspecting, messaging, and managing threads
   environments         Environment lifecycle hooks, operations, commits, and merges

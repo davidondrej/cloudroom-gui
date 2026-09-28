@@ -9,14 +9,14 @@ description: Connect Modal and create reusable cloud machines with the bundled s
    `tokenSecret` in plugin Settings. Do not print credentials. `appName` defaults
    to `bb-sandboxes`. The plugin page defines named sandbox size presets and
    images; the initial Default image contains the bundled Dockerfile.
-2. Run `cloudroom modal account inspect --json` to test the connection without allocating
+2. Run `room-cli modal account inspect --json` to test the connection without allocating
    compute. Exit status 1 means configuration or connection failed; the JSON gives
    a secret-free message. SDK callers use the plugin's `modalRpcContract`
    (`account.inspect`) through `sdk.plugins.callRpc`.
-3. Resolve the project with `cloudroom project list --json`. It needs a Git remote,
+3. Resolve the project with `room-cli project list --json`. It needs a Git remote,
    credentials to clone it, and machine server access reachable from Modal.
 4. Create a standalone machine with
-   `cloudroom machine create --provider modal-sandbox --json`.
+   `room-cli machine create --provider modal-sandbox --json`.
    SDK: `hosts.experimental_create({machineProviderId:"modal-sandbox",key})`.
    Standalone machines remain until explicitly removed. Sandboxes created with
    a thread retire after their last live thread is archived.
@@ -27,7 +27,7 @@ Settings edits the Default image's Dockerfile, adds named Dockerfile or Modal
 image-ID entries, and adds named CPU/memory presets. One or zero choices use the
 default without adding a composer chip; multiple choices share one chip. Agents
 can run
-`cloudroom modal image show > Dockerfile`, edit the file, then run `cloudroom modal image set
+`room-cli modal image show > Dockerfile`, edit the file, then run `cloudroom modal image set
 --file ./Dockerfile`. `cloudroom modal image reset` restores the bundled default.
 Append `--json` for structured output. File paths resolve from the CLI directory
 on the current thread's host, or the server primary host without thread context.
@@ -52,8 +52,8 @@ both hooks. Configure runtime secrets through core Machine environment settings;
 never bake them into the image. There are no user recipes, context uploads, smoke
 verification records or promotion commands.
 
-Use `cloudroom machine list --json` for core suspension state and
-`cloudroom modal machine inspect HOST_ID --json` for Modal expiry and saved-image
+Use `room-cli machine list --json` for core suspension state and
+`room-cli modal machine inspect HOST_ID --json` for Modal expiry and saved-image
 status. Idle pause defaults to 15 minutes; compute lifetime is fixed at Modal's
 24-hour maximum. There is no retention/keep policy; remove machines explicitly.
 
@@ -70,7 +70,7 @@ Pause before the timeout to save work. Failed saves retain compute while it exis
 Missing compute never silently restores an older snapshot; a checkpoint from an
 interrupted planned suspension remains recoverable.
 
-Remove with `cloudroom machine remove MACHINE --yes --json`. This removes
+Remove with `room-cli machine remove MACHINE --yes --json`. This removes
 owned environments, compute and private snapshots. Shared standard images remain
 cached for future launches. Builds and machines incur Modal usage; obtain task
 authorization before allocating them during testing.
@@ -78,11 +78,11 @@ authorization before allocating them during testing.
 ## Debug an image
 
 ```sh
-cloudroom modal image build --json
-cloudroom modal sandbox run --json
-cloudroom modal sandbox exec SANDBOX -- bash -lc 'node --version && which git'
-cloudroom modal sandbox exec SANDBOX --json -- bash -lc 'exit 7'
-cloudroom modal sandbox stop SANDBOX --json
+room-cli modal image build --json
+room-cli modal sandbox run --json
+room-cli modal sandbox exec SANDBOX -- bash -lc 'node --version && which git'
+room-cli modal sandbox exec SANDBOX --json -- bash -lc 'exit 7'
+room-cli modal sandbox stop SANDBOX --json
 ```
 
 Build uses the saved Dockerfile and the same account-wide image cache as machine
@@ -113,11 +113,11 @@ SDK clients use `sdk.plugins.callRpc` with `modalRpcContract`: `image.build({})`
 `sandbox.run({})`, `sandbox.exec({sandboxId,command})`, and
 `sandbox.stop({sandboxId})`. Build/run incur Modal usage.
 
-`cloudroom modal machine inspect HOST_ID [--json]` and the plugin RPC `machine.inspect({ hostId })` read vendor state without waking compute. Sandbox and snapshot identifiers come directly from core’s current persisted machine resource, including lifecycle checkpoints. Existing machines need no diagnostic initialization.
+`room-cli modal machine inspect HOST_ID [--json]` and the plugin RPC `machine.inspect({ hostId })` read vendor state without waking compute. Sandbox and snapshot identifiers come directly from core’s current persisted machine resource, including lifecycle checkpoints. Existing machines need no diagnostic initialization.
 
 ### New thread with a new sandbox
 
-Use `cloudroom thread spawn --project <id> --environment-provider modal-sandbox --prompt "..."`.
+Use `room-cli thread spawn --project <id> --environment-provider modal-sandbox --prompt "..."`.
 The composed environment creates a Modal machine and uses core project-checkout
 setup to clone the project. Do not pass machine selectors with this environment.
 The same option appears once in the environment picker. Existing sandbox hosts
@@ -137,7 +137,7 @@ not discard ownership. Pending creates can be rediscovered by their saved name;
 absent pending entries expire after the requested sandbox lifetime.
 
 When compute is running for a machine core marks suspended, the plugin calls
-`hosts.experimental_reconcile` (`cloudroom machine reconcile MACHINE --json`). Core
+`hosts.experimental_reconcile` (`room-cli machine reconcile MACHINE --json`). Core
 checks its current state and starts save-and-stop, returning acceptance immediately;
 the CLI polls until completion. Core does not poll Modal. Tracking cleanup failures
 after a successful stop retain the entry for the next sweep without failing pause.

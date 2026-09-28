@@ -79,6 +79,12 @@ export class SandboxDirectory {
     return value;
   }
 
+  /** Whether the website judges a generated thread title too vague to keep, at the user's sensitivity (2–5). */
+  async titleTooVague(check: { title: string; firstMessage: string; agentReply: string; sensitivity: number }): Promise<boolean> {
+    const value = await this.call({ ...check, sensitivity: String(check.sensitivity) }, "thread-title");
+    return z.object({ rename: z.boolean() }).parse(value).rename;
+  }
+
   private remember(view: View): View {
     this.views.set(view.thread, { view, at: Date.now() });
     return view;
@@ -88,17 +94,19 @@ export class SandboxDirectory {
   async connection(thread: string, project: SandboxProject, wake: boolean): Promise<SandboxConnection | null> {
     const cached = this.views.get(thread);
     let view = cached?.view;
-    if (!view || (view.state !== "awake" && (wake || Date.now() - cached!.at > RECHECK_MS))) {
-      view = this.remember(viewSchema.parse(await this.call({ action: "register", thread, project: project.id, ...(project.repository ? { repository: project.repository, folder: project.folder } : {}) })));
+    const place = { thread, project: project.id, ...(project.repository ? { repository: project.repository, folder: project.folder } : {}) };
+    // A wake registers too, so only lookups need their own call.
+    if (!wake && (!view || (view.state !== "awake" && Date.now() - cached!.at > RECHECK_MS))) {
+      view = this.remember(viewSchema.parse(await this.call({ action: "register", ...place })));
     }
-    if (view.state === "awake" && view.origin && view.token) return { url: view.origin, token: view.token };
+    if (view?.state === "awake" && view.origin && view.token) return { url: view.origin, token: view.token };
     if (!wake) return null;
     const waiting = this.backoff.get(thread);
     if (waiting && Date.now() < waiting.until) throw new CloudroomConnectionError(`The cloud sandbox could not start. Retrying in ${Math.ceil((waiting.until - Date.now()) / 1000)} seconds.`);
     let pending = this.wakes.get(thread);
     if (!pending) {
       this.wakeStarts.set(thread, Date.now());
-      pending = this.call({ action: "wake", thread }).then(value => this.remember(viewSchema.parse(value))).then(view => { this.backoff.delete(thread); return view; }, error => {
+      pending = this.call({ action: "wake", ...place }).then(value => this.remember(viewSchema.parse(value))).then(view => { this.backoff.delete(thread); return view; }, error => {
         const delay = Math.min((this.backoff.get(thread)?.delay ?? 2_500) * 2, 300_000);
         this.backoff.set(thread, { until: Date.now() + delay, delay });
         throw error;

@@ -338,7 +338,7 @@ function printPluginRequestInteraction(
   );
   console.log(`  Data: ${JSON.stringify(interaction.payload.data)}`);
   console.log(
-    "  Answer: cloudroom thread interactions respond <interactionId> --value '<json>'",
+    "  Answer: room-cli thread interactions respond <interactionId> --value '<json>'",
   );
 }
 
@@ -621,7 +621,7 @@ function buildBinaryResolution(
     approvalInteraction.payload.subject.kind === "permission_grant"
   ) {
     throw new Error(
-      `Interaction ${interaction.id} is a permission grant; use cloudroom thread interactions grant.`,
+      `Interaction ${interaction.id} is a permission grant; use room-cli thread interactions grant.`,
     );
   }
   const decision = pickApprovalDecision(approvalInteraction, action);

@@ -72,7 +72,9 @@ export function TeleportNotice({
         ? ["AlertCircle", "Teleport paused", "Local history is safe."]
         : progress.phase === "cancelling"
           ? ["Spinner", "Cancelling", "Keep your laptop online."]
-          : progress.phase === "stopping"
+          : progress.phase === "checking"
+            ? ["Spinner", "Teleporting to Cloud", "Starting Cloud…"]
+            : progress.phase === "stopping"
             ? ["Spinner", "Teleporting to Cloud", "Stopping local work…"]
             : progress.cloudStarted
               ? [

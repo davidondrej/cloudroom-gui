@@ -19,7 +19,7 @@ function settingsResponse(value: number): Response {
   );
 }
 
-describe("cloudroom plugin config", () => {
+describe("room-cli plugin config", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>

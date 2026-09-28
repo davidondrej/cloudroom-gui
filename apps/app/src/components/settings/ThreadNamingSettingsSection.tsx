@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAtom } from "jotai";
+import { Slider } from "@bb/shared-ui/slider";
 import { Textarea } from "@bb/shared-ui/textarea";
 import { DEFAULT_THREAD_NAMING_RULES } from "@bb/domain";
 import {
@@ -15,6 +16,16 @@ const threadNamingFallbackModelAtom = createSyncedPreferenceAtom(
   "threadNaming.fallbackModel",
 );
 const threadNamingRulesAtom = createSyncedPreferenceAtom("threadNaming.rules");
+const renameSensitivityAtom = createSyncedPreferenceAtom(
+  "threadNaming.renameSensitivity",
+);
+const RENAME_SENSITIVITY_LABELS = [
+  "Off",
+  "Rarely",
+  "Sometimes",
+  "Often",
+  "Very often",
+] as const;
 
 export function ThreadNamingSettingsSection() {
   const [model, setModel] = useAtom(threadNamingModelAtom);
@@ -22,6 +33,9 @@ export function ThreadNamingSettingsSection() {
     threadNamingFallbackModelAtom,
   );
   const [rules, setRules] = useAtom(threadNamingRulesAtom);
+  const [renameSensitivity, setRenameSensitivity] = useAtom(
+    renameSensitivityAtom,
+  );
   const [draftRules, setDraftRules] = useState(rules);
   const defaultModel = useSystemConfig().data?.aiServices.inference ?? null;
 
@@ -66,6 +80,26 @@ export function ThreadNamingSettingsSection() {
             onChange={(event) => setDraftRules(event.target.value)}
             onBlur={saveRules}
           />
+        </SettingsWithControl>
+        <SettingsWithControl
+          label="Rename vague titles"
+          description="After the first reply, gives a vague title a clearer name once. Titles you set are never changed."
+        >
+          <div className="flex w-48 items-center gap-3">
+            <Slider
+              aria-label="Rename vague titles"
+              min={1}
+              max={5}
+              step={1}
+              value={[renameSensitivity]}
+              onValueChange={([value]) => {
+                if (value !== undefined) setRenameSensitivity(value);
+              }}
+            />
+            <span className="w-16 shrink-0 text-xs text-muted-foreground">
+              {RENAME_SENSITIVITY_LABELS[renameSensitivity - 1]}
+            </span>
+          </div>
         </SettingsWithControl>
       </div>
     </SettingsSection>

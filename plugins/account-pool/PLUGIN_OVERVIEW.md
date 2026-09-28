@@ -4,8 +4,8 @@ Keep a Claude Code or Codex thread running when one account hits its limit. A lo
 
 - A pool of Claude and Codex accounts, added by importing the login already on the machine, signing in through the browser, or pasting an Anthropic API key.
 - Accounts run one after another in priority order, with ties following the order added. New conversations stay on the current fallback even when an earlier account recovers. Existing conversations keep their own account until it becomes unavailable.
-- Drag handles set the account order within each provider in settings (keyboard: Space to pick up, arrow keys to move, Space to drop, Escape to cancel), with the same operation available through `cloudroom pool account reorder <claude|codex> <id>...`.
-- Live limit windows per account and model family in the plugin's settings page, and the same numbers from `cloudroom pool status`.
+- Drag handles set the account order within each provider in settings (keyboard: Space to pick up, arrow keys to move, Space to drop, Escape to cancel), with the same operation available through `room-cli pool account reorder <claude|codex> <id>...`.
+- Live limit windows per account and model family in the plugin's settings page, and the same numbers from `room-cli pool status`.
 - A routing switch per provider and a bypass per thread, so one thread can go straight to its own credentials.
 - Opt-in cache miss reports, analyzed after each response ends, that name the likely cause of a large miss and the first changed prompt segment.
 
@@ -19,7 +19,7 @@ The pooler owns its upstream HTTP connections and uses HTTP/1.1, so a broken HTT
 
 ## Nested Cloudroom servers
 
-A Cloudroom server started inside another Cloudroom server's thread detects the parent's pooler and enables this plugin. Choose in settings or with `cloudroom pool parent`:
+A Cloudroom server started inside another Cloudroom server's thread detects the parent's pooler and enables this plugin. Choose in settings or with `room-cli pool parent`:
 
 - **proxy** (default): keep a local hub with its own machine tokens and forward pooled traffic to the parent, so the parent's token never reaches this server's agents. Routing is contributed only for providers the parent can serve.
 - **isolate**: neutralise the inherited routing and use this instance's own accounts, or each provider's own credentials.
@@ -34,4 +34,4 @@ This plugin is experimental. Routing behavior, stored data, and the CLI can chan
 
 ## For agents
 
-`cloudroom pool` subcommands: `account add|list|remove|enable|disable|priority|reorder`, `status`, `routing <claude|codex> [--off]`, `config`, `config set`, `cache-miss list|clear`, `parent [proxy|isolate]`, `token rotate`, and `bypass <thread-id>`. `list` and `status` take `--json`.
+`room-cli pool` subcommands: `account add|list|remove|enable|disable|priority|reorder`, `status`, `routing <claude|codex> [--off]`, `config`, `config set`, `cache-miss list|clear`, `parent [proxy|isolate]`, `token rotate`, and `bypass <thread-id>`. `list` and `status` take `--json`.

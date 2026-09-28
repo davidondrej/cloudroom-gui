@@ -3,19 +3,19 @@ kind: instruction
 title: Cloudroom Guide — Plugins
 summary: Command reference for installing, configuring, running, and authoring cloudroom plugins and their contributed CLI commands.
 intent: Provide complete plugin command documentation plus an authoring walkthrough for agents and humans building cloudroom plugins.
-editingNotes: Keep flags accurate against the CLI implementation (apps/cli/src/commands/plugin.ts, apps/cli/src/commands/marketplace.ts) and the server plugin service; a CLI test asserts every `cloudroom plugin` and `cloudroom marketplace` subcommand appears in this chapter. The full authoring reference is the bb-plugin-authoring builtin skill.
+editingNotes: Keep flags accurate against the CLI implementation (apps/cli/src/commands/plugin.ts, apps/cli/src/commands/marketplace.ts) and the server plugin service; a CLI test asserts every `room-cli plugin` and `room-cli marketplace` subcommand appears in this chapter. The full authoring reference is the bb-plugin-authoring builtin skill.
 ---
 Plugin commands
 
 A cloudroom plugin is a TypeScript package that extends the cloudroom server in-process and
 may also declare one bundled Node entry for enrolled hosts: background
 services, cron schedules, HTTP/RPC endpoints, thread lifecycle handlers,
-settings, storage, host-local operations — and `cloudroom` CLI subcommands that agents
+settings, storage, host-local operations — and `room-cli` CLI subcommands that agents
 and humans run like any other command. Plugins are full-trust code in both
 runtimes.
 
 Plugins are on by default. Builtin plugins (`builtin:<name>`) ship with Cloudroom;
-user-installed plugins come from `cloudroom plugin install` or the official store.
+user-installed plugins come from `room-cli plugin install` or the official store.
 Plugin state lives under `<bb-data-dir>/plugins/<id>/` (per-plugin SQLite file,
 secrets, logs).
 
@@ -33,28 +33,28 @@ Claude and Codex account tokens in per-account 0600 secret files and proxies
 provider API requests through the cloudroom server. Enable it and add an account:
 
 ```
-cloudroom plugin enable account-pool
-cloudroom pool account add --provider claude --login
-printf '%s\n' "$CLAUDE_AUTH_CODE" | cloudroom pool account login-complete --session <id> --code-stdin
-cloudroom pool account add --provider claude --import
-cloudroom pool account add --provider codex --import
-printf '%s\n' "$ANTHROPIC_API_KEY" | cloudroom pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]
-cloudroom pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]
-cloudroom pool account list [--json]
-cloudroom pool account remove <id>
-cloudroom pool account enable <id>
-cloudroom pool account disable <id>
-cloudroom pool account priority <id> <n>
-cloudroom pool account reorder <claude|codex> <id>...
-cloudroom pool account refresh <id>
-cloudroom pool status [--json]
-cloudroom pool routing <claude|codex> [--off]
-cloudroom pool config
-cloudroom pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>
-cloudroom pool cache-miss list [--json]
-cloudroom pool cache-miss clear
-cloudroom pool token rotate --machine <id-or-name>
-cloudroom pool bypass <thread-id> [--off]
+room-cli plugin enable account-pool
+room-cli pool account add --provider claude --login
+printf '%s\n' "$CLAUDE_AUTH_CODE" | room-cli pool account login-complete --session <id> --code-stdin
+room-cli pool account add --provider claude --import
+room-cli pool account add --provider codex --import
+printf '%s\n' "$ANTHROPIC_API_KEY" | room-cli pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]
+room-cli pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]
+room-cli pool account list [--json]
+room-cli pool account remove <id>
+room-cli pool account enable <id>
+room-cli pool account disable <id>
+room-cli pool account priority <id> <n>
+room-cli pool account reorder <claude|codex> <id>...
+room-cli pool account refresh <id>
+room-cli pool status [--json]
+room-cli pool routing <claude|codex> [--off]
+room-cli pool config
+room-cli pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>
+room-cli pool cache-miss list [--json]
+room-cli pool cache-miss clear
+room-cli pool token rotate --machine <id-or-name>
+room-cli pool bypass <thread-id> [--off]
 ```
 
 Claude `--login` starts a ten-minute in-memory PKCE session, prints the browser
@@ -84,15 +84,15 @@ safely. Rotation keeps the prior token valid for ten minutes. Agents should use
 input. The compatibility form `--api-key <key>` exposes the key in process
 arguments, shell history, and agent transcripts. Prefer `--import` when Claude
 Code is already signed in. OAuth quota refreshes on add or enable and every
-five minutes while the account is idle. Use `cloudroom pool account refresh <id>` to
+five minutes while the account is idle. Use `room-cli pool account refresh <id>` to
 request an immediate refresh for one account. Account tables add columns for
 the family buckets Anthropic reports, and JSON status exposes the same
 observations under `familyWeekly`. Selection skips an account only for a spent
 requested family while retaining it for other families. When Claude Code supplies an
 account UUID in `metadata.user_id`, the hub aligns it with the selected OAuth
-account. `cloudroom pool config` prints the quota switch threshold, both upstream
+account. `room-cli pool config` prints the quota switch threshold, both upstream
 URLs, the parent mode, and the cache miss debugging values. Use
-`cloudroom pool config set <key> <value>` to change one; the two URL values
+`room-cli pool config set <key> <value>` to change one; the two URL values
 are QA-only overrides. Upgrading from a build that stored these values through
 plugin settings resets the threshold and QA overrides to their defaults.
 `cacheMissDebug true` (default `false`) records large prompt cache misses on
@@ -102,10 +102,10 @@ after the first response chunk is forwarded, and analysis after the response
 ends. Claude requests without a `cache_control`
 breakpoint are not tracked, and Codex idle gaps are judged against a 30 minute
 cache lifetime.
-`cloudroom pool cache-miss list` prints each miss's likely causes and first changed
+`room-cli pool cache-miss list` prints each miss's likely causes and first changed
 prompt segment; with `--json` it also prints `cacheMissDebug` and
 `forwardsToParent`, so an empty list can be told apart from reporting that is
-off or left to the parent. `cloudroom pool cache-miss clear` removes the reports. Logs carry
+off or left to the parent. `room-cli pool cache-miss clear` removes the reports. Logs carry
 ids, token counts, and cause kinds but no prompt text. A nested server in proxy
 mode does not analyze forwarded traffic; enable it on the parent.
 
@@ -122,9 +122,9 @@ and session pins survive hub restarts. Session pins expire after 30 idle minutes
 and the pool retains the 4,096 most recently used pins.
 
 Use the up/down arrows in Account Pooler settings, or
-`cloudroom pool account reorder <claude|codex> <id>...`, to set the complete order for
+`room-cli pool account reorder <claude|codex> <id>...`, to set the complete order for
 one provider. Include disabled accounts too. Reordering changes the next failover
-sequence without moving the current account. `cloudroom pool account priority <id> <n>`
+sequence without moving the current account. `room-cli pool account priority <id> <n>`
 sets an individual priority; the same operations are available through the
 `account.reorder` and `account.setPriority` plugin RPCs.
 
@@ -133,11 +133,11 @@ Its settings page lets you target all hosts or selected hosts. The CLI
 equivalents are:
 
 ```
-cloudroom keep-awake status [--json]
-cloudroom keep-awake enable [--json]
-cloudroom keep-awake disable [--json]
-cloudroom keep-awake hosts all
-cloudroom keep-awake hosts <host-id>...
+room-cli keep-awake status [--json]
+room-cli keep-awake enable [--json]
+room-cli keep-awake disable [--json]
+room-cli keep-awake hosts all
+room-cli keep-awake hosts <host-id>...
 ```
 
 It reconciles when the plugin starts, a host connects, its configuration
@@ -149,29 +149,29 @@ Codex and Claude Code turns after structured provider overloads and subscription
 window limits. A pending retry is a queued row on the thread, so a server
 restart does not lose it, and that row — on the queue card above the composer,
 with its reason, its time and its own Cancel — is the only place the wait is
-narrated. Inspect it with `cloudroom provider-retry status`. See
-`cloudroom guide providers` for the eligibility rules. The plugin only reacts to a
+narrated. Inspect it with `room-cli provider-retry status`. See
+`room-cli guide providers` for the eligibility rules. The plugin only reacts to a
 failed turn — it never blocks a send. Prior output or tool activity does not
 block recovery. Its `maximumWait` setting defaults to `6 hours`; choose
 `24 hours` or `No limit` from the plugin detail page, or configure it with
-`cloudroom plugin config provider-retry set maximumWait <value>`.
+`room-cli plugin config provider-retry set maximumWait <value>`.
 
 The builtin Workflows plugin runs durable provider-independent JavaScript
 orchestration. It is disabled on fresh installations; enable `workflows` under
-Settings → Installed plugins or run `cloudroom plugin enable workflows` before using:
+Settings → Installed plugins or run `room-cli plugin enable workflows` before using:
 
-  cloudroom workflows validate (--script '<javascript>'|--source '<javascript>'|
+  room-cli workflows validate (--script '<javascript>'|--source '<javascript>'|
                         --file <path>|--name <name>)
-  cloudroom workflows run (--script '<javascript>'|--source '<javascript>'|
+  room-cli workflows run (--script '<javascript>'|--source '<javascript>'|
                    --file <path>|--name <name>)
                    [--args '<json>'] [--resume <run-id>]
-  cloudroom workflows status <run-id>
-  cloudroom workflows history <run-id> [--cursor <call-index>] [--limit <1-100>]
-  cloudroom workflows list [--limit <1-50>]
-  cloudroom workflows stop <run-id>
+  room-cli workflows status <run-id>
+  room-cli workflows history <run-id> [--cursor <call-index>] [--limit <1-100>]
+  room-cli workflows list [--limit <1-50>]
+  room-cli workflows stop <run-id>
 
 Commands must run from a Cloudroom project thread. Workflows has six plugin
-settings, configurable with `cloudroom plugin config workflows set <key> <value>`:
+settings, configurable with `room-cli plugin config workflows set <key> <value>`:
 `maxActiveRuns` (default 4, range 1–32), `maxConcurrentAgents` (8, 1–64),
 `maxAgentCalls` (100, 1–1000), `totalRunTimeoutMs` (86400000, 60000–604800000),
 `retentionDays` (7, 1–3650), and `maxNotificationBytes` (16384,
@@ -189,7 +189,7 @@ models <provider-id> --environment "$ROOM_ENVIRONMENT_ID" --json` before writing
 an explicit selection; never guess ACP model IDs.
 
 The Memory plugin is an opt-in install, bundled with the app:
-`cloudroom plugin install memory`. Once installed, it injects a compact global and
+`room-cli plugin install memory`. Once installed, it injects a compact global and
 current-project memory index into agent context and progressively discloses
 full records through CLI-only commands. Because its store works across
 providers, we recommend disabling provider-native memory under Settings →
@@ -197,30 +197,30 @@ Providers to avoid duplicate or conflicting stores. Settings → Memory lists
 every global and project memory and supports version-checked edits and soft
 deletion.
 
-  cloudroom memory catalog [--scope project|global|all] [--json]
-  cloudroom memory search <query> [--scope project|global|all] [--json]
-  cloudroom memory get <id> [--scope project|global|all] [--json]
-  cloudroom memory add --scope project|global --name <name> --summary <text>
+  room-cli memory catalog [--scope project|global|all] [--json]
+  room-cli memory search <query> [--scope project|global|all] [--json]
+  room-cli memory get <id> [--scope project|global|all] [--json]
+  room-cli memory add --scope project|global --name <name> --summary <text>
                 --details <text> --reason <text> [--kind <kind>]
                 [--tag <tag>]... [--importance <0-100>] [--pinned] [--json]
-  cloudroom memory update <id> --expected-version <n> [fields...] [--json]
-  cloudroom memory forget <id> --expected-version <n> --reason <text> [--json]
-  cloudroom memory history <id> [--scope project|global|all] [--limit 1-100] [--json]
+  room-cli memory update <id> --expected-version <n> [fields...] [--json]
+  room-cli memory forget <id> --expected-version <n> --reason <text> [--json]
+  room-cli memory history <id> [--scope project|global|all] [--limit 1-100] [--json]
 
 Project writes use the invoking CLI's current project. Global writes require
 the explicit `--scope global` flag.
 
 The Docs plugin is an opt-in official plugin bundled with the app:
-`cloudroom plugin install docs`. Read-only discovery remains direct, while edits use
+`room-cli plugin install docs`. Read-only discovery remains direct, while edits use
 a manifest-backed local workspace:
 
-  cloudroom docs vaults [--json]
-  cloudroom docs list [--vault <id>] [--json]
-  cloudroom docs read <path> [--vault <id>]
-  cloudroom docs pull <path> [--folder] [--vault <id>] [--into <dir>]
-  cloudroom docs pull --all [--vault <id>] [--into <dir>]
-  cloudroom docs status [workspace-dir] [--delete] [--diff] [--json]
-  cloudroom docs push [workspace-dir] [--delete] [--dry-run] [--diff] [--json]
+  room-cli docs vaults [--json]
+  room-cli docs list [--vault <id>] [--json]
+  room-cli docs read <path> [--vault <id>]
+  room-cli docs pull <path> [--folder] [--vault <id>] [--into <dir>]
+  room-cli docs pull --all [--vault <id>] [--into <dir>]
+  room-cli docs status [workspace-dir] [--delete] [--diff] [--json]
+  room-cli docs push [workspace-dir] [--delete] [--dry-run] [--diff] [--json]
 
 Pull preserves vault-relative paths and writes `.bb-docs-state.json`; edit the
 ordinary files and leave that state file untouched. Push uses pulled SHA-256
@@ -235,24 +235,24 @@ CLI's working directory is on a non-primary host. Direct `write`, `mkdir`,
 `move`, and `remove` remain only as deprecated compatibility commands.
 
 The Tasks plugin is an opt-in official plugin bundled with the app:
-`cloudroom plugin install tasks`. It adds a task tracker, agent delegation,
-and the `cloudroom tasks` command. Common agent operations are:
+`room-cli plugin install tasks`. It adds a task tracker, agent delegation,
+and the `room-cli tasks` command. Common agent operations are:
 
-  cloudroom tasks show <key-or-id> [--json]
-  cloudroom tasks list [--project <prefix-or-id>] [filters...] [--sort manual|priority|due] [--limit 1-500] [--cursor <opaque>] [--json]
-  cloudroom tasks comment <key-or-id> (--body <markdown> | --body-file <path>) [--json]
-  cloudroom tasks attachment add <key-or-comment-id> --file <path> [--json]
-  cloudroom tasks attachment get <attachment-id> --out <path> [--json]
-  cloudroom tasks attach <key-or-id> [--thread <thread-id>] [--json]
-  cloudroom tasks detach <key-or-id> [--thread <thread-id>] [--json]
-  cloudroom tasks update <key-or-id> --status in_review [--json]
-  cloudroom tasks update <key-or-id> (--parent <parent-key-or-id> | --no-parent) [--json]
+  room-cli tasks show <key-or-id> [--json]
+  room-cli tasks list [--project <prefix-or-id>] [filters...] [--sort manual|priority|due] [--limit 1-500] [--cursor <opaque>] [--json]
+  room-cli tasks comment <key-or-id> (--body <markdown> | --body-file <path>) [--json]
+  room-cli tasks attachment add <key-or-comment-id> --file <path> [--json]
+  room-cli tasks attachment get <attachment-id> --out <path> [--json]
+  room-cli tasks attach <key-or-id> [--thread <thread-id>] [--json]
+  room-cli tasks detach <key-or-id> [--thread <thread-id>] [--json]
+  room-cli tasks update <key-or-id> --status in_review [--json]
+  room-cli tasks update <key-or-id> (--parent <parent-key-or-id> | --no-parent) [--json]
 
-Run `cloudroom tasks --help` for project, folder, task, label, attachment, and demo-data
+Run `room-cli tasks --help` for project, folder, task, label, attachment, and demo-data
 commands, plus preset management, delegation, and attached-thread inspection.
-Delegated threads are attached automatically; use `cloudroom tasks attach` only when
-work started outside Tasks, and `cloudroom tasks detach` when a thread is done with a
-task or a respawned worker replaced it. `cloudroom tasks threads <key>` lists live
+Delegated threads are attached automatically; use `room-cli tasks attach` only when
+work started outside Tasks, and `room-cli tasks detach` when a thread is done with a
+task or a respawned worker replaced it. `room-cli tasks threads <key>` lists live
 threads first, newest first. Task update resolves both task keys and IDs for
 `--parent`; use `--no-parent` to promote a subtask to the top level. File paths
 in tasks commands resolve on the invoking machine (the thread's machine inside
@@ -276,10 +276,10 @@ never appear in command arguments, model-visible output, or persisted
 interaction data; success prints only the path, variable names, and
 added/updated/unchanged counts.
 
-  cloudroom plugin search <query>       Search the store: the plugins bundled with
+  room-cli plugin search <query>       Search the store: the plugins bundled with
                                  the app plus every registered marketplace
                                  catalog. Results include a Category column
-  cloudroom plugin install <entry>      Install a bundled official plugin by name
+  room-cli plugin install <entry>      Install a bundled official plugin by name
                                  (github, docs, memory, tasks),
                                  <entry-id>@<marketplace>, a Git repository
                                  URL, local path, builtin:<name>,
@@ -304,48 +304,48 @@ added/updated/unchanged counts.
                                  Installing a local path for an id that is
                                  already installed from another local path
                                  moves it there and keeps its settings
-  cloudroom plugin outdated             Check installed plugins for compatible
+  room-cli plugin outdated             Check installed plugins for compatible
                                  updates (table; --json for raw results).
                                  Columns: installed, latest compatible,
                                  blocked newer (incompatible releases not
                                  selected), status. Dev builds (Cloudroom 0.0.0)
                                  annotate that engines.room is not enforced
-  cloudroom plugin update <id> | --all  Apply compatible updates for one plugin or
+  room-cli plugin update <id> | --all  Apply compatible updates for one plugin or
                                  every tracking plugin with an update. Same
                                  full-trust confirmation as
                                  install (--yes skips; non-TTY refuses without
                                  --yes). Use outdated to preview; pinned
                                  installs stay put
-  cloudroom plugin list                 Status, services, schedules, handler timings.
-                                 `cloudroom status` also names enabled plugins that
+  room-cli plugin list                 Status, services, schedules, handler timings.
+                                 `room-cli status` also names enabled plugins that
                                  are incompatible, failed, or missing
-  cloudroom plugin source <id> [--json] Show requested/resolved source, subdirectory,
+  room-cli plugin source <id> [--json] Show requested/resolved source, subdirectory,
                                  semver range with its tag prefix and resolved
                                  tag, engine ranges, install time, and recent
                                  activation history
-  cloudroom plugin enable|disable <id>  Load or unload an installed plugin
-  cloudroom plugin reload [id]          Re-run factories against current sources.
+  room-cli plugin enable|disable <id>  Load or unload an installed plugin
+  room-cli plugin reload [id]          Re-run factories against current sources.
                                  Exits 1 when a plugin does not come up on
                                  them (previous instance kept, or degraded
                                  because a service ignored its abort)
-  cloudroom plugin config <id> [set <key> <value> | unset <key>]
+  room-cli plugin config <id> [set <key> <value> | unset <key>]
                                  Show or change a plugin's declared settings
-  cloudroom plugin logs <id> [-n N] [-f]  Print (or follow) a plugin's bb.log output
-  cloudroom plugin run <id> [args...]   Run a plugin command explicitly (also works when core owns its name)
-  cloudroom plugin token <id> [--rotate]  Print the token for auth:"token" HTTP
+  room-cli plugin logs <id> [-n N] [-f]  Print (or follow) a plugin's bb.log output
+  room-cli plugin run <id> [args...]   Run a plugin command explicitly (also works when core owns its name)
+  room-cli plugin token <id> [--rotate]  Print the token for auth:"token" HTTP
                                  routes; --rotate generates a new token,
                                  invalidating the old one
-  cloudroom plugin remove <id>          Uninstall and delete the plugin's settings,
+  room-cli plugin remove <id>          Uninstall and delete the plugin's settings,
                                  secrets, and schedules (managed git:/npm:
                                  files deleted; local path sources stay on
                                  disk; builtin removals are remembered)
-  cloudroom plugin new <name>           Scaffold a todo-list plugin (server.ts,
-                                 app.tsx with a sidebar page, a `cloudroom <id>` CLI
+  room-cli plugin new <name>           Scaffold a todo-list plugin (server.ts,
+                                 app.tsx with a sidebar page, a `room-cli <id>` CLI
                                  command, and a skill) and install its npm
                                  dependencies, including @get-bb/plugin-sdk
                                  pinned to this Cloudroom's exact SDK version (no
                                  server required)
-  cloudroom plugin types [path]         Sync a plugin's @get-bb/plugin-sdk surface to
+  room-cli plugin types [path]         Sync a plugin's @get-bb/plugin-sdk surface to
                                  this Cloudroom (default: cwd): repin the npm
                                  devDependency to this Cloudroom's SDK version and
                                  the type-only devDependencies of the packages
@@ -354,7 +354,7 @@ added/updated/unchanged counts.
                                  rewrite the vendored types/ of a plugin that
                                  still carries them; --check writes nothing
                                  and exits non-zero on a mismatch
-  cloudroom plugin migrate [path]       Switch a plugin that still vendors types/ to
+  room-cli plugin migrate [path]       Switch a plugin that still vendors types/ to
                                  the @get-bb/plugin-sdk npm package (default:
                                  cwd): pin the devDependency, drop the tsconfig
                                  path map, delete the vendored declarations.
@@ -362,7 +362,7 @@ added/updated/unchanged counts.
                                  the prompt (required when stdin is not a
                                  terminal). The old layout keeps working, so
                                  nothing migrates unless you ask
-  cloudroom plugin build [path]         Compile the plugin into dist/ — the backend
+  room-cli plugin build [path]         Compile the plugin into dist/ — the backend
                                  bundle (server.js, server.meta.json); when
                                  bb.app is declared, the minified frontend
                                  bundle (app.js, app.css, app.meta.json); when
@@ -376,25 +376,25 @@ added/updated/unchanged counts.
                                  major/version, artifactFormatVersion,
                                  pluginId, pluginVersion, and builtWith (Cloudroom +
                                  plugin SDK versions); no server required
-  cloudroom plugin dev [path]           Watch a plugin's sources (default: cwd) and
+  room-cli plugin dev [path]           Watch a plugin's sources (default: cwd) and
                                  on every change rebuild its declared frontend
                                  (unminified, for readable stack traces),
                                  host, and provider-bridge bundles, then
                                  reload the plugin; Ctrl+C to stop
 
-  cloudroom marketplace add <source>    Add a marketplace from an https manifest URL,
+  room-cli marketplace add <source>    Add a marketplace from an https manifest URL,
                                  git:<url>[@<ref>], or path:<directory>. Cloudroom
                                  validates the manifest, caches the catalog,
                                  and fetches the entry icons. Adding a
                                  marketplace installs nothing
-  cloudroom marketplace list            Name, source, entry count, and last refresh of
+  room-cli marketplace list            Name, source, entry count, and last refresh of
                                  every marketplace (--json for raw rows)
-  cloudroom marketplace refresh [name]  Re-read one catalog, or every one of them.
+  room-cli marketplace refresh [name]  Re-read one catalog, or every one of them.
                                  Discovery metadata and icons only — a refresh
                                  never installs, updates, or runs plugin code.
                                  A failed refresh keeps the last catalog Cloudroom
                                  validated and exits non-zero
-  cloudroom marketplace remove <name>   Forget a marketplace. Its catalog rows and
+  room-cli marketplace remove <name>   Forget a marketplace. Its catalog rows and
                                  cached icons are deleted; plugins installed
                                  from it keep running as direct installs and
                                  keep checking for updates from their recorded
@@ -425,9 +425,9 @@ plugin's own manifest.
 
 Install one plugin of the repository:
 
-  cloudroom plugin install git:github.com/acme/repo@main --plugin sidebar
-  cloudroom plugin install git:github.com/acme/repo@main --subdirectory plugins/sidebar
-  cloudroom plugin install path:/work/repo --plugin sidebar
+  room-cli plugin install git:github.com/acme/repo@main --plugin sidebar
+  room-cli plugin install git:github.com/acme/repo@main --subdirectory plugins/sidebar
+  room-cli plugin install path:/work/repo --plugin sidebar
 
 --subdirectory is the primitive and works without a collection manifest.
 --plugin resolves a name from .bb/plugins.json. Installs from one repository
@@ -440,13 +440,13 @@ BB Official plugins
 
 Cloudroom's official plugins ship inside the app. The reserved `bb-official`
 marketplace describes these plugins with the standard v2 format. Its catalog
-uses a local path. It never uses the network. `cloudroom marketplace list` shows it
+uses a local path. It never uses the network. `room-cli marketplace list` shows it
 first. You cannot add or remove it.
 
 The plugins appear in the first Browse shelf, BB Official. They also appear in
 their category shelves. Install a plugin by its bare name or its qualified name.
 For example, use
-`cloudroom plugin install docs` or `cloudroom plugin install docs@bb-official`. cloudroom copies the
+`room-cli plugin install docs` or `room-cli plugin install docs@bb-official`. cloudroom copies the
 plugin from the app bundle. An app update also updates the bundled copy.
 
 The BB Marketplace has the reserved name `bb-community`. It lists
@@ -462,14 +462,14 @@ refresh changes discovery data and icons only. It never installs, updates, or
 runs plugin code. The server fetches and serves entry icons. The detail page
 loads screenshots from the URLs that the marketplace declares. An entry can
 also carry a long-form markdown description. The detail page renders it below
-the short description, and `cloudroom plugin search --json` returns it as `overview`.
+the short description, and `room-cli plugin search --json` returns it as `overview`.
 An install uses the normal git or npm source pipeline. cloudroom records the source
 marketplace.
 
 The BB Marketplace also publishes install counts beside its
 manifest, at https://getbb.app/marketplace/v1/stats.json. cloudroom re-reads that
 file on every refresh — the counts move while the manifest sits unchanged —
-and shows them in the store and in the Installs column of `cloudroom plugin search`.
+and shows them in the store and in the Installs column of `room-cli plugin search`.
 BB computes these counts; Cloudroom only displays them. No third-party
 marketplace has counts.
 
@@ -482,9 +482,9 @@ Anyone can host a marketplace manifest. Add one with its https manifest URL,
 with git:<url>[@<ref>] (cloudroom reads marketplace.json from the checkout), or with
 path:<directory> on the cloudroom server's machine:
 
-  cloudroom marketplace add https://plugins.acme.dev/marketplace.json
-  cloudroom marketplace add git:github.com/acme/bb-marketplace@main
-  cloudroom marketplace add path:/work/acme-marketplace
+  room-cli marketplace add https://plugins.acme.dev/marketplace.json
+  room-cli marketplace add git:github.com/acme/bb-marketplace@main
+  room-cli marketplace add path:/work/acme-marketplace
 
 The manifest `name` is the marketplace identity. cloudroom refuses a duplicate name.
 The `bb-official` and `bb-community` names are reserved. You cannot add or
@@ -501,7 +501,7 @@ unknown source keys because a source key changes the installed code.
 
 Install an entry of a specific marketplace with <entry-id>@<marketplace>:
 
-  cloudroom plugin install thread-hover-cards@acme-plugins
+  room-cli plugin install thread-hover-cards@acme-plugins
 
 A bare id resolves across every marketplace. Exactly one match installs.
 Several matches fail and list the id@marketplace choices. Every other source
@@ -521,7 +521,7 @@ install when the listing or its resolved git commit changes after confirmation.
 
 Removing a marketplace never disturbs installed code. Each plugin it listed
 becomes a direct install that keeps its full source intent and exact
-resolution, so `cloudroom plugin outdated` and `cloudroom plugin update` keep working from
+resolution, so `room-cli plugin outdated` and `room-cli plugin update` keep working from
 the recorded source. Only the catalog rows and the cached icons are deleted.
 
 The Browse tab groups entries by publisher: BB Official for the plugins
@@ -532,18 +532,18 @@ another publisher's group by copying its name. Only the two reserved
 marketplaces can use the BB Official or BB Marketplace labels. Entry cards show
 the author.
 
-For direct git:/npm: installs, updates are manual: `cloudroom plugin outdated`
-checks tracking sources and `cloudroom plugin update` applies compatible candidates.
+For direct git:/npm: installs, updates are manual: `room-cli plugin outdated`
+checks tracking sources and `room-cli plugin update` applies compatible candidates.
 Reinstalling an already-installed managed plugin is refused — use
-`cloudroom plugin update`. A failed activation restores the pre-update snapshot and
+`room-cli plugin update`. A failed activation restores the pre-update snapshot and
 leaves the latest failure visible as needing attention. Exact npm versions,
 git tags and commits, path sources, and bundled official plugins are pinned;
 npm ranges/omitted specs/dist-tags, omitted Git refs (the repository default
 branch), Git branches, and Git semver ranges track compatible updates. A
-pinned git:/npm: source changes only through `cloudroom plugin remove` (which
+pinned git:/npm: source changes only through `room-cli plugin remove` (which
 deletes the plugin's settings, secrets, and schedules) and a fresh install. A
 local path plugin is never removed to change it: edit it in place and
-`cloudroom plugin reload <id>`, or `cloudroom plugin install path:<new dir>` to move it to
+`room-cli plugin reload <id>`, or `room-cli plugin install path:<new dir>` to move it to
 another directory; both keep its configuration.
 
 Git semver ranges
@@ -551,9 +551,9 @@ Git semver ranges
 A git source can track releases the way an npm range does, over the
 repository's tags:
 
-  cloudroom plugin install git:github.com/acme/repo@^1.2.0
-  cloudroom plugin install git:github.com/acme/repo@semver:^1.2.0
-  cloudroom plugin install git:github.com/acme/repo@^1.2.0 --tag-prefix notes/
+  room-cli plugin install git:github.com/acme/repo@^1.2.0
+  room-cli plugin install git:github.com/acme/repo@semver:^1.2.0
+  room-cli plugin install git:github.com/acme/repo@^1.2.0 --tag-prefix notes/
 
 cloudroom lists refs/tags, keeps the tags named [<tag-prefix>]vX.Y.Z that parse as
 semver, and installs the highest one the range allows. Prereleases are
@@ -572,7 +572,7 @@ it has both, the install fails and asks you to choose. Write
 `@semver:<range>` for the range or `@ref:<name>` for the literal ref. Bare
 version tags such as `v1` and `v1.2.3` are always the literal tag.
 
-`cloudroom plugin search <query>` matches an id, name, description, category, or tag.
+`room-cli plugin search <query>` matches an id, name, description, category, or tag.
 It searches bb-official and each other registered marketplace. The output has a
 Category column. Status shows installed, compatible, or requires newer Cloudroom.
 Install a bundled plugin by its bare name. Direct
@@ -602,9 +602,9 @@ a machine, cloudroom downloads a pinned esbuild + Tailwind set into
 `<dataDir>/plugins/toolchain-<versions>/` and reuses it afterwards. Installing
 a prebuilt npm plugin never triggers that download.
 
-To build a plugin yourself, run `cloudroom plugin build` with Cloudroom
+To build a plugin yourself, run `room-cli plugin build` with Cloudroom
 installed. It talks to no server. Cache the toolchain directory in CI to skip
-the download on later runs. Only `cloudroom plugin dev` needs a running Cloudroom, because
+the download on later runs. Only `room-cli plugin dev` needs a running Cloudroom, because
 it reloads the installed plugin after each rebuild.
 
 The backend half is prebuilt too: when a builtin/official/git/npm install ships
@@ -623,11 +623,11 @@ SDK subpath (`@get-bb/plugin-sdk/host`, `/provider-bridge`,
 bundled from the plugin's own installed SDK, so a plugin that imports one
 needs the SDK as a real dependency; the build names the missing install
 rather than shipping an import cloudroom cannot serve.
-Path installs always load server.ts from source, so `cloudroom plugin dev`/reload see
+Path installs always load server.ts from source, so `room-cli plugin dev`/reload see
 edits immediately.
 
-`cloudroom plugin dev` is the edit loop: it requires the directory to already be
-installed as a plugin (`cloudroom plugin install .` first), ignores dist/,
+`room-cli plugin dev` is the edit loop: it requires the directory to already be
+installed as a plugin (`room-cli plugin install .` first), ignores dist/,
 node_modules/, and .git/, batches saves, and prints one line per cycle. A
 build or reload failure prints the error and keeps watching (a failed build
 skips that cycle's reload). Reloads reach open app pages live — changed
@@ -683,7 +683,7 @@ backend contract import with `useRpc<typeof contract>()` for exact frontend
 method/input/result inference. The server validates both schemas and rejects
 non-JSON results (including cyclic and non-finite values) with structured
 error codes. Components are vendored shadcn source the plugin owns (the
-shadcn model): `cloudroom plugin new` pre-vendors a starter set into
+shadcn model): `room-cli plugin new` pre-vendors a starter set into
 components/ui/ and `npx shadcn add @bb/<name>` pulls more from the Cloudroom
 component registry (the full stock shadcn set, version-matched to the
 running Cloudroom via the pinned ref in components.json). Product capabilities are
@@ -720,7 +720,7 @@ sonner, vaul, @pierre/diffs, and the host-resident clsx, tailwind-merge, and
 class-variance-authority libraries are runtime-shimmed (never bundled). Shimmed
 does not mean undeclared: tsc resolves their declarations through node_modules,
 so each shimmed package a plugin imports is a type-only devDependency at the
-host's version — the scaffold declares all of them and `cloudroom plugin types`
+host's version — the scaffold declares all of them and `room-cli plugin types`
 repins them; never list one in dependencies, which would bundle a second copy —
 though source and diffs should go through the host's own
 experimental_SourceCode / experimental_Diff components rather than
@@ -735,17 +735,17 @@ Everything else (zod included) bundles from the plugin's node_modules (`npm inst
 release packages with their declared production dependencies). A crashing slot collapses to a
 "plugin <id> crashed" chip without
 touching the rest of the app. Installed plugins and their declared settings
-(same data as `cloudroom plugin config`) appear under both Settings → Installed plugins
+(same data as `room-cli plugin config`) appear under both Settings → Installed plugins
 and Plugins → Installed plugins. Both locations manage the same installed plugins.
 
 Plugin CLI commands: a plugin can register one top-level subcommand (for
-example `cloudroom github …`). Unknown `cloudroom` commands are looked up against installed
+example `room-cli github …`). Unknown `room-cli` commands are looked up against installed
 plugins and proxied to the server, so plugin commands work exactly like core
 commands; core command names always win. A collision logs an activation warning,
-and `cloudroom plugin list` shows the required `cloudroom plugin run <id>` form. Inside agent
+and `room-cli plugin list` shows the required `room-cli plugin run <id>` form. Inside agent
 threads the generated `plugin-commands` skill lists the available plugin commands.
 
-Settings changes do not auto-reload a plugin — run `cloudroom plugin reload <id>`
+Settings changes do not auto-reload a plugin — run `room-cli plugin reload <id>`
 after configuring. Add --json to plugin commands for machine-readable output.
 Plugin CLI stdout plus stderr is capped at 1,048,576 UTF-8 bytes from the
 shared `@get-bb/plugin-sdk` constant. Results above the ceiling are rejected in
@@ -755,9 +755,9 @@ large content.
 
 Authoring a plugin
 
-The loop: `cloudroom plugin new <name>` scaffolds `./bb-plugin-<name>` — a working
-todo list with a backend, a sidebar page, a `cloudroom <name>` command, and a skill;
-delete what you do not need; `cloudroom plugin install .` registers it; `cloudroom plugin
+The loop: `room-cli plugin new <name>` scaffolds `./bb-plugin-<name>` — a working
+todo list with a backend, a sidebar page, a `room-cli <name>` command, and a skill;
+delete what you do not need; `room-cli plugin install .` registers it; `cloudroom plugin
 dev` watches and reloads on every save. The manifest is package.json: required
 `bb.name` and `bb.description` human identity, required `bb.branding` with at
 least `icon` or `logo.light`, `bb.server`
@@ -786,7 +786,7 @@ Plugins can contribute palettes with `bb.themes`: an array of
 plugin-relative `.css` file and optional `codeTheme` is
 `{ dark?, light? }` (a bundled Shiki / Pierre name or a plugin-relative
 VS Code theme `.json`). Loaded plugin palettes appear in Settings →
-Appearance and `cloudroom theme list`; their selectable id is
+Appearance and `room-cli theme list`; their selectable id is
 `plugin:<plugin-id>:<theme-id>`. Disabling or removing the owning plugin
 makes cloudroom fall back to the default palette.
 
@@ -800,7 +800,7 @@ Zap. Roomy surfaces reuse the same icon when no logo override is declared.
 Add `bb.branding.logo.light` only for intentionally different rich/full-size
 identity artwork; optional `bb.branding.logo.dark` is preferred in dark mode.
 Logo paths must be plugin-relative `.svg`, `.png`, or `.webp` files.
-`cloudroom plugin build` refuses an SVG logo that carries a script vector (a
+`room-cli plugin build` refuses an SVG logo that carries a script vector (a
 `script`, `handler` or `listener` element, an `on*` attribute, or a
 `javascript:` href) and takes any other tool export as-is; install and load
 never refuse a logo, and every SVG cloudroom serves carries `nosniff` and a
@@ -825,19 +825,19 @@ node_modules/@get-bb/plugin-sdk/bundled-types/bb-plugin-sdk.d.ts (plus
 bundle — read them
 for an exact signature. Plugins scaffolded before this switch instead vendor
 the root/app declarations in types/, mapped through tsconfig; that layout still
-works for existing entries. Run `cloudroom plugin migrate` before adding `bb.host` so
+works for existing entries. Run `room-cli plugin migrate` before adding `bb.host` so
 the `/host` and `/testing/host` declaration subpaths are available; migration
 shows every change and asks first.
-The SDK surface grows every release, so `cloudroom plugin types` syncs a plugin to
+The SDK surface grows every release, so `room-cli plugin types` syncs a plugin to
 the running Cloudroom — repinning the SDK devDependency and the shimmed packages'
 type-only devDependencies, or rewriting types/ for a plugin that still
 vendors them. Run it in a cloned or older plugin, and `Cloudroom
 plugin types --check` in CI. `cloudroom plugin build` and `cloudroom plugin dev` keep a
 vendored plugin in step for you. Need a symbol the types
 don't explain? Clone the repo: https://github.com/davidondrej/cloudroom-gui. The API in
-one line each — bb.log (plugin-scoped logger behind `cloudroom plugin logs`);
+one line each — bb.log (plugin-scoped logger behind `room-cli plugin logs`);
 bb.settings.define (declarative settings incl. secrets, editable via
-`cloudroom plugin config`); bb.storage.kv (JSON rows ≤256KB) and
+`room-cli plugin config`); bb.storage.kv (JSON rows ≤256KB) and
 bb.storage.database()+migrate (the plugin's own database); bb.sdk (the full
 Cloudroom SDK — handlers/services only, not the factory; spawned threads are
 attributed to the plugin; `visibility: "hidden"` creates directly addressable
@@ -864,7 +864,7 @@ experimental_createHostEntryHarness from
 bb.realtime.publish (ephemeral signals to open app pages);
 bb.background.service (long-lived, AbortSignal, restart w/ backoff) and
 bb.background.schedule (durable cron rows); bb.cli.register (a top-level
-`cloudroom <name>` command agents run through bash, with a shared 1 MiB combined
+`room-cli <name>` command agents run through bash, with a shared 1 MiB combined
 stdout/stderr ceiling and atomic structured over-limit errors); bb.agents.registerTool
 (static native tools with zod or JSON-schema parameters) and
 bb.agents.configure (one synchronous per-resolution callback selecting this
@@ -906,9 +906,9 @@ composer regions). Thread Hover
 Cards installs from the BB Marketplace (source: the bb-plugins
 repo).
 
-Modal setup uses `cloudroom modal account inspect --json` to check credentials, then
-`cloudroom machine create --provider modal-sandbox --json` to create a
-machine. Settings edits its shared Dockerfile; `cloudroom modal image set --file PATH [--json]` saves it and `cloudroom modal image reset [--json]` restores the bundled default for future machines; `cloudroom modal image show [--json]`
+Modal setup uses `room-cli modal account inspect --json` to check credentials, then
+`room-cli machine create --provider modal-sandbox --json` to create a
+machine. Settings edits its shared Dockerfile; `room-cli modal image set --file PATH [--json]` saves it and `room-cli modal image reset [--json]` restores the bundled default for future machines; `room-cli modal image show [--json]`
 reads the same file without cloud access. The image builds automatically and is reused across projects;
 core installs the daemon on demand. Project dependencies and services belong in
 `.bb-env-setup.sh`. Read the plugin's skill for connection and lifecycle details.
@@ -917,10 +917,10 @@ Contributed commands may accept `--stdin`: the calling CLI transfers up to
 256 KiB of multiline text as `--input-text`, without reading server-local files.
 The existing `--<flag>-stdin` form still accepts one line.
 
-Modal image debugging: `cloudroom modal image build [--json]` prepares the saved image; `cloudroom modal sandbox run [--json]` starts a 30-minute standalone sandbox; `cloudroom modal sandbox exec ID [--json] -- COMMAND...` runs a command (60-second timeout); `cloudroom modal sandbox stop ID [--json]` cleans up. These debug sandboxes skip Cloudroom enrollment, clone and setup. Logs are returned after the build finishes.
+Modal image debugging: `room-cli modal image build [--json]` prepares the saved image; `room-cli modal sandbox run [--json]` starts a 30-minute standalone sandbox; `room-cli modal sandbox exec ID [--json] -- COMMAND...` runs a command (60-second timeout); `room-cli modal sandbox stop ID [--json]` cleans up. These debug sandboxes skip Cloudroom enrollment, clone and setup. Logs are returned after the build finishes.
 
 ## Inspect plugin RPC
 
-`cloudroom plugin rpc list [plugin-id] [--method <exact-name>] [--json]` lists discoverable methods from running plugins, optionally restricted to one plugin. `cloudroom plugin rpc inspect <plugin-id> [method] [--json]` dumps registration and method descriptions plus input/output JSON Schemas. Copy the relevant schema into your consumer and call the existing plugin RPC endpoint. Discovery is opt-in advertising, not access control; method names may carry versions such as `provider-usage.v1.listResources`.
+`room-cli plugin rpc list [plugin-id] [--method <exact-name>] [--json]` lists discoverable methods from running plugins, optionally restricted to one plugin. `room-cli plugin rpc inspect <plugin-id> [method] [--json]` dumps registration and method descriptions plus input/output JSON Schemas. Copy the relevant schema into your consumer and call the existing plugin RPC endpoint. Discovery is opt-in advertising, not access control; method names may carry versions such as `provider-usage.v1.listResources`.
 
-`cloudroom plugin rpc call <plugin-id> <method> [--input-file <json-path>] [--json]` invokes a method using server-side schema validation. Omitting the input file sends JSON null. Input files avoid putting sensitive values in command arguments.
+`room-cli plugin rpc call <plugin-id> <method> [--input-file <json-path>] [--json]` invokes a method using server-side schema validation. Omitting the input file sends JSON null. Input files avoid putting sensitive values in command arguments.

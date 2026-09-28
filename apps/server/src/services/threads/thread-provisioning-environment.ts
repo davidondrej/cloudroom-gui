@@ -23,7 +23,7 @@ import {
   appendThreadProvisioningEvent,
   appendThreadProvisioningEventInTransaction,
 } from "./thread-events.js";
-import { dispatchThreadRenameCommand } from "./thread-commands.js";
+import { syncGeneratedTitleToProvider } from "./thread-commands.js";
 import { inferThreadMetadata } from "./thread-metadata-inference.js";
 import { resolveEnvironmentProvider } from "./thread-environment-placement.js";
 import {
@@ -200,30 +200,9 @@ export async function ensureThreadProvisionEnvironmentReady(
         writeTranscript: false,
       })
         .then((metadata) => {
-          if (!metadata.titleApplied || !metadata.title) {
-            return;
+          if (metadata.titleApplied && metadata.title) {
+            syncGeneratedTitleToProvider(deps, thread.id, metadata.title);
           }
-          const titledThread = getThread(deps.db, thread.id);
-          const environment = titledThread?.environmentId
-            ? getEnvironment(deps.db, titledThread.environmentId)
-            : null;
-          if (
-            !titledThread ||
-            !environment ||
-            (titledThread.status !== "active" &&
-              titledThread.status !== "idle")
-          ) {
-            return;
-          }
-          dispatchThreadRenameCommand(deps, {
-            environment: {
-              id: environment.id,
-              hostId: environment.hostId,
-            },
-            providerId: titledThread.providerId,
-            threadId: titledThread.id,
-            title: metadata.title,
-          });
         })
         .catch((error) => {
           deps.logger.warn(

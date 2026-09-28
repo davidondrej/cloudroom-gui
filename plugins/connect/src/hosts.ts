@@ -123,7 +123,7 @@ export class ShareHostResolver {
     );
     if (nameMatches.length === 0) {
       throw new Error(
-        `unknown host "${query}"; run \`cloudroom machine list\` to list hosts`,
+        `unknown host "${query}"; run \`room-cli machine list\` to list hosts`,
       );
     }
     if (nameMatches.length > 1) {

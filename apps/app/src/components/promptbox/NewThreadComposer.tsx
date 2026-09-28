@@ -1633,6 +1633,13 @@ export function NewThreadComposer({
     setReasoningLevel,
     snapshotDraftBeforeOptionChange,
   );
+  const handleSelectModel = useCallback(
+    (selection: { providerId: string; model: string }) => {
+      snapshotDraftBeforeOptionChange();
+      setProviderModelReasoning(selection);
+    },
+    [setProviderModelReasoning, snapshotDraftBeforeOptionChange],
+  );
   const handlePermissionChange = useDraftPreservingOptionChange(
     permissionMode,
     setPermissionMode,
@@ -1842,6 +1849,7 @@ export function NewThreadComposer({
               options: availableReasoningOptions,
               onChange: handleReasoningChange,
             },
+            selectModel: locks.provider ? undefined : handleSelectModel,
           }}
         />
       );
@@ -1865,6 +1873,7 @@ export function NewThreadComposer({
       handleProjectChange,
       handleProviderChange,
       handleReasoningChange,
+      handleSelectModel,
       handleSelectProvider,
       handleSelectHost,
       handleServiceTierChange,

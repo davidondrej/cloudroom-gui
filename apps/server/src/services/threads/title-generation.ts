@@ -16,9 +16,13 @@ const MAX_BRANCH_SLUG_LENGTH = 48;
 interface ApplyGeneratedThreadTitleArgs {
   threadId: string;
   title: string;
+  /** Replace only this earlier generated title. Without it, only an untitled thread is named. */
+  replaces?: string;
 }
 
 interface ThreadMetadataGenerationArgs {
+  /** The agent's first reply, when renaming a vague title after the first turn. */
+  agentReply?: string;
   input: PromptInput[];
   threadId: string;
   timeoutMaxAttempts?: number;
@@ -45,7 +49,7 @@ interface RawGeneratedThreadMetadata {
   title: string;
 }
 
-function cleanPromptText(input: PromptInput[]): string {
+export function cleanPromptText(input: PromptInput[]): string {
   return input
     .filter((part) => part.type === "text")
     .map((part) => part.text.trim())
@@ -132,6 +136,7 @@ export async function generateThreadMetadataWithOutcome(
   const fallbackModel =
     preferences["threadNaming.fallbackModel"].value ?? model;
   const prompt = renderTemplate("generateThreadMetadata", {
+    agentReply: args.agentReply ?? "",
     cleanedPrompt: fallback,
     rules: preferences["threadNaming.rules"].value,
   });
@@ -170,7 +175,12 @@ export function applyGeneratedThreadTitle(
   }
 
   const currentThread = getThread(deps.db, args.threadId);
-  if (!currentThread || currentThread.title) {
+  const current = currentThread?.title ?? null;
+  if (
+    !currentThread ||
+    title === current ||
+    (args.replaces === undefined ? current : current !== args.replaces)
+  ) {
     return false;
   }
 

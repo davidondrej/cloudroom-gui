@@ -206,8 +206,8 @@ done
 mkdir -p "$prefix/bin"
 cp "${bbAppTemplatePath}" "$prefix/bin/bb-app"
 chmod +x "$prefix/bin/bb-app"
-cp "${bbAppTemplatePath}" "$prefix/bin/cloudroom"
-chmod +x "$prefix/bin/cloudroom"
+cp "${bbAppTemplatePath}" "$prefix/bin/room-cli"
+chmod +x "$prefix/bin/room-cli"
 mkdir -p "$prefix/lib/node_modules/bb-app/host-daemon/dist"
 printf '%s\n' 'fixture' >"$prefix/lib/node_modules/bb-app/host-daemon/dist/daemon-bundle.mjs"
 for module in node-pty @parcel/watcher; do
@@ -222,7 +222,7 @@ done
 
 function writeNpmInstallingFixtureBbApp(fixture: Fixture): void {
   const bbApp = join(fixture.binDir, "bb-app");
-  const cli = join(fixture.binDir, "cloudroom");
+  const cli = join(fixture.binDir, "room-cli");
   writeExecutable(
     join(fixture.binDir, "npm"),
     `#!/bin/sh
@@ -233,7 +233,7 @@ done
 [ -n "$prefix" ] || exit 2
 mkdir -p "$prefix/bin"
 cp "${bbApp}" "$prefix/bin/bb-app"
-if [ -x "${cli}" ]; then cp "${cli}" "$prefix/bin/cloudroom"; else cp "${bbApp}" "$prefix/bin/cloudroom"; fi
+if [ -x "${cli}" ]; then cp "${cli}" "$prefix/bin/room-cli"; else cp "${bbApp}" "$prefix/bin/room-cli"; fi
 for module in node-pty @parcel/watcher; do
   mkdir -p "$prefix/lib/node_modules/bb-app/node_modules/$module"
   printf '%s\n' 'module.exports = {};' >"$prefix/lib/node_modules/bb-app/node_modules/$module/index.js"
@@ -315,7 +315,7 @@ exec '${process.execPath}' "$@"
       expect(result.status).not.toBe(0);
       expect(result.stderr).not.toContain("HOME");
       expect(existsSync(join(fixture.dataDir, "resolved-home"))).toBe(unset);
-      expect(existsSync(join(fixture.homeDir, ".local/bin/cloudroom"))).toBe(true);
+      expect(existsSync(join(fixture.homeDir, ".local/bin/room-cli"))).toBe(true);
       expect(existsSync(join(fixture.dataDir, "auth.json"))).toBe(false);
     },
   );
@@ -422,14 +422,14 @@ exec '${process.execPath}' "$@"
       "older",
       "npm",
       "bin",
-      "cloudroom",
+      "room-cli",
     );
     mkdirSync(dirname(olderCli), { recursive: true });
     writeExecutable(olderCli, "#!/bin/sh\necho wrong-installation\n");
-    const installedCli = join(fixture.dataDir, "npm", "bin", "cloudroom");
+    const installedCli = join(fixture.dataDir, "npm", "bin", "room-cli");
     mkdirSync(dirname(installedCli), { recursive: true });
     writeExecutable(installedCli, '#!/bin/sh\nprintf "%s" "$ROOM_DATA_DIR"\n');
-    const shim = join(fixture.homeDir, ".local", "bin", "cloudroom");
+    const shim = join(fixture.homeDir, ".local", "bin", "room-cli");
     const explicit = spawnSync(
       shim,
       ["machine", "uninstall", "--host-id", "host-test"],
@@ -460,7 +460,7 @@ exec '${process.execPath}' "$@"
     });
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("Could not install bb-app");
-    const shim = join(fixture.homeDir, ".local", "bin", "cloudroom");
+    const shim = join(fixture.homeDir, ".local", "bin", "room-cli");
     expect(existsSync(shim)).toBe(true);
     const cleanup = spawnSync(
       shim,
@@ -483,7 +483,7 @@ exec '${process.execPath}' "$@"
         "host-test",
       );
       writeExecutable(
-        join(fixture.binDir, "cloudroom"),
+        join(fixture.binDir, "room-cli"),
         `#!/usr/bin/env node
 const fs = require("node:fs");
 const path = require("node:path");
@@ -533,7 +533,7 @@ fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "config.json"), JSON.strin
           "private-bootstrap-test",
         );
         expect(
-          spawnSync("sh", ["-n", join(fixture.homeDir, ".local/bin/cloudroom")])
+          spawnSync("sh", ["-n", join(fixture.homeDir, ".local/bin/room-cli")])
             .status,
         ).toBe(0);
       } finally {

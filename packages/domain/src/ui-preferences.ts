@@ -64,6 +64,7 @@ export const UI_PREFERENCE_KEYS = [
   "threadNaming.model",
   "threadNaming.fallbackModel",
   "threadNaming.rules",
+  "threadNaming.renameSensitivity",
 ] as const;
 export type UiPreferenceKey = (typeof UI_PREFERENCE_KEYS)[number];
 const uiPreferenceKeySchema = z.enum(UI_PREFERENCE_KEYS);
@@ -198,6 +199,11 @@ export const uiPreferenceDefinitions = {
     z.string().trim().min(1).max(THREAD_NAMING_RULES_MAX_LENGTH),
     DEFAULT_THREAD_NAMING_RULES,
     "Rules and formatting the model follows when naming new threads.",
+  ),
+  "threadNaming.renameSensitivity": defineUiPreference(
+    z.number().int().min(1).max(5),
+    3,
+    "How readily a vague generated title is renamed once after the first reply: 1 is off, 3 renames about 20% of threads, 5 about 45%.",
   ),
 } as const satisfies Record<UiPreferenceKey, UiPreferenceDefinition>;
 

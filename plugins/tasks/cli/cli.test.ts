@@ -81,7 +81,7 @@ function stdout(result: {
   return result.stdout;
 }
 
-describe("cloudroom tasks CLI", () => {
+describe("room-cli tasks CLI", () => {
   it("lists seed-demo in help while retaining the explicit confirmation guard", async () => {
     const { bb, harness } = createFakePluginHost({ pluginId: "tasks" });
     await plugin(bb);
@@ -666,7 +666,7 @@ describe("cloudroom tasks CLI", () => {
       exitCode: 1,
       stdout: "",
       stderr:
-        "no tracker project is linked to Cloudroom project proj_missing; pass --project or link one with cloudroom tasks project update",
+        "no tracker project is linked to Cloudroom project proj_missing; pass --project or link one with room-cli tasks project update",
     });
 
     await harness.dispose();
@@ -1181,7 +1181,7 @@ describe("cloudroom tasks CLI", () => {
     await harness.dispose();
   });
 
-  it("detaches a thread with `cloudroom tasks detach` and lists live threads first", async () => {
+  it("detaches a thread with `room-cli tasks detach` and lists live threads first", async () => {
     const { bb, harness } = createFakePluginHost({
       pluginId: "tasks",
       sdk: {
@@ -1454,7 +1454,7 @@ describe("cloudroom tasks CLI", () => {
         `Failed to attach ${boomPath}: simulated blob write failure`,
       );
       expect(human.stdout).toContain(
-        `Retry with: cloudroom tasks attachment add MIX-2 --file ${boomPath}`,
+        `Retry with: room-cli tasks attachment add MIX-2 --file ${boomPath}`,
       );
     } finally {
       await rm(directory, { recursive: true, force: true });

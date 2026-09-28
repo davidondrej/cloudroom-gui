@@ -332,7 +332,7 @@ async function resolveScriptFileHostId(
       );
     }
     throw new Error(
-      `Unknown host "${query}"; run \`cloudroom machine list\` to list hosts.`,
+      `Unknown host "${query}"; run \`room-cli machine list\` to list hosts.`,
     );
   }
   if (ctx.threadId === undefined) return undefined;
@@ -804,15 +804,15 @@ function printRunTable(runs: AutomationRunResponse[]): string {
 function helpText(): string {
   return `Automation commands
 
-cloudroom automation list --project <id>
-cloudroom automation create --project <id> --name <name> (--cron <expr> --timezone <tz> | --at <datetime> | --in <duration>) (--prompt <text> --provider <id> --model <model> [--reasoning <level>] [--service-tier default|fast] | --script <inline> | --script-file <path> [--host <name-or-id>])
-cloudroom automation show <automationId> --project <id>
-cloudroom automation update <automationId> --project <id> [--name <name>] [schedule flags] [complete agent/script execution flags | --provider <id> --model <model> --reasoning <level> --service-tier default|fast|none]
-cloudroom automation pause <automationId> --project <id>
-cloudroom automation resume <automationId> --project <id>
-cloudroom automation run <automationId> --project <id> [--idempotency-key <key>]
-cloudroom automation runs <automationId> --project <id> [--limit <count>] [--output <runId>]
-cloudroom automation delete <automationId> --project <id> --yes
+room-cli automation list --project <id>
+room-cli automation create --project <id> --name <name> (--cron <expr> --timezone <tz> | --at <datetime> | --in <duration>) (--prompt <text> --provider <id> --model <model> [--reasoning <level>] [--service-tier default|fast] | --script <inline> | --script-file <path> [--host <name-or-id>])
+room-cli automation show <automationId> --project <id>
+room-cli automation update <automationId> --project <id> [--name <name>] [schedule flags] [complete agent/script execution flags | --provider <id> --model <model> --reasoning <level> --service-tier default|fast|none]
+room-cli automation pause <automationId> --project <id>
+room-cli automation resume <automationId> --project <id>
+room-cli automation run <automationId> --project <id> [--idempotency-key <key>]
+room-cli automation runs <automationId> --project <id> [--limit <count>] [--output <runId>]
+room-cli automation delete <automationId> --project <id> --yes
 `;
 }
 
@@ -828,51 +828,51 @@ export function registerAutomationCli(args: {
       {
         name: "list",
         summary: "List automations for a project",
-        usage: "cloudroom automation list --project <id> [--json]",
+        usage: "room-cli automation list --project <id> [--json]",
       },
       {
         name: "create",
         summary: "Create an automation",
         usage:
-          "cloudroom automation create --project <id> --name <name> [schedule flags] [mode flags]",
+          "room-cli automation create --project <id> --name <name> [schedule flags] [mode flags]",
       },
       {
         name: "show",
         summary: "Show automation details",
-        usage: "cloudroom automation show <automationId> --project <id> [--json]",
+        usage: "room-cli automation show <automationId> --project <id> [--json]",
       },
       {
         name: "update",
         summary: "Update automation configuration",
-        usage: "cloudroom automation update <automationId> --project <id> [flags]",
+        usage: "room-cli automation update <automationId> --project <id> [flags]",
       },
       {
         name: "pause",
         summary: "Pause an automation",
-        usage: "cloudroom automation pause <automationId> --project <id> [--json]",
+        usage: "room-cli automation pause <automationId> --project <id> [--json]",
       },
       {
         name: "resume",
         summary: "Resume an automation",
-        usage: "cloudroom automation resume <automationId> --project <id> [--json]",
+        usage: "room-cli automation resume <automationId> --project <id> [--json]",
       },
       {
         name: "run",
         summary: "Run an automation now",
         usage:
-          "cloudroom automation run <automationId> --project <id> [--idempotency-key <key>] [--json]",
+          "room-cli automation run <automationId> --project <id> [--idempotency-key <key>] [--json]",
       },
       {
         name: "runs",
         summary: "List automation runs",
         usage:
-          "cloudroom automation runs <automationId> --project <id> [--limit <count>] [--output <runId>] [--json]",
+          "room-cli automation runs <automationId> --project <id> [--limit <count>] [--output <runId>] [--json]",
       },
       {
         name: "delete",
         summary: "Delete an automation",
         usage:
-          "cloudroom automation delete <automationId> --project <id> --yes [--json]",
+          "room-cli automation delete <automationId> --project <id> --yes [--json]",
       },
     ],
     async run(argv: string[], ctx: PluginCliContext): Promise<PluginCliResult> {

@@ -1,4 +1,4 @@
-import { environments, events, threads } from "@bb/db";
+import { environments, events, getEnvironment, getThread, threads } from "@bb/db";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import {
   PromptInput,
@@ -459,6 +459,32 @@ export function dispatchThreadRenameCommand(
         "Live thread rename command failed",
       );
     },
+  });
+}
+
+/** Pushes a generated title to a local thread's live provider session, when it has one. */
+export function syncGeneratedTitleToProvider(
+  deps: CommandResultSideEffectsDeps,
+  threadId: string,
+  title: string,
+): void {
+  const thread = getThread(deps.db, threadId);
+  const environment = thread?.environmentId
+    ? getEnvironment(deps.db, thread.environmentId)
+    : null;
+  if (
+    !thread ||
+    !environment ||
+    thread.executionTarget === "cloud" ||
+    (thread.status !== "active" && thread.status !== "idle")
+  ) {
+    return;
+  }
+  dispatchThreadRenameCommand(deps, {
+    environment: { id: environment.id, hostId: environment.hostId },
+    providerId: thread.providerId,
+    threadId,
+    title,
   });
 }
 

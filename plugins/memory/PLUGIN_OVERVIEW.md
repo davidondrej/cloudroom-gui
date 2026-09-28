@@ -10,7 +10,7 @@ Give your agents a memory that survives across threads, projects, and providers.
 
 ## How it works
 
-The agent uses the `cloudroom memory` CLI. `cloudroom memory search` finds summaries with keyword search. `cloudroom memory get` reads one complete record. `cloudroom memory add`, `cloudroom memory update`, and `cloudroom memory forget` change the store with version checks. `cloudroom memory catalog` and `cloudroom memory history` list summaries and past versions.
+The agent uses the `room-cli memory` CLI. `room-cli memory search` finds summaries with keyword search. `room-cli memory get` reads one complete record. `room-cli memory add`, `room-cli memory update`, and `room-cli memory forget` change the store with version checks. `room-cli memory catalog` and `room-cli memory history` list summaries and past versions.
 
 Project writes use the project of the current thread. Global writes must pass `--scope global`. The bundled `memory` skill teaches the agent when to search and what to save. The plugin rejects text that looks like a secret or a prompt injection.
 

@@ -10,20 +10,20 @@ import type { CommandRegistrar } from "../helpers/command-output-harness.js";
 import * as fixtures from "../helpers/command-output-fixtures.js";
 import { registerThreadCommands } from "../../commands/thread/index.js";
 
-describe("cloudroom thread log command output", () => {
+describe("room-cli thread log command output", () => {
   setupCommandOutputTestEnvironment();
 
   const register: CommandRegistrar = (program) =>
     registerThreadCommands(program, () => "http://server");
 
-  it("cloudroom thread log help describes verbose as expanded timeline output", async () => {
+  it("room-cli thread log help describes verbose as expanded timeline output", async () => {
     const helpOutput = await getHelpOutput(["thread", "log"], register);
 
     expect(helpOutput).toContain("verbose (expanded timeline)");
     expect(helpOutput).not.toContain("verbose (full timeline)");
   });
 
-  it("cloudroom thread log --json prints raw events", async () => {
+  it("room-cli thread log --json prints raw events", async () => {
     const thread = {
       id: "thread-json-log",
       projectId: "proj-1",
@@ -57,7 +57,7 @@ describe("cloudroom thread log command output", () => {
     ).toEqual(events);
   });
 
-  it("cloudroom thread log renders merged timeline rows for human output", async () => {
+  it("room-cli thread log renders merged timeline rows for human output", async () => {
     const getEvents = vi.fn(async () => []);
     const getTimeline = vi.fn(async () =>
       fixtures.makeTimelineResponse([
@@ -126,7 +126,7 @@ describe("cloudroom thread log command output", () => {
     expect(getEvents).not.toHaveBeenCalled();
   });
 
-  it("cloudroom thread log renders pending steers for human output", async () => {
+  it("room-cli thread log renders pending steers for human output", async () => {
     const getEvents = vi.fn(async () => []);
     const getTimeline = vi.fn(async () =>
       fixtures.makeTimelineResponse([fixtures.makePendingSteerTimelineRow()]),
@@ -151,7 +151,7 @@ describe("cloudroom thread log command output", () => {
     expect(getEvents).not.toHaveBeenCalled();
   });
 
-  it("cloudroom thread log renders pending steers with default formatting", async () => {
+  it("room-cli thread log renders pending steers with default formatting", async () => {
     const getEvents = vi.fn(async () => []);
     const getTimeline = vi.fn(async () =>
       fixtures.makeTimelineResponse([fixtures.makePendingSteerTimelineRow()]),
@@ -173,7 +173,7 @@ describe("cloudroom thread log command output", () => {
     expect(getEvents).not.toHaveBeenCalled();
   });
 
-  it("cloudroom thread log renders approval state on command and file-change rows", async () => {
+  it("room-cli thread log renders approval state on command and file-change rows", async () => {
     const getEvents = vi.fn(async () => []);
     const getTimeline = vi.fn(async () =>
       fixtures.makeTimelineResponse([
@@ -237,7 +237,7 @@ describe("cloudroom thread log command output", () => {
     expect(getEvents).not.toHaveBeenCalled();
   });
 
-  it("cloudroom thread log --json caps at --limit and warns on stderr when more events exist", async () => {
+  it("room-cli thread log --json caps at --limit and warns on stderr when more events exist", async () => {
     const events = Array.from({ length: 4 }, (_, index) => ({
       id: `evt-${index + 1}`,
       scope: { kind: "thread" },
@@ -270,7 +270,7 @@ describe("cloudroom thread log command output", () => {
     expect(stderr).toContain("--all");
   });
 
-  it("cloudroom thread log --json detects more events across the server page boundary", async () => {
+  it("room-cli thread log --json detects more events across the server page boundary", async () => {
     const events = Array.from({ length: 101 }, (_, index) => ({
       id: `evt-${index + 1}`,
       scope: { kind: "thread" },
@@ -305,7 +305,7 @@ describe("cloudroom thread log command output", () => {
     );
   });
 
-  it("cloudroom thread log --json retries smaller raw-event pages after the byte limit", async () => {
+  it("room-cli thread log --json retries smaller raw-event pages after the byte limit", async () => {
     const events = Array.from({ length: 5 }, (_, index) => ({
       id: `evt-${index + 1}`,
       scope: { kind: "thread" },
@@ -350,7 +350,7 @@ describe("cloudroom thread log command output", () => {
     ]);
   });
 
-  it("cloudroom thread log --json stays quiet when the page is not full", async () => {
+  it("room-cli thread log --json stays quiet when the page is not full", async () => {
     const events = [
       {
         id: "evt-1",
@@ -374,7 +374,7 @@ describe("cloudroom thread log command output", () => {
     expect(collectLogLines(vi.mocked(console.error))).toEqual([]);
   });
 
-  it("cloudroom thread log --json --all pages through every event with --after-seq", async () => {
+  it("room-cli thread log --json --all pages through every event with --after-seq", async () => {
     const makeEvent = (seq: number) => ({
       id: `evt-${seq}`,
       scope: { kind: "thread" },
@@ -429,7 +429,7 @@ describe("cloudroom thread log command output", () => {
     expect(collectLogLines(vi.mocked(console.error))).toEqual([]);
   });
 
-  it("cloudroom thread log --json --all keeps paging after reducing a byte-heavy page", async () => {
+  it("room-cli thread log --json --all keeps paging after reducing a byte-heavy page", async () => {
     const events = Array.from({ length: 5 }, (_, index) => ({
       id: `evt-${index + 1}`,
       scope: { kind: "thread" },
@@ -495,7 +495,7 @@ describe("cloudroom thread log command output", () => {
     ]);
   });
 
-  it("cloudroom thread log --json --all restores large pages after a dense prefix", async () => {
+  it("room-cli thread log --json --all restores large pages after a dense prefix", async () => {
     const events = Array.from({ length: 1202 }, (_, index) => ({
       id: `evt-${index + 1}`,
       scope: { kind: "thread" },
@@ -551,7 +551,7 @@ describe("cloudroom thread log command output", () => {
     expect(getEvents.mock.calls.length).toBeLessThan(30);
   });
 
-  it("cloudroom thread log prints an older-history notice when the timeline page is cut", async () => {
+  it("room-cli thread log prints an older-history notice when the timeline page is cut", async () => {
     const getTimeline = vi.fn(async () => ({
       ...fixtures.makeTimelineResponse([
         fixtures.makePendingSteerTimelineRow(),
@@ -577,7 +577,7 @@ describe("cloudroom thread log command output", () => {
     expect(output).toContain("--all");
   });
 
-  it("cloudroom thread log --limit sets the timeline segment limit for human output", async () => {
+  it("room-cli thread log --limit sets the timeline segment limit for human output", async () => {
     const getTimeline = vi.fn(async () =>
       fixtures.makeTimelineResponse([fixtures.makePendingSteerTimelineRow()]),
     );
@@ -599,7 +599,7 @@ describe("cloudroom thread log command output", () => {
     expect(output).not.toContain("older history omitted");
   });
 
-  it("cloudroom thread log --all walks older timeline pages and prints them oldest first", async () => {
+  it("room-cli thread log --all walks older timeline pages and prints them oldest first", async () => {
     const makeUserRow = (id: string, seq: number, text: string) => ({
       ...fixtures.makePendingSteerTimelineRow(),
       ...fixtures.makeTimelineBase({ id, sourceSeqStart: seq }),
@@ -678,7 +678,7 @@ describe("cloudroom thread log command output", () => {
     expect(output).not.toContain("older history omitted");
   });
 
-  it("cloudroom thread log rejects --all combined with --limit", async () => {
+  it("room-cli thread log rejects --all combined with --limit", async () => {
     stubServerApi({
       "v1.threads.:id.timeline.$get": vi.fn(async () =>
         fixtures.makeTimelineResponse([]),
@@ -696,7 +696,7 @@ describe("cloudroom thread log command output", () => {
     );
   });
 
-  it("cloudroom thread log --self resolves from ROOM_THREAD_ID", async () => {
+  it("room-cli thread log --self resolves from ROOM_THREAD_ID", async () => {
     vi.stubEnv("ROOM_THREAD_ID", "thread-log-self");
     const getEvents = vi.fn(async () => []);
     const getTimeline = vi.fn(async () => fixtures.makeTimelineResponse([]));

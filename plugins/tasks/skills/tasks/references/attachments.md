@@ -10,22 +10,22 @@ For a comment attachment, create the comment as JSON and use its ID:
 
 ```sh
 comment_id=$(
-  cloudroom tasks comment ABC-12 \
+  room-cli tasks comment ABC-12 \
     --body "Screenshot of the failing step." \
     --json | jq -r '.comment.id'
 )
-cloudroom tasks attachment add "$comment_id" --file ./screenshot.png
-cloudroom tasks attachment add "$comment_id" --file ./trace.log
+room-cli tasks attachment add "$comment_id" --file ./screenshot.png
+room-cli tasks attachment add "$comment_id" --file ./trace.log
 ```
 
 Use JSON output when another command needs returned attachment data.
 
 ## Add and remove files
 
-Use repeatable `--attach <path>` with `cloudroom tasks create` for initial files.
+Use repeatable `--attach <path>` with `room-cli tasks create` for initial files.
 
-List IDs with `cloudroom tasks attachment list <key>`. Remove a file with
-`cloudroom tasks attachment remove <attachment-id>`.
+List IDs with `room-cli tasks attachment list <key>`. Remove a file with
+`room-cli tasks attachment remove <attachment-id>`.
 
 The remove command deletes the row and the stored file. It rejects a referenced
 file unless `--remove-references` confirms description cleanup.

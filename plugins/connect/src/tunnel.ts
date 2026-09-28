@@ -186,7 +186,7 @@ export class ConnectTunnel {
     if (credential === null) {
       throw new ConnectListError(
         "not_paired",
-        "this Cloudroom server is not connected to getbb.app — run `cloudroom connect` for how to pair",
+        "this Cloudroom server is not connected to getbb.app — run `room-cli connect` for how to pair",
       );
     }
     return listAccountServers(credential);

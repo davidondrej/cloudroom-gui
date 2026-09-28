@@ -2,10 +2,10 @@
 
 ## Failures And Interruptions
 
-- For failed threads, inspect `cloudroom thread show <id> --json` and
-  `cloudroom thread log <id>` before deciding whether to retry, clarify, or update the
+- For failed threads, inspect `room-cli thread show <id> --json` and
+  `room-cli thread log <id>` before deciding whether to retry, clarify, or update the
   user.
-- Use `cloudroom thread retry <thread-id>` to re-send a failed turn's original message
+- Use `room-cli thread retry <thread-id>` to re-send a failed turn's original message
   verbatim. It re-submits the same input — it does not add a new user message to
   the timeline — and increments the attempt number (2 is the first retry). With
   no `--turn` it retries the most recent turn, the one whose failure put the
@@ -20,13 +20,13 @@
 sendAt?, reason? })`.
 - For interrupted or stopped threads, inspect first. If the user stopped the
   thread, treat that as intentional unless they ask you to continue.
-- Use `cloudroom thread stop <id>` when a thread is stuck or no longer needed.
-- `cloudroom thread stop <id>` also releases an idle or stuck agent runtime. The
+- Use `room-cli thread stop <id>` when a thread is stuck or no longer needed.
+- `room-cli thread stop <id>` also releases an idle or stuck agent runtime. The
   command is idempotent and preserves thread history.
-- Use `cloudroom thread compact <id>` to send the built-in `/compact` command to an idle or errored thread. Completion or failure appears in the timeline. Provider support varies; consult its skill and reported capabilities.
-- Use `cloudroom thread clear <id>` on an idle or failed thread to reset its active
+- Use `room-cli thread compact <id>` to send the built-in `/compact` command to an idle or errored thread. Completion or failure appears in the timeline. Provider support varies; consult its skill and reported capabilities.
+- Use `room-cli thread clear <id>` on an idle or failed thread to reset its active
   timeline and model context in place while keeping the same Cloudroom thread,
   workspace, durable event history, and sticky execution settings.
-- Use `cloudroom thread cancel-plan <id>` to exit an active Plan turn without
-  optimistically clearing its banner. Use `cloudroom thread clear-goal <id>` to clear
+- Use `room-cli thread cancel-plan <id>` to exit an active Plan turn without
+  optimistically clearing its banner. Use `room-cli thread clear-goal <id>` to clear
   a thread's durable active Goal when supported by its provider. Both wait for provider confirmation.
