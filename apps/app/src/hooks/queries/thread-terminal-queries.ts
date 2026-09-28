@@ -1,4 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  clearTerminalCapability,
+  storeTerminalCapability,
+} from "@/lib/terminal-capability-store";
 import type {
   CloseTerminalRequest,
   CreateTerminalRequest,
@@ -94,7 +98,10 @@ export function useCreateTerminal() {
     },
     mutationFn: ({ target, ...request }: CreateTerminalRequest) =>
       sdk.terminals.create({ ...request, scope: target }),
-    onSuccess: (session: TerminalSession) => {
+    onSuccess: (session) => {
+      if (session.capability !== undefined) {
+        storeTerminalCapability(session.id, session.capability.token);
+      }
       applyTerminalSessionUpsert({ queryClient, session });
     },
   });
@@ -216,6 +223,7 @@ export function useCloseTerminal() {
     mutationFn: ({ mode, terminalId }: CloseTerminalMutationRequest) =>
       sdk.terminals.close({ mode, terminalId }),
     onSuccess: (session: TerminalSession, variables) => {
+      clearTerminalCapability(variables.terminalId);
       applyTerminalSessionClose({
         queryClient,
         session,

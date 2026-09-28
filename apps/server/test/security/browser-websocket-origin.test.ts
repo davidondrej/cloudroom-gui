@@ -1,5 +1,4 @@
 import { createNodeBbSdk } from "@bb/sdk/node";
-import { createNodeWebsocketFactory } from "@bb/sdk/node-websocket";
 import { afterEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import {
@@ -28,9 +27,15 @@ function openWebSocket(url: string, origin?: string): Promise<WebSocket> {
   });
 }
 
-function rejectedWebSocketStatus(url: string, origin: string): Promise<number> {
+function rejectedWebSocketStatus(
+  url: string,
+  origin?: string,
+): Promise<number> {
   return new Promise((resolve, reject) => {
-    const socket = new WebSocket(url, { origin });
+    const socket =
+      origin === undefined
+        ? new WebSocket(url)
+        : new WebSocket(url, { origin });
     sockets.add(socket);
     socket.once("open", () =>
       reject(new Error(`WebSocket unexpectedly opened for ${origin}`)),
@@ -113,8 +118,12 @@ describe("browser WebSocket origin boundary", () => {
     const dev = await openWebSocket(realtimeUrl, devOrigin.origin);
     await closeSocket(dev);
 
-    const terminal = await openWebSocket(terminalUrl, server.baseUrl);
-    await closeSocket(terminal);
+    // TG3: the terminal socket's origin boundary passes for trusted origins;
+    // the next layer (terminal capability) rejects the missing terminal with
+    // 401. A 403 here would mean the origin boundary regressed.
+    await expect(
+      rejectedWebSocketStatus(terminalUrl, server.baseUrl),
+    ).resolves.toBe(401);
   });
 
   it("keeps absent-Origin Node SDK realtime and CLI terminal sockets working", async () => {
@@ -141,14 +150,13 @@ describe("browser WebSocket origin boundary", () => {
     stopTarget();
     stopConnection();
 
-    const terminalSocket = createNodeWebsocketFactory()(
-      websocketUrl(server.baseUrl, "/ws/terminals/missing-terminal"),
-    );
-    await new Promise<void>((resolve, reject) => {
-      terminalSocket.onopen = () => resolve();
-      terminalSocket.onerror = () =>
-        reject(new Error("CLI terminal WebSocket handshake failed"));
-    });
-    terminalSocket.close();
+    // TG3: the absent-origin terminal socket passes the origin boundary and
+    // reaches the terminal capability layer (401, not 403). A CLI that needs
+    // a terminal presents the terminal's capability token.
+    await expect(
+      rejectedWebSocketStatus(
+        websocketUrl(server.baseUrl, "/ws/terminals/missing-terminal"),
+      ),
+    ).resolves.toBe(401);
   });
 });

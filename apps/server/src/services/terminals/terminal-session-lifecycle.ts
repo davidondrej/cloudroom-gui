@@ -1,4 +1,8 @@
 import { emitPluginTerminalInput } from "../plugins/plugin-thread-events.js";
+import {
+  createTerminalCapabilityStore,
+  type TerminalCapabilityStore,
+} from "./terminal-capabilities.js";
 import { resolveHostEnvironment } from "../hosts/host-environment.js";
 import { randomUUID } from "node:crypto";
 import {
@@ -481,6 +485,7 @@ export class TerminalSessionLifecycle {
     PendingTerminalRpcKey,
     TerminalReplayMessage
   >;
+  private readonly terminalCapabilities: TerminalCapabilityStore;
   private readonly pendingOpens: PendingRpcRegistry<
     PendingTerminalRpcKey,
     TerminalOpenedMessage
@@ -491,6 +496,7 @@ export class TerminalSessionLifecycle {
   >;
 
   constructor(private readonly options: TerminalSessionLifecycleOptions) {
+    this.terminalCapabilities = createTerminalCapabilityStore({});
     const attachTimeoutMs =
       options.attachTimeoutMs ?? DEFAULT_TERMINAL_OPEN_TIMEOUT_MS;
     const closeTimeoutMs =
@@ -928,6 +934,7 @@ export class TerminalSessionLifecycle {
   }
 
   async closeTerminal(args: CloseTerminalArgs): Promise<TerminalSession> {
+    this.terminalCapabilities.revoke(args.terminalId);
     const current = getTerminalById(this.options.db, args.terminalId);
     if (!current) {
       throw new ApiError(
@@ -1117,6 +1124,32 @@ export class TerminalSessionLifecycle {
       throw new ApiError(502, "host_disconnected", "Host is not connected");
     }
     return toTerminalSession(session);
+  }
+
+  /** TG3: issue or refresh the terminal's short-lifetime capability. */
+  issueOrRefreshTerminalCapability(
+    terminalId: string,
+    hostId: string,
+  ): { token: string; expiresAt: number } {
+    return this.terminalCapabilities.issueOrRefresh(terminalId, hostId);
+  }
+
+  /** TG3: throws 401 unless the presented terminal capability is valid. */
+  requireTerminalCapability(
+    terminalId: string,
+    presented: string | undefined,
+  ): void {
+    if (!this.terminalCapabilities.verify(terminalId, presented)) {
+      throw new ApiError(
+        401,
+        "missing_or_invalid_terminal_capability",
+        "Provide the terminal capability issued when this terminal was created",
+      );
+    }
+  }
+
+  revokeTerminalCapability(terminalId: string): void {
+    this.terminalCapabilities.revoke(terminalId);
   }
 
   async readTerminalOutput(

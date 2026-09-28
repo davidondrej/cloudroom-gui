@@ -7,6 +7,7 @@ import type {
   TerminalOutputResponse,
   TerminalResizeRequest,
   TerminalSession,
+  TerminalSessionWithCapability,
   UpdateTerminalRequest,
 } from "@bb/server-contract";
 import { signalRequestArgs, type CreateSdkAreaArgs } from "./common.js";
@@ -101,8 +102,8 @@ export interface TerminalOutputArgs extends TerminalTargetArgs {
 export type TerminalRestartArgs = TerminalTargetArgs;
 
 export type TerminalListResult = TerminalListResponse;
-export type TerminalCreateResult = TerminalSession;
-export type TerminalGetResult = TerminalSession;
+export type TerminalCreateResult = TerminalSessionWithCapability;
+export type TerminalGetResult = TerminalSessionWithCapability;
 export type TerminalRenameResult = TerminalSession;
 export type TerminalCloseResult = TerminalSession;
 export type TerminalInputResult = TerminalSession;

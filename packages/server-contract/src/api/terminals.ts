@@ -25,6 +25,24 @@ export const terminalSessionSchema = z.object({
 });
 export type TerminalSession = z.infer<typeof terminalSessionSchema>;
 
+// TG3: short-lifetime credential bound to a single terminal. Issued at
+// creation and re-issued on GET; required for every mutation and the WS
+// upgrade. Never persisted — in-memory only, server side.
+export const terminalCapabilitySchema = z.object({
+  token: z.string().min(1),
+  expiresAt: z.number().int().nonnegative(),
+});
+export type TerminalCapability = z.infer<typeof terminalCapabilitySchema>;
+
+export const terminalSessionWithCapabilitySchema = terminalSessionSchema.extend(
+  {
+    capability: terminalCapabilitySchema,
+  },
+);
+export type TerminalSessionWithCapability = z.infer<
+  typeof terminalSessionWithCapabilitySchema
+>;
+
 export const terminalListResponseSchema = z.object({
   sessions: z.array(terminalSessionSchema),
 });

@@ -732,6 +732,15 @@ export function createApp(
     upgradeWebSocket((context) => {
       assertBrowserWebSocketAllowed(context);
       const terminalId = context.req.param("terminalId");
+      // TG3 (HI-1): the upgrade requires the terminal's own short-lifetime
+      // capability, issued at creation and re-issued on authenticated reads.
+      // Browser WebSocket clients cannot set headers, so the query parameter
+      // is the browser channel; the header serves non-browser clients.
+      deps.terminalSessions.requireTerminalCapability(
+        terminalId,
+        context.req.query("terminalToken") ??
+          context.req.header("x-bb-terminal-capability"),
+      );
       const query = terminalWebSocketQuerySchema.safeParse({
         sinceSeq: context.req.query("sinceSeq"),
       });

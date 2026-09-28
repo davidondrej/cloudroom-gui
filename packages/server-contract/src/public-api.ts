@@ -201,6 +201,7 @@ import type {
   TerminalListResponse,
   ThemeCatalogResponse,
   TerminalSession,
+  TerminalSessionWithCapability,
   TerminalInputRequest,
   TerminalListQuery,
   TerminalOutputQuery,
@@ -903,13 +904,13 @@ export const publicApiRoutes = {
       request: jsonRequest<EmptyInput, CreateTerminalRequest>(
         createTerminalRequestSchema,
       ),
-      response: jsonResponse<TerminalSession>({ status: 201 }),
+      response: jsonResponse<TerminalSessionWithCapability>({ status: 201 }),
     }),
     get: defineRoute({
       path: "/terminals/:terminalId",
       method: "get",
       request: noRequest<PathTerminal>(),
-      response: jsonResponse<TerminalSession>(),
+      response: jsonResponse<TerminalSessionWithCapability>(),
     }),
     update: defineRoute({
       path: "/terminals/:terminalId",

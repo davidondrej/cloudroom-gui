@@ -41,6 +41,7 @@ import {
   type SelectionAnchorPoint,
 } from "@/components/thread/timeline/SelectableMessageProse.js";
 import { TimelineSelectionMenu } from "@/components/thread/timeline/TimelineSelectionMenu.js";
+import { ensureTerminalCapability } from "@/lib/app-surface";
 import { buildTerminalWebSocketUrl } from "./terminal-websocket-url";
 import { TerminalWebSocketTransport } from "@bb/client-core";
 import { TerminalLinkOpenDialog } from "./TerminalLinkOpenDialog";
@@ -1015,6 +1016,10 @@ export function ThreadTerminalView({
       const activeTerminal = terminal;
       let hasOpened = false;
       let reconnectNoticeVisible = false;
+      // TG3: resolve (or re-issue) the terminal's capability before the
+      // upgrade — the server refuses terminal WebSocket connections without
+      // it. Reconnects reuse the store; the fetch wrapper re-issues on 401.
+      const terminalToken = await ensureTerminalCapability(session.id);
       const activeTransport = new TerminalWebSocketTransport({
         onConnectionState: (state) => {
           if (disposed) {
@@ -1072,7 +1077,10 @@ export function ThreadTerminalView({
         },
         shouldReconnect: () =>
           !disposed && sessionStatusRef.current === "running",
-        url: buildTerminalWebSocketUrl({ terminalId: session.id }),
+        url: buildTerminalWebSocketUrl({
+          terminalId: session.id,
+          terminalToken,
+        }),
       });
       transport = activeTransport;
       activeTransport.sendResize(activeTerminal.cols, activeTerminal.rows);
