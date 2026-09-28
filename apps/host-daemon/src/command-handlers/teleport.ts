@@ -265,8 +265,6 @@ async function runCapture(
       return null;
     },
   );
-  if (git && !git.isDirectory())
-    throw new Error("Teleport supports primary checkouts, not worktrees");
   const capture: Capture = { nativeId: "", files: [], omitted: [] };
   const add = async (
     source: string,

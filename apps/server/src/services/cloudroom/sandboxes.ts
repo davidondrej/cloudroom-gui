@@ -49,6 +49,30 @@ export async function macCursorLogin(): Promise<string | null> {
   return accessToken && refreshToken ? JSON.stringify({ accessToken, refreshToken }, null, 2) : null;
 }
 
+const environmentSchema = z.object({ variables: z.array(z.object({ name: z.string(), hint: z.string() })), setup: z.string() });
+export type CloudEnvironment = z.infer<typeof environmentSchema>;
+export const cloudEnvironmentRequestSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("get") }),
+  z.object({ action: z.literal("set"), variables: z.record(z.string(), z.string()) }),
+  z.object({ action: z.literal("remove"), name: z.string().min(1) }),
+  z.object({ action: z.literal("setup"), setup: z.string() }),
+]);
+export type CloudEnvironmentRequest = z.infer<typeof cloudEnvironmentRequestSchema>;
+
+/** API keys, tokens, and secrets exported in this Mac's login shell (say, ~/.zshrc): what local agents get (ADR 0130). */
+export async function macVariables(): Promise<Record<string, string>> {
+  const marker = "__CLOUDROOM_ENV__";
+  const run = promisify(execFile)(process.env.SHELL || "/bin/zsh", ["-ilc", `printf '${marker}\\0'; env -0`], { timeout: 15_000, maxBuffer: 8 * 1024 * 1024 });
+  run.child.stdin?.end();
+  const output = await run.then(result => result.stdout, () => "");
+  const entries = output.slice(output.indexOf(`${marker}\0`) + marker.length + 1).split("\0");
+  return Object.fromEntries(entries.flatMap(entry => {
+    const at = entry.indexOf("="), name = entry.slice(0, at), value = entry.slice(at + 1);
+    const wanted = at > 0 && /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) && /KEY|TOKEN|SECRET/i.test(name) && !/^(BB|ROOM|CLOUDROOM|ELECTRON)_/.test(name);
+    return wanted && value && !/[\r\n]/.test(value) ? [[name, value]] : [];
+  }));
+}
+
 /** Each cloud thread's own sandbox, managed by the website (docs/scopes/sandboxes.md). Lookups never wake it. */
 export class SandboxDirectory {
   private readonly views = new Map<string, { view: View; at: number }>();
@@ -59,7 +83,7 @@ export class SandboxDirectory {
   private uploaded = new Map<string, string>();
   constructor(private readonly account: () => Promise<SandboxAccount | null>) {}
 
-  private async call(body: Record<string, string>, path = "sandboxes"): Promise<unknown> {
+  private async call(body: Record<string, unknown>, path = "sandboxes"): Promise<unknown> {
     const account = await this.account();
     if (!account) throw new CloudroomError("Sign in to Cloudroom to use cloud sandboxes.");
     let response: Response;
@@ -155,6 +179,11 @@ export class SandboxDirectory {
     if (this.uploaded.get(name) === digest) return;
     await this.call({ name, value }, "logins");
     this.uploaded.set(name, digest);
+  }
+
+  /** The account's Cloud environment, shared with the website: variables (names only) and the setup script. */
+  async environment(request: CloudEnvironmentRequest): Promise<CloudEnvironment> {
+    return environmentSchema.parse(await this.call(request, "environment"));
   }
 
   /** Which logins the website holds for this account's sandboxes. */

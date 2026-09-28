@@ -1,3 +1,4 @@
+import { CloudEnvironmentSettingsSection } from "@/components/settings/CloudEnvironmentSettingsSection";
 import { MachineEnvironmentSettings } from "@/components/settings/MachineEnvironmentSettings";
 import { MachineAccessSettings } from "@/components/settings/MachineAccessSettings";
 import { useMemo, useRef, useState, type ReactNode } from "react";
@@ -1111,6 +1112,8 @@ export function SettingsView() {
   let content: ReactNode = null;
   if (activePluginId !== null) {
     content = <PluginSettingsPage pluginId={activePluginId} />;
+  } else if (activeSection === "cloud-environment") {
+    content = <CloudEnvironmentSettingsSection />;
   } else if (activeSection === "providers") {
     content = (
       <ProvidersSettingsSection

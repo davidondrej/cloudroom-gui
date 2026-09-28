@@ -1036,6 +1036,8 @@ it("shows Teleport the moment it starts, and never leaves a failed or interrupte
     const started = api(`/cloudroom/threads/${thread.id}/teleport`, { action: "start" });
     await vi.waitFor(() => expect(heldChecks).toHaveLength(1));
     expect(await phase()).toBe("checking");
+    teleports(harness.deps).recover();
+    expect(await phase()).toBe("checking");
     expect((await api(`/cloudroom/threads/${thread.id}/teleport`, { action: "start" })).status).toBe(409);
     heldChecks[0]!({ ok: false, code: "model_unavailable", error: "Cloud cannot run test-model." });
     expect((await started).status).toBe(409);
@@ -1045,6 +1047,14 @@ it("shows Teleport the moment it starts, and never leaves a failed or interrupte
     saveTeleportProgress(harness.db, thread.id, { id: "interrupted", owner: thread.id, phase: "checking", completed: 0, total: 0 });
     teleports(harness.deps).recover();
     expect(await phase()).toBe("cancelled");
+
+    const stopped = api(`/cloudroom/threads/${thread.id}/teleport`, { action: "start" });
+    await vi.waitFor(() => expect(heldChecks).toHaveLength(2));
+    teleports(harness.deps).abandon(thread.id);
+    heldChecks[1]!({ ok: true });
+    const response = await stopped;
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: "teleport_interrupted", message: expect.stringContaining("stopped or archived") });
   } finally {
     service.stop(); core.closeAllConnections(); await new Promise<void>((resolve) => core.close(() => resolve())); await harness.cleanup();
   }

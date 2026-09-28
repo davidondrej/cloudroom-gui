@@ -40,6 +40,17 @@ export interface CloudroomCodexAuth {
   user_code: string | null;
 }
 
+/** Every new cloud thread starts with these (synced with the website). Values are never returned; `hint` is the
+ *  last 4 characters of long values. */
+export interface CloudEnvironment {
+  variables: { name: string; hint: string }[];
+  setup: string;
+}
+export type CloudEnvironmentChange =
+  | { action: "set"; variables: Record<string, string> }
+  | { action: "remove"; name: string }
+  | { action: "setup"; setup: string };
+
 export interface ClaudeAccountInput { action?: "login" | "cancel" | "complete" | "setup-token" | "key"; requestId?: string; code?: string; state?: string; apiKey?: string }
 
 export interface CloudroomArea {
@@ -56,6 +67,12 @@ export interface CloudroomArea {
   signIn(input?: { projectId?: string; websiteUrl?: string }): Promise<{ url: string }>;
   setMacAccess(enabled: boolean): Promise<void>;
   setCopyLogins(enabled: boolean): Promise<void>;
+  environment(signal?: AbortSignal): Promise<CloudEnvironment>;
+  updateEnvironment(change: CloudEnvironmentChange): Promise<CloudEnvironment>;
+  /** Names of API keys and tokens set in this Mac's login shell, never their values. */
+  macVariables(signal?: AbortSignal): Promise<{ names: string[] }>;
+  /** Copies the named variables from this Mac's login shell into the Cloud environment. */
+  importMacVariables(names: string[]): Promise<CloudEnvironment>;
   /** Mac → cloud: runs a shell command as the agent account of the VM, or of `threadId`'s sandbox. Input and output bytes are hex. */
   runOnVm(input: { command: string; stdin?: string; cwd?: string; threadId?: string }): Promise<{ code: number | null; stdout: string; stderr: string; truncated: boolean }>;
   cancel(): Promise<void>;
@@ -108,6 +125,10 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     cancel: () => transport.readVoid(request("/cancel", {})),
     setMacAccess: (enabled) => transport.readVoid(request("/mac-access", { enabled })),
     setCopyLogins: (enabled) => transport.readVoid(request("/copy-logins", { enabled })),
+    environment: (signal) => transport.readJson(request("/environment", undefined, signal)) as Promise<CloudEnvironment>,
+    updateEnvironment: (change) => transport.readJson(request("/environment", change)) as Promise<CloudEnvironment>,
+    macVariables: (signal) => transport.readJson(request("/environment/mac", undefined, signal)) as Promise<{ names: string[] }>,
+    importMacVariables: (names) => transport.readJson(request("/environment/mac", { names })) as Promise<CloudEnvironment>,
     runOnVm: (input) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/vm/run`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })) as Promise<{ code: number | null; stdout: string; stderr: string; truncated: boolean }>,
     logout: () => transport.readVoid(request("/logout", {})),
     threadWorkspace: (threadId, signal) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/workspace`, { signal })) as Promise<CloudroomThreadWorkspace | null>,

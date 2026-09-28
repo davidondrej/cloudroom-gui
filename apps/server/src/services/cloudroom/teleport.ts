@@ -91,6 +91,8 @@ export function teleports(deps: AppDeps): Teleport {
 
 class Teleport {
   private readonly active = new Map<string, Promise<void>>();
+  // Checks running in this process. Recovery only drops checks a restart interrupted.
+  private readonly checking = new Set<string>();
   constructor(private readonly deps: AppDeps) {}
   private save(state: State): void {
     this.deps.db
@@ -161,6 +163,31 @@ class Teleport {
     threadId: string,
     choice?: { model: string; reasoning: string },
   ): Promise<TeleportProgress> {
+    try {
+      return await this.start(threadId, choice);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.deps.logger.warn(
+        {
+          threadId,
+          code: error instanceof ApiError ? error.body.code : undefined,
+          error: message,
+        },
+        "Teleport did not start",
+      );
+      if (error instanceof ApiError) throw error;
+      // Cloud and network errors would otherwise reach the user as "Internal server error".
+      throw new ApiError(
+        409,
+        "teleport_check_failed",
+        `Teleport did not start; this thread stays local. ${message}`,
+      );
+    }
+  }
+  private async start(
+    threadId: string,
+    choice?: { model: string; reasoning: string },
+  ): Promise<TeleportProgress> {
     const existing = teleportProgress(this.deps.db, threadId);
     if (existing && existing.phase !== "cancelled") {
       if (existing.owner !== threadId)
@@ -211,13 +238,12 @@ class Teleport {
       thread.parentThreadId ||
       thread.archivedAt ||
       thread.deletedAt ||
-      !environment?.path ||
-      environment.isWorktree
+      !environment?.path
     )
       throw new ApiError(
         409,
         "teleport_unavailable",
-        "Teleport requires a local parent thread in its primary checkout.",
+        "Teleport requires a local parent thread with a workspace.",
       );
     if (!harnessOf(thread.providerId))
       throw new ApiError(
@@ -240,7 +266,6 @@ class Teleport {
       if (
         !env ||
         env.hostId !== environment.hostId ||
-        env.isWorktree ||
         env.path !== environment.path ||
         !nativeId ||
         !harnessOf(source.providerId)
@@ -293,13 +318,23 @@ class Teleport {
       total: 0,
     });
     this.notify(threadId);
+    this.checking.add(id);
     try {
       await this.preflight(thread.id, thread.providerId, execution);
     } catch (error) {
       this.dropChecking(threadId, id);
       throw error;
+    } finally {
+      this.checking.delete(id);
     }
     const checked = teleportProgress(this.deps.db, threadId)!;
+    // Only the user's own Cancel ends a check quietly; anything else says why.
+    if (checked.id === id && checked.error)
+      throw new ApiError(
+        409,
+        "teleport_interrupted",
+        `Teleport did not start; this thread stays local. ${checked.error}`,
+      );
     if (checked.id !== id || checked.phase !== "checking") return checked;
     const queued = queuedRows.map((row) => {
       const content = JSON.parse(row.content) as {
@@ -441,7 +476,11 @@ class Teleport {
     )
       return;
     if (progress.phase === "checking")
-      return this.dropChecking(threadId, progress.id);
+      return this.dropChecking(
+        threadId,
+        progress.id,
+        "The thread was stopped or archived during the check.",
+      );
     try {
       const state = { ...this.load(progress.id), cancelRequested: true };
       this.save(state);
@@ -491,15 +530,21 @@ class Teleport {
   }
   recover(): void {
     for (const { threadId, progress } of pendingTeleports(this.deps.db))
-      if (progress.phase === "checking") this.dropChecking(threadId, progress.id);
-      else this.launch(threadId, progress.id);
+      if (progress.phase !== "checking") this.launch(threadId, progress.id);
+      else if (!this.checking.has(progress.id))
+        this.dropChecking(
+          threadId,
+          progress.id,
+          "The app restarted during the check.",
+        );
   }
-  private dropChecking(threadId: string, id: string): void {
+  private dropChecking(threadId: string, id: string, reason?: string): void {
     const progress = teleportProgress(this.deps.db, threadId);
     if (progress?.id !== id || progress.phase !== "checking") return;
     saveTeleportProgress(this.deps.db, threadId, {
       ...progress,
       phase: "cancelled",
+      ...(reason ? { error: reason } : {}),
     });
     this.notify(threadId);
   }

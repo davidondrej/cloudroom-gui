@@ -75,6 +75,7 @@ describe("SettingsSidebarContent navigation", () => {
       [
         "Back to app",
         "General",
+        "Cloud environment",
         "Providers",
         "Appearance",
         "Keyboard",

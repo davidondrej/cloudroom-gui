@@ -14,7 +14,8 @@ import { claudePlan, createClaudeToken } from "./claude-token.js";
 import { startClaudeVersionSync } from "./claude-version.js";
 import { importBbThreads } from "./bb-import.js";
 import { copyToMac, openOnMac, teleportingToLocal, teleportToLocal } from "./teleport-local.js";
-import { sandboxThread } from "./sandboxes.js";
+import { cloudEnvironmentRequestSchema, macVariables, sandboxThread, type CloudEnvironmentRequest } from "./sandboxes.js";
+import { CloudroomError } from "./client.js";
 import { archiveThreadAndChildren } from "../threads/thread-archive.js";
 
 export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
@@ -67,6 +68,22 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     const input = z.object({ enabled: z.boolean() }).strict().parse(await context.req.json());
     await setMacAccess(deps, input.enabled);
     return context.json({ ok: true });
+  });
+  // The website's own message (say, an invalid key) reaches the user instead of "Internal server error".
+  const environment = (request: CloudEnvironmentRequest) => cloudroom(deps).sandboxes.environment(request).catch((error: unknown) => {
+    throw new ApiError(error instanceof CloudroomError && error.status ? 400 : 503, "cloud_environment", error instanceof Error ? error.message : String(error));
+  });
+  // Cloud environment settings live on the website, so the app and the dashboard always show the same values.
+  app.get("/api/v1/cloudroom/account/environment", async (context) => context.json(await environment({ action: "get" })));
+  app.post("/api/v1/cloudroom/account/environment", async (context) => context.json(await environment(cloudEnvironmentRequestSchema.parse(await context.req.json()))));
+  // Import from this Mac: the list shows names only, and values go straight to the website.
+  app.get("/api/v1/cloudroom/account/environment/mac", async (context) => context.json({ names: Object.keys(await macVariables()).sort() }));
+  app.post("/api/v1/cloudroom/account/environment/mac", async (context) => {
+    const { names } = z.object({ names: z.array(z.string()).min(1).max(100) }).strict().parse(await context.req.json());
+    const found = await macVariables();
+    const variables = Object.fromEntries(names.flatMap(name => found[name] ? [[name, found[name]]] : []));
+    if (!Object.keys(variables).length) throw new ApiError(404, "mac_variables_missing", "Those variables are no longer set in your shell on this Mac.");
+    return context.json(await environment({ action: "set", variables }));
   });
   app.post("/api/v1/cloudroom/account/copy-logins", async (context) => {
     const input = z.object({ enabled: z.boolean() }).strict().parse(await context.req.json());

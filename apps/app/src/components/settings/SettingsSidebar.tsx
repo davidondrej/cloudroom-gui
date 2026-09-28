@@ -20,6 +20,7 @@ import type { PluginSettingsEntry } from "./plugin-settings-entries";
 
 const VISIBLE_SECTIONS = new Set<SettingsSectionId>([
   "general",
+  "cloud-environment",
   "providers",
   "appearance",
   "keyboard",
