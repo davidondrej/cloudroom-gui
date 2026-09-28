@@ -7,7 +7,7 @@ import { reasoningLevelSchema, threadEventSchema, threadScope, turnScope, encode
 import { z } from "zod";
 import { CloudroomError, type SessionRecord } from "./client.js";
 import { codexErrorFields } from "./codex-errors.js";
-import { binding, command, saveBinding, saveCommandState, saveStatus, effectivePrompt, type Binding, type Command } from "./store.js";
+import { binding, command, queuedPrompts, saveBinding, saveCommandState, saveStatus, effectivePrompt, unstartedTurn, type Binding, type Command } from "./store.js";
 
 const object = z.record(z.string(), z.unknown());
 const nativeFrame = z.object({ method: z.string(), params: object.optional() });
@@ -51,17 +51,32 @@ function promptRequestedEvent(db: DbQueryConnection, saved: Binding, request: Co
   });
 }
 
+function appendPrompt(tx: DbTransaction, saved: Binding, request: Command): void {
+  const event = promptRequestedEvent(tx, saved, request);
+  appendThreadEventsInTransaction(tx, [{
+    threadId: saved.threadId, environmentId: null, providerThreadId: saved.nativeId, createdAt: request.createdAt,
+    type: event.type, scope: event.scope, data: event,
+  } as AppendStoredThreadEventArgs]);
+}
+
 export function projectInitialPrompt(tx: DbTransaction, threadId: string): boolean {
   const saved = binding(tx, threadId);
   const request = command(tx, `first_${threadId}`);
   if (!saved || !request || saved.turnId ||
       !(request.state === "sending" || request.state === "accepted" || (request.state === "failed" && !saved.sessionId)) ||
       requestedTurns(tx, threadId).has(bbRequestId(request.id))) return false;
-  const event = promptRequestedEvent(tx, saved, request);
-  appendThreadEventsInTransaction(tx, [{
-    threadId, environmentId: null, providerThreadId: saved.nativeId, createdAt: request.createdAt,
-    type: event.type, scope: event.scope, data: event,
-  } as AppendStoredThreadEventArgs]);
+  appendPrompt(tx, saved, request);
+  return true;
+}
+
+export function projectFollowUp(tx: DbTransaction, threadId: string, id: string): boolean {
+  const saved = binding(tx, threadId);
+  const request = command(tx, id);
+  const status = getThread(tx, threadId)?.status;
+  if (!saved?.sessionId || saved.queuePaused || request?.command !== "prompt" || (status !== "idle" && status !== "error") || queuedPrompts(tx, threadId).length) return false;
+  saveBinding(tx, threadId, { turnId: id, error: null });
+  saveStatus(tx, threadId, "active");
+  appendPrompt(tx, saved, request);
   return true;
 }
 
@@ -123,6 +138,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
       }
       if (receipt.state === "accepted" && ["stop", "resume"].includes(receipt.command)) {
         saveBinding(tx, threadId, { queuePaused: receipt.command === "stop" });
+        if (receipt.command === "stop" && unstartedTurn(tx, threadId)) saveStatus(tx, threadId, "idle");
       }
       if (receipt.command === "cancel" && ["accepted", "completed"].includes(receipt.state)) {
         const stored = data.input ? object.parse(data.input) : previous ? JSON.parse(previous.input) as { target_request_id?: string } : {};
@@ -212,12 +228,14 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
           emit({ ...base, type: "turn/input/accepted", clientRequestId: bbRequestId(data.request_id) });
         }
       }
-      saveStatus(tx, threadId,
+      const status =
         state === "pending" || state === "waiting_for_files" ? "pending" :
         ["starting", "resuming"].includes(state) ? "starting" :
         ["starting_turn", "running"].includes(state) ? "active" :
         state === "interrupting" ? "stopping" :
-        ["failed", "process_lost"].includes(state) ? "error" : "idle");
+        ["failed", "process_lost"].includes(state) ? "error" : "idle";
+      const waiting = status !== "error" && status !== "stopping" && !saved.queuePaused && unstartedTurn(tx, threadId);
+      saveStatus(tx, threadId, waiting ? "active" : status);
       if (["failed", "process_lost"].includes(state)) emit({
         type: "system/error", scope: threadScope(), threadId,
         message: typeof data.reason === "string" ? data.reason : "Cloudroom execution failed",

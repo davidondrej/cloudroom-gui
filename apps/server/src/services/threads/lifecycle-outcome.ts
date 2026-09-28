@@ -13,6 +13,7 @@ import {
   emitPluginTurnFailed,
 } from "../plugins/plugin-thread-events.js";
 import type { ProviderRegistryService } from "../providers/provider-registry.js";
+import { noteTurnFailed } from "../system/auth-failure-telemetry.js";
 import { buildThreadStatusChangeMetadata } from "./thread-runtime-display.js";
 
 /**
@@ -31,6 +32,7 @@ function announceTurnFailed(
 ): void {
   if (!outcome.applied || args.event.type !== "run.failed") return;
   emitPluginTurnFailed(args.threadId);
+  noteTurnFailed(args.threadId);
 }
 
 interface ApplyLoggedThreadLifecycleEventDeps {

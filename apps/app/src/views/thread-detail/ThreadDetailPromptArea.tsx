@@ -5,8 +5,9 @@ import { ProjectCopyNotice } from "@/components/thread/ProjectCopyNotice";
 import { FixPrompt } from "@/components/ui/fix-prompt";
 import { cloudThreadFixPrompt } from "@/lib/fix-prompts";
 import { canTeleportLocalThread, canTeleportThread } from "@/components/thread/ThreadActionsMenu";
-import { ClaudeCloudSignIn } from "@/components/ClaudeConnection";
-import { openCodexConnection, openCursorConnection } from "@/components/CodexConnectionPanel";
+import { ClaudeSignIn } from "@/components/ClaudeConnection";
+import { LocalSignInNotice } from "@/components/LocalSignInNotice";
+import { openCodexConnection, openCursorConnection, openTeleportLogin } from "@/components/CodexConnectionPanel";
 import {
   useCallback,
   useEffect,
@@ -200,6 +201,7 @@ interface ThreadDetailPromptAreaProps {
   isEnvironmentActionPending: boolean;
   pendingInteractions: readonly PendingInteraction[];
   pendingInteractionsInitialLoading: boolean;
+  providerAuthFailed?: boolean;
   queuedMessageCount: number;
   onChangedFileClick: (selection: WorkspaceChangedFileSelection) => void;
   projectId: string;
@@ -402,6 +404,7 @@ export function ThreadDetailPromptArea({
   isEnvironmentActionPending,
   pendingInteractions,
   pendingInteractionsInitialLoading,
+  providerAuthFailed = false,
   queuedMessageCount,
   onChangedFileClick,
   projectId,
@@ -445,6 +448,7 @@ export function ThreadDetailPromptArea({
     // Claude connects through its own sign-in card in the cloud notice below.
     if (cloudState.data?.authRequired && !claudeThread) openCloudConnection(authThreadId);
   }, [cloudState.data?.authRequired, claudeThread, authThreadId, openCloudConnection]);
+  useEffect(() => { if (teleport.error) openTeleportLogin(teleport.error, thread.providerId); }, [teleport.error, thread.providerId]);
   const cloudWorkspace = useCloudroomThreadWorkspace(
     thread.id,
     isCloud && Boolean(cloudState.data?.sessionId),
@@ -2336,7 +2340,7 @@ export function ThreadDetailPromptArea({
   const cloudFixPrompt = cloudError || cloudState.data?.failedStart ? cloudThreadFixPrompt(thread.id, thread.providerId, cloudError) : null;
   const cloudAuthNotice = isCloud && !shouldHideComposer && cloudState.data?.authRequired ? (
     <PromptStackCard ariaLabel="Connect your account" className="w-full max-w-sm justify-self-center p-3 text-xs">
-      {claudeThread ? <ClaudeCloudSignIn onContinue={() => retryCloudStart.mutate()} continuing={retryCloudStart.isPending} /> : (
+      {claudeThread ? <ClaudeSignIn target={{ target: "cloud" }} onContinue={() => retryCloudStart.mutate()} continuing={retryCloudStart.isPending} /> : (
         <div className="flex items-center justify-between gap-2">
           <div>
             <p className="text-sm font-medium">Connect {thread.providerId === "acp-cursor" ? "Cursor" : "Codex"} to start</p>
@@ -2373,7 +2377,7 @@ export function ThreadDetailPromptArea({
       id={THREAD_DETAIL_COMPOSER_TEXTAREA_ID}
       loadingLabel={cloudStarting ? "Starting cloud thread" : undefined}
       attachments={bottomAttachmentsConfig}
-      stack={<>{!isCloud && !teleporting && <TeleportCheckCard pending={teleport.isPending} error={teleport.error} models={[...modelOptions, ...moreModelOptions]} reasoning={reasoningLevel} usedTokens={contextWindowUsage?.usedTokens ?? null} levelsFor={(model) => cloudReasoningLevels(cloudConnection.data, thread.providerId, model)} onTeleport={(choice) => teleport.mutate(choice)} onDismiss={teleport.reset} />}{thread.teleport && <TeleportNotice thread={thread} pendingDelivery={cloudState.data?.pendingDelivery} paused={cloudState.data?.paused} />}{thread.projectCopy && <ProjectCopyNotice thread={thread} />}{cloudNotice}{pendingInteractionNode ? pendingInteractionStack : promptStack}</>}
+      stack={<>{!isCloud && !teleporting && <TeleportCheckCard pending={teleport.isPending} error={teleport.error} models={[...modelOptions, ...moreModelOptions]} reasoning={reasoningLevel} usedTokens={contextWindowUsage?.usedTokens ?? null} levelsFor={(model) => cloudReasoningLevels(cloudConnection.data, thread.providerId, model)} onTeleport={(choice) => teleport.mutate(choice)} onDismiss={teleport.reset} />}{thread.teleport && <TeleportNotice thread={thread} pendingDelivery={cloudState.data?.pendingDelivery} paused={cloudState.data?.paused} sending={sendMessage.isPending} />}{thread.projectCopy && <ProjectCopyNotice thread={thread} />}{cloudNotice}{!isCloud && !shouldHideComposer && <LocalSignInNotice threadId={thread.id} providerId={thread.providerId} hostId={environmentHostId} environmentId={thread.environmentId} authFailed={providerAuthFailed} />}{pendingInteractionNode ? pendingInteractionStack : promptStack}</>}
       pendingInteraction={pendingInteractionNode}
       activePromptMode={isHandoffSelection ? null : activePromptMode}
       composer={shouldHideComposer || teleporting || transferredChild || movingToLocal ? null : bottomComposerConfig}

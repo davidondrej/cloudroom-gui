@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@bb/shared-ui/button";
 import { PersistentResponsiveDrawerShell } from "@bb/shared-ui/responsive-overlay";
 import { useCloudroomAccount } from "@/hooks/queries/cloudroom-queries";
-import { sdk } from "@/lib/sdk";
+import { BbHttpError, sdk } from "@/lib/sdk";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
 
@@ -14,6 +14,13 @@ export function openCodexConnection(threadId?: string) {
 
 export function openCursorConnection(threadId?: string) {
   window.dispatchEvent(new CustomEvent("cloudroom:connect-cursor", { detail: threadId ?? null }));
+}
+export function openTeleportLogin(error: unknown, providerId: string): boolean {
+  if (!(error instanceof BbHttpError) || error.code !== "teleport_login_required") return false;
+  if (providerId === "acp-cursor") openCursorConnection();
+  else if (providerId === "codex") openCodexConnection();
+  else return false;
+  return true;
 }
 export function CodexConnectionPanel() { return <ConnectionPanel provider="codex" />; }
 export function CursorConnectionPanel() { return <ConnectionPanel provider="cursor" />; }

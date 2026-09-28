@@ -132,7 +132,7 @@ export async function resumeThreadsAfterUpdate(
       }
       await requestJson(args.serverUrl, `/threads/${id}/send`, "POST", {
         input: [{ mentions: [], text: RESUME_MESSAGE, type: "text" }],
-        mode: "queue-if-active",
+        mode: "steer-if-active",
       });
       args.logger.info(`Resumed thread ${id} after the update.`);
     } catch (error: unknown) {

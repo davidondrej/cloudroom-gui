@@ -8,19 +8,19 @@ import type { CreateThreadRequest, SendMessageRequest, SendMessageResponse } fro
 import { z } from "zod";
 import { ApiError } from "../../errors.js";
 import { CloudroomClient, CloudroomConnectionError, CloudroomError, authRequiredMessages, type CodexAuthStatus, type VmRun, type VmRunResult } from "./client.js";
-import { CLOUD_HARNESSES, isCloudProvider, projectInitialPrompt, projectRecord, retractStillQueuedPrompts, type CloudProvider } from "./events.js";
+import { CLOUD_HARNESSES, isCloudProvider, projectFollowUp, projectInitialPrompt, projectRecord, retractStillQueuedPrompts, type CloudProvider } from "./events.js";
 import { mentionsOpenAISide401 } from "./codex-errors.js";
 import { codexOutage } from "./openai-status.js";
 import { buildThreadStatusChangeMetadata } from "../threads/thread-runtime-display.js";
 import { prepareCloudInstructionInput, resolveCustomInstructions } from "../threads/custom-instructions.js";
-import { binding, bindings, command, commands, queuedPrompts, saveBinding, saveCommandState, saveStatus, effectivePrompt, projectCopyProgress, teleportBlocked, type Binding, type Command } from "./store.js";
+import { binding, bindings, command, commands, queuedPrompts, saveBinding, saveCommandState, saveStatus, effectivePrompt, projectCopyProgress, teleportBlocked, unstartedTurn, type Binding, type Command } from "./store.js";
 import { copyProject, githubRepository, planProjectCopy } from "./project-copy.js";
 import { deriveTitleFallback, shouldGenerateThreadTitle } from "../threads/title-generation.js";
 import { inferThreadMetadata } from "../threads/thread-metadata-inference.js";
 import { copyLogins, importCodexLogin, importPiLogin, setupSync, stopSync, syncStatus } from "./sync.js";
 import { setupPreviews, stopPreviews, previewStatus } from "./previews.js";
 import { CloudSecrets } from "./secrets.js";
-import { SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject } from "./sandboxes.js";
+import { macCursorLogin, SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject } from "./sandboxes.js";
 import type { AppDeps, LoggedWorkSessionDeps } from "../../types.js";
 import type { EditMessageRequest, EditMessageResponse } from "@bb/server-contract";
 
@@ -190,6 +190,14 @@ function validateReasoning(harness: string, model: string, reasoning: string, ca
   const levels = profile?.models ? (profile.models.find((item) => item.model === model)?.reasoning_levels ?? anyLevel) : profile?.reasoning_levels;
   if (profile?.models && !levels) throw new ApiError(400, "invalid_model", "This model is unavailable on Cloud. Refresh the model selection.");
   if (!levels?.includes(reasoning)) throw new ApiError(400, "invalid_reasoning_effort", "This reasoning level is unavailable for the cloud model. Select a supported level.");
+}
+
+function followUpPayload(harness: string, saved: Binding, payload: SendMessageRequest, reasoning: string | null, capabilities: Capabilities) {
+  const profile = harnessProfile(capabilities, harness);
+  if ((payload.mode === "steer" || payload.mode === "steer-if-active") && (!feature(capabilities, "steer") || profile?.steer === false)) throw new ApiError(409, "cloudroom_unsupported", "Cloud steering is not enabled. Use --mode queue.");
+  if (payload.serviceTier === "fast" && !profile?.service_tier) throw new ApiError(409, "cloudroom_launch_settings", "Model is fixed for this cloud session. Start a new thread to change it.");
+  if (reasoning !== null) validateFollowUpReasoning(harness, saved, reasoning, capabilities);
+  return promptPayload(payload.input, harness, capabilities.attachments && (profile?.attachments ?? true));
 }
 
 function validateFollowUpReasoning(harness: string, saved: Binding, reasoning: string, capabilities: Capabilities): void {
@@ -506,6 +514,14 @@ class CloudroomService {
     return { id: project?.id ?? PERSONAL_PROJECT_ID, repository: project && project.id !== PERSONAL_PROJECT_ID ? githubRepository(project.gitRemoteUrl) : null, folder: workspaceName(project?.name ?? "project") };
   }
 
+  private async warmRecentProject(): Promise<void> {
+    const recent = bindings(this.deps.db).filter(saved => sandboxThread(saved.coreUrl))
+      .map(saved => getThread(this.deps.db, saved.threadId))
+      .filter(thread => thread && !thread.archivedAt && !thread.deletedAt)
+      .sort((a, b) => b!.createdAt - a!.createdAt)[0];
+    if (recent && Date.now() - recent.createdAt < 7 * 86_400_000) await this.warmSandbox(recent.projectId);
+  }
+
   async warmSandbox(projectId: string): Promise<void> {
     if (!await this.newThreadsInSandboxes()) return;
     await this.uploadMacLogins();
@@ -705,8 +721,14 @@ class CloudroomService {
   async cursorAuth(action?: "login" | "cancel" | "key", requestId?: string, apiKey?: string) {
     const sandbox = await this.sandboxLogin("cursor");
     if (sandbox) {
-      if (action === "login") throw new ApiError(409, "cursor_auth_unsupported", "Cloud sandboxes connect Cursor with an API key. Use a Cursor API key instead.");
-      if (action !== "key") return sandbox.state === "connected" ? sandbox : { ...sandbox, state: "limited" as const, message: "Cloud sandboxes use a Cursor user API key. Create one in your Cursor dashboard, then paste it below." };
+      // Signing in copies this Mac's Cursor login; clicking is the consent, even when automatic copying is off.
+      if (action === "login") {
+        const login = await macCursorLogin();
+        if (!login) throw new ApiError(409, "cursor_auth_required", "Cursor is not signed in on this Mac. Run `cursor-agent login` in your terminal, then click Sign in with Cursor again, or use a Cursor API key.");
+        await this.sandboxes.saveLogin("cursor", login);
+        return { ...sandbox, state: "connected" as const };
+      }
+      if (action !== "key") return sandbox.state === "connected" ? sandbox : { ...sandbox, message: "Cloud threads use this Mac's Cursor login, or a Cursor user API key." };
       const key = apiKey?.trim() ?? "";
       if (!/^[\x21-\x7e]{1,4096}$/.test(key)) throw new ApiError(400, "invalid_request", "Enter a valid Cursor API key.");
       await this.sandboxes.saveLogin("cursor", JSON.stringify({ apiKey: key }));
@@ -756,7 +778,8 @@ class CloudroomService {
   async threadWorkspace(threadId: string, signal?: AbortSignal) {
     const saved = binding(this.deps.db, threadId);
     if (!saved?.sessionId) return null;
-    return (await this.client(saved)).sessionWorkspace(saved.sessionId, signal);
+    try { return (await this.client(saved, false)).sessionWorkspace(saved.sessionId, signal); }
+    catch (error) { if (error instanceof SandboxAsleep) return null; throw error; }
   }
 
   async updateReasoningOverride(thread: Thread, reasoningLevel: ReasoningLevel | null): Promise<void> {
@@ -874,37 +897,42 @@ class CloudroomService {
     if (teleportBlocked(this.deps.db, thread.id)) throw new ApiError(409, "teleport_in_progress", "Messages are disabled until Teleport finishes.");
     const saved = binding(this.deps.db, thread.id);
     if (!saved) throw new ApiError(409, "cloudroom_missing_binding", "Cloud thread has no core binding; native execution is blocked");
-    const client = await this.client(saved);
     if (!saved.sessionId && command(this.deps.db, `first_${thread.id}`)?.state === "failed") throw new ApiError(409, "cloudroom_start_failed", "Retry the rejected cloud start before sending more messages. Your original prompt is saved.");
     if (thread.archivedAt || thread.deletedAt) throw new ApiError(409, "thread_not_writable", "Thread is archived or deleted");
-    let capabilities: Capabilities;
-    try {
-      capabilities = await this.capabilities(client);
-    } catch (error) {
-      if (error instanceof ApiError) throw error;
-      throw new ApiError(503, error instanceof CloudroomError ? error.code ?? "cloudroom_unavailable" : "cloudroom_unavailable", publicError(error));
-    }
-    const profile = harnessProfile(capabilities, thread.providerId);
     if (payload.sendAt || payload.pluginSubmission) throw new ApiError(409, "cloudroom_unsupported", "Cloud follow-ups use the core queue. Scheduling is not enabled.");
     if (isStandaloneBuiltinCompactCommand(payload.input)) {
       await this.compact(thread);
       return { ok: true, delivery: "sent" };
     }
-    if ((payload.mode === "steer" || payload.mode === "steer-if-active") && (!feature(capabilities, "steer") || profile?.steer === false)) throw new ApiError(409, "cloudroom_unsupported", "Cloud steering is not enabled. Use --mode queue.");
     if (payload.permissionMode && payload.permissionMode !== "full") throw new ApiError(409, "cloudroom_unsupported", "Cloud uses the full permission mode; restricted modes are not supported.");
     if (payload.model && payload.model !== saved.model) throw new ApiError(409, "cloudroom_launch_settings", "Model is fixed for this cloud session. Start a new thread to change it.");
-    if (payload.serviceTier === "fast" && !profile?.service_tier) throw new ApiError(409, "cloudroom_launch_settings", "Model is fixed for this cloud session. Start a new thread to change it.");
-    const parsed = promptPayload(payload.input, thread.providerId, capabilities.attachments && (profile?.attachments ?? true));
     const id = payload.requestId ?? randomUUID();
-    if ((payload.mode === "steer" || payload.mode === "steer-if-active") && thread.status === "active" && saved.turnId) {
-      this.enqueue(thread.id, id, "steer", { target_request_id: saved.turnId, text: parsed.text, content: parsed.content });
-      await this.deliver(thread.id);
-      return { ok: true, delivery: "sent" };
-    }
+    const steer = (payload.mode === "steer" || payload.mode === "steer-if-active") && thread.status === "active" && saved.turnId && !unstartedTurn(this.deps.db, thread.id);
     const previous = command(this.deps.db, id);
     const reasoning = payload.reasoningLevel ?? (previous
       ? commandReasoning(previous.input) ?? saved.reasoning
       : getThreadExecutionOverride(this.deps.db, thread.id)?.reasoningLevelOverride ?? saved.reasoning);
+    const live = async () => {
+      try { return await this.capabilities(await this.client(saved)); }
+      catch (error) {
+        if (error instanceof ApiError) throw error;
+        throw new ApiError(503, error instanceof CloudroomError ? error.code ?? "cloudroom_unavailable" : "cloudroom_unavailable", publicError(error));
+      }
+    };
+    const fast = saved.sessionId && !saved.queuePaused && ["idle", "error", "active"].includes(thread.status);
+    const known = fast ? sandboxThread(saved.coreUrl) ? await this.savedCapabilities() : this.lastCapabilities : null;
+    const validated = steer || previous ? null : reasoning;
+    let parsed: ReturnType<typeof promptPayload>;
+    try { parsed = followUpPayload(thread.providerId, saved, payload, validated, known ?? await live()); }
+    catch (error) {
+      if (!known || !(error instanceof ApiError)) throw error;
+      parsed = followUpPayload(thread.providerId, saved, payload, validated, await live());
+    }
+    if (steer) {
+      this.enqueue(thread.id, id, "steer", { target_request_id: saved.turnId, text: parsed.text, content: parsed.content });
+      await this.deliver(thread.id);
+      return { ok: true, delivery: "sent" };
+    }
     const stored = {
       ...parsed,
       ...(reasoning !== saved.reasoning ? { reasoning } : {}),
@@ -913,10 +941,16 @@ class CloudroomService {
     if (previous) {
       if (!sameStoredPrompt(previous, thread.id, stored, reasoning, saved.reasoning)) throw new ApiError(409, "request_conflict", "Request ID was already used with different content");
     } else {
-      validateFollowUpReasoning(thread.providerId, saved, reasoning, capabilities);
       this.enqueue(thread.id, id, "prompt", stored);
+      if (this.deps.db.transaction(tx => projectFollowUp(tx, thread.id, id))) this.notify(thread.id, ["client/turn/requested"]);
     }
-    await this.deliver(thread.id);
+    const delivery = this.deliver(thread.id);
+    const shown = this.queue(thread.id).find((item) => item.id === id);
+    if (shown || binding(this.deps.db, thread.id)?.turnId === id) {
+      void delivery.catch(() => {});
+      return shown ? { ok: true, delivery: "queued", queuedMessage: shown } : { ok: true, delivery: "sent" };
+    }
+    await delivery;
     const state = command(this.deps.db, id)?.state;
     if (state && ["failed", "unknown", "unknown_after_restart"].includes(state)) throw new ApiError(409, "cloudroom_command_failed", "The core reports failed or uncertain execution. Check the conversation before submitting again.");
     const queued = this.queue(thread.id).find((item) => item.id === id);
@@ -1058,6 +1092,7 @@ class CloudroomService {
 
   async editQueued(thread: Thread, queuedMessageId: string, payload: { input: PromptInput[]; expectedUpdatedAt: number }) {
     const saved = binding(this.deps.db, thread.id);
+    if (command(this.deps.db, queuedMessageId)?.state === "sending") await this.deliver(thread.id).catch(() => {});
     const current = command(this.deps.db, queuedMessageId);
     if (!saved || !current || current.threadId !== thread.id || current.command !== "prompt" || current.state !== "accepted") {
       throw new ApiError(404, "invalid_request", "Queued message not found");
@@ -1114,7 +1149,7 @@ class CloudroomService {
     const queue = this.queue(thread.id);
     const queued = queue.find((item) => item.id === queuedMessageId);
     if (!saved || !queued) throw new ApiError(404, "invalid_request", "Queued message not found");
-    const active = thread.status === "active" && saved.turnId !== null;
+    const active = thread.status === "active" && saved.turnId !== null && !unstartedTurn(this.deps.db, thread.id);
     if (active && queued.content.every((part) => part.type === "text")) {
       const capabilities = await this.capabilities(await this.client(saved));
       if (feature(capabilities, "steer") && feature(capabilities, "queue_cancel") && harnessProfile(capabilities, thread.providerId)?.steer !== false) {
@@ -1222,6 +1257,7 @@ class CloudroomService {
     void this.reportOnboarding();
     void this.uploadMacLogins();
     void this.uploadMacConfig();
+    void this.warmRecentProject().catch(() => {});
     this.timer = setInterval(() => {
       this.teleportRecovery?.();
       void this.uploadMacConfig(); // Rate-limited to once a minute; only changed skills are sent.

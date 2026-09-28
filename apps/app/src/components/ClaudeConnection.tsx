@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "@bb/shared-ui/button";
@@ -76,7 +76,10 @@ async function request(
     signal,
   });
 }
-function useClaudeConnection(target: ClaudeConnectionTarget) {
+export function useClaudeConnection(
+  target: ClaudeConnectionTarget,
+  enabled = true,
+) {
   const account = useCloudroomAccount();
   return useQuery({
     queryKey: [
@@ -86,7 +89,8 @@ function useClaudeConnection(target: ClaudeConnectionTarget) {
       target.target === "cloud" ? account.data?.account?.id : null,
     ],
     queryFn: ({ signal }) => request(target, undefined, signal),
-    enabled: target.target === "local" || account.data?.ready === true,
+    enabled:
+      enabled && (target.target === "local" || account.data?.ready === true),
     retry: false,
     staleTime: 30_000,
     refetchInterval: (query) =>
@@ -166,15 +170,27 @@ export function ClaudeConnectionButton({
   return popover;
 }
 
-export function ClaudeCloudSignIn({
+export function ClaudeSignIn({
+  target,
   onContinue,
   continuing,
 }: {
-  onContinue: () => void;
+  target: ClaudeConnectionTarget;
+  onContinue?: () => void;
   continuing: boolean;
 }) {
-  const auth = useClaudeConnection({ target: "cloud" });
-  if (auth.data?.state === "connected")
+  const auth = useClaudeConnection(target);
+  const connected = auth.data?.state === "connected";
+  const sawSignedOut = useRef(false);
+  useEffect(() => {
+    if (auth.data && !connected) sawSignedOut.current = true;
+    else if (connected && sawSignedOut.current) {
+      sawSignedOut.current = false;
+      onContinue?.();
+    }
+  }, [auth.data, connected, onContinue]);
+  if (connected && !onContinue) return null;
+  if (connected)
     return (
       <div className="flex items-center justify-between gap-2 text-sm">
         <span>Claude is connected.</span>
@@ -191,10 +207,10 @@ export function ClaudeCloudSignIn({
     );
   return (
     <ClaudeConnectionPanel
-      target={{ target: "cloud" }}
+      target={target}
       heading={
         <div>
-          <p className="text-sm font-medium">Connect Claude to start</p>
+          <p className="text-sm font-medium">Sign in to Claude to continue</p>
           <p className="text-muted-foreground">Your message is saved.</p>
         </div>
       }

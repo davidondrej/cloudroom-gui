@@ -132,6 +132,7 @@ import {
 } from "@/components/workspace/workspace-change-summary";
 import { getThreadDisplayTitle } from "@/lib/thread-title";
 import { hasThreadProvisioningFailure } from "@/lib/thread-provisioning-failure";
+import { hasThreadAuthFailure } from "@/lib/thread-auth-failure";
 import {
   getMutationErrorMessage,
   showMutationErrorToast,
@@ -2397,6 +2398,8 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     thread.status === "error" && thread.environmentId === null
       ? hasThreadProvisioningFailure(timelineRows)
       : false;
+  const providerAuthFailed =
+    thread.status === "error" && hasThreadAuthFailure(timelineRows);
   const threadEnvironmentProviderLookup = findEnvironmentDisplayProvider(
     registeredEnvironmentProviders,
     environment?.environmentProviderId ?? null,
@@ -2554,6 +2557,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
       pullRequestMergeMethod={pullRequestMergeMethod}
       onChangedFileClick={handleChangedFileClick}
       projectId={projectId}
+      providerAuthFailed={providerAuthFailed}
       resolveMentionLink={resolveMentionLink}
       workspaceChangedFilesSection={
         canUseGitUi ? workspaceChangedFilesSection : null

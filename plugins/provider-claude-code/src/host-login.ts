@@ -61,9 +61,33 @@ export class ClaudeLogin {
     }
   }
 
+  private connectedSince: number | null = null;
+
+  private noteLoginChange(
+    previous: ClaudeLoginStatus["state"],
+    next: ClaudeLoginStatus["state"],
+  ) {
+    const now = Date.now();
+    if (next === "connected" && previous !== "connected") {
+      this.connectedSince = now;
+      if (this.checkedAt > 0)
+        console.error(`claude login: signed in at ${new Date(now).toISOString()}`);
+    } else if (previous === "connected" && next === "missing") {
+      const healthyMin =
+        this.connectedSince === null
+          ? "unknown"
+          : Math.round((now - this.connectedSince) / 60_000);
+      this.connectedSince = null;
+      console.error(
+        `claude login: signed out at ${new Date(now).toISOString()} after ${healthyMin} min healthy`,
+      );
+    }
+  }
+
   private async check(force = false) {
     if (this.child || (!force && Date.now() - this.checkedAt < 15_000))
       return this.value;
+    const previous = this.value.state;
     let stdout = "";
     let code = 0;
     try {
@@ -99,6 +123,7 @@ export class ClaudeLogin {
         "Could not check Claude Code on this machine.",
       );
     }
+    this.noteLoginChange(previous, this.value.state);
     this.checkedAt = Date.now();
     return this.value;
   }

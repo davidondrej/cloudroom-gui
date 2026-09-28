@@ -39,6 +39,16 @@ function contentDigest(tar: Buffer): string {
   return hash.digest("hex");
 }
 
+/** This Mac's Cursor CLI login in the file shape the CLI keeps on Linux, or null when Cursor is signed out here.
+ *  The CLI stores it in the Keychain through /usr/bin/security, so reading it the same way shows no macOS prompt. */
+export async function macCursorLogin(): Promise<string | null> {
+  if (process.platform !== "darwin") return null;
+  const read = (service: string) => promisify(execFile)("/usr/bin/security", ["find-generic-password", "-a", "cursor-user", "-s", service, "-w"], { timeout: 10_000 })
+    .then(result => result.stdout.trim(), () => "");
+  const [accessToken, refreshToken] = await Promise.all([read("cursor-access-token"), read("cursor-refresh-token")]);
+  return accessToken && refreshToken ? JSON.stringify({ accessToken, refreshToken }, null, 2) : null;
+}
+
 /** Each cloud thread's own sandbox, managed by the website (docs/scopes/sandboxes.md). Lookups never wake it. */
 export class SandboxDirectory {
   private readonly views = new Map<string, { view: View; at: number }>();
@@ -147,7 +157,7 @@ export class SandboxDirectory {
 
   private copiedAt = 0;
   get loginsCopied(): boolean { return this.copiedAt > 0; }
-  /** Copies this Mac's Codex, Pi, and GitHub logins when the user allowed it (ADRs 0128, 0130). At most once a minute. */
+  /** Copies this Mac's Codex, Pi, Cursor, and GitHub logins when the user allowed it (ADRs 0128, 0130). At most once a minute. */
   async copyMacLogins(): Promise<void> {
     if (Date.now() - this.copiedAt < RECHECK_MS) return;
     this.copiedAt = Date.now();
@@ -156,13 +166,15 @@ export class SandboxDirectory {
     const files = [["codex", join(codexHome, "auth.json")], ["pi", join(piHome, "auth.json")]] as const;
     // One failed login never stops the others; all failures are reported together.
     const failed: string[] = [];
-    const save = (name: "codex" | "pi" | "github", value: string) => this.saveLogin(name, value).catch((error: unknown) => { failed.push(`${name}: ${error instanceof Error ? error.message : String(error)}`); });
+    const save = (name: "codex" | "pi" | "cursor" | "github", value: string) => this.saveLogin(name, value).catch((error: unknown) => { failed.push(`${name}: ${error instanceof Error ? error.message : String(error)}`); });
     for (const [name, path] of files) {
       const value = await readFile(path, "utf8").catch(() => null);
       if (!value) continue;
       try { JSON.parse(value); } catch { continue; }
       await save(name, value);
     }
+    const cursor = await macCursorLogin();
+    if (cursor) await save("cursor", cursor);
     const run = (command: string, args: string[]) => promisify(execFile)(command, args, { timeout: 10_000 }).then(result => result.stdout.trim(), () => "");
     const github = await run("gh", ["auth", "token", "--hostname", "github.com"]);
     // Agents commit as the user, with the Mac's Git identity.

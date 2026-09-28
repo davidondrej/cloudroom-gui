@@ -6,6 +6,8 @@ interface TimelineErrorDisplay {
   detail: string | null;
 }
 
+export const PROVIDER_AUTH_FAILED_TITLE = "Provider authorization failed";
+
 const providerErrorCategoryTitles = {
   "active-turn-not-steerable": "Turn is not steerable",
   "bad-request": "Provider rejected request",
@@ -24,7 +26,7 @@ const providerErrorCategoryTitles = {
   "structured-output-retries": "Structured output retries exhausted",
   "thread-rollback-failed": "Thread rollback failed",
   "too-many-failed-attempts": "Provider failed after too many attempts",
-  unauthorized: "Provider authorization failed",
+  unauthorized: PROVIDER_AUTH_FAILED_TITLE,
   unknown: "Provider error",
 } satisfies Record<ProviderErrorCategory, string>;
 

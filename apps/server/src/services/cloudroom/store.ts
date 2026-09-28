@@ -59,8 +59,9 @@ export function commands(db: DbQueryConnection, threadId: string): Command[] {
 export function queuedPrompts(db: DbQueryConnection, threadId: string): Command[] {
   const all = commands(db, threadId);
   const active = db.select({ status: threads.status }).from(threads).where(eq(threads.id, threadId)).get()?.status === "active";
+  const turnId = binding(db, threadId)?.turnId;
   const cancelling = new Set(all.filter(item => item.command === "cancel" && ["sending", "accepted", "completed"].includes(item.state)).map(item => JSON.parse(item.input).target_request_id));
-  const queued = all.filter(item => item.command === "prompt" && item.id !== `first_${threadId}` && (item.state === "accepted" || (active && item.state === "sending")) && !cancelling.has(item.id) && !JSON.parse(item.input).teleport_handoff);
+  const queued = all.filter(item => item.command === "prompt" && item.id !== `first_${threadId}` && item.id !== turnId && (item.state === "accepted" || (active && item.state === "sending")) && !cancelling.has(item.id) && !JSON.parse(item.input).teleport_handoff);
   // Mirror the core: the latest reorder puts its listed prompts first; newer prompts follow in send order.
   const reorder = [...all].reverse().find(item => item.command === "reorder" && ["sending", "accepted", "completed"].includes(item.state));
   if (!reorder) return queued;
@@ -73,8 +74,16 @@ export function command(db: DbQueryConnection, id: string): Command | null {
   return db.select().from(cloudroomCommands).where(eq(cloudroomCommands.id, id)).get() ?? null;
 }
 
+export function unstartedTurn(db: DbQueryConnection, threadId: string): Command | null {
+  const turnId = binding(db, threadId)?.turnId;
+  const turn = turnId ? command(db, turnId) : null;
+  return turn?.command === "prompt" && (turn.state === "sending" || turn.state === "accepted") ? turn : null;
+}
+
 export function saveCommandState(db: DbQueryConnection, threadId: string, id: string, state: string): void {
+  const unstarted = unstartedTurn(db, threadId)?.id === id;
   db.update(cloudroomCommands).set({ state }).where(and(eq(cloudroomCommands.id, id), eq(cloudroomCommands.threadId, threadId))).run();
+  if (unstarted && !["sending", "accepted", "running", "delivered"].includes(state)) saveStatus(db, threadId, ["failed", "unknown", "unknown_after_restart"].includes(state) ? "error" : "idle");
 }
 
 export function effectivePrompt(db: DbQueryConnection, threadId: string, id: string): Record<string, unknown> {

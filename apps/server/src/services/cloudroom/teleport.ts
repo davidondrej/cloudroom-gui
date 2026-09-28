@@ -150,7 +150,9 @@ class Teleport {
         409,
         result.code === "model_unavailable"
           ? "teleport_model_unavailable"
-          : "teleport_check_failed",
+          : result.code === "login_required"
+            ? "teleport_login_required"
+            : "teleport_check_failed",
         `${retry ? "Retry did not start." : "Teleport did not start; this thread stays local."} ${result.error}`,
       );
   }

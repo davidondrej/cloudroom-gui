@@ -833,15 +833,6 @@ function setCurrentRuntime(runtime: DesktopRuntime | null): void {
   } else {
     connectServerSync?.onRuntimeReady();
   }
-  if (runtime?.ownership === "spawned") {
-    void resumeThreadsAfterUpdate({
-      logger: desktopLogger,
-      serverUrl: runtime.serverUrl,
-      userDataPath: app.getPath("userData"),
-    }).catch((error: unknown) => {
-      desktopLogger.error(`Resuming threads after the update failed: ${String(error)}`);
-    });
-  }
   refreshApplicationMenu();
   if (runtime?.ownership !== "spawned") {
     closeServerDaemonLogsWindow();
@@ -1833,6 +1824,13 @@ async function startOwnedRuntime(
   }
 
   if (raceResult.result.kind === "compatible") {
+    void resumeThreadsAfterUpdate({
+      logger: desktopLogger,
+      serverUrl: runtime.serverUrl,
+      userDataPath: args.userDataPath,
+    }).catch((error: unknown) => {
+      desktopLogger.error(`Resuming threads after the update failed: ${String(error)}`);
+    });
     return runtime;
   }
 

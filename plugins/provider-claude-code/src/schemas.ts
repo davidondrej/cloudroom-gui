@@ -340,6 +340,7 @@ export const claudeAssistantMessageSchema = z
     type: z.literal("assistant"),
     message: z.unknown(),
     uuid: z.string().min(1).optional(),
+    error: claudeAssistantMessageErrorSchema.optional().catch(undefined),
   })
   .passthrough();
 export type ClaudeAssistantMessage = z.infer<

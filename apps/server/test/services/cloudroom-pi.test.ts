@@ -105,7 +105,7 @@ it.each([false, true])("routes Pi through the core and replays messages without 
     await expect.poll(() => app.db.select().from(events).all().filter(e => e.type === "client/turn/requested").length).toBe(2);
     const turns = app.db.select().from(events).all().filter(e => e.type === "client/turn/requested").map(e => JSON.parse(e.data).execution.reasoningLevel);
     expect(turns).toEqual(["high", "xhigh"]);
-    expect(prompts.at(-1)).toMatchObject({ text: "again", reasoning: "xhigh" });
+    await expect.poll(() => prompts.at(-1)).toMatchObject({ text: "again", reasoning: "xhigh" });
     expect(service.threadStatus(thread.id)?.reasoning).toBe("xhigh");
     const locked = await app.app.request(`/api/v1/threads/${thread.id}/send`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "auto", model: "other-model", reasoningLevel: "high", input: [{ type: "text", text: "no", mentions: [] }] }) });
     expect(locked.status).toBe(409);
@@ -158,7 +158,7 @@ it.each(["pi", "codex"])("sends selected skills in Cloud %s starts and follow-up
     expect(prompts).toHaveLength(1);
     const follow = await request(`/threads/${thread.id}/send`, { requestId: "skill-follow", mode: "auto", input: [{ type: "text", text: "again", mentions: [] }, { type: "text", text: "/file-tree", mentions: [{ start: 0, end: 10, resource }] }] });
     expect(follow.status, await follow.clone().text()).toBe(200);
-    expect(prompts.at(-1)).toBe(providerId === "pi" ? "/skill:file-tree again\n" : "again\n/file-tree");
+    await expect.poll(() => prompts.at(-1)).toBe(providerId === "pi" ? "/skill:file-tree again\n" : "again\n/file-tree");
     for (const input of [
       [{ ...tagged, mentions: [{ start: 0, end: 10, resource }] }],
       [{ ...tagged, mentions: [{ start: 5, end: 15, resource: { ...resource, source: "command" } }] }],

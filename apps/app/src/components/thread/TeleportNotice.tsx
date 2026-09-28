@@ -1,4 +1,4 @@
-import { useReducer } from "react";
+import { useCallback, useEffect, useReducer } from "react";
 import type { Thread } from "@bb/domain";
 import { Icon } from "@bb/shared-ui/icon";
 import { cn } from "@bb/shared-ui/lib/utils";
@@ -23,19 +23,36 @@ export function TeleportNotice({
   thread,
   pendingDelivery,
   paused,
+  sending,
 }: {
   thread: Thread;
   pendingDelivery?: number;
   paused?: boolean;
+  sending?: boolean;
 }) {
   const action = useTeleportThread(thread.id);
   const stop = useStopThread();
   const [, rerender] = useReducer((count: number) => count + 1, 0);
   const progress = thread.teleport;
+  const dismissKey = `cloudroom.teleport.dismissed.${progress?.id}`;
+  const dismiss = useCallback(() => {
+    window.localStorage.setItem(dismissKey, "1");
+    rerender();
+  }, [dismissKey]);
+  const handedOff =
+    progress?.phase === "complete" && progress.owner === thread.id;
+  const settled = handedOff && pendingDelivery === 0;
+  useEffect(() => {
+    if (!settled) return;
+    const timer = window.setTimeout(dismiss, 15_000);
+    return () => window.clearTimeout(timer);
+  }, [settled, dismiss]);
+  useEffect(() => {
+    if (handedOff && sending) dismiss();
+  }, [handedOff, sending, dismiss]);
   if (!progress || progress.phase === "cancelled") return null;
   const owner = progress.owner === thread.id;
   const complete = progress.phase === "complete";
-  const dismissKey = `cloudroom.teleport.dismissed.${progress.id}`;
   if (complete && window.localStorage.getItem(dismissKey)) return null;
   const failed =
     progress.phase === "error" || Boolean(action.error || stop.error);
@@ -144,10 +161,7 @@ export function TeleportNotice({
               type="button"
               aria-label="Dismiss"
               className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
-              onClick={() => {
-                window.localStorage.setItem(dismissKey, "1");
-                rerender();
-              }}
+              onClick={dismiss}
             >
               <Icon name="CircleX" className="size-4" aria-hidden />
             </button>

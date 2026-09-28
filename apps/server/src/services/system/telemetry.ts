@@ -42,6 +42,15 @@ export type TelemetryEvent =
       };
     }
   | {
+      name: "provider_auth_failed";
+      properties: {
+        execution: TelemetryExecution;
+        provider: string;
+        provider_code: string | null;
+        running_threads: number;
+      };
+    }
+  | {
       name: "plugin_installed";
       properties: {
         plugin_id: string | null;

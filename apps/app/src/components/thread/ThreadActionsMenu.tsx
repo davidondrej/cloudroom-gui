@@ -37,6 +37,7 @@ import { getThreadDisplayTitle } from "@/lib/thread-title";
 import { useThreadActions } from "./ThreadActionsProvider";
 import { useThreadSectionMove } from "./ThreadSectionMoveProvider";
 import { sdk } from "@/lib/sdk";
+import { openTeleportLogin } from "@/components/CodexConnectionPanel";
 import { showMutationErrorToast } from "@/lib/mutation-errors";
 import { useCopyToMac, useTeleportLocal } from "@/hooks/queries/cloudroom-queries";
 import { showCloudWaitlist, useCloudLocked } from "@/hooks/useCloudLocked";
@@ -221,7 +222,7 @@ function ThreadActionsMenuItems({
     if (cloudLocked) return showCloudWaitlist();
     setTeleportPending(true);
     try { await sdk.cloudroom.teleport(thread.id); }
-    catch (error) { showMutationErrorToast({ error, fallbackMessage: "Could not start Teleport" }); }
+    catch (error) { if (!openTeleportLogin(error, thread.providerId)) showMutationErrorToast({ error, fallbackMessage: "Could not start Teleport" }); }
     finally { setTeleportPending(false); }
   };
   const canTeleport = canTeleportThread(thread);

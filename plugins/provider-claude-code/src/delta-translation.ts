@@ -39,6 +39,7 @@ import {
   claudeUserMessageSchema,
   type ClaudeApiRetryMessage,
   type ClaudeAssistantMessage,
+  type ClaudeAssistantMessageError,
   type ClaudeRateLimitEvent,
   type ClaudeResultMessage,
 } from "./schemas.js";
@@ -386,6 +387,7 @@ interface ClaudeThreadDialectState {
     | (ClaudeModelFallbackTransition & { segment: number })
     | undefined;
   armedHardRateLimitRejection: { detail: string; segment: number } | undefined;
+  assistantError: ClaudeAssistantMessageError | undefined;
   selectedModelContextWindow: number | null;
   suppressUnacceptedTurnStart: boolean;
   openCompaction: { segment: number } | undefined;
@@ -402,6 +404,7 @@ function createThreadState(): ClaudeThreadDialectState {
     latestProviderCheckpointId: undefined,
     lastModelFallback: undefined,
     armedHardRateLimitRejection: undefined,
+    assistantError: undefined,
     selectedModelContextWindow: null,
     suppressUnacceptedTurnStart: false,
     openCompaction: undefined,
@@ -456,6 +459,7 @@ export function createClaudeDeltaTranslator(
   function mirrorCloseTurn(state: ClaudeThreadDialectState): void {
     state.mirror.turnOpen = false;
     state.armedHardRateLimitRejection = undefined;
+    state.assistantError = undefined;
     state.startedTools.clear();
   }
 
@@ -774,6 +778,9 @@ export function createClaudeDeltaTranslator(
       return [];
     }
     const parentToolCallId = context?.parentToolCallId;
+    if (parentToolCallId === undefined && message.error !== undefined) {
+      state.assistantError = message.error;
+    }
     const parentRefField = parentToolCallId
       ? { parentRef: parentToolCallId }
       : {};
@@ -1066,6 +1073,9 @@ export function createClaudeDeltaTranslator(
     const failed = resultFailed || pendingHardRateLimitRejection !== undefined;
     if (failed) {
       const resultErrorInfo = buildClaudeProviderErrorInfo({
+        ...(state.assistantError === undefined
+          ? {}
+          : { code: state.assistantError }),
         httpStatusCode: message.api_error_status,
         resultSubtype: message.subtype,
       });
@@ -1088,6 +1098,7 @@ export function createClaudeDeltaTranslator(
       });
     }
     state.armedHardRateLimitRejection = undefined;
+    state.assistantError = undefined;
     if (!failed && hasCompletionBlockingClaudeTasks(state.tasksById)) {
       return deltas;
     }

@@ -27,6 +27,7 @@ import {
 import { installProviderModelCatalogPrewarm } from "./services/providers/provider-model-catalog-prewarm.js";
 import { createProviderRegistryService } from "./services/providers/provider-registry.js";
 import { installFirstResponseTelemetry } from "./services/system/first-response-telemetry.js";
+import { installAuthFailureTelemetry } from "./services/system/auth-failure-telemetry.js";
 import { createTelemetryService } from "./services/system/telemetry.js";
 import { TerminalSessionLifecycle } from "./services/terminals/terminal-session-lifecycle.js";
 import { createLifecycleDedupers } from "./lifecycle-dedupers.js";
@@ -199,6 +200,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
   });
   cloud.start();
   const stopFirstResponseTelemetry = installFirstResponseTelemetry({ db, hub, telemetry }, (threadId, at) => cloud.sandboxes.wokeSince(threadId, at));
+  const stopAuthFailureTelemetry = installAuthFailureTelemetry({ db, logger, telemetry });
 
   const sweepDeps = {
     config: runtimeConfig,
@@ -275,6 +277,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
       eventLoopStallMonitor.stop();
       cloud.stop();
       stopFirstResponseTelemetry();
+      stopAuthFailureTelemetry();
       clearInterval(sweepInterval);
       pluginCatalogService.stopPeriodicRefresh();
       await pluginService.stopPeriodicUpdateChecks();
