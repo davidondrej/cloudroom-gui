@@ -50,8 +50,8 @@
   `waitingOn`, and `sendAt` without guessing. `queuedMessage.waitingOn.kind` is
   one of `time`, `thread-busy`, `turn-starting`, `provisioning`, `host-offline`,
   `interaction`, or `plugin` (which also carries `pluginId` and a human reason).
-- Inspect and act on queued dispatches with `cloudroom thread queue list [<thread-id>]
-[--wait-holder plugin:<plugin-id>]`, `cloudroom thread queue send <thread-id>
+- Inspect and act on queued dispatches with `room-cli thread queue list [<thread-id>]
+[--wait-holder plugin:<plugin-id>]`, `room-cli thread queue send <thread-id>
 <message-id>` (send it now, bypassing every plugin wait and its schedule), and
   `room-cli thread queue delete <thread-id> <message-id>` (discard it). Omitting the
   thread lists every queued row in the workspace. The list shows `Waiting on`
@@ -89,7 +89,7 @@ hostId, providerId, projectId, parentThreadId, groupBy })`.
   approval), `room-cli thread tell` cannot interrupt it. The message joins the
   thread's queue with `waitingOn.kind: "interaction"` and dispatches once the
   interaction settles; the CLI prints that it is queued and why. That outcome is
-  not a failure, so do not resend. For a hard stop use `cloudroom thread stop
+  not a failure, so do not resend. For a hard stop use `room-cli thread stop
 <thread-id>`. `--json` reports `delivery` as `sent` or `queued`. If the thread
   fails while the message is queued (its provider exited), the message waits
   until somebody retries the thread.
@@ -138,7 +138,7 @@ For review or fix pipelines, get the environment ID from
   target thread workspace.
 - Absolute paths under `ROOM_THREAD_STORAGE` open as thread-storage files for the
   current thread.
-- Use `cloudroom thread pane maximize|restore|toggle|spotlight|clear-spotlight
+- Use `room-cli thread pane maximize|restore|toggle|spotlight|clear-spotlight
 [thread-id]` to change a matching open pane in every connected Cloudroom app window.
   Inside a Cloudroom thread, omit the ID to use `ROOM_THREAD_ID`. The command reports
   how many connected clients received the ephemeral action. The SDK equivalent is

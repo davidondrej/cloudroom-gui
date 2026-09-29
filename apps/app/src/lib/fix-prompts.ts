@@ -6,7 +6,7 @@ const said = (text?: string | null) =>
   text?.trim() ? `: "${text.trim().replace(/\s+/g, " ").slice(0, 400)}".` : ".";
 
 const fixPrompt = (problem: string, look: string) =>
-  `${problem} ${look} Find the root cause and fix it without losing any work, then tell me what was wrong. If \`cloudroom\` is not on your PATH, use ${CLI_PATH}.`;
+  `${problem} ${look} Find the root cause and fix it without losing any work, then tell me what was wrong. If \`room-cli\` is not on your PATH, use ${CLI_PATH}.`;
 
 export const cloudThreadFixPrompt = (threadId: string, agent: string, error?: string | null) =>
   fixPrompt(

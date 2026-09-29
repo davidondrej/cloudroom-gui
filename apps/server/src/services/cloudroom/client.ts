@@ -326,6 +326,8 @@ export class CloudroomClient {
         method: "POST",
         headers: {
           Authorization: `Bearer ${this.#token}`,
+          // Some sandbox proxies replace Authorization with their own login.
+          "X-Cloudroom-Token": this.#token,
           ...(this.#gateToken ? { Cookie: `_port_auth=${this.#gateToken}` } : {}),
           Accept: "application/json",
           "Content-Type": "application/json",
@@ -356,6 +358,8 @@ export class CloudroomClient {
         method: body === undefined && !upload ? "GET" : "POST",
         headers: {
           Authorization: `Bearer ${this.#token}`,
+          // Some sandbox proxies replace Authorization with their own login.
+          "X-Cloudroom-Token": this.#token,
           ...(this.#gateToken ? { Cookie: `_port_auth=${this.#gateToken}` } : {}),
           Accept: path.includes("/stream?")
             ? "text/event-stream"

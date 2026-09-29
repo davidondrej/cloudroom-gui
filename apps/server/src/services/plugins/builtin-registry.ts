@@ -123,6 +123,11 @@ export const BUILTIN_PLUGINS = [
     defaultEnabled: true,
   },
   {
+    name: "computer-use",
+    pluginId: "computer-use",
+    defaultEnabled: true,
+  },
+  {
     name: "keep-awake",
     pluginId: "keep-awake",
     defaultEnabled: true,

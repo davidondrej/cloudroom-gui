@@ -8,10 +8,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@bb/shared-ui/tooltip";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { SidebarMenuItem } from "@/components/ui/sidebar";
 import { appToast } from "@/components/ui/app-toast";
-import { useCloudroomAccount, useSetMacAccess } from "@/hooks/queries/cloudroom-queries";
+import { useCloudroomAccount, useCloudroomSignIn, useSetMacAccess } from "@/hooks/queries/cloudroom-queries";
 import { getSettingsRoutePath } from "@/lib/route-paths";
 import { sdk } from "@/lib/sdk";
-import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
 
 const FOOTER_ICON_BUTTON_CLASS = "relative size-8 p-0 text-muted-foreground hover:text-sidebar-foreground [&_[data-icon-root]]:size-4";
 
@@ -19,19 +18,7 @@ export function CloudroomSignInButton() {
   const status = useCloudroomAccount();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const action = useMutation({
-    mutationFn: async () => {
-      if (status.data?.signingIn) await sdk.cloudroom.cancel();
-      else {
-        const { url } = await sdk.cloudroom.signIn();
-        openUrlInExternalBrowser(url);
-      }
-    },
-    onSuccess: () => {
-      return queryClient.invalidateQueries({ queryKey: ["cloudroom-account"] });
-    },
-    onError: (error) => appToast.error(error.message),
-  });
+  const action = useCloudroomSignIn();
   const [menuOpen, setMenuOpen] = useState(false);
   const logout = useMutation({
     mutationFn: () => sdk.cloudroom.logout(),
@@ -54,9 +41,9 @@ export function CloudroomSignInButton() {
   });
   const account = status.data?.account;
   const signingIn = status.data?.signingIn === true;
-  const label = checking || account ? "Account" : signingIn ? "Cancel sign-in" : "Sign in";
-  const tooltip = account ? `Account (${account.email})` : signingIn ? "Cancel sign-in" : checking ? "Checking your account" : "Sign in to Cloudroom";
-  const button = <Button variant="ghost" className={cn(FOOTER_ICON_BUTTON_CLASS, "data-[state=open]:bg-state-active data-[state=open]:text-foreground")} aria-label={label} disabled={action.isPending || checking} onClick={account ? undefined : () => action.mutate()}>
+  const label = checking || account ? "Account" : signingIn ? "Cancel login" : "Log in";
+  const tooltip = account ? `Account (${account.email})` : signingIn ? "Cancel login" : checking ? "Checking your account" : "Log in to Cloudroom";
+  const button = <Button variant="ghost" className={cn(FOOTER_ICON_BUTTON_CLASS, "data-[state=open]:bg-state-active data-[state=open]:text-foreground")} aria-label={label} disabled={action.isPending || checking} onClick={account ? undefined : () => action.mutate(signingIn)}>
     {checking || signingIn || action.isPending ? <Icon name="Loading" className="animate-spin" aria-hidden /> : <Icon name="UserRound" aria-hidden />}
     {!checking && !account && !signingIn && <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-destructive" aria-hidden />}
   </Button>;

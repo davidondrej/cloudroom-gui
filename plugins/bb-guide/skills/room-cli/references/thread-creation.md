@@ -48,7 +48,7 @@ worktree` only; a provider takes its branch through `--environment-inputs`.
   the follow-up picker, choose **Handoff to new thread**; **Exit handoff** in
   the picker or composer restores the source execution settings and retains
   draft edits without the automatic source reference. Closing the picker
-  keeps handoff active. Use `cloudroom thread spawn --provider PROVIDER --model MODEL
+  keeps handoff active. Use `room-cli thread spawn --provider PROVIDER --model MODEL
 --environment ENV_ID --prompt 'Continue from @thread:THREAD_ID ...'` for the
   same thread creation through the CLI, or `threads.spawn` through the SDK.
 - Use `room-cli thread fork <source-thread-id>` to clone a provider session. The
@@ -139,14 +139,14 @@ worktree` only; a provider takes its branch through `--environment-inputs`.
   upload automatically for absolute paths and `file:` URLs; use the explicit
   command when a reusable attachment token is needed. Image MIME types are
   capped at 10MB and other files at 25MB, and image/heic or image/heif uploads
-  are rejected (convert them to JPEG or PNG first). `cloudroom project attachment
+  are rejected (convert them to JPEG or PNG first). `room-cli project attachment
 download <project-id> <attachment-path> --client-file <path>` writes existing
   attachment bytes on the CLI machine. There is no project-attachment list or
   per-file remove API.
 - `room-cli project history|reorder` exposes project prompt recall and sidebar order.
-- Use `room-cli project show|update|delete` for one project. Use `cloudroom project source
-update|delete` for one source. Use `cloudroom project branches` for branch data.
-- Direct environment inspection accepts any environment ID: use `cloudroom environment
+- Use `room-cli project show|update|delete` for one project. Use `room-cli project source
+update|delete` for one source. Use `room-cli project branches` for branch data.
+- Direct environment inspection accepts any environment ID: use `room-cli environment
 status|branches|paths|diff|diff-files|diff-file|diff-patch <id>` and `bb
 environment pull-request show <id>`. Diff commands require an explicit target
   and the matching merge-base or commit flags; all support `--json`.
@@ -178,7 +178,7 @@ environment pull-request show <id>`. Diff commands require an explicit target
   intentionally inspect the primary machine. Model lists answer from the
   machine's last stored list while a background refresh runs, so a list can be
   hours old. A provider whose refresh keeps failing or timing out keeps
-  answering from its last stored list. Check `cloudroom machine provider-cli status MACHINE
+  answering from its last stored list. Check `room-cli machine provider-cli status MACHINE
 --json` for installed executables. Installed does not mean authenticated; a Claude
   login error requires the user to run `claude` and `/login`.
 - If Cursor's model list fails, `room-cli provider models acp-cursor --restart`
@@ -201,12 +201,12 @@ or artifacts, validation performed, and blockers.
 
 ### Standalone machine creation
 
-`cloudroom machine create --provider <id> [--key <idempotency-key>] [--inputs <JSON>]
+`room-cli machine create --provider <id> [--key <idempotency-key>] [--inputs <JSON>]
 [--no-wait] [--json]` creates a machine without a thread. Omitted
 inputs are null and must satisfy the provider schema; omitted key is generated
 by the server. Supply a stable key to recover the same creation across retries.
-Creation is durable. `--no-wait` returns the host ID; `cloudroom machine show
-<host-id>` inspects it and `cloudroom machine remove <host-id>` cancels it. SIGINT
+Creation is durable. `--no-wait` returns the host ID; `room-cli machine show
+<host-id>` inspects it and `room-cli machine remove <host-id>` cancels it. SIGINT
 stops following and exits with status 130 while creation continues.
 
 `room-cli machine show <id-or-name> --json` includes `providerDetails` inventory and

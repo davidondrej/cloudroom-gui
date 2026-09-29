@@ -767,9 +767,10 @@ class CloudroomService {
     if (await this.sandboxLogin("codex")) {
       if (action === "login") {
         if (await copyLogins(this.deps) !== true) throw new ApiError(409, "codex_auth_unsupported", "Cloud sandboxes use this Mac's Codex login. Allow copying logins in Cloudroom's setup, then try again.");
-        await this.sandboxes.copyMacLogins();
+        await this.sandboxes.copyMacLogins(true);
       }
-      return (await this.sandboxLogin("codex"))!;
+      const status = (await this.sandboxLogin("codex"))!;
+      return action === "login" && status.state !== "connected" ? { ...status, message: "Codex is not signed in on this computer. Run `codex login` in your terminal, then try again." } : status;
     }
     try {
       const client = await this.client();

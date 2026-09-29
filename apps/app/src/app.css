@@ -892,3 +892,70 @@
     transform: scaleX(1);
   }
 }
+
+/* First-run call to action: a soft light runs once around the border, then
+ * rests for a few seconds. The ring sits just outside the button, so it reads
+ * on filled buttons too. */
+@property --bb-beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes bb-beam {
+  0% {
+    --bb-beam-angle: 0deg;
+    opacity: 0;
+  }
+  6%,
+  40% {
+    opacity: 1;
+  }
+  48%,
+  100% {
+    --bb-beam-angle: 360deg;
+    opacity: 0;
+  }
+}
+
+.bb-beam {
+  position: relative;
+  isolation: isolate;
+}
+
+.bb-beam::before,
+.bb-beam::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  padding: 1.5px;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.bb-beam::before {
+  background: color-mix(in oklch, var(--primary) 18%, transparent);
+}
+
+.bb-beam::after {
+  background: conic-gradient(
+    from var(--bb-beam-angle),
+    transparent 0deg 250deg,
+    color-mix(in oklch, var(--primary) 70%, transparent) 320deg,
+    #fff 352deg,
+    transparent 360deg
+  );
+  animation: bb-beam 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bb-beam::after {
+    animation: none;
+    opacity: 0;
+  }
+}

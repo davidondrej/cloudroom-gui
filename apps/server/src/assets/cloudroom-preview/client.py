@@ -100,7 +100,8 @@ class Core:
             raise ValueError('Sign in to Cloudroom again')
         if gate is not None and (not gate or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._~-' for c in gate)):
             raise ValueError('Invalid hosting credential')
-        self.headers = {'Authorization': 'Bearer ' + token, **({'Cookie': '_port_auth=' + gate} if gate else {})}
+        # Some sandbox proxies replace Authorization with their own login, so Core also reads X-Cloudroom-Token.
+        self.headers = {'Authorization': 'Bearer ' + token, 'X-Cloudroom-Token': token, **({'Cookie': '_port_auth=' + gate} if gate else {})}
         self.opener = OPENER
         # A sandbox gets a new token on every wake, so its tunnels and streams are rebuilt.
         self.key = (self.url, token)

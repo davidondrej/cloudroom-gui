@@ -32,7 +32,7 @@ upgrade, failed to load, or missing); run `room-cli plugin list` for the detail.
 All commands support --json for machine-readable output.
 
 To make a repo work with cloudroom worktrees, run `room-cli guide environments` for the
-repo-level `.bb-env-setup.sh` and `.bb-env-teardown.sh` hooks. Run `cloudroom guide
+repo-level `.bb-env-setup.sh` and `.bb-env-teardown.sh` hooks. Run `room-cli guide
 agent-configuration` for the data-dir and workspace files that customize agent
 behavior.
 

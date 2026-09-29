@@ -3,7 +3,7 @@
 ## Quickstart
 
 ```
-room-cli plugin new hello            # scaffolds ./bb-plugin-hello: a todo list with a sidebar page, `cloudroom hello` CLI, and a skill
+room-cli plugin new hello            # scaffolds ./bb-plugin-hello: a todo list with a sidebar page, `room-cli hello` CLI, and a skill
 cd bb-plugin-hello
 room-cli plugin install .            # registers the directory in place (--yes to skip the prompt)
 room-cli plugin dev                  # rebuild app/host bundles + reload on every save

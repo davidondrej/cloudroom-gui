@@ -53,5 +53,5 @@ export const DEFAULT_WINDOW_STATE: PersistedWindowState = {
     y: 80,
   },
   isFullScreen: false,
-  isMaximized: false,
+  isMaximized: true,
 };

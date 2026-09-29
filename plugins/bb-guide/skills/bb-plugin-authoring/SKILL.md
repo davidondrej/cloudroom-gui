@@ -18,7 +18,7 @@ Inspect the affected package and current SDK declarations to select backend,
 frontend, or both. Build the plugin and verify the affected contracts and user
 workflow. Install or reload when a live check is needed for the requested work.
 
-Use cloudroom plugin new <name> for a new plugin. The scaffold includes frontend files.
+Use room-cli plugin new <name> for a new plugin. The scaffold includes frontend files.
 Remove `bb.app` and those files when the plugin is headless.
 
 Every new public Plugin SDK surface starts with an experimental\_ prefix and an
@@ -92,8 +92,8 @@ the same change.
 - Keep experimental names until the public API audit stabilizes them.
 - Use current names. Compatibility aliases can warn and can expire after one
   release. Removed APIs can throw.
-- Run cloudroom plugin types when SDK declaration versions can drift.
-- Run cloudroom plugin build before install, release, or marketplace submission.
+- Run room-cli plugin types when SDK declaration versions can drift.
+- Run room-cli plugin build before install, release, or marketplace submission.
 
 ## Verification
 

@@ -342,7 +342,7 @@ block:
 - `--font-terminal` controls the integrated terminal's font family.
 
 Always end font stacks with a generic fallback such as `sans-serif` or
-`monospace`. The complete theme token reference is in the cloudroom skill's
+`monospace`. The complete theme token reference is in the room-cli skill's
 `references/theming.md`.
 
 ## Keyboard Shortcuts

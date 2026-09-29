@@ -44,6 +44,10 @@ import {
   type DesktopPathContext,
 } from "./app-paths.js";
 import {
+  ensureRoomCliShim,
+  resolveBundledRoomCliPath,
+} from "./room-cli-shim.js";
+import {
   resolveBbAppProcessRuntime,
   type BbAppProcess,
   type BbAppProcessExit,
@@ -2120,6 +2124,24 @@ async function runDesktopApp(): Promise<void> {
   }
 
   const paths = createDesktopPathContext();
+  if (paths.isPackaged && process.platform === "darwin") {
+    void ensureRoomCliShim({
+      cliPath: resolveBundledRoomCliPath(paths.appPath),
+      homeDir: homedir(),
+    })
+      .then((result) => {
+        if (result.kind !== "unchanged") {
+          desktopLogger.info(
+            `[desktop] ${result.shimPath}: ${result.kind === "skipped" ? `left alone (${result.reason})` : result.kind}`,
+          );
+        }
+      })
+      .catch((error: unknown) => {
+        desktopLogger.warn(
+          `[desktop] Could not update the room-cli shim: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      });
+  }
   const iconPath = resolveDesktopIconPath({
     packagedIconFileName: DESKTOP_RELEASE_INFO.iconFileName,
     paths,

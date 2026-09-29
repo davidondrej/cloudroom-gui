@@ -111,7 +111,7 @@ diff viewers, and the new-thread composer.
   responsive-overlay, drawer, hooks) into `components/ui/` etc., and writes a `components.json`
   whose `@room` registry is pinned to the release tag matching the running
   Cloudroom. Import via the `@/*` alias: `import { Button } from
-"@/components/ui/button"` (tsconfig maps it; `cloudroom plugin build` reads it).
+"@/components/ui/button"` (tsconfig maps it; `room-cli plugin build` reads it).
 - Add more with stock shadcn tooling: `npx shadcn add @bb/select
 @bb/table` — the BB registry carries the full stock set (~44 items:
   accordion, alert-dialog, calendar, chart, command, form, sheet, table,

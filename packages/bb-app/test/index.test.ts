@@ -837,6 +837,28 @@ describe("bb-app launcher", () => {
     expect(readFileSync(cliThreadIdPath, "utf8")).toBe("thr_parent");
   });
 
+  it("runs the bundled room-cli when ROOM_CLI is unset", async () => {
+    const root = mkdtempSync(join(tmpdir(), "bb-app-bundled-cli-"));
+    const daemonBundleDir = join(root, "host-daemon", "dist");
+    const markerPath = join(root, "ran.txt");
+    mkdirSync(daemonBundleDir, { recursive: true });
+    writeFileSync(
+      join(daemonBundleDir, "room-cli"),
+      `#!/bin/sh\nprintf '%s' "$1" > '${markerPath}'\n`,
+      { mode: 0o755 },
+    );
+
+    const exitCode = await runBundledCliCommand({
+      args: ["status"],
+      context: { ...createTestStartContext(), daemonBundleDir },
+      env: {},
+    });
+
+    expect(exitCode).toBe(0);
+    expect(readFileSync(markerPath, "utf8")).toBe("status");
+    rmSync(root, { force: true, recursive: true });
+  });
+
   it("rejects an invalid server bind host before launcher startup", async () => {
     const dataDir = mkdtempSync(join(tmpdir(), "bb-app-invalid-bind-host-"));
 

@@ -3,7 +3,7 @@ kind: instruction
 title: Cloudroom Guide — Customization
 summary: Command reference for customizing the cloudroom app color palette, typography, keyboard shortcuts, and mobile push notifications.
 intent: Explain the CLI theme surface, server-backed app customization, and push-notification device registration.
-editingNotes: Keep flags accurate against the CLI implementation. Theme details live in the cloudroom skill's references/theming.md.
+editingNotes: Keep flags accurate against the CLI implementation. Theme details live in the room-cli skill's references/theming.md.
 ---
 Customization commands
 
@@ -31,7 +31,7 @@ To author a custom theme, run `room-cli theme dir`, write <that-dir>/<name>/them
 then `room-cli theme set <name>`. Optional `pierre-dark.json` / `pierre-light.json`
 (or a `theme.json` `codeTheme` field) ship the matching code colors. Built-in
 palettes use the matching Shiki pair. The full design-token reference is in
-the cloudroom skill (references/theming.md).
+the room-cli skill (references/theming.md).
 
 Theme CSS can override typography as well as colors. `--font-terminal` controls
 the integrated terminal's font family independently of `--font-mono`; set it in
@@ -76,8 +76,8 @@ Server-backed General settings
 Settings → General includes app-wide preferences stored server-side so every
 window and restart sees the same value. Keep Awake is instead owned by its
 builtin plugin: use its autosaving page under Settings → Installed plugins or run
-`room-cli keep-awake enable` or `room-cli keep-awake disable`. Choose every host with `Cloudroom
-keep-awake hosts all`, or name individual host ids after `cloudroom keep-awake hosts`.
+`room-cli keep-awake enable` or `room-cli keep-awake disable`. Choose every host with `room-cli
+keep-awake hosts all`, or name individual host ids after `room-cli keep-awake hosts`.
 On macOS it prevents system idle sleep while Cloudroom is running; closing the lid or
 choosing Sleep still sleeps the Mac.
 
@@ -160,7 +160,7 @@ The default-off `sidebarProgressiveDisclosure` experiment shows the first five
 groups in the current sort order in **By project** and **By machine**, keeps
 attention groups visible, and reveals ten more per **Show more** click. Revealed
 groups stay visible through activity and sort-order changes.
-**Manually** is unchanged. Enable it with `cloudroom settings experiment
+**Manually** is unchanged. Enable it with `room-cli settings experiment
 sidebarProgressiveDisclosure true`.
 
 The default-off `timelineWindowing` experiment mounts only nearby rows in long
@@ -226,8 +226,8 @@ windows must stay open; browser permission is requested in the plugin settings.
 
 `add` is an upsert by token: a known token refreshes its label and last-seen
 time and keeps its id. Expo tokens that are no longer registered are removed
-automatically after a failed delivery. Use `cloudroom plugin disable
-push-notifications` to stop delivery. Change the relay URL with `cloudroom plugin
+automatically after a failed delivery. Use `room-cli plugin disable
+push-notifications` to stop delivery. Change the relay URL with `room-cli plugin
 config push-notifications set expoPushUrl <url>`. Add `--json` to `list` or
 `status` for machine-readable output. The list returns token suffixes only.
 The three channel switches default to true and apply immediately across this

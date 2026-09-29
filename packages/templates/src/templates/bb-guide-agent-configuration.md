@@ -50,13 +50,13 @@ Skills (.bb/skills/):
 
   Use `room-cli skill list` to inspect installed and discovered skills and copy the
   opaque skill ID. `room-cli skill show|files <skill-id>` reads that exact skill;
-  `room-cli skill show <skill-id> --json` returns the revision required by `cloudroom skill
-  update <skill-id> --revision <sha256>`. `cloudroom skill delete <skill-id>` and
+  `room-cli skill show <skill-id> --json` returns the revision required by `room-cli skill
+  update <skill-id> --revision <sha256>`. `room-cli skill delete <skill-id>` and
   update are restricted to editable, user-owned skills. These workspace-scoped
   commands default to `ROOM_PROJECT_ID`, then the personal project; pass
   `--project` or `--environment` when a different workspace is required.
 
-  Use `room-cli skill search` to browse skills.sh, `cloudroom skill registry detail
+  Use `room-cli skill search` to browse skills.sh, `room-cli skill registry detail
   <registry-skill-id>` to inspect metadata and the bounded file preview, and
   `room-cli skill install <registry-skill-id>` to install that canonical registry
   identity into cloudroom user skills. Registry commands are server-wide and do not

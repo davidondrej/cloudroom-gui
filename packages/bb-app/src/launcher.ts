@@ -2455,7 +2455,7 @@ export async function runBundledCliCommand(
   args: RunBundledCliCommandArgs,
 ): Promise<number> {
   const bbCliOverride = toOptionalString(args.env.ROOM_CLI);
-  const cliPath = bbCliOverride ?? join(args.context.daemonBundleDir, "cloudroom");
+  const cliPath = bbCliOverride ?? join(args.context.daemonBundleDir, "room-cli");
   const childProcess = spawn(cliPath, args.args, {
     cwd: process.cwd(),
     env: createCliEnv({ context: args.context, env: args.env }),

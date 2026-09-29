@@ -86,7 +86,7 @@ Spawning:
   machine resolution is unchanged.
   Omit --base-branch for Cloudroom's default. Explicit values are exact; use
   origin/<branch> for a remote ref.
-  Before selecting a provider, run `cloudroom environment providers --project <id>
+  Before selecting a provider, run `room-cli environment providers --project <id>
   --machine <id-or-name>` to see whether it is available, needs setup, or is
   unavailable and why. The first-party providers are Project checkout,
   Worktree, and Personal workspace.
@@ -97,7 +97,7 @@ Handoff:
   one from the current provider. Exit handoff restores the original execution
   settings and keeps draft edits, removing the automatic source reference.
   Closing the picker keeps handoff active; the composer also has Exit handoff.
-  CLI callers can use cloudroom thread spawn with --provider, --model, --environment
+  CLI callers can use room-cli thread spawn with --provider, --model, --environment
   and --prompt 'Continue from @thread:THREAD_ID ...'. SDK callers use
   threads.spawn with the corresponding execution, environment and input fields.
 

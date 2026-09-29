@@ -1983,7 +1983,7 @@ function RootComposeSurface({
         >
           <AppNavigationHostProvider capabilities={appNavigationCapabilities}>
             <RootComposeSecondaryContent
-              footer={connectionFooter}
+              footer={showEmptyWelcome ? null : connectionFooter}
               contentClassName={
                 showEmptyWelcome
                   ? ROOT_COMPOSE_EMPTY_WELCOME_CONTENT_CLASS

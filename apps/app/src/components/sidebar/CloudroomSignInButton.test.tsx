@@ -23,7 +23,7 @@ function mount(path = "/") {
   render(<MemoryRouter initialEntries={[path]}><QueryClientProvider client={client}><TooltipProvider><ul><CloudroomSignInButton /></ul></TooltipProvider><Location /></QueryClientProvider></MemoryRouter>);
 }
 async function clickSignIn() {
-  const button = await screen.findByRole("button", { name: "Sign in" });
+  const button = await screen.findByRole("button", { name: "Log in" });
   await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
   fireEvent.click(button);
 }
@@ -59,7 +59,7 @@ it("cancels a pending browser login from the same button", async () => {
   vi.mocked(sdk.cloudroom.status).mockResolvedValue({ ...signedOut, signingIn: true });
   vi.mocked(sdk.projects.list).mockResolvedValue([]);
   mount();
-  fireEvent.click(await screen.findByRole("button", { name: "Cancel sign-in" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Cancel login" }));
   await waitFor(() => expect(sdk.cloudroom.cancel).toHaveBeenCalledOnce());
   expect(sdk.cloudroom.signIn).not.toHaveBeenCalled();
 });

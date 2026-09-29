@@ -92,7 +92,7 @@ limit cannot run there. Set it in Settings → Machines → the machine → Perm
 limit; that page also shows the machine's projects, provider CLIs, update state,
 and rename/remove. There is no CLI or SDK command to set it, and a paired
 machine cannot set it for any machine, so a sandbox machine can stay at Full
-Access while your laptop stays lower. `room-cli machine list --json` and `cloudroom machine
+Access while your laptop stays lower. `room-cli machine list --json` and `room-cli machine
 show` report the current limit.
 
 Standalone create does not create a thread or workspace. Omit inputs to use the
@@ -104,7 +104,7 @@ that host until active. SIGINT stops following and exits 130 while creation
 continues. `room-cli machine list` includes machines still being created. It lists persistent
 machines only; pass `--all` to include the disposable sandboxes that
 environment providers create per thread.
-Use `room-cli machine show <host-id>` to inspect progress and `cloudroom machine
+Use `room-cli machine show <host-id>` to inspect progress and `room-cli machine
 remove <host-id>` to cancel and clean up. The SDK provides
 `hosts.experimental_create`; pass `wait: false` to receive the creating host and
 poll it with `hosts.get`. Aborting a caller signal never cancels the server operation. A connected daemon does not
@@ -178,7 +178,7 @@ instead of `--path` to clone the project's Git remote there; `--remote-url` and
 
 ## Server access
 
-Set Machines → Server URL reachable by machines, or run `cloudroom settings general
+Set Machines → Server URL reachable by machines, or run `room-cli settings general
 machineServerUrl https://bb.example.com`. An unset value uses BB_EXTERNAL_URL.
 Select Manual to show the URL input. Set Default machine access with
 `room-cli settings general defaultMachineAccess direct` or `connect`; `null` uses
@@ -190,7 +190,7 @@ banners refresh this status when the access provider signals a change. Machines 
 access for ongoing runtime requests, including account-pool endpoints.
 
 The Tailscale plugin can supply private machine access without a Direct URL.
-Use `room-cli tailscale devices`, `room-cli tailscale status`, and `cloudroom tailscale configure
+Use `room-cli tailscale devices`, `room-cli tailscale status`, and `room-cli tailscale configure
 <port>` to discover devices and validate a dedicated existing HTTPS Serve
 mapping. Choose Tailscale explicitly; it is not selected by default.
 The plugin skill documents SSH prerequisites and safe endpoint cleanup.

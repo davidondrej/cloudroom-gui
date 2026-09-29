@@ -3,7 +3,7 @@ kind: instruction
 title: Cloudroom Terminal Guide
 summary: Creating and managing persistent terminals across thread, environment, and machine scopes.
 intent: Help agents route terminal sessions explicitly and manage them by terminal ID.
-editingNotes: Keep scope selectors and ID-only commands aligned with cloudroom terminal --help.
+editingNotes: Keep scope selectors and ID-only commands aligned with room-cli terminal --help.
 ---
 Terminal commands
 
@@ -31,7 +31,7 @@ Machine names are resolved to an explicit machine ID. No scope defaults to the
 primary machine, and --cwd is valid only with --machine or --host.
 
 Thread-scoped terminals receive ROOM_THREAD_ID, ROOM_PROJECT_ID,
-ROOM_ENVIRONMENT_ID, and ROOM_THREAD_STORAGE. Use cloudroom status or --self
+ROOM_ENVIRONMENT_ID, and ROOM_THREAD_STORAGE. Use room-cli status or --self
 without setting context manually. Environment-only and machine-only terminals
 have no current thread and do not inherit another thread's context.
 

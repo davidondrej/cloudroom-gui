@@ -26,6 +26,8 @@ export interface CloudroomStatus {
   macAccess?: boolean | null;
   /** Copy this computer's logins, API keys, and model providers to the VM (ADR 0130); null until first-run setup asks. */
   copyLogins?: boolean | null;
+  /** Agent logins found on this computer. Claude's is checked through its provider plugin. */
+  localLogins?: { codex: boolean };
   signingIn: boolean;
   signInError: string | null;
 }

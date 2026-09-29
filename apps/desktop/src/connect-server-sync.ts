@@ -58,6 +58,10 @@ const CONNECT_PLUGIN_ID = "connect";
 const LIST_ACCOUNT_SERVERS_RPC = "listAccountServers";
 const CONNECT_SERVER_SYNC_INTERVAL_MS = 10 * 60 * 1000;
 const CONNECT_SERVER_SYNC_MIN_INTERVAL_MS = 60 * 1000;
+// The Connect plugin loads a moment after the runtime, so the first sync can
+// fail. Retry a few times quickly instead of waiting for the 10-minute timer.
+const CONNECT_SERVER_SYNC_RETRY_MS = 5 * 1000;
+const CONNECT_SERVER_SYNC_MAX_RETRIES = 6;
 
 type ConnectServerSyncFetch = (
   input: string,
@@ -156,6 +160,7 @@ export function createConnectServerSync(
   let lastSyncAttemptAt = 0;
   let inFlight: Promise<void> | null = null;
   let loggedSkipReason: ConnectServerSyncSkipReason | null = null;
+  let retries = 0;
 
   async function fetchServers(): Promise<FetchConnectAccountServersResult> {
     const serverUrl = args.getLocalServerUrl();
@@ -190,9 +195,19 @@ export function createConnectServerSync(
         log?.(`connect server sync skipped (${outcome.reason})`);
       }
       args.onSkipped(outcome.reason);
+      if (
+        outcome.reason === "unavailable" &&
+        retries < CONNECT_SERVER_SYNC_MAX_RETRIES
+      ) {
+        retries += 1;
+        setTimeout(() => {
+          void syncNow();
+        }, CONNECT_SERVER_SYNC_RETRY_MS).unref();
+      }
       return;
     }
 
+    retries = 0;
     loggedSkipReason = null;
     args.onServers(selectTargetableConnectServers(outcome.result));
   }

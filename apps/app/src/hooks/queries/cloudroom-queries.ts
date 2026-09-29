@@ -3,6 +3,7 @@ import { z } from "zod";
 import { reasoningLevelSchema, serviceTierSchema, type Thread } from "@bb/domain";
 import { fetchWithAppSurface } from "@/lib/app-surface";
 import { sdk } from "@/lib/sdk";
+import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
 import { appToast } from "@/components/ui/app-toast";
 import { getMutationErrorMessage, showMutationErrorToast } from "@/lib/mutation-errors";
 
@@ -77,6 +78,19 @@ const threadStatusSchema = z.object({ authRequired: z.boolean().default(false), 
 
 export function useCloudroomAccount() {
   return useQuery({ queryKey: ["cloudroom-account"], queryFn: ({ signal }) => sdk.cloudroom.status(signal), refetchInterval: (query) => query.state.data?.signingIn ? 1500 : 10000 });
+}
+
+/** Starts browser sign-in, or cancels the one in progress. */
+export function useCloudroomSignIn() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (cancel: boolean) => {
+      if (cancel) await sdk.cloudroom.cancel();
+      else openUrlInExternalBrowser((await sdk.cloudroom.signIn()).url);
+    },
+    onSuccess: () => client.invalidateQueries({ queryKey: ["cloudroom-account"] }),
+    onError: (error) => appToast.error(error.message),
+  });
 }
 
 export function useCloudroomConnection() {

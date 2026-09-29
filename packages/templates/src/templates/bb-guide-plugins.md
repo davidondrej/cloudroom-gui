@@ -183,8 +183,8 @@ summaries. Detailed run and call records are paged JSONL: redirect `history`
 into `$ROOM_THREAD_STORAGE` before inspecting it, and continue with the final
 page record's `nextCursor`. The invoking shell writes
 that file on the thread's execution host, so this works the same on local and
-remote hosts without granting the plugin arbitrary filesystem access. Use `Cloudroom
-provider list --environment "$ROOM_ENVIRONMENT_ID" --json` and then `cloudroom provider
+remote hosts without granting the plugin arbitrary filesystem access. Use `room-cli
+provider list --environment "$ROOM_ENVIRONMENT_ID" --json` and then `room-cli provider
 models <provider-id> --environment "$ROOM_ENVIRONMENT_ID" --json` before writing
 an explicit selection; never guess ACP model IDs.
 
@@ -757,7 +757,7 @@ Authoring a plugin
 
 The loop: `room-cli plugin new <name>` scaffolds `./bb-plugin-<name>` — a working
 todo list with a backend, a sidebar page, a `room-cli <name>` command, and a skill;
-delete what you do not need; `room-cli plugin install .` registers it; `cloudroom plugin
+delete what you do not need; `room-cli plugin install .` registers it; `room-cli plugin
 dev` watches and reloads on every save. The manifest is package.json: required
 `bb.name` and `bb.description` human identity, required `bb.branding` with at
 least `icon` or `logo.light`, `bb.server`
@@ -831,8 +831,8 @@ shows every change and asks first.
 The SDK surface grows every release, so `room-cli plugin types` syncs a plugin to
 the running Cloudroom — repinning the SDK devDependency and the shimmed packages'
 type-only devDependencies, or rewriting types/ for a plugin that still
-vendors them. Run it in a cloned or older plugin, and `Cloudroom
-plugin types --check` in CI. `cloudroom plugin build` and `cloudroom plugin dev` keep a
+vendors them. Run it in a cloned or older plugin, and `room-cli
+plugin types --check` in CI. `room-cli plugin build` and `room-cli plugin dev` keep a
 vendored plugin in step for you. Need a symbol the types
 don't explain? Clone the repo: https://github.com/davidondrej/cloudroom-gui. The API in
 one line each — bb.log (plugin-scoped logger behind `room-cli plugin logs`);

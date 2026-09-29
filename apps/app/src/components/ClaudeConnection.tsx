@@ -104,7 +104,7 @@ export function ClaudeConnectionButton({
   environmentId,
   presentation = "footer",
 }: ClaudeConnectionTarget & {
-  presentation?: "settings" | "footer";
+  presentation?: "settings" | "footer" | "inline";
 }) {
   const [open, setOpen] = useState(false);
   const client = useQueryClient();
@@ -126,16 +126,18 @@ export function ClaudeConnectionButton({
       <PopoverTrigger asChild>
         <Button
           type="button"
-          variant={presentation === "settings" ? "default" : "ghost"}
+          variant={presentation === "settings" ? "default" : presentation === "inline" ? "outline" : "ghost"}
           size={presentation === "settings" ? "default" : "sm"}
           className={
             presentation === "footer"
               ? "h-7 text-xs text-muted-foreground hover:text-foreground"
-              : "shrink-0"
+              : presentation === "inline"
+                ? "h-7 px-2.5 text-xs"
+                : "shrink-0"
           }
           aria-label={`${label} · ${target === "cloud" ? "Cloud" : "Local"}`}
         >
-          {label}
+          {presentation === "inline" ? (auth.data?.state === "waiting" ? "Finish" : "Connect") : label}
         </Button>
       </PopoverTrigger>
       <PopoverContent

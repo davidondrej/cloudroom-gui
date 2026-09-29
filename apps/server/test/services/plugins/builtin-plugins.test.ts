@@ -292,6 +292,7 @@ describe("builtin plugin reconciliation", () => {
       ["ask-user-question", "MessageQuestion"],
       ["automations", "Repeat"],
       ["connect", "Smartphone"],
+      ["computer-use", "Cursor"],
       ["custom-instructions", "EditFile"],
       ["plugin-api-tester", "Beaker"],
       ["inline-vis", "AppWindow"],

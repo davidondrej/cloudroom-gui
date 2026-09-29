@@ -13,7 +13,7 @@
   when the thread has moved on. It errors when the thread has not failed or
   `--turn` names a different turn (409 `no_failed_turn`), and when that turn
   already has a retry queued (`retry_already_queued`). Add `--send-at <when>` to
-  queue the retry on the clock (same `<when>` grammar as `cloudroom thread tell
+  queue the retry on the clock (same `<when>` grammar as `room-cli thread tell
 --send-at`); without it the retry is attempted now and may still queue behind
   a busy thread or a plugin's dispatch hook. `--reason <text>` labels the queued
   row. The SDK equivalent is `sdk.threads.retry({ threadId, turnRequestId?,

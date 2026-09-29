@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFile, stat } from "node:fs/promises";
+import { access, readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -28,6 +28,8 @@ const RECHECK_MS = 60_000;
 // The Mac's skills and global instructions that sandboxes receive, one way (docs/scopes/sandboxes.md).
 const CONFIG_PATHS = [".agents/skills", ".claude/skills", ".claude/CLAUDE.md", ".codex/skills", ".codex/AGENTS.md", ".pi/agent/skills", ".pi/agent/AGENTS.md"];
 const CONFIG_LIMIT = 45 * 1024 * 1024;
+const codexAuthPath = () => join(process.env.CODEX_HOME || join(homedir(), ".codex"), "auth.json");
+export const hasMacCodexLogin = () => access(codexAuthPath()).then(() => true, () => false);
 
 function contentDigest(tar: Buffer): string {
   const hash = createHash("sha256");
@@ -194,13 +196,13 @@ export class SandboxDirectory {
 
   private copiedAt = 0;
   get loginsCopied(): boolean { return this.copiedAt > 0; }
-  /** Copies this Mac's Codex, Pi, Cursor, and GitHub logins when the user allowed it (ADRs 0128, 0130). At most once a minute. */
-  async copyMacLogins(): Promise<void> {
-    if (Date.now() - this.copiedAt < RECHECK_MS) return;
+  /** Copies this Mac's Codex, Pi, Cursor, and GitHub logins when the user allowed it (ADRs 0128, 0130).
+   *  At most once a minute, unless the user just clicked Connect. */
+  async copyMacLogins(force = false): Promise<void> {
+    if (!force && Date.now() - this.copiedAt < RECHECK_MS) return;
     this.copiedAt = Date.now();
-    const codexHome = process.env.CODEX_HOME || join(homedir(), ".codex");
     const piHome = process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi/agent");
-    const files = [["codex", join(codexHome, "auth.json")], ["pi", join(piHome, "auth.json")]] as const;
+    const files = [["codex", codexAuthPath()], ["pi", join(piHome, "auth.json")]] as const;
     // One failed login never stops the others; all failures are reported together.
     const failed: string[] = [];
     const save = (name: "codex" | "pi" | "cursor" | "github", value: string) => this.saveLogin(name, value).catch((error: unknown) => { failed.push(`${name}: ${error instanceof Error ? error.message : String(error)}`); });

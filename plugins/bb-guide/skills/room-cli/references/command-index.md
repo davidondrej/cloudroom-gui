@@ -18,7 +18,8 @@ This index lists every command path that the core CLI registers. Read the task-s
 - `room-cli cloud cursor login`
 - `room-cli cloud cursor cancel`
 - `room-cli cloud cursor key`
-- `room-cli cloud pi key PROVIDER` (reads the key from stdin)
+- `room-cli cloud pi`
+- `room-cli cloud pi key`
 - `room-cli cloud teleport`
 - `room-cli cloud retry-start`
 - `room-cli cloud thread-workspace`

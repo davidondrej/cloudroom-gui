@@ -6,6 +6,7 @@ import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { cloudroom } from "./commands.js";
 import { macAccess } from "./previews.js";
+import { hasMacCodexLogin } from "./sandboxes.js";
 import { copyLogins } from "./sync.js";
 
 const website = "https://www.cloudroom.dev";
@@ -37,7 +38,7 @@ h1{margin:0 0 20px;font-size:clamp(28px,5vw,40px);font-weight:500;letter-spacing
 <div class="status"><span class="symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${success ? '<path d="m5 12 4 4L19 6"/>' : '<path d="M12 5v9m0 3v2"/>'}</svg></span>${success ? "Sign-in complete" : "Please try again"}</div>
 <h1>${title}</h1><p>${escaped}</p>
 ${success
-    ? '<div class="next open"><div><strong>Head back to Cloudroom</strong><p>You can close this browser tab.</p></div><a class="button" href="cloudroom://open">Open Cloudroom</a></div>'
+    ? '<div class="next open"><div><strong>Head back to Cloudroom</strong><p>Next, connect Claude Code and Codex in the app. You can close this browser tab.</p></div><a class="button" href="cloudroom://open">Open Cloudroom</a></div>'
     : '<div class="next"><strong>Start sign-in again from the Cloudroom app</strong><p>You can close this browser tab.</p></div>'}
 <p class="local">This page is served by Cloudroom on your Mac.</p>
 </main></body></html>`;
@@ -56,7 +57,7 @@ export class CloudroomAccountService {
   constructor(private readonly deps: Deps) {}
 
   async status() {
-    return { ...await cloudroom(this.deps).status(), macAccess: await macAccess(this.deps), copyLogins: await copyLogins(this.deps), signingIn: this.pending !== null, signInError: this.error };
+    return { ...await cloudroom(this.deps).status(), macAccess: await macAccess(this.deps), copyLogins: await copyLogins(this.deps), localLogins: { codex: await hasMacCodexLogin() }, signingIn: this.pending !== null, signInError: this.error };
   }
 
   cancel(): void {

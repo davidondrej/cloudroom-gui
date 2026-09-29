@@ -261,7 +261,9 @@ def cycle(config, connection, state_dir):
             skipped = local.get('skipped', []) + cloud.get('skipped', [])
             conflicts.extend(skipped)
             for path in sorted(set(base) | set(local['files']) | set(cloud['files'])):
-                if excluded(path) or any(path == prefix or path.startswith(prefix + '/') for prefix in skipped):
+                # The Mac and the cloud each ship their own room-cli skill; never mirror it.
+                if excluded(path) or any(path == prefix or path.startswith(prefix + '/') for prefix in skipped) \
+                        or (tree.kind == 'skills' and path.split('/')[0] == 'room-cli'):
                     continue
                 left, right = local['files'].get(path), cloud['files'].get(path)
                 a, b, old = (left or {}).get('tag'), (right or {}).get('tag'), base.get(path)

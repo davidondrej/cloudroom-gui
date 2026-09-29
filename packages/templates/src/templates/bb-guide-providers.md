@@ -20,7 +20,7 @@ Use these before spawning threads if you are unsure which provider or model to u
 `--host` is an alias for `--machine`. Machine and environment selectors are
 mutually exclusive because an environment already selects its machine. When no
 selector is supplied, both commands intentionally inspect the primary machine.
-When provider and model are omitted from cloudroom thread spawn, the project's
+When provider and model are omitted from room-cli thread spawn, the project's
 remembered defaults apply. If the project has no remembered choice, cloudroom uses
 the explicitly requested provider or Codex, then resolves the model marked
 default by that provider on the target machine (falling back to the first
@@ -126,7 +126,7 @@ default agent in the OpenCode config and the ACP session uses it.
 Top-level customModels in the app data-dir config.json adds extra picker
 entries. Each entry has a providerId (a built-in provider id or any acp-*
 provider id), a model id, and an optional displayName. cloudroom skips an invalid
-entry with a warning. The entry then appears in cloudroom provider models output and
+entry with a warning. The entry then appears in room-cli provider models output and
 in the model picker, but the provider must still accept the id: claude-code
 and codex accept unlisted ids, while an ACP agent can reject an id it does
 not know at session start. OpenCode rejects unlisted ids, so add an OpenCode
@@ -136,7 +136,7 @@ General setting hides every entry from these lists; see the customization
 chapter.
 
 Custom ACP agents live in the ACP providers plugin's customAgents setting, a
-JSON array. Set it with cloudroom plugin config provider-acp set customAgents '[...]'.
+JSON array. Set it with room-cli plugin config provider-acp set customAgents '[...]'.
 Each entry needs id (lowercase letters, digits and dashes), displayName, and
 command. cloudroom derives provider id acp-<id> from the slug id. The id is permanent.
 The id cursor is reserved because cloudroom always lists that agent. The ids opencode,
