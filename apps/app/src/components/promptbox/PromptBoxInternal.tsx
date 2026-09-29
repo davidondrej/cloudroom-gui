@@ -86,7 +86,7 @@ import {
 } from "@bb/client-core";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { PROMPT_STACK_EDGE_CARET_BUTTON_WIDTH_CLASS } from "./banner/PromptStackCard";
-import { AttachmentPreview } from "./AttachmentPreview";
+import { AttachmentPreview, useUploadingImageCount } from "./AttachmentPreview";
 import type { ExecutionControlsProps } from "./ExecutionControls";
 import { VoiceRecordingBar } from "./VoiceRecordingBar";
 import {
@@ -1385,6 +1385,8 @@ export function PromptBoxInternal({
   const dispatchAppCommandKey = useAppCommandKeyDispatch();
   const syncTriggerStateRef = useRef<(editor: Editor) => void>(() => {});
   const onAttachFilesRef = useRef(onAttachFiles);
+  const { uploadingImageCount, trackUpload } =
+    useUploadingImageCount(attachments);
   const dismissedTriggerRef = useRef<DismissedTriggerRange | null>(null);
   const isRestoringAppliedMentionRef = useRef(false);
   const [activeTrigger, setActiveTrigger] = useState<ActiveTrigger | null>(
@@ -1866,7 +1868,7 @@ export function PromptBoxInternal({
 
           if (attachFiles && pastedFiles.length > 0) {
             event.preventDefault();
-            void attachFiles(pastedFiles);
+            trackUpload(pastedFiles, attachFiles(pastedFiles));
           }
 
           const plainText = event.clipboardData?.getData("text/plain") ?? "";
@@ -2889,9 +2891,9 @@ export function PromptBoxInternal({
   const emitAttachmentFiles = useCallback(
     (files: File[]) => {
       if (!onAttachFiles || files.length === 0) return;
-      void onAttachFiles(files);
+      trackUpload(files, onAttachFiles(files));
     },
-    [onAttachFiles],
+    [onAttachFiles, trackUpload],
   );
 
   const submitPrompt = useCallback(() => {
@@ -3451,6 +3453,7 @@ export function PromptBoxInternal({
               >
                 <AttachmentPreview
                   attachments={attachments}
+                  uploadingImageCount={uploadingImageCount}
                   attachmentProjectId={attachmentProjectId}
                   expandedImageIndex={expandedImageIndex}
                   onExpandedImageIndexChange={setExpandedImageIndex}

@@ -647,6 +647,8 @@ describe("ThreadTimelineRows actions", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add to chat" }));
     expect(onMessageAddToChat).toHaveBeenCalledWith(
       "Quote this agent response.",
+      undefined,
+      { messageNumber: 1 },
     );
   });
 
@@ -691,6 +693,7 @@ describe("ThreadTimelineRows actions", () => {
           sizeBytes: 0,
         },
       ],
+      { messageNumber: 1 },
     );
   });
 
@@ -713,6 +716,8 @@ describe("ThreadTimelineRows actions", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add to chat" }));
     expect(onSelectionAddToChat).toHaveBeenCalledWith(
       "Quote this user prompt.",
+      undefined,
+      { messageNumber: 1 },
     );
   });
 
@@ -757,6 +762,7 @@ describe("ThreadTimelineRows actions", () => {
           sizeBytes: 0,
         },
       ],
+      { messageNumber: 1 },
     );
   });
 
@@ -785,14 +791,18 @@ describe("ThreadTimelineRows actions", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Add to chat" }));
-    expect(onSelectionAddToChat).toHaveBeenCalledWith("", [
-      {
-        type: "localFile",
-        path: "uploads/spec.md",
-        name: "spec.md",
-        sizeBytes: 0,
-      },
-    ]);
+    expect(onSelectionAddToChat).toHaveBeenCalledWith(
+      "",
+      [
+        {
+          type: "localFile",
+          path: "uploads/spec.md",
+          name: "spec.md",
+          sizeBytes: 0,
+        },
+      ],
+      { messageNumber: 1 },
+    );
   });
 
   it("hides user message add-to-chat when no add handler is supplied", () => {
@@ -869,7 +879,11 @@ describe("ThreadTimelineRows actions", () => {
     await flushSelectionFrames();
     fireEvent.click(await screen.findByRole("button", { name: "Add to chat" }));
 
-    expect(onSelectionAddToChat).toHaveBeenLastCalledWith("earlier answer");
+    expect(onSelectionAddToChat).toHaveBeenLastCalledWith(
+      "earlier answer",
+      undefined,
+      { messageNumber: 1 },
+    );
   });
 
   it("shows the floating selection menu on coarse pointers", async () => {
@@ -911,7 +925,11 @@ describe("ThreadTimelineRows actions", () => {
       name: "Add to chat",
     });
     fireEvent.click(addToChat);
-    expect(onSelectionAddToChat).toHaveBeenCalledWith("chat actions");
+    expect(onSelectionAddToChat).toHaveBeenCalledWith(
+      "chat actions",
+      undefined,
+      { messageNumber: 1 },
+    );
   });
 
   it("keeps the floating selection menu on compact fine-pointer viewports", async () => {

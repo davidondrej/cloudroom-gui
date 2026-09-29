@@ -39,7 +39,8 @@ export function useComposerTypeahead({
   const promptMentions = usePromptMentions(mentionsProjectId ?? projectId, {
     currentThreadId,
     environmentId,
-    threadStorageThreadId: currentThreadId,
+    // Cloud threads have no environment, so no thread storage on this host.
+    threadStorageThreadId: environmentId ? currentThreadId : undefined,
   });
   const [commandQuery, setCommandQuery] = useState<string | null>(null);
   const [hasComposerFocused, setHasComposerFocused] = useState(false);

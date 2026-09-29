@@ -264,6 +264,17 @@ class Tree:
             finally:
                 try: os.unlink(temporary, dir_fd=fd)
                 except FileNotFoundError: pass
+            if native and native['harness'] == 'claude-code':
+                # Core refuses a Claude ID found in two project folders, so older copies are set aside.
+                with directory(self.root) as root:
+                    for folder in os.listdir(root):
+                        if folder == relative.split('/')[0]:
+                            continue
+                        try: other = os.open(folder, DIRECTORY, dir_fd=root)
+                        except OSError: continue
+                        try: os.rename(name, f'{name}.before-teleport-{uuid.uuid4().hex}', src_dir_fd=other, dst_dir_fd=other)
+                        except FileNotFoundError: pass
+                        finally: os.close(other)
             project_path = request.get('project_path')
             if project_path:
                 # Incoming bytes are durable. A conflicting directory or unwritable

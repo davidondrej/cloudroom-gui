@@ -207,6 +207,14 @@ function json(value: unknown): Json {
   return value as Json;
 }
 
+function attachAcceptance(value: Record<string, unknown>, sessionId: string, id: string): Acceptance {
+  const accepted = { session_id: text(value.session_id), receipt: receipt(value.receipt), saving: json(value.saving) };
+  if (accepted.session_id !== sessionId || accepted.receipt.request_id !== id || accepted.receipt.command !== "attach") {
+    throw new CloudroomError("Cloudroom acceptance does not match the command");
+  }
+  return accepted;
+}
+
 function receipt(value: unknown): Receipt {
   const item = object(value);
   return {
@@ -251,6 +259,8 @@ function sessionPath(id: string): string {
 }
 
 const MAX_RESPONSE_BYTES = 16 * 1024 * 1024;
+/** The most one upload request may carry: some sandbox proxies (Upstash) drop requests over about 8 MB. */
+export const UPLOAD_PART = 4 * 1024 * 1024;
 
 export class CloudroomClient {
   #base: string;
@@ -671,15 +681,32 @@ export class CloudroomClient {
       signal,
       { ...upload, contentType: "application/octet-stream" },
     );
-    const accepted = {
-      session_id: text(value.session_id),
-      receipt: receipt(value.receipt),
-      saving: json(value.saving),
-    };
-    if (accepted.session_id !== sessionId || accepted.receipt.request_id !== id || accepted.receipt.command !== "attach") {
-      throw new CloudroomError("Cloudroom acceptance does not match the command");
-    }
-    return accepted;
+    return attachAcceptance(value, sessionId, id);
+  }
+
+  /** Sends an attachment in `UPLOAD_PART` pieces (core `upload_parts`); the last part returns the acceptance.
+   *  A retry resends every part: the core ignores parts it already has. */
+  async attachInParts(
+    sessionId: string,
+    id: string,
+    name: string,
+    kind: "image" | "file",
+    bytes: Uint8Array,
+    signal?: AbortSignal,
+  ): Promise<Acceptance> {
+    requestId(id);
+    if (bytes.length > 25 * 1024 * 1024) throw new CloudroomError("Attachment exceeds the size limit");
+    let offset = 0;
+    do {
+      const part = bytes.subarray(offset, offset + UPLOAD_PART);
+      const query = new URLSearchParams({ request_id: id, name, kind, offset: String(offset), total: String(bytes.length) });
+      const value = await this.#json(`${sessionPath(sessionId)}/attachments?${query}`, undefined, signal, {
+        body: new ReadableStream({ start(controller) { controller.enqueue(part); controller.close(); } }), length: part.length, contentType: "application/octet-stream",
+      });
+      if (value.receipt !== undefined) return attachAcceptance(value, sessionId, id);
+      offset += part.length;
+    } while (offset < bytes.length);
+    throw new CloudroomError("Cloudroom did not save the attachment");
   }
 
   interrupt(sessionId: string, id: string, targetRequestId: string) {

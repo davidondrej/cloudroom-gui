@@ -49,9 +49,15 @@ export type ThreadTimelineSendToMainMessageHandler = (
   target: ThreadTimelineSendToMainMessageTarget,
 ) => void;
 
+/** Set when the text comes from a chat message; `messageNumber` counts user and agent messages from 1. */
+export interface ThreadTimelineAddToChatSource {
+  messageNumber: number | null;
+}
+
 export type ThreadTimelineAddToChatHandler = (
   text: string,
   attachments?: readonly PromptDraftAttachment[],
+  source?: ThreadTimelineAddToChatSource,
 ) => void;
 
 export interface ThreadTimelinePluginMessageAction {

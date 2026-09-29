@@ -15,11 +15,23 @@ import {
 
 export type PromptDraftAttachment = UploadedPromptAttachment;
 
+/** Full text behind a short `<context> [label] </context>` line in the draft. */
+export interface PromptDraftContext {
+  label: string;
+  text: string;
+}
+
 export interface PromptDraftState {
   text: string;
   mentions: PromptTextMention[];
   attachments: PromptDraftAttachment[];
+  contexts?: PromptDraftContext[];
 }
+
+const promptDraftContextSchema = z.object({
+  label: z.string(),
+  text: z.string(),
+});
 
 const promptDraftStorageSchema = z.object({
   text: z.string().default(""),
@@ -38,6 +50,15 @@ const promptDraftStorageSchema = z.object({
     .transform((items) =>
       items.flatMap((item) => {
         const result = uploadedPromptAttachmentSchema.safeParse(item);
+        return result.success ? [result.data] : [];
+      }),
+    ),
+  contexts: z
+    .array(z.unknown())
+    .default([])
+    .transform((items) =>
+      items.flatMap((item) => {
+        const result = promptDraftContextSchema.safeParse(item);
         return result.success ? [result.data] : [];
       }),
     ),
@@ -89,20 +110,18 @@ export function appendQuoteToDraftText(
   return { ...state, text };
 }
 
-export function appendQuoteAndAttachmentsToDraft(
+function appendAttachmentsToDraft(
   state: PromptDraftState,
-  quotedText: string,
   attachments: readonly PromptDraftAttachment[],
 ): PromptDraftState {
-  const quotedState = appendQuoteToDraftText(state, quotedText);
   if (attachments.length === 0) {
-    return quotedState;
+    return state;
   }
 
   const existingAttachmentPaths = new Set(
-    quotedState.attachments.map((attachment) => attachment.path),
+    state.attachments.map((attachment) => attachment.path),
   );
-  const mergedAttachments = [...quotedState.attachments];
+  const mergedAttachments = [...state.attachments];
   for (const attachment of attachments) {
     if (existingAttachmentPaths.has(attachment.path)) {
       continue;
@@ -111,11 +130,60 @@ export function appendQuoteAndAttachmentsToDraft(
     mergedAttachments.push(attachment);
   }
 
-  if (mergedAttachments.length === quotedState.attachments.length) {
-    return quotedState;
+  if (mergedAttachments.length === state.attachments.length) {
+    return state;
   }
 
-  return { ...quotedState, attachments: mergedAttachments };
+  return { ...state, attachments: mergedAttachments };
+}
+
+export function appendQuoteAndAttachmentsToDraft(
+  state: PromptDraftState,
+  quotedText: string,
+  attachments: readonly PromptDraftAttachment[],
+): PromptDraftState {
+  return appendAttachmentsToDraft(
+    appendQuoteToDraftText(state, quotedText),
+    attachments,
+  );
+}
+
+function countWords(text: string): number {
+  return text.split(/\s+/u).filter((word) => word.length > 0).length;
+}
+
+function messageContextLine(label: string): string {
+  return `<context> ${label} </context>`;
+}
+
+/**
+ * Adds a chat message as a short `<context> [message #7 - 494 words] </context>`
+ * line. The full text is kept in `contexts` and swapped in on send.
+ */
+export function appendMessageContextToDraft(
+  state: PromptDraftState,
+  messageText: string,
+  messageNumber: number | null,
+  attachments: readonly PromptDraftAttachment[] = [],
+): PromptDraftState {
+  const text = messageText.trim();
+  if (text === "") return appendAttachmentsToDraft(state, attachments);
+
+  const words = countWords(text);
+  const label = `[message${messageNumber === null ? "" : ` #${messageNumber}`} - ${words} ${words === 1 ? "word" : "words"}]`;
+  const separator =
+    state.text === "" || state.text.endsWith("\n") ? "" : "\n\n";
+  const contexts = (state.contexts ?? []).filter(
+    (context) => context.label !== label,
+  );
+  return appendAttachmentsToDraft(
+    {
+      ...state,
+      text: `${state.text}${separator}${messageContextLine(label)}\n\n`,
+      contexts: [...contexts, { label, text }],
+    },
+    attachments,
+  );
 }
 
 export function isPromptDraftEmpty(draft: PromptDraftState): boolean {
@@ -134,7 +202,9 @@ export function parsePromptDraftStorage(
   try {
     const parsed: unknown = JSON.parse(rawValue);
     const result = promptDraftStorageSchema.safeParse(parsed);
-    return result.success ? result.data : emptyPromptDraftState();
+    if (!result.success) return emptyPromptDraftState();
+    const { contexts, ...draft } = result.data;
+    return contexts.length > 0 ? { ...draft, contexts } : draft;
   } catch {
     return emptyPromptDraftState();
   }
@@ -146,6 +216,7 @@ export function serializePromptDraftStorage(
   const text = draft.text;
   const mentions = draft.mentions;
   const attachments = draft.attachments;
+  const contexts = draft.contexts ?? [];
   if (isPromptDraftEmpty(draft)) {
     return null;
   }
@@ -153,6 +224,7 @@ export function serializePromptDraftStorage(
     text,
     ...(mentions.length > 0 ? { mentions } : {}),
     attachments,
+    ...(contexts.length > 0 ? { contexts } : {}),
   });
 }
 
@@ -195,46 +267,81 @@ interface ExpandedPromptText {
   mentions: PromptTextMention[];
 }
 
-function expandAutomationPromptCommandMentions(
+interface PromptTextReplacement {
+  start: number;
+  end: number;
+  text: string;
+}
+
+function automationPromptCommandReplacements(
+  mentions: readonly PromptTextMention[],
+): PromptTextReplacement[] {
+  return mentions
+    .filter((mention) => isAutomationPromptCommandResource(mention.resource))
+    .map((mention) => ({
+      start: mention.start,
+      end: mention.end,
+      text: SUBMITTED_AUTOMATION_PROMPT_PREFIX,
+    }));
+}
+
+function messageContextReplacements(
+  text: string,
+  contexts: readonly PromptDraftContext[],
+): PromptTextReplacement[] {
+  return contexts.flatMap((context) => {
+    const line = messageContextLine(context.label);
+    const replacements: PromptTextReplacement[] = [];
+    for (
+      let start = text.indexOf(line);
+      start !== -1;
+      start = text.indexOf(line, start + line.length)
+    ) {
+      replacements.push({
+        start,
+        end: start + line.length,
+        text: `<context>\n${context.text}\n</context>`,
+      });
+    }
+    return replacements;
+  });
+}
+
+/** Applies non-overlapping replacements, dropping mentions inside them and shifting the rest. */
+function applyPromptTextReplacements(
   text: string,
   mentions: readonly PromptTextMention[],
+  replacements: readonly PromptTextReplacement[],
 ): ExpandedPromptText {
-  const automationMentions = mentions
-    .filter((mention) => isAutomationPromptCommandResource(mention.resource))
-    .sort((left, right) => left.start - right.start || left.end - right.end);
-
-  if (automationMentions.length === 0) {
+  if (replacements.length === 0) {
     return { text, mentions: [...mentions] };
   }
 
-  const replacements: Array<{ start: number; end: number }> = [];
+  const applied: PromptTextReplacement[] = [];
   let cursor = 0;
   let nextText = "";
-  for (const mention of automationMentions) {
-    if (mention.start < cursor) {
+  for (const replacement of [...replacements].sort(
+    (left, right) => left.start - right.start || left.end - right.end,
+  )) {
+    if (replacement.start < cursor) {
       continue;
     }
-    replacements.push({ start: mention.start, end: mention.end });
-    nextText += text.slice(cursor, mention.start);
-    nextText += SUBMITTED_AUTOMATION_PROMPT_PREFIX;
-    cursor = mention.end;
+    applied.push(replacement);
+    nextText += text.slice(cursor, replacement.start);
+    nextText += replacement.text;
+    cursor = replacement.end;
   }
   nextText += text.slice(cursor);
 
   const nextMentions = mentions.flatMap((mention) => {
-    if (isAutomationPromptCommandResource(mention.resource)) {
-      return [];
-    }
-
     let offset = 0;
-    for (const replacement of replacements) {
+    for (const replacement of applied) {
       if (mention.start < replacement.end && mention.end > replacement.start) {
         return [];
       }
       if (replacement.end <= mention.start) {
         offset +=
-          SUBMITTED_AUTOMATION_PROMPT_PREFIX.length -
-          (replacement.end - replacement.start);
+          replacement.text.length - (replacement.end - replacement.start);
       }
     }
 
@@ -276,7 +383,10 @@ export function promptDraftToInput(draft: PromptDraftState): PromptInput[] {
       }),
       text.length,
     );
-    const expandedText = expandAutomationPromptCommandMentions(text, mentions);
+    const expandedText = applyPromptTextReplacements(text, mentions, [
+      ...automationPromptCommandReplacements(mentions),
+      ...messageContextReplacements(text, draft.contexts ?? []),
+    ]);
     input.push({
       type: "text",
       text: expandedText.text,

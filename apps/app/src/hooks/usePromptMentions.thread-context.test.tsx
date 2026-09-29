@@ -93,4 +93,42 @@ describe("usePromptMentions thread contexts", () => {
       }),
     );
   });
+
+  describe("when file search fails", () => {
+    beforeEach(() => {
+      mocks.usePathSuggestions.mockReturnValue({
+        suggestions: [],
+        isLoading: false,
+        isError: true,
+        isDebouncing: false,
+      });
+    });
+
+    it("still shows matching threads", () => {
+      const { result } = renderHook(() =>
+        usePromptMentions("proj_1", { environmentId: null }),
+      );
+
+      act(() => {
+        result.current.setQuery("Only worktree", "@");
+      });
+
+      expect(result.current.isError).toBe(false);
+      expect(result.current.results.suggestions).toEqual([
+        expect.objectContaining({ kind: "thread", threadId: "thr_existing" }),
+      ]);
+    });
+
+    it("reports the error when nothing else matches", () => {
+      const { result } = renderHook(() =>
+        usePromptMentions("proj_1", { environmentId: null }),
+      );
+
+      act(() => {
+        result.current.setQuery("no such thread", "@");
+      });
+
+      expect(result.current.isError).toBe(true);
+    });
+  });
 });

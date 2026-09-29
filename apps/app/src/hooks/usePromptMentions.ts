@@ -277,8 +277,10 @@ export function usePromptMentions(
     threadsQuery.isError &&
     !threadsQuery.isLoading &&
     !threadsQuery.isFetching;
+  // One failed source must not hide results from the others.
   const isError =
-    (includeBuiltInSources && pathSearch.isError) || isThreadError;
+    results.suggestions.length === 0 &&
+    ((includeBuiltInSources && pathSearch.isError) || isThreadError);
 
   return {
     query,

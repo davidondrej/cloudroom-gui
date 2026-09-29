@@ -53,6 +53,7 @@ import {
 import { isRunningThreadRuntimeDisplayStatus } from "@bb/client-core";
 import type {
   ThreadTimelineAddToChatHandler,
+  ThreadTimelineAddToChatSource,
   ThreadTimelineEditMessageHandler,
   ThreadTimelineInlineMessageEditor,
   ThreadTimelineForkMessageHandler,
@@ -132,6 +133,7 @@ import {
   type PluginMessageActionSlot,
 } from "@/lib/plugin-slots.js";
 import { runPluginMessageAction } from "@/lib/plugin-message-actions.js";
+import { sdk } from "@/lib/sdk";
 import { isPluginSideChatSenderThread } from "@/lib/side-chat-plugin.js";
 import {
   buildMessageDirectiveRegistry,
@@ -177,9 +179,15 @@ export interface ThreadTimelineRowsProps {
   workspaceRootPath: string | undefined;
 }
 
+type ResolveMessageNumber = (
+  rowId: string,
+  onResolved: (messageNumber: number | null) => void,
+) => void;
+
 interface TimelineRendererStaticContextValue {
   canSpawnChild: boolean;
   getViewRows: GetTimelineViewRows;
+  resolveMessageNumber: ResolveMessageNumber;
   onForkMessage: ThreadTimelineForkMessageHandler | undefined;
   onEditMessage: ThreadTimelineEditMessageHandler | undefined;
   inlineMessageEditor: ThreadTimelineInlineMessageEditor | undefined;
@@ -360,6 +368,52 @@ const TimelineSearchExpansionContext =
   createContext<ReadonlySet<string>>(EMPTY_ROW_ID_SET);
 const TimelineWindowingEnabledContext = createContext(false);
 const TIMELINE_TERMINAL_EXPANSION_RETENTION = 24;
+
+/**
+ * Numbers top-level user and agent messages from 1, like the server outline.
+ * Asks the outline when older messages are not loaded yet.
+ */
+function useMessageNumberResolver({
+  hasOlderTimelineRows,
+  threadId,
+  timelineRows,
+}: {
+  hasOlderTimelineRows: boolean;
+  threadId: string | undefined;
+  timelineRows: readonly TimelineRow[];
+}): ResolveMessageNumber {
+  const latestRef = useRef({ hasOlderTimelineRows, threadId, timelineRows });
+  latestRef.current = { hasOlderTimelineRows, threadId, timelineRows };
+  return useCallback((rowId, onResolved) => {
+    const latest = latestRef.current;
+    if (!latest.hasOlderTimelineRows || latest.threadId === undefined) {
+      const index = latest.timelineRows
+        .filter((row) => row.kind === "conversation")
+        .findIndex((row) => row.id === rowId);
+      onResolved(index === -1 ? null : index + 1);
+      return;
+    }
+    void sdk.threads.conversationOutline({ threadId: latest.threadId }).then(
+      (outline) => {
+        const index = outline.items.findIndex((item) => item.id === rowId);
+        onResolved(index === -1 ? null : index + 1);
+      },
+      () => onResolved(null),
+    );
+  }, []);
+}
+
+function addMessageToChatHandler(
+  handler: ThreadTimelineAddToChatHandler | undefined,
+  rowId: string,
+  resolveMessageNumber: ResolveMessageNumber,
+): ThreadTimelineAddToChatHandler | undefined {
+  if (handler === undefined) return undefined;
+  return (text, attachments) =>
+    resolveMessageNumber(rowId, (messageNumber) =>
+      handler(text, attachments, { messageNumber }),
+    );
+}
 
 function useTimelineRendererStaticContext(): TimelineRendererStaticContextValue {
   const context = useContext(TimelineRendererStaticContext);
@@ -862,6 +916,7 @@ const ConversationRowContent = memo(function ConversationRowContent({
     pluginMessageActions,
     consumerMessageActions,
     reportProseSelection,
+    resolveMessageNumber,
     threadOriginKind,
     onOpenLink,
     onOpenLocalFileLink,
@@ -949,7 +1004,11 @@ const ConversationRowContent = memo(function ConversationRowContent({
         initiator={row.initiator}
         mentions={row.mentions}
         mobileActionDisplay={mobileActionDisplay}
-        onAddToChat={onSelectionAddToChat}
+        onAddToChat={addMessageToChatHandler(
+          onSelectionAddToChat,
+          row.id,
+          resolveMessageNumber,
+        )}
         onEdit={onEdit}
         onOpenLink={onOpenLink}
         onOpenLocalFileLink={onOpenLocalFileLink}
@@ -998,7 +1057,11 @@ const ConversationRowContent = memo(function ConversationRowContent({
     <ConversationMessageContent
       attachments={row.attachments}
       id={row.id}
-      onAddToChat={onMessageAddToChat}
+      onAddToChat={addMessageToChatHandler(
+        onMessageAddToChat,
+        row.id,
+        resolveMessageNumber,
+      )}
       onFork={onFork}
       onSendToMain={onSendToMain}
       forkDisabled={!canSpawnChild}
@@ -1929,6 +1992,11 @@ function ThreadTimelineRowsForTimelineView(props: ThreadTimelineRowsProps) {
     () => getViewRows(props.timelineRows),
     [getViewRows, props.timelineRows],
   );
+  const resolveMessageNumber = useMessageNumberResolver({
+    hasOlderTimelineRows: props.hasOlderTimelineRows ?? false,
+    threadId: props.threadId,
+    timelineRows: props.timelineRows,
+  });
   const heightSnapRevision = timelineHeightSnapRevision(props.timelineRows);
   const latestActionableAssistantMessageId = useMemo(
     () => findLastActionableAssistantMessageId(rows),
@@ -2041,12 +2109,9 @@ function ThreadTimelineRowsForTimelineView(props: ThreadTimelineRowsProps) {
     (
       text: string,
       attachments?: Parameters<ThreadTimelineAddToChatHandler>[1],
+      source?: ThreadTimelineAddToChatSource,
     ) => {
-      if (attachments === undefined) {
-        onSelectionAddToChat?.(text);
-      } else {
-        onSelectionAddToChat?.(text, attachments);
-      }
+      onSelectionAddToChat?.(text, attachments, source);
       setActiveSelection(null);
     },
     [onSelectionAddToChat],
@@ -2079,6 +2144,7 @@ function ThreadTimelineRowsForTimelineView(props: ThreadTimelineRowsProps) {
     () => ({
       canSpawnChild: props.canSpawnChild ?? false,
       getViewRows,
+      resolveMessageNumber,
       onForkMessage: props.onForkMessage,
       onEditMessage: props.onEditMessage,
       inlineMessageEditor: props.inlineMessageEditor,
@@ -2109,6 +2175,7 @@ function ThreadTimelineRowsForTimelineView(props: ThreadTimelineRowsProps) {
     [
       props.canSpawnChild,
       getViewRows,
+      resolveMessageNumber,
       props.onForkMessage,
       props.onEditMessage,
       props.inlineMessageEditor,
@@ -2197,7 +2264,15 @@ function ThreadTimelineRowsForTimelineView(props: ThreadTimelineRowsProps) {
                   {hasSelectionActions ? (
                     <TimelineSelectionMenu
                       selection={activeSelection?.selection ?? null}
-                      onAddToChat={selectionAddToChatHandler}
+                      onAddToChat={
+                        activeSelection === null
+                          ? undefined
+                          : addMessageToChatHandler(
+                              selectionAddToChatHandler,
+                              activeSelection.rowId,
+                              resolveMessageNumber,
+                            )
+                      }
                       pluginActions={selectionPluginActions}
                       onDismiss={dismissSelection}
                     />

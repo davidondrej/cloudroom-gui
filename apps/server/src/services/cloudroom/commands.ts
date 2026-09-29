@@ -65,6 +65,7 @@ const capabilitiesSchema = z.object({
   steer: z.boolean().default(false),
   rewind: z.boolean().default(false),
   attachments: z.boolean().default(false),
+  upload_parts: z.boolean().default(false),
   compact: z.boolean().default(false),
   usage: z.boolean().default(false),
   subagents: z.boolean().default(false),
@@ -1049,6 +1050,7 @@ class CloudroomService {
     promptId: string,
     attachments: { name: string; kind: "image" | "file"; localPath?: string; path?: string; id?: string }[],
     projectId: string,
+    parts: boolean,
   ) {
     const uploaded = [];
     for (const [index, attachment] of attachments.entries()) {
@@ -1061,13 +1063,12 @@ class CloudroomService {
       const candidate = attachment.localPath.startsWith("/") ? attachment.localPath : join(root, attachment.localPath);
       const bytes = await readFile(candidate);
       const attachmentId = `${promptId}a${index}`;
-      const accepted = await client.attach(
-        sessionId,
-        attachmentId.length <= 64 ? attachmentId : createHash("sha256").update(attachmentId).digest("hex"),
-        attachment.name.replace(/[^a-zA-Z0-9._-]+/g, "-") || "attachment",
-        attachment.kind,
-        { body: new Blob([bytes]).stream(), length: bytes.byteLength },
-      );
+      const id = attachmentId.length <= 64 ? attachmentId : createHash("sha256").update(attachmentId).digest("hex");
+      const name = attachment.name.replace(/[^a-zA-Z0-9._-]+/g, "-") || "attachment";
+      // Cores with upload_parts take files in pieces small enough for every sandbox proxy.
+      const accepted = parts
+        ? await client.attachInParts(sessionId, id, name, attachment.kind, bytes)
+        : await client.attach(sessionId, id, name, attachment.kind, { body: new Blob([bytes]).stream(), length: bytes.byteLength });
       const input = accepted.receipt.input as { id?: string; path?: string };
       uploaded.push({
         id: input.id ?? accepted.receipt.request_id,
@@ -1421,7 +1422,7 @@ class CloudroomService {
               if (!capabilities.attachments) throw new ApiError(400, "cloudroom_unsupported", "Update the cloud core to use attachments. Your message is saved.");
             }
             const attachments = capabilities.attachments
-              ? await this.uploadAttachments(client, sessionId, pending.id, parsed.attachments ?? [], getThread(this.deps.db, threadId)?.projectId ?? "")
+              ? await this.uploadAttachments(client, sessionId, pending.id, parsed.attachments ?? [], getThread(this.deps.db, threadId)?.projectId ?? "", capabilities.upload_parts)
               : [];
             const enriched = prepareCloudInstructionInput({ text: parsed.text, content: cloudTextContent(parsed.content) }, parsed.customInstructions);
             let context = parsed.workspaceContext;
@@ -1447,7 +1448,7 @@ class CloudroomService {
             }).parse(JSON.parse(pending.input));
             requireClaudeSkillSupport(parsed.content, capabilities, harness);
             const enriched = prepareCloudInstructionInput({ text: parsed.text, content: cloudTextContent(parsed.content) }, parsed.customInstructions);
-            const attachments = await this.uploadAttachments(client, sessionId, pending.id, parsed.attachments ?? [], getThread(this.deps.db, threadId)!.projectId);
+            const attachments = await this.uploadAttachments(client, sessionId, pending.id, parsed.attachments ?? [], getThread(this.deps.db, threadId)!.projectId, capabilities.upload_parts);
             accepted = await client.edit(sessionId, pending.id, parsed.target_request_id, parsed.expected_revision, enriched.text, {
               ...(enriched.content === undefined ? {} : { content: enriched.content as never }),
               attachments: attachments as never,
@@ -1467,7 +1468,7 @@ class CloudroomService {
             const parsed = z.object({ before: z.string(), last_turn_id: z.string().optional(), customInstructions: z.string().default(""), replacement: z.object({ request_id: z.string(), text: z.string(), content: z.unknown().optional(), attachments: z.array(z.object({ name: z.string(), kind: z.enum(["image", "file"]), localPath: z.string().optional(), path: z.string().optional(), id: z.string().optional() })).optional(), reasoning: z.string().optional(), service_tier: z.string().optional() }) }).parse(JSON.parse(pending.input));
             requireClaudeSkillSupport(parsed.replacement.content, capabilities, harness);
             const enriched = prepareCloudInstructionInput({ text: parsed.replacement.text, content: cloudTextContent(parsed.replacement.content) }, parsed.customInstructions);
-            const attachments = await this.uploadAttachments(client, sessionId, parsed.replacement.request_id, parsed.replacement.attachments ?? [], getThread(this.deps.db, threadId)!.projectId);
+            const attachments = await this.uploadAttachments(client, sessionId, parsed.replacement.request_id, parsed.replacement.attachments ?? [], getThread(this.deps.db, threadId)!.projectId, capabilities.upload_parts);
             accepted = await client.rewind(sessionId, pending.id, parsed.before, parsed.last_turn_id, { ...parsed.replacement, ...enriched, content: enriched.content as never, attachments: attachments as never });
           } else if (pending.command === "stop" || pending.command === "resume" || pending.command === "sleep") {
             accepted = await client[pending.command](sessionId, pending.id);

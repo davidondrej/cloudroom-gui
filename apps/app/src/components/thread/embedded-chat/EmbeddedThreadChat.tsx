@@ -614,8 +614,8 @@ function EmbeddedThreadChatWithComposer({
 
   const addQuoteToPromptDraft = promptDraft.addQuote;
   const handleAddToChat = useCallback<ThreadTimelineAddToChatHandler>(
-    (text, attachments) => {
-      addQuoteToPromptDraft(text, attachments);
+    (text, attachments, source) => {
+      addQuoteToPromptDraft(text, attachments, source);
       setComposerFocusNonce((nonce) => nonce + 1);
     },
     [addQuoteToPromptDraft],

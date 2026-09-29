@@ -18,6 +18,7 @@ import {
   type ThreadTimelineEditMessageHandler,
   type ThreadTimelineEditMessageTarget,
   type ThreadTimelineInlineMessageEditor,
+  type ThreadTimelineAddToChatHandler,
   type ThreadTimelineForkMessageHandler,
   type ThreadTimelineLinkHandler,
   type ThreadTimelineLocalFileLink,
@@ -139,7 +140,6 @@ import {
 } from "@/lib/mutation-errors";
 import {
   promptInputToDraft,
-  type PromptDraftAttachment,
   type PromptDraftState,
 } from "@bb/client-core";
 import { createLocalStorageEnumStorage } from "@/lib/browser-storage";
@@ -1195,10 +1195,10 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
       ),
     [selectionPromptDraft.storageKey],
   );
-  const handleSelectionAddToChat = useCallback(
-    (text: string, attachments?: readonly PromptDraftAttachment[]) => {
+  const handleSelectionAddToChat = useCallback<ThreadTimelineAddToChatHandler>(
+    (text, attachments, source) => {
       dismissCompactKeyboard();
-      addQuoteToComposer(text, attachments);
+      addQuoteToComposer(text, attachments, source);
       setComposerFocusRequestNonce((nonce) => nonce + 1);
     },
     [addQuoteToComposer, dismissCompactKeyboard],

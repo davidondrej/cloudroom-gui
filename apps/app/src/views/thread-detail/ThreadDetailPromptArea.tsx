@@ -2179,11 +2179,6 @@ export function ThreadDetailPromptArea({
             onToggle={() => toggleWorkflowExpanded(workflow.id)}
           />
         ))}
-        <ThreadBackgroundCommandsCard
-          commands={activeBackgroundCommands}
-          isExpanded={isBackgroundCommandsExpanded}
-          onToggle={() => setIsBackgroundCommandsExpanded((value) => !value)}
-        />
         {activePromptModeCard}
         {activeGoalCard}
         <ThreadTodoCard
@@ -2232,6 +2227,17 @@ export function ThreadDetailPromptArea({
           gitSectionPending={workspaceStatusPending}
           expandedSection={expandedBannerSection}
           onToggleSection={handleToggleBannerSection}
+          leading={
+            activeBackgroundCommands.length > 0 ? (
+              <ThreadBackgroundCommandsCard
+                commands={activeBackgroundCommands}
+                isExpanded={isBackgroundCommandsExpanded}
+                onToggle={() =>
+                  setIsBackgroundCommandsExpanded((value) => !value)
+                }
+              />
+            ) : null
+          }
         />
         {modelFallback ? (
           <ThreadModelFallbackCard

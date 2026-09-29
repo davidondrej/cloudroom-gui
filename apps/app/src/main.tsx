@@ -20,6 +20,16 @@ installPerfMonitor();
 
 Error.stackTraceLimit = 50;
 
+// A page left open across an app update asks for old chunk names that no
+// longer exist. Reload to pick up the new build, at most once per minute so a
+// truly missing file can't cause a reload loop.
+window.addEventListener("vite:preloadError", () => {
+  const lastReload = Number(sessionStorage.getItem("cloudroom:preload-reload"));
+  if (Date.now() - lastReload < 60_000) return;
+  sessionStorage.setItem("cloudroom:preload-reload", String(Date.now()));
+  window.location.reload();
+});
+
 installAppQueryClientBrowserEvents(appQueryClient);
 registerProviderCliInstallQueryClient(appQueryClient);
 

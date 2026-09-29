@@ -150,7 +150,7 @@ export function TimelineSelectionMenu({
     ...(onAddToChat
       ? [
           {
-            icon: "MessageSquarePlus" as const,
+            icon: "ArrowTurnDown" as const,
             label: "Add to chat",
             onSelect: (currentSelection: MessageProseSelection) =>
               onAddToChat(currentSelection.text),

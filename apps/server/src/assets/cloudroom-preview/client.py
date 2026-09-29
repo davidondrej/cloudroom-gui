@@ -453,6 +453,22 @@ def identity(folder):
 
 
 MAC_LIMIT = 16 * 1024 * 1024
+# Hex characters per result request: some sandbox proxies drop requests over about 8 MB.
+MAC_PART = 4 * 1024 * 1024
+
+
+def deliver(post, result):
+    """Large output travels in parts, then `done` carries the rest. A core without parts (HTTP 422) gets it whole."""
+    if len(result['stdout']) + len(result['stderr']) > MAC_PART:
+        try:
+            for name in ('stdout', 'stderr'):
+                for offset in range(0, len(result[name]), MAC_PART):
+                    post({'state': 'part', 'offset': offset, name: result[name][offset:offset + MAC_PART]})
+            result = {**result, 'stdout': '', 'stderr': ''}
+        except ControlError as error:
+            if error.code != 422:
+                raise
+    post(result)
 
 
 class MacJobs:
@@ -538,7 +554,7 @@ class MacJobs:
         deadline = time.monotonic() + 3600
         while time.monotonic() < deadline:
             try:
-                post(result)
+                deliver(post, result)
                 return
             except ControlError as error:
                 if error.code in (403, 404, 409, 413):

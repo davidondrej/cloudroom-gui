@@ -71,7 +71,7 @@ interface MessageActionBarProps {
 }
 
 interface MessageOverflowAction {
-  icon: "Copy" | "Edit" | "MessageSquarePlus" | "Fork" | "ArrowTurnBackward";
+  icon: "Copy" | "Edit" | "ArrowTurnDown" | "Fork" | "ArrowTurnBackward";
   plugin?: { pluginId: string | null; icon: string | null };
   key?: string;
   label: string;
@@ -498,7 +498,7 @@ export function MessageActionBar({
     ...(hasAddToChat
       ? [
           {
-            icon: "MessageSquarePlus" as const,
+            icon: "ArrowTurnDown" as const,
             label: "Add to chat",
             onSelect: handleAddToChat,
           },

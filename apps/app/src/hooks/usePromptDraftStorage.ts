@@ -1,7 +1,12 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { PromptTextMention } from "@bb/domain";
 import type { PromptDraftAttachment, PromptDraftState } from "@bb/client-core";
+import type {
+  ThreadTimelineAddToChatHandler,
+  ThreadTimelineAddToChatSource,
+} from "@/components/thread/timeline/types";
 import {
+  appendMessageContextToDraft,
   appendQuoteAndAttachmentsToDraft,
   arePromptDraftStatesEqual,
   emptyPromptDraftState,
@@ -228,13 +233,18 @@ function addQuoteToPromptDraft(
   storageKey: string,
   text: string,
   attachments: readonly PromptDraftAttachment[] = [],
+  source?: ThreadTimelineAddToChatSource,
 ): void {
   const currentDraft = readPromptDraft(storageKey);
-  const nextDraft = appendQuoteAndAttachmentsToDraft(
-    currentDraft,
-    text,
-    attachments,
-  );
+  const nextDraft =
+    source === undefined
+      ? appendQuoteAndAttachmentsToDraft(currentDraft, text, attachments)
+      : appendMessageContextToDraft(
+          currentDraft,
+          text,
+          source.messageNumber,
+          attachments,
+        );
   if (nextDraft === currentDraft) {
     return;
   }
@@ -264,10 +274,7 @@ export function getPromptDraftAccessor(scope: PromptDraftScope): {
   getCurrent: () => PromptDraftState;
   subscribe: (listener: () => void) => () => void;
   setDraft: (draft: PromptDraftState) => void;
-  addQuote: (
-    text: string,
-    attachments?: readonly PromptDraftAttachment[],
-  ) => void;
+  addQuote: ThreadTimelineAddToChatHandler;
 } {
   const storageKey = getPromptDraftStorageKey(scope);
   return {
@@ -275,8 +282,8 @@ export function getPromptDraftAccessor(scope: PromptDraftScope): {
     getCurrent: () => readPromptDraft(storageKey),
     subscribe: (listener) => subscribePromptDraft(storageKey, listener),
     setDraft: (draft) => writePromptDraft(storageKey, draft),
-    addQuote: (text, attachments) =>
-      addQuoteToPromptDraft(storageKey, text, attachments),
+    addQuote: (text, attachments, source) =>
+      addQuoteToPromptDraft(storageKey, text, attachments, source),
   };
 }
 
@@ -356,9 +363,9 @@ export function usePromptDraftStorage(scope: PromptDraftScope) {
     [storageKey],
   );
 
-  const addQuote = useCallback(
-    (text: string, attachments?: readonly PromptDraftAttachment[]) =>
-      addQuoteToPromptDraft(storageKey, text, attachments),
+  const addQuote = useCallback<ThreadTimelineAddToChatHandler>(
+    (text, attachments, source) =>
+      addQuoteToPromptDraft(storageKey, text, attachments, source),
     [storageKey],
   );
 

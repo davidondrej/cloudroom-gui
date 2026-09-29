@@ -8,7 +8,7 @@ import { promisify } from "node:util";
 import { getProject, getThread, listProjectSourcesByProjectIds } from "@bb/db";
 import type { ProjectCopyProgress } from "@bb/domain";
 import type { AppDeps } from "../../types.js";
-import type { CloudroomClient } from "./client.js";
+import { UPLOAD_PART, type CloudroomClient } from "./client.js";
 import { saveProjectCopyProgress } from "./store.js";
 
 type Deps = Pick<AppDeps, "db" | "hub">;
@@ -16,7 +16,8 @@ type Deps = Pick<AppDeps, "db" | "hub">;
 export type ProjectCopyJob = { threadId: string; workspace: string; key: string; localPath: string; repository: string | null };
 
 const exec = promisify(execFile);
-const CHUNK = 16 * 1024 * 1024;
+// Each piece travels hex-encoded, doubling it, and must fit in one upload request.
+const CHUNK = UPLOAD_PART / 2;
 const MAX_FILE = 50 * 1024 * 1024;
 const MAX_TOTAL = 1024 * 1024 * 1024;
 export const SKIPPED = new Set(["node_modules", ".git", ".venv", "venv", ".next", ".turbo", ".cache", "__pycache__", "target", "dist", "build", ".DS_Store"]);

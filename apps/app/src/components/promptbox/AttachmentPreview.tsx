@@ -1,4 +1,10 @@
-import { useEffect } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   getWrappedImageIndex,
   ImageLightbox,
@@ -28,8 +34,48 @@ function isImageAttachment(attachment: PromptDraftAttachment): boolean {
   );
 }
 
+/**
+ * Counts images that are still uploading, so the composer can show a
+ * placeholder tile for each until the real thumbnail lands.
+ */
+export function useUploadingImageCount(attachments: PromptDraftAttachment[]) {
+  const [uploadingImageCount, setUploadingImageCount] = useState(0);
+  const pendingUploadsRef = useRef(0);
+  const imageCount = attachments.filter(isImageAttachment).length;
+  const previousImageCountRef = useRef(imageCount);
+
+  // Each landed image replaces one placeholder before paint, so no flash.
+  useLayoutEffect(() => {
+    const added = imageCount - previousImageCountRef.current;
+    previousImageCountRef.current = imageCount;
+    if (added > 0) {
+      setUploadingImageCount((count) => Math.max(0, count - added));
+    }
+  }, [imageCount]);
+
+  const trackUpload = useCallback(
+    (files: File[], upload: void | Promise<void>) => {
+      const images = files.filter((file) =>
+        file.type.startsWith("image/"),
+      ).length;
+      if (images === 0) return;
+      pendingUploadsRef.current += 1;
+      setUploadingImageCount((count) => count + images);
+      void Promise.resolve(upload).finally(() => {
+        pendingUploadsRef.current -= 1;
+        // Failed images never land, so clear leftovers once all uploads settle.
+        if (pendingUploadsRef.current === 0) setUploadingImageCount(0);
+      });
+    },
+    [],
+  );
+
+  return { uploadingImageCount, trackUpload };
+}
+
 interface AttachmentPreviewProps {
   attachments: PromptDraftAttachment[];
+  uploadingImageCount?: number;
   compact?: boolean;
   attachmentProjectId?: string;
   expandedImageIndex: number | null;
@@ -39,6 +85,7 @@ interface AttachmentPreviewProps {
 
 export function AttachmentPreview({
   attachments,
+  uploadingImageCount = 0,
   compact = false,
   attachmentProjectId,
   expandedImageIndex,
@@ -65,7 +112,7 @@ export function AttachmentPreview({
     onExpandedImageIndexChange(null);
   }, [expandedImageIndex, imageAttachments.length, onExpandedImageIndexChange]);
 
-  if (attachments.length === 0) {
+  if (attachments.length === 0 && uploadingImageCount === 0) {
     return null;
   }
 
@@ -83,7 +130,7 @@ export function AttachmentPreview({
         </span>
       ) : (
         <div className="mx-3 mb-1 mt-1">
-          {imageAttachments.length > 0 ? (
+          {imageAttachments.length > 0 || uploadingImageCount > 0 ? (
             <div className="mb-1.5 flex flex-wrap gap-2">
               {imageAttachments.map((attachment, index) => (
                 <div key={`${attachment.path}-${index}`} className="relative">
@@ -117,6 +164,16 @@ export function AttachmentPreview({
                       </span>
                     </button>
                   ) : null}
+                </div>
+              ))}
+              {Array.from({ length: uploadingImageCount }, (_, index) => (
+                <div
+                  key={`uploading-${index}`}
+                  role="status"
+                  aria-label="Uploading image"
+                  className="flex h-16 w-24 items-center justify-center rounded-md border border-border bg-surface-recessed text-muted-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200"
+                >
+                  <Icon name="Spinner" className="size-4 animate-spin" />
                 </div>
               ))}
             </div>

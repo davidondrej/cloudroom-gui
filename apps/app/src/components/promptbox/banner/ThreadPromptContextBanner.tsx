@@ -141,6 +141,8 @@ interface ThreadPromptContextBannerProps {
   pullRequestSection: ThreadPromptPullRequestSection | null;
   expandedSection: ThreadPromptContextBannerExpandedSection | null;
   onToggleSection: (section: ThreadPromptContextBannerExpandedSection) => void;
+  /** Row content shown left of the minimal diff toggle, or above the banner otherwise. */
+  leading?: ReactNode;
 }
 
 const KIND_PREFIX: Record<WorkspaceChangedFilesSection["kind"], string> = {
@@ -183,7 +185,7 @@ const CONTEXT_BANNER_CARD_CLASS = cn(
 const CONTEXT_BANNER_ROW_CLASS =
   "flex items-center gap-0.5 p-0.5 text-xs text-muted-foreground";
 const MINIMAL_GIT_BANNER_CLASS = cn(
-  "relative z-10 ml-auto mr-3 w-fit min-w-0 sm:mr-4",
+  "relative z-10 mr-3 min-w-0 sm:mr-4",
   "[[data-app-composer]_&:last-child]:-mb-5 [[data-app-composer]_&:last-child]:pb-3",
 );
 
@@ -689,10 +691,12 @@ function MinimalGitBanner({
   gitSection,
   isExpanded,
   onToggle,
+  leading,
 }: {
   gitSection: ThreadPromptGitSection;
   isExpanded: boolean;
   onToggle: () => void;
+  leading?: ReactNode;
 }) {
   const { changedFiles, mergeBase } = gitSection;
   const tally = toChangeTally(changedFiles.stats);
@@ -708,9 +712,10 @@ function MinimalGitBanner({
   return (
     <section
       aria-label="Thread context before sending"
-      className={MINIMAL_GIT_BANNER_CLASS}
+      className={cn(MINIMAL_GIT_BANNER_CLASS, !leading && "ml-auto w-fit")}
     >
-      <div className="flex justify-end">
+      <div className="flex items-start">
+        {leading ? <div className="min-w-0 flex-1">{leading}</div> : null}
         <button
           type="button"
           id={SECTION_IDS.git.toggle}
@@ -720,7 +725,7 @@ function MinimalGitBanner({
           title={`${prefix} · ${formatChangeSummary(tally)}`}
           onClick={onToggle}
           className={cn(
-            "flex min-h-6 cursor-pointer items-center gap-1 rounded px-1.5 text-2xs transition-[color,opacity]",
+            "ml-auto flex min-h-6 shrink-0 cursor-pointer items-center gap-1 rounded px-1.5 text-2xs transition-[color,opacity]",
             isExpanded
               ? "text-foreground"
               : "text-muted-foreground opacity-75 hover:opacity-100",
@@ -862,6 +867,7 @@ export function ThreadPromptContextBanner({
   pullRequestSection,
   expandedSection,
   onToggleSection,
+  leading,
 }: ThreadPromptContextBannerProps) {
   if (archivedSection || environmentGoneSection) {
     const environmentGone = environmentGoneSection !== null;
@@ -869,30 +875,35 @@ export function ThreadPromptContextBanner({
       ? ENVIRONMENT_GONE_STATUS_COPY[environmentGoneSection.status]
       : null;
     return (
-      <ReadOnlyContextBanner
-        iconName={environmentGone ? "CircleX" : "Archive"}
-        statusAriaLabel={
-          environmentGoneCopy?.ariaLabel ?? ARCHIVED_THREAD_STATUS_LABEL
-        }
-        statusLabel={environmentGoneCopy?.label ?? ARCHIVED_THREAD_STATUS_LABEL}
-        statusAction={
-          archivedSection?.onUnarchive && !environmentGone ? (
-            <PendingBannerActionButton
-              pending={Boolean(archivedSection.unarchivePending)}
-              label="Unarchive"
-              pendingLabel="Unarchiving..."
-              onClick={archivedSection.onUnarchive}
-            />
-          ) : null
-        }
-        parentThreadSection={parentThreadSection}
-        expandedSection={expandedSection}
-        onToggleSection={onToggleSection}
-      />
+      <>
+        {leading}
+        <ReadOnlyContextBanner
+          iconName={environmentGone ? "CircleX" : "Archive"}
+          statusAriaLabel={
+            environmentGoneCopy?.ariaLabel ?? ARCHIVED_THREAD_STATUS_LABEL
+          }
+          statusLabel={
+            environmentGoneCopy?.label ?? ARCHIVED_THREAD_STATUS_LABEL
+          }
+          statusAction={
+            archivedSection?.onUnarchive && !environmentGone ? (
+              <PendingBannerActionButton
+                pending={Boolean(archivedSection.unarchivePending)}
+                label="Unarchive"
+                pendingLabel="Unarchiving..."
+                onClick={archivedSection.onUnarchive}
+              />
+            ) : null
+          }
+          parentThreadSection={parentThreadSection}
+          expandedSection={expandedSection}
+          onToggleSection={onToggleSection}
+        />
+      </>
     );
   }
   if (gitSectionPending) {
-    return null;
+    return leading ?? null;
   }
   const showGit = gitSection !== null;
   const showParentThread = parentThreadSection !== null;
@@ -900,7 +911,7 @@ export function ThreadPromptContextBanner({
     childThreadsSection !== null && childThreadsSection.items.length > 0;
   const showPullRequest = pullRequestSection !== null;
   if (!showGit && !showParentThread && !showChildThreads && !showPullRequest) {
-    return null;
+    return leading ?? null;
   }
   const visibleSegmentCount =
     Number(showParentThread) + Number(showPullRequest) + Number(showGit);
@@ -971,6 +982,7 @@ export function ThreadPromptContextBanner({
         gitSection={gitSection}
         isExpanded={isGitExpanded}
         onToggle={() => onToggleSection("git")}
+        leading={leading}
       />
     ) : visibleSegmentCount > 0 ? (
       <PromptStackCard
@@ -1066,14 +1078,17 @@ export function ThreadPromptContextBanner({
       </PromptStackCard>
     ) : null;
 
-  if (activeChildThreadsCard && compactContextBanner) {
+  const leadingNode = hasSingleVisibleSegment && showGit ? null : leading;
+  const parts = [leadingNode, activeChildThreadsCard, compactContextBanner];
+  if (parts.filter(Boolean).length > 1) {
     return (
       <div className="contents">
+        {leadingNode}
         {activeChildThreadsCard}
         {compactContextBanner}
       </div>
     );
   }
 
-  return activeChildThreadsCard ?? compactContextBanner;
+  return leadingNode ?? activeChildThreadsCard ?? compactContextBanner;
 }
