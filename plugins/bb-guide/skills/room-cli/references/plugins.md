@@ -7,10 +7,10 @@
   subcommands that agents run through bash like any other command.
 - Use `room-cli plugin list` to inspect installed plugins and their current state.
 - **Cloudroom plugin catalog** (store under `/api/v1/plugin-catalog`):
-  - The reserved **BB Official marketplace** has the name `bb-official`. It
+  - The reserved **Cloudroom Official marketplace** has the name `bb-official`. It
     describes all plugins in the app bundle with a generated v2 document.
     Its source is a local path. It never uses the network. It appears first in
-    `room-cli marketplace list`. Its plugins appear in the first Browse shelf, BB
+    `room-cli marketplace list`. Its plugins appear in the first Browse shelf, Cloudroom
     Official, and in their category shelves. It can be neither added nor
     removed.
   - The store lists the **BB Marketplace** catalog: a manifest
@@ -24,11 +24,11 @@
     plugin code, and a failed refresh keeps the last catalog cloudroom validated.
   - `room-cli plugin search <query> [--json]` — search the catalog by id,
     name, description, category, or tag; status shows installed / compatible /
-    requires newer bb. The table includes a **Category** column. An
+    requires newer Cloudroom. The table includes a **Category** column. An
     **Installs** column appears once the curated
     marketplace's `stats.json` sidecar has been read (`installs` in `--json`,
     null when unknown): anonymous-telemetry install counts for published
-    entries. BB Official entries use the count for the same plugin id. With
+    entries. Cloudroom Official entries use the count for the same plugin id. With
     `--json`, `overview` holds the entry's long-form markdown description when
     the marketplace publishes one; the detail page renders it below the short
     description.

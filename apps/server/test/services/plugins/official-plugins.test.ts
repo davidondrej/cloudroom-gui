@@ -162,7 +162,7 @@ describe("store-installed official plugins", () => {
   });
 
   it.each([true, false])(
-    "moves old BB Community provenance to BB Official when autoInstall is %s",
+    "moves old BB Community provenance to Cloudroom Official when autoInstall is %s",
     async (autoInstall) => {
       upsertInstalledPlugin(db, {
         id: "builtin-fixture",
@@ -206,7 +206,7 @@ describe("store-installed official plugins", () => {
           provenance: "catalog",
           catalogEntryId: "fixture",
           catalogMarketplaceName: "bb-official",
-          publisherLabel: "BB Official",
+          publisherLabel: "Cloudroom Official",
           status: "running",
         },
       ]);

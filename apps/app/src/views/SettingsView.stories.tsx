@@ -223,6 +223,8 @@ function GeneralSettingsStory({
         onStreamerModeChange={state.setStreamerMode}
         telemetryEnabled={state.telemetryEnabled}
         onTelemetryEnabledChange={state.setTelemetryEnabled}
+        bugReportsEnabled
+        onBugReportsEnabledChange={() => {}}
         streamerMode={state.streamerMode}
         disabled={false}
         enabled={state.showDiagnosticEvents}

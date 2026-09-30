@@ -67,7 +67,7 @@ const AUTOMATIONS_PLUGIN = {
   hasSettings: false,
   provenance: "builtin",
   publisherKey: "bb-official",
-  publisherLabel: "BB Official",
+  publisherLabel: "Cloudroom Official",
   isOrphanedBuiltin: false,
   sourceDisplay: "builtin · automations",
   updateState: {},
@@ -89,9 +89,9 @@ const GITHUB_CATALOG_ENTRY = {
   category: "Developer tools",
   source: "builtin:github",
   marketplace: "bb-official",
-  marketplaceDisplayName: "BB Official",
+  marketplaceDisplayName: "Cloudroom Official",
   publisherKey: "bb-official",
-  publisherLabel: "BB Official",
+  publisherLabel: "Cloudroom Official",
   official: true,
   author: null,
   installed: false,
@@ -174,9 +174,9 @@ function installFetch(plugins: readonly unknown[] = [AUTOMATIONS_PLUGIN]) {
             icon: GITHUB_CATALOG_ENTRY.icon,
             provenance: "catalog",
             publisherKey: "bb-official",
-            publisherLabel: "BB Official",
+            publisherLabel: "Cloudroom Official",
             catalogEntryId: GITHUB_CATALOG_ENTRY.entryId,
-            sourceDisplay: "BB Official · GitHub",
+            sourceDisplay: "Cloudroom Official · GitHub",
           },
         });
       }
@@ -294,7 +294,7 @@ describe("PluginsOverview", () => {
         icon: DOCS_CATALOG_ENTRY.icon,
         provenance: "catalog",
         publisherKey: "bb-official",
-        publisherLabel: "BB Official",
+        publisherLabel: "Cloudroom Official",
         catalogEntryId: "docs",
       },
     ]);
@@ -390,7 +390,7 @@ describe("PluginsOverview", () => {
     expect(toolbar.contains(sort)).toBe(true);
     const heroHeading = screen.getByRole("heading", {
       level: 2,
-      name: /^Turn bb into/,
+      name: /^Turn Cloudroom into/,
     });
     expect(
       heroHeading.compareDocumentPosition(toolbar) &
@@ -655,7 +655,7 @@ describe("PluginsOverview", () => {
       "plugin-row-inactive-local",
       "plugin-row-inactive-official",
     ]);
-    const officialPills = screen.getAllByText("BB Official");
+    const officialPills = screen.getAllByText("Cloudroom Official");
     expect(officialPills).toHaveLength(2);
     expect(screen.getAllByText("BB Community")).toHaveLength(1);
 
@@ -746,7 +746,7 @@ describe("PluginsOverview", () => {
     expect(screen.queryByRole("menuitemcheckbox", { name: "All" })).toBeNull();
 
     fireEvent.click(
-      screen.getByRole("menuitemcheckbox", { name: "BB Official" }),
+      screen.getByRole("menuitemcheckbox", { name: "Cloudroom Official" }),
     );
     await waitFor(() => {
       expect(rowIds()).toEqual(["plugin-row-builtin-one"]);
@@ -764,7 +764,7 @@ describe("PluginsOverview", () => {
 
     fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "User" }));
     fireEvent.click(
-      screen.getByRole("menuitemcheckbox", { name: "BB Official" }),
+      screen.getByRole("menuitemcheckbox", { name: "Cloudroom Official" }),
     );
     fireEvent.click(
       screen.getByRole("menuitemcheckbox", { name: "BB Community" }),
@@ -893,7 +893,7 @@ describe("PluginsOverview", () => {
     expect(screen.getByText("Inactive Local Plugin")).toBeTruthy();
   });
 
-  it("badges a built-in plugin BB Official and a catalog install by its marketplace", async () => {
+  it("badges a built-in plugin Cloudroom Official and a catalog install by its marketplace", async () => {
     installFetch([
       AUTOMATIONS_PLUGIN,
       {
@@ -905,7 +905,7 @@ describe("PluginsOverview", () => {
         publisherKey: "bb-community",
         publisherLabel: "BB Community",
         catalogEntryId: GITHUB_CATALOG_ENTRY.entryId,
-        sourceDisplay: "BB Official · GitHub",
+        sourceDisplay: "Cloudroom Official · GitHub",
       },
     ]);
     const { wrapper: QueryClientWrapper } = createQueryClientTestHarness();
@@ -919,7 +919,7 @@ describe("PluginsOverview", () => {
       </MemoryRouter>,
     );
 
-    const official = await screen.findAllByText("BB Official");
+    const official = await screen.findAllByText("Cloudroom Official");
     expect(official).toHaveLength(1);
     const community = screen.getAllByText("BB Community");
     expect(community).toHaveLength(1);

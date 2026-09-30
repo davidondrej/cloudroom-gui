@@ -330,7 +330,7 @@ export function MobileActionsAndSelection() {
         [data-timeline-row-id="mobile_actions_earlier_agent_message"]
       .mobile-agent-actions-review
         [data-timeline-row-id="mobile_actions_earlier_user_message"]
-        [aria-label="Add to chat"] {
+        [aria-label="Include context"] {
         display: none;
       }
 
@@ -356,7 +356,7 @@ export function MobileActionsAndSelection() {
         [data-timeline-row-id="mobile_actions_latest_agent_message"]
       .mobile-agent-actions-review
         [data-timeline-row-id="mobile_actions_latest_user_message"]
-        [aria-label="Add to chat"] {
+        [aria-label="Include context"] {
         width: 1.75rem;
         height: 1.75rem;
         opacity: 1;
@@ -375,7 +375,7 @@ export function MobileActionsAndSelection() {
         [data-timeline-row-id="mobile_actions_latest_agent_message"]
       .mobile-agent-actions-review
         [data-timeline-row-id="mobile_actions_latest_user_message"]
-        [aria-label="Add to chat"] svg {
+        [aria-label="Include context"] svg {
         width: 1rem;
         height: 1rem;
       }

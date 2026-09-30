@@ -916,6 +916,21 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         experimental: true,
       },
       {
+        id: "telemetry",
+        tagline: "Measure how a built-in feature is used",
+        title: "Product telemetry",
+        summary:
+          "Sends product analytics through Cloudroom's own telemetry. With this, a built-in plugin can:",
+        bullets: [
+          "Call bb.experimental_telemetry.capture(name, properties) with a snake_case name and primitive values",
+          "Rely on Cloudroom to add the plugin id, app version and platform, and to respect the user's telemetry setting",
+          "Do nothing for other plugins: the call is a silent no-op outside built-in plugins",
+        ],
+        apiSymbols: ["PluginTelemetry", "PluginTelemetryValue"],
+        firstParty: ["Computer Use"],
+        experimental: true,
+      },
+      {
         id: "host-workers",
         tagline: "Run code on enrolled machines",
         title: "Host workers",

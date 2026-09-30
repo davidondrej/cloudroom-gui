@@ -1503,6 +1503,11 @@ function createFakePluginHostInternal(
     server,
     hosts,
     experimental_aiServices,
+    experimental_telemetry: {
+      capture() {
+        assertLive();
+      },
+    },
     get sdk() {
       assertLive();
       return sdk;

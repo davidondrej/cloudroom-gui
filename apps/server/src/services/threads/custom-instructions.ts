@@ -15,8 +15,9 @@ export const PLUGIN_INSTRUCTION_MAX_CHARS = 4096;
 type Context = { threadId: string; projectId: string };
 
 export function cloudroomSystemPrompt(db: DbConnection): string | undefined {
-  return getAppSettings(db).systemPromptEnabled
-    ? renderTemplate("standardAgentAppendInstructions", {})
+  const settings = getAppSettings(db);
+  return settings.systemPromptEnabled
+    ? renderTemplate("standardAgentAppendInstructions", { bugReports: settings.bugReportsEnabled ? "on" : "" })
     : undefined;
 }
 type Input = { input: PromptInput[]; inputGroups?: PromptInput[][] };

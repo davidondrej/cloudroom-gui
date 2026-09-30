@@ -44,6 +44,12 @@ This index lists every command path that the core CLI registers. Read the task-s
 
 `import bb` copies every open BB thread into an idle Local thread with its full history, title, harness, and model. It forks each native session, so it sends no prompts and never changes BB. Re-running skips threads already imported.
 
+## report
+
+- `room-cli report`
+
+`room-cli report "MESSAGE"` sends a Cloudroom bug report to the Cloudroom team (ADR 0158): what you did, what happened, what you expected, and the exact error. Never include secrets, personal data, or the user's code. The app adds its version, OS, and thread details. It prints `{"sent":false}` while Settings → Send bug reports is off. Cloud threads use `cloudroom report "MESSAGE"`.
+
 ## status
 
 - `room-cli status`

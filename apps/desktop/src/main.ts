@@ -1790,7 +1790,7 @@ async function startOwnedRuntime(
     }
     setCurrentRuntime(null);
     void loadStartupError({
-      details: `The Electron-owned bb-app process stopped with ${formatExitResult(
+      details: `The Cloudroom backend stopped with ${formatExitResult(
         exit,
       )}.`,
       logs: bbProcess.logs.text(),
@@ -1816,7 +1816,7 @@ async function startOwnedRuntime(
 
   if (raceResult.kind === "process-exited") {
     await loadStartupError({
-      details: `bb-app exited before the server was ready with ${formatExitResult(
+      details: `The Cloudroom backend exited before it was ready with ${formatExitResult(
         raceResult.exit,
       )}.`,
       logs: bbProcess.logs.text(),

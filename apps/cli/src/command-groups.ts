@@ -41,6 +41,11 @@ export const CORE_COMMAND_GROUPS: readonly CommandGroup[] = [
     (m) => (program, deps) => m.registerImportCommands(program, deps.getUrl),
   ),
   group(
+    "report",
+    () => import("./commands/cloudroom.js"),
+    (m) => (program, deps) => m.registerReportCommand(program, deps.getUrl),
+  ),
+  group(
     "browser",
     () => import("./commands/browser.js"),
     (m) => (program, deps) => m.registerBrowserCommands(program, deps.getUrl),

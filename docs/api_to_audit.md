@@ -407,7 +407,7 @@ one.
 `turn.failed` fires after a turn failed and the thread has landed in `error`. It
 carries ids and failure facts only — `threadId`, the failed turn's `requestId`,
 the provider `turnId`, the provider's `ProviderErrorInfo`, the latest
-`ProviderRateLimitState` and `attemptNumber` — and no thread DTO or copy of the
+`ProviderRateLimitState`, `attemptNumber` and `interruptionReason` — and no thread DTO or copy of the
 message, because a retry is asked for by reference with
 `bb.sdk.threads.retry({ threadId, turnRequestId, sendAt })` and anything else is
 one `threads.get` away and fresher for being read when it is used. It is an
@@ -3044,3 +3044,18 @@ never offer a side chat that fails.
 
 **Audit before stabilizing.** One consumer. Decide whether a general
 availability predicate should replace this single capability flag.
+
+## `bb.experimental_telemetry.capture`
+
+`capture(name, properties)` sends one PostHog event through the server's own
+telemetry service, tagged with `plugin_id`. Only built-in plugins get a working
+call; for others it is a silent no-op. It does nothing when the user turned
+telemetry off. Names must be snake_case (at most 64 characters); at most 32
+properties; values are strings (cut to 200 characters), numbers, booleans, or
+null.
+
+First consumer: the Computer Use plugin (`computer_use_*` events).
+
+Stabilization requires deciding whether third-party plugins may ever send events,
+and whether a per-plugin event schema should be declared in the manifest.
+

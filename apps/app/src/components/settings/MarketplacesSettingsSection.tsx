@@ -140,7 +140,9 @@ export function MarketplacesSettingsSection() {
                 </span>
                 {marketplace.official ? (
                   <Badge variant="outline" className="text-2xs font-normal">
-                    By BB
+                    {marketplace.name === "bb-official"
+                      ? "By Cloudroom"
+                      : "By BB"}
                   </Badge>
                 ) : null}
               </p>

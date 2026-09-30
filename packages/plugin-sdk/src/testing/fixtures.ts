@@ -355,6 +355,7 @@ export function makeTurnFailedEvent(
     inputAccepted: true,
     rateLimits: null,
     attemptNumber: 1,
+    interruptionReason: null,
     ...overrides,
   };
 }

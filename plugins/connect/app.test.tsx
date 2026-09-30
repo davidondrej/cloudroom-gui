@@ -439,7 +439,9 @@ describe("connect settings section", () => {
       },
     );
     await slot.findByText("Cloudroom mobile app");
-    slot.getByText(/sign in to your BB Connect account/);
+    slot.getByText(
+      /sign in with the BB Connect account you used to connect this machine/,
+    );
     expect(
       slot.rpcCalls.some((call) => call.method === "createMachineCode"),
     ).toBe(false);

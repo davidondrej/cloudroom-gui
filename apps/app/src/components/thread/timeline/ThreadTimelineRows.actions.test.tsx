@@ -644,7 +644,7 @@ describe("ThreadTimelineRows actions", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Add to chat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Include context" }));
     expect(onMessageAddToChat).toHaveBeenCalledWith(
       "Quote this agent response.",
       undefined,
@@ -676,7 +676,7 @@ describe("ThreadTimelineRows actions", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Add to chat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Include context" }));
     expect(onMessageAddToChat).toHaveBeenCalledWith(
       "Quote this agent response.",
       [
@@ -713,7 +713,7 @@ describe("ThreadTimelineRows actions", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Add to chat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Include context" }));
     expect(onSelectionAddToChat).toHaveBeenCalledWith(
       "Quote this user prompt.",
       undefined,
@@ -745,7 +745,7 @@ describe("ThreadTimelineRows actions", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Add to chat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Include context" }));
     expect(onSelectionAddToChat).toHaveBeenCalledWith(
       "Quote this user prompt.",
       [
@@ -790,7 +790,7 @@ describe("ThreadTimelineRows actions", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Add to chat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Include context" }));
     expect(onSelectionAddToChat).toHaveBeenCalledWith(
       "",
       [
@@ -820,7 +820,7 @@ describe("ThreadTimelineRows actions", () => {
     );
 
     expect(markup).toContain('aria-label="Copy message"');
-    expect(markup).not.toContain('aria-label="Add to chat"');
+    expect(markup).not.toContain('aria-label="Include context"');
   });
 
   it("does not let the previously selected row clear a new row selection", async () => {
@@ -868,7 +868,7 @@ describe("ThreadTimelineRows actions", () => {
     mockWindowSelection({ node: laterTextNode!, text: "later answer" });
     fireEvent(document, new Event("selectionchange"));
     await flushSelectionFrames();
-    await screen.findByRole("button", { name: "Add to chat" });
+    await screen.findByRole("button", { name: "Include context" });
 
     const earlierTextNode = screen.getByText(
       "Select this earlier answer.",
@@ -877,7 +877,7 @@ describe("ThreadTimelineRows actions", () => {
     mockWindowSelection({ node: earlierTextNode!, text: "earlier answer" });
     fireEvent(document, new Event("selectionchange"));
     await flushSelectionFrames();
-    fireEvent.click(await screen.findByRole("button", { name: "Add to chat" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Include context" }));
 
     expect(onSelectionAddToChat).toHaveBeenLastCalledWith(
       "earlier answer",
@@ -922,7 +922,7 @@ describe("ThreadTimelineRows actions", () => {
     });
 
     const addToChat = await screen.findByRole("button", {
-      name: "Add to chat",
+      name: "Include context",
     });
     fireEvent.click(addToChat);
     expect(onSelectionAddToChat).toHaveBeenCalledWith(
@@ -966,7 +966,7 @@ describe("ThreadTimelineRows actions", () => {
     fireEvent(document, new Event("selectionchange"));
 
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Add to chat" })).toBeTruthy(),
+      expect(screen.getByRole("button", { name: "Include context" })).toBeTruthy(),
     );
   });
 

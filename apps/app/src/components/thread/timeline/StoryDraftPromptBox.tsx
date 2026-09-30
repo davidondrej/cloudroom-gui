@@ -89,7 +89,7 @@ export function StoryDraftPromptBox({
       mentionRanges={draft.mentionRanges}
       onChange={draft.onChange}
       onSubmit={noop}
-      placeholder="Add to chat inserts a quote here"
+      placeholder="Include context inserts a quote here"
       typeahead={typeahead}
       mentionMenuPlacement="bottom"
       attachments={attachments}

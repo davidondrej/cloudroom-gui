@@ -78,7 +78,7 @@ function skillSourceFilterId(skill: SkillSummary): ResourceSkillSourceFilter {
 function skillSourceFilterLabel(source: ResourceSkillSourceFilter): string {
   switch (source) {
     case "bb-official":
-      return "BB Official";
+      return "Cloudroom Official";
     case "included":
       return "Included in plugin";
     case "user":
@@ -280,7 +280,7 @@ function SkillRow({
         title={skill.name}
         titleMeta={
           skill.scope === "bb-builtin" ? (
-            <ProvenancePill label="BB Official" />
+            <ProvenancePill label="Cloudroom Official" />
           ) : skill.scope === "plugin" ? (
             <ProvenancePill
               label="Included"
@@ -694,9 +694,9 @@ export function SkillDetailDialogView({
       titleBadge={
         skill.scope === "bb-builtin"
           ? {
-              label: "BB Official",
+              label: "Cloudroom Official",
               tooltip: "Ships with Cloudroom",
-              accessibleLabel: `${skill.name} is BB Official`,
+              accessibleLabel: `${skill.name} is Cloudroom Official`,
             }
           : bundledPluginName !== null
             ? {

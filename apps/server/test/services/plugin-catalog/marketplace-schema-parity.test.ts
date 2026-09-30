@@ -481,7 +481,7 @@ describe("published marketplace schema parity", () => {
     const manifest = {
       ...manifestV2With({ source: { bundled: { plugin: "docs" } } }),
       name: "bb-official",
-      displayName: "BB Official",
+      displayName: "Cloudroom Official",
     };
 
     expect(validate(manifest)).toBe(false);

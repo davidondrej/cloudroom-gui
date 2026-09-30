@@ -47,7 +47,9 @@ the provider's own report, or the typed code of a request the provider rejected
 at the door; null when neither carried one), `inputAccepted` (whether the
 provider took the input into its conversation before failing), `rateLimits`
 (the latest `ProviderRateLimitState`, null when the provider reports no
-windows) and `attemptNumber` (1 on a first failure, 2 on the first retry's).
+windows), `attemptNumber` (1 on a first failure, 2 on the first retry's) and
+`interruptionReason` (`host-daemon-restarted` when the app or its daemon
+restarted mid-turn; null for provider failures).
 There is no thread DTO and no copy of the message, because a retry is asked for
 BY REFERENCE:
 

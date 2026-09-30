@@ -330,7 +330,7 @@ async function delay(ms: number): Promise<void> {
   });
 }
 const MISSING_CODEX_CLI_GUIDANCE =
-  "bb could not find the Codex CLI on this machine. Install Codex (https://developers.openai.com/codex/cli) or put `codex` on PATH, then retry.";
+  "Cloudroom could not find the Codex CLI on this machine. Install Codex (https://developers.openai.com/codex/cli) or put `codex` on PATH, then retry.";
 
 export function resolveAppServerLaunch(env: NodeJS.ProcessEnv = process.env): {
   command: string;

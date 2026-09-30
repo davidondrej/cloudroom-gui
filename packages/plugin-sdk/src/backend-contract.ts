@@ -15,6 +15,7 @@ import type {
   ProviderRateLimitState,
   ReasoningLevel,
   ServiceTier,
+  SystemThreadInterruptedReason,
   ThreadQueuedMessage,
   WorkspaceProvisionType,
 } from "@bb/domain";
@@ -249,6 +250,11 @@ export interface PluginTurnFailedEvent {
    * A policy caps its own retries by comparing against this.
    */
   attemptNumber: number;
+  /**
+   * Why core itself ended the turn, when it did: `host-daemon-restarted` means
+   * the app or its host daemon restarted mid-turn. Null for provider failures.
+   */
+  interruptionReason: SystemThreadInterruptedReason | null;
 }
 
 /**
@@ -1746,6 +1752,18 @@ export interface PluginUi {
   registerMentionProvider(provider: PluginMentionProviderRegistration): void;
 }
 
+export type PluginTelemetryValue = string | number | boolean | null;
+
+export interface PluginTelemetry {
+  /**
+   * Send one snake_case event through Cloudroom's own product telemetry, tagged
+   * with this plugin's id. Built-in plugins only; a no-op for others and when
+   * the user turned telemetry off. Values are primitives. Never send screen
+   * content, typed text, file paths, or secrets.
+   */
+  capture(name: string, properties?: Record<string, PluginTelemetryValue>): void;
+}
+
 export interface PluginEvents {
   /**
    * Add a thread lifecycle listener. Multiple listeners for the same event are
@@ -1973,6 +1991,8 @@ export interface BbPluginApi {
    * inference, voice transcription). See `@get-bb/plugin-sdk/ai-services`.
    */
   readonly experimental_aiServices: PluginAiServices;
+  /** Product analytics through Cloudroom's own telemetry. Experimental: see docs/api_to_audit.md. */
+  readonly experimental_telemetry: PluginTelemetry;
   /**
    * The full BB SDK, bound to this server over loopback (design §4.1).
    * Bind-gated: reading this before the host binds the SDK throws. The real

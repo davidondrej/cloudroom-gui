@@ -76,8 +76,8 @@ const GITHUB_PLUGIN = makePluginListItem({
   app: { hasApp: true, bundle: null },
   provenance: "catalog",
   catalogEntryId: "github",
-  publisherLabel: "BB Official",
-  sourceDisplay: "BB Official · GitHub",
+  publisherLabel: "Cloudroom Official",
+  sourceDisplay: "Cloudroom Official · GitHub",
 });
 
 const GITHUB_CATALOG_ENTRY = {
@@ -94,9 +94,9 @@ const GITHUB_CATALOG_ENTRY = {
   collections: [],
   source: "builtin:github",
   repositoryUrl: null,
-  marketplaceDisplayName: "BB Official",
+  marketplaceDisplayName: "Cloudroom Official",
   publisherKey: "bb-official",
-  publisherLabel: "BB Official",
+  publisherLabel: "Cloudroom Official",
   official: true,
   author: null,
   installed: false,
@@ -153,7 +153,7 @@ afterEach(() => {
 });
 
 describe("PluginDetail official catalog lifecycle", () => {
-  it("offers Install from an unowned BB Official plugin detail page", () => {
+  it("offers Install from an unowned Cloudroom Official plugin detail page", () => {
     const onInstall = vi.fn();
     const { container } = render(
       <CatalogPluginDetail
@@ -165,7 +165,7 @@ describe("PluginDetail official catalog lifecycle", () => {
     );
 
     expect(screen.getByRole("heading", { name: "GitHub" })).toBeTruthy();
-    expect(screen.getByText("BB Official")).toBeTruthy();
+    expect(screen.getByText("Cloudroom Official")).toBeTruthy();
     expect(screen.getByText("Developer tools")).toBeTruthy();
     expect(
       screen.getByText("Browse GitHub issues and pull requests in BB."),
@@ -227,7 +227,7 @@ describe("PluginDetail official catalog lifecycle", () => {
     const incompatibleEntry = {
       ...GITHUB_CATALOG_ENTRY,
       compatible: false,
-      incompatibleReason: "Requires bb 0.20 or newer.",
+      incompatibleReason: "Requires Cloudroom 0.20 or newer.",
     };
     render(
       <>
@@ -251,7 +251,7 @@ describe("PluginDetail official catalog lifecycle", () => {
       "Update Cloudroom to install this plugin",
     );
     expect(compatibilityStatus.textContent).toContain(
-      "Requires bb 0.20 or newer.",
+      "Requires Cloudroom 0.20 or newer.",
     );
     expect(
       screen
@@ -309,7 +309,7 @@ describe("PluginDetail official catalog lifecycle", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getAllByText("BB Official").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Cloudroom Official").length).toBeGreaterThan(0);
     expect(screen.getByText("Developer tools")).toBeTruthy();
     expect(
       screen.queryByRole("button", { name: "Uninstall GitHub" }),
@@ -467,7 +467,7 @@ describe("PluginDetail official catalog lifecycle", () => {
       updateState: {
         ...EMPTY_PLUGIN_UPDATE_STATE,
         blockedVersion: "2.0.0",
-        blockedReasons: ["Requires bb 0.20 or newer."],
+        blockedReasons: ["Requires Cloudroom 0.20 or newer."],
       },
       expected: "Update blocked",
       actionName: null,
@@ -567,7 +567,7 @@ describe("PluginDetail official catalog lifecycle", () => {
       provenance: "builtin" as const,
       catalogEntryId: null,
       publisherKey: "bb-official",
-      publisherLabel: "BB Official",
+      publisherLabel: "Cloudroom Official",
     };
     const { wrapper: QueryClientWrapper } = createQueryClientTestHarness();
     render(
@@ -589,7 +589,7 @@ describe("PluginDetail official catalog lifecycle", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("BB Official")).toBeTruthy();
+    expect(screen.getByText("Cloudroom Official")).toBeTruthy();
     expect(
       screen.getByRole("switch", { name: "Disable Automations" }),
     ).toBeTruthy();
@@ -612,7 +612,7 @@ describe("PluginDetail official catalog lifecycle", () => {
   });
 });
 
-describe("BB Official plugin detail routing", () => {
+describe("Cloudroom Official plugin detail routing", () => {
   it("uses the installed catalog identity when plugin ids collide", async () => {
     const firstCatalogEntry = {
       ...GITHUB_CATALOG_ENTRY,
@@ -1383,7 +1383,7 @@ describe("PluginDetail runtime health", () => {
       provenance: "builtin" as const,
       catalogEntryId: null,
       publisherKey: "bb-official",
-      publisherLabel: "BB Official",
+      publisherLabel: "Cloudroom Official",
       status,
       statusDetail: "The runtime reported a problem.",
       ...overrides,
@@ -1782,7 +1782,7 @@ describe("PluginDetail capability inventory", () => {
       "Adds a page to the app sidebar.",
       "enhance-prompt",
       "Adds an action beside the thread composer.",
-      "cloudroom capability",
+      "room-cli capability",
       "Inspect contributed capabilities.",
       "review",
       "Review repository changes.",

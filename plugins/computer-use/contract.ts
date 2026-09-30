@@ -29,7 +29,10 @@ export const permissionKindSchema = z.enum(["accessibility", "screenRecording"])
 
 export const hostContract = defineRpcContract({
   status: { input: z.object({}).strict(), output: hostStatusSchema },
-  prepare: { input: z.object({}).strict(), output: hostStatusSchema },
+  prepare: {
+    input: z.object({}).strict(),
+    output: hostStatusSchema.extend({ installMs: z.number().nullable() }),
+  },
   call: {
     input: z
       .object({
@@ -40,7 +43,12 @@ export const hostContract = defineRpcContract({
       })
       .strict(),
     output: z
-      .object({ exitCode: z.number().int(), stdout: z.string(), stderr: z.string() })
+      .object({
+        exitCode: z.number().int(),
+        stdout: z.string(),
+        stderr: z.string(),
+        driverExits: z.number().int(),
+      })
       .strict(),
   },
   describe: {

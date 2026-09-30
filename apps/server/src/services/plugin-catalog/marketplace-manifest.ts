@@ -39,7 +39,7 @@ export const CURATED_MARKETPLACE_V1_URL =
 export const CURATED_MARKETPLACE_V2_URL =
   "https://getbb.app/marketplace/v2/marketplace.json";
 
-export const BUILTIN_PUBLISHER_LABEL = "BB Official";
+export const BUILTIN_PUBLISHER_LABEL = "Cloudroom Official";
 
 const MARKETPLACE_MAX_ENTRIES = 256;
 

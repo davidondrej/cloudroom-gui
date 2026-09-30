@@ -231,7 +231,7 @@ export function evaluateCompatibility(args: {
         engine: "bb",
         required: args.bbRange,
         actual: appVersion.version,
-        message: `requires bb ${args.bbRange}, running Cloudroom is ${appVersion.version}`,
+        message: `requires Cloudroom ${args.bbRange}, running Cloudroom is ${appVersion.version}`,
       });
     }
   }
@@ -794,6 +794,6 @@ export async function resolveGitRange(args: {
     outcome: "unavailable",
     detail:
       firstProblem ??
-      `no release of ${args.url} matching ${args.range} runs on this bb`,
+      `no release of ${args.url} matching ${args.range} runs on this Cloudroom version`,
   };
 }

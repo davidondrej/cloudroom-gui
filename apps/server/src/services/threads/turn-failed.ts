@@ -11,6 +11,7 @@ import {
 import {
   providerErrorInfoSchema,
   providerRateLimitStateSchema,
+  systemThreadInterruptedEventDataSchema,
   type ClientTurnRequestId,
   type ProviderErrorInfo,
   type ProviderRateLimitState,
@@ -198,7 +199,24 @@ export function buildTurnFailedEvent(
     inputAccepted: wasFailedTurnInputAccepted(db, { threadId, failed }),
     rateLimits: latestRateLimits(db, thread),
     attemptNumber: retryChain(failed.request).attemptNumber,
+    interruptionReason: interruptionReason(db, { threadId, failed }),
   };
+}
+
+function interruptionReason(
+  db: DbConnection,
+  args: { threadId: string; failed: FailedTurnRecord },
+): PluginTurnFailedEvent["interruptionReason"] {
+  const row = getLatestStoredThreadEventOfTypes(db, {
+    threadId: args.threadId,
+    types: ["system/thread/interrupted"],
+    afterSequence: args.failed.requestSequence,
+  });
+  if (row === null) return null;
+  return (
+    systemThreadInterruptedEventDataSchema.safeParse(parseRowData(row)).data
+      ?.reason ?? null
+  );
 }
 
 function latestRateLimits(

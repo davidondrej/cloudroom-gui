@@ -1,4 +1,4 @@
-Cloudroom Connect opens Cloudroom from a phone or another computer. It is powered by BB Connect. Your private `https://<handle>.getbb.app` address requires your BB Connect account login.
+Cloudroom Connect opens Cloudroom from a phone or another computer. Remote access is provided by BB Connect. Sign in to your private `https://<handle>.getbb.app` address with the BB Connect account you used to connect this machine.
 
 ## What you get
 

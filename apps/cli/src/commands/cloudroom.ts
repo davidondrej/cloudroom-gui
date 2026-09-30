@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 import { Command } from "commander";
 import { action } from "../action.js";
 import { createCliBbSdk } from "../client.js";
+import { resolveContextThreadId } from "../context-env.js";
 import { resolveLocalHostId } from "../daemon.js";
 import { outputJson, type JsonOutputOptions } from "./helpers.js";
 
@@ -77,6 +78,14 @@ export function registerImportCommands(program: Command, getUrl: () => string): 
       for (const thread of result.imported) console.log(`Imported  ${thread.title} → ${thread.threadId}`);
       for (const thread of result.skipped) console.log(`Skipped   ${thread.title}: ${thread.reason}`);
       if (!result.imported.length && !result.skipped.length) console.log("No open BB threads found.");
+    }));
+}
+
+/** Agents report Cloudroom bugs by themselves (ADR 0158). Prints {"sent":false} while reports are off in Settings. */
+export function registerReportCommand(program: Command, getUrl: () => string): void {
+  program.command("report <message>").description("Report a Cloudroom bug to the Cloudroom team: what happened, what you expected, exact errors. No secrets or code.")
+    .action(action(async (message: string) => {
+      console.log(JSON.stringify(await createCliBbSdk(getUrl()).cloudroom.reportBug({ message, threadId: resolveContextThreadId() })));
     }));
 }
 

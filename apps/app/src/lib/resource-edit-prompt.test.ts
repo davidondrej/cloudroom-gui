@@ -13,7 +13,7 @@ describe("resource edit thread prompts", () => {
         path: "/Users/me/plugins/pattern-atlas",
       }),
     ).toBe(
-      'Edit the bb plugin "Pattern Atlas" at /Users/me/plugins/pattern-atlas. I want to ',
+      'Edit the Cloudroom plugin "Pattern Atlas" at /Users/me/plugins/pattern-atlas. I want to ',
     );
     expect(
       buildSkillEditThreadPrompt({
@@ -22,7 +22,7 @@ describe("resource edit thread prompts", () => {
         path: "/Users/me/.bb/skills/review-pr/SKILL.md",
       }),
     ).toBe(
-      'Edit the bb skill "Review PR" (ID skill_abc123) at /Users/me/.bb/skills/review-pr/SKILL.md. Inspect it with bb skill show skill_abc123 --json and pass that revision to bb skill update when saving. I want to ',
+      'Edit the Cloudroom skill "Review PR" (ID skill_abc123) at /Users/me/.bb/skills/review-pr/SKILL.md. Inspect it with room-cli skill show skill_abc123 --json and pass that revision to room-cli skill update when saving. I want to ',
     );
     expect(
       buildAutomationEditThreadPrompt({
@@ -31,7 +31,7 @@ describe("resource edit thread prompts", () => {
         automationId: "auto_456",
       }),
     ).toBe(
-      'Edit the bb automation "Daily triage" (ID auto_456) in project proj_123. I want to ',
+      'Edit the Cloudroom automation "Daily triage" (ID auto_456) in project proj_123. I want to ',
     );
   });
 });

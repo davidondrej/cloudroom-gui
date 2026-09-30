@@ -1,11 +1,11 @@
 # bb-plugin-github
 
-GitHub issues and pull requests inside BB, with one-click agent dispatch.
+GitHub issues and pull requests inside Cloudroom, with one-click agent dispatch.
 
-Install it from the BB Official catalog:
+Install it from the Cloudroom Official catalog:
 
 ```sh
-bb plugin install github
+room-cli plugin install github
 ```
 
 ## What it does
@@ -16,13 +16,13 @@ bb plugin install github
 - **Issue detail**: markdown body, comments, comment box, status,
   assignee, and label editing, plus "Send agent".
   Deep-linkable via the URL hash: `#/issues/<owner>/<repo>/<number>`.
-- **Send agent / Review with agent**: spawns a BB worker thread on the issue
-  (or a review thread on the PR) in the repo's BB project. The issue/PR then
+- **Send agent / Review with agent**: spawns a Cloudroom worker thread on the issue
+  (or a review thread on the PR) in the repo's Cloudroom project. The issue/PR then
   shows a ⚡ pill linking to the thread.
 - **Homepage section**: recent open issues with the same Send agent buttons.
 - **Mentions**: `@` or `#` in any composer completes GitHub issues and PRs; the
   selected item's title/body/state is attached as agent context at send time.
-- **`bb github` CLI**: `repos`, `issues [repo]`, `prs [repo]`, `sync` — also
+- **`room-cli github` CLI**: `repos`, `issues [repo]`, `prs [repo]`, `sync` — also
   discoverable by agents through the plugin-commands skill.
 
 ## Auth
@@ -32,17 +32,17 @@ it reports needs-configuration. No tokens are stored by the plugin.
 
 ## Which repos are tracked
 
-- Every BB project source whose checkout has a GitHub `origin` remote
+- Every Cloudroom project source whose checkout has a GitHub `origin` remote
   (repo → project mapping is also how spawn picks the project).
 - Plus the `extraRepos` setting: comma-separated `owner/repo` list. Entries that
   are not `owner/repo` — a `owner/*` wildcard, a bare owner, a typo — are not
-  tracked; `bb github repos` names them on stderr and the plugin log warns once
+  tracked; `room-cli github repos` names them on stderr and the plugin log warns once
   per distinct set. Wildcards are not supported.
 - `defaultProject` setting: where threads spawn for repos with no project.
 
 ```
-bb plugin config github set extraRepos "owner/repo, owner/other"
-bb plugin reload github
+room-cli plugin config github set extraRepos "owner/repo, owner/other"
+room-cli plugin reload github
 ```
 
 A background service refreshes immediately on startup, then waits 15 minutes
@@ -57,7 +57,7 @@ repository’s cached rows.
 Batching reduces list-fetch process invocations from four to one per repository
 (75%). This does not measure GraphQL rate-limit point savings.
 Background data may take 15 minutes plus sync time to refresh. The panel's
-Refresh button, the `refresh` RPC, or `bb github sync` starts a sync immediately.
+Refresh button, the `refresh` RPC, or `room-cli github sync` starts a sync immediately.
 
 Transient authentication failures and failures across all repositories retain
 the existing retry backoff: 30 seconds, doubling to a five-minute cap, reset

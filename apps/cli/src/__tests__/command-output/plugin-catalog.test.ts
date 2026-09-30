@@ -23,9 +23,9 @@ const searchResult = {
   source: "builtin:linear",
   repositoryUrl: null,
   marketplace: "bb-official",
-  marketplaceDisplayName: "BB Official",
+  marketplaceDisplayName: "Cloudroom Official",
   publisherKey: "bb-official",
-  publisherLabel: "BB Official",
+  publisherLabel: "Cloudroom Official",
   official: true,
   author: null,
   installed: false,
@@ -153,7 +153,7 @@ describe("room-cli plugin catalog", () => {
     const output = collectLogPayloads(vi.mocked(console.log)).join("\n");
     expect(output).toContain("Marketplace");
     expect(output).toContain("Acme Plugins");
-    expect(output).toContain("BB Official");
+    expect(output).toContain("Cloudroom Official");
   });
 
   it("adds an Installs column only once a listing reports counts", async () => {

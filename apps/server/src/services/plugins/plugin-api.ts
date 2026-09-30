@@ -51,6 +51,8 @@ import type {
   PluginMachines,
   PluginAiServiceDeclaration,
   PluginAiServices,
+  PluginTelemetry,
+  PluginTelemetryValue,
   PluginProviderDeclaration,
   ExperimentalPluginProviderEnvContext,
   ExperimentalPluginProviderEnvEntry,
@@ -473,6 +475,8 @@ export function createPluginApi(options: {
    * name. Empty when the manifest declares none.
    */
   declaredIconNames: ReadonlySet<string>;
+  /** Present only for built-in plugins. */
+  captureTelemetry?: (name: string, properties: Record<string, PluginTelemetryValue>) => void;
   requestInteraction: (args: {
     threadId: string;
     rendererId: string;
@@ -1276,6 +1280,23 @@ export function createPluginApi(options: {
     register: aiServiceRegistrations.register,
   };
 
+  const experimental_telemetry: PluginTelemetry = {
+    capture(name, properties = {}) {
+      assertLive();
+      if (!options.captureTelemetry) return;
+      if (!/^[a-z][a-z0-9_]{0,63}$/.test(name)) throw new Error(`Invalid telemetry event name "${name}"`);
+      const entries = Object.entries(properties);
+      if (entries.length > 32) throw new Error("Telemetry events take at most 32 properties");
+      const clean: Record<string, PluginTelemetryValue> = {};
+      for (const [key, value] of entries) {
+        if (value !== null && !["string", "number", "boolean"].includes(typeof value))
+          throw new Error(`Telemetry property "${key}" must be a string, number, boolean, or null`);
+        clean[key] = typeof value === "string" ? value.slice(0, 200) : value;
+      }
+      options.captureTelemetry(name, clean);
+    },
+  };
+
   const api: BbPluginApi = {
     pluginId,
     log,
@@ -1298,6 +1319,7 @@ export function createPluginApi(options: {
     server,
     hosts,
     experimental_aiServices,
+    experimental_telemetry,
     get sdk(): PluginBbSdk {
       assertLive();
       const sdk = getSdk();

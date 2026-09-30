@@ -30,11 +30,12 @@ import type { CloudroomClient } from "./client.js";
 import { SKIPPED } from "./project-copy.js";
 import { binding, teleportProgress } from "./store.js";
 
-type Harness = "codex" | "pi" | "claude-code";
+type Harness = "codex" | "pi" | "claude-code" | "acp-cursor";
 const VM_SESSIONS: Record<Harness, string> = {
   codex: "$HOME/.codex/sessions",
   pi: "$HOME/.pi/agent/sessions",
   "claude-code": "$HOME/.claude/projects",
+  "acp-cursor": "$HOME/.cursor/chats",
 };
 const CHUNK = 8 * 1024 * 1024;
 const VIEWABLE = /\.(png|jpe?g|gif|webp|heic|svg|pdf|zip|txt|md|csv|json|mp4|mov|mp3|wav)$/i;
@@ -61,7 +62,7 @@ async function run(deps: AppDeps, threadId: string): Promise<{ conflicts: number
   const phase = teleportProgress(deps.db, threadId)?.phase;
   if (!thread || thread.executionTarget !== "cloud" || thread.parentThreadId || thread.archivedAt || thread.deletedAt
     || !saved?.sessionId || !harness || !(harness in VM_SESSIONS) || (phase && !["complete", "cancelled", "error"].includes(phase)))
-    throw new ApiError(409, "teleport_unavailable", "Teleport to Local needs a Codex, Pi, or Claude Code cloud parent thread.");
+    throw new ApiError(409, "teleport_unavailable", "Teleport to Local needs a Codex, Pi, Claude Code, or Cursor cloud parent thread.");
   const nativeId = getLastProviderThreadId(deps, threadId);
   if (!nativeId || !/^[A-Za-z0-9_-]+$/.test(nativeId))
     throw new ApiError(409, "teleport_unavailable", "This cloud thread has no saved conversation yet.");
@@ -78,6 +79,7 @@ async function run(deps: AppDeps, threadId: string): Promise<{ conflicts: number
     download(client, vmPath),
     cloudChanges(client, cloud.path, await git(environment.path, ["rev-parse", "HEAD"]), thread.createdAt),
   ]);
+  if (harness === "acp-cursor") await vm(client, `rm -f ${quote(vmPath)}`).catch(() => {});
   await installNative(harness, nativeId, vmPath, session, environment.path);
   const conflicts = await applyChanges(environment.path, changes.archive, randomUUID(), changes.proven);
 
@@ -221,6 +223,10 @@ async function vm(client: CloudroomClient, command: string): Promise<Buffer> {
 }
 
 function findNative(harness: Harness, nativeId: string): string {
+  // A Cursor chat is a folder (meta.json plus a SQLite store), so it travels as one archive.
+  if (harness === "acp-cursor")
+    return `d=$(ls -d "${VM_SESSIONS[harness]}"/*/${nativeId} 2>/dev/null | head -n1); [ -f "$d/meta.json" ] || exit 0
+mkdir -p ~/.cache/cloudroom && tar -czf ~/.cache/cloudroom/cursor-${nativeId}.tgz -C "$d" --exclude='*-shm' . && echo ~/.cache/cloudroom/cursor-${nativeId}.tgz`;
   return `find "${VM_SESSIONS[harness]}" -name '*.jsonl' -printf '%T@ %p\\n' 2>/dev/null | sort -rn | cut -d' ' -f2- | while IFS= read -r f; do
   case "$f" in *${nativeId}*) echo "$f"; exit 0;; esac
   head -n1 "$f" | grep -qF '"id":"${nativeId}"' && { echo "$f"; exit 0; }
@@ -326,6 +332,7 @@ async function git(cwd: string, args: string[]): Promise<string | null> {
 }
 
 async function installNative(harness: Harness, nativeId: string, vmPath: string, bytes: Buffer, cwd: string) {
+  if (harness === "acp-cursor") return installCursor(nativeId, bytes, cwd);
   const end = bytes.indexOf(10);
   if (end < 0) throw new Error("The cloud conversation file is empty.");
   let data = bytes;
@@ -341,6 +348,24 @@ async function installNative(harness: Harness, nativeId: string, vmPath: string,
   const temporary = `${target}.${randomUUID()}.tmp`;
   await writeFile(temporary, data, { mode: 0o600 });
   await rename(temporary, target);
+}
+
+// Local Cursor keeps each chat in ~/.cursor/acp-sessions/<id>/, the folder the host's Teleport capture reads.
+async function installCursor(nativeId: string, archive: Buffer, cwd: string) {
+  const target = join(homedir(), ".cursor", "acp-sessions", nativeId);
+  const staged = `${target}.${randomUUID()}.tmp`;
+  await mkdir(staged, { recursive: true, mode: 0o700 });
+  try {
+    await writeFile(`${staged}.tgz`, archive, { mode: 0o600 });
+    await exec("tar", ["-xzf", `${staged}.tgz`, "-C", staged]);
+    const meta = join(staged, "meta.json");
+    await writeFile(meta, JSON.stringify({ ...JSON.parse(await readFile(meta, "utf8")), cwd }));
+    if (existsSync(target)) await rename(target, `${target}.before-teleport-${Date.now()}`);
+    await rename(staged, target);
+  } finally {
+    await rm(`${staged}.tgz`, { force: true });
+    await rm(staged, { recursive: true, force: true });
+  }
 }
 
 async function nativeTarget(harness: Harness, nativeId: string, name: string, cwd: string): Promise<string> {

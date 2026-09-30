@@ -252,13 +252,13 @@ export function SkillDetailStates() {
       </State>
 
       <State
-        name="BB Official"
-        note="A skill that ships with bb uses the same publisher badge as a BB Official plugin. Its read-only behavior remains a separate permission fact."
+        name="Cloudroom Official"
+        note="A skill that ships with Cloudroom uses the same publisher badge as a Cloudroom Official plugin. Its read-only behavior remains a separate permission fact."
       >
         <Skill
           titleBadge={{
-            label: "BB Official",
-            tooltip: "Ships with bb",
+            label: "Cloudroom Official",
+            tooltip: "Ships with Cloudroom",
           }}
         />
       </State>
@@ -488,7 +488,7 @@ const BUNDLED_PLUGIN: PluginListItem = {
   source: "builtin:github",
   rootDir: "/managed/plugins/github",
   provenance: "builtin",
-  sourceDisplay: "Ships with bb",
+  sourceDisplay: "Ships with Cloudroom",
   capabilities: STATIC_CAPABILITIES,
 };
 
@@ -506,9 +506,9 @@ const UNINSTALLED_CATALOG_PLUGIN = {
   collections: [],
   source: "builtin:github",
   repositoryUrl: null,
-  marketplaceDisplayName: "BB Official",
+  marketplaceDisplayName: "Cloudroom Official",
   publisherKey: "bb-official",
-  publisherLabel: "BB Official",
+  publisherLabel: "Cloudroom Official",
   official: true,
   author: null,
   installed: false,
@@ -632,7 +632,7 @@ function CatalogPlugin({
           entryId: entry.entryId,
           pluginId: entry.pluginId,
           marketplace: "bb-official",
-          publisherLabel: "BB Official",
+          publisherLabel: "Cloudroom Official",
           displayName: entry.displayName,
           icon: entry.icon,
           iconUrl: entry.iconUrl,
@@ -681,11 +681,11 @@ export function PluginDetailStates() {
     <PluginStoryQueryBoundary>
       <Story
         title="Plugin detail states"
-        description="An uninstalled BB Official plugin shows the catalog facts bb can verify and offers Install. Once installed, the page adds runtime capabilities, settings, services, and schedules when they apply."
+        description="An uninstalled Cloudroom Official plugin shows the catalog facts bb can verify and offers Install. Once installed, the page adds runtime capabilities, settings, services, and schedules when they apply."
       >
         <State
           name="Before ownership"
-          note="An uninstalled BB Official plugin opens as a real detail page. Install is the primary header action; the full-trust confirmation is the commit step."
+          note="An uninstalled Cloudroom Official plugin opens as a real detail page. Install is the primary header action; the full-trust confirmation is the commit step."
         >
           <CatalogPlugin />
         </State>
@@ -765,15 +765,15 @@ export function PluginDetailStates() {
         </State>
 
         <State
-          name="BB Official · catalog"
-          note="Installed from bb's catalog. It shares the BB Official badge with built-in plugins, while its install date and ownership menu preserve the lifecycle difference."
+          name="Cloudroom Official · catalog"
+          note="Installed from bb's catalog. It shares the Cloudroom Official badge with built-in plugins, while its install date and ownership menu preserve the lifecycle difference."
         >
           <Plugin plugin={CATALOG_PLUGIN} />
         </State>
 
         <State
-          name="BB Official · built-in"
-          note="Ships with bb. The badge matches catalog-installed official plugins; the missing install date and ownership menu show that it cannot be uninstalled separately."
+          name="Cloudroom Official · built-in"
+          note="Ships with Cloudroom. The badge matches catalog-installed official plugins; the missing install date and ownership menu show that it cannot be uninstalled separately."
         >
           <Plugin plugin={BUNDLED_PLUGIN} />
         </State>
@@ -879,7 +879,7 @@ export function PluginBannerStates() {
             plugin={{
               ...PLUGIN,
               status: "incompatible",
-              statusDetail: "requires bb 0.20 or newer",
+              statusDetail: "requires Cloudroom 0.20 or newer",
             }}
           />
         </State>
@@ -1120,7 +1120,7 @@ export function ResourceControlStates() {
                 onAction={noop}
               />
             }
-            meaning="Canonical BB Official plugin acquisition action on both Browse and the pre-ownership detail page."
+            meaning="Canonical Cloudroom Official plugin acquisition action on both Browse and the pre-ownership detail page."
           />
           <ControlRow
             state="Plugin · installing"
@@ -1166,21 +1166,21 @@ export function ResourceControlStates() {
           description="Badges appear only when provenance changes how the resource should be understood. Ordinary owned resources stay unlabelled in their detail-page stories."
         >
           <ControlRow
-            state="Plugin · BB Official catalog"
+            state="Plugin · Cloudroom Official catalog"
             control={<PluginProvenancePill plugin={CATALOG_PLUGIN} />}
             meaning="Published by bb and installed from the catalog."
           />
           <ControlRow
-            state="Plugin · BB Official built-in"
+            state="Plugin · Cloudroom Official built-in"
             control={<PluginProvenancePill plugin={BUNDLED_PLUGIN} />}
-            meaning="Ships with bb. The same badge communicates publisher; lifecycle differences remain in metadata and actions."
+            meaning="Ships with Cloudroom. The same badge communicates publisher; lifecycle differences remain in metadata and actions."
           />
           <ControlRow
-            state="Skill · BB Official"
+            state="Skill · Cloudroom Official"
             control={
-              <ProvenancePill label="BB Official" tooltip="Ships with bb" />
+              <ProvenancePill label="Cloudroom Official" tooltip="Ships with Cloudroom" />
             }
-            meaning="A skill that ships with bb."
+            meaning="A skill that ships with Cloudroom."
           />
           <ControlRow
             state="Skill · Included"
@@ -1285,7 +1285,7 @@ export function ResourceControlStates() {
             meaning="Local sources can be edited, opened, submitted to the marketplace, or removed from bb without deleting the source directory."
           />
           <ControlRow
-            state="BB Official built-in actions"
+            state="Cloudroom Official built-in actions"
             control={<NoControl>No ownership menu</NoControl>}
             meaning="Built-in plugins cannot be uninstalled or source-edited here."
           />
@@ -1342,7 +1342,7 @@ export function ResourceControlStates() {
           <ControlRow
             state="Read-only actions"
             control={<NoControl>No ownership menu</NoControl>}
-            meaning="BB Official, Included, and Imported skills expose provenance without pretending they are mutable."
+            meaning="Cloudroom Official, Included, and Imported skills expose provenance without pretending they are mutable."
           />
         </ControlTable>
 

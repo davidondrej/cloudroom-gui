@@ -67,10 +67,17 @@ export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCop
 async function run(client: CloudroomClient, job: ProjectCopyJob, report: (progress: ProjectCopyProgress) => void): Promise<void> {
   const target = (await client.workspace(job.workspace))?.path;
   if (!target) throw new Error("The cloud project folder is unavailable.");
-  const cloned = job.repository ? await clone(client, target, job.repository, job.localPath) : false;
+  // A failed clone falls back to uploading the files, so the agent can still work, then reports why Git is missing.
+  let cloneError: string | null = null;
+  if (job.repository) {
+    cloneError = await clone(client, target, job.repository, job.localPath);
+    if (cloneError) cloneError = await clone(client, target, job.repository, job.localPath);
+  }
+  const cloned = Boolean(job.repository) && !cloneError;
   if (!cloned) report({ phase: "uploading", completed: 0, total: 0 });
   const files = await localFiles(job.localPath, cloned);
   if (files.length) await upload(client, job.localPath, target, files, !cloned, report);
+  if (cloneError) throw new Error(`The GitHub clone failed, so your files were copied without Git history: ${cloneError}`);
 }
 
 async function vm(client: CloudroomClient, command: string, stdin = Buffer.alloc(0)): Promise<void> {
@@ -82,7 +89,8 @@ async function git(cwd: string, args: string[]): Promise<string | null> {
   return await exec("git", ["-C", cwd, ...args], { maxBuffer: 256 * 1024 * 1024 }).then((result) => result.stdout, () => null);
 }
 
-async function clone(client: CloudroomClient, target: string, repository: string, localPath: string): Promise<boolean> {
+/** Returns null once the clone is in place, or why it failed. */
+async function clone(client: CloudroomClient, target: string, repository: string, localPath: string): Promise<string | null> {
   const token = await exec("gh", ["auth", "token", "--hostname", "github.com"], { timeout: 15_000 }).then((result) => result.stdout.trim(), () => "");
   const branch = (await git(localPath, ["rev-parse", "--abbrev-ref", "HEAD"]))?.trim();
   const temporary = quote(`${target}.cloudroom-clone`);
@@ -95,11 +103,12 @@ async function clone(client: CloudroomClient, target: string, repository: string
       branch && branch !== "HEAD" ? `git -C ${temporary} checkout --quiet ${quote(branch)} 2>/dev/null || true` : "",
       `mkdir -p -- ${quote(target)} && (shopt -s dotglob && mv -n -- ${temporary}/* ${quote(target)}/) || true`,
       `rm -rf -- ${temporary}`,
-      `test -e ${quote(`${target}/.git`)}`,
+      `test -e ${quote(`${target}/.git`)} || { echo 'The clone did not reach the project folder.' >&2; exit 1; }`,
     ].join("\n"),
     stdin: Buffer.from(token).toString("hex"),
   });
-  return result.code === 0;
+  if (result.code === 0) return null;
+  return Buffer.from(result.stderr, "hex").toString().trim().slice(-300) || `git clone exited with code ${result.code}`;
 }
 
 async function localFiles(root: string, cloned: boolean): Promise<string[]> {

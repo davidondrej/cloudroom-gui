@@ -27,9 +27,9 @@ function entry(
     source: `builtin:${id}`,
     repositoryUrl: null,
     marketplace: "bb-official",
-    marketplaceDisplayName: "BB Official",
+    marketplaceDisplayName: "Cloudroom Official",
     publisherKey: "bb-official",
-    publisherLabel: "BB Official",
+    publisherLabel: "Cloudroom Official",
     official: true,
     author: null,
     installed: false,
@@ -54,7 +54,7 @@ describe("plugin browse shelves", () => {
       collections: [
         {
           id: "z-server-first",
-          displayName: "BB Official",
+          displayName: "Cloudroom Official",
           pluginIds: ["official"],
         },
         {
@@ -66,7 +66,7 @@ describe("plugin browse shelves", () => {
     });
 
     expect(shelves.map((shelf) => shelf.label)).toEqual([
-      "BB Official",
+      "Cloudroom Official",
       "New & notable",
       "Thread Content",
     ]);

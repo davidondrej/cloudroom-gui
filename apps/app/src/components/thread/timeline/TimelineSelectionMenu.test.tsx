@@ -60,10 +60,10 @@ describe("TimelineSelectionMenu", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Add to chat" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Include context" })).toBeTruthy();
     expect(
       screen
-        .getByRole("button", { name: "Add to chat" })
+        .getByRole("button", { name: "Include context" })
         .closest("[data-bb-portaled-overlay]"),
     ).not.toBeNull();
   });
@@ -85,7 +85,7 @@ describe("TimelineSelectionMenu", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Add to chat" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Include context" })).toBeTruthy();
     expect(container.querySelector('[aria-hidden="true"]')).toBeNull();
   });
 
@@ -114,7 +114,7 @@ describe("TimelineSelectionMenu", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Add to chat" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Include context" })).toBeTruthy();
     expect(document.body.querySelector('[data-side="top"]')).toBeTruthy();
   });
 
@@ -128,7 +128,7 @@ describe("TimelineSelectionMenu", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Add to chat" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Include context" })).toBeTruthy();
     expect(document.body.querySelector('[data-side="top"]')).toBeTruthy();
   });
 
@@ -143,7 +143,7 @@ describe("TimelineSelectionMenu", () => {
       />,
     );
 
-    const button = screen.getByRole("button", { name: "Add to chat" });
+    const button = screen.getByRole("button", { name: "Include context" });
     fireEvent.pointerDown(button, { pointerType: "touch" });
     fireEvent.pointerUp(button, { pointerType: "touch" });
     fireEvent.click(button);
@@ -179,7 +179,7 @@ describe("TimelineSelectionMenu", () => {
     }
 
     render(<ComposerFocusHandoff />);
-    const action = screen.getByRole("button", { name: "Add to chat" });
+    const action = screen.getByRole("button", { name: "Include context" });
     fireEvent.pointerDown(action, { pointerType: "touch" });
     fireEvent.pointerUp(action, { pointerType: "touch" });
 

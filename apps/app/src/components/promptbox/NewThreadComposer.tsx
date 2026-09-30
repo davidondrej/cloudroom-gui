@@ -1383,8 +1383,14 @@ export function NewThreadComposer({
       text: promptDraft.text,
       mentions: promptDraft.mentions,
       attachments: promptDraft.attachments,
+      contexts: promptDraft.contexts,
     }),
-    [promptDraft.attachments, promptDraft.mentions, promptDraft.text],
+    [
+      promptDraft.attachments,
+      promptDraft.contexts,
+      promptDraft.mentions,
+      promptDraft.text,
+    ],
   );
   const promptInput = useMemo(
     () => promptDraftToInput(currentDraft),

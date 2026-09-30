@@ -71,6 +71,7 @@ import {
 import type {
   PluginHookName,
   PluginSettingDescriptors,
+  PluginTelemetryValue,
 } from "@get-bb/plugin-sdk";
 import type { PluginHookRegistration } from "./plugin-hook-registry.js";
 import type { PluginEnvironmentProviderRecord } from "./plugin-environment-provider-registry.js";
@@ -857,7 +858,7 @@ export function createPluginRuntime(context: PluginRuntimeContext) {
       return undefined;
     }
     if (!semver.satisfies(version, manifest.bbEngineRange)) {
-      return `requires bb ${manifest.bbEngineRange}, this is ${version.version}`;
+      return `requires Cloudroom ${manifest.bbEngineRange}, this is ${version.version}`;
     }
     return undefined;
   }
@@ -1416,6 +1417,9 @@ export function createPluginRuntime(context: PluginRuntimeContext) {
       reportNeedsConfiguration: (message) => {
         reportNeedsConfiguration(row.id, message);
       },
+      ...(row.provenance === "builtin"
+        ? { captureTelemetry: (name: string, properties: Record<string, PluginTelemetryValue>) => deps.telemetry.capturePlugin(row.id, name, properties) }
+        : {}),
       isAgentToolNameTaken: (name) => findAgentToolOwner(name, row.id),
       isEnvironmentProviderIdTaken: (id) => {
         for (const [pluginId, plugin] of loaded) {

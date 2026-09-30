@@ -23,6 +23,8 @@ export const DEFAULT_MAXIMUM_WAIT_MS = 6 * 60 * 60 * 1_000;
 
 export const OVERLOAD_RETRY_BASE_MS = 5_000;
 
+const RESTART_RETRY_DELAY_MS = 5_000;
+
 /**
  * The cap on a turn's TOTAL attempts: the original dispatch plus at most four
  * retries, since `attemptNumber` counts from 1 on the original.
@@ -46,7 +48,7 @@ export type RetryDecision =
   | {
       kind: "retry";
       sendAt: number;
-      reason: "Rate limited" | "Provider overloaded";
+      reason: "Rate limited" | "Provider overloaded" | "App restarted";
     };
 
 export interface RetryPolicyInput {
@@ -114,6 +116,13 @@ export function decideRetry(input: RetryPolicyInput): RetryDecision {
   const { failure } = input;
   if (failure.attemptNumber >= MAX_RETRY_ATTEMPTS) {
     return { kind: "decline", reason: "attempts-exhausted" };
+  }
+  if (failure.interruptionReason === "host-daemon-restarted") {
+    return {
+      kind: "retry",
+      sendAt: input.now + RESTART_RETRY_DELAY_MS,
+      reason: "App restarted",
+    };
   }
   if (failure.errorInfo?.category === "overloaded") {
     return {

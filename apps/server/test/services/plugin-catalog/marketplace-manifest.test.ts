@@ -318,7 +318,7 @@ describe("marketplace manifest schema", () => {
       const bundled = {
         schemaVersion: 2,
         name: BUNDLED_MARKETPLACE_NAME,
-        displayName: "BB Official",
+        displayName: "Cloudroom Official",
         plugins: [entry({ source: { bundled: { plugin: "docs" } } })],
       };
       expect(() =>

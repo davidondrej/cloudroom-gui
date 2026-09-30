@@ -1,6 +1,6 @@
-# Releasing BB Official plugins
+# Releasing Cloudroom Official plugins
 
-Official plugins ship **bundled inside the BB app**. There is no separate
+Official plugins ship **bundled inside the Cloudroom app**. There is no separate
 publish pipeline. Each plugin runs the internal `bb-plugin-build prepare-bundled`
 command through its Turbo-cached `prepare:bundled` task. The shared tool compiles
 one plugin into its `.bundled-runtime` directory. `@bb/bundled-plugins` assembles
@@ -31,7 +31,7 @@ The official plugins are:
    version is shown in plugin management and drives startup reconciliation
    (an installed official plugin re-points to the new bundled copy when its
    version or root directory changes).
-2. Ship a normal BB app release. The packaging step builds changed plugins and reuses cached
+2. Ship a normal Cloudroom app release. The packaging step builds changed plugins and reuses cached
    outputs for unchanged plugins; installed plugins pick up the new code at
    the next server start.
 

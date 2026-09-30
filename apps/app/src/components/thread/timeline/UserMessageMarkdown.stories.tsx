@@ -193,7 +193,7 @@ export function Overview() {
       </StoryRow>
       <StoryRow
         label="add to chat result"
-        hint="click Add to chat under any markdown user message, then type below the quote"
+        hint="click Include context under any markdown user message, then type below the quote"
       >
         <StoryDraftPromptBox draft={promptDraft} />
       </StoryRow>

@@ -1043,7 +1043,7 @@ export function Overview() {
       </StoryRow>
       <StoryRow
         label="with blockquote"
-        hint="'Add to chat' inserts a > quote block; reply goes on the line below"
+        hint="'Include context' inserts a > quote block; reply goes on the line below"
       >
         <WithBlockquoteRow />
       </StoryRow>

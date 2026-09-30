@@ -281,7 +281,7 @@ function NavigateButton({ to, label }: { to: string; label: string }) {
 }
 
 describe("SkillsOverview", () => {
-  it("defaults to BB skills and places BB Official skills first", () => {
+  it("defaults to BB skills and places Cloudroom Official skills first", () => {
     const markup = render({
       skills: [
         makeSkill({ name: "claude-skill", provider: "claude-code" }),
@@ -304,7 +304,7 @@ describe("SkillsOverview", () => {
     expect(markup).not.toContain("Provider: 1 selected");
     expect(markup).toContain("Sort");
     expect(markup).not.toContain('role="tab"');
-    expect(markup).toContain("BB Official");
+    expect(markup).toContain("Cloudroom Official");
     expect(markup).toContain("New Cloudroom skill");
     expect(markup).not.toContain('aria-label="Open zz-official-skill"');
     expect(markup.indexOf("zz-official-skill")).toBeLessThan(
@@ -355,7 +355,7 @@ describe("SkillsOverview", () => {
     fireEvent.pointerDown(typeTrigger);
     expect(screen.getByText("Type")).toBeTruthy();
     expect(screen.queryByRole("menuitemcheckbox", { name: "All" })).toBeNull();
-    for (const name of ["BB Official", "Included in plugin", "User"]) {
+    for (const name of ["Cloudroom Official", "Included in plugin", "User"]) {
       expect(
         screen
           .getByRole("menuitemcheckbox", { name })
@@ -434,7 +434,7 @@ describe("SkillsOverview", () => {
     expect(screen.queryByText("codex-authored")).toBeNull();
   });
 
-  it("toggles BB Official independently from Included in plugin", async () => {
+  it("toggles Cloudroom Official independently from Included in plugin", async () => {
     renderDom(
       <SkillsOverview
         providerRoster={NO_PROVIDER_ROSTER}
@@ -469,7 +469,7 @@ describe("SkillsOverview", () => {
     expect(screen.queryByText("official-skill")).toBeNull();
 
     fireEvent.click(
-      screen.getByRole("menuitemcheckbox", { name: "BB Official" }),
+      screen.getByRole("menuitemcheckbox", { name: "Cloudroom Official" }),
     );
     expect(await screen.findByText("official-skill")).toBeTruthy();
     expect(screen.getByText("automations")).toBeTruthy();
@@ -478,7 +478,7 @@ describe("SkillsOverview", () => {
       screen.getByRole("menuitemcheckbox", { name: "Included in plugin" }),
     );
     fireEvent.click(
-      screen.getByRole("menuitemcheckbox", { name: "BB Official" }),
+      screen.getByRole("menuitemcheckbox", { name: "Cloudroom Official" }),
     );
     expect(await screen.findByText("official-skill")).toBeTruthy();
     expect(screen.getByText("automations")).toBeTruthy();
@@ -1484,7 +1484,7 @@ describe("RegistrySkillDetailView reference creation", () => {
 });
 
 describe("SkillDetailDialogView", () => {
-  it("presents a built-in skill as BB Official without an actions menu", async () => {
+  it("presents a built-in skill as Cloudroom Official without an actions menu", async () => {
     const skill = makeSkill({
       name: "bb-cli",
       provider: null,
@@ -1493,8 +1493,8 @@ describe("SkillDetailDialogView", () => {
     });
     renderSkillDetailDialog(skill);
 
-    const official = screen.getByLabelText("bb-cli is BB Official");
-    expect(official.textContent).toBe("BB Official");
+    const official = screen.getByLabelText("bb-cli is Cloudroom Official");
+    expect(official.textContent).toBe("Cloudroom Official");
     expect(screen.queryByRole("button", { name: "bb-cli actions" })).toBeNull();
     fireEvent.pointerMove(official);
     expect((await screen.findByRole("tooltip")).textContent).toBe(
@@ -1592,7 +1592,7 @@ describe("SkillDetailDialogView", () => {
       name: "Copy skill path: /home/u/.bb/skills/bb-skill",
     });
     expect(screen.getByText("~/.bb/skills/bb-skill")).toBeTruthy();
-    expect(screen.queryByText("BB Official", { exact: true })).toBeNull();
+    expect(screen.queryByText("Cloudroom Official", { exact: true })).toBeNull();
     expect(screen.queryByText("Included", { exact: true })).toBeNull();
     expect(screen.queryByText("Imported", { exact: true })).toBeNull();
     expect(screen.queryByText("Editable", { exact: true })).toBeNull();

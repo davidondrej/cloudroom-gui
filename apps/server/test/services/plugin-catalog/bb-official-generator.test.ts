@@ -58,13 +58,13 @@ describe("bb-official marketplace generator", () => {
     );
 
     expect(catalog.name).toBe(BUNDLED_MARKETPLACE_NAME);
-    expect(catalog.displayName).toBe("BB Official");
+    expect(catalog.displayName).toBe("Cloudroom Official");
     expect(catalog.categories).toEqual(PLUGIN_CATALOG_CATEGORIES);
     expect(catalog.plugins).toHaveLength(BUNDLED_PLUGINS.length);
     expect(catalog.collections).toEqual([
       {
         id: "bb-official",
-        displayName: "BB Official",
+        displayName: "Cloudroom Official",
         pluginIds: BUNDLED_PLUGINS.map((plugin) => plugin.pluginId),
       },
     ]);
@@ -76,7 +76,7 @@ describe("bb-official marketplace generator", () => {
       );
       expect(entry?.id).toBe(plugin.pluginId);
       expect(entry?.screenshots).toEqual(fields[plugin.name]?.screenshots);
-      expect(entry?.author).toEqual({ name: "BB" });
+      expect(entry?.author).toEqual({ name: "Cloudroom" });
     }
   });
 

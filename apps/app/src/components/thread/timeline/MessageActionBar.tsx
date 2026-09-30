@@ -499,7 +499,7 @@ export function MessageActionBar({
       ? [
           {
             icon: "ArrowTurnDown" as const,
-            label: "Add to chat",
+            label: "Include context",
             onSelect: handleAddToChat,
           },
         ]

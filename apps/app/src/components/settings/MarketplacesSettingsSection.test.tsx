@@ -124,15 +124,22 @@ describe("MarketplacesSettingsSection", () => {
     });
   });
 
-  it("offers Remove only for marketplaces other than bb-community", async () => {
-    stubFetch([OFFICIAL, ACME]);
+  it("offers Remove only for third-party marketplaces", async () => {
+    stubFetch([
+      { ...OFFICIAL, name: "bb-official", displayName: "Cloudroom Official" },
+      OFFICIAL,
+      ACME,
+    ]);
     const { wrapper } = createQueryClientTestHarness();
     render(<MarketplacesSettingsSection />, { wrapper });
 
     await screen.findByText("Acme Plugins");
-    expect(screen.queryByRole("button", { name: "Remove BB Official" })).toBe(
-      null,
-    );
+    expect(
+      screen.queryByRole("button", { name: "Remove Cloudroom Official" }),
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Remove BB Community" })).toBeNull();
+    expect(screen.getByText("By Cloudroom")).toBeTruthy();
+    expect(screen.getByText("By BB")).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Remove Acme Plugins" }),
     ).toBeTruthy();

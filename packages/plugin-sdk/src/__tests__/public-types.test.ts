@@ -20,6 +20,7 @@ type ExpectedBbPluginApiKey =
   | "experimental_hooks"
   | "experimental_machines"
   | "experimental_serverAccess"
+  | "experimental_telemetry"
   | "hosts"
   | "http"
   | "log"

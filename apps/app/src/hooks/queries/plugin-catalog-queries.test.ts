@@ -42,7 +42,7 @@ const UPDATES_RESULTS = [
     outcome: "incompatible",
     devMode: true,
     installed: { version: "1.8.3", display: "1.8.3" },
-    blocked: { version: "1.9.0", reasons: ["requires bb >= 0.15"] },
+    blocked: { version: "1.9.0", reasons: ["requires Cloudroom >= 0.15"] },
   },
 ];
 
@@ -58,7 +58,7 @@ describe("checkPluginUpdates", () => {
       "incompatible",
     ]);
     expect(entries[1]?.candidate?.version).toBe("1.7.0");
-    expect(entries[2]?.blocked?.reasons).toEqual(["requires bb >= 0.15"]);
+    expect(entries[2]?.blocked?.reasons).toEqual(["requires Cloudroom >= 0.15"]);
   });
 
   it("throws on a malformed 2xx body", async () => {
@@ -138,7 +138,7 @@ describe("plugin catalog queries", () => {
             overview: "# Todoist\n\nLong-form text.\n",
             installed: false,
             compatible: false,
-            incompatibleReason: "requires bb >= 0.15",
+            incompatibleReason: "requires Cloudroom >= 0.15",
           },
         ],
         collections: [
@@ -179,7 +179,7 @@ describe("plugin catalog queries", () => {
           installed: false,
           installs: null,
           compatible: false,
-          incompatibleReason: "requires bb >= 0.15",
+          incompatibleReason: "requires Cloudroom >= 0.15",
         },
       ],
       collections: [

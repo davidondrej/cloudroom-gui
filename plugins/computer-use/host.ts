@@ -112,7 +112,7 @@ async function saveImages(stdout: string, shotsDir: string) {
   } catch {
     return stdout;
   }
-  const writes: Promise<void>[] = [];
+  const writes: { file: string; data: Buffer }[] = [];
   const visit = (value: unknown): unknown => {
     if (Array.isArray(value)) return value.map(visit);
     if (!value || typeof value !== "object") return value;
@@ -121,7 +121,7 @@ async function saveImages(stdout: string, shotsDir: string) {
       const match = /^(.*)_(png|jpeg|jpg)_b64$/.exec(key);
       if (match && typeof entry === "string") {
         const file = join(shotsDir, `${match[1]}-${randomUUID().slice(0, 8)}.${match[2] === "png" ? "png" : "jpg"}`);
-        writes.push(writeFile(file, Buffer.from(entry, "base64"), { mode: 0o600 }));
+        writes.push({ file, data: Buffer.from(entry, "base64") });
         out[`${match[1]}_file`] = file;
       } else out[key] = visit(entry);
     }
@@ -130,7 +130,7 @@ async function saveImages(stdout: string, shotsDir: string) {
   const result = visit(parsed);
   if (writes.length === 0) return stdout;
   await mkdir(shotsDir, { recursive: true, mode: 0o700 });
-  await Promise.all(writes);
+  await Promise.all(writes.map(({ file, data }) => writeFile(file, data, { mode: 0o600 })));
   return JSON.stringify(result, null, 2);
 }
 
@@ -140,6 +140,8 @@ export function createHostEntry() {
   let installing: Promise<void> | null = null;
   let verified = false;
   let lastUsed = 0;
+  let installMs: number | null = null;
+  let driverExits = 0;
   let lease: ExperimentalHostWorkerLease | null = null;
   let paths: Paths | null = null;
 
@@ -178,9 +180,14 @@ export function createHostEntry() {
         return;
       }
     }
-    installing ??= install(dir(), signal).finally(() => {
-      installing = null;
-    });
+    const started = Date.now();
+    installing ??= install(dir(), signal)
+      .then(() => {
+        installMs = Date.now() - started;
+      })
+      .finally(() => {
+        installing = null;
+      });
     await installing;
     verified = true;
   }
@@ -220,12 +227,15 @@ export function createHostEntry() {
       env: { ...driverEnv(home()), CUA_DRIVER_PARENT_LIVENESS_STDIN: "1" },
       stdio: ["pipe", "ignore", "pipe"],
     });
+    child.stdin?.on("error", () => {});
     let log = "";
     child.stderr?.on("data", (chunk: Buffer) => {
       log = (log + chunk.toString()).slice(-2000);
     });
     child.once("exit", () => {
-      if (daemon === child) stopDaemon();
+      if (daemon !== child) return;
+      driverExits++;
+      stopDaemon();
       void rm(socketDir, { recursive: true, force: true });
     });
     daemon = child;
@@ -255,7 +265,9 @@ export function createHostEntry() {
       async prepare(_input, context) {
         paths = context.experimental_paths;
         if (!unsupported()) await ensureInstalled(context.lifecycle.signal);
-        return status();
+        const reported = installMs;
+        installMs = null;
+        return { ...(await status()), installMs: reported };
       },
       async call(input, context) {
         paths = context.experimental_paths;
@@ -276,7 +288,9 @@ export function createHostEntry() {
           }),
         );
         lastUsed = Date.now();
-        return { ...result, stdout: await saveImages(result.stdout, input.shotsDir) };
+        const exits = driverExits;
+        driverExits = 0;
+        return { ...result, stdout: await saveImages(result.stdout, input.shotsDir), driverExits: exits };
       },
       async describe(input, context) {
         paths = context.experimental_paths;

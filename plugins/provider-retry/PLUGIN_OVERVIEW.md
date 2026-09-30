@@ -4,12 +4,13 @@ Keep threads moving when a provider is overloaded or your subscription window is
 
 - Automatic retry after a provider overload, with a short delay that doubles on each attempt.
 - Automatic retry after a subscription limit, timed to the reset the provider reports.
+- Automatic "continue" when the app or its host daemon restarts mid-turn.
 - A queued message card on the thread that you can send now or cancel.
 - A cap of four retries per turn.
 
 ## How it works
 
-The plugin reacts to each failed turn. It only retries overload errors and subscription-window rate limits with a known reset time. Credit and spend limits are not retried. Each retry waits a little past the reset and adds a random spread. Many threads on one account then do not wake at the same instant.
+The plugin reacts to each failed turn. It only retries app restarts, overload errors and subscription-window rate limits with a known reset time. Credit and spend limits are not retried. Each retry waits a little past the reset and adds a random spread. Many threads on one account then do not wake at the same instant.
 
 ## Settings
 

@@ -606,7 +606,7 @@ describe("plugin update service and routes", () => {
           outcome: "incompatible",
           blocked: {
             version: incompatibleCommit,
-            reasons: [expect.stringContaining("requires bb >=99.0.0")],
+            reasons: [expect.stringContaining("requires Cloudroom >=99.0.0")],
           },
         },
       ],

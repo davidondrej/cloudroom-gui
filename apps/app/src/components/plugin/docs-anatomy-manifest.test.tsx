@@ -248,7 +248,7 @@ describe("docs anatomy manifest", () => {
     const actionLabels: Record<string, string> = {
       copy: "Copy message",
       edit: "Edit message",
-      "add-to-chat": "Add to chat",
+      "add-to-chat": "Include context",
       "send-to-main-thread": "Send to main thread",
       fork: "Fork into new thread",
       "plugin-actions": "Anatomy message action",

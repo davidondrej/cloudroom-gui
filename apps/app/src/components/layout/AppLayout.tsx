@@ -80,6 +80,7 @@ import {
 } from "@/lib/bb-desktop";
 import { useDesktopWindowState } from "@/hooks/useDesktopWindowState";
 import { useServerDaemonLogsCommand } from "@/hooks/useServerDaemonLogsCommand";
+import { useServerUpdateReload } from "@/hooks/useServerUpdateReload";
 import {
   getLegacyProjectComposeRoutePath,
   getSettingsProjectRoutePath,
@@ -358,6 +359,7 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  useServerUpdateReload();
   const quickCreateProject = useQuickCreateProjectController();
   const isCompactViewport = useIsCompactViewport();
   const store = useStore();

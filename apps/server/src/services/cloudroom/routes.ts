@@ -17,6 +17,7 @@ import { copyToMac, openOnMac, teleportingToLocal, teleportToLocal } from "./tel
 import { cloudEnvironmentRequestSchema, macVariables, sandboxThread, type CloudEnvironmentRequest } from "./sandboxes.js";
 import { CloudroomError } from "./client.js";
 import { archiveThreadAndChildren } from "../threads/thread-archive.js";
+import { reportBug } from "./bug-reports.js";
 
 export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   cloudroom(deps).teleportRecovery = () => teleports(deps).recover();
@@ -64,6 +65,10 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     return context.json({ ok: true });
   });
   app.get("/api/v1/cloudroom/account", async (context) => context.json(await cloudroomAccount(deps).status()));
+  app.post("/api/v1/cloudroom/bug-reports", async (context) => {
+    const input = z.object({ message: z.string().trim().min(1).max(4000), threadId: z.string().min(1).max(200).optional() }).strict().parse(await context.req.json());
+    return context.json(await reportBug(deps, input));
+  });
   app.post("/api/v1/cloudroom/account/mac-access", async (context) => {
     const input = z.object({ enabled: z.boolean() }).strict().parse(await context.req.json());
     await setMacAccess(deps, input.enabled);

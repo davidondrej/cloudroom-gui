@@ -94,6 +94,8 @@ export interface CloudroomArea {
   moveToSandbox(threadId: string): Promise<TeleportProgress>;
   /** Copies open BB threads into idle Local threads by forking their native sessions. Sends no prompts. */
   importBb(hostId: string): Promise<BbImportResult>;
+  /** Sends a Local agent's Cloudroom bug report. `sent` is false while bug reports are off in Settings. */
+  reportBug(input: { message: string; threadId?: string }): Promise<{ sent: boolean }>;
 }
 
 export interface BbImportResult {
@@ -141,6 +143,7 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     copyToMac: (threadId) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/teleport`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "copy" }) })) as Promise<{ branch: string }>,
     openCloudFile: (threadId, path) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/open-file`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path }) })) as Promise<{ path: string }>,
     importBb: (hostId) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/import/bb`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hostId }) })) as Promise<BbImportResult>,
+    reportBug: (input) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/bug-reports`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })) as Promise<{ sent: boolean }>,
     retryStart: (threadId) => transport.readVoid(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/retry-start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })),
   };
 }

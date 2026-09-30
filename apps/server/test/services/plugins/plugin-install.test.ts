@@ -824,7 +824,7 @@ describe("plugin install flows", () => {
           expect.objectContaining({
             status: "rejected",
             reason: expect.objectContaining({
-              message: expect.stringContaining("bb plugin update concurrent"),
+              message: expect.stringContaining("room-cli plugin update concurrent"),
             }),
           }),
         ]),
@@ -848,7 +848,7 @@ describe("plugin install flows", () => {
       });
       await commitAll(repoDir, "v0.2.0");
       await expect(service.install(source, { kind: "root" })).rejects.toThrow(
-        "bb plugin update fresh",
+        "room-cli plugin update fresh",
       );
       expect(
         service.list().find((plugin) => plugin.id === "fresh"),
@@ -886,7 +886,7 @@ describe("plugin install flows", () => {
       await commitAll(repoDir, "broken frontend");
 
       await expect(service.install(source, { kind: "root" })).rejects.toThrow(
-        "bb plugin update managed-frontend",
+        "room-cli plugin update managed-frontend",
       );
       expect(getInstalledPluginRegistration(db, "managed-frontend")).toEqual(
         registrationBefore,
@@ -960,7 +960,7 @@ describe("plugin install flows", () => {
       const source = `git:${repoDir}@main`;
       await expect(
         service.install(source, { kind: "root" }),
-      ).rejects.toThrowError(/install refused.*requires bb >=99\.0\.0/);
+      ).rejects.toThrowError(/install refused.*requires Cloudroom >=99\.0\.0/);
       expect(service.list()).toHaveLength(0);
       const managed = join(
         dataDir,
@@ -1046,7 +1046,7 @@ describe("plugin install flows", () => {
 
       await expect(
         service.install(source, { kind: "root" }),
-      ).rejects.toThrowError(/install refused.*requires bb >=0\.9\.0/u);
+      ).rejects.toThrowError(/install refused.*requires Cloudroom >=0\.9\.0/u);
       expect(materializationCount).toBe(clonesBefore);
       expect(
         getInstalledPluginRegistration(db, "cached-engine"),

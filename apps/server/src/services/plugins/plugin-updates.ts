@@ -230,7 +230,7 @@ export function createPluginUpdates(
           detail:
             `security check failed: ${url} now publishes "${ref}" as a branch, but this install ` +
             `${evidence === "tag" ? "recorded it as a tag" : "has no local record of its ref kind"}. ` +
-            `bb keeps the plugin pinned to ${row.gitResolvedCommit ?? "its recorded commit"} rather than ` +
+            `Cloudroom keeps the plugin pinned to ${row.gitResolvedCommit ?? "its recorded commit"} rather than ` +
             "tracking that branch. Remove the plugin and install it again to accept the new ref",
         };
       }

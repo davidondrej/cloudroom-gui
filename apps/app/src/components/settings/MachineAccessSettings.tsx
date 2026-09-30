@@ -298,7 +298,7 @@ function MachineAccessDetails({
               aria-label="Server address"
               aria-invalid={error !== null}
               value={draft ?? value}
-              placeholder={access?.effectiveUrl ?? "https://bb.example.com"}
+              placeholder={access?.effectiveUrl ?? "https://cloudroom.example.com"}
               disabled={disabled}
               onChange={(event) => machineAccess.editDraft(event.target.value)}
               onKeyDown={(event) => {

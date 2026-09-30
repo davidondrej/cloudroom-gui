@@ -30,7 +30,7 @@ export function Overview() {
             />
           </HoverRevealStage>
         </StoryRow>
-        <StoryRow label="user message" hint="Copy + Add to chat">
+        <StoryRow label="user message" hint="Copy + Include context">
           <HoverRevealStage>
             <MessageActionBar
               messageText="A user message you can quote into the composer."

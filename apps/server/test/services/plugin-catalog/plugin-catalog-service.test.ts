@@ -207,17 +207,17 @@ describe("plugin catalog service", () => {
       ],
       source: "builtin:docs",
       marketplace: "bb-official",
-      marketplaceDisplayName: "BB Official",
+      marketplaceDisplayName: "Cloudroom Official",
       publisherKey: "bb-official",
-      publisherLabel: "BB Official",
-      author: { name: "BB", url: null },
+      publisherLabel: "Cloudroom Official",
+      author: { name: "Cloudroom", url: null },
       installed: false,
       compatible: true,
     });
     expect(catalog.collections()).toEqual([
       {
         id: "bb-official",
-        displayName: "BB Official",
+        displayName: "Cloudroom Official",
         pluginIds: BUNDLED_PLUGINS.map((plugin) => plugin.pluginId),
       },
     ]);
@@ -560,7 +560,7 @@ describe("plugin catalog service", () => {
       expect(catalog.collections()).toEqual([
         {
           id: "bb-official",
-          displayName: "BB Official",
+          displayName: "Cloudroom Official",
           pluginIds: BUNDLED_PLUGINS.map((plugin) => plugin.pluginId),
         },
         {
@@ -604,7 +604,7 @@ describe("plugin catalog service", () => {
       expect(catalog.collections()).toEqual([
         {
           id: "bb-official",
-          displayName: "BB Official",
+          displayName: "Cloudroom Official",
           pluginIds: BUNDLED_PLUGINS.map((plugin) => plugin.pluginId),
         },
       ]);

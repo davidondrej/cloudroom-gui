@@ -1886,7 +1886,7 @@ export function ExtensionsPluginPageWireframe() {
             <PluginGlyph className="size-4" />
             <span className="text-sm font-semibold text-foreground">Hello</span>
             <span className="rounded border border-border px-1.5 py-0.5 text-xs">
-              BB Official
+              Cloudroom Official
             </span>
             <span className="flex-1" />
             <span

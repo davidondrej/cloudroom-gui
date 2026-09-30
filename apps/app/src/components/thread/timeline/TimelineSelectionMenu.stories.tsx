@@ -129,7 +129,7 @@ export function Interactive() {
           <AgentMessageWithMenu
             selected="flip reads over once every row is populated"
             handlers={{
-              onAddToChat: (text) => push(`Add to chat: "${text}"`),
+              onAddToChat: (text) => push(`Include context: "${text}"`),
               onDismiss: () => push("Dismissed"),
             }}
           />

@@ -998,7 +998,7 @@ export function createPluginCatalogService(deps: {
           const name = materialized.catalog.name;
           if (isReservedMarketplace(name)) {
             throw new Error(
-              `marketplace name "${name}" is reserved for a marketplace that ships with bb`,
+              `marketplace name "${name}" is reserved for a marketplace that ships with Cloudroom`,
             );
           }
           if (getPluginMarketplace(deps.db, name) !== undefined) {

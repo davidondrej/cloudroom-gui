@@ -41,7 +41,7 @@ describe("marketplace publisher labels", () => {
     ).toBe("Acme Plugins");
   });
 
-  it("refuses a reserved label to a marketplace that is not BB's", () => {
+  it("refuses a reserved label to a marketplace that is not its publisher's", () => {
     const labels = publisherLabels([
       { marketplaceName: "acme", displayName: "BB Official" },
     ]);
@@ -54,12 +54,15 @@ describe("marketplace publisher labels", () => {
         labels,
       }),
     ).toBe("acme");
-    expect(
-      marketplacePublisherLabel({
-        marketplaceName: "acme",
-        displayName: "BB Community",
-      }),
-    ).toBe("acme");
+    for (const displayName of [
+      "Cloudroom Official",
+      "BB Official",
+      "BB Community",
+    ]) {
+      expect(
+        marketplacePublisherLabel({ marketplaceName: "acme", displayName }),
+      ).toBe("acme");
+    }
     expect(
       marketplacePublisherLabel({
         marketplaceName: "bb-community",
@@ -76,7 +79,7 @@ describe("marketplace publisher labels", () => {
     }
   });
 
-  it("keeps a store-installed bundled plugin on BB Official", () => {
+  it("keeps a store-installed bundled plugin on Cloudroom Official", () => {
     const labels = publisherLabels([
       { marketplaceName: "bb-community", displayName: "BB Community" },
     ]);
@@ -88,11 +91,18 @@ describe("marketplace publisher labels", () => {
         catalogMarketplaceName: "bb-community",
         labels,
       }),
-    ).toBe("BB Official");
+    ).toBe("Cloudroom Official");
   });
 
-  it("badges bundled plugins BB Official and user installs not at all", () => {
+  it("badges bundled plugins Cloudroom Official and user installs not at all", () => {
     const labels = publisherLabels([]);
+
+    expect(
+      marketplacePublisherLabel({
+        marketplaceName: "bb-official",
+        displayName: "BB Official",
+      }),
+    ).toBe("Cloudroom Official");
 
     expect(
       pluginPublisherLabel({
@@ -101,7 +111,7 @@ describe("marketplace publisher labels", () => {
         catalogMarketplaceName: null,
         labels,
       }),
-    ).toBe("BB Official");
+    ).toBe("Cloudroom Official");
     expect(
       pluginPublisherLabel({
         sourceKind: "git",
@@ -112,7 +122,7 @@ describe("marketplace publisher labels", () => {
     ).toBeNull();
   });
 
-  it("does not reuse BB Official for the marketplace bb curates", () => {
+  it("does not reuse Cloudroom Official for the marketplace BB curates", () => {
     expect(BUNDLED_CURATED_MARKETPLACE.displayName).toBe("BB Marketplace");
   });
 });

@@ -32,9 +32,9 @@ const MEMORY_ENTRY: PluginCatalogSearchEntry = {
   source: "builtin:memory",
   repositoryUrl: null,
   marketplace: "bb-official",
-  marketplaceDisplayName: "BB Official",
+  marketplaceDisplayName: "Cloudroom Official",
   publisherKey: "bb-official",
-  publisherLabel: "BB Official",
+  publisherLabel: "Cloudroom Official",
   official: true,
   author: {
     name: "BB",
@@ -169,7 +169,7 @@ describe("BrowsePluginsTab", () => {
       "Tasks & Workflows",
     ]);
     expect(screen.getAllByText("Memory")).toHaveLength(2);
-    expect(screen.queryByText("BB Official plugins")).toBeNull();
+    expect(screen.queryByText("Cloudroom Official plugins")).toBeNull();
   });
 
   it("round trips the search parameter", async () => {
@@ -526,7 +526,7 @@ describe("BrowsePluginsTab", () => {
       entryId: "memory",
       pluginId: "memory",
       marketplace: "bb-official",
-      publisherLabel: "BB Official",
+      publisherLabel: "Cloudroom Official",
       displayName: "Memory",
       icon: "Brain",
       iconUrl: null,

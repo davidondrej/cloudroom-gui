@@ -607,7 +607,8 @@ def run(folder):
                     if denied:
                         raise denied
                     desired = {}
-                    for core in listed:
+                    # Sandboxes first, so a VM that turns this Mac away can't block their Mac access.
+                    for core in sorted(listed, key=lambda core: not core.sandbox):
                         try:
                             metadata = core.request('/device', {'device': config['device'], 'public_key': identity(folder)})
                             for entry in core.request('')['previews']:

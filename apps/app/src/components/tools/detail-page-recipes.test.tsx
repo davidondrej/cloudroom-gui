@@ -125,7 +125,7 @@ const PLUGIN: PluginListItem = makePluginListItem({
   provenance: "catalog",
   catalogEntryId: "github",
   publisherLabel: "BB Community",
-  sourceDisplay: "BB Official · GitHub",
+  sourceDisplay: "Cloudroom Official · GitHub",
 });
 
 function renderPlugin(
@@ -258,7 +258,7 @@ describe("Plugin detail recipe", () => {
     ).toBeNull();
 
     for (const item of [
-      "bb gh",
+      "room-cli gh",
       "review",
       "gh_search",
       "Pull requests",

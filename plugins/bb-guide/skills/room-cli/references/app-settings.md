@@ -173,7 +173,7 @@ This blocks common catastrophic shell commands; it is not a sandbox.
   environment picker. Machine-only pickers add search when they contain more
   than five machines.
 
-Machine access: `room-cli settings general machineServerUrl https://bb.example.com`
+Machine access: `room-cli settings general machineServerUrl https://cloudroom.example.com`
 sets the server URL reachable by machines. Set `null` to use BB_EXTERNAL_URL.
 `room-cli settings general defaultMachineAccess direct` selects direct access;
 `connect` selects bb Cloud; `null` selects the first registered access provider,

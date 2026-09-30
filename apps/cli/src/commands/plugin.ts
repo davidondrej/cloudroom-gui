@@ -661,7 +661,7 @@ function installPlanSummary(plan: PluginCatalogInstallPlan): string {
       : `${plan.author.name} (${plan.author.url})`;
   return [
     `Installing ${plan.displayName} (${plan.entryId}@${plan.marketplace})`,
-    `  marketplace: ${plan.marketplaceDisplayName} — a third-party marketplace, not reviewed by BB`,
+    `  marketplace: ${plan.marketplaceDisplayName} — a third-party marketplace, not reviewed by Cloudroom`,
     `  author: ${author}`,
     ...resolvedSourceLines(plan.resolvedSource),
   ].join("\n");
@@ -1021,7 +1021,7 @@ export function registerPluginCommands(
   plugin
     .command("install <source>")
     .description(
-      "Install a catalog entry by name or <entry>@<marketplace>, a Git repository URL, a local path, builtin:<name>, git:<url>[@<ref|semver-range>], or npm:<name>@<version>. A catalog entry from a third-party marketplace is not reviewed by BB, so its confirmation names the marketplace, the author, and the exact resolved source (managed sources validate engines ranges and build artifacts; bundled plugin ids are reserved)",
+      "Install a catalog entry by name or <entry>@<marketplace>, a Git repository URL, a local path, builtin:<name>, git:<url>[@<ref|semver-range>], or npm:<name>@<version>. A catalog entry from a third-party marketplace is not reviewed by Cloudroom, so its confirmation names the marketplace, the author, and the exact resolved source (managed sources validate engines ranges and build artifacts; bundled plugin ids are reserved)",
     )
     .option(
       "--subdirectory <path>",

@@ -179,7 +179,7 @@ instead of `--path` to clone the project's Git remote there; `--remote-url` and
 ## Server access
 
 Set Machines → Server URL reachable by machines, or run `room-cli settings general
-machineServerUrl https://bb.example.com`. An unset value uses BB_EXTERNAL_URL.
+machineServerUrl https://cloudroom.example.com`. An unset value uses BB_EXTERNAL_URL.
 Select Manual to show the URL input. Set Default machine access with
 `room-cli settings general defaultMachineAccess direct` or `connect`; `null` uses
 the first registered access provider, or direct when none is registered. An

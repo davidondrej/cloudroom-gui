@@ -33,7 +33,7 @@ const official = {
 const bundled = {
   ...official,
   name: "bb-official",
-  displayName: "BB Official",
+  displayName: "Cloudroom Official",
   sourceKind: "path" as const,
   source: "/app/builtin-plugins",
   entryCount: 25,

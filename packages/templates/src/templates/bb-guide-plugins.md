@@ -436,14 +436,14 @@ manifest, is not a plugin itself, and neither flag is given, the install fails
 and lists the entry names. cloudroom records the subdirectory, so outdated, update,
 rollback, and remove keep working per plugin.
 
-BB Official plugins
+Cloudroom Official plugins
 
 Cloudroom's official plugins ship inside the app. The reserved `bb-official`
 marketplace describes these plugins with the standard v2 format. Its catalog
 uses a local path. It never uses the network. `room-cli marketplace list` shows it
 first. You cannot add or remove it.
 
-The plugins appear in the first Browse shelf, BB Official. They also appear in
+The plugins appear in the first Browse shelf, Cloudroom Official. They also appear in
 their category shelves. Install a plugin by its bare name or its qualified name.
 For example, use
 `room-cli plugin install docs` or `room-cli plugin install docs@bb-official`. cloudroom copies the
@@ -473,7 +473,7 @@ and shows them in the store and in the Installs column of `room-cli plugin searc
 BB computes these counts; Cloudroom only displays them. No third-party
 marketplace has counts.
 
-BB Official entries use the same counts. cloudroom finds each count in the Cloudroom
+Cloudroom Official entries use the same counts. cloudroom finds each count in the Cloudroom
 Community `stats.json` file by the plugin id.
 
 Third-party marketplaces
@@ -524,12 +524,12 @@ becomes a direct install that keeps its full source intent and exact
 resolution, so `room-cli plugin outdated` and `room-cli plugin update` keep working from
 the recorded source. Only the catalog rows and the cached icons are deleted.
 
-The Browse tab groups entries by publisher: BB Official for the plugins
+The Browse tab groups entries by publisher: Cloudroom Official for the plugins
 bundled with the app, BB Marketplace for the curated marketplace's listings, and
 each third-party marketplace under its own display name. Grouping keys on the
 marketplace identity, not on the display name, so a marketplace cannot join
 another publisher's group by copying its name. Only the two reserved
-marketplaces can use the BB Official or BB Marketplace labels. Entry cards show
+marketplaces can use the Cloudroom Official or BB Marketplace labels. Entry cards show
 the author.
 
 For direct git:/npm: installs, updates are manual: `room-cli plugin outdated`
@@ -899,7 +899,7 @@ in a checkout). The builtin `inline-vis` plugin renders
 path-shaped, sandboxed worktree HTML iframe preview; `height` is optional.
 Its card header includes an open-in-sidebar action for the source HTML file.
 The `plugins/` directory contains every bundled plugin: the auto-installed
-builtins and the store-only BB Official GitHub, Docs, Memory, and Tasks
+builtins and the store-only Cloudroom Official GitHub, Docs, Memory, and Tasks
 plugins. The `examples/plugins/` reference plugins cover slack-bot (webhook
 bot), agent-enrichment (agent surfaces), and composer-customization (all
 composer regions). Thread Hover

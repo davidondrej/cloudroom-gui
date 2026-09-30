@@ -42,7 +42,7 @@ describe("pluginRowSignal (the one-signal rule)", () => {
       pluginRowSignal(
         plugin({
           blockedVersion: "1.9.0",
-          blockedReasons: ["requires bb >= 0.15"],
+          blockedReasons: ["requires Cloudroom >= 0.15"],
         }),
       ),
     ).toBeNull();

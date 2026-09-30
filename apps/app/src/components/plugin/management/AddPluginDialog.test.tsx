@@ -31,13 +31,13 @@ function installPlanFor(url: string): unknown {
     marketplace,
     marketplaceDisplayName:
       marketplace === "bb-official"
-        ? "BB Official"
+        ? "Cloudroom Official"
         : marketplace === "bb-community"
           ? "BB Community"
           : "Acme Plugins",
     publisherLabel:
       marketplace === "bb-official"
-        ? "BB Official"
+        ? "Cloudroom Official"
         : marketplace === "bb-community"
           ? "BB Community"
           : "Acme Plugins",
@@ -228,7 +228,7 @@ describe("AddPluginDialog", () => {
       entryId: "linear",
       pluginId: "linear",
       marketplace: "bb-official",
-      publisherLabel: "BB Official",
+      publisherLabel: "Cloudroom Official",
       displayName: "Linear",
       icon: "Github",
       iconUrl: null,
@@ -304,7 +304,7 @@ describe("AddPluginDialog", () => {
       entryId: "linear",
       pluginId: "linear",
       marketplace: "bb-official",
-      publisherLabel: "BB Official",
+      publisherLabel: "Cloudroom Official",
       displayName: "Linear",
       icon: "Github",
       iconUrl: null,
@@ -361,7 +361,7 @@ describe("AddPluginDialog", () => {
           entryId: "linear",
           pluginId: "linear",
           marketplace: "bb-official",
-          publisherLabel: "BB Official",
+          publisherLabel: "Cloudroom Official",
           displayName: "Linear",
           icon: "Github",
           iconUrl: null,
@@ -392,14 +392,14 @@ describe("AddPluginDialog", () => {
   it("names and links a catalog plugin when installation fails", async () => {
     const errorToast = vi.spyOn(appToast, "error").mockReturnValue("toast");
     stubFetch(
-      { ok: false, error: "requires bb >= 0.15 — you have 0.14.1" },
+      { ok: false, error: "requires Cloudroom >= 0.15 — you have 0.14.1" },
       422,
     );
     renderDialog({
       entryId: "linear",
       pluginId: "linear",
       marketplace: "bb-official",
-      publisherLabel: "BB Official",
+      publisherLabel: "Cloudroom Official",
       displayName: "Linear",
       icon: null,
       iconUrl: null,
@@ -412,7 +412,7 @@ describe("AddPluginDialog", () => {
       expect(errorToast).toHaveBeenCalledTimes(1);
     });
     expect(screen.getByRole("alert").textContent).toBe(
-      "requires bb >= 0.15 — you have 0.14.1",
+      "requires Cloudroom >= 0.15 — you have 0.14.1",
     );
     expect(errorToast.mock.calls[0]?.[0]).toBe("Plugin installation failed");
     render(
@@ -421,7 +421,7 @@ describe("AddPluginDialog", () => {
     const pluginLink = screen.getByRole("link", { name: "Linear" });
     expect(pluginLink.getAttribute("href")).toBe("/plugins/linear");
     expect(pluginLink.parentElement?.textContent).toBe(
-      "Linear — requires bb >= 0.15 — you have 0.14.1",
+      "Linear — requires Cloudroom >= 0.15 — you have 0.14.1",
     );
   });
 
@@ -449,7 +449,9 @@ describe("AddPluginDialog", () => {
         .getAttribute("href"),
     ).toBe("https://github.com/acme/plugins.git");
     expect(screen.getByText("^1.0.0")).toBeTruthy();
-    expect(screen.getByText(/third-party marketplace/)).toBeTruthy();
+    expect(
+      screen.getByText(/third-party marketplace that Cloudroom does not review/),
+    ).toBeTruthy();
     expect(screen.getByText("Acme Plugins")).toBeTruthy();
     expect(
       requests.some((request) =>
@@ -484,7 +486,7 @@ describe("AddPluginDialog", () => {
       entryId: "linear",
       pluginId: "linear",
       marketplace: "bb-official",
-      publisherLabel: "BB Official",
+      publisherLabel: "Cloudroom Official",
       displayName: "Linear",
       icon: "Github",
       iconUrl: null,

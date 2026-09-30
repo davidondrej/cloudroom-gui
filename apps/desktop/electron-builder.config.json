@@ -42,6 +42,7 @@
     "identity": null,
     "notarize": false,
     "extendInfo": {
+      "CFBundleAlternateNames": ["Room"],
       "NSDesktopFolderUsageDescription": "Cloudroom agents read and write files you ask them to work on.",
       "NSDocumentsFolderUsageDescription": "Cloudroom agents read and write files you ask them to work on.",
       "NSDownloadsFolderUsageDescription": "Cloudroom agents read and write files you ask them to work on."

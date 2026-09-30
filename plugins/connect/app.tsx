@@ -464,7 +464,8 @@ function MobileAppSection({ url }: { url: string }) {
     <section className="space-y-2.5 border-t border-border-seam pt-4">
       <h3 className="text-sm font-semibold">Cloudroom mobile app</h3>
       <p className="text-xs text-muted-foreground">
-        Open the URL above on your phone and sign in to your BB Connect account.
+        Open the URL above on your phone. Remote access uses BB Connect, so sign
+        in with the BB Connect account you used to connect this machine.
         On iPhone, use Safari&apos;s Share menu and choose Add to Home Screen.
         On Android, use your browser&apos;s Install app or Add to Home screen
         menu.

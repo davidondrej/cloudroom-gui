@@ -12,6 +12,7 @@ export const RESERVED_BB_CLI_COMMANDS: readonly string[] = [
   "plugin",
   "project",
   "provider",
+  "report",
   "settings",
   "skill",
   "status",

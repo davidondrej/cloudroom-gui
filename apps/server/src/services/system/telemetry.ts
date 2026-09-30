@@ -60,8 +60,11 @@ export type TelemetryEvent =
       };
     };
 
+export type PluginTelemetryProperties = Record<string, string | number | boolean | null>;
+
 export interface TelemetryService {
   capture(event: TelemetryEvent): void;
+  capturePlugin(pluginId: string, name: string, properties: PluginTelemetryProperties): void;
   setEnabled(enabled: boolean): void;
 }
 
@@ -79,6 +82,7 @@ interface CreateTelemetryServiceArgs {
 
 const noopTelemetryService: TelemetryService = {
   capture: () => {},
+  capturePlugin: () => {},
   setEnabled: () => {},
 };
 
@@ -116,40 +120,40 @@ export async function createTelemetryService(
     cloudroom_version: args.desktopVersion ?? null,
     platform: process.platform,
   };
+  const send = (name: string, eventProperties: object): void => {
+    if (!telemetryEnabled) return;
+    const appSurface = telemetryAppSurfaceStorage.getStore() ?? args.appSurface;
+    const body = JSON.stringify({
+      api_key: args.apiKey,
+      distinct_id: distinctId,
+      event: name,
+      properties: {
+        ...commonProperties,
+        ...eventProperties,
+        app_surface: appSurface,
+      },
+      timestamp: new Date().toISOString(),
+    });
+    fetch(POSTHOG_INGESTION_URL, {
+      body,
+      headers: { "content-type": "application/json" },
+      method: "POST",
+    }).catch((error: unknown) => {
+      args.logger.debug(
+        { app_surface: appSurface, err: error, event: name },
+        "Telemetry event send failed",
+      );
+    });
+  };
   return {
     setEnabled(enabled: boolean): void {
       telemetryEnabled = enabled;
     },
+    capturePlugin(pluginId, name, properties): void {
+      send(name, { ...properties, plugin_id: pluginId });
+    },
     capture(event: TelemetryEvent): void {
-      if (!telemetryEnabled) return;
-      const appSurface =
-        telemetryAppSurfaceStorage.getStore() ?? args.appSurface;
-      const eventProperties = "properties" in event ? event.properties : {};
-      const body = JSON.stringify({
-        api_key: args.apiKey,
-        distinct_id: distinctId,
-        event: event.name,
-        properties: {
-          ...commonProperties,
-          ...eventProperties,
-          app_surface: appSurface,
-        },
-        timestamp: new Date().toISOString(),
-      });
-      fetch(POSTHOG_INGESTION_URL, {
-        body,
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      }).catch((error: unknown) => {
-        args.logger.debug(
-          {
-            app_surface: appSurface,
-            err: error,
-            event: event.name,
-          },
-          "Telemetry event send failed",
-        );
-      });
+      send(event.name, "properties" in event ? event.properties : {});
     },
   };
 }

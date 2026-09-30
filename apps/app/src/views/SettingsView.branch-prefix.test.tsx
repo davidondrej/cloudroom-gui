@@ -47,6 +47,8 @@ function renderSection(overrides?: {
         onTelemetryEnabledChange={
           overrides?.onTelemetryEnabledChange ?? vi.fn()
         }
+        bugReportsEnabled
+        onBugReportsEnabledChange={vi.fn()}
       />
     </>,
   );

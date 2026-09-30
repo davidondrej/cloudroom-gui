@@ -184,6 +184,8 @@ interface PrivacySettingsSectionProps {
   streamerMode: boolean;
   telemetryEnabled: boolean;
   onTelemetryEnabledChange: (enabled: boolean) => void;
+  bugReportsEnabled: boolean;
+  onBugReportsEnabledChange: (enabled: boolean) => void;
   disabled: boolean;
   enabled: boolean;
   onEnabledChange: (enabled: boolean) => void;
@@ -952,6 +954,8 @@ export function PrivacySettingsSection({
   onStreamerModeChange,
   telemetryEnabled,
   onTelemetryEnabledChange,
+  bugReportsEnabled,
+  onBugReportsEnabledChange,
 }: PrivacySettingsSectionProps) {
   return (
     <SettingsSection title="Privacy & diagnostics">
@@ -977,6 +981,18 @@ export function PrivacySettingsSection({
             disabled={disabled}
             onCheckedChange={onTelemetryEnabledChange}
             aria-label="Share anonymous usage data"
+          />
+        </SettingsWithControl>
+
+        <SettingsWithControl
+          label="Send bug reports"
+          description="Let your agents report Cloudroom bugs they run into, so we can fix them fast. Reports describe what went wrong, never your code or secrets."
+        >
+          <Switch
+            checked={bugReportsEnabled}
+            disabled={disabled}
+            onCheckedChange={onBugReportsEnabledChange}
+            aria-label="Send bug reports"
           />
         </SettingsWithControl>
 
@@ -1305,6 +1321,13 @@ export function SettingsView() {
             updateGeneralSettingsMutation.mutate({
               ...generalSettings,
               telemetryEnabled: enabled,
+            })
+          }
+          bugReportsEnabled={generalSettings.bugReportsEnabled}
+          onBugReportsEnabledChange={(enabled) =>
+            updateGeneralSettingsMutation.mutate({
+              ...generalSettings,
+              bugReportsEnabled: enabled,
             })
           }
           streamerMode={generalSettings.streamerMode}

@@ -129,7 +129,7 @@ describe("MessageActionBar", () => {
       [...container.querySelectorAll<HTMLButtonElement>("button[aria-label]")]
         .map((button) => button.getAttribute("aria-label"))
         .filter((label) => label !== "Message actions"),
-    ).toEqual(["Copy message", "Add to chat", "Fork into new thread"]);
+    ).toEqual(["Copy message", "Include context", "Fork into new thread"]);
   });
 
   it("keeps the same agent action order in the mobile overflow", () => {
@@ -152,7 +152,7 @@ describe("MessageActionBar", () => {
       within(content)
         .getAllByRole("button")
         .map((button) => button.textContent),
-    ).toEqual(["Copy message", "Add to chat", "Fork into new thread"]);
+    ).toEqual(["Copy message", "Include context", "Fork into new thread"]);
   });
 
   it("renders plugin actions after the native ones and fires their handlers", () => {
@@ -182,7 +182,7 @@ describe("MessageActionBar", () => {
         .filter((label) => label !== "Message actions"),
     ).toEqual([
       "Copy message",
-      "Add to chat",
+      "Include context",
       "Fork into new thread",
       "Summarize",
     ]);
@@ -250,7 +250,7 @@ describe("MessageActionBar", () => {
       />,
     );
 
-    const button = screen.getByRole("button", { name: "Add to chat" });
+    const button = screen.getByRole("button", { name: "Include context" });
     fireEvent.click(button);
     expect(onAddToChat).toHaveBeenCalledWith("Quote this message.");
   });
@@ -273,7 +273,7 @@ describe("MessageActionBar", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Add to chat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Include context" }));
     expect(onAddToChat).toHaveBeenCalledWith("Quote this message.", [
       attachment,
     ]);
@@ -297,7 +297,7 @@ describe("MessageActionBar", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Add to chat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Include context" }));
     expect(onAddToChat).toHaveBeenCalledWith("", [attachment]);
   });
 
@@ -369,7 +369,7 @@ describe("MessageActionBar", () => {
     expect(document.body.querySelector("[data-vaul-drawer]")).toBeNull();
 
     fireEvent.click(
-      within(content!).getByRole("button", { name: "Add to chat" }),
+      within(content!).getByRole("button", { name: "Include context" }),
     );
 
     expect(onAddToChat).toHaveBeenCalledWith("Quote this message.");
@@ -438,7 +438,7 @@ describe("MessageActionBar", () => {
       screen
         .getAllByRole("button")
         .map((button) => button.getAttribute("aria-label")),
-    ).toEqual(["Copy message", "Add to chat", "Fork into new thread"]);
+    ).toEqual(["Copy message", "Include context", "Fork into new thread"]);
     expect(
       screen.queryByRole("button", { name: "Message actions" }),
     ).toBeNull();
@@ -459,7 +459,7 @@ describe("MessageActionBar", () => {
     resizeObserver.reportWidth(44);
 
     expect(screen.getByRole("button", { name: "Copy message" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Add to chat" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Include context" })).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Fork into new thread" }),
     ).toBeNull();
@@ -468,7 +468,7 @@ describe("MessageActionBar", () => {
     expect(
       screen.getByRole("menuitem", { name: "Fork into new thread" }),
     ).toBeTruthy();
-    fireEvent.click(screen.getByRole("menuitem", { name: "Add to chat" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Include context" }));
     expect(onAddToChat).toHaveBeenCalledWith("An answer.");
   });
 
@@ -489,7 +489,7 @@ describe("MessageActionBar", () => {
     fireEvent.pointerDown(screen.getByRole("button", { name: "More actions" }));
     expect(
       screen.getAllByRole("menuitem").map((item) => item.textContent),
-    ).toEqual(["Copy message", "Add to chat", "Fork into new thread"]);
+    ).toEqual(["Copy message", "Include context", "Fork into new thread"]);
   });
 
   it("collapses touch inline actions that do not fit into the mobile popover", () => {
@@ -520,7 +520,7 @@ describe("MessageActionBar", () => {
       within(content)
         .getAllByRole("button")
         .map((button) => button.textContent),
-    ).toEqual(["Add to chat", "Fork into new thread"]);
+    ).toEqual(["Include context", "Fork into new thread"]);
     fireEvent.click(
       within(content).getByRole("button", { name: "Fork into new thread" }),
     );
@@ -550,10 +550,10 @@ describe("MessageActionBar", () => {
       screen
         .getAllByRole("button")
         .map((button) => button.getAttribute("aria-label")),
-    ).toEqual(["Copy message", "Add to chat", "Fork into new thread"]);
+    ).toEqual(["Copy message", "Include context", "Fork into new thread"]);
     expect(document.body.querySelector('[data-side="top"]')).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Add to chat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Include context" }));
     expect(onAddToChat).toHaveBeenCalledWith("An answer.");
     expect(
       screen.getByRole("button", { name: "Message actions" }),
@@ -617,7 +617,7 @@ describe("MessageActionBar", () => {
       within(content)
         .getAllByRole("button")
         .map((button) => button.textContent),
-    ).toEqual(["Copy message", "Add to chat", "Fork into new thread"]);
+    ).toEqual(["Copy message", "Include context", "Fork into new thread"]);
   });
 
   it("mounts the tooltip bar on fine-pointer viewports", () => {
@@ -687,7 +687,7 @@ describe("MessageActionBar observer budget", () => {
       screen
         .getAllByRole("button")
         .map((button) => button.getAttribute("aria-label")),
-    ).toEqual(["Copy message", "Add to chat", "Fork into new thread"]);
+    ).toEqual(["Copy message", "Include context", "Fork into new thread"]);
   });
 
   it("constructs only the slot observer for a desktop bar under the shared column width", () => {

@@ -6,6 +6,7 @@ import {
 
 const RESERVED_PUBLISHER_LABELS: ReadonlySet<string> = new Set([
   BUILTIN_PUBLISHER_LABEL,
+  "BB Official",
   "BB Community",
   "BB Marketplace",
 ]);
@@ -17,7 +18,7 @@ export function marketplacePublisherLabel(args: {
   if (args.marketplaceName === CURATED_PLUGIN_MARKETPLACE_NAME)
     return "BB Marketplace";
   if (args.marketplaceName === BUNDLED_MARKETPLACE_NAME)
-    return args.displayName;
+    return BUILTIN_PUBLISHER_LABEL;
   return RESERVED_PUBLISHER_LABELS.has(args.displayName)
     ? args.marketplaceName
     : args.displayName;

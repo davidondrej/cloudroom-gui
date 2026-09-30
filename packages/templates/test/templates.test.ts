@@ -51,7 +51,7 @@ describe("@bb/templates", () => {
   });
 
   it("renders standardAgentAppendInstructions without user-question guidance", () => {
-    const rendered = renderTemplate("standardAgentAppendInstructions", {});
+    const rendered = renderTemplate("standardAgentAppendInstructions", { bugReports: "" });
 
     expect(rendered).toContain("You are working inside Cloudroom");
     expect(rendered).toContain("IDE for managing coding agents");

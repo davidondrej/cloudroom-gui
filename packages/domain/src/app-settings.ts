@@ -28,6 +28,7 @@ export const appSettingsSchema = z
     telemetryEnabled: z.boolean(),
     commandGuardEnabled: z.boolean().default(true),
     systemPromptEnabled: z.boolean().default(true),
+    bugReportsEnabled: z.boolean().default(true),
     managedBranchPrefix: managedBranchPrefixSchema,
     machineServerUrl: z
       .string()
@@ -58,6 +59,7 @@ export const defaultAppSettings: AppSettings = {
   telemetryEnabled: true,
   commandGuardEnabled: true,
   systemPromptEnabled: true,
+  bugReportsEnabled: true,
   managedBranchPrefix: DEFAULT_MANAGED_BRANCH_PREFIX,
   machineServerUrl: null,
   defaultMachineAccess: null,
@@ -68,12 +70,14 @@ export const appSettingsUpdateSchema = z.union([
   appSettingsSchema.extend({
     commandGuardEnabled: z.boolean().optional(),
     systemPromptEnabled: z.boolean().optional(),
+    bugReportsEnabled: z.boolean().optional(),
     telemetryEnabled: z.boolean().optional(),
     showUnhandledProviderEvents: z.boolean().optional(),
   }),
   appSettingsSchema.omit({ showDiagnosticEvents: true }).extend({
     commandGuardEnabled: z.boolean().optional(),
     systemPromptEnabled: z.boolean().optional(),
+    bugReportsEnabled: z.boolean().optional(),
     telemetryEnabled: z.boolean().optional(),
     showUnhandledProviderEvents: z.boolean(),
   }),

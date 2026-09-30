@@ -83,7 +83,7 @@ export class SandboxDirectory {
   // After a failed wake, wait before asking again: 5 s, doubling to 5 minutes. Delivery retries every tick otherwise.
   private readonly backoff = new Map<string, { until: number; delay: number }>();
   private uploaded = new Map<string, string>();
-  constructor(private readonly account: () => Promise<SandboxAccount | null>) {}
+  constructor(readonly account: () => Promise<SandboxAccount | null>) {}
 
   private async call(body: Record<string, unknown>, path = "sandboxes"): Promise<unknown> {
     const account = await this.account();
