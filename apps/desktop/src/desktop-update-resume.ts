@@ -84,22 +84,28 @@ async function waitUntilStopped(serverUrl: string, ids: string[]) {
   }
 }
 
-export async function stopThreadsForUpdate(
-  args: UpdateResumeArgs,
-): Promise<void> {
+export async function runningLocalThreadIds(
+  serverUrl: string,
+): Promise<string[]> {
   const running = runningThreadsSchema.parse(
-    await requestJson(args.serverUrl, "/threads/running"),
+    await requestJson(serverUrl, "/threads/running"),
   );
   const threads = await Promise.all(
-    running.map(({ id }) => getThread(args.serverUrl, id)),
+    running.map(({ id }) => getThread(serverUrl, id)),
   );
-  const ids = running
+  return running
     .filter(
       (_entry, index) =>
         isLocalThread(threads[index]!) &&
         RUNNING_STATUSES.has(threads[index]!.status),
     )
     .map(({ id }) => id);
+}
+
+export async function stopThreadsForUpdate(
+  args: UpdateResumeArgs,
+): Promise<void> {
+  const ids = await runningLocalThreadIds(args.serverUrl);
   if (ids.length === 0) {
     return;
   }

@@ -4,8 +4,14 @@ import { useSystemVersion } from "@/hooks/queries/system-queries";
 
 const TOAST_ID = "server-updated";
 
-/** A window viewing another Mac's server keeps running the build it loaded after that server updates. The
- *  version is refetched on every reconnect (a server update restarts it), so a change offers a reload. */
+function composerHasContent(): boolean {
+  return (
+    [...document.querySelectorAll("[data-promptbox-editor-content]")].some(
+      (editor) => editor.textContent?.trim(),
+    ) || document.querySelector("[data-promptbox-attachments]") !== null
+  );
+}
+
 export function useServerUpdateReload(): void {
   const version = useSystemVersion().data?.desktopVersion;
   const loaded = useRef<string | undefined>(undefined);
@@ -13,6 +19,10 @@ export function useServerUpdateReload(): void {
     if (!version) return;
     loaded.current ??= version;
     if (version === loaded.current) return;
+    if (!composerHasContent()) {
+      window.location.reload();
+      return;
+    }
     appToast.message("Cloudroom was updated", {
       id: TOAST_ID,
       duration: Infinity,

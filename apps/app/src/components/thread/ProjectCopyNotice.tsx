@@ -12,6 +12,7 @@ import { FixPrompt } from "@/components/ui/fix-prompt";
 import { projectFilesFixPrompt } from "@/lib/fix-prompts";
 
 const megabytes = (bytes: number) => Math.max(1, Math.round(bytes / 1e6));
+const timeLeft = (seconds: number) => seconds < 60 ? "under a minute left" : `about ${Math.round(seconds / 60)} min left`;
 
 export function ProjectCopyNotice({ thread }: { thread: Thread }) {
   const [, rerender] = useReducer((count: number) => count + 1, 0);
@@ -25,7 +26,7 @@ export function ProjectCopyNotice({ thread }: { thread: Thread }) {
     : progress.phase === "cloning"
       ? "Cloning from GitHub…"
       : progress.total
-        ? `Copying files from your Mac… ${megabytes(progress.completed)} of ${megabytes(progress.total)} MB`
+        ? `Copying files from your Mac… ${megabytes(progress.completed)} of ${megabytes(progress.total)} MB${progress.secondsLeft === undefined ? "" : ` · ${timeLeft(progress.secondsLeft)}`}`
         : "Preparing files on your Mac…";
   const percent = progress.total
     ? Math.max(4, (progress.completed / progress.total) * 100)

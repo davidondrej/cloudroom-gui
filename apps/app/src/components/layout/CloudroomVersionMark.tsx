@@ -1,16 +1,20 @@
+import { useState } from "react";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { useSystemVersion } from "@/hooks/queries/system-queries";
 import { CHROME_ROW_CLASS, getBbDesktopInfo } from "@/lib/bb-desktop";
 
 export function CloudroomVersionMark() {
-  const version = getBbDesktopInfo()?.version;
-  if (version === undefined || version.length === 0) {
+  const app = getBbDesktopInfo()?.version;
+  const live = useSystemVersion().data?.desktopVersion;
+  const [server, setServer] = useState<string>();
+  if (live && server === undefined) setServer(live);
+  if (app === undefined || app.length === 0) {
     return null;
   }
 
   return (
     <div className="pointer-events-none fixed right-2 bottom-1 z-[48] select-none text-[9px] leading-none text-neutral-500">
-      {version}
+      {server && server !== app ? `server ${server} · app ${app}` : app}
     </div>
   );
 }

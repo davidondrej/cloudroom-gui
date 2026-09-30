@@ -328,11 +328,13 @@ export class CloudroomClient {
     }) as unknown as TeleportStatus;
   }
 
-  /** Runs a shell command on the VM as its agent account (ADR 0113). No timeout: the caller decides. */
-  async runOnVm(input: VmRun, signal?: AbortSignal): Promise<VmRunResult> {
+  /** Runs a shell command on the VM as its agent account (ADR 0113). No timeout: the caller decides.
+   *  Raw `bytes` replace hex stdin, halving the upload; older cores answer 404. */
+  async runOnVm(input: VmRun, signal?: AbortSignal, bytes?: Uint8Array<ArrayBuffer>): Promise<VmRunResult> {
+    const raw = bytes ? `/raw?${new URLSearchParams({ command: input.command, ...(input.cwd ? { cwd: input.cwd } : {}) })}` : "";
     let response: Response;
     try {
-      response = await fetch(`${this.#base}/v1/vm/run`, {
+      response = await fetch(`${this.#base}/v1/vm/run${raw}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${this.#token}`,
@@ -340,9 +342,9 @@ export class CloudroomClient {
           "X-Cloudroom-Token": this.#token,
           ...(this.#gateToken ? { Cookie: `_port_auth=${this.#gateToken}` } : {}),
           Accept: "application/json",
-          "Content-Type": "application/json",
+          "Content-Type": bytes ? "application/octet-stream" : "application/json",
         },
-        body: JSON.stringify(input),
+        body: bytes ?? JSON.stringify(input),
         redirect: "error",
         signal,
       });

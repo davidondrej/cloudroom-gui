@@ -399,7 +399,7 @@ export type TeleportProgress = z.infer<typeof teleportProgressSchema>;
 
 export const projectCopyProgressSchema = z.object({
   phase: z.enum(["cloning", "uploading", "complete", "error"]),
-  completed: z.number(), total: z.number(), error: z.string().optional(),
+  completed: z.number(), total: z.number(), secondsLeft: z.number().optional(), error: z.string().optional(),
 });
 export type ProjectCopyProgress = z.infer<typeof projectCopyProgressSchema>;
 

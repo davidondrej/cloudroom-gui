@@ -11,6 +11,7 @@ import {
   nativeImage,
   nativeTheme,
   net,
+  powerMonitor,
   safeStorage,
   session,
   shell,
@@ -148,8 +149,10 @@ import {
 import { mergeDesktopUpdateInfo } from "./desktop-update-info.js";
 import {
   resumeThreadsAfterUpdate,
+  runningLocalThreadIds,
   stopThreadsForUpdate,
 } from "./desktop-update-resume.js";
+import { reopenAfterExit, startIdleInstall } from "./desktop-update-install.js";
 import {
   BB_DESKTOP_CHECK_FOR_UPDATES_CHANNEL,
   BB_DESKTOP_GET_INFO_CHANNEL,
@@ -327,6 +330,7 @@ let currentAppKeybindings: AppKeybindings = [];
 let currentApplicationMenuAccelerators = DEFAULT_APPLICATION_MENU_ACCELERATORS;
 let desktopUpdateService: DesktopUpdateService | null = null;
 let desktopAutoUpdateService: DesktopAutoUpdateService | null = null;
+let idleInstall: ReturnType<typeof startIdleInstall> | null = null;
 let currentRuntime: DesktopRuntime | null = null;
 let currentWindowUrl: string | null = null;
 let logViewerLineBuffer: LogLineBuffer | null = null;
@@ -1590,9 +1594,46 @@ async function finishQuit(): Promise<void> {
   connectSessionRenewal?.stop();
   desktopUpdateService?.stop();
   desktopAutoUpdateService?.stop();
+  idleInstall?.stop();
   desktopBrowserViewManager?.destroyAll();
   await desktopWindowFactory?.persistOpenWindows();
   await stopOwnedRuntime();
+}
+
+async function installDownloadedUpdate(): Promise<void> {
+  if (desktopAutoUpdateService === null) {
+    return;
+  }
+  if (!desktopAutoUpdateService.getInfo().updateDownloaded) {
+    desktopAutoUpdateService.installUpdate();
+    return;
+  }
+  const appImagePath = process.env.APPIMAGE?.trim() ?? "";
+  if (
+    process.platform === "linux" &&
+    (appImagePath.length === 0 || !canReplaceAppImage(appImagePath))
+  ) {
+    desktopLogger.error(
+      `Desktop update install skipped: ${appImagePath || "this build"} cannot be replaced in place. The runtime stays up; download the new AppImage instead.`,
+    );
+    return;
+  }
+  if (currentRuntime?.ownership === "spawned") {
+    await stopThreadsForUpdate({
+      logger: desktopLogger,
+      serverUrl: currentRuntime.serverUrl,
+      userDataPath: app.getPath("userData"),
+    }).catch((error: unknown) => {
+      desktopLogger.error(`Stopping threads for the update failed: ${String(error)}`);
+    });
+  }
+  quitting = true;
+  stoppingForQuit = true;
+  await finishQuit();
+  if (process.platform === "darwin" && app.isPackaged) {
+    reopenAfterExit(process.execPath, process.pid);
+  }
+  desktopAutoUpdateService.installUpdate();
 }
 
 function registerDesktopUpdateIpc(): void {
@@ -1612,38 +1653,7 @@ function registerDesktopUpdateIpc(): void {
     ]);
     return getCurrentDesktopInfo();
   });
-  ipcMain.handle(BB_DESKTOP_INSTALL_UPDATE_CHANNEL, async () => {
-    if (desktopAutoUpdateService === null) {
-      return;
-    }
-    if (!desktopAutoUpdateService.getInfo().updateDownloaded) {
-      desktopAutoUpdateService.installUpdate();
-      return;
-    }
-    const appImagePath = process.env.APPIMAGE?.trim() ?? "";
-    if (
-      process.platform === "linux" &&
-      (appImagePath.length === 0 || !canReplaceAppImage(appImagePath))
-    ) {
-      desktopLogger.error(
-        `Desktop update install skipped: ${appImagePath || "this build"} cannot be replaced in place. The runtime stays up; download the new AppImage instead.`,
-      );
-      return;
-    }
-    if (currentRuntime?.ownership === "spawned") {
-      await stopThreadsForUpdate({
-        logger: desktopLogger,
-        serverUrl: currentRuntime.serverUrl,
-        userDataPath: app.getPath("userData"),
-      }).catch((error: unknown) => {
-        desktopLogger.error(`Stopping threads for the update failed: ${String(error)}`);
-      });
-    }
-    quitting = true;
-    stoppingForQuit = true;
-    await finishQuit();
-    desktopAutoUpdateService.installUpdate();
-  });
+  ipcMain.handle(BB_DESKTOP_INSTALL_UPDATE_CHANNEL, installDownloadedUpdate);
   ipcMain.on(BB_DESKTOP_SET_THEME_CHANNEL, (_event, payload: unknown) => {
     const parsed = bbDesktopThemeSchema.safeParse(payload);
     if (!parsed.success) {
@@ -2294,6 +2304,20 @@ async function runDesktopApp(): Promise<void> {
   desktopAutoUpdateService.subscribe(() => {
     sendDesktopInfoChanged();
   });
+  if (process.platform === "darwin") {
+    idleInstall = startIdleInstall({
+      isUpdateDownloaded: () =>
+        desktopAutoUpdateService?.getInfo().updateDownloaded === true,
+      systemIdleSeconds: () => powerMonitor.getSystemIdleTime(),
+      hasRunningThreads: async () =>
+        currentRuntime?.ownership === "spawned" &&
+        (await runningLocalThreadIds(currentRuntime.serverUrl)).length > 0,
+      install: async () => {
+        desktopLogger.info("Installing the downloaded update: this Mac and its agents have been idle.");
+        await installDownloadedUpdate();
+      },
+    });
+  }
   registerDesktopUpdateIpc();
   desktopBrowserViewManager = createDesktopBrowserViewManager({
     dispatchAppCommand({ command, hostWebContentsId }) {

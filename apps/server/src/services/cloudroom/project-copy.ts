@@ -8,7 +8,7 @@ import { promisify } from "node:util";
 import { getProject, getThread, listProjectSourcesByProjectIds } from "@bb/db";
 import type { ProjectCopyProgress } from "@bb/domain";
 import type { AppDeps } from "../../types.js";
-import { UPLOAD_PART, type CloudroomClient } from "./client.js";
+import { CloudroomError, UPLOAD_PART, type CloudroomClient } from "./client.js";
 import { saveProjectCopyProgress } from "./store.js";
 
 type Deps = Pick<AppDeps, "db" | "hub">;
@@ -16,8 +16,8 @@ type Deps = Pick<AppDeps, "db" | "hub">;
 export type ProjectCopyJob = { threadId: string; workspace: string; key: string; localPath: string; repository: string | null };
 
 const exec = promisify(execFile);
-// Each piece travels hex-encoded, doubling it, and must fit in one upload request.
-const CHUNK = UPLOAD_PART / 2;
+// A stalled piece counts as dropped, so the retry sends it again.
+const PIECE_TIMEOUT = 120_000;
 const MAX_FILE = 50 * 1024 * 1024;
 const MAX_TOTAL = 1024 * 1024 * 1024;
 export const SKIPPED = new Set(["node_modules", ".git", ".venv", "venv", ".next", ".turbo", ".cache", "__pycache__", "target", "dist", "build", ".DS_Store"]);
@@ -80,9 +80,22 @@ async function run(client: CloudroomClient, job: ProjectCopyJob, report: (progre
   if (cloneError) throw new Error(`The GitHub clone failed, so your files were copied without Git history: ${cloneError}`);
 }
 
-async function vm(client: CloudroomClient, command: string, stdin = Buffer.alloc(0)): Promise<void> {
-  const result = await client.runOnVm({ command, stdin: stdin.toString("hex") });
+async function vm(client: CloudroomClient, command: string, bytes?: Buffer<ArrayBuffer>, raw = false): Promise<void> {
+  const signal = bytes && AbortSignal.timeout(PIECE_TIMEOUT);
+  const result = raw ? await client.runOnVm({ command }, signal, bytes) : await client.runOnVm({ command, stdin: bytes?.toString("hex") ?? "" }, signal);
   if (result.code !== 0) throw new Error(Buffer.from(result.stderr, "hex").toString().trim() || `Cloud command failed (${result.code})`);
+}
+
+/** Retries dropped connections and busy clouds for about 90 seconds, so a network blip doesn't end the copy. */
+async function retry<T>(attempt: () => Promise<T>): Promise<T> {
+  for (let tries = 1; ; tries++) {
+    try {
+      return await attempt();
+    } catch (error) {
+      if (tries === 7 || !(error instanceof CloudroomError && error.retryable)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, Math.min(2_000 * 2 ** (tries - 1), 30_000)));
+    }
+  }
 }
 
 async function git(cwd: string, args: string[]): Promise<string | null> {
@@ -150,13 +163,21 @@ async function upload(client: CloudroomClient, root: string, target: string, fil
       tar.stdin.end(files.map((path) => `${path}\0`).join(""));
     });
     const size = (await stat(archive)).size;
-    await vm(client, `mkdir -p .cache/cloudroom && : > ${remote}`);
+    // Older cores lack raw input (404) and take hex, which doubles the upload.
+    const raw = await retry(() => client.runOnVm({ command: "true" }, AbortSignal.timeout(PIECE_TIMEOUT), new Uint8Array()).then(() => true, (error: unknown) => {
+      if (error instanceof CloudroomError && error.status === 404) return false;
+      throw error;
+    }));
+    const chunk = raw ? UPLOAD_PART : UPLOAD_PART / 2;
+    const started = Date.now();
     const handle = await open(archive);
     try {
-      for (let offset = 0; offset < size; offset += CHUNK) {
-        const { buffer, bytesRead } = await handle.read(Buffer.alloc(Math.min(CHUNK, size - offset)), 0, Math.min(CHUNK, size - offset), offset);
-        await vm(client, `cat >> ${remote}`, buffer.subarray(0, bytesRead));
-        report({ phase: "uploading", completed: offset + bytesRead, total: size });
+      for (let offset = 0; offset < size; offset += chunk) {
+        const { buffer, bytesRead } = await handle.read(Buffer.alloc(Math.min(chunk, size - offset)), 0, Math.min(chunk, size - offset), offset);
+        // Truncating first lets a resent piece replace itself instead of repeating.
+        await retry(() => vm(client, `mkdir -p .cache/cloudroom && truncate -s ${offset} ${remote} && cat >> ${remote}`, buffer.subarray(0, bytesRead), raw));
+        const sent = offset + bytesRead;
+        report({ phase: "uploading", completed: sent, total: size, secondsLeft: Math.round(((Date.now() - started) / sent) * (size - sent) / 1000) });
       }
     } finally {
       await handle.close();
