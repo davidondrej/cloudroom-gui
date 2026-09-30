@@ -1526,6 +1526,20 @@ export function ThreadDetailPromptArea({
   const handleInlineComposerSubmit = useCallback(() => {
     void handleSaveInlineQueuedMessage();
   }, [handleSaveInlineQueuedMessage]);
+  const wokeForTyping = useRef({ threadId: "", at: 0 });
+  const setBottomComposerText = promptDraft.setTextAndMentions;
+  const handleBottomComposerMessageChange = useCallback<FollowUpComposerProps["onChangeMessage"]>(
+    (text, mentions) => {
+      setBottomComposerText(text, mentions);
+      const last = wokeForTyping.current;
+      if (!isCloud || !text.trim() || (last.threadId === thread.id && Date.now() - last.at < 60_000)) return;
+      wokeForTyping.current = { threadId: thread.id, at: Date.now() };
+      void fetchWithAppSurface(`/api/v1/cloudroom/threads/${encodeURIComponent(thread.id)}/wake`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+      }).catch(() => {});
+    },
+    [isCloud, setBottomComposerText, thread.id],
+  );
 
   const bottomComposerConfig = useMemo<FollowUpComposerProps>(
     () => ({
@@ -1538,7 +1552,7 @@ export function ThreadDetailPromptArea({
       isFollowUpSubmitting,
       message: currentPromptDraft.text,
       mentionRanges: currentPromptDraft.mentions,
-      onChangeMessage: promptDraft.setTextAndMentions,
+      onChangeMessage: handleBottomComposerMessageChange,
       onModifierSubmit: handleBottomComposerModifierSubmit,
       ...(isCloud || isHandoffSelection
         ? {}
@@ -1564,6 +1578,7 @@ export function ThreadDetailPromptArea({
       compactPromptPlaceholder,
       currentPromptDraft,
       handleBottomComposerHardQueueSubmit,
+      handleBottomComposerMessageChange,
       handleBottomComposerModifierSubmit,
       handleBottomComposerSubmit,
       isFollowUpSubmitting,
@@ -1571,7 +1586,6 @@ export function ThreadDetailPromptArea({
       promptHistoryDrafts,
       promptPlaceholder,
       promptDraft.setDraft,
-      promptDraft.setTextAndMentions,
       runtimeDisplayStatus,
       steerActiveThreadOnEnter,
       cloudSteerSupported,

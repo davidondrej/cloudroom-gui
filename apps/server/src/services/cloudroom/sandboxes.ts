@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import { gzipSync } from "node:zlib";
 import { z } from "zod";
 import { CloudroomConnectionError, CloudroomError } from "./client.js";
+import { macHarnessVersions } from "./harness-versions.js";
 
 export const SANDBOX_PREFIX = "sandbox:";
 export const sandboxThread = (coreUrl: string) => coreUrl.startsWith(SANDBOX_PREFIX) ? coreUrl.slice(SANDBOX_PREFIX.length) : null;
@@ -15,10 +16,12 @@ export class SandboxAsleep extends Error {}
 const viewSchema = z.object({
   thread: z.string(), state: z.enum(["new", "awake", "asleep", "archived", "deleted", "failed"]), generation: z.number(),
   issue: z.string().nullable(), origin: z.string().url().optional(), token: z.string().optional(),
+  startup: z.object({ id: z.string(), source: z.enum(["spare", "image", "template", "backup", "resume", "restart", "reuse"]), duration_ms: z.number().nonnegative() }).optional(),
 });
 type View = z.infer<typeof viewSchema>;
 export type SandboxAccount = { website: string; userId: string; token: string };
 export type SandboxConnection = { url: string; token: string };
+export type SandboxTrigger = "app_launch" | "app_activity" | "composer" | "thread_typing";
 /** Logins the website keeps for every sandbox of an account (ADR 0145). */
 export type SandboxLogin = "claude" | "codex" | "pi" | "github" | "cursor";
 /** GitHub projects also name their repository and cloud folder, so the website can build a template. */
@@ -80,6 +83,7 @@ export class SandboxDirectory {
   private readonly views = new Map<string, { view: View; at: number }>();
   private readonly wakes = new Map<string, Promise<View>>();
   private readonly wakeStarts = new Map<string, number>();
+  private readonly wakeHarnesses = new Map<string, Awaited<ReturnType<typeof macHarnessVersions>>>();
   // After a failed wake, wait before asking again: 5 s, doubling to 5 minutes. Delivery retries every tick otherwise.
   private readonly backoff = new Map<string, { until: number; delay: number }>();
   private uploaded = new Map<string, string>();
@@ -117,7 +121,7 @@ export class SandboxDirectory {
   }
 
   /** The thread's Core, or null while it sleeps. `wake` starts it; only callers with work to send pass true. */
-  async connection(thread: string, project: SandboxProject, wake: boolean): Promise<SandboxConnection | null> {
+  async connection(thread: string, project: SandboxProject, wake: boolean, startId?: string): Promise<SandboxConnection | null> {
     const cached = this.views.get(thread);
     let view = cached?.view;
     const place = { thread, project: project.id, ...(project.repository ? { repository: project.repository, folder: project.folder } : {}) };
@@ -132,7 +136,11 @@ export class SandboxDirectory {
     let pending = this.wakes.get(thread);
     if (!pending) {
       this.wakeStarts.set(thread, Date.now());
-      pending = this.call({ action: "wake", ...place }).then(value => this.remember(viewSchema.parse(value))).then(view => { this.backoff.delete(thread); return view; }, error => {
+      // The Mac's harness versions: the sandbox upgrades to them before its agent starts (ADR 0133).
+      pending = macHarnessVersions().then(harnesses => {
+        this.wakeHarnesses.set(thread, harnesses);
+        return this.call({ action: "wake", ...place, harnesses, ...(this.backoff.has(thread) ? { trigger: "retry" } : {}), ...(startId ? { start_id: createHash("sha256").update(startId).digest("hex") } : {}) });
+      }).then(value => this.remember(viewSchema.parse(value))).then(view => { this.backoff.delete(thread); return view; }, error => {
         const delay = Math.min((this.backoff.get(thread)?.delay ?? 2_500) * 2, 300_000);
         this.backoff.set(thread, { until: Date.now() + delay, delay });
         throw error;
@@ -160,12 +168,27 @@ export class SandboxDirectory {
 
   wokeSince(thread: string, at: number): boolean { return (this.wakeStarts.get(thread) ?? 0) >= at; }
 
+  startupSince(thread: string, at: number) {
+    const startup = this.views.get(thread)?.view.startup;
+    const versions = this.wakeHarnesses.get(thread);
+    if (!this.wokeSince(thread, at)) return { startup_source: "reuse" as const, sandbox_start_ms: 0, startup_id: null, versions };
+    return { startup_source: startup?.source ?? null, sandbox_start_ms: startup?.duration_ms ?? null, startup_id: startup?.id ?? null, versions };
+  }
+
+  private activityAt = 0;
+  async activity(): Promise<void> {
+    if (Date.now() - this.activityAt < 30_000) return;
+    await this.call({ action: "activity", trigger: "app_activity" });
+    this.activityAt = Date.now();
+  }
+
   private warmed: { project: string; at: number } | null = null;
-  /** Asks the website to keep a hot spare sandbox for this project's next cloud thread. At most once a minute per project. */
-  async warm(project: SandboxProject): Promise<void> {
+  /** Asks the website to keep hot spare sandboxes ready for the next cloud threads, in any project. The project lets it
+   *  build that project's template. At most once a minute per project. */
+  async warm(project: SandboxProject, trigger: SandboxTrigger = "composer"): Promise<void> {
     if (this.warmed?.project === project.id && Date.now() - this.warmed.at < RECHECK_MS) return;
     this.warmed = { project: project.id, at: Date.now() };
-    await this.call({ action: "warm", project: project.id, ...(project.repository ? { repository: project.repository, folder: project.folder } : {}) });
+    await this.call({ action: "warm", project: project.id, trigger, ...(project.repository ? { repository: project.repository, folder: project.folder } : {}), harnesses: await macHarnessVersions() });
   }
 
   /** A broken stream or failed request may mean the sandbox went to sleep; look it up again next time. */

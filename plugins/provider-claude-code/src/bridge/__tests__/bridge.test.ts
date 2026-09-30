@@ -902,6 +902,7 @@ describe("bridge", () => {
     expect(options.effort).toBe("xhigh");
     expect(options.settings).toEqual({
       autoMemoryEnabled: true,
+      disableClaudeAiConnectors: true,
       enableWorkflows: true,
       ultracode: true,
     });
@@ -925,6 +926,7 @@ describe("bridge", () => {
     expect(options.effort).toBe("high");
     expect(options.settings).toEqual({
       autoMemoryEnabled: true,
+      disableClaudeAiConnectors: true,
       enableWorkflows: true,
       ultracode: false,
     });
@@ -947,6 +949,7 @@ describe("bridge", () => {
 
     expect(options.settings).toEqual({
       autoMemoryEnabled: true,
+      disableClaudeAiConnectors: true,
       enableWorkflows: false,
       ultracode: false,
     });
@@ -968,6 +971,7 @@ describe("bridge", () => {
 
     expect(options.settings).toEqual({
       autoMemoryEnabled: false,
+      disableClaudeAiConnectors: true,
       enableWorkflows: false,
       ultracode: false,
     });

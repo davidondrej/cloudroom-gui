@@ -11,7 +11,7 @@ import { teleports } from "./teleport.js";
 import { binding, teleportBlocked, teleportProgress } from "./store.js";
 import { browserRequestProblem } from "../../browser-request-guard.js";
 import { claudePlan, createClaudeToken } from "./claude-token.js";
-import { startClaudeVersionSync } from "./claude-version.js";
+import { startClaudeVersionSync } from "./harness-versions.js";
 import { importBbThreads } from "./bb-import.js";
 import { copyToMac, openOnMac, teleportingToLocal, teleportToLocal } from "./teleport-local.js";
 import { cloudEnvironmentRequestSchema, macVariables, sandboxThread, type CloudEnvironmentRequest } from "./sandboxes.js";
@@ -27,7 +27,7 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     try { archiveThreadAndChildren(deps, { parentThread: thread }); }
     catch (error) { deps.logger.warn({ error, threadId }, "Cloud self-archive failed"); }
   };
-  startClaudeVersionSync(deps);
+  startClaudeVersionSync(deps, () => cloudroom(deps).teleportClient());
   const localOnly: MiddlewareHandler = async (context, next) => {
     const problem = browserRequestProblem(context, deps, { requireJsonForMutation: true });
     if (problem) return context.json({ message: "Use the local Cloudroom app or CLI." }, problem.status);
@@ -65,6 +65,11 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     return context.json({ ok: true });
   });
   app.get("/api/v1/cloudroom/account", async (context) => context.json(await cloudroomAccount(deps).status()));
+  app.post("/api/v1/cloudroom/account/activity", async (context) => {
+    z.object({}).strict().parse(await context.req.json());
+    await cloudroom(deps).noteActivity();
+    return context.json({ ok: true });
+  });
   app.post("/api/v1/cloudroom/bug-reports", async (context) => {
     const input = z.object({ message: z.string().trim().min(1).max(4000), threadId: z.string().min(1).max(200).optional() }).strict().parse(await context.req.json());
     return context.json(await reportBug(deps, input));
@@ -165,6 +170,10 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     if (problem) return context.json({ message: "Use the local Cloudroom app or CLI." }, problem.status);
     await cloudroom(deps).retryStart(context.req.param("id"));
     return context.json({ ok: true });
+  });
+  app.post("/api/v1/cloudroom/threads/:id/wake", async (context) => {
+    void cloudroom(deps).wakeForTyping(context.req.param("id")).catch(() => {});
+    return context.json({ ok: true }, 202);
   });
   app.post("/api/v1/cloudroom/threads/:id/resume", async (context) => {
     const problem = browserRequestProblem(context, deps, { requireJsonForMutation: true });

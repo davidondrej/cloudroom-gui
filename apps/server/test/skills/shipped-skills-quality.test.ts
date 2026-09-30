@@ -5,7 +5,11 @@ import { listBundledPluginRegistrations } from "../../src/services/plugins/built
 import { readPluginManifest } from "../../src/services/plugins/manifest.js";
 import { testLogger } from "../helpers/test-app.js";
 import { resolveProjectSkillSourceFromContent } from "../../src/services/skills/injected-skills.js";
-import { resolveBuiltinSkillsRootPath } from "../../src/services/skills/builtin-skills-copy.js";
+import {
+  resolveBuiltinSkillsRootPath,
+  resolveSharedBuiltinSkillsRootPath,
+  readSharedBuiltinSkillNames,
+} from "../../src/services/skills/builtin-skills-copy.js";
 
 function skillDirectories(
   rootPath: string,
@@ -23,6 +27,18 @@ const pluginManifests = await Promise.all(
 );
 const SHIPPED_SKILLS = [
   ...skillDirectories(resolveBuiltinSkillsRootPath()),
+  ...readSharedBuiltinSkillNames(
+    resolveSharedBuiltinSkillsRootPath(resolveBuiltinSkillsRootPath()),
+  ).map(
+    (name) =>
+      [
+        name,
+        path.join(
+          resolveSharedBuiltinSkillsRootPath(resolveBuiltinSkillsRootPath()),
+          name,
+        ),
+      ] as const,
+  ),
   ...pluginManifests.flatMap((manifest) =>
     manifest.skillsRootPaths.flatMap(skillDirectories),
   ),

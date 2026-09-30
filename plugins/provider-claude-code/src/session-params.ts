@@ -76,6 +76,7 @@ export type ClaudeSessionExecutionOptions = RuntimePermissionPolicy & {
   workflowsEnabled: boolean;
   commandGuardEnabled?: boolean;
   chromeEnabled: boolean;
+  claudeAiConnectorsEnabled?: boolean | undefined;
   memoryEnabled?: boolean | undefined;
   providerSubagentsEnabled?: boolean | undefined;
   skillRoots?: readonly ClaudeCodeSkillRoot[] | undefined;
@@ -136,6 +137,7 @@ function buildInternalSessionParams(
       : {}),
     workflowsEnabled: args.options.workflowsEnabled,
     chromeEnabled: args.options.chromeEnabled,
+    claudeAiConnectorsEnabled: args.options.claudeAiConnectorsEnabled,
     memoryEnabled: args.options.memoryEnabled,
     providerSubagentsEnabled: args.options.providerSubagentsEnabled,
     ...(dynamicTools && dynamicTools.length > 0 ? { dynamicTools } : {}),
@@ -151,6 +153,7 @@ const claudeProviderOptionsSchema = z
     commandGuardEnabled: z.boolean().optional(),
     workflowsEnabled: z.boolean().optional(),
     chromeEnabled: z.boolean().optional(),
+    claudeAiConnectorsEnabled: z.boolean().optional(),
     memoryEnabled: z.boolean().optional(),
     providerSubagentsEnabled: z.boolean().optional(),
     additionalWorkspaceWriteRoots: z.array(z.string()).optional(),
@@ -197,6 +200,7 @@ export function buildClaudeSessionParams(
       workflowsEnabled: providerOptions.workflowsEnabled ?? false,
       commandGuardEnabled: providerOptions.commandGuardEnabled,
       chromeEnabled: providerOptions.chromeEnabled ?? false,
+      claudeAiConnectorsEnabled: providerOptions.claudeAiConnectorsEnabled,
       memoryEnabled: providerOptions.memoryEnabled,
       providerSubagentsEnabled: providerOptions.providerSubagentsEnabled,
     },

@@ -13,7 +13,8 @@ import { saveProjectCopyProgress } from "./store.js";
 
 type Deps = Pick<AppDeps, "db" | "hub">;
 // `key` is the copy target: one folder on a shared VM, or one per thread sandbox.
-export type ProjectCopyJob = { threadId: string; workspace: string; key: string; localPath: string; repository: string | null };
+// New threads get a default-branch clone and `.env` files; Teleport also brings the local branch and uncommitted work.
+export type ProjectCopyJob = { threadId: string; workspace: string; key: string; localPath: string; repository: string | null; clone: boolean; teleport: boolean };
 
 const exec = promisify(execFile);
 // A stalled piece counts as dropped, so the retry sends it again.
@@ -29,16 +30,30 @@ export function githubRepository(remote: string | null): string | null {
   return repository ? `https://github.com/${repository}` : null;
 }
 
-export async function planProjectCopy(deps: Deps, client: CloudroomClient, threadId: string, workspace: string, localPath?: string, key = workspace): Promise<ProjectCopyJob | null> {
+function localProjectPath(deps: Deps, projectId: string): string | undefined {
+  const sources = listProjectSourcesByProjectIds(deps.db, [projectId]).filter((source) => existsSync(source.path));
+  return (sources.find((source) => source.isDefault) ?? sources[0])?.path;
+}
+
+/** Tells a new cloud thread where a project without GitHub lives, since its files stay on the Mac. */
+export function localProjectNote(deps: Deps, projectId: string): string | undefined {
+  const project = getProject(deps.db, projectId);
+  const path = project && !githubRepository(project.gitRemoteUrl) ? localProjectPath(deps, project.id) : undefined;
+  return path && `This project is not on GitHub, so only its \`.env\` files were copied here. The rest is on the user's Mac at \`${path}\`. Pull only what the task needs with \`cloudroom mac pull\`.`;
+}
+
+export async function planProjectCopy(deps: Deps, client: CloudroomClient, threadId: string, workspace: string, { localPath, key = workspace, teleport = false }: { localPath?: string; key?: string; teleport?: boolean } = {}): Promise<ProjectCopyJob | null> {
   try {
     const project = getProject(deps.db, getThread(deps.db, threadId)?.projectId ?? "");
     if (!project || copying.has(key)) return null;
-    const sources = listProjectSourcesByProjectIds(deps.db, [project.id]).filter((source) => existsSync(source.path));
-    const path = localPath ?? (sources.find((source) => source.isDefault) ?? sources[0])?.path;
+    const path = localPath ?? localProjectPath(deps, project.id);
     if (!path) return null;
     const existing = await client.workspace(workspace);
-    if (existing && (await client.runOnVm({ command: `[ -z "$(ls -A -- ${quote(existing.path)} 2>/dev/null | grep -Fvx .cloudroom)" ]`, stdin: "" })).code !== 0) return null;
-    return { threadId, workspace, key, localPath: path, repository: githubRepository(project.gitRemoteUrl) };
+    const empty = !existing || (await client.runOnVm({ command: `[ -z "$(ls -A -- ${quote(existing.path)} 2>/dev/null | grep -Fvx .cloudroom)" ]`, stdin: "" })).code === 0;
+    if (!empty && teleport) return null;
+    const repository = githubRepository(project.gitRemoteUrl);
+    const job = { threadId, workspace, key, localPath: path, repository, clone: empty && Boolean(repository), teleport };
+    return job.clone || teleport || (await localFiles(path, "env")).length ? job : null;
   } catch {
     return null;
   }
@@ -48,12 +63,13 @@ export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCop
   if (copying.has(job.key)) return;
   copying.add(job.key);
   const report = (progress: ProjectCopyProgress) => {
+    if (!job.clone && !job.teleport && progress.phase !== "error") return;
     saveProjectCopyProgress(deps.db, job.threadId, progress);
     deps.hub.notifyThread(job.threadId, ["status-changed"]);
     const projectId = getThread(deps.db, job.threadId)?.projectId;
     if (projectId) deps.hub.notifyProject(projectId, ["threads-changed"]);
   };
-  report({ phase: job.repository ? "cloning" : "uploading", completed: 0, total: 0 });
+  report({ phase: job.clone ? "cloning" : "uploading", completed: 0, total: 0 });
   void run(client, job, report)
     .then(() => { report({ phase: "complete", completed: 0, total: 0 }); done?.(); })
     .catch((error: unknown) => {
@@ -67,17 +83,19 @@ export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCop
 async function run(client: CloudroomClient, job: ProjectCopyJob, report: (progress: ProjectCopyProgress) => void): Promise<void> {
   const target = (await client.workspace(job.workspace))?.path;
   if (!target) throw new Error("The cloud project folder is unavailable.");
-  // A failed clone falls back to uploading the files, so the agent can still work, then reports why Git is missing.
+  // A failed Teleport clone falls back to uploading the files, so the agent can still work, then reports why Git is missing.
   let cloneError: string | null = null;
-  if (job.repository) {
-    cloneError = await clone(client, target, job.repository, job.localPath);
-    if (cloneError) cloneError = await clone(client, target, job.repository, job.localPath);
+  if (job.clone && job.repository) {
+    const branch = job.teleport ? (await git(job.localPath, ["rev-parse", "--abbrev-ref", "HEAD"]))?.trim() : undefined;
+    cloneError = await clone(client, target, job.repository, branch);
+    if (cloneError) cloneError = await clone(client, target, job.repository, branch);
   }
-  const cloned = Boolean(job.repository) && !cloneError;
+  const cloned = job.clone && !cloneError;
   if (!cloned) report({ phase: "uploading", completed: 0, total: 0 });
-  const files = await localFiles(job.localPath, cloned);
-  if (files.length) await upload(client, job.localPath, target, files, !cloned, report);
-  if (cloneError) throw new Error(`The GitHub clone failed, so your files were copied without Git history: ${cloneError}`);
+  const scope = !job.teleport ? "env" : cloned ? "changed" : "all";
+  const files = await localFiles(job.localPath, scope);
+  if (files.length) await upload(client, job.localPath, target, files, scope !== "changed", report);
+  if (cloneError) throw new Error(job.teleport ? `The GitHub clone failed, so your files were copied without Git history: ${cloneError}` : `The GitHub clone failed: ${cloneError}`);
 }
 
 async function vm(client: CloudroomClient, command: string, bytes?: Buffer<ArrayBuffer>, raw = false): Promise<void> {
@@ -103,9 +121,8 @@ async function git(cwd: string, args: string[]): Promise<string | null> {
 }
 
 /** Returns null once the clone is in place, or why it failed. */
-async function clone(client: CloudroomClient, target: string, repository: string, localPath: string): Promise<string | null> {
+async function clone(client: CloudroomClient, target: string, repository: string, branch?: string): Promise<string | null> {
   const token = await exec("gh", ["auth", "token", "--hostname", "github.com"], { timeout: 15_000 }).then((result) => result.stdout.trim(), () => "");
-  const branch = (await git(localPath, ["rev-parse", "--abbrev-ref", "HEAD"]))?.trim();
   const temporary = quote(`${target}.cloudroom-clone`);
   const result = await client.runOnVm({
     command: [
@@ -124,11 +141,15 @@ async function clone(client: CloudroomClient, target: string, repository: string
   return Buffer.from(result.stderr, "hex").toString().trim().slice(-300) || `git clone exited with code ${result.code}`;
 }
 
-async function localFiles(root: string, cloned: boolean): Promise<string[]> {
-  const listed = await git(root, ["ls-files", "-z", cloned ? "--modified" : "--cached", "--others", "--exclude-standard"]);
+const isEnv = (path: string) => basename(path).startsWith(".env");
+
+/** `all`: every project file; `changed`: uncommitted and untracked files; `env`: only `.env` files. Ignored `.env` files always count. */
+async function localFiles(root: string, scope: "all" | "changed" | "env"): Promise<string[]> {
+  const listed = await git(root, ["ls-files", "-z", scope === "all" ? "--cached" : "--modified", "--others", "--exclude-standard"]);
   const ignored = listed === null ? "" : await git(root, ["ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--directory"]) ?? "";
-  const env = ignored.split("\0").filter((path) => path && !path.endsWith("/") && basename(path).startsWith(".env"));
-  const candidates = listed === null ? await walk(root, "") : [...new Set([...listed.split("\0").filter(Boolean), ...env])];
+  const env = ignored.split("\0").filter((path) => path && !path.endsWith("/") && isEnv(path));
+  const found = listed === null ? await walk(root, "") : [...new Set([...listed.split("\0").filter(Boolean), ...env])];
+  const candidates = scope === "env" ? found.filter(isEnv) : found;
   const files: string[] = [];
   let total = 0;
   for (const path of candidates) {

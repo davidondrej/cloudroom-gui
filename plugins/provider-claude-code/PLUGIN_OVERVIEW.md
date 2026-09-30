@@ -20,6 +20,7 @@ This is literal instruction loading, not native skill execution. Native tool/mod
 - `Disable provider subagents`: hide the native Task tool so the agent delegates through Cloudroom. On by default.
 - `Disable Workflow tool`: hide the native Workflow tool.
 - `Claude in Chrome`: start Claude Code with the browser tools.
+- `claude.ai connectors`: load Gmail, Drive, and other connectors from your claude.ai account. Off by default.
 
 ## Requirements
 

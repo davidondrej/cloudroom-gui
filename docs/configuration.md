@@ -751,6 +751,13 @@ value. A change on one device reaches every other connected window through the
 Sidebar width and open state stay in the browser because they depend on the
 window size.
 
+### Thread naming
+
+Settings → Thread naming chooses the primary model, fallback model, and naming rules.
+Local and Cloud threads retry failed naming automatically. Each model gets 30 seconds.
+Retries wait 10 seconds, 30 seconds, 1 minute, 2 minutes, then 5 minutes between attempts.
+Pending names survive app restarts. Setting a name manually cancels automatic naming.
+
 ### Sidebar footer
 
 Settings → Appearance → Sidebar footer lets users reorder and hide built-in and

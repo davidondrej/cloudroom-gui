@@ -5,6 +5,9 @@ import {
   BUILTIN_SKILLS_DIRECTORY_NAME,
   copyBuiltinSkills,
   resolveBuiltinSkillsRootPath,
+  resolveSharedBuiltinSkillsRootPath,
+  copySharedBuiltinSkills,
+  SHARED_SKILLS_DIRECTORY_NAME,
 } from "../src/services/skills/builtin-skills-copy.js";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -17,3 +20,13 @@ const targetPath = path.resolve(
 const skillsRootPath = resolveBuiltinSkillsRootPath();
 await rm(targetPath, { force: true, recursive: true });
 await copyBuiltinSkills({ skillsRootPath, targetPath });
+const sharedTarget = path.resolve(
+  scriptDir,
+  "../dist",
+  SHARED_SKILLS_DIRECTORY_NAME,
+);
+await rm(sharedTarget, { force: true, recursive: true });
+await copySharedBuiltinSkills(
+  resolveSharedBuiltinSkillsRootPath(skillsRootPath),
+  sharedTarget,
+);

@@ -4,6 +4,11 @@ import { clearAllThreadProvisionSchedules } from "../../src/services/threads/thr
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import {
+  copySharedBuiltinSkills,
+  resolveSharedBuiltinSkillsRootPath,
+  resolveBuiltinSkillsRootPath,
+} from "../../src/services/skills/builtin-skills-copy.js";
 import { serve } from "@hono/node-server";
 import type { AddressInfo } from "node:net";
 import { createConnection, getAppSettings, type DbConnection } from "@bb/db";
@@ -142,6 +147,10 @@ export async function createTestAppHarness(
   } = overrides;
   const logger = createTestLogger();
   const dataDir = await mkdtemp(join(tmpdir(), "bb-server-test-"));
+  await copySharedBuiltinSkills(
+    resolveSharedBuiltinSkillsRootPath(resolveBuiltinSkillsRootPath()),
+    join(dataDir, "shared-skills"),
+  );
   const db = createTestDb();
   const hub = new NotificationHubImpl();
   const watchInterests = new WatchInterestCoordinator({ db, hub });
@@ -251,9 +260,7 @@ export async function createTestAppHarness(
     terminalSessions,
   });
   pendingInteractions.start();
-  const appVersion =
-    appVersionService ??
-    createAppVersionService({ config });
+  const appVersion = appVersionService ?? createAppVersionService({ config });
   const deps: ServerAppDeps = {
     appVersion,
     bbAppManagedConfig,

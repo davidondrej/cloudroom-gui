@@ -1,6 +1,7 @@
 import type { LoggedWorkSessionDeps } from "../../types.js";
 import { getPluginSkillRootContributions } from "../plugins/plugin-agent-contributions.js";
 import { generatedSkillsRootPath } from "../plugins/plugin-commands-skill.js";
+import { resolveSharedBuiltinSkillsRootPath } from "./builtin-skills-copy.js";
 import {
   resolveSkillCatalogEntries,
   type ProjectInjectedSkillSource,
@@ -19,6 +20,9 @@ export function resolveSkillCatalog(
   args: ResolveSkillCatalogSourcesArgs = {},
 ): ResolvedSkillCatalogEntry[] {
   return resolveSkillCatalogEntries(deps.logger, {
+    builtinSkillsRootPath: resolveSharedBuiltinSkillsRootPath(
+      deps.config.builtinSkillsRootPath,
+    ),
     additionalSkillsRootPaths: [
       ...deps.config.inheritedSkillsRootPaths,
       generatedSkillsRootPath(deps.config.dataDir),

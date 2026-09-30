@@ -245,11 +245,11 @@ class Teleport {
         "teleport_unavailable",
         "Teleport requires a local parent thread with a workspace.",
       );
-    if (!harnessOf(thread.providerId))
+    if (!harnessOf(thread.providerId) || thread.providerId === "acp-cursor")
       throw new ApiError(
         409,
         "teleport_unavailable",
-        "Teleport supports Codex, Pi, Claude Code, and Cursor.",
+        "Teleport supports Codex, Pi, and Claude Code.",
       );
     const all = [thread];
     for (let i = 0; i < all.length; i++)
@@ -855,7 +855,7 @@ class Teleport {
       };
       this.save(state);
     }
-    const copy = await planProjectCopy(this.deps, client, state.threadId, state.manifest!.workspace, state.workspacePath);
+    const copy = await planProjectCopy(this.deps, client, state.threadId, state.manifest!.workspace, { localPath: state.workspacePath, teleport: true });
     let remote = await client.prepareTeleport(state.manifest!);
     if (copy) copyProject(this.deps, client, copy);
     const cancelled = async () => {

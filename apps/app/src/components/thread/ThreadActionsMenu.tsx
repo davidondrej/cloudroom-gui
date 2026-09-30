@@ -85,7 +85,7 @@ export function canReturnCloudWork(thread: Thread): boolean {
 const RETURN_PR_PROMPT = "Commit all your work on this thread's branch, push the branch to origin, and open a pull request into the default branch with gh. Reply with the pull request link.";
 
 export function canTeleportThread(thread: Thread): boolean {
-  return thread.executionTarget !== "cloud" && !thread.parentThreadId && thread.archivedAt == null && ["codex", "pi", "claude-code", "acp-cursor"].includes(thread.providerId) && (!thread.teleport || ["cancelled", "error"].includes(thread.teleport.phase));
+  return thread.executionTarget !== "cloud" && !thread.parentThreadId && thread.archivedAt == null && ["codex", "pi", "claude-code"].includes(thread.providerId) && (!thread.teleport || ["cancelled", "error"].includes(thread.teleport.phase));
 }
 
 function ThreadSectionMoveMenu({

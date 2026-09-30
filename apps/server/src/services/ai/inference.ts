@@ -57,7 +57,7 @@ const DEFAULT_INFERENCE_TIMEOUT_MS = 30_000;
 export const INFERENCE_POLICY = {
   hostRpcGraceMs: 1_000,
   commitMessage: { maxAttempts: 2, retryDelayMs: 0, timeoutMs: 5_000 },
-  threadMetadata: { maxAttempts: 2, retryDelayMs: 250, timeoutMs: 10_000 },
+  threadMetadata: { maxAttempts: 2, retryDelayMs: 250, timeoutMs: 30_000 },
   voiceTranscription: { maxAttempts: 2, retryDelayMs: 250, timeoutMs: 10_000 },
 } as const;
 
@@ -156,6 +156,18 @@ export async function inferenceCompleteWithFallback<T extends TSchema>(
             schema: args.schema,
             timeoutMs: args.timeoutMs,
           });
+      if (
+        value === null &&
+        args.fallbackOnAnyError &&
+        fallbackModel !== primaryModel &&
+        attempt < maxAttempts
+      ) {
+        throw new AiServiceCallError(
+          "inference",
+          "invalid_response",
+          "Inference returned no structured result.",
+        );
+      }
       if (attempt > 1) {
         deps.logger.info(
           {

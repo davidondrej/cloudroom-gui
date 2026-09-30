@@ -19,6 +19,7 @@ import {
 } from "../hosts/online-rpc.js";
 import type { ProjectCommandWorkspace as CommandWorkspace } from "../projects/project-workspace.js";
 import { resolveServerOwnedSkillCatalogEntries } from "./injected-skills.js";
+import { resolveSharedBuiltinSkillsRootPath } from "./builtin-skills-copy.js";
 import { resolveSkillCatalog } from "./skill-catalog.js";
 import { readRegistrySkillProvenance } from "./registry-skill-provenance.js";
 import { hostPathDirname, resolveSharedSkills } from "./shared-skills.js";
@@ -187,19 +188,27 @@ function listServerOwnedSkills(deps: AppDeps): SkillSummary[] {
 function listBbPluginSkills(deps: AppDeps): SkillSummary[] {
   return resolveSkillCatalog(deps)
     .map(({ provenance, runtimeSource }): SkillSummary | null => {
-      if (provenance.kind !== "plugin" || runtimeSource.kind !== "tree") {
+      if (
+        (provenance.kind !== "plugin" && provenance.kind !== "builtin") ||
+        runtimeSource.kind !== "tree"
+      ) {
         return null;
       }
       const rootPath = deps.skillTreeRegistry.resolve(runtimeSource.treeHash);
       if (rootPath === undefined) return null;
       const logicalPath = `${runtimeSource.name}/${runtimeSource.entryPath}`;
       return {
-        id: skillId(`bb-plugin:${provenance.pluginId}`, logicalPath),
+        id: skillId(
+          provenance.kind === "builtin"
+            ? "bb-builtin"
+            : `bb-plugin:${provenance.pluginId}`,
+          logicalPath,
+        ),
         name: runtimeSource.name,
         description: runtimeSource.description,
         provider: null,
-        scope: "plugin",
-        pluginId: provenance.pluginId,
+        scope: provenance.kind === "builtin" ? "bb-builtin" : "plugin",
+        pluginId: provenance.kind === "builtin" ? null : provenance.pluginId,
         filePath: path.join(rootPath, runtimeSource.entryPath),
         manageable: false,
         registrySkillId: null,
@@ -260,7 +269,9 @@ function isServerOwnedSkill(deps: AppDeps, skill: SkillSummary): boolean {
   }
   return (
     skill.scope === "bb-builtin" &&
-    path.dirname(skillDirectoryPath) === deps.config.builtinSkillsRootPath
+    (path.dirname(skillDirectoryPath) === deps.config.builtinSkillsRootPath ||
+      path.dirname(skillDirectoryPath) ===
+        resolveSharedBuiltinSkillsRootPath(deps.config.builtinSkillsRootPath))
   );
 }
 

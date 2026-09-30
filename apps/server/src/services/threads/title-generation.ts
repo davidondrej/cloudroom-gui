@@ -178,6 +178,8 @@ export function applyGeneratedThreadTitle(
   const current = currentThread?.title ?? null;
   if (
     !currentThread ||
+    currentThread.archivedAt !== null ||
+    currentThread.deletedAt !== null ||
     title === current ||
     (args.replaces === undefined ? current : current !== args.replaces)
   ) {

@@ -1,8 +1,9 @@
-import { events, type DbConnection } from "@bb/db";
+import { cloudroomCommands, cloudroomThreads, events, threads, type DbConnection } from "@bb/db";
 import type { ThreadEventType } from "@bb/domain";
 import { and, desc, eq, gt, inArray, isNull, ne, or } from "drizzle-orm";
 import type { NotificationHub } from "../../ws/hub.js";
-import type { TelemetryExecution, TelemetryService } from "./telemetry.js";
+import type { TelemetryEvent, TelemetryExecution, TelemetryService } from "./telemetry.js";
+import type { SandboxDirectory } from "../cloudroom/sandboxes.js";
 
 const OUTPUT_TYPES: ThreadEventType[] = [
   "item/started",
@@ -18,8 +19,12 @@ interface SentMessage {
   afterSequence: number;
   execution: TelemetryExecution;
   isChildThread: boolean;
+  messageSource: Extract<TelemetryEvent, { name: "first_response" }>["properties"]["message_source"];
   provider: string;
   sentAt: number;
+  model?: string | null;
+  reasoningLevel?: string | null;
+  serviceTier?: string | null;
 }
 
 interface Tracker {
@@ -27,6 +32,7 @@ interface Tracker {
   pending: Map<string, SentMessage>;
   telemetry: TelemetryService;
   wokeSince: (threadId: string, at: number) => boolean;
+  startupSince: (threadId: string, at: number) => ReturnType<SandboxDirectory["startupSince"]> | null;
 }
 
 let tracker: Tracker | null = null;
@@ -34,8 +40,9 @@ let tracker: Tracker | null = null;
 export function installFirstResponseTelemetry(
   deps: { db: DbConnection; hub: NotificationHub; telemetry: TelemetryService },
   wokeSince: Tracker["wokeSince"],
+  startupSince: Tracker["startupSince"] = () => null,
 ): () => void {
-  const current: Tracker = { db: deps.db, pending: new Map(), telemetry: deps.telemetry, wokeSince };
+  const current: Tracker = { db: deps.db, pending: new Map(), telemetry: deps.telemetry, wokeSince, startupSince };
   tracker = current;
   const unsubscribe = deps.hub.onChangedMessage((message) => {
     if (message.entity !== "thread" || !message.changes.includes("events-appended")) return;
@@ -46,14 +53,23 @@ export function installFirstResponseTelemetry(
       current.pending.delete(message.id);
       const ms = Date.now() - sent.sentAt;
       if (ms > MAX_WAIT_MS) return;
+      const startup = sent.execution === "cloud_sandbox" ? current.startupSince(message.id, sent.sentAt) : null;
       current.telemetry.capture({
         name: "first_response",
         properties: {
           execution: sent.execution,
           is_child_thread: sent.isChildThread,
+          message_source: sent.messageSource,
           ms,
           provider: sent.provider,
           sandbox_woke: sent.execution === "cloud_sandbox" ? current.wokeSince(message.id, sent.sentAt) : null,
+          startup_source: startup?.startup_source ?? null,
+          sandbox_start_ms: startup?.sandbox_start_ms ?? null,
+          startup_id: startup?.startup_id ?? null,
+          model: sent.model ?? null,
+          reasoning_level: sent.reasoningLevel ?? null,
+          service_tier: sent.serviceTier ?? null,
+          harness_version: sent.provider === "codex" ? startup?.versions?.codex ?? null : sent.provider === "claude-code" ? startup?.versions?.claude ?? null : null,
         },
       });
       return;
@@ -90,7 +106,15 @@ export function noteMessageSent(
     tracker.pending.delete(threadId);
     return;
   }
-  tracker.pending.set(threadId, { ...message, afterSequence: latest?.sequence ?? 0, sentAt });
+  const local = tracker.db.select({ model: threads.modelOverride, reasoning: threads.reasoningLevelOverride }).from(threads).where(eq(threads.id, threadId)).get();
+  const cloud = message.execution === "local" ? undefined : tracker.db.select({ model: cloudroomThreads.model, reasoning: cloudroomThreads.reasoning }).from(cloudroomThreads).where(eq(cloudroomThreads.threadId, threadId)).get();
+  let serviceTier: string | null = null;
+  if (cloud) {
+    const initial = tracker.db.select({ input: cloudroomCommands.input }).from(cloudroomCommands).where(eq(cloudroomCommands.id, `first_${threadId}`)).get();
+    try { serviceTier = initial ? JSON.parse(initial.input).service_tier ?? "default" : null; } catch { serviceTier = null; }
+  }
+  tracker.pending.set(threadId, { ...message, model: cloud?.model ?? local?.model ?? null, reasoningLevel: cloud?.reasoning ?? local?.reasoning ?? null,
+    serviceTier, afterSequence: latest?.sequence ?? 0, sentAt });
 }
 
 function hasOutputAfter(db: DbConnection, threadId: string, afterSequence: number): boolean {

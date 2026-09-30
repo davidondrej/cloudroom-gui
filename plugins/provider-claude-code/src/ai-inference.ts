@@ -6,6 +6,7 @@ import type {
   ExperimentalAiServiceErrorCode,
 } from "@get-bb/plugin-sdk/ai-services";
 import { claudeExecutable } from "./bridge/provider-maintenance.js";
+import { withoutBridgeRuntimeEnv } from "@get-bb/plugin-sdk/provider-bridge";
 
 type InferenceValue = Extract<
   ExperimentalAiInferenceCompleteOutput,
@@ -13,6 +14,7 @@ type InferenceValue = Extract<
 >["value"];
 
 interface ClaudePrintResult {
+  type?: string;
   is_error?: boolean;
   result?: string;
   structured_output?: unknown;
@@ -29,13 +31,22 @@ function parseResult(
   stdout: string,
   model: string,
 ): ExperimentalAiInferenceCompleteOutput {
-  let result: ClaudePrintResult;
-  try {
-    result = JSON.parse(stdout) as ClaudePrintResult;
-  } catch {
+  let result: ClaudePrintResult | undefined;
+  for (const line of stdout.split("\n")) {
+    try {
+      const parsed: ClaudePrintResult = JSON.parse(line);
+      if (parsed?.type === "result") result = parsed;
+    } catch {}
+  }
+  if (!result) {
     return failure("invalid_response", "Claude Code returned no JSON result.");
   }
-  const value = result.structured_output;
+  let value = result.structured_output;
+  if (!value && result.result && !result.is_error) {
+    try {
+      value = JSON.parse(result.result);
+    } catch {}
+  }
   if (
     result.is_error ||
     !value ||
@@ -55,6 +66,9 @@ export function completeClaudeInference(
   input: ExperimentalAiInferenceCompleteInput,
 ): Promise<ExperimentalAiInferenceCompleteOutput> {
   return new Promise((resolve) => {
+    const env = withoutBridgeRuntimeEnv(process.env);
+    delete env.CLAUDECODE;
+    delete env.CLAUDE_AGENT_SDK_CLIENT_APP;
     const child = spawn(
       claudeExecutable(),
       [
@@ -73,15 +87,17 @@ export function completeClaudeInference(
         "--mcp-config",
         '{"mcpServers":{}}',
         "--output-format",
-        "json",
+        "stream-json",
+        "--verbose",
         "--json-schema",
         JSON.stringify(input.outputSchema),
       ],
-      { cwd: os.homedir(), stdio: "pipe" },
+      { cwd: os.homedir(), env, stdio: "pipe" },
     );
     let stdout = "";
+    let stderr = "";
     const timer = setTimeout(() => {
-      child.kill();
+      child.kill("SIGKILL");
       resolve(
         failure(
           "timeout",
@@ -89,8 +105,13 @@ export function completeClaudeInference(
         ),
       );
     }, input.timeoutMs);
-    child.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString("utf8");
+    child.stdout.setEncoding("utf8");
+    child.stdout.on("data", (chunk: string) => {
+      stdout += chunk;
+    });
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk: string) => {
+      stderr = (stderr + chunk).slice(-2_000);
     });
     child.once("error", (error) => {
       clearTimeout(timer);
@@ -101,9 +122,18 @@ export function completeClaudeInference(
         ),
       );
     });
-    child.once("close", () => {
+    child.once("close", (code) => {
       clearTimeout(timer);
-      resolve(parseResult(stdout, input.model));
+      const result = parseResult(stdout, input.model);
+      resolve(
+        code !== 0 && !result.ok
+          ? failure(
+              "request_failed",
+              stderr.trim().replace(/sk-[a-zA-Z0-9_-]+/gu, "[redacted]") ||
+                `Claude Code exited with code ${code}.`,
+            )
+          : result,
+      );
     });
     // Spawn failures already surface through the child's error event.
     child.stdin.once("error", () => {});

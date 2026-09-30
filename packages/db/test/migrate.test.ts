@@ -675,7 +675,27 @@ function dropMarketplaceCatalogSchema(db: DbConnection): void {
   }
 }
 
+// Cloudroom's own migrations (0121+) come after every rewind point, so every rewind undoes them.
+function dropCloudroomSchema(db: DbConnection): void {
+  db.$client.exec("DROP TABLE IF EXISTS cloudroom_commands");
+  db.$client.exec("DROP TABLE IF EXISTS cloudroom_threads");
+  for (const [table, column] of [
+    ["threads", "execution_target"],
+    ["queued_thread_messages", "hard_queue"],
+  ]) {
+    if (
+      db.$client
+        .prepare<[], TableInfoRow>(`PRAGMA table_info(${table})`)
+        .all()
+        .some((row) => row.name === column)
+    ) {
+      db.$client.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
+    }
+  }
+}
+
 function dropEventToolNameColumn(db: DbConnection): void {
+  dropCloudroomSchema(db);
   db.$client.prepare("DROP TABLE IF EXISTS provider_model_catalogs").run();
   db.$client.prepare("DROP TABLE IF EXISTS ui_preferences").run();
   db.$client.prepare("DROP TABLE IF EXISTS retained_event_outputs").run();
@@ -841,6 +861,7 @@ function rewindEnvironmentRowFactsMigration(db: DbConnection): void {
 }
 
 function rewindMachineProvidersMigration(db: DbConnection): void {
+  dropCloudroomSchema(db);
   db.$client.exec("DROP TABLE IF EXISTS thread_plugin_metadata");
   db.$client.exec("DROP TABLE IF EXISTS provider_model_catalogs");
   db.$client.exec("DROP TABLE IF EXISTS environment_hook_operations");
@@ -1934,18 +1955,10 @@ describe("migrate", () => {
       runMigrationFile({ db, migrationPath: appSettingsKeyValueMigrationPath });
 
       expect(getAppSettings(db)).toEqual({
+        ...defaultAppSettings,
         showKeyboardHints: false,
         steerActiveThreadOnEnter: true,
         showDiagnosticEvents: true,
-        providerOrder: [],
-        defaultProviderId: null,
-        providerCompletedTurnDisplay: {},
-        machineServerUrl: null,
-        defaultMachineAccess: null,
-        machineGitCredentialsEnabled: true,
-        streamerMode: false,
-        telemetryEnabled: true,
-        managedBranchPrefix: "bb/",
       });
       expect(
         db.$client
@@ -5676,6 +5689,7 @@ describe("environment providers migration", () => {
   const environmentProvidersMigrationWhen = 1788386943764;
 
   function seedPreProviderEnvironments(db: DbConnection): void {
+    dropCloudroomSchema(db);
     db.$client.prepare("DROP TABLE provider_model_catalogs").run();
     db.$client.prepare("DROP TABLE ui_preferences").run();
     db.$client.prepare("DROP TABLE retained_event_outputs").run();

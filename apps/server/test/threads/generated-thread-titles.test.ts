@@ -738,7 +738,7 @@ describe("generated thread titles", () => {
     });
   });
 
-  it("does not retry non-transient metadata inference failures", async () => {
+  it("tries the fallback model after non-transient metadata inference failures", async () => {
     piAiMocks.getModel.mockReturnValue({ provider: "test" });
     piAiMocks.complete.mockRejectedValue(new Error("metadata failed"));
     await withTestHarness(async (harness) => {
@@ -753,7 +753,17 @@ describe("generated thread titles", () => {
         metadata: null,
         reason: "failed",
       });
-      expect(piAiMocks.complete).toHaveBeenCalledTimes(1);
+      expect(piAiMocks.complete).toHaveBeenCalledTimes(2);
+      expect(piAiMocks.getModel).toHaveBeenNthCalledWith(
+        1,
+        "test",
+        "mock-model",
+      );
+      expect(piAiMocks.getModel).toHaveBeenNthCalledWith(
+        2,
+        "test",
+        "mock-fallback-model",
+      );
     });
   });
 });

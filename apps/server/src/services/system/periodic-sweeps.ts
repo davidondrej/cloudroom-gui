@@ -49,6 +49,7 @@ import {
   requestThreadStorageDeletion,
 } from "../threads/thread-lifecycle.js";
 import { advanceThreadProvisioning } from "../threads/thread-provisioning.js";
+import { sweepThreadTitleRetries } from "../threads/thread-metadata-inference.js";
 import {
   runQueuedMessageDispatch,
   type QueueWaitPluginDirectory,
@@ -485,6 +486,12 @@ const PERIODIC_SWEEP_JOBS: PeriodicSweepJob[] = [
   {
     cadenceMs: 0,
     category: "durable-intent-retry",
+    name: "thread-title-retry",
+    run: sweepThreadTitleRetries,
+  },
+  {
+    cadenceMs: 0,
+    category: "durable-intent-retry",
     name: "environment-provider-lifecycle",
     run: sweepProviderLifecycles,
   },
@@ -586,6 +593,7 @@ const PERIODIC_SWEEP_JOBS: PeriodicSweepJob[] = [
 export async function runStartupRecoverySweep(
   deps: LoggedPendingInteractionWorkSessionDeps,
 ): Promise<void> {
+  sweepThreadTitleRetries(deps);
   await deliverLegacyDeferredThreadMessages(deps);
   await runEnvironmentProvisioningSweep(deps);
   await runThreadLifecycleSweep(deps);

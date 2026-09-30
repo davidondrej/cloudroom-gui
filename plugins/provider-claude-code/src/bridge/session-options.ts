@@ -26,6 +26,7 @@ export interface BuildSessionOptionsArgs {
   reasoningLevel?: ReasoningLevel;
   workflowsEnabled: boolean;
   chromeEnabled: boolean;
+  claudeAiConnectorsEnabled?: boolean;
   memoryEnabled?: boolean;
 }
 
@@ -62,6 +63,7 @@ export function toSdkEffort(
 function buildFlagSettings(params: BuildSessionOptionsArgs): Settings {
   return {
     autoMemoryEnabled: params.memoryEnabled ?? true,
+    disableClaudeAiConnectors: params.claudeAiConnectorsEnabled !== true,
     enableWorkflows: params.workflowsEnabled,
     ultracode: params.reasoningLevel === "ultracode",
   };

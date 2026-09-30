@@ -19,6 +19,7 @@ import {
 const MAX_CONTEXT_LENGTH = 2_000;
 
 interface PendingTitle {
+  checking?: boolean;
   input: PromptInput[];
   title: string;
 }
@@ -44,6 +45,7 @@ export function installTitleRecheck(
   });
   return () => {
     unsubscribe();
+    current.pending.clear();
     if (tracker === current) tracker = null;
   };
 }
@@ -59,21 +61,34 @@ export function noteGeneratedTitle(
   checkWhenReplied(tracker, threadId);
 }
 
+export function cancelTitleRecheck(threadId: string): void {
+  tracker?.pending.delete(threadId);
+}
+
 function checkWhenReplied(current: Tracker, threadId: string): void {
   const thread = getThread(current.deps.db, threadId);
   const gone = !thread || thread.archivedAt !== null;
-  if (!gone && (thread.status !== "idle" || !hasCompletedTurn(current.deps.db, threadId))) {
+  if (
+    !gone &&
+    (thread.status !== "idle" || !hasCompletedTurn(current.deps.db, threadId))
+  ) {
     return;
   }
   const pending = current.pending.get(threadId);
-  current.pending.delete(threadId);
-  if (gone || !pending) return;
-  void recheckTitle(current, threadId, pending).catch((error: unknown) => {
-    current.deps.logger.debug(
-      { threadId, ...runtimeErrorLogFields(current.deps.config, error) },
-      "Vague title check failed",
-    );
-  });
+  if (gone) current.pending.delete(threadId);
+  if (gone || !pending || pending.checking) return;
+  pending.checking = true;
+  void recheckTitle(current, threadId, pending)
+    .catch((error: unknown) => {
+      current.deps.logger.debug(
+        { threadId, ...runtimeErrorLogFields(current.deps.config, error) },
+        "Vague title check failed",
+      );
+    })
+    .finally(() => {
+      if (current.pending.get(threadId) === pending)
+        current.pending.delete(threadId);
+    });
 }
 
 async function recheckTitle(
@@ -82,9 +97,15 @@ async function recheckTitle(
   pending: PendingTitle,
 ): Promise<void> {
   const { deps } = current;
-  const sensitivity = readUiPreferences(deps)["threadNaming.renameSensitivity"].value;
-  const agentReply = getLastThreadOutput(deps.db, threadId)?.slice(0, MAX_CONTEXT_LENGTH);
-  const unchanged = () => getThread(deps.db, threadId)?.title === pending.title;
+  const sensitivity =
+    readUiPreferences(deps)["threadNaming.renameSensitivity"].value;
+  const agentReply = getLastThreadOutput(deps.db, threadId)?.slice(
+    0,
+    MAX_CONTEXT_LENGTH,
+  );
+  const unchanged = () =>
+    current.pending.get(threadId) === pending &&
+    getThread(deps.db, threadId)?.title === pending.title;
   if (sensitivity <= 1 || !agentReply || !unchanged()) return;
 
   const vague = await current.website.titleTooVague({
@@ -101,7 +122,15 @@ async function recheckTitle(
     threadId,
   });
   const title = outcome.metadata?.title;
-  if (title && applyGeneratedThreadTitle(deps, { replaces: pending.title, threadId, title })) {
+  if (
+    title &&
+    unchanged() &&
+    applyGeneratedThreadTitle(deps, {
+      replaces: pending.title,
+      threadId,
+      title,
+    })
+  ) {
     syncGeneratedTitleToProvider(deps, threadId, title);
   }
 }
@@ -111,7 +140,9 @@ function hasCompletedTurn(db: DbConnection, threadId: string): boolean {
     db
       .select({ id: events.id })
       .from(events)
-      .where(and(eq(events.threadId, threadId), eq(events.type, "turn/completed")))
+      .where(
+        and(eq(events.threadId, threadId), eq(events.type, "turn/completed")),
+      )
       .limit(1)
       .get() !== undefined
   );

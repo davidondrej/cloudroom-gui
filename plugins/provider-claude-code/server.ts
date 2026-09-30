@@ -58,6 +58,13 @@ export default function plugin(bb: BbPluginApi) {
         "Start Claude Code with the Claude in Chrome browser tools. Needs the Chrome extension and a claude.ai login on the host.",
       default: false,
     },
+    claudeAiConnectorsEnabled: {
+      type: "boolean",
+      label: "claude.ai connectors",
+      description:
+        "Load connectors from your claude.ai account, like Gmail and Google Drive. Applies to new Claude sessions.",
+      default: false,
+    },
   });
 
   bb.providers.register({
@@ -117,6 +124,8 @@ export default function plugin(bb: BbPluginApi) {
         providerSubagentsEnabled: context.settings.subagentsDisabled !== true,
         workflowsEnabled: context.settings.workflowsDisabled !== true,
         chromeEnabled: context.settings.chromeEnabled === true,
+        claudeAiConnectorsEnabled:
+          context.settings.claudeAiConnectorsEnabled === true,
         ...(context.promptMode === "plan"
           ? { claudeCodePermissionMode: "plan" }
           : {}),

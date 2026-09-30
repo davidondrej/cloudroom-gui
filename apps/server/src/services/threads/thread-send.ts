@@ -389,6 +389,7 @@ export function captureUserMessageSentTelemetry(
   noteMessageSent(args.threadId, {
     execution: args.execution ?? "local",
     isChildThread: args.isChildThread,
+    messageSource: args.messageSource,
     provider: args.providerId,
   }, args.sentAt);
   deps.telemetry.capture({

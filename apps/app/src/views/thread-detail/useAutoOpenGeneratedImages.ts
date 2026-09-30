@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { TimelineRow } from "@bb/server-contract";
+import { IMAGE_FILE_EXTENSIONS } from "@/components/secondary-panel/ImageTabLightboxContext";
 import {
   parseLocalFileHref,
   resolveRelativeLocalFileHref,
@@ -8,15 +9,16 @@ import {
 
 const MAX_AUTO_OPENED_IMAGES = 5;
 const MARKDOWN_CODE_PATTERN = /```[\s\S]*?```|`[^`\n]*`/g;
-const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\(\s*(?:<([^>]+)>|([^)\s]+))/g;
+// Plain links (not `![...]` embeds): embeds already show inline in the chat.
+const MARKDOWN_LINK_PATTERN = /(?<!!)\[[^\]]*\]\(\s*(?:<([^>]+)>|([^)\s]+))/g;
 const TRUSTED_HOST = { kind: "trusted-host" } as const;
 
-interface ShownImage {
+interface LinkedImage {
   key: string;
   link: MarkdownPreviewLocalFileLink;
 }
 
-interface FindShownImagesArgs {
+interface FindLinkedImagesArgs {
   afterSeq: number;
   rows: readonly TimelineRow[];
   workspaceRootPath: string | null;
@@ -37,7 +39,12 @@ interface AutoOpenState {
   threadId: string;
 }
 
-function toLocalImageLink(
+function isImagePath(path: string): boolean {
+  const extension = path.split(".").pop()?.toLowerCase();
+  return extension !== undefined && IMAGE_FILE_EXTENSIONS.has(extension);
+}
+
+function toLocalFileLink(
   href: string,
   workspaceRootPath: string | null,
 ): MarkdownPreviewLocalFileLink | null {
@@ -53,12 +60,12 @@ function toLocalImageLink(
     : parseLocalFileHref({ absoluteLinks: TRUSTED_HOST, href: resolved });
 }
 
-export function findShownImages({
+export function findLinkedImages({
   afterSeq,
   rows,
   workspaceRootPath,
-}: FindShownImagesArgs): ShownImage[] {
-  const images: ShownImage[] = [];
+}: FindLinkedImagesArgs): LinkedImage[] {
+  const images: LinkedImage[] = [];
   const visit = (row: TimelineRow): void => {
     if (row.kind === "turn") {
       row.children?.forEach(visit);
@@ -72,12 +79,12 @@ export function findShownImages({
       return;
     }
     const prose = row.text.replace(MARKDOWN_CODE_PATTERN, "");
-    for (const match of prose.matchAll(MARKDOWN_IMAGE_PATTERN)) {
-      const link = toLocalImageLink(
+    for (const match of prose.matchAll(MARKDOWN_LINK_PATTERN)) {
+      const link = toLocalFileLink(
         match[1] ?? match[2] ?? "",
         workspaceRootPath,
       );
-      if (link === null) continue;
+      if (link === null || !isImagePath(link.path)) continue;
       const key = `${row.turnId ?? row.id}:${link.path}`;
       if (!images.some((image) => image.key === key))
         images.push({ key, link });
@@ -113,7 +120,7 @@ export function useAutoOpenGeneratedImages({
     }
     if (isTurnRunning) return;
 
-    const fresh = findShownImages({
+    const fresh = findLinkedImages({
       afterSeq: state.afterSeq,
       rows,
       workspaceRootPath,

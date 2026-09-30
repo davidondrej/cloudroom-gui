@@ -1,5 +1,5 @@
-import { cp } from "node:fs/promises";
-import { constants as fsConstants, existsSync } from "node:fs";
+import { cp, mkdir } from "node:fs/promises";
+import { constants as fsConstants, existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,6 +13,7 @@ interface ResolveBuiltinSkillsRootPathArgs {
 }
 
 export const BUILTIN_SKILLS_DIRECTORY_NAME = "builtin-skills";
+export const SHARED_SKILLS_DIRECTORY_NAME = "shared-skills";
 const BUILTIN_SKILLS_SENTINEL_PATH = path.join("room-cli", "SKILL.md");
 const BUILTIN_SKILLS_COPY_MODE = fsConstants.COPYFILE_FICLONE;
 const builtinSkillsModuleDir = path.dirname(fileURLToPath(import.meta.url));
@@ -59,4 +60,56 @@ export async function copyBuiltinSkills(
     mode: BUILTIN_SKILLS_COPY_MODE,
     recursive: true,
   });
+}
+
+export function resolveSharedBuiltinSkillsRootPath(
+  builtinRoot: string,
+): string {
+  const candidates = [
+    path.resolve(builtinRoot, "..", SHARED_SKILLS_DIRECTORY_NAME),
+    path.resolve(builtinRoot, "../../../../skills"),
+    path.resolve(builtinRoot, "../../../skills"),
+  ];
+  const root = candidates.find((candidate) =>
+    existsSync(path.join(candidate, "manifest.json")),
+  );
+  if (!root) throw new Error("Missing shared built-in skills manifest");
+  return root;
+}
+
+export function readSharedBuiltinSkillNames(root: string): string[] {
+  const manifest = JSON.parse(
+    readFileSync(path.join(root, "manifest.json"), "utf8"),
+  );
+  const names: unknown = manifest.skills;
+  if (
+    !Array.isArray(names) ||
+    !names.every(
+      (name): name is string =>
+        typeof name === "string" &&
+        /^(?!.*--)[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(name),
+    ) ||
+    new Set(names).size !== names.length
+  ) {
+    throw new Error(`Invalid built-in skills manifest at ${root}`);
+  }
+  return names;
+}
+
+export async function copySharedBuiltinSkills(
+  root: string,
+  target: string,
+): Promise<void> {
+  await mkdir(target, { recursive: true });
+  for (const name of readSharedBuiltinSkillNames(root)) {
+    readFileSync(path.join(root, name, "SKILL.md"));
+    await cp(path.join(root, name), path.join(target, name), {
+      recursive: true,
+      mode: BUILTIN_SKILLS_COPY_MODE,
+    });
+  }
+  await cp(
+    path.join(root, "manifest.json"),
+    path.join(target, "manifest.json"),
+  );
 }

@@ -475,6 +475,7 @@ export function syncGeneratedTitleToProvider(
   if (
     !thread ||
     !environment ||
+    thread.title !== title ||
     thread.executionTarget === "cloud" ||
     (thread.status !== "active" && thread.status !== "idle")
   ) {

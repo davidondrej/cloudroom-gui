@@ -77,7 +77,13 @@ export function cloudFeatureSupported(status: z.infer<typeof cloudroomStatusSche
 const threadStatusSchema = z.object({ authRequired: z.boolean().default(false), starting: z.boolean().default(false), sessionId: z.string().nullable(), paused: z.boolean(), failedStart: z.boolean().default(false), model: z.string(), reasoning: reasoningLevelSchema, serviceTier: serviceTierSchema.default("default"), error: z.string().nullable(), reconnecting: z.boolean().default(false), pendingDelivery: z.number() }).nullable();
 
 export function useCloudroomAccount() {
-  return useQuery({ queryKey: ["cloudroom-account"], queryFn: ({ signal }) => sdk.cloudroom.status(signal), refetchInterval: (query) => query.state.data?.signingIn ? 1500 : 10000 });
+  return useQuery({ queryKey: ["cloudroom-account"], queryFn: async ({ signal }) => {
+    const status = await sdk.cloudroom.status(signal);
+    if (status.account && typeof document !== "undefined" && document.visibilityState === "visible") {
+      void fetchWithAppSurface("/api/v1/cloudroom/account/activity", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {});
+    }
+    return status;
+  }, refetchInterval: (query) => query.state.data?.signingIn ? 1500 : 10000 });
 }
 
 /** Starts browser sign-in, or cancels the one in progress. */

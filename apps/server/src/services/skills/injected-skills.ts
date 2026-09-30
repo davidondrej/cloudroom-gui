@@ -9,6 +9,7 @@ import { z } from "zod";
 import type { ServerLogger } from "../../types.js";
 import { isFsErrorWithCode } from "../lib/fs-errors.js";
 import { REGISTRY_SKILL_PROVENANCE_FILE_NAME } from "./registry-skill-provenance.js";
+import { readSharedBuiltinSkillNames } from "./builtin-skills-copy.js";
 
 const SKILL_FILE_NAME = "SKILL.md";
 const SKILL_NAME_PATTERN = /^(?!.*--)[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/u;
@@ -33,6 +34,7 @@ const skillFrontmatterSchema = z
   .passthrough();
 
 export interface ResolveInjectedSkillSourcesArgs {
+  builtinSkillsRootPath?: string;
   additionalSkillsRootPaths?: readonly string[];
   dataDir: string;
   pluginSkillRoots?: readonly PluginSkillRoot[];
@@ -609,6 +611,19 @@ export function resolveSkillCatalogEntries(
   args: ResolveInjectedSkillSourcesArgs,
 ): ResolvedSkillCatalogEntry[] {
   const { skillTreeRegistry } = args;
+  const builtinSources = args.builtinSkillsRootPath
+    ? readSharedBuiltinSkillNames(args.builtinSkillsRootPath).map((name) => {
+        const source = readSkillCandidate({
+          candidatePath: path.join(args.builtinSkillsRootPath!, name),
+          directoryName: name,
+          logger,
+          skillTreeRegistry,
+          sourceType: "builtin",
+        });
+        if (!source) throw new Error(`Invalid built-in skill: ${name}`);
+        return source;
+      })
+    : [];
   const projectSources = [...(args.projectSkillSources ?? [])];
   const sharedProjectSources = (args.sharedSkillSources ?? []).filter(
     (source) => source.sourceType === "shared-project",
@@ -689,6 +704,10 @@ export function resolveSkillCatalogEntries(
   const globalSources = excludeCollisions(logger, [
     ...userSources,
     ...activePluginSources,
+    ...excludeOverriddenLowerPriorityUserSources(logger, {
+      higherPrioritySources: [...userSources, ...activePluginSources],
+      lowerPrioritySources: builtinSources,
+    }),
   ]);
   const activeProjectSources = excludeCollisions(logger, projectSources);
   const activeSharedProjectSources = excludeOverriddenLowerPriorityUserSources(
@@ -708,6 +727,9 @@ export function resolveSkillCatalogEntries(
     HostDaemonInjectedSkillSource,
     SkillCatalogProvenance
   >();
+  for (const source of builtinSources) {
+    provenanceBySource.set(source, { kind: "builtin" });
+  }
   for (const source of projectSources) {
     provenanceBySource.set(source, { kind: "project" });
   }

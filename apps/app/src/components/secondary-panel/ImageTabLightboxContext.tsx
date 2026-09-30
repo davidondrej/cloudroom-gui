@@ -29,7 +29,7 @@ interface ImageTabLightboxProviderProps {
   tabs: readonly SecondaryPanelRenderableTab[];
 }
 
-const IMAGE_FILE_EXTENSIONS = new Set([
+export const IMAGE_FILE_EXTENSIONS = new Set([
   "avif",
   "bmp",
   "gif",

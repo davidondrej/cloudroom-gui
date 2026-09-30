@@ -304,13 +304,20 @@ class Relay:
             threading.Thread(target=self.pipe, args=(client,), daemon=True).start()
 
     def open(self):
+        # Some sandbox proxies relay bytes only after a WebSocket handshake; cores before 0.1.35 know only cloudroom-tunnel.
+        try:
+            return self.connect('websocket')
+        except PermissionError:
+            return self.connect('cloudroom-tunnel')
+
+    def connect(self, protocol):
         url = urllib.parse.urlsplit(self.core.url)
         remote = socket.create_connection((url.hostname, url.port or (443 if url.scheme == 'https' else 80)), timeout=10)
         if url.scheme == 'https':
             remote = ssl.create_default_context().wrap_socket(remote, server_hostname=url.hostname)
         headers = ''.join(f'{key}: {value}\r\n' for key, value in self.core.headers.items())
         remote.sendall(f'GET /v1/previews/{self.port}/tunnel?device={self.device} HTTP/1.1\r\nHost: {url.netloc}\r\n'
-                       f'Connection: Upgrade\r\nUpgrade: cloudroom-tunnel\r\n{headers}\r\n'.encode())
+                       f'Connection: Upgrade\r\nUpgrade: {protocol}\r\n{headers}\r\n'.encode())
         head = b''
         while b'\r\n\r\n' not in head:
             chunk = remote.recv(4096)
@@ -318,6 +325,9 @@ class Relay:
                 raise OSError('Preview tunnel closed')
             head += chunk
         status, rest = head.split(b'\r\n', 1)[0].split(), head.split(b'\r\n\r\n', 1)[1]
+        if len(status) >= 2 and status[1] == b'400':
+            remote.close()
+            raise PermissionError('Preview tunnel protocol refused')
         if len(status) < 2 or status[1] != b'101':
             raise OSError('Preview tunnel refused')
         remote.settimeout(None)

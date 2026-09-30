@@ -36,9 +36,17 @@ export type TelemetryEvent =
       properties: {
         execution: TelemetryExecution;
         is_child_thread: boolean;
+        message_source: "queued_message" | "thread_create" | "thread_send";
         ms: number;
         provider: string;
         sandbox_woke: boolean | null;
+        startup_source?: string | null;
+        sandbox_start_ms?: number | null;
+        startup_id?: string | null;
+        model?: string | null;
+        reasoning_level?: string | null;
+        service_tier?: string | null;
+        harness_version?: string | null;
       };
     }
   | {

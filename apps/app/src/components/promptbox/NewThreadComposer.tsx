@@ -794,7 +794,10 @@ export function NewThreadComposer({
   const cloudLevels = cloudReasoningLevels(cloudConnection.data, selectedProviderId, selectedThreadModel);
   const cloudFastSupported = executionTarget === "cloud" && cloudServiceTierSupported(cloudConnection.data, selectedProviderId);
   const cloudKnown = executionTarget === "cloud" && cloudCatalogKnown(cloudConnection.data);
-  const availableReasoningOptions = cloudKnown ? reasoningOptions.filter((option) => cloudLevels.includes(option.value)) : reasoningOptions;
+  // Sandboxes upgrade to the Mac's harness version before the agent starts (ADR 0133), so a model the saved cloud
+  // catalog lacks, such as one released today, keeps the Mac's levels; Core still rejects an unsupported one.
+  const cloudFiltered = cloudKnown && cloudLevels.length > 0;
+  const availableReasoningOptions = cloudFiltered ? reasoningOptions.filter((option) => cloudLevels.includes(option.value)) : reasoningOptions;
 
   const promptDraft = usePromptDraftStorage(draftStorage);
   const textEffects = useComposerTextEffects(promptDraft.storageKey);
@@ -1491,7 +1494,9 @@ export function NewThreadComposer({
     submissionEnvironmentUnavailable: submissionEnvironment === null,
   });
   // Shown as a banner too, so an unavailable agent is never a silent greyed-out button.
-  const cloudBlockedReason = !cloudKnown || cloudHarness(cloudConnection.data, selectedProviderId)
+  const cloudBlockedReason = executionTarget === "cloud" && selectedProviderId === "acp-cursor"
+    ? "Cursor isn't available in Cloud. Use Codex or Claude Code."
+    : !cloudKnown || cloudHarness(cloudConnection.data, selectedProviderId)
     ? null
     : selectedProviderId === "claude-code"
       ? "Claude Code is not configured in Cloud yet."
@@ -1501,7 +1506,7 @@ export function NewThreadComposer({
       ? (cloudBlockedReason
           ?? (!selectedThreadModel || isLoadingModels
             ? "Select a model"
-            : cloudKnown && !cloudLevels.includes(reasoningLevel)
+            : cloudFiltered && !cloudLevels.includes(reasoningLevel)
               ? "Select a reasoning level supported by the cloud model"
             : isSubmitting || isUploading || isCopyingAttachments
               ? "Preparing your message"

@@ -12,6 +12,9 @@ with `room-cli plugin config provider-claude-code set <key> <value>`.
   Claude in Chrome tools. The host needs the extension and a claude.ai login.
   A change restarts the thread's Claude process before its next turn, preserving
   context.
+- `claudeAiConnectorsEnabled` defaults to `false`. Claude Code then skips the
+  connectors from the user's claude.ai account (Gmail, Drive, and others). A
+  change applies to new Claude sessions.
 - Structured plan, message editing, and compaction are supported through the
   corresponding `room-cli thread` commands. Unlisted model IDs are accepted by the
   provider; verify actual availability on the target host.

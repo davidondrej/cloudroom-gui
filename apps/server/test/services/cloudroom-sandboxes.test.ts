@@ -23,7 +23,7 @@ it("gives each cloud thread its own sandbox, wakes it only for work, and archive
   const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
   const service = cloudroom(harness.deps);
   const capture = vi.spyOn(harness.deps.telemetry, "capture");
-  const website: { action: string; thread?: string; auth?: string }[] = [];
+  const website: { action: string; thread?: string; project?: string; auth?: string }[] = [];
   const core: { path: string; auth?: string }[] = [];
   let state: "new" | "awake" | "asleep" | "archived" = "new";
   let coreUrl = "";
@@ -141,7 +141,7 @@ it("moving back to the VM: new threads start on the VM while sandbox threads sta
     await service.claudeAuth("token", undefined, "sk-ant-oat01-test", "max");
     expect(savedLogins).toContain("claude");
     // Cursor too, with an API key. The picker offers what sandboxes run, never the VM's harnesses.
-    expect(await service.cursorAuth()).toMatchObject({ state: "limited" });
+    expect(await service.cursorAuth()).toMatchObject({ state: "missing" });
     await service.cursorAuth("key", undefined, "key_cursor");
     expect(savedLogins).toContain("cursor");
     await vi.waitFor(async () => expect((await service.status()).harnesses?.map(h => h.id)).toEqual(["codex"]));

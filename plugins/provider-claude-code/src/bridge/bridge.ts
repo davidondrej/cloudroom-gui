@@ -833,6 +833,7 @@ function toSessionConstructionConfig(
       additionalWorkspaceWriteRoots: params.additionalWorkspaceWriteRoots,
       baseInstructions: params.baseInstructions,
       chromeEnabled: params.chromeEnabled,
+      claudeAiConnectorsEnabled: params.claudeAiConnectorsEnabled,
       cwd: params.cwd,
       disallowedTools: params.disallowedTools,
       instructionMode: params.instructionMode,

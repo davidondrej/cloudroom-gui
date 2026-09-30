@@ -14,6 +14,7 @@ import { ApiError } from "../../errors.js";
 import { emitPluginThreadCreated } from "../plugins/plugin-thread-events.js";
 import type { ThreadCreateServiceRequest } from "./thread-create-request.js";
 import { sanitizeGeneratedBranchSlug } from "./title-generation.js";
+import { queueThreadTitle } from "./thread-metadata-inference.js";
 
 type EnvironmentProvisionCommand = Extract<
   HostDaemonCommand,
@@ -119,6 +120,7 @@ export function createThreadRecord(
       // be claiming a thread had been admitted before anything decided so.
       status: "pending",
     });
+    queueThreadTitle(deps.db, thread.id, args.request.input);
     emitPluginThreadCreated(thread);
     return thread;
   } catch (error) {

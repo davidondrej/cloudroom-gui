@@ -200,7 +200,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
     machineAuth, pluginHostArtifacts, aiServices, skillTreeRegistry, telemetry, pendingInteractions,
   });
   cloud.start();
-  const stopFirstResponseTelemetry = installFirstResponseTelemetry({ db, hub, telemetry }, (threadId, at) => cloud.sandboxes.wokeSince(threadId, at));
+  const stopFirstResponseTelemetry = installFirstResponseTelemetry({ db, hub, telemetry }, (threadId, at) => cloud.sandboxes.wokeSince(threadId, at), (threadId, at) => cloud.sandboxes.startupSince(threadId, at));
   const stopAuthFailureTelemetry = installAuthFailureTelemetry({ db, logger, telemetry });
 
   const sweepDeps = {

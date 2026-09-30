@@ -136,6 +136,7 @@
       ]
     },
     "@bb/server#build": {
+      "cache": false,
       "dependsOn": ["topo"],
       "outputs": ["dist/**"],
       "inputs": [
@@ -179,6 +180,7 @@
       "outputs": ["dist/**"]
     },
     "bb-app#build": {
+      "cache": false,
       "dependsOn": [
         "@bb/app#build",
         "@bb/server#build",
@@ -228,6 +230,7 @@
       "dependsOn": ["topo", "@get-bb/plugin-sdk#build"]
     },
     "@bb/desktop#build": {
+      "cache": false,
       "dependsOn": ["bb-app#build", "topo"],
       "env": ["BB_CLOUDROOM_STAMP", "BB_DESKTOP_RELEASE_CHANNEL"],
       "inputs": [
@@ -615,6 +618,7 @@
     // condition that lets vitest read `src/` does not apply inside that
     // bundling step — so the SDK dist must exist before the suite runs.
     "@bb/server#test": {
+      "cache": false,
       "dependsOn": [
         "@bb/agent-runtime#generate:test-bridges",
         "//#ensure-native-modules",

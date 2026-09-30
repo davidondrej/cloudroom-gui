@@ -50,6 +50,8 @@ import { dispatchThreadRenameCommand } from "../../services/threads/thread-comma
 import { requestThreadStorageDeletion } from "../../services/threads/thread-lifecycle.js";
 import { listThreadWithDescendants } from "../../services/threads/thread-archive.js";
 import { createThreadFromRequest } from "../../services/threads/thread-create.js";
+import { cancelThreadTitleRetry } from "../../services/threads/thread-metadata-inference.js";
+import { cancelTitleRecheck } from "../../services/threads/title-recheck.js";
 import { createThreadForkFromRequest } from "../../services/threads/thread-fork.js";
 import { requireChildThreadsConfirmation } from "../../services/threads/child-thread-confirmation.js";
 import {
@@ -438,6 +440,10 @@ export function registerThreadBaseRoutes(app: Hono, deps: AppDeps): void {
         : requirePublicThread(deps.db, thread.id);
     if (!updated) {
       throw new ApiError(404, "thread_not_found", "Thread not found");
+    }
+    if ("title" in payload) {
+      cancelThreadTitleRetry(deps.db, thread.id);
+      cancelTitleRecheck(thread.id);
     }
 
     if (
