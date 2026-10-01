@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { PLUGIN_SDK_VERSION } from "@bb/domain";
+import { PLUGIN_SDK_NPM_VERSION } from "@bb/domain";
 import { RESERVED_BB_CLI_COMMANDS } from "@bb/domain/plugin-cli";
 import { Command } from "commander";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -124,14 +124,14 @@ describe.sequential("room-cli plugin new dependency install", () => {
     expect(logged).toContain("  npm install --include=dev");
   });
 
-  it("pins the scaffold to this Cloudroom's SDK version", async () => {
+  it("pins the scaffold to this Cloudroom's npm SDK version", async () => {
     await runPluginNew(["pinned"]);
 
     const manifest: { devDependencies: Record<string, string> } = JSON.parse(
       await readFile(join(workDir, "bb-plugin-pinned", "package.json"), "utf8"),
     );
     expect(manifest.devDependencies["@get-bb/plugin-sdk"]).toBe(
-      PLUGIN_SDK_VERSION,
+      PLUGIN_SDK_NPM_VERSION,
     );
     expect(await isInstalled("bb-plugin-pinned", "@get-bb/plugin-sdk")).toBe(
       true,
@@ -149,7 +149,7 @@ describe.sequential("room-cli plugin new dependency install", () => {
     );
     const warnings = warned.join("\n");
     expect(warnings).toContain(
-      `@get-bb/plugin-sdk ${PLUGIN_SDK_VERSION} — this Cloudroom's SDK version — was not found on npm`,
+      `@get-bb/plugin-sdk ${PLUGIN_SDK_NPM_VERSION} — the version this Cloudroom pins — was not found on npm`,
     );
     expect(warnings).toContain("npm pack");
   });
@@ -160,7 +160,7 @@ describe.sequential("room-cli plugin new dependency install", () => {
     await runPluginNew(["missing-package"]);
 
     expect(warned.join("\n")).toContain(
-      `@get-bb/plugin-sdk ${PLUGIN_SDK_VERSION} — this Cloudroom's SDK version — was not found on npm`,
+      `@get-bb/plugin-sdk ${PLUGIN_SDK_NPM_VERSION} — the version this Cloudroom pins — was not found on npm`,
     );
   });
 

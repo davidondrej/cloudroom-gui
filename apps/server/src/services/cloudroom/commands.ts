@@ -13,14 +13,14 @@ import { mentionsOpenAISide401 } from "./codex-errors.js";
 import { codexOutage } from "./openai-status.js";
 import { buildThreadStatusChangeMetadata } from "../threads/thread-runtime-display.js";
 import { cloudroomSystemPrompt, prepareCloudInstructionInput, resolveCustomInstructions } from "../threads/custom-instructions.js";
-import { binding, bindings, command, commands, queuedPrompts, saveBinding, saveCommandState, saveStatus, effectivePrompt, projectCopyProgress, teleportBlocked, unstartedTurn, type Binding, type Command } from "./store.js";
+import { binding, bindings, command, commands, queuedPrompts, saveBinding, saveCommandState, saveStatus, effectivePrompt, projectCopyProgress, stampBindings, teleportBlocked, unstartedTurn, type Binding, type Command } from "./store.js";
 import { copyProject, githubRepository, localProjectNote, planProjectCopy } from "./project-copy.js";
 import { deriveTitleFallback, shouldGenerateThreadTitle } from "../threads/title-generation.js";
 import { inferThreadMetadata, queueThreadTitle } from "../threads/thread-metadata-inference.js";
 import { copyLogins, importCodexLogin, importPiLogin, setupSync, stopSync, syncStatus } from "./sync.js";
 import { setupPreviews, stopPreviews, previewStatus } from "./previews.js";
 import { CloudSecrets } from "./secrets.js";
-import { cancelMacCodexLogin, hasMacCodexLogin, macCodexLogin, macCursorLogin, startMacCodexLogin, SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject, type SandboxTrigger } from "./sandboxes.js";
+import { cancelMacCodexLogin, hasMacCodexLogin, macCodexLogin, macCursorLogin, revokeDesktopToken, startMacCodexLogin, SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject, type SandboxTrigger } from "./sandboxes.js";
 import type { AppDeps, LoggedWorkSessionDeps } from "../../types.js";
 import type { EditMessageRequest, EditMessageResponse } from "@bb/server-contract";
 
@@ -423,6 +423,7 @@ class CloudroomService {
 
   /** A thread's Core. Sandbox threads wake only when `wake` is true, for work that must be sent. */
   private async client(saved?: Binding, wake = true): Promise<CloudroomClient> {
+    if (saved) await this.requireOwnThread(saved);
     const sandbox = saved ? sandboxThread(saved.coreUrl) : null;
     if (sandbox) {
       if (wake) {
@@ -437,6 +438,15 @@ class CloudroomService {
     const connection = await this.connection();
     if (saved && connection.url !== saved.coreUrl) throw new ApiError(409, "cloudroom_connection_changed", "This thread belongs to a different core connection. Restore its connection before continuing.");
     return new CloudroomClient(connection);
+  }
+
+  /** Cloud threads stamped with another account stay locked until that account signs in again (docs/scopes/sandboxes.md). */
+  private async otherAccountThread(saved: Binding): Promise<boolean> {
+    return Boolean(saved.accountId) && saved.accountId !== (await this.savedConnection())?.account?.id;
+  }
+
+  private async requireOwnThread(saved: Binding): Promise<void> {
+    if (await this.otherAccountThread(saved)) throw new ApiError(409, "cloudroom_other_account", "This cloud thread belongs to another Cloudroom account. Sign in with that account to use it.");
   }
 
   private async storage(client: CloudroomClient): Promise<Storage | null> {
@@ -472,9 +482,9 @@ class CloudroomService {
       if (connection) connection.url = new URL(connection.url).href.replace(/\/$/, "");
       if (connection?.projectId && !getProject(this.deps.db, connection.projectId)) throw new ApiError(404, "project_not_found", "Project not found");
       const existing = await this.savedConnection();
-      const allBindings = bindings(this.deps.db);
-      const savedBindings = allBindings.filter((saved) => !sandboxThread(saved.coreUrl));
-      if ((connection && savedBindings.some((saved) => saved.coreUrl !== connection.url)) || (allBindings.length && existing?.account && existing.account.id !== account?.id)) throw new ApiError(409, "cloudroom_connection_in_use", "Existing cloud threads belong to another account or core. Use a separate app profile; history has not been changed.");
+      const previousAccount = existing?.account && existing.account.id !== account?.id ? existing.account.id : null;
+      const savedBindings = bindings(this.deps.db).filter((saved) => !sandboxThread(saved.coreUrl) && (saved.accountId ? saved.accountId === account?.id : !previousAccount));
+      if (connection && savedBindings.some((saved) => saved.coreUrl !== connection.url)) throw new ApiError(409, "cloudroom_connection_in_use", "Existing cloud threads belong to another core. Use a separate app profile; history has not been changed.");
       if (connection && savedBindings.length && existing?.projectId && connection.projectId && existing.projectId !== connection.projectId) throw new ApiError(409, "cloudroom_project_in_use", "Existing legacy cloud threads keep their current project binding.");
       if (connection && !account) {
         const client = new CloudroomClient(connection);
@@ -483,6 +493,10 @@ class CloudroomService {
       }
       signal?.throwIfAborted();
       this.stop();
+      if (previousAccount) {
+        stampBindings(this.deps.db, previousAccount);
+        this.sandboxes.reset();
+      }
       await this.saveConnection({
         ...(connection ?? {}), ...(account ? { account: accountSchema.parse(account) } : {}),
         ...(websiteUrl ? { websiteUrl: websiteSchema.parse(websiteUrl) } : {}),
@@ -505,9 +519,11 @@ class CloudroomService {
       const saved = await this.savedConnection();
       await stopPreviews(this.deps);
       if (saved) {
-        const { token: _token, gateToken: _gateToken, sandboxToken: _sandboxToken, ...binding } = saved;
+        const { token: _token, gateToken: _gateToken, sandboxToken, ...binding } = saved;
         await this.saveConnection(binding);
+        if (sandboxToken && saved.account) revokeDesktopToken({ website: saved.websiteUrl ?? "https://www.cloudroom.dev", userId: saved.account.id, token: sandboxToken });
       }
+      this.sandboxes.reset();
       await stopSync(this.deps);
     });
   }
@@ -940,6 +956,7 @@ class CloudroomService {
     if (teleportBlocked(this.deps.db, thread.id)) throw new ApiError(409, "teleport_in_progress", "Messages are disabled until Teleport finishes.");
     const saved = binding(this.deps.db, thread.id);
     if (!saved) throw new ApiError(409, "cloudroom_missing_binding", "Cloud thread has no core binding; native execution is blocked");
+    await this.requireOwnThread(saved);
     if (!saved.sessionId && command(this.deps.db, `first_${thread.id}`)?.state === "failed") throw new ApiError(409, "cloudroom_start_failed", "Retry the rejected cloud start before sending more messages. Your original prompt is saved.");
     if (thread.archivedAt || thread.deletedAt) throw new ApiError(409, "thread_not_writable", "Thread is archived or deleted");
     if (payload.sendAt || payload.pluginSubmission) throw new ApiError(409, "cloudroom_unsupported", "Cloud follow-ups use the core queue. Scheduling is not enabled.");
@@ -1360,7 +1377,7 @@ class CloudroomService {
   private async deliverPending(threadId: string): Promise<void> {
     this.holdRejectedStart(threadId);
     let saved = binding(this.deps.db, threadId);
-    if (!saved || this.stopped) return;
+    if (!saved || this.stopped || await this.otherAccountThread(saved)) return;
     if (!saved.sessionId && commands(this.deps.db, threadId).some(item => item.command === "teleport")) return;
     if (!saved.sessionId && command(this.deps.db, `first_${threadId}`)?.state === "failed") return;
     const epoch = this.epoch;

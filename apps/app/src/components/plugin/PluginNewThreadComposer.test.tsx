@@ -723,7 +723,21 @@ describe("PluginNewThreadComposer seeding", () => {
     );
   }
 
+  it("starts new threads in Cloud by default and keeps the last choice when set to Last used", async () => {
+    const { unmount } = render(newThreadElement("proj_1"));
+    expect(latestPromptBoxProps().modeConfig.environment.cloud.selected).toBe(
+      true,
+    );
+    unmount();
+    window.localStorage.setItem("cloudroom.startingMachine", "last");
+    render(newThreadElement("proj_1"));
+    expect(latestPromptBoxProps().modeConfig.environment.cloud.selected).toBe(
+      false,
+    );
+  });
+
   it("selects Cloud through the checkout menu and switches back to a local worktree", async () => {
+    window.localStorage.setItem("cloudroom.startingMachine", "last");
     render(newThreadElement("proj_1"));
     expect(
       latestPromptBoxProps().modeConfig.executionTargetControl,

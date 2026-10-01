@@ -117,6 +117,14 @@ export async function macVariables(): Promise<Record<string, string>> {
   }));
 }
 
+/** Asks the website to delete this sign-in's token. Best effort: signing out never waits for the network. */
+export function revokeDesktopToken(account: SandboxAccount): void {
+  void fetch(`${account.website}/api/desktop/sign-out`, {
+    method: "POST", redirect: "error", signal: AbortSignal.timeout(10_000),
+    headers: { Authorization: `Basic ${Buffer.from(`${account.userId}:${account.token}`).toString("base64")}` },
+  }).then(response => response.body?.cancel(), () => {});
+}
+
 /** Each cloud thread's own sandbox, managed by the website (docs/scopes/sandboxes.md). Lookups never wake it. */
 export class SandboxDirectory {
   private readonly views = new Map<string, { view: View; at: number }>();
@@ -229,6 +237,18 @@ export class SandboxDirectory {
     if (this.warmed?.project === project.id && Date.now() - this.warmed.at < RECHECK_MS) return;
     this.warmed = { project: project.id, at: Date.now() };
     await this.call({ action: "warm", project: project.id, trigger, ...(project.repository ? { repository: project.repository, folder: project.folder } : {}), harnesses: await macHarnessVersions() });
+  }
+
+  /** Forgets what was learned under the last account: sandbox tokens, uploaded logins and config, and its settings. */
+  reset(): void {
+    this.views.clear();
+    this.backoff.clear();
+    this.uploaded.clear();
+    this.mode = null;
+    this.warmed = null;
+    this.copiedAt = 0;
+    this.configAt = 0;
+    this.configDigest = "";
   }
 
   /** A broken stream or failed request may mean the sandbox went to sleep; look it up again next time. */

@@ -93,6 +93,7 @@ import {
 } from "@/hooks/usePromptDraftStorage";
 import { usePromptMentions } from "@/hooks/usePromptMentions";
 import { usePromptBoxMachinePreference } from "@/hooks/thread-creation-options/persisted-selection-fields";
+import { startingExecutionTarget } from "@/hooks/useStartingMachine";
 import { useThreadCreationOptions } from "@/hooks/useThreadCreationOptions";
 import { useComposerTextEffects } from "@/lib/composer-text-effects";
 import { getMutationErrorMessage } from "@/lib/mutation-errors";
@@ -436,9 +437,9 @@ export function NewThreadComposer({
   const [storedExecutionTarget, setExecutionTarget] = useState<
     "local" | "cloud"
   >(() =>
-    localStorage.getItem("cloudroom.executionTarget") === "cloud"
-      ? "cloud"
-      : "local",
+    startingExecutionTarget(
+      selectionScope === "new-thread" && seed?.environment === undefined,
+    ),
   );
   const executionTarget = cloudLocked ? "local" : storedExecutionTarget;
   useEffect(() => {
@@ -623,6 +624,7 @@ export function NewThreadComposer({
     setActiveSeedSignature(seedSignature);
     setBranchSeedOverridden(false);
     setPickedProviderMachine(null);
+    if (seed?.environment !== undefined) setExecutionTarget("local");
   }
 
   const resolveProviderSelection = useCallback(
@@ -1592,6 +1594,8 @@ export function NewThreadComposer({
         if (executionTarget === "cloud")
           clearCloudroomRequestId(promptDraft.storageKey);
         clearReuseEnvironment();
+        if (selectionScope === "new-thread")
+          setExecutionTarget(startingExecutionTarget(true));
       } catch (submitError) {
         if (clearedSubmittedDraft) {
           promptDraft.restoreIfEmpty(submittedDraft);
@@ -1613,6 +1617,7 @@ export function NewThreadComposer({
       promptDraft,
       reasoningLevel,
       seededExecutionInputSources,
+      selectionScope,
       submitDisabledReason,
       submissionEnvironment,
       selectedProviderId,

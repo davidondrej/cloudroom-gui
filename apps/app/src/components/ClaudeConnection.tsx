@@ -164,7 +164,7 @@ export function ClaudeConnectionButton({
         <div>
           <p className="text-sm font-medium">
             Claude Code ·{" "}
-            {target === "cloud" ? "Cloud" : "Local Primary"}
+            {target === "cloud" ? "Cloud" : "Local"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             Use your existing Claude subscription.

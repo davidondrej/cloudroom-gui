@@ -173,12 +173,12 @@ describe("EnvironmentPickerUI Cloudroom checkout menu", () => {
         .getAllByRole("option")
         .map((item) => item.textContent),
     ).toEqual([
-      "Local Primary",
+      "Local",
       "Local Worktree",
       "Cloud",
     ]);
     expect(
-      screen.getByRole("option", { name: "Local Primary" }).querySelector(
+      screen.getByRole("option", { name: "Local" }).querySelector(
         '[data-icon="Laptop"]',
       ),
     ).toBeTruthy();
@@ -195,7 +195,7 @@ describe("EnvironmentPickerUI Cloudroom checkout menu", () => {
     expect(document.querySelector('[data-icon="FolderGit"]')).toBeNull();
     expect(screen.queryByText("Docker container")).toBeNull();
     const trigger = screen.getByRole("button", { name: "Environment" });
-    expect(trigger.textContent).toContain("Local Primary");
+    expect(trigger.textContent).toContain("Local");
     expect(trigger.querySelector('[data-icon="Laptop"]')).toBeTruthy();
   });
 
@@ -208,7 +208,7 @@ describe("EnvironmentPickerUI Cloudroom checkout menu", () => {
   });
 
   it.each([
-    ["Local Primary", "project-checkout"],
+    ["Local", "project-checkout"],
     ["Local Worktree", "git-worktree"],
   ])("can switch back from Cloud to %s", (label, providerId) => {
     const { onSelectProvider, onSelectCloud } = mount({ selected: true });
@@ -239,7 +239,7 @@ describe("EnvironmentPickerUI Cloudroom checkout menu", () => {
     );
     fireEvent.click(cloud);
     expect(onSelectCloud).not.toHaveBeenCalled();
-    const local = screen.getByRole("option", { name: "Local Primary" });
+    const local = screen.getByRole("option", { name: "Local" });
     expect(local.getAttribute("aria-disabled")).not.toBe("true");
   });
 });

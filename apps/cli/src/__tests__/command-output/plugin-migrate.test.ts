@@ -9,7 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PLUGIN_SDK_VERSION } from "@bb/domain";
+import { PLUGIN_SDK_NPM_VERSION, PLUGIN_SDK_VERSION } from "@bb/domain";
 import {
   collectLogPayloads,
   readlineMocks,
@@ -98,7 +98,7 @@ describe("room-cli plugin migrate", () => {
 
     const logged = collectLogPayloads(logSpy).join("\n");
     expect(logged).toContain(
-      `"@get-bb/plugin-sdk": (none) → ${PLUGIN_SDK_VERSION}`,
+      `"@get-bb/plugin-sdk": (none) → ${PLUGIN_SDK_NPM_VERSION}`,
     );
     expect(logged).toContain("delete         types/bb-plugin-sdk.d.ts");
     expect(vi.mocked(console.error).mock.calls.flat().join("\n")).toContain(
@@ -121,7 +121,7 @@ describe("room-cli plugin migrate", () => {
       (manifest.devDependencies as Record<string, string>)[
         "@get-bb/plugin-sdk"
       ],
-    ).toBe(PLUGIN_SDK_VERSION);
+    ).toBe(PLUGIN_SDK_NPM_VERSION);
     await expect(
       stat(join(rootDir, "types", "bb-plugin-sdk.d.ts")),
     ).rejects.toThrow();
@@ -154,7 +154,7 @@ describe("room-cli plugin migrate", () => {
       name: "bb-plugin-modern",
       engines: { bbPluginSdk: `>=${PLUGIN_SDK_VERSION}` },
       bb: { server: "./server.ts" },
-      devDependencies: { "@get-bb/plugin-sdk": PLUGIN_SDK_VERSION },
+      devDependencies: { "@get-bb/plugin-sdk": PLUGIN_SDK_NPM_VERSION },
     });
     const before = await readFile(join(rootDir, "package.json"), "utf8");
 
@@ -181,7 +181,7 @@ describe("room-cli plugin migrate", () => {
       (manifest.devDependencies as Record<string, string>)[
         "@get-bb/plugin-sdk"
       ],
-    ).toBe(PLUGIN_SDK_VERSION);
+    ).toBe(PLUGIN_SDK_NPM_VERSION);
     expect((manifest.engines as Record<string, string>).bbPluginSdk).toBe(
       `>=${PLUGIN_SDK_VERSION}`,
     );
@@ -238,7 +238,7 @@ describe("room-cli plugin dev stale-pin warning", () => {
     ).rejects.toThrow("process.exit:1");
 
     expect(vi.mocked(console.warn).mock.calls.flat().join("\n")).toContain(
-      `This plugin pins @get-bb/plugin-sdk 0.2.0; this Cloudroom's SDK is ${PLUGIN_SDK_VERSION}`,
+      `This plugin pins @get-bb/plugin-sdk 0.2.0; this Cloudroom pins ${PLUGIN_SDK_NPM_VERSION}`,
     );
   });
 
@@ -246,7 +246,7 @@ describe("room-cli plugin dev stale-pin warning", () => {
     await writeManifest({
       name: "bb-plugin-modern",
       bb: { server: "./server.ts" },
-      devDependencies: { "@get-bb/plugin-sdk": PLUGIN_SDK_VERSION },
+      devDependencies: { "@get-bb/plugin-sdk": PLUGIN_SDK_NPM_VERSION },
     });
     stubEmptyPluginList();
     await expect(
@@ -285,12 +285,12 @@ describe("room-cli plugin types on a package-layout plugin", () => {
       (manifest.devDependencies as Record<string, string>)[
         "@get-bb/plugin-sdk"
       ],
-    ).toBe(PLUGIN_SDK_VERSION);
+    ).toBe(PLUGIN_SDK_NPM_VERSION);
     expect((manifest.engines as Record<string, string>).bbPluginSdk).toBe(
       ">=0.2.0",
     );
     const logged = collectLogPayloads(vi.mocked(console.log)).join("\n");
-    expect(logged).toContain(`0.2.0 → ${PLUGIN_SDK_VERSION}`);
+    expect(logged).toContain(`0.2.0 → ${PLUGIN_SDK_NPM_VERSION}`);
     expect(logged).toContain("Run `npm install`");
   });
 
@@ -313,7 +313,7 @@ describe("room-cli plugin types on a package-layout plugin", () => {
     await writeManifest({
       name: "bb-plugin-modern",
       bb: { server: "./server.ts" },
-      devDependencies: { "@get-bb/plugin-sdk": PLUGIN_SDK_VERSION },
+      devDependencies: { "@get-bb/plugin-sdk": PLUGIN_SDK_NPM_VERSION },
     });
     const before = await readFile(join(rootDir, "package.json"), "utf8");
 
@@ -321,7 +321,7 @@ describe("room-cli plugin types on a package-layout plugin", () => {
 
     expect(await readFile(join(rootDir, "package.json"), "utf8")).toBe(before);
     expect(collectLogPayloads(vi.mocked(console.log)).join("\n")).toContain(
-      `already pinned to ${PLUGIN_SDK_VERSION}`,
+      `already pinned to ${PLUGIN_SDK_NPM_VERSION}`,
     );
   });
 });

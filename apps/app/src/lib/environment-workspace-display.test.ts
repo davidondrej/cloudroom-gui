@@ -294,7 +294,7 @@ describe("getEnvironmentWorkspaceSummaryDisplay", () => {
         providerLabel: "Project checkout",
       }),
       providerLookup: checkoutProviderLookup,
-      label: "Local Primary",
+      label: "Local",
     },
     {
       name: "a worktree",

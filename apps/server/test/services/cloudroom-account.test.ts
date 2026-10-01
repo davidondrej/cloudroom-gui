@@ -44,7 +44,7 @@ it("pairs through a loopback callback, keeps secrets out of status, persists/rec
     if (req.url === "/api/desktop/onboarding") {
       expect(req.headers.origin).toBeUndefined();
       expect(req.headers.cookie).toBeUndefined();
-      expect(req.headers.authorization).toBe(`Basic ${Buffer.from(`${owners[0]!.id}:${token}`).toString("base64")}`);
+      expect(owners.map(item => `Basic ${Buffer.from(`${item.id}:${token}`).toString("base64")}`)).toContain(req.headers.authorization);
       let text = ""; for await (const chunk of req) text += chunk;
       const progress = JSON.parse(text);
       expect(progress.connected).toBe(true);
@@ -129,15 +129,19 @@ it("pairs through a loopback callback, keeps secrets out of status, persists/rec
     expect(saved).toContain(owners[0]!.id);
     expect(await account.status()).toMatchObject({ ready: false, account: null });
     expect(harness.db.select().from(cloudroomThreads).all()).toHaveLength(1);
-    await expect(cloudroom(harness.deps).control(thread.id, "stop")).rejects.toThrow("Sign in");
+    await expect(cloudroom(harness.deps).control(thread.id, "stop")).rejects.toThrow(/sign in/i);
     expect(coreCalls.some(path => path.includes("/stop") || path.includes("/close"))).toBe(false);
     owner = owners[1]!;
-    expect((await finish(await start())).status).toBe(400);
-    expect((await account.status()).signInError).toContain("another account");
-    expect(await readFile(savedPath, "utf8")).toBe(saved);
+    expect((await finish(await start())).status).toBe(200);
+    expect(await account.status()).toMatchObject({ ready: true, account: owners[1] });
+    expect(harness.db.select().from(cloudroomThreads).get()?.accountId).toBe(owners[0]!.id);
+    await expect(cloudroom(harness.deps).control(thread.id, "stop")).rejects.toThrow("another Cloudroom account");
+    await account.logout();
     owner = owners[0]!;
     expect((await finish(await start())).status).toBe(200);
     expect(await account.status()).toMatchObject({ ready: true, account: owners[0] });
+    await expect(cloudroom(harness.deps).threadClient(thread.id)).resolves.toBeDefined();
+    expect(coreCalls.some(path => path.includes("/stop") || path.includes("/close"))).toBe(false);
     await account.logout();
 
     const cancelled = await start();

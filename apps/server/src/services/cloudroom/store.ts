@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { cloudroomCommands, cloudroomThreads, threads, threadPluginMetadata, type DbQueryConnection } from "@bb/db";
 import type { ProjectCopyProgress } from "@bb/domain";
 
@@ -46,6 +46,11 @@ export function binding(db: DbQueryConnection, threadId: string): Binding | null
 
 export function bindings(db: DbQueryConnection): Binding[] {
   return db.select().from(cloudroomThreads).all();
+}
+
+/** Unstamped cloud threads belong to the signed-in account. Before another account signs in, they are stamped with the old one. */
+export function stampBindings(db: DbQueryConnection, accountId: string): void {
+  db.update(cloudroomThreads).set({ accountId }).where(isNull(cloudroomThreads.accountId)).run();
 }
 
 export function saveBinding(db: DbQueryConnection, threadId: string, values: Partial<Omit<Binding, "threadId">>): void {

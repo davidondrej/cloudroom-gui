@@ -645,6 +645,7 @@ export const cloudroomThreads = sqliteTable("cloudroom_threads", {
   turnId: text("turn_id"),
   queuePaused: integer("queue_paused", { mode: "boolean" }).notNull().default(false),
   error: text("error"),
+  accountId: text("account_id"),
 });
 
 export const cloudroomCommands = sqliteTable("cloudroom_commands", {

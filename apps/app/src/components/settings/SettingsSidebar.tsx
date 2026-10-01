@@ -20,6 +20,7 @@ import type { PluginSettingsEntry } from "./plugin-settings-entries";
 
 const VISIBLE_SECTIONS = new Set<SettingsSectionId>([
   "general",
+  "defaults",
   "cloud-environment",
   "providers",
   "appearance",

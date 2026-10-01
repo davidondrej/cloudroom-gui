@@ -16,7 +16,7 @@ import type {
   PluginCatalogSearchResult,
   PluginUpdateCheckEntry as PluginUpdateResult,
 } from "@bb/server-contract";
-import { PLUGIN_SDK_VERSION } from "@bb/domain";
+import { PLUGIN_SDK_NPM_VERSION, PLUGIN_SDK_VERSION } from "@bb/domain";
 import { BbHttpError, pluginMutationResponseSchema } from "@bb/sdk";
 import { parseDataDirEnvValue, resolveProdDataDir } from "@bb/config/runtime";
 import {
@@ -189,9 +189,9 @@ const EXACT_VERSION_PATTERN = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)*$/;
 
 function warnIfSdkPinIsStale(pin: string | null): void {
   if (pin === null || !EXACT_VERSION_PATTERN.test(pin)) return;
-  if (pin === PLUGIN_SDK_VERSION) return;
+  if (pin === PLUGIN_SDK_NPM_VERSION) return;
   console.warn(
-    `This plugin pins @get-bb/plugin-sdk ${pin}; this Cloudroom's SDK is ${PLUGIN_SDK_VERSION} — \`room-cli plugin types\` updates the pin.`,
+    `This plugin pins @get-bb/plugin-sdk ${pin}; this Cloudroom pins ${PLUGIN_SDK_NPM_VERSION} — \`room-cli plugin types\` updates the pin.`,
   );
 }
 
@@ -310,7 +310,7 @@ async function warnIfSdkVersionUnpublished(): Promise<void> {
   if (status === "published") return;
   if (status === "unknown") {
     console.warn(
-      `Warning: could not reach the npm registry to verify that @get-bb/plugin-sdk ${PLUGIN_SDK_VERSION} — this Cloudroom's SDK version — is published.`,
+      `Warning: could not reach the npm registry to verify that @get-bb/plugin-sdk ${PLUGIN_SDK_NPM_VERSION} — the version this Cloudroom pins — is published.`,
     );
     console.warn(
       "  If `npm install` fails to resolve it, the version may not be on your registry yet.",
@@ -318,7 +318,7 @@ async function warnIfSdkVersionUnpublished(): Promise<void> {
     return;
   }
   console.warn(
-    `Warning: @get-bb/plugin-sdk ${PLUGIN_SDK_VERSION} — this Cloudroom's SDK version — was not found on npm.`,
+    `Warning: @get-bb/plugin-sdk ${PLUGIN_SDK_NPM_VERSION} — the version this Cloudroom pins — was not found on npm.`,
   );
   console.warn(
     "  `npm install` in the new plugin will fail until that version publishes.",
@@ -342,7 +342,12 @@ async function probeSdkVersionPublished(): Promise<
   try {
     const { stdout } = await promisify(execFile)(
       "npm",
-      ["view", `@get-bb/plugin-sdk@${PLUGIN_SDK_VERSION}`, "version", "--json"],
+      [
+        "view",
+        `@get-bb/plugin-sdk@${PLUGIN_SDK_NPM_VERSION}`,
+        "version",
+        "--json",
+      ],
       { timeout: 5_000, killSignal: "SIGKILL" },
     );
     return stdout.trim().length === 0 ? "missing" : "published";
@@ -1326,7 +1331,7 @@ export function registerPluginCommands(
             );
             const pending = await setPluginSdkPin({
               rootDir,
-              sdkVersion: PLUGIN_SDK_VERSION,
+              sdkVersion: PLUGIN_SDK_NPM_VERSION,
               app: hasApp,
               dryRun: true,
             });
@@ -1340,7 +1345,7 @@ export function registerPluginCommands(
               console.error(
                 pending.pin === null
                   ? 'Move "@get-bb/plugin-sdk" from dependencies to devDependencies — cloudroom provides its runtime (`room-cli plugin types` does it for you).'
-                  : `Set "@get-bb/plugin-sdk" to ${PLUGIN_SDK_VERSION} in devDependencies and re-run npm install (\`room-cli plugin types\` does it for you).`,
+                  : `Set "@get-bb/plugin-sdk" to ${PLUGIN_SDK_NPM_VERSION} in devDependencies and re-run npm install (\`room-cli plugin types\` does it for you).`,
               );
             }
             for (const shim of pending.shimmedTypePins) {
@@ -1354,12 +1359,12 @@ export function registerPluginCommands(
           }
           const changed = await setPluginSdkPin({
             rootDir,
-            sdkVersion: PLUGIN_SDK_VERSION,
+            sdkVersion: PLUGIN_SDK_NPM_VERSION,
             app: hasApp,
           });
           if (changed === null) {
             console.log(
-              `@get-bb/plugin-sdk is already pinned to ${PLUGIN_SDK_VERSION} — this Cloudroom's SDK version${hasApp ? ", and the runtime-shimmed packages are at this Cloudroom's versions" : ""}.`,
+              `@get-bb/plugin-sdk is already pinned to ${PLUGIN_SDK_NPM_VERSION} — the version this Cloudroom pins${hasApp ? ", and the runtime-shimmed packages are at this Cloudroom's versions" : ""}.`,
             );
             console.log(
               "The declarations are in node_modules/@get-bb/plugin-sdk/bundled-types/ — read them for exact signatures.",
@@ -1424,6 +1429,7 @@ export function registerPluginCommands(
         const plan = await migratePluginToPackageLayout({
           rootDir,
           sdkVersion: PLUGIN_SDK_VERSION,
+          npmVersion: PLUGIN_SDK_NPM_VERSION,
           dryRun: true,
         });
         if (!plan.changed) {
@@ -1446,6 +1452,7 @@ export function registerPluginCommands(
         const confirmedPlan = await migratePluginToPackageLayout({
           rootDir,
           sdkVersion: PLUGIN_SDK_VERSION,
+          npmVersion: PLUGIN_SDK_NPM_VERSION,
           dryRun: true,
         });
         if (!samePlan(plan, confirmedPlan)) {
@@ -1457,6 +1464,7 @@ export function registerPluginCommands(
         const applied = await migratePluginToPackageLayout({
           rootDir,
           sdkVersion: PLUGIN_SDK_VERSION,
+          npmVersion: PLUGIN_SDK_NPM_VERSION,
         });
         console.log("Migrated to the @get-bb/plugin-sdk npm package.");
         if (plan.removedTypesDir && !applied.removedTypesDir) {

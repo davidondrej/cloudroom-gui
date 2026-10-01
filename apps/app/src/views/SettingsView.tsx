@@ -1,4 +1,5 @@
 import { CloudEnvironmentSettingsSection } from "@/components/settings/CloudEnvironmentSettingsSection";
+import { DefaultsSettingsSection } from "@/components/settings/DefaultsSettingsSection";
 import { MachineEnvironmentSettings } from "@/components/settings/MachineEnvironmentSettings";
 import { MachineAccessSettings } from "@/components/settings/MachineAccessSettings";
 import { useMemo, useRef, useState, type ReactNode } from "react";
@@ -51,6 +52,7 @@ import {
 } from "@/hooks/useTheme";
 import { useHostDaemon, useLocalHostDaemonAccess } from "@/hooks/useHostDaemon";
 import { useAppThemePreview } from "@/hooks/useAppThemePreview";
+import { useCorners, type Corners } from "@/hooks/useCorners";
 import { ProvidersSettingsSection } from "@/components/settings/ProvidersSettingsSection";
 import { CodeRendererSettings } from "@/components/settings/CodeRendererSettings";
 import { SidebarThreadListSetting } from "@/components/settings/SidebarThreadListSetting";
@@ -354,6 +356,56 @@ function FaviconColorSettingsControl({
                 className={cn(
                   "ml-auto",
                   faviconColor !== option.value && "opacity-0",
+                  COARSE_POINTER_ICON_SIZE_CLASS,
+                )}
+              />
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </SettingsWithControl>
+  );
+}
+
+const CORNERS_OPTIONS: ReadonlyArray<{ label: string; value: Corners }> = [
+  { label: "Rounded", value: "rounded" },
+  { label: "Sharp", value: "sharp" },
+];
+
+function CornersSetting() {
+  const [corners, setCorners] = useCorners();
+  return (
+    <SettingsWithControl label="Corners">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className={SETTINGS_DROPDOWN_TRIGGER_CLASS}
+            aria-label="Corners"
+          >
+            {corners === "sharp" ? "Sharp" : "Rounded"}
+            <Icon
+              name="ChevronDown"
+              className="size-3.5 text-muted-foreground"
+            />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className={SETTINGS_DROPDOWN_CONTENT_CLASS}
+        >
+          {CORNERS_OPTIONS.map((option) => (
+            <DropdownMenuItem
+              key={option.value}
+              onSelect={() => setCorners(option.value)}
+            >
+              {option.label}
+              <Icon
+                name="Check"
+                className={cn(
+                  "ml-auto",
+                  corners !== option.value && "opacity-0",
                   COARSE_POINTER_ICON_SIZE_CLASS,
                 )}
               />
@@ -723,6 +775,7 @@ export function AppearanceSettingsSection({
             </DropdownMenuContent>
           </DropdownMenu>
         </SettingsWithControl>
+        <CornersSetting />
 
         <SettingsWithControl
           label="Palette"
@@ -1145,6 +1198,8 @@ export function SettingsView() {
   let content: ReactNode = null;
   if (activePluginId !== null) {
     content = <PluginSettingsPage pluginId={activePluginId} />;
+  } else if (activeSection === "defaults") {
+    content = <DefaultsSettingsSection />;
   } else if (activeSection === "cloud-environment") {
     content = <CloudEnvironmentSettingsSection />;
   } else if (activeSection === "providers") {

@@ -13,7 +13,11 @@ import {
 import { dirname, isAbsolute, join, relative } from "node:path";
 import semverCompare from "semver/functions/compare.js";
 import minVersion from "semver/ranges/min-version.js";
-import { derivePluginId, PLUGIN_SDK_VERSION } from "@bb/domain";
+import {
+  derivePluginId,
+  PLUGIN_SDK_NPM_VERSION,
+  PLUGIN_SDK_VERSION,
+} from "@bb/domain";
 import { loadPluginSdkDeclarations } from "./plugin-sdk-dts.js";
 import {
   PLUGIN_SHIMMED_TYPE_DEPENDENCIES,
@@ -119,6 +123,7 @@ const MAX_SOURCE_SCAN_DEPTH = 12;
 interface MigratePluginArgs {
   rootDir: string;
   sdkVersion: string;
+  npmVersion?: string;
   dryRun?: boolean;
 }
 
@@ -142,8 +147,9 @@ interface RewrittenSdkImportFile {
 export async function migratePluginToPackageLayout(
   args: MigratePluginArgs,
 ): Promise<PluginPackageLayoutMigration> {
-  const { rootDir, sdkVersion, dryRun = false } = args;
+  const { rootDir, sdkVersion, npmVersion, dryRun = false } = args;
   const manifestPlan = await planManifest(rootDir, sdkVersion, {
+    pin: npmVersion,
     raiseFloor: true,
     shimmedTypePins: "none",
   });
@@ -345,7 +351,11 @@ type ShimmedTypePinPolicy = "none" | "declared" | "all";
 async function planManifest(
   rootDir: string,
   sdkVersion: string,
-  options: { raiseFloor: boolean; shimmedTypePins: ShimmedTypePinPolicy },
+  options: {
+    pin?: string;
+    raiseFloor: boolean;
+    shimmedTypePins: ShimmedTypePinPolicy;
+  },
 ): Promise<ManifestPlan> {
   const path = join(rootDir, "package.json");
   await statNoFollow(path, "package.json");
@@ -371,10 +381,11 @@ async function planManifest(
   }
 
   const declaredPin = readSdkPinFrom(manifest);
+  const pinVersion = options.pin ?? sdkVersion;
   const pin =
-    declaredPin.version === sdkVersion
+    declaredPin.version === pinVersion
       ? null
-      : { from: declaredPin.version, to: sdkVersion };
+      : { from: declaredPin.version, to: pinVersion };
   const movedFromDependencies = declaredPin.inDependencies;
   if (pin !== null || movedFromDependencies) {
     if (movedFromDependencies) {
@@ -389,7 +400,7 @@ async function planManifest(
     manifest.devDependencies = insertDependency(
       asRecord(manifest.devDependencies),
       "@get-bb/plugin-sdk",
-      sdkVersion,
+      pinVersion,
     );
   }
 
@@ -1444,9 +1455,9 @@ room-cli plugin reload ${id}
 ## Types & API reference
 
 The plugin API ships as the npm package \`@get-bb/plugin-sdk\`, pinned to an
-exact version in \`devDependencies\` (\`${PLUGIN_SDK_VERSION}\` — the SDK of the Cloudroom
-that scaffolded this plugin). After \`npm install\`, the full surface is on disk
-at:
+exact version in \`devDependencies\` (\`${PLUGIN_SDK_NPM_VERSION}\` — the npm release
+closest to the SDK of the Cloudroom that scaffolded this plugin). After
+\`npm install\`, the full surface is on disk at:
 
 \`\`\`
 node_modules/@get-bb/plugin-sdk/bundled-types/bb-plugin-sdk.d.ts      # backend
@@ -1506,7 +1517,7 @@ export async function scaffoldPlugin(args: ScaffoldPluginArgs): Promise<void> {
           zod: "^4.3.6",
         },
         devDependencies: {
-          "@get-bb/plugin-sdk": PLUGIN_SDK_VERSION,
+          "@get-bb/plugin-sdk": PLUGIN_SDK_NPM_VERSION,
           "@types/better-sqlite3": "^7.6.12",
           "@types/node": "^22.0.0",
           "@types/react": "^19.0.0",

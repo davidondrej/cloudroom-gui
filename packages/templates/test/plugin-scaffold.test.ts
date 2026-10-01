@@ -1,7 +1,7 @@
 import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { PLUGIN_SDK_VERSION } from "@bb/domain";
+import { PLUGIN_SDK_NPM_VERSION, PLUGIN_SDK_VERSION } from "@bb/domain";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   resolvePluginSdkLayout,
@@ -46,7 +46,9 @@ describe("scaffoldPlugin SDK dependency", () => {
     const pkg = JSON.parse(
       await readFile(join(targetDir, "package.json"), "utf8"),
     );
-    expect(pkg.devDependencies["@get-bb/plugin-sdk"]).toBe(PLUGIN_SDK_VERSION);
+    expect(pkg.devDependencies["@get-bb/plugin-sdk"]).toBe(
+      PLUGIN_SDK_NPM_VERSION,
+    );
     expect(pkg.dependencies["@get-bb/plugin-sdk"]).toBeUndefined();
     expect(pkg.engines).toEqual({
       bb: ">=0.9",
@@ -163,7 +165,7 @@ describe("resolvePluginSdkLayout", () => {
 
     await expect(resolvePluginSdkLayout(targetDir)).resolves.toEqual({
       kind: "package",
-      pin: PLUGIN_SDK_VERSION,
+      pin: PLUGIN_SDK_NPM_VERSION,
     });
   });
 
@@ -212,6 +214,6 @@ describe("resolvePluginSdkLayout", () => {
 
     const layout = await resolvePluginSdkLayout(targetDir);
     expect(layout.kind).toBe("vendored");
-    expect(layout.pin).toBe(PLUGIN_SDK_VERSION);
+    expect(layout.pin).toBe(PLUGIN_SDK_NPM_VERSION);
   });
 });

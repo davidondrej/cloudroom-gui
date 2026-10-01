@@ -23,7 +23,7 @@ import {
   expect,
   it,
 } from "vitest";
-import { PLUGIN_SDK_VERSION } from "@bb/domain";
+import { PLUGIN_SDK_NPM_VERSION, PLUGIN_SDK_VERSION } from "@bb/domain";
 import { scaffoldPlugin } from "../src/plugin-scaffold.js";
 
 const execFileAsync = promisify(execFile);
@@ -376,7 +376,7 @@ describe("external plugin scaffold types", () => {
     });
     await writeFile(join(targetDir, "server.ts"), REPRESENTATIVE_SERVER);
     await writeFile(join(targetDir, "app.tsx"), REPRESENTATIVE_APP);
-    expect(await scaffoldSdkPin(targetDir)).toBe(PLUGIN_SDK_VERSION);
+    expect(await scaffoldSdkPin(targetDir)).toBe(PLUGIN_SDK_NPM_VERSION);
     await useInstalledNodeModules(targetDir);
 
     const tsconfig = JSON.parse(
