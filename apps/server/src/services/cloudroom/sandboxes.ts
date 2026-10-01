@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
 import { access, readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -33,6 +33,36 @@ const CONFIG_PATHS = [".agents/skills", ".claude/skills", ".claude/CLAUDE.md", "
 const CONFIG_LIMIT = 45 * 1024 * 1024;
 const codexAuthPath = () => join(process.env.CODEX_HOME || join(homedir(), ".codex"), "auth.json");
 export const hasMacCodexLogin = () => access(codexAuthPath()).then(() => true, () => false);
+
+type MacCodexLogin = { child: ChildProcess; url: string | null; error: string | null; done: boolean };
+let macCodexLoginRun: MacCodexLogin | null = null;
+/** Runs `codex login` on this Mac. Codex opens the default browser and saves the login itself; one run at a time, 10 minutes at most. */
+export function startMacCodexLogin(): MacCodexLogin {
+  if (macCodexLoginRun && !macCodexLoginRun.done) return macCodexLoginRun;
+  const child = spawn("codex", ["login"], { stdio: ["ignore", "pipe", "pipe"], timeout: 10 * 60_000 });
+  const run: MacCodexLogin = { child, url: null, error: null, done: false };
+  let output = "";
+  const read = (chunk: Buffer) => { output += chunk.toString(); run.url ??= output.match(/https:\/\/auth\.openai\.com\/\S+/)?.[0] ?? null; };
+  child.stdout?.on("data", read);
+  child.stderr?.on("data", read);
+  child.on("error", (error: NodeJS.ErrnoException) => {
+    run.done = true;
+    run.error = error.code === "ENOENT" ? "Codex is not installed on this Mac. Install it with `npm i -g @openai/codex`, then click Connect again." : `Codex sign-in could not start: ${error.message}`;
+  });
+  child.on("exit", code => { run.done = true; if (code !== 0) run.error ??= "Codex sign-in did not finish. Click Connect to try again."; });
+  macCodexLoginRun = run;
+  return run;
+}
+/** The current `codex login` run; a finished run is returned once, then forgotten. */
+export function macCodexLogin(): MacCodexLogin | null {
+  const run = macCodexLoginRun;
+  if (run?.done) macCodexLoginRun = null;
+  return run;
+}
+export function cancelMacCodexLogin(): void {
+  macCodexLoginRun?.child.kill();
+  macCodexLoginRun = null;
+}
 
 function contentDigest(tar: Buffer): string {
   const hash = createHash("sha256");

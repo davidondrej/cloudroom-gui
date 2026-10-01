@@ -10,7 +10,7 @@ import { setCopyLogins } from "./sync.js";
 import { teleports } from "./teleport.js";
 import { binding, teleportBlocked, teleportProgress } from "./store.js";
 import { browserRequestProblem } from "../../browser-request-guard.js";
-import { claudePlan, createClaudeToken } from "./claude-token.js";
+import { claudePlan, createClaudeToken, isClaudeApiKey } from "./claude-token.js";
 import { startClaudeVersionSync } from "./harness-versions.js";
 import { importBbThreads } from "./bb-import.js";
 import { copyToMac, openOnMac, teleportingToLocal, teleportToLocal } from "./teleport-local.js";
@@ -139,8 +139,8 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     return context.json(await cloudroom(deps).claudeAuth("token", input.requestId, token, await claudePlan()));
   });
   app.post("/api/v1/cloudroom/account/claude/key", async context => {
-    const parsed = z.object({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/), apiKey: z.string().regex(/^sk-ant-api[A-Za-z0-9_-]{1,1014}$/) }).strict().safeParse(await context.req.json().catch(() => null));
-    if (!parsed.success) throw new ApiError(400, "invalid_claude_key", "Paste an Anthropic API key. It starts with sk-ant-api.");
+    const parsed = z.object({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/), apiKey: z.string().refine(isClaudeApiKey) }).strict().safeParse(await context.req.json().catch(() => null));
+    if (!parsed.success) throw new ApiError(400, "invalid_claude_key", "Paste an Anthropic API key from the Claude Console. It starts with sk-ant-.");
     return context.json(await cloudroom(deps).claudeAuth("key", parsed.data.requestId, parsed.data.apiKey));
   });
   for (const action of ["login", "cancel", "complete"] as const) {

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { CloudroomError } from "./client.js";
 
 const TOKEN = /(sk-ant-oat[A-Za-z0-9_-]{20,})[^A-Za-z0-9_-]/;
+export const isClaudeApiKey = (value: string) => /^sk-ant-(?!oat|ort|admin)[A-Za-z0-9_-]{1,1017}$/.test(value);
 export const claudeBinary = () => [join(homedir(), ".local/bin/claude"), "/opt/homebrew/bin/claude", "/usr/local/bin/claude"].find(existsSync);
 
 /** The Mac's Claude plan, such as `max`. The VM needs it to offer plan-only models like Opus 1M. */

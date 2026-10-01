@@ -74,7 +74,8 @@ function ConnectionPanel({ provider }: { provider: "codex" | "cursor" }) {
       if (result.state === "error") throw new Error(result.message ?? `${name} sign-in failed`);
       queryClient.setQueryData(queryKey, result);
       if (result.state !== "waiting") requestId.current = null;
-      if (!cursor && kind === "login" && result.verification_url) openUrlInExternalBrowser(result.verification_url);
+      // Without a device code, Codex is signing in on this Mac and has opened the browser itself.
+      if (!cursor && kind === "login" && result.verification_url && result.user_code) openUrlInExternalBrowser(result.verification_url);
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
@@ -96,8 +97,8 @@ function ConnectionPanel({ provider }: { provider: "codex" | "cursor" }) {
         <p role="status">Connected{auth.data?.email ? ` · ${auth.data.email}` : ""}</p>
         <Button className="w-full" disabled={action.isPending} onClick={() => action.mutate("continue")}>{threadId ? "Continue to task" : "Done"}</Button>
       </> : state === "waiting" ? <>
-        <p role="status" className="text-sm">{cursor ? "Open Cursor’s sign-in page. Credentials will be saved on your cloud VM." : "Enter this code on OpenAI’s sign-in page."}</p>
-        {!cursor && <div className="flex items-center justify-between gap-3 border p-3">
+        <p role="status" className="text-sm">{cursor ? "Open Cursor’s sign-in page. Credentials will be saved on your cloud VM." : auth.data?.user_code ? "Enter this code on OpenAI’s sign-in page." : "Finish signing in to ChatGPT in your browser."}</p>
+        {!cursor && auth.data?.user_code && <div className="flex items-center justify-between gap-3 border p-3">
           <code className="text-lg tracking-wider">{auth.data?.user_code}</code>
           <Button variant="outline" size="sm" onClick={() => void copyToClipboardWithToast(auth.data?.user_code ?? "", { successMessage: null, errorMessage: "Copy failed. Select the code and copy it manually." }).then(setCopied)}>{copied ? "Copied" : "Copy code"}</Button>
         </div>}

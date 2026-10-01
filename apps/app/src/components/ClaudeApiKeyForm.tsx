@@ -54,7 +54,7 @@ export function ClaudeApiKeyForm() {
           maxLength={1024}
           autoComplete="off"
           spellCheck={false}
-          placeholder="sk-ant-api…"
+          placeholder="sk-ant-…"
           aria-label="Anthropic API key"
           value={apiKey}
           onChange={(event) => setApiKey(event.target.value)}

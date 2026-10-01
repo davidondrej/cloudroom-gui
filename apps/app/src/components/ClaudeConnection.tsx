@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "@bb/shared-ui/button";
+import { cn } from "@bb/shared-ui/lib/utils";
 import { Icon } from "@bb/shared-ui/icon";
 import { Popover, PopoverContent, PopoverTrigger } from "@bb/shared-ui/popover";
 import { useCloudroomAccount } from "@/hooks/queries/cloudroom-queries";
@@ -103,8 +104,10 @@ export function ClaudeConnectionButton({
   hostId,
   environmentId,
   presentation = "footer",
+  className,
 }: ClaudeConnectionTarget & {
   presentation?: "settings" | "footer" | "inline";
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const client = useQueryClient();
@@ -128,13 +131,14 @@ export function ClaudeConnectionButton({
           type="button"
           variant={presentation === "settings" ? "default" : presentation === "inline" ? "outline" : "ghost"}
           size={presentation === "settings" ? "default" : "sm"}
-          className={
+          className={cn(
             presentation === "footer"
               ? "h-7 text-xs text-muted-foreground hover:text-foreground"
               : presentation === "inline"
                 ? "h-7 px-2.5 text-xs"
-                : "shrink-0"
-          }
+                : "shrink-0",
+            className,
+          )}
           aria-label={`${label} · ${target === "cloud" ? "Cloud" : "Local"}`}
         >
           {presentation === "inline" ? (auth.data?.state === "waiting" ? "Finish" : "Connect") : label}

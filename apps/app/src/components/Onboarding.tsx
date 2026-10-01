@@ -20,7 +20,8 @@ import { useQuickCreateProjectController } from "@/hooks/useQuickCreateProject";
 import { booleanLocalStorage } from "@/lib/browser-storage";
 import { MACOS_APP_REGION_NO_DRAG_CLASS, MACOS_WINDOW_DRAG_CLASS } from "@/lib/bb-desktop";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
-import { getProviderIconInfo } from "@/lib/provider-icon";
+import { useSystemProviders } from "@/hooks/queries/system-queries";
+import { getProviderIconInfo, getProviderIconTintStyle } from "@/lib/provider-icon";
 import { getRootComposeRoutePath } from "@/lib/route-paths";
 import { useSetRootComposeProjectId } from "@/lib/root-compose-selection";
 import { sdk } from "@/lib/sdk";
@@ -47,6 +48,7 @@ export function useSetupProgress() {
     enabled: Boolean(accountId) && ready,
     queryFn: ({ signal }) => sdk.cloudroom.codexAuth(signal),
     retry: false,
+    refetchInterval: (query) => (query.state.data?.state === "waiting" ? 1500 : false),
   });
   const github = useQuery({
     queryKey: ["cloudroom-github-auth", accountId],
@@ -57,7 +59,7 @@ export function useSetupProgress() {
   });
   const agents = { claude: claude.data?.state === "connected", codex: codex.data?.state === "connected" };
   const done = [Boolean(accountId), agents.claude || agents.codex, github.data?.state === "connected"];
-  return { account, ready, agents, github, done, complete: done.every(Boolean), checking: account.isPending };
+  return { account, ready, agents, codex, github, done, complete: done.every(Boolean), checking: account.isPending };
 }
 
 export function Onboarding() {
@@ -188,11 +190,13 @@ function Cta({ children, className, ...props }: React.ButtonHTMLAttributes<HTMLB
   );
 }
 
+const OUTLINE = "inline-flex h-9 shrink-0 items-center gap-2 rounded-none border border-(--ob-ink) bg-(--ob-card) px-4 text-[13.5px] font-medium text-(--ob-ink) hover:bg-(--ob-bg) hover:text-(--ob-ink) disabled:opacity-50";
+
 function Outline({ children, className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="button"
-      className={cn("inline-flex h-9 shrink-0 items-center gap-2 border border-(--ob-ink) bg-(--ob-card) px-4 text-[13.5px] font-medium hover:bg-(--ob-bg) disabled:opacity-50", className)}
+      className={cn(OUTLINE, className)}
       {...props}
     >
       {children}
@@ -248,7 +252,7 @@ function AccountStep({ email, signingIn, next }: { email: string | null; signing
 }
 
 function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupProgress>; next: () => void }) {
-  const { account, agents, ready } = progress;
+  const { account, agents, codex, ready } = progress;
   const { localHostId } = useHostDaemon();
   const claudeLocal = useClaudeConnection({ target: "local", hostId: localHostId });
   const client = useQueryClient();
@@ -266,26 +270,35 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
     mutationFn: async () => {
       await saveChoices();
       const result = await sdk.cloudroom.codexLogin(crypto.randomUUID());
-      if (result.state === "waiting") openCodexConnection();
-      else if (result.state !== "connected") throw new Error(result.message ?? "Codex could not connect. Try again.");
+      // A VM signs in with a device code; a sandbox signs in on this Mac, where Codex opens the browser itself.
+      if (result.state === "waiting" && result.user_code) openCodexConnection();
+      else if (result.state !== "connected" && result.state !== "waiting") throw new Error(result.message ?? "Codex could not connect. Try again.");
+      client.setQueryData(["cloudroom-codex-auth", account.data?.account?.id], result);
     },
+    meta: { showErrorToast: false },
     onError: (error) => appToast.error(error.message),
     onSettled: () => client.invalidateQueries({ queryKey: ["cloudroom-codex-auth"] }),
   });
-  const finish = useMutation({ mutationFn: saveChoices, onSuccess: next, onError: (error) => appToast.error(error.message) });
-  const ClaudeIcon = getProviderIconInfo("agent", "claude-code").icon;
-  const CodexIcon = getProviderIconInfo("agent", "codex").icon;
+  const finish = useMutation({ mutationFn: saveChoices, onSuccess: next, meta: { showErrorToast: false }, onError: (error) => appToast.error(error.message) });
+  const codexBrowser = codex.data?.state === "waiting" && !codex.data.user_code ? codex.data : null;
   const waiting = !account.data?.account ? "Log in first" : !ready ? "Starting your cloud…" : null;
   const action = (connected: boolean, button: ReactNode) => (connected ? <Connected /> : waiting ? <Note>{waiting}</Note> : button);
   return (
     <>
       <Heading lead="Connect an" mark="agent" />
       <div className="mt-8 flex flex-col gap-3">
-        <Card on={agents.claude} logo={<span className="grid size-11 place-items-center bg-[#f4e4d6]"><ClaudeIcon className="size-6" /></span>} name="Claude Code" detail={claudeLocal.data?.state === "connected" ? "Found on this Mac" : "Uses your Claude plan"}>
-          {action(agents.claude, <ClaudeConnectionButton target="cloud" presentation="inline" />)}
+        <Card on={agents.claude} logo={<AgentLogo id="claude-code" className="bg-[#f4e4d6]" />} name="Claude Code" detail={claudeLocal.data?.state === "connected" ? "Found on this Mac" : "Uses your Claude plan"}>
+          {action(agents.claude, <ClaudeConnectionButton target="cloud" presentation="inline" className={OUTLINE} />)}
         </Card>
-        <Card on={agents.codex} logo={<span className="grid size-11 place-items-center bg-black text-white"><CodexIcon className="size-6" /></span>} name="Codex" detail={account.data?.localLogins?.codex ? "Found on this Mac" : "Uses your ChatGPT plan"}>
-          {action(agents.codex, <Outline disabled={connectCodex.isPending} onClick={() => connectCodex.mutate()}>{connectCodex.isPending ? "Connecting…" : "Connect"}</Outline>)}
+        <Card on={agents.codex} logo={<AgentLogo id="codex" className="bg-black text-white" />} name="Codex" detail={account.data?.localLogins?.codex ? "Found on this Mac" : "Uses your ChatGPT plan"}>
+          {action(agents.codex, codexBrowser ? (
+            <Note>
+              Finish in your browser.{" "}
+              {codexBrowser.verification_url && <button type="button" className={LINK} onClick={() => openUrlInExternalBrowser(codexBrowser.verification_url!)}>Reopen</button>}
+            </Note>
+          ) : (
+            <Outline disabled={connectCodex.isPending} onClick={() => connectCodex.mutate()}>{connectCodex.isPending ? "Connecting…" : "Connect"}</Outline>
+          ))}
         </Card>
       </div>
       {(ask.mac || ask.logins) && (
@@ -299,6 +312,17 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
         <Note>Add the other one later in Settings.</Note>
       </div>
     </>
+  );
+}
+
+/** Uses the provider record so the plugin's real logo and tint load, not the generic fallback. */
+function AgentLogo({ id, className }: { id: string; className: string }) {
+  const provider = useSystemProviders().data?.find((entry) => entry.id === id);
+  const Logo = getProviderIconInfo("agent", id, provider ?? null).icon;
+  return (
+    <span className={cn("grid size-11 place-items-center", className)} style={provider && getProviderIconTintStyle(provider)}>
+      <Logo className="size-6" />
+    </span>
   );
 }
 

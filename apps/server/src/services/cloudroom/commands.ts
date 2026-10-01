@@ -20,7 +20,7 @@ import { inferThreadMetadata, queueThreadTitle } from "../threads/thread-metadat
 import { copyLogins, importCodexLogin, importPiLogin, setupSync, stopSync, syncStatus } from "./sync.js";
 import { setupPreviews, stopPreviews, previewStatus } from "./previews.js";
 import { CloudSecrets } from "./secrets.js";
-import { macCursorLogin, SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject, type SandboxTrigger } from "./sandboxes.js";
+import { cancelMacCodexLogin, hasMacCodexLogin, macCodexLogin, macCursorLogin, startMacCodexLogin, SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject, type SandboxTrigger } from "./sandboxes.js";
 import type { AppDeps, LoggedWorkSessionDeps } from "../../types.js";
 import type { EditMessageRequest, EditMessageResponse } from "@bb/server-contract";
 
@@ -780,12 +780,19 @@ class CloudroomService {
 
   async codexAuth(action?: "login" | "cancel", requestId?: string) {
     if (await this.sandboxLogin("codex")) {
+      if (action === "cancel") cancelMacCodexLogin();
       if (action === "login") {
         if (await copyLogins(this.deps) !== true) throw new ApiError(409, "codex_auth_unsupported", "Cloud sandboxes use this Mac's Codex login. Allow copying logins in Cloudroom's setup, then try again.");
-        await this.sandboxes.copyMacLogins(true);
+        // Signed out here: sign in on this Mac first, then the next status check copies the new login.
+        if (await hasMacCodexLogin()) await this.sandboxes.copyMacLogins(true);
+        else startMacCodexLogin();
       }
+      const run = macCodexLogin();
+      if (run?.done && !run.error) await this.sandboxes.copyMacLogins(true);
       const status = (await this.sandboxLogin("codex"))!;
-      return action === "login" && status.state !== "connected" ? { ...status, message: "Codex is not signed in on this computer. Run `codex login` in your terminal, then try again." } : status;
+      if (status.state === "connected" || !run) return status;
+      if (run.error) return { ...status, state: "error" as const, message: run.error };
+      return run.done ? status : { ...status, state: "waiting" as const, login_id: "mac", verification_url: run.url, message: "Finish signing in to ChatGPT in your browser." };
     }
     try {
       const client = await this.client();
