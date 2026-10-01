@@ -41,9 +41,9 @@ it("keeps the skill switches across reloads", async () => {
 
 describe("individual skill selection", () => {
   it.each([
-    ["bbCli", ["bb-plugin-authoring", "skill-creator"]],
+    ["bbCli", ["plugin-authoring", "skill-creator"]],
     ["pluginAuthoring", ["room-cli", "skill-creator"]],
-    ["skillCreator", ["room-cli", "bb-plugin-authoring"]],
+    ["skillCreator", ["room-cli", "plugin-authoring"]],
   ])("disables %s", async (key, expected) => {
     const { bb, harness } = createFakePluginHost({
       pluginId: "bb-guide",

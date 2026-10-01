@@ -1619,10 +1619,10 @@ export default async function plugin(bb: BbPluginApi) {
 
   const USAGE = [
     "Usage:",
-    "  bb github repos              List tracked repositories",
-    "  bb github issues [repo]      List cached open issues",
-    "  bb github prs [repo]         List cached open pull requests",
-    "  bb github sync               Refresh the cache from GitHub now",
+    "  room-cli github repos              List tracked repositories",
+    "  room-cli github issues [repo]      List cached open issues",
+    "  room-cli github prs [repo]         List cached open pull requests",
+    "  room-cli github sync               Refresh the cache from GitHub now",
   ].join("\n");
 
   bb.cli.register({
@@ -1632,22 +1632,22 @@ export default async function plugin(bb: BbPluginApi) {
       {
         name: "repos",
         summary: "List tracked repositories",
-        usage: "bb github repos",
+        usage: "room-cli github repos",
       },
       {
         name: "issues",
         summary: "List cached open issues",
-        usage: "bb github issues [owner/repo]",
+        usage: "room-cli github issues [owner/repo]",
       },
       {
         name: "prs",
         summary: "List cached open pull requests",
-        usage: "bb github prs [owner/repo]",
+        usage: "room-cli github prs [owner/repo]",
       },
       {
         name: "sync",
         summary: "Refresh the cache from GitHub now",
-        usage: "bb github sync",
+        usage: "room-cli github sync",
       },
     ],
     async run(argv) {
@@ -1694,7 +1694,7 @@ export default async function plugin(bb: BbPluginApi) {
           if (items.length === 0) {
             return {
               exitCode: 0,
-              stdout: "Nothing cached. Run `bb github sync` first.",
+              stdout: "Nothing cached. Run `room-cli github sync` first.",
             };
           }
           return {

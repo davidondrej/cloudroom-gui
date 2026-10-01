@@ -3,7 +3,6 @@ import type {
   ProviderPendingInteraction,
 } from "@bb/domain";
 import { ThreadPendingInteractionBanner } from "@/components/thread/pending-interactions/ThreadPendingInteractionBanner";
-import { ThreadPromptContextBanner } from "@/components/promptbox/banner/ThreadPromptContextBanner";
 import { StoryCard, StoryRow } from "../../../../.ladle/story-card";
 
 export default {
@@ -177,7 +176,7 @@ export function Overview() {
       <StoryRow
         className="grid-cols-1 gap-y-2 px-0 md:grid-cols-[210px_minmax(0,1fr)]"
         label="parent thread when a child needs approval"
-        hint="the parent composer shows the child's prompt plus the needs-approval banner"
+        hint="the parent composer shows the child's prompt"
       >
         <PromptStage>
           <ThreadPendingInteractionBanner
@@ -187,26 +186,6 @@ export function Overview() {
               title: "Install workspace tools",
             }}
             threadId={commandApproval.threadId}
-          />
-          <ThreadPromptContextBanner
-            gitSection={null}
-            gitSectionPending={false}
-            archivedSection={null}
-            environmentGoneSection={null}
-            parentThreadSection={null}
-            childThreadsSection={{
-              items: [
-                {
-                  id: "thr_blocked",
-                  title: "Install workspace tools",
-                  href: "/projects/proj-1/threads/thr_blocked",
-                  hasPendingInteraction: true,
-                },
-              ],
-            }}
-            pullRequestSection={null}
-            expandedSection={null}
-            onToggleSection={() => {}}
           />
         </PromptStage>
       </StoryRow>

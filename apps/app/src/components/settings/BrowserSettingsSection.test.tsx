@@ -88,7 +88,7 @@ describe("BrowserSettingsSectionContent", () => {
   it("explains that import is desktop only outside the desktop app", () => {
     render(<BrowserSettingsSectionContent desktopBrowser={null} />);
     expect(
-      screen.getByText("Only available in the BB desktop app."),
+      screen.getByText("Only available in the Cloudroom desktop app."),
     ).toBeDefined();
   });
 

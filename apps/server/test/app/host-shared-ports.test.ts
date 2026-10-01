@@ -569,7 +569,7 @@ describe("daemon session connect shares", () => {
           ports: [4173],
         }),
       ).toThrow(
-        'cannot share ports from host "Host" (host-1) because it has no bb connect machine credential; enroll it via Connect in Settings > Machines',
+        'cannot share ports from host "Host" (host-1) because it has no Cloudroom Connect machine credential; enroll it via Connect in Settings > Machines',
       );
       expect(daemonSocket.messages).toEqual(messagesBeforeDeclaration);
       expect(

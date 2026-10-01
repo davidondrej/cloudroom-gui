@@ -8,7 +8,7 @@ Usage: install.sh --join-code <code> --host-id <host-id> --server <url> [--machi
        install.sh --bootstrap-env <NAME>
        install.sh --start|--stop|--uninstall --host-id <host-id> [--server-url <url>] [--data-dir <path>]
 
-The first three options are required. --machine-code is required through bb connect.
+The first three options are required. --machine-code is required through Cloudroom Connect.
 By default, the installer assigns this enrolled daemon its own local API port.
 EOF
   exit 2
@@ -318,14 +318,14 @@ else
 fi
 [ -n "$host_id" ] || usage
 if [ -z "$lifecycle_action" ]; then [ -n "$server_url" ] || usage; fi
-printf '\n  %s\n\n' "$(bold "bb machine setup")"
+printf '\n  %s\n\n' "$(bold "Cloudroom machine setup")"
 active_step "Setting up this machine as $host_id for $server_url"
 
 case "$(uname -s)" in
   Darwin) platform=darwin ;;
   Linux) platform=linux ;;
   *)
-    fail_step "bb machine installation supports macOS and Linux only."
+    fail_step "Cloudroom machine installation supports macOS and Linux only."
     exit 1
     ;;
 esac
@@ -619,7 +619,7 @@ elif [ "$package_status" -ge 200 ] && [ "$package_status" -lt 300 ]; then
     ' "$package_file")
     if [ "$downloaded_digest" != "$package_digest" ]; then
       rm -rf "$package_dir"
-      fail_step "The downloaded bb host artifact failed SHA-256 verification."
+      fail_step "The downloaded Cloudroom host artifact failed SHA-256 verification."
       detail "Expected $package_digest but received $downloaded_digest." >&2
       exit 1
     fi
@@ -690,10 +690,10 @@ if [ -n "$machine_code" ]; then
     url.hash = "";
     process.stdout.write(url.origin);
   ' "$server_url" 2>/dev/null) || {
-    fail_step "Could not derive the bb connect apex from $server_url."
+    fail_step "Could not derive the Cloudroom Connect apex from $server_url."
     exit 1
   }
-  active_step "Authorizing this machine with bb connect"
+  active_step "Authorizing this machine with Cloudroom Connect"
   redeem_response=$(curl -fsS \
     --connect-timeout "$CURL_CONNECT_TIMEOUT_SECONDS" \
     --max-time "$MACHINE_CODE_REDEEM_TIMEOUT_SECONDS" \
@@ -701,7 +701,7 @@ if [ -n "$machine_code" ]; then
     -H 'content-type: application/json' \
     --data "{\"code\":\"$machine_code\"}" \
     "$connect_apex/api/connect/redeem-machine") || {
-    fail_step "Could not redeem the bb connect machine code."
+    fail_step "Could not redeem the Cloudroom Connect machine code."
     exit 1
   }
   printf '%s' "$redeem_response" | node -e '
@@ -731,10 +731,10 @@ if [ -n "$machine_code" ]; then
       fs.renameSync(temporary, configPath);
     });
   ' "$data_dir" "$server_url" || {
-    fail_step "The bb connect machine-code response was invalid."
+    fail_step "The Cloudroom Connect machine-code response was invalid."
     exit 1
   }
-  complete_step "Authorized this machine with bb connect"
+  complete_step "Authorized this machine with Cloudroom Connect"
 fi
 
 auth_matches_host() {
@@ -791,7 +791,7 @@ if [ "$already_joined" = no ]; then
     fi
     if ! kill -0 "$join_pid" 2>/dev/null; then
       wait "$join_pid" || true
-      fail_step "bb host daemon exited before it connected to $server_url."
+      fail_step "Cloudroom host daemon exited before it connected to $server_url."
       detail "See $join_log" >&2
       exit 1
     fi
@@ -834,7 +834,7 @@ if [ "${BB_INSTALL_SKIP_SERVICE:-0}" = 1 ]; then
     if ! wait_for_daemon_connection "the host daemon"; then
       kill "$join_pid" 2>/dev/null || true
       wait "$join_pid" 2>/dev/null || true
-      fail_step "The bb host daemon did not connect to $server_url."
+      fail_step "The Cloudroom host daemon did not connect to $server_url."
       detail "See $daemon_log" >&2
       exit 1
     fi
@@ -854,7 +854,7 @@ if [ -n "$join_pid" ]; then
 fi
 rm -f "$data_dir/install-daemon.pid"
 
-active_step "Installing the persistent bb host daemon service"
+active_step "Installing the persistent Cloudroom host daemon service"
 
 xml_escape() {
   printf '%s' "$1" | sed \
@@ -918,18 +918,18 @@ if [ "$platform" = darwin ]; then
 EOF
   launchctl bootout "gui/$(id -u)" "$service_file" >/dev/null 2>&1 || true
   if ! launchctl_error=$(launchctl bootstrap "gui/$(id -u)" "$service_file" 2>&1); then
-    fail_step "Could not register the bb host-daemon launch agent $service_label."
+    fail_step "Could not register the Cloudroom host-daemon launch agent $service_label."
     [ -z "$launchctl_error" ] || detail "launchctl: $launchctl_error" >&2
     exit 1
   fi
   if ! wait_for_daemon_connection "the launch agent"; then
-    fail_step "The bb host-daemon launch agent started but did not connect to $server_url."
+    fail_step "The Cloudroom host-daemon launch agent started but did not connect to $server_url."
     detail "See $data_dir/logs/launchd.log for the daemon error." >&2
     exit 1
   fi
   complete_step "Installed and started the launch agent"
   printf '\n'
-  log "$(green "●")" "$(bold "bb machine is ready")"
+  log "$(green "●")" "$(bold "Cloudroom machine is ready")"
   printf '\n'
   ready_row "server" "$(cyan "$server_url")"
   ready_row "daemon" "http://127.0.0.1:$host_daemon_port"
@@ -968,7 +968,7 @@ else
   fi
   cat >"$service_file" <<EOF
 [Unit]
-Description=bb host daemon for $server_host
+Description=Cloudroom host daemon for $server_host
 After=network-online.target
 Wants=network-online.target
 
@@ -986,25 +986,25 @@ EOF
   enable_unit="$service_name.service"
   if [ "$systemd_scope" = --system ]; then enable_unit="$service_file"; fi
   if ! systemctl_error=$(systemctl "$systemd_scope" enable "$enable_unit" 2>&1); then
-    fail_step "The bb host-daemon systemd service could not be enabled."
+    fail_step "The Cloudroom host-daemon systemd service could not be enabled."
     [ -z "$systemctl_error" ] || detail "systemctl: $systemctl_error" >&2
     detail "Inspect it with: journalctl $systemd_scope -u $service_name.service" >&2
     exit 1
   fi
   if ! systemctl_error=$(systemctl "$systemd_scope" restart "$service_name.service" 2>&1); then
-    fail_step "The bb host-daemon systemd service was enabled, but it could not be restarted."
+    fail_step "The Cloudroom host-daemon systemd service was enabled, but it could not be restarted."
     [ -z "$systemctl_error" ] || detail "systemctl: $systemctl_error" >&2
     detail "Inspect it with: journalctl $systemd_scope -u $service_name.service" >&2
     exit 1
   fi
   if ! wait_for_daemon_connection "the systemd service"; then
-    fail_step "The bb host-daemon systemd service started but did not connect to $server_url."
+    fail_step "The Cloudroom host-daemon systemd service started but did not connect to $server_url."
     detail "Inspect it with: journalctl $systemd_scope -u $service_name.service" >&2
     exit 1
   fi
   complete_step "Installed and started the systemd service ($systemd_scope)"
   printf '\n'
-  log "$(green "●")" "$(bold "bb machine is ready")"
+  log "$(green "●")" "$(bold "Cloudroom machine is ready")"
   printf '\n'
   ready_row "server" "$(cyan "$server_url")"
   ready_row "daemon" "http://127.0.0.1:$host_daemon_port"

@@ -577,7 +577,7 @@ function movedGitTagDetail(args: {
   if (args.currentCommit === args.recordedCommit) return null;
   return (
     `security check failed: git tag "${args.tag}" in ${args.url} moved from ` +
-    `${args.recordedCommit} to ${args.currentCommit}; bb will not re-resolve a ` +
+    `${args.recordedCommit} to ${args.currentCommit}; Cloudroom will not re-resolve a ` +
     `tag that changed. Remove the plugin and install it again to accept the new commit`
   );
 }
@@ -627,7 +627,7 @@ async function resolveGitRangeUpdate(args: {
       outcome: "unavailable",
       detail:
         `security check failed: recorded git tag "${args.intent.resolvedTag}" no longer exists in ${args.url}; ` +
-        "bb will not re-resolve a missing release tag. Restore the tag, or remove and install the plugin again",
+        "Cloudroom will not re-resolve a missing release tag. Restore the tag, or remove and install the plugin again",
     };
   }
   const moved = movedGitTagDetail({

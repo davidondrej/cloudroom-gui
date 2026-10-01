@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
   type ReactNode,
@@ -142,7 +143,10 @@ import {
   promptInputToDraft,
   type PromptDraftState,
 } from "@bb/client-core";
-import { createLocalStorageEnumStorage } from "@/lib/browser-storage";
+import {
+  createLocalStorageEnumStorage,
+  withLocalStorage,
+} from "@/lib/browser-storage";
 import {
   getProjectComposeRoutePath,
   getThreadRoutePath,
@@ -165,9 +169,7 @@ import {
 } from "./ThreadDetailPromptArea";
 import {
   type ContextBannerMergeBaseConfig,
-  isThreadDisplayStatusBannerActive,
   type ThreadPromptParentThreadSection,
-  type ThreadPromptChildThreadsSection,
 } from "@/components/promptbox/banner/ThreadPromptContextBanner";
 import { ThreadDetailSecondaryContent } from "./ThreadDetailSecondaryContent";
 import {
@@ -316,8 +318,6 @@ import { ThreadPinCommandHandler } from "./ThreadPinCommandHandler";
 import { ThreadRenameCommandHandler } from "./ThreadRenameCommandHandler";
 
 const EMPTY_PARENT_THREADS: readonly ThreadListEntry[] = [];
-const EMPTY_CHILD_THREAD_ITEMS: readonly ChildThreadPendingAttentionSource[] =
-  [];
 const EMPTY_PROJECT_THREAD_SUBSET_FILTERS =
   {} satisfies ProjectThreadSubsetFilters;
 const EMPTY_TERMINAL_SESSIONS: readonly TerminalSession[] = [];
@@ -1921,13 +1921,26 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     enabled: threadOpenContext !== null,
     ...(threadOpenContext ? { openContext: threadOpenContext } : {}),
   });
+  const parentBannerDismissKey = `cloudroom.parentBanner.dismissed.${thread?.id}`;
+  const [, rerenderParentBanner] = useReducer((count: number) => count + 1, 0);
+  const dismissParentBanner = useCallback(() => {
+    withLocalStorage(
+      (storage) => storage.setItem(parentBannerDismissKey, "1"),
+      undefined,
+    );
+    rerenderParentBanner();
+  }, [parentBannerDismissKey]);
+  const parentBannerDismissed = withLocalStorage(
+    (storage) => storage.getItem(parentBannerDismissKey) === "1",
+    false,
+  );
   const parentThreadSection: ThreadPromptParentThreadSection | null =
     useMemo(() => {
       const relatedThreadId =
         threadOriginKind !== null
           ? threadSourceThreadId
           : thread?.parentThreadId;
-      if (!thread || !relatedThreadId) return null;
+      if (!thread || !relatedThreadId || parentBannerDismissed) return null;
       const relationship = isSideChatThread
         ? "side-chat"
         : threadOriginKind === "fork"
@@ -1944,6 +1957,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
           parentThreadTitle: relatedThreadId.slice(0, 8),
           href,
           relationship,
+          onDismiss: dismissParentBanner,
         };
       }
       if (
@@ -1958,47 +1972,38 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
         parentThreadTitle: getThreadDisplayTitle(relatedThread),
         href,
         relationship,
+        onDismiss: dismissParentBanner,
       };
     }, [
+      dismissParentBanner,
       isSideChatThread,
+      parentBannerDismissed,
       parentThread,
       sourceThread,
       thread,
       threadOriginKind,
       threadSourceThreadId,
     ]);
-  const childThreadsSection: ThreadPromptChildThreadsSection | null =
-    useMemo(() => {
-      const list = childThreadSubsetQuery.data ?? [];
-      const activeItems = list
-        .filter(
-          (entry) =>
-            entry.originKind === null &&
-            (isThreadDisplayStatusBannerActive(entry.runtime.displayStatus) ||
-              entry.hasPendingInteraction),
-        )
-        .map((entry) => ({
-          id: entry.id,
-          title: getThreadDisplayTitle(entry),
-          href: getThreadRoutePath({
-            projectId: entry.projectId,
-            threadId: entry.id,
-          }),
-          hasPendingInteraction: entry.hasPendingInteraction,
-        }))
-        .sort((left, right) =>
-          left.hasPendingInteraction === right.hasPendingInteraction
-            ? 0
-            : left.hasPendingInteraction
-              ? -1
-              : 1,
-        );
-      if (activeItems.length === 0) return null;
-      return { items: activeItems };
-    }, [childThreadSubsetQuery.data]);
-  const childPendingInteractions = useChildThreadPendingAttention(
-    childThreadsSection?.items ?? EMPTY_CHILD_THREAD_ITEMS,
-  );
+  const pendingChildThreads: readonly ChildThreadPendingAttentionSource[] =
+    useMemo(
+      () =>
+        (childThreadSubsetQuery.data ?? [])
+          .filter(
+            (entry) => entry.originKind === null && entry.hasPendingInteraction,
+          )
+          .map((entry) => ({
+            id: entry.id,
+            title: getThreadDisplayTitle(entry),
+            href: getThreadRoutePath({
+              projectId: entry.projectId,
+              threadId: entry.id,
+            }),
+            hasPendingInteraction: true,
+          })),
+      [childThreadSubsetQuery.data],
+    );
+  const childPendingInteractions =
+    useChildThreadPendingAttention(pendingChildThreads);
   const isThreadTimelinePending = timelineLoading && timelineRows.length === 0;
   useThreadOpenTiming(
     threadId,
@@ -2634,7 +2639,6 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
       activeBackgroundCommands={activeBackgroundCommands}
       parentThreadSection={parentThreadSection}
       childPendingInteractions={childPendingInteractions}
-      childThreadsSection={childThreadsSection}
       pullRequest={pullRequest}
       thread={thread}
     />

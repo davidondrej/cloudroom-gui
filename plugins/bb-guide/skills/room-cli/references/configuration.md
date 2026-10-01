@@ -31,7 +31,7 @@
 - Use `room-cli settings usage [--machine <id-or-name>]` for provider limits.
   `--host` is an alias for `--machine`.
 - Use `room-cli settings version [--force]` for release information.
-- Use `room-cli settings reload` to reload BB-managed configuration.
+- Use `room-cli settings reload` to reload Cloudroom-managed configuration.
 - These commands support `--json`.
 
 ## Agent Instructions

@@ -45,4 +45,6 @@ export const BLOCKED_TOOLS = new Set([
   "set_config", "install_extension", "install_ffmpeg", "check_for_update", "replay_trajectory",
 ]);
 
+export const LIME_CURSOR_SUFFIX = "-8";
+
 export const WHOLE_SCREEN = { key: "whole-screen", name: "the whole screen" } as const;

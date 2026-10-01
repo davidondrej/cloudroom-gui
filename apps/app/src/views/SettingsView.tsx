@@ -148,11 +148,14 @@ interface FaviconColorSettingsControlProps {
 }
 
 interface AppearanceSettingsSectionProps {
+  agentQuestionsEnabled: boolean;
   appearance: AppTheme;
   appearanceDisabled: boolean;
   customThemes: readonly string[];
   pluginThemes: readonly PluginThemeMeta[];
   faviconColor: FaviconColorPreference;
+  generalSettingsDisabled: boolean;
+  onAgentQuestionsEnabledChange: (enabled: boolean) => void;
   onAppearanceThemeChange: (themeId: string) => void;
   onAppearanceThemePrefetch: (themeIds: readonly string[]) => void;
   onAppearanceThemePreview: (themeId: string | null) => void;
@@ -650,11 +653,14 @@ function ManagedBranchPrefixSetting({
 }
 
 export function AppearanceSettingsSection({
+  agentQuestionsEnabled,
   appearance,
   appearanceDisabled,
   customThemes,
   pluginThemes,
   faviconColor,
+  generalSettingsDisabled,
+  onAgentQuestionsEnabledChange,
   onAppearanceThemeChange,
   onAppearanceThemePrefetch,
   onAppearanceThemePreview,
@@ -809,6 +815,17 @@ export function AppearanceSettingsSection({
         />
         <SplitDimmingSetting />
         <SidebarFooterSettings />
+        <SettingsWithControl
+          label="Question cards"
+          description="Let agents ask you multiple-choice questions. Applies to new sessions."
+        >
+          <Switch
+            checked={agentQuestionsEnabled}
+            disabled={generalSettingsDisabled}
+            onCheckedChange={onAgentQuestionsEnabledChange}
+            aria-label="Question cards"
+          />
+        </SettingsWithControl>
       </div>
     </SettingsSection>
   );
@@ -1146,6 +1163,7 @@ export function SettingsView() {
   } else if (activeSection === "appearance") {
     content = (
       <AppearanceSettingsSection
+        agentQuestionsEnabled={generalSettings.agentQuestionsEnabled}
         appearance={appearance}
         appearanceDisabled={
           systemConfigQuery.data === undefined ||
@@ -1154,6 +1172,16 @@ export function SettingsView() {
         customThemes={systemConfigQuery.data?.customThemes ?? []}
         pluginThemes={systemConfigQuery.data?.pluginThemes ?? []}
         faviconColor={appearance.faviconColor}
+        generalSettingsDisabled={
+          systemConfigQuery.data === undefined ||
+          updateGeneralSettingsMutation.isPending
+        }
+        onAgentQuestionsEnabledChange={(enabled) =>
+          updateGeneralSettingsMutation.mutate({
+            ...generalSettings,
+            agentQuestionsEnabled: enabled,
+          })
+        }
         themePreference={themePreference}
         onAppearanceThemeChange={(themeId) =>
           updateAppearanceMutation.mutate(

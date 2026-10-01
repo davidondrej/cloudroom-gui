@@ -84,6 +84,15 @@ async function waitUntilStopped(serverUrl: string, ids: string[]) {
   }
 }
 
+export async function reportDesktopUpdate(
+  serverUrl: string,
+  version: string,
+  installAt: number | null,
+): Promise<boolean> {
+  const response = await requestJson(serverUrl, "/cloudroom/desktop-update", "POST", { version, installAt });
+  return z.object({ install: z.boolean() }).parse(response).install;
+}
+
 export async function runningLocalThreadIds(
   serverUrl: string,
 ): Promise<string[]> {

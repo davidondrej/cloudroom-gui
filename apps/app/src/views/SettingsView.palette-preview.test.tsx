@@ -22,6 +22,7 @@ function renderSection({ compact = false } = {}) {
   const onAppearanceThemePreview = vi.fn();
   render(
     <AppearanceSettingsSection
+      agentQuestionsEnabled
       appearance={defaultAppTheme}
       appearanceDisabled={false}
       customThemes={["mine"]}
@@ -34,6 +35,8 @@ function renderSection({ compact = false } = {}) {
         },
       ]}
       faviconColor="default"
+      generalSettingsDisabled={false}
+      onAgentQuestionsEnabledChange={vi.fn()}
       onAppearanceThemeChange={onAppearanceThemeChange}
       onAppearanceThemePrefetch={onAppearanceThemePrefetch}
       onAppearanceThemePreview={onAppearanceThemePreview}

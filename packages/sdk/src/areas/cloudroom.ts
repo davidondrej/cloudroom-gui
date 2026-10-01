@@ -65,8 +65,15 @@ export interface CloudroomArea {
   codexAuth(signal?: AbortSignal): Promise<CloudroomCodexAuth>;
   codexLogin(requestId: string): Promise<CloudroomCodexAuth>;
   cancelCodexLogin(requestId: string): Promise<CloudroomCodexAuth>;
+  /** GitHub for cloud sandboxes: connected when this Mac's `gh` is signed in or the website holds a login. Login runs GitHub's device flow. */
+  githubAuth(signal?: AbortSignal): Promise<CloudroomCodexAuth>;
+  githubLogin(requestId: string): Promise<CloudroomCodexAuth>;
+  cancelGithubLogin(requestId: string): Promise<CloudroomCodexAuth>;
+  /** Recently used Git folders on this Mac, for picking a first project. */
+  localRepos(signal?: AbortSignal): Promise<{ repos: { name: string; path: string; updatedAt: number }[] }>;
   status(signal?: AbortSignal): Promise<CloudroomStatus>;
-  signIn(input?: { projectId?: string; websiteUrl?: string }): Promise<{ url: string }>;
+  /** `provider` opens that provider's sign-in directly instead of the website's sign-in page. */
+  signIn(input?: { projectId?: string; websiteUrl?: string; provider?: "github" | "google" }): Promise<{ url: string }>;
   setMacAccess(enabled: boolean): Promise<void>;
   setCopyLogins(enabled: boolean): Promise<void>;
   environment(signal?: AbortSignal): Promise<CloudEnvironment>;
@@ -124,6 +131,10 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     codexAuth: (signal) => transport.readJson(request("/codex", undefined, signal)) as Promise<CloudroomCodexAuth>,
     codexLogin: (requestId) => transport.readJson(request("/codex/login", { requestId })) as Promise<CloudroomCodexAuth>,
     cancelCodexLogin: (requestId) => transport.readJson(request("/codex/cancel", { requestId })) as Promise<CloudroomCodexAuth>,
+    githubAuth: (signal) => transport.readJson(request("/github", undefined, signal)) as Promise<CloudroomCodexAuth>,
+    localRepos: (signal) => transport.readJson(request("/local-repos", undefined, signal)) as Promise<{ repos: { name: string; path: string; updatedAt: number }[] }>,
+    githubLogin: (requestId) => transport.readJson(request("/github/login", { requestId })) as Promise<CloudroomCodexAuth>,
+    cancelGithubLogin: (requestId) => transport.readJson(request("/github/cancel", { requestId })) as Promise<CloudroomCodexAuth>,
     status: (signal) => transport.readJson(request("", undefined, signal)) as Promise<CloudroomStatus>,
     signIn: (input = {}) => transport.readJson(request("/sign-in", input)) as Promise<{ url: string }>,
     cancel: () => transport.readVoid(request("/cancel", {})),

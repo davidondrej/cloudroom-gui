@@ -6,7 +6,6 @@ import { MemoryRouter } from "react-router-dom";
 import type { ThreadPullRequest } from "@bb/domain";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  isThreadDisplayStatusBannerActive,
   ThreadPromptContextBanner,
   type ThreadPromptGitSection,
 } from "./ThreadPromptContextBanner";
@@ -80,7 +79,6 @@ describe("ThreadPromptContextBanner", () => {
         archivedSection={{ archivedAt: 1_731_456_000_000 }}
         environmentGoneSection={null}
         parentThreadSection={null}
-        childThreadsSection={null}
         pullRequestSection={null}
         expandedSection={null}
         onToggleSection={noop}
@@ -100,7 +98,6 @@ describe("ThreadPromptContextBanner", () => {
         archivedSection={null}
         environmentGoneSection={{ status: "destroyed" }}
         parentThreadSection={null}
-        childThreadsSection={null}
         pullRequestSection={null}
         expandedSection={null}
         onToggleSection={noop}
@@ -143,7 +140,6 @@ describe("ThreadPromptContextBanner", () => {
               href: "/threads/thr_parent",
               relationship: "parent",
             }}
-            childThreadsSection={null}
             pullRequestSection={null}
             expandedSection={null}
             onToggleSection={noop}
@@ -174,7 +170,6 @@ describe("ThreadPromptContextBanner", () => {
             href: "/threads/thr_parent",
             relationship: "parent",
           }}
-          childThreadsSection={null}
           pullRequestSection={null}
           expandedSection={null}
           onToggleSection={noop}
@@ -195,7 +190,6 @@ describe("ThreadPromptContextBanner", () => {
         archivedSection={null}
         environmentGoneSection={null}
         parentThreadSection={null}
-        childThreadsSection={null}
         pullRequestSection={{ pullRequest: pullRequestFixture }}
         expandedSection={null}
         onToggleSection={noop}
@@ -216,7 +210,6 @@ describe("ThreadPromptContextBanner", () => {
         archivedSection={null}
         environmentGoneSection={null}
         parentThreadSection={null}
-        childThreadsSection={null}
         pullRequestSection={{
           pullRequest: pullRequestFixture,
           actions: {
@@ -240,7 +233,6 @@ describe("ThreadPromptContextBanner", () => {
         archivedSection={null}
         environmentGoneSection={null}
         parentThreadSection={null}
-        childThreadsSection={null}
         pullRequestSection={{
           pullRequest: {
             ...pullRequestFixture,
@@ -273,7 +265,6 @@ describe("ThreadPromptContextBanner", () => {
         archivedSection={null}
         environmentGoneSection={null}
         parentThreadSection={null}
-        childThreadsSection={null}
         pullRequestSection={{
           pullRequest: {
             ...pullRequestFixture,
@@ -289,185 +280,6 @@ describe("ThreadPromptContextBanner", () => {
     expect(markup).toContain("PR #128 · Closed");
   });
 
-  it("summarizes child work without flashing the banner", () => {
-    const markup = renderToStaticMarkup(
-      <MemoryRouter>
-        <ThreadPromptContextBanner
-          gitSection={null}
-          gitSectionPending={false}
-          archivedSection={null}
-          environmentGoneSection={null}
-          parentThreadSection={null}
-          childThreadsSection={{
-            items: [
-              {
-                id: "thr_child",
-                title: "Investigate failing checks",
-                href: "/threads/thr_child",
-                hasPendingInteraction: false,
-              },
-            ],
-          }}
-          pullRequestSection={null}
-          expandedSection={null}
-          onToggleSection={noop}
-        />
-      </MemoryRouter>,
-    );
-
-    expect(markup).toContain('aria-label="Child threads"');
-    expect(markup).toContain(
-      "1 active child thread: Investigate failing checks",
-    );
-    expect(markup).toContain("Active child thread:");
-    expect(markup).toContain("Investigate failing checks");
-    expect(markup).toContain('data-icon="UserRound"');
-    expect(markup).toContain("animate-shine-icon");
-    expect(markup).not.toContain("animate-shine font-medium");
-  });
-
-  it("summarizes additional active child threads", () => {
-    const markup = renderToStaticMarkup(
-      <MemoryRouter>
-        <ThreadPromptContextBanner
-          gitSection={null}
-          gitSectionPending={false}
-          archivedSection={null}
-          environmentGoneSection={null}
-          parentThreadSection={null}
-          childThreadsSection={{
-            items: [
-              {
-                id: "thr_primary",
-                title: "Investigate failing checks",
-                href: "/threads/thr_primary",
-                hasPendingInteraction: false,
-              },
-              {
-                id: "thr_other",
-                title: "Review the release notes",
-                href: "/threads/thr_other",
-                hasPendingInteraction: false,
-              },
-            ],
-          }}
-          pullRequestSection={null}
-          expandedSection={null}
-          onToggleSection={noop}
-        />
-      </MemoryRouter>,
-    );
-
-    expect(markup).toContain(
-      "2 active child threads: Investigate failing checks",
-    );
-    expect(markup).toContain("+1 more");
-  });
-
-  it("lets combined child and context cards shrink inside the composer stack", () => {
-    render(
-      <MemoryRouter>
-        <ThreadPromptContextBanner
-          gitSection={makeGitSection("uncommitted")}
-          gitSectionPending={false}
-          archivedSection={null}
-          environmentGoneSection={null}
-          parentThreadSection={null}
-          childThreadsSection={{
-            items: [
-              {
-                id: "thr_child",
-                title: "Host-owned SourceCode and Diff renderers",
-                href: "/threads/thr_child",
-                hasPendingInteraction: false,
-              },
-            ],
-          }}
-          pullRequestSection={null}
-          expandedSection={null}
-          onToggleSection={noop}
-        />
-      </MemoryRouter>,
-    );
-
-    const childCard = screen.getByRole("region", { name: "Child threads" });
-    const contextCard = screen.getByRole("region", {
-      name: "Thread context before sending",
-    });
-
-    expect(childCard.parentElement).toBe(contextCard.parentElement);
-    expect(childCard.parentElement?.classList.contains("contents")).toBe(true);
-  });
-
-  it("uses neutral active copy for a child waiting for a host", () => {
-    expect(isThreadDisplayStatusBannerActive("waiting-for-host")).toBe(true);
-
-    const markup = renderToStaticMarkup(
-      <MemoryRouter>
-        <ThreadPromptContextBanner
-          gitSection={null}
-          gitSectionPending={false}
-          archivedSection={null}
-          environmentGoneSection={null}
-          parentThreadSection={null}
-          childThreadsSection={{
-            items: [
-              {
-                id: "thr_waiting",
-                title: "Waiting for build host",
-                href: "/threads/thr_waiting",
-                hasPendingInteraction: false,
-              },
-            ],
-          }}
-          pullRequestSection={null}
-          expandedSection={null}
-          onToggleSection={noop}
-        />
-      </MemoryRouter>,
-    );
-
-    expect(markup).toContain("1 active child thread: Waiting for build host");
-    expect(markup).toContain("Active child thread:");
-    expect(markup).not.toContain("Running child thread:");
-  });
-
-  it("labels a child blocked on approval instead of active work", () => {
-    const markup = renderToStaticMarkup(
-      <MemoryRouter>
-        <ThreadPromptContextBanner
-          gitSection={null}
-          gitSectionPending={false}
-          archivedSection={null}
-          environmentGoneSection={null}
-          parentThreadSection={null}
-          childThreadsSection={{
-            items: [
-              {
-                id: "thr_blocked",
-                title: "Install workspace tools",
-                href: "/threads/thr_blocked",
-                hasPendingInteraction: true,
-              },
-            ],
-          }}
-          pullRequestSection={null}
-          expandedSection={null}
-          onToggleSection={noop}
-        />
-      </MemoryRouter>,
-    );
-
-    expect(markup).toContain(
-      "1 child thread needs input: Install workspace tools",
-    );
-    expect(markup).toContain("Needs your input:");
-    expect(markup).toContain("Install workspace tools");
-    expect(markup).toContain('data-icon="CircleQuestion"');
-    expect(markup).not.toContain("Active child thread:");
-    expect(markup).not.toContain("animate-shine-icon");
-  });
-
   it("labels standalone actionable pull request attention", () => {
     const markup = renderToStaticMarkup(
       <ThreadPromptContextBanner
@@ -476,7 +288,6 @@ describe("ThreadPromptContextBanner", () => {
         archivedSection={null}
         environmentGoneSection={null}
         parentThreadSection={null}
-        childThreadsSection={null}
         pullRequestSection={{
           pullRequest: {
             ...pullRequestFixture,
@@ -508,7 +319,6 @@ describe("ThreadPromptContextBanner", () => {
         archivedSection={null}
         environmentGoneSection={null}
         parentThreadSection={null}
-        childThreadsSection={null}
         pullRequestSection={{ pullRequest: pullRequestFixture }}
         expandedSection={null}
         onToggleSection={noop}
@@ -530,7 +340,6 @@ describe("ThreadPromptContextBanner", () => {
         archivedSection={null}
         environmentGoneSection={null}
         parentThreadSection={null}
-        childThreadsSection={null}
         pullRequestSection={{
           pullRequest: pullRequestFixture,
           actions: {
@@ -556,7 +365,6 @@ describe("ThreadPromptContextBanner", () => {
         archivedSection={null}
         environmentGoneSection={null}
         parentThreadSection={null}
-        childThreadsSection={null}
         pullRequestSection={{ pullRequest: pullRequestFixture }}
         expandedSection={null}
         onToggleSection={noop}
@@ -603,7 +411,6 @@ describe("ThreadPromptContextBanner", () => {
             archivedSection={null}
             environmentGoneSection={null}
             parentThreadSection={null}
-            childThreadsSection={null}
             pullRequestSection={{ pullRequest }}
             expandedSection={null}
             onToggleSection={noop}
@@ -633,7 +440,6 @@ describe("ThreadPromptContextBanner git section body", () => {
           archivedSection={null}
           environmentGoneSection={null}
           parentThreadSection={null}
-          childThreadsSection={null}
           pullRequestSection={null}
           expandedSection={expandedSection}
           onToggleSection={noop}

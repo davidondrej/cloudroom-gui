@@ -18,6 +18,8 @@ import { cloudEnvironmentRequestSchema, macVariables, sandboxThread, type CloudE
 import { CloudroomError } from "./client.js";
 import { archiveThreadAndChildren } from "../threads/thread-archive.js";
 import { reportBug } from "./bug-reports.js";
+import { githubAuth } from "./github-login.js";
+import { localRepos } from "./local-repos.js";
 
 export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   cloudroom(deps).teleportRecovery = () => teleports(deps).recover();
@@ -69,6 +71,23 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     z.object({}).strict().parse(await context.req.json());
     await cloudroom(deps).noteActivity();
     return context.json({ ok: true });
+  });
+  let desktopUpdate: { version: string; installAt: number | null; seenAt: number; install: boolean } | null = null;
+  app.post("/api/v1/cloudroom/desktop-update", async (context) => {
+    const input = z.object({ version: z.string().min(1).max(40), installAt: z.number().nullable() }).strict().parse(await context.req.json());
+    const install = desktopUpdate?.version === input.version && desktopUpdate.install;
+    desktopUpdate = { ...input, seenAt: Date.now(), install };
+    return context.json({ install });
+  });
+  app.get("/api/v1/cloudroom/desktop-update", (context) =>
+    context.json(desktopUpdate && Date.now() - desktopUpdate.seenAt < 60_000
+      ? { version: desktopUpdate.version, installAt: desktopUpdate.installAt, installing: desktopUpdate.install }
+      : null));
+  app.post("/api/v1/cloudroom/desktop-update/install", async (context) => {
+    z.object({}).strict().parse(await context.req.json());
+    if (!desktopUpdate) throw new ApiError(409, "no_desktop_update", "No downloaded update to install.");
+    desktopUpdate.install = true;
+    return context.json({ ok: true }, 202);
   });
   app.post("/api/v1/cloudroom/bug-reports", async (context) => {
     const input = z.object({ message: z.string().trim().min(1).max(4000), threadId: z.string().min(1).max(200).optional() }).strict().parse(await context.req.json());
@@ -145,6 +164,14 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     app.post(`/api/v1/cloudroom/account/codex/${action}`, async context => {
       const input = z.object({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/) }).strict().parse(await context.req.json());
       return context.json(await cloudroom(deps).codexAuth(action, input.requestId));
+    });
+  }
+  app.get("/api/v1/cloudroom/account/github", async context => context.json(await githubAuth(deps)));
+  app.get("/api/v1/cloudroom/account/local-repos", async context => context.json({ repos: await localRepos() }));
+  for (const action of ["login", "cancel"] as const) {
+    app.post(`/api/v1/cloudroom/account/github/${action}`, async context => {
+      const input = z.object({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/) }).strict().parse(await context.req.json());
+      return context.json(await githubAuth(deps, action, input.requestId));
     });
   }
   app.post("/api/v1/cloudroom/account/sign-in", async (context) => context.json(await cloudroomAccount(deps).signIn(await context.req.json())));

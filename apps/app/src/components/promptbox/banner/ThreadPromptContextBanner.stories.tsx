@@ -12,7 +12,6 @@ import {
   type ThreadPromptContextBannerExpandedSection,
   type ThreadPromptEnvironmentGoneSection,
   type ThreadPromptParentThreadSection,
-  type ThreadPromptChildThreadsSection,
 } from "@/components/promptbox/banner/ThreadPromptContextBanner";
 import {
   selectWorkspaceChangedFilesSection,
@@ -357,61 +356,6 @@ const sideChatFromFixture: ThreadPromptParentThreadSection = {
   relationship: "side-chat",
 };
 
-const childThreadsFixture: ThreadPromptChildThreadsSection = {
-  items: [
-    {
-      id: "thr_a",
-      title: "Investigate Safari auth flake on staging",
-      href: "/projects/proj-1/threads/thr_a",
-      hasPendingInteraction: false,
-    },
-    {
-      id: "thr_b",
-      title: "Review PR #4521 reviewer comments",
-      href: "/projects/proj-1/threads/thr_b",
-      hasPendingInteraction: false,
-    },
-    {
-      id: "thr_c",
-      title: "Refactor email pipeline retry logic",
-      href: "/projects/proj-1/threads/thr_c",
-      hasPendingInteraction: false,
-    },
-    {
-      id: "thr_d",
-      title: "Backfill workspace-status invalidation cache",
-      href: "/projects/proj-1/threads/thr_d",
-      hasPendingInteraction: false,
-    },
-  ],
-};
-
-const childThreadsPendingFixture: ThreadPromptChildThreadsSection = {
-  items: [
-    {
-      id: "thr_blocked",
-      title: "Install workspace tools",
-      href: "/projects/proj-1/threads/thr_blocked",
-      hasPendingInteraction: true,
-    },
-  ],
-};
-
-const childThreadsMixedFixture: ThreadPromptChildThreadsSection = {
-  items: childThreadsFixture.items.map((item, index) =>
-    index === 1 ? { ...item, hasPendingInteraction: true } : item,
-  ),
-};
-
-const childThreadsLargeFixture: ThreadPromptChildThreadsSection = {
-  items: Array.from({ length: 12 }, (_, i) => ({
-    id: `thr_large_${i}`,
-    title: `Child work item ${i + 1} that is busy doing thing-${i}`,
-    href: `/projects/proj-1/threads/thr_large_${i}`,
-    hasPendingInteraction: i === 1,
-  })),
-};
-
 function buildPullRequestFixture(
   overrides: Partial<ThreadPullRequest> = {},
 ): ThreadPullRequest {
@@ -620,7 +564,6 @@ interface RowConfig {
   archived?: ThreadPromptArchivedSection | null;
   environmentGone?: ThreadPromptEnvironmentGoneSection | null;
   parentThread?: ThreadPromptParentThreadSection | null;
-  childThreads?: ThreadPromptChildThreadsSection | null;
   pullRequest?: ThreadPullRequest | null;
   pullRequestActions?: boolean;
   pullRequestMergeMethod?: PullRequestMergeMethod;
@@ -633,7 +576,6 @@ function ContextBannerPreview({
   archived = null,
   environmentGone = null,
   parentThread = null,
-  childThreads = null,
   pullRequest = null,
   pullRequestActions = false,
   pullRequestMergeMethod = "merge",
@@ -660,7 +602,6 @@ function ContextBannerPreview({
         archivedSection={archived}
         environmentGoneSection={environmentGone}
         parentThreadSection={parentThread}
-        childThreadsSection={childThreads}
         pullRequestSection={
           pullRequest
             ? {
@@ -736,13 +677,12 @@ export function Overview() {
         <Row
           archived={archivedFixture}
           section={uncommittedSection}
-          childThreads={childThreadsFixture}
           mergeBase={null}
         />
       </StoryRow>
       <StoryRow
         label="environment archived"
-        hint="archived-environment row suppresses git/childThreads"
+        hint="archived-environment row suppresses git"
       >
         <Row environmentGone={destroyedEnvironmentFixture} mergeBase={null} />
       </StoryRow>
@@ -763,7 +703,6 @@ export function Overview() {
         <Row
           environmentGone={destroyedEnvironmentFixture}
           section={uncommittedSection}
-          childThreads={childThreadsFixture}
           mergeBase={null}
         />
       </StoryRow>
@@ -781,49 +720,6 @@ export function Overview() {
         hint={'renders "Side chat of …"'}
       >
         <Row parentThread={sideChatFromFixture} mergeBase={null} />
-      </StoryRow>
-      <StoryRow
-        label="parent thread with a child waiting for approval"
-        hint="the parent banner names the blocked child and drops the active shimmer"
-      >
-        <Row childThreads={childThreadsPendingFixture} mergeBase={null} />
-      </StoryRow>
-      <StoryRow
-        label="parent thread with active children (collapsed)"
-        hint="the primary child mirrors other background-work banners without an animated flash; click to expand the child list"
-      >
-        <Row childThreads={childThreadsFixture} mergeBase={null} />
-      </StoryRow>
-      <StoryRow
-        label="active child + pull request + uncommitted"
-        hint="long child titles stay within the shared stack; pull request actions remain available"
-      >
-        <Row
-          childThreads={childThreadsFixture}
-          pullRequest={pullRequestFixture}
-          pullRequestActions
-          section={uncommittedSection}
-        />
-      </StoryRow>
-      <StoryRow
-        label="parent thread with active children (expanded)"
-        hint="list of children with status + pending-approval marker on item 2"
-      >
-        <Row
-          childThreads={childThreadsMixedFixture}
-          mergeBase={null}
-          initiallyExpandedSection="childThreads"
-        />
-      </StoryRow>
-      <StoryRow
-        label="parent thread with many children (scrollable)"
-        hint="max-h-40 caps the list; rest scrolls"
-      >
-        <Row
-          childThreads={childThreadsLargeFixture}
-          mergeBase={null}
-          initiallyExpandedSection="childThreads"
-        />
       </StoryRow>
       <StoryRow
         label="child thread + uncommitted"

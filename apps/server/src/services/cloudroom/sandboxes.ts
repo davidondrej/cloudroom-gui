@@ -16,7 +16,7 @@ export class SandboxAsleep extends Error {}
 const viewSchema = z.object({
   thread: z.string(), state: z.enum(["new", "awake", "asleep", "archived", "deleted", "failed"]), generation: z.number(),
   issue: z.string().nullable(), origin: z.string().url().optional(), token: z.string().optional(),
-  startup: z.object({ id: z.string(), source: z.enum(["spare", "image", "template", "backup", "resume", "restart", "reuse"]), duration_ms: z.number().nonnegative() }).optional(),
+  startup: z.object({ source: z.enum(["spare", "image", "template", "backup", "resume", "restart", "reuse"]), duration_ms: z.number().nonnegative() }).optional().catch(undefined),
 });
 type View = z.infer<typeof viewSchema>;
 export type SandboxAccount = { website: string; userId: string; token: string };
@@ -54,6 +54,15 @@ export async function macCursorLogin(): Promise<string | null> {
   return accessToken && refreshToken ? JSON.stringify({ accessToken, refreshToken }, null, 2) : null;
 }
 
+const output = (command: string, args: string[]) => promisify(execFile)(command, args, { timeout: 10_000 }).then(result => result.stdout.trim(), () => "");
+/** This Mac's GitHub CLI token, or "" when `gh` is missing or signed out. */
+export const macGithubToken = () => output("gh", ["auth", "token", "--hostname", "github.com"]);
+/** The GitHub login sandboxes receive. Agents commit as the user, with the Mac's Git identity. */
+export async function sandboxGithubLogin(token: string): Promise<string> {
+  const [name, email] = await Promise.all([output("git", ["config", "--global", "user.name"]), output("git", ["config", "--global", "user.email"])]);
+  return JSON.stringify({ token, ...(name ? { name } : {}), ...(email ? { email } : {}) });
+}
+
 const environmentSchema = z.object({ variables: z.array(z.object({ name: z.string(), hint: z.string() })), setup: z.string() });
 export type CloudEnvironment = z.infer<typeof environmentSchema>;
 export const cloudEnvironmentRequestSchema = z.discriminatedUnion("action", [
@@ -89,13 +98,15 @@ export class SandboxDirectory {
   private uploaded = new Map<string, string>();
   constructor(readonly account: () => Promise<SandboxAccount | null>) {}
 
-  private async call(body: Record<string, unknown>, path = "sandboxes"): Promise<unknown> {
+  /** `only` sends the request solely for that account, so a login started under one account never reaches another. */
+  private async call(body: Record<string, unknown>, path = "sandboxes", only?: { account: SandboxAccount; signal: AbortSignal }): Promise<unknown> {
     const account = await this.account();
     if (!account) throw new CloudroomError("Sign in to Cloudroom to use cloud sandboxes.");
+    if (only && (account.userId !== only.account.userId || account.website !== only.account.website)) throw new CloudroomError("The Cloudroom account changed. Try again.");
     let response: Response;
     try {
       response = await fetch(`${account.website}/api/desktop/${path}`, {
-        method: "POST", redirect: "error", signal: AbortSignal.timeout(120_000),
+        method: "POST", redirect: "error", signal: only ? AbortSignal.any([only.signal, AbortSignal.timeout(120_000)]) : AbortSignal.timeout(120_000),
         headers: { "Content-Type": "application/json", Authorization: `Basic ${Buffer.from(`${account.userId}:${account.token}`).toString("base64")}` },
         body: JSON.stringify(body),
       });
@@ -121,7 +132,7 @@ export class SandboxDirectory {
   }
 
   /** The thread's Core, or null while it sleeps. `wake` starts it; only callers with work to send pass true. */
-  async connection(thread: string, project: SandboxProject, wake: boolean, startId?: string): Promise<SandboxConnection | null> {
+  async connection(thread: string, project: SandboxProject, wake: boolean): Promise<SandboxConnection | null> {
     const cached = this.views.get(thread);
     let view = cached?.view;
     const place = { thread, project: project.id, ...(project.repository ? { repository: project.repository, folder: project.folder } : {}) };
@@ -139,7 +150,7 @@ export class SandboxDirectory {
       // The Mac's harness versions: the sandbox upgrades to them before its agent starts (ADR 0133).
       pending = macHarnessVersions().then(harnesses => {
         this.wakeHarnesses.set(thread, harnesses);
-        return this.call({ action: "wake", ...place, harnesses, ...(this.backoff.has(thread) ? { trigger: "retry" } : {}), ...(startId ? { start_id: createHash("sha256").update(startId).digest("hex") } : {}) });
+        return this.call({ action: "wake", ...place, harnesses, ...(this.backoff.has(thread) ? { trigger: "retry" } : {}) });
       }).then(value => this.remember(viewSchema.parse(value))).then(view => { this.backoff.delete(thread); return view; }, error => {
         const delay = Math.min((this.backoff.get(thread)?.delay ?? 2_500) * 2, 300_000);
         this.backoff.set(thread, { until: Date.now() + delay, delay });
@@ -171,15 +182,8 @@ export class SandboxDirectory {
   startupSince(thread: string, at: number) {
     const startup = this.views.get(thread)?.view.startup;
     const versions = this.wakeHarnesses.get(thread);
-    if (!this.wokeSince(thread, at)) return { startup_source: "reuse" as const, sandbox_start_ms: 0, startup_id: null, versions };
-    return { startup_source: startup?.source ?? null, sandbox_start_ms: startup?.duration_ms ?? null, startup_id: startup?.id ?? null, versions };
-  }
-
-  private activityAt = 0;
-  async activity(): Promise<void> {
-    if (Date.now() - this.activityAt < 30_000) return;
-    await this.call({ action: "activity", trigger: "app_activity" });
-    this.activityAt = Date.now();
+    if (!this.wokeSince(thread, at)) return { startup_source: "reuse" as const, sandbox_start_ms: 0, versions };
+    return { startup_source: startup?.source ?? null, sandbox_start_ms: startup?.duration_ms ?? null, versions };
   }
 
   private warmed: { project: string; at: number } | null = null;
@@ -199,10 +203,10 @@ export class SandboxDirectory {
   async remove(thread: string): Promise<void> { this.forget(thread); await this.call({ action: "remove", thread }); }
 
   /** Saves a login for every sandbox of this account (ADR 0145), skipping values already uploaded. */
-  async saveLogin(name: SandboxLogin, value: string): Promise<void> {
+  async saveLogin(name: SandboxLogin, value: string, only?: { account: SandboxAccount; signal: AbortSignal }): Promise<void> {
     const digest = createHash("sha256").update(value).digest("hex");
     if (this.uploaded.get(name) === digest) return;
-    await this.call({ name, value }, "logins");
+    await this.call({ name, value }, "logins", only);
     this.uploaded.set(name, digest);
   }
 
@@ -237,11 +241,8 @@ export class SandboxDirectory {
     }
     const cursor = await macCursorLogin();
     if (cursor) await save("cursor", cursor);
-    const run = (command: string, args: string[]) => promisify(execFile)(command, args, { timeout: 10_000 }).then(result => result.stdout.trim(), () => "");
-    const github = await run("gh", ["auth", "token", "--hostname", "github.com"]);
-    // Agents commit as the user, with the Mac's Git identity.
-    const [name, email] = await Promise.all([run("git", ["config", "--global", "user.name"]), run("git", ["config", "--global", "user.email"])]);
-    if (github) await save("github", JSON.stringify({ token: github, ...(name ? { name } : {}), ...(email ? { email } : {}) }));
+    const github = await macGithubToken();
+    if (github) await save("github", await sandboxGithubLogin(github));
     if (failed.length) throw new CloudroomError(`Some logins could not be copied to cloud sandboxes. ${failed.join("; ")}`);
   }
 

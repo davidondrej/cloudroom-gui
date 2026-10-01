@@ -272,6 +272,7 @@ export function registerSystemRoutes(
       commandGuardEnabled: settings.commandGuardEnabled ?? current.commandGuardEnabled,
       systemPromptEnabled: settings.systemPromptEnabled ?? current.systemPromptEnabled,
       bugReportsEnabled: settings.bugReportsEnabled ?? current.bugReportsEnabled,
+      agentQuestionsEnabled: settings.agentQuestionsEnabled ?? current.agentQuestionsEnabled,
       showDiagnosticEvents:
         diagnosticValue === undefined ||
         (showUnhandledProviderEvents !== undefined &&

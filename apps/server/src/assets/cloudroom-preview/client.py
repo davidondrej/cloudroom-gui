@@ -522,8 +522,13 @@ class MacJobs:
                             self.cancel(json.loads(line[5:])['id'])
                         elif line.startswith(':') and (not self.enabled() or core.key not in self.wanted):
                             break
-            except (OSError, ValueError, KeyError, TypeError):
+            except (OSError, ValueError, KeyError, TypeError) as error:
                 delay = min(delay * 2, 30)
+                # A new sandbox refuses this Mac until it pairs; pair here instead of backing off until the preview loop does.
+                if getattr(error, 'code', None) == 403:
+                    with contextlib.suppress(OSError, ValueError):
+                        core.request('/device', {'device': device, 'public_key': identity(self.folder)})
+                        delay = 1
             time.sleep(delay)
 
     def execute(self, core, device, job):

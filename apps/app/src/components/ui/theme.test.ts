@@ -215,8 +215,11 @@ describe("theme.css neutral ramp", () => {
   }
 
   it("defines the same ramp tokens in light and dark", () => {
+    // Light makes the chat input pure white; only dark lifts it with ink.
     const light = [...rampSteps(modeBlock("light")).keys()].sort();
-    const dark = [...rampSteps(modeBlock("dark")).keys()].sort();
+    const dark = [...rampSteps(modeBlock("dark")).keys()]
+      .filter((token) => token !== "composer")
+      .sort();
     expect(light).toEqual(dark);
   });
 

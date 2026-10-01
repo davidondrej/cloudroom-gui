@@ -1,5 +1,5 @@
 ---
-name: bb-theme-authoring
+name: theme-authoring
 description: "Create or edit Cloudroom color themes and inspect them in the Theme Preview panel."
 ---
 

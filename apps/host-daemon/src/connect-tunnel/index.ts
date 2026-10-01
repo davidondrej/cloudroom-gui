@@ -71,14 +71,14 @@ export function resolveTrustedConnectGate(
   const firstDot = parsed.hostname.indexOf(".");
   if (firstDot <= 0 || firstDot === parsed.hostname.length - 1) {
     throw new Error(
-      `cannot derive the bb connect gate base domain from enrollment server ${parsed.origin}`,
+      `cannot derive the Cloudroom Connect gate base domain from enrollment server ${parsed.origin}`,
     );
   }
   const baseHostname = parsed.hostname.slice(firstDot + 1);
   const baseDomain = `${baseHostname}${parsed.port ? `:${parsed.port}` : ""}`;
   if (parsed.protocol !== connectPublicProtocol(baseDomain)) {
     throw new Error(
-      `bb connect machine credentials require HTTPS, or HTTP for a local *.localhost enrollment server, got ${parsed.origin}`,
+      `Cloudroom Connect machine credentials require HTTPS, or HTTP for a local *.localhost enrollment server, got ${parsed.origin}`,
     );
   }
   return {
@@ -172,7 +172,7 @@ export class ConnectTunnelClient {
     if (!credential) {
       return Promise.reject(
         new Error(
-          "this host has no trusted bb connect machine enrollment; remove and re-add it from Settings > Machines",
+          "this host has no trusted Cloudroom Connect machine enrollment; remove and re-add it from Settings > Machines",
         ),
       );
     }
@@ -185,7 +185,7 @@ export class ConnectTunnelClient {
     if (this.credentialRejected) {
       return Promise.reject(
         new ConnectTunnelCredentialRejectedError(
-          "the bb connect gate rejected this machine credential; re-add the machine from Settings > Machines",
+          "the Cloudroom Connect gate rejected this machine credential; re-add the machine from Settings > Machines",
         ),
       );
     }

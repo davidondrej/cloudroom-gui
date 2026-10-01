@@ -79,7 +79,7 @@ Skills (.bb/skills/):
 Cloudroom guide plugin:
 
   The enabled-by-default Cloudroom guide plugin owns the Cloudroom introduction and the
-  cloudroom, bb-plugin-authoring, and skill-creator skills. Settings → Installed
+  cloudroom, plugin-authoring, and skill-creator skills. Settings → Installed
   plugins → Cloudroom guide exposes introduction, a master skills switch, and one
   switch per skill. All default to true. Use:
 

@@ -395,7 +395,7 @@ export function registerConnectCli(args: {
           exitCode: 0,
           stdout:
             `Paired as ${status.handle} — reachable at ${status.url}\n` +
-            "The server holds the tunnel; it stays up while bb is running.\n",
+            "The server holds the tunnel; it stays up while Cloudroom is running.\n",
         };
       } catch (error) {
         return {

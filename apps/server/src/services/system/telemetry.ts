@@ -42,7 +42,6 @@ export type TelemetryEvent =
         sandbox_woke: boolean | null;
         startup_source?: string | null;
         sandbox_start_ms?: number | null;
-        startup_id?: string | null;
         model?: string | null;
         reasoning_level?: string | null;
         service_tier?: string | null;

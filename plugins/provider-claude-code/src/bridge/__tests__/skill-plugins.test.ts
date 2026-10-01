@@ -122,6 +122,6 @@ describe("claude skill plugins", () => {
       takenNames,
     });
     expect(nameOf(a)).toBe(CLAUDE_SKILL_PLUGIN_NAME);
-    expect(nameOf(b)).toMatch(/^bb-global-skills-[0-9a-f]{8}$/u);
+    expect(nameOf(b)).toMatch(/^cloudroom-[0-9a-f]{8}$/u);
   });
 });

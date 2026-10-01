@@ -79,7 +79,7 @@ describe("index.html pre-paint script", () => {
     expect(
       document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
         ?.content,
-    ).toBe("#151515");
+    ).toBe("#101010");
   });
 
   it("follows the system scheme when no preference is stored", () => {
@@ -100,7 +100,7 @@ describe("index.html pre-paint script", () => {
     expect(
       document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
         ?.content,
-    ).toBe("#ffffff");
+    ).toBe("#f4f4f4");
   });
 
   it("injects the palette CSS cached by applyAppThemeCss as the last head style", () => {

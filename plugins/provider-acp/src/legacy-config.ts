@@ -44,7 +44,7 @@ export async function readLegacyCustomAcpAgents(
   }
   const config = legacyConfigSchema.safeParse(parsed);
   if (!config.success) {
-    return { entries: [], problem: `${path} is not a bb config file` };
+    return { entries: [], problem: `${path} is not a Cloudroom config file` };
   }
   return {
     entries: (config.data.customAcpAgents ?? []).map(withoutLegacyLogo),
@@ -54,7 +54,7 @@ export async function readLegacyCustomAcpAgents(
 export function legacyAgentDeprecationMessage(agent: CustomAcpAgent): string {
   return (
     `Custom ACP agent "${agent.id}" comes from the deprecated customAcpAgents ` +
-    `array in config.json. bb reads it until ${LEGACY_CUSTOM_AGENTS_REMOVED_IN}; ` +
+    `array in config.json. Cloudroom reads it until ${LEGACY_CUSTOM_AGENTS_REMOVED_IN}; ` +
     `move it to the ACP providers plugin's "customAgents" setting.`
   );
 }

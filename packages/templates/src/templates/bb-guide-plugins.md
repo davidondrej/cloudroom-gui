@@ -3,7 +3,7 @@ kind: instruction
 title: Cloudroom Guide — Plugins
 summary: Command reference for installing, configuring, running, and authoring cloudroom plugins and their contributed CLI commands.
 intent: Provide complete plugin command documentation plus an authoring walkthrough for agents and humans building cloudroom plugins.
-editingNotes: Keep flags accurate against the CLI implementation (apps/cli/src/commands/plugin.ts, apps/cli/src/commands/marketplace.ts) and the server plugin service; a CLI test asserts every `room-cli plugin` and `room-cli marketplace` subcommand appears in this chapter. The full authoring reference is the bb-plugin-authoring builtin skill.
+editingNotes: Keep flags accurate against the CLI implementation (apps/cli/src/commands/plugin.ts, apps/cli/src/commands/marketplace.ts) and the server plugin service; a CLI test asserts every `room-cli plugin` and `room-cli marketplace` subcommand appears in this chapter. The full authoring reference is the plugin-authoring builtin skill.
 ---
 Plugin commands
 
@@ -892,8 +892,8 @@ tw-animate-css utilities compile in plugin builds).
 
 For the complete authoring reference — exact signatures, working snippets
 for every surface, the reload lifecycle, testing tips, and gotchas — use
-the built-in `bb-plugin-authoring` skill (agents: it loads on demand;
-humans: plugins/bb-guide/skills/bb-plugin-authoring/
+the built-in `plugin-authoring` skill (agents: it loads on demand;
+humans: plugins/bb-guide/skills/plugin-authoring/
 in a checkout). The builtin `inline-vis` plugin renders
 `::inline-vis{file="demo.html" height="480"}` through the sidebar's
 path-shaped, sandboxed worktree HTML iframe preview; `height` is optional.

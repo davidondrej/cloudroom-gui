@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { useCloudroomAccount } from "@/hooks/queries/cloudroom-queries";
 import { getBbDesktopInfo } from "@/lib/bb-desktop";
 import { CodexConnectionPanel, CursorConnectionPanel } from "./CodexConnectionPanel";
-import { CloudroomSetup } from "./CloudroomSetup";
 
 export function CloudroomAccountPanels() {
   const status = useCloudroomAccount();
@@ -18,5 +17,5 @@ export function CloudroomAccountPanels() {
     }
   }, [signingIn, accountId]);
   if (!accountId) return null;
-  return <><CloudroomSetup /><CodexConnectionPanel /><CursorConnectionPanel /></>;
+  return <><CodexConnectionPanel /><CursorConnectionPanel /></>;
 }

@@ -2,7 +2,6 @@ import { useState, type ClipboardEvent, type FormEvent, type ReactNode } from "r
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CloudEnvironment, CloudEnvironmentChange } from "@bb/sdk/browser";
 import { Button } from "@bb/shared-ui/button";
-import { Checkbox } from "@bb/shared-ui/checkbox";
 import { Icon } from "@bb/shared-ui/icon";
 import { Input } from "@bb/shared-ui/input";
 import { Textarea } from "@bb/shared-ui/textarea";
@@ -11,6 +10,8 @@ import { sdk } from "@/lib/sdk";
 const ENVIRONMENT_KEY = ["cloudroom-environment"];
 const VARIABLE_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const PREINSTALLED = "Node.js · Git · GitHub CLI · Claude Code · Codex · Pi · Cursor";
+// Dimmer than the default placeholder, so the example never reads as saved text.
+const DIM_PLACEHOLDER = "placeholder:text-subtle-foreground/60";
 const SCRIPT_PLACEHOLDER = "# Runs once in each new cloud sandbox, as the agent. sudo works.\nnpm install -g vercel";
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : error ? String(error) : null);
@@ -93,9 +94,17 @@ function VariablesCard({
   onChange: (change: CloudEnvironmentChange) => Promise<unknown>;
   onImported: (data: CloudEnvironment) => void;
 }) {
-  const [importing, setImporting] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [value, setValue] = useState("");
+  // Scans this Mac's shell on open, so keys the cloud lacks show up without a click.
+  const mac = useQuery({ queryKey: ["cloudroom-mac-variables"], queryFn: ({ signal }) => sdk.cloudroom.macVariables(signal), retry: false });
+  const importKeys = useMutation({ mutationFn: (names: string[]) => sdk.cloudroom.importMacVariables(names), onSuccess: onImported });
+  const saved = new Set(environment.variables.map((variable) => variable.name));
+  const missing = (mac.data?.names ?? []).filter((macName) => !saved.has(macName));
+  const locked = busy || importKeys.isPending;
+  // Typed text keeps the form open even if the Mac scan finishes late.
+  const showForm = adding || Boolean(name || value) || (!environment.variables.length && !missing.length);
   const nameProblem = name && !VARIABLE_NAME.test(name) ? "Names start with a letter or underscore." : null;
   const add = (event: FormEvent) => {
     event.preventDefault();
@@ -103,6 +112,7 @@ function VariablesCard({
     void onChange({ action: "set", variables: { [name]: value } }).then(() => {
       setName("");
       setValue("");
+      setAdding(false);
     }, () => {});
   };
   const pasteLine = (event: ClipboardEvent<HTMLInputElement>) => {
@@ -114,32 +124,13 @@ function VariablesCard({
     setValue(line.slice(at + 1).trim().replace(/^(["'])(.*)\1$/, "$2"));
   };
   return (
-    <Card
-      icon="Lock"
-      title="API keys"
-      description="Agents get these as environment variables. Values are hidden after saving."
-      action={
-        <Button size="sm" variant="outline" aria-expanded={importing} onClick={() => setImporting(!importing)}>
-          <Icon name="Laptop" />
-          Import from Mac
-        </Button>
-      }
-    >
-      {importing && (
-        <MacImport
-          saved={new Set(environment.variables.map((variable) => variable.name))}
-          onClose={() => setImporting(false)}
-          onImported={(data) => {
-            onImported(data);
-            setImporting(false);
-          }}
-        />
-      )}
-      {environment.variables.length ? (
+    <Card icon="Lock" title="API keys" description="Agents get these as environment variables. Values are hidden after saving.">
+      {environment.variables.length > 0 && (
         <ul className="divide-y divide-border border-t border-border">
           {environment.variables.map((variable) => (
             <li key={variable.name} className="group flex items-center gap-3 px-4 py-2">
               <code className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">{variable.name}</code>
+              <span className="rounded-full border border-primary/30 px-1.5 text-2xs text-primary-text">in cloud</span>
               <span className="font-mono text-xs tracking-wider text-subtle-foreground" aria-label="Hidden value">
                 ••••••••{variable.hint}
               </span>
@@ -148,7 +139,7 @@ function VariablesCard({
                 variant="ghost"
                 className="size-7 text-subtle-foreground hover:text-destructive-text"
                 aria-label={`Remove ${variable.name}`}
-                disabled={busy}
+                disabled={locked}
                 onClick={() => void onChange({ action: "remove", name: variable.name }).catch(() => {})}
               >
                 <Icon name="Trash2" className="size-3.5" />
@@ -156,90 +147,76 @@ function VariablesCard({
             </li>
           ))}
         </ul>
-      ) : (
-        <p className="border-t border-border px-4 py-5 text-center text-xs text-subtle-foreground">
-          No API keys yet. Add one below, or import them from your Mac.
-        </p>
       )}
-      <form onSubmit={add} className="flex flex-col gap-2 border-t border-border bg-surface-recessed/40 px-4 py-3 sm:flex-row sm:items-start">
-        <div className="sm:w-60">
-          <Input
-            className="h-8 font-mono text-xs"
-            placeholder="OPENROUTER_API_KEY"
-            aria-label="Variable name"
-            aria-invalid={nameProblem !== null}
-            autoComplete="off"
-            spellCheck={false}
-            value={name}
-            onPaste={pasteLine}
-            onChange={(event) => setName(event.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, "_"))}
-          />
-          {nameProblem && <p className="mt-1 text-2xs text-destructive-text">{nameProblem}</p>}
-        </div>
-        <Input
-          className="h-8 min-w-0 flex-1 font-mono text-xs"
-          type="password"
-          placeholder="Value"
-          aria-label="Variable value"
-          autoComplete="off"
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-        />
-        <Button type="submit" size="sm" disabled={busy || !name || !value.trim() || nameProblem !== null}>
-          <Icon name="Plus" />
-          Add
-        </Button>
-      </form>
-    </Card>
-  );
-}
-
-function MacImport({ saved, onClose, onImported }: { saved: Set<string>; onClose: () => void; onImported: (data: CloudEnvironment) => void }) {
-  const found = useQuery({ queryKey: ["cloudroom-mac-variables"], queryFn: ({ signal }) => sdk.cloudroom.macVariables(signal), staleTime: 0, retry: false });
-  const [picked, setPicked] = useState<Set<string> | null>(null);
-  const names = found.data?.names ?? [];
-  const selected = picked ?? new Set(names.filter((name) => !saved.has(name)));
-  const run = useMutation({ mutationFn: () => sdk.cloudroom.importMacVariables([...selected]), onSuccess: onImported });
-  const toggle = (name: string, on: boolean) => {
-    const next = new Set(selected);
-    if (on) next.add(name);
-    else next.delete(name);
-    setPicked(next);
-  };
-  return (
-    <div className="border-t border-border bg-surface-recessed/40 px-4 py-3">
-      {found.isPending ? (
-        <p className="text-xs text-subtle-foreground">Looking for API keys in your shell…</p>
-      ) : found.isError ? (
-        <p role="alert" className="text-xs text-destructive-text">{errorText(found.error)}</p>
-      ) : !names.length ? (
-        <p className="text-xs text-subtle-foreground">No API keys found in your shell on this Mac (for example, in ~/.zshrc).</p>
-      ) : (
+      {missing.length > 0 && (
         <>
-          <p className="mb-2 text-xs text-subtle-foreground">Found in your shell on this Mac. Pick the ones cloud agents should get.</p>
-          <div className="grid gap-0.5 sm:grid-cols-2">
-            {names.map((name) => (
-              <label key={name} className="flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-state-hover">
-                <Checkbox checked={selected.has(name)} onCheckedChange={(on) => toggle(name, on === true)} aria-label={name} />
-                <code className="min-w-0 truncate font-mono text-xs text-foreground">{name}</code>
-                {saved.has(name) && <span className="ml-auto shrink-0 text-2xs text-subtle-foreground">Replaces saved</span>}
-              </label>
-            ))}
+          <div className="flex items-center justify-between gap-3 border-t border-border bg-primary/5 px-4 py-2">
+            <p className="text-xs text-foreground">
+              <span className="font-semibold">{missing.length} more on this Mac</span>
+              <span className="text-subtle-foreground"> · from your shell</span>
+            </p>
+            <Button size="sm" disabled={locked} onClick={() => importKeys.mutate(missing)}>
+              {importKeys.isPending ? "Importing…" : missing.length > 1 ? `Import all ${missing.length}` : "Import"}
+            </Button>
           </div>
+          <ul className="divide-y divide-border border-t border-border bg-primary/[0.02]">
+            {missing.map((macName) => (
+              <li key={macName} className="flex items-center gap-3 px-4 py-2">
+                <code className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">{macName}</code>
+                <Button size="sm" variant="outline" className="h-7" disabled={locked} onClick={() => importKeys.mutate([macName])}>
+                  <Icon name="Plus" />
+                  Import
+                </Button>
+              </li>
+            ))}
+          </ul>
+          {importKeys.error && (
+            <p role="alert" className="border-t border-border px-4 py-2 text-xs text-destructive-text">
+              {errorText(importKeys.error)}
+            </p>
+          )}
         </>
       )}
-      {run.error && <p role="alert" className="mt-2 text-xs text-destructive-text">{errorText(run.error)}</p>}
-      <div className="mt-3 flex justify-end gap-2">
-        <Button size="sm" variant="ghost" onClick={onClose}>
-          Cancel
-        </Button>
-        {names.length > 0 && (
-          <Button size="sm" disabled={!selected.size || run.isPending} onClick={() => run.mutate()}>
-            {run.isPending ? "Importing…" : `Import ${selected.size}`}
+      {showForm ? (
+        <form onSubmit={add} className="flex flex-col gap-2 border-t border-border bg-surface-recessed/40 px-4 py-3 sm:flex-row sm:items-start">
+          <div className="sm:w-60">
+            <Input
+              className={`h-8 font-mono text-xs ${DIM_PLACEHOLDER}`}
+              placeholder="OPENROUTER_API_KEY"
+              aria-label="Variable name"
+              aria-invalid={nameProblem !== null}
+              autoComplete="off"
+              spellCheck={false}
+              autoFocus={adding}
+              value={name}
+              onPaste={pasteLine}
+              onChange={(event) => setName(event.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, "_"))}
+            />
+            {nameProblem && <p className="mt-1 text-2xs text-destructive-text">{nameProblem}</p>}
+          </div>
+          <Input
+            className={`h-8 min-w-0 flex-1 font-mono text-xs ${DIM_PLACEHOLDER}`}
+            type="password"
+            placeholder="Value"
+            aria-label="Variable value"
+            autoComplete="off"
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+          />
+          <Button type="submit" size="sm" disabled={locked || !name || !value.trim() || nameProblem !== null}>
+            <Icon name="Plus" />
+            Add
           </Button>
-        )}
-      </div>
-    </div>
+        </form>
+      ) : (
+        <div className="border-t border-border px-2 py-1.5">
+          <Button size="sm" variant="ghost" className="text-subtle-foreground" onClick={() => setAdding(true)}>
+            <Icon name="Plus" />
+            Add a key manually
+          </Button>
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -256,7 +233,7 @@ function SetupScriptCard({ setup, onSave }: { setup: string; onSave: (setup: str
     <Card icon="Terminal" title="Setup script" description="Runs once in each new cloud sandbox, in the background. Output: /var/log/cloudroom/setup.log">
       <div className="border-t border-border p-3">
         <Textarea
-          className="min-h-36 resize-y font-mono text-xs leading-relaxed"
+          className={`min-h-36 resize-y font-mono text-xs leading-relaxed ${DIM_PLACEHOLDER}`}
           placeholder={SCRIPT_PLACEHOLDER}
           aria-label="Setup script"
           spellCheck={false}

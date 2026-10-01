@@ -34,7 +34,7 @@ function pluginDirectoryName(root: ClaudeSkillPluginRoot): string {
     .slice(0, 16);
 }
 
-export const CLAUDE_SKILL_PLUGIN_NAME = "bb-global-skills";
+export const CLAUDE_SKILL_PLUGIN_NAME = "cloudroom";
 
 function pluginNameFor(
   root: ClaudeSkillPluginRoot,
@@ -64,7 +64,7 @@ export function ensureClaudeSkillPlugin(args: {
     name,
     version: "0.1.0",
     description: `Skills injected by Cloudroom (${args.root.id}).`,
-    author: { name: "bb" },
+    author: { name: "Cloudroom" },
     skills: "./skills",
   };
   writeFileSync(

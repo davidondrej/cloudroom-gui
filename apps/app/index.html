@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <meta name="theme-color" content="#ffffff" id="theme-color" />
+    <meta name="theme-color" content="#f4f4f4" id="theme-color" />
     <!-- iOS ignores the manifest's display mode, so these opt the home-screen
          app into standalone (chrome-less) launch. The translucent status bar
          and viewport-fit=cover let app surfaces paint edge-to-edge; layout
@@ -81,15 +81,15 @@
         // Pre-paint browser-chrome color so PWA/status-bar chrome doesn't
         // flash the wrong shade before the app boots; useTheme.ts owns the
         // meta tag afterwards. Mirrors the bb.theme preference resolution and
-        // the --canvas values in theme.css (#151515 = oklch(0.195 0 0)).
+        // the --canvas values in theme.css (#101010 = oklch(0.175 0 0), #f4f4f4 = oklch(0.968 0 0)).
         var theme = null;
         try {
           theme = localStorage.getItem("bb.theme");
         } catch {}
         var darkTheme = theme === "dark" || (theme !== "light" && mq.matches);
         document.getElementById("theme-color").content = darkTheme
-          ? "#151515"
-          : "#ffffff";
+          ? "#101010"
+          : "#f4f4f4";
         // theme.css keys every dark token off the `dark` class, so add it
         // before the stylesheet applies. Otherwise the first paint is the
         // light palette until main.tsx (behind ~1.5 MB of JS) toggles it,

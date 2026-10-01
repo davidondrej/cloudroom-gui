@@ -146,7 +146,6 @@ import {
   RootComposeSecondaryContent,
 } from "./RootComposeSecondaryContent";
 import { RootComposeMobileRecents } from "./RootComposeMobileRecents";
-import { RootComposeEmptyWelcome } from "./RootComposeEmptyWelcome";
 import {
   shouldLoadThreadStorageFileList,
   useThreadStorageViewer,
@@ -193,8 +192,6 @@ import {
 
 const ROOT_COMPOSE_SIDEBAR_ACTION_ALIGNED_TOP_PADDING_CLASS = "pt-14";
 
-const ROOT_COMPOSE_EMPTY_WELCOME_CONTENT_CLASS =
-  "min-h-full flex-1 items-center justify-center pb-12";
 const EMPTY_TERMINAL_SESSIONS: readonly TerminalSession[] = [];
 
 interface LegacyProjectComposeRedirectProps {
@@ -1790,21 +1787,6 @@ function RootComposeSurface({
     </div>
   ) : null;
   const isForkDraft = forkSeed !== null;
-  const showEmptyWelcome =
-    !isForkDraft &&
-    !startedComposing &&
-    projects !== undefined &&
-    projects.length === 0;
-  const setPromptTextAndMentions = promptDraft.setTextAndMentions;
-  const handleStartComposing = useCallback(
-    (prefill?: string) => {
-      if (prefill) {
-        setPromptTextAndMentions(prefill, []);
-      }
-      setStartedComposing(true);
-    },
-    [setPromptTextAndMentions, setStartedComposing],
-  );
   useEffect(() => {
     if (!startedComposing) return;
     if (isProviderCliVersionBlocked) return;
@@ -1983,22 +1965,18 @@ function RootComposeSurface({
         >
           <AppNavigationHostProvider capabilities={appNavigationCapabilities}>
             <RootComposeSecondaryContent
-              footer={showEmptyWelcome ? null : connectionFooter}
+              footer={connectionFooter}
               contentClassName={
-                showEmptyWelcome
-                  ? ROOT_COMPOSE_EMPTY_WELCOME_CONTENT_CLASS
-                  : ROOT_COMPOSE_SIDEBAR_ACTION_ALIGNED_TOP_PADDING_CLASS
+                ROOT_COMPOSE_SIDEBAR_ACTION_ALIGNED_TOP_PADDING_CLASS
               }
               compactScrollContent={
-                showEmptyWelcome ? null : (
-                  <RootComposeMobileRecents
-                    highlightedThreadId={lastCreatedThreadId}
-                    projectNamesById={mobileRecentProjectNamesById}
-                    providersById={mobileRecentProvidersById}
-                    showCreatingRow={isSubmitting}
-                    threads={mobileRecentThreads}
-                  />
-                )
+                <RootComposeMobileRecents
+                  highlightedThreadId={lastCreatedThreadId}
+                  projectNamesById={mobileRecentProjectNamesById}
+                  providersById={mobileRecentProvidersById}
+                  showCreatingRow={isSubmitting}
+                  threads={mobileRecentThreads}
+                />
               }
               isSecondaryPanelOpen={isSecondaryPanelOpen}
               onToggleSecondaryPanel={handleToggleSecondaryPanel}
@@ -2027,11 +2005,7 @@ function RootComposeSurface({
                 onPanelFocus: touchFixedPanelTabsState,
               }}
             >
-              {showEmptyWelcome ? (
-                <RootComposeEmptyWelcome onCompose={handleStartComposing} />
-              ) : (
-                promptBox
-              )}
+              {promptBox}
             </RootComposeSecondaryContent>
           </AppNavigationHostProvider>
         </UrlOpenRoutingProvider>

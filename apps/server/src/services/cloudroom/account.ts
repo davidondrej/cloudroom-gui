@@ -5,6 +5,7 @@ import { getProject, type DbConnection } from "@bb/db";
 import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { cloudroom } from "./commands.js";
+import { cancelGithubLogin } from "./github-login.js";
 import { macAccess } from "./previews.js";
 import { hasMacCodexLogin } from "./sandboxes.js";
 import { copyLogins } from "./sync.js";
@@ -12,7 +13,7 @@ import { copyLogins } from "./sync.js";
 const website = "https://www.cloudroom.dev";
 // Keep the loopback listener open while a VM is provisioned. The one-use pairing code expires separately after five minutes.
 export const pendingLoginTimeoutMs = 30 * 60_000;
-const signInSchema = z.object({ projectId: z.string().min(1).optional(), websiteUrl: z.string().url().optional() }).strict();
+const signInSchema = z.object({ projectId: z.string().min(1).optional(), websiteUrl: z.string().url().optional(), provider: z.enum(["github", "google"]).optional() }).strict();
 const handoffSchema = z.object({
   account: z.object({ id: z.string().uuid(), email: z.string().email() }).strict(),
   connection: z.object({ url: z.string().url(), token: z.string().min(32), gateToken: z.string().regex(/^[a-zA-Z0-9._~-]{1,4096}$/).optional() }).strict().optional(),
@@ -75,6 +76,7 @@ export class CloudroomAccountService {
 
   async logout(): Promise<void> {
     this.cancel();
+    cancelGithubLogin();
     await cloudroom(this.deps).disconnect();
   }
 
@@ -162,6 +164,6 @@ export class CloudroomAccountService {
     const timer = setTimeout(() => { if (this.pending?.server === server) { this.cancel(); this.error = "Sign-in expired. Try again."; } }, pendingLoginTimeoutMs);
     timer.unref();
     this.pending = { server, abort, timer, claimed: false };
-    return { url: `${origin.origin}/desktop?${new URLSearchParams({ callback, state, challenge })}` };
+    return { url: `${origin.origin}/desktop?${new URLSearchParams({ callback, state, challenge, ...(input.provider ? { provider: input.provider } : {}) })}` };
   }
 }

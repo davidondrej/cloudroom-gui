@@ -36,7 +36,7 @@ export default async function plugin(bb: BbPluginApi) {
     skills: current.skills
       ? [
           ...(current.bbCli ? ["room-cli"] : []),
-          ...(current.pluginAuthoring ? ["bb-plugin-authoring"] : []),
+          ...(current.pluginAuthoring ? ["plugin-authoring"] : []),
           ...(current.skillCreator ? ["skill-creator"] : []),
         ]
       : [],

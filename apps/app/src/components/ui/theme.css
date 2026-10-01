@@ -27,6 +27,7 @@
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-composer: var(--composer);
   --color-primary: var(--primary);
   --color-primary-text: var(--primary-text);
   --color-primary-foreground: var(--primary-foreground);
@@ -403,7 +404,7 @@
   color-scheme: light;
   /* Anchors. The neutral ramp below is derived from these two by mixing ink
    * into the canvas, so changing the canvas moves every surface coherently. */
-  --canvas: oklch(1 0 0);
+  --canvas: oklch(0.968 0 0);
   --ink: oklch(0.3211 0 0);
   --background: var(--canvas);
   --foreground: var(--ink);
@@ -416,6 +417,8 @@
   --card-foreground: var(--ink);
   --popover: var(--canvas);
   --popover-foreground: var(--ink);
+  /* The chat input is the one surface lifted off the light-gray page. */
+  --composer: oklch(1 0 0);
   --primary: #bfff00;
   --primary-text: var(--primary);
   --primary-foreground: color-mix(in oklch, var(--ink) 20%, black);
@@ -439,8 +442,8 @@
    * palettes tint it instead of stranding it neutral beside their own text. */
   --version-upgrade: color-mix(in oklch, var(--ink) 96%, var(--canvas));
   /* Soft "paper blue" timeline accent — the one tint in the otherwise
-   * achromatic timeline. ~5.0:1 on white. */
-  --timeline-accent: oklch(0.55 0.1 250);
+   * achromatic timeline. Clears 4.5:1 on the light-gray canvas. */
+  --timeline-accent: oklch(0.53 0.1 250);
   --file-accent: var(--timeline-accent);
   /* Interactive-state fills: translucent ink so the same hover/active step
    * reads consistently on canvas, cards, and recessed surfaces alike. Over the
@@ -648,7 +651,7 @@
 
 .dark {
   color-scheme: dark;
-  --canvas: oklch(0.195 0 0);
+  --canvas: oklch(0.175 0 0);
   /* Softened from a brighter near-white so dark-mode foreground text reads a
    * touch less intense; the whole achromatic ramp is anchored here, so chrome
    * follows by an imperceptible amount. */
@@ -662,6 +665,8 @@
   --card-foreground: var(--ink);
   --popover: var(--canvas);
   --popover-foreground: var(--ink);
+  /* The chat input lifts to a lighter gray than the page. */
+  --composer: color-mix(in oklch, var(--ink) 16%, var(--canvas));
   --primary: #bfff00;
   --primary-text: var(--primary);
   --primary-foreground: color-mix(in oklch, var(--ink) 20%, black);

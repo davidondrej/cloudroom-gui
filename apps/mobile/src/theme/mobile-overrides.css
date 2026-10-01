@@ -34,6 +34,7 @@
 :root,
 .light {
   /* Anchors: systemBackground / label. */
+  --canvas: oklch(1 0 0);
   --ink: oklch(0 0 0);
   /* systemBlue tint; the ring and selection tints derive from it. */
   --primary: #007aff;

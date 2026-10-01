@@ -148,6 +148,7 @@ import {
 } from "./desktop-auto-update.js";
 import { mergeDesktopUpdateInfo } from "./desktop-update-info.js";
 import {
+  reportDesktopUpdate,
   resumeThreadsAfterUpdate,
   runningLocalThreadIds,
   stopThreadsForUpdate,
@@ -2312,8 +2313,13 @@ async function runDesktopApp(): Promise<void> {
       hasRunningThreads: async () =>
         currentRuntime?.ownership === "spawned" &&
         (await runningLocalThreadIds(currentRuntime.serverUrl)).length > 0,
+      report: async (installAt) => {
+        const version = desktopAutoUpdateService?.getInfo().pendingVersion;
+        if (currentRuntime?.ownership !== "spawned" || !version) return false;
+        return reportDesktopUpdate(currentRuntime.serverUrl, `v${version.replace(/\.0\.0$/u, "")}`, installAt);
+      },
       install: async () => {
-        desktopLogger.info("Installing the downloaded update: this Mac and its agents have been idle.");
+        desktopLogger.info("Installing the downloaded update: this Mac was idle, or a window asked to restart.");
         await installDownloadedUpdate();
       },
     });

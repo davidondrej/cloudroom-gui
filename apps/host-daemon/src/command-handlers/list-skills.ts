@@ -250,7 +250,7 @@ export async function writeHostSkill(
   if (realTarget !== path.join(realRoot, command.name)) {
     throw new CommandDispatchError(
       "skill_outside_root",
-      "Refusing to edit a skill that resolves outside its bb root",
+      "Refusing to edit a skill that resolves outside its skill root",
     );
   }
   const skillFilePath = path.join(realTarget, SKILL_FILE_NAME);

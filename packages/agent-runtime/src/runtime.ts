@@ -651,7 +651,7 @@ export function createAgentRuntime(options: AgentRuntimeOptions): AgentRuntime {
       sendJsonRpcError({
         child: args.proc.child,
         id: args.parsedId,
-        message: `Unable to resolve BB thread id for ${args.requestKind} on provider thread "${args.providerThreadId}"`,
+        message: `Unable to resolve Cloudroom thread id for ${args.requestKind} on provider thread "${args.providerThreadId}"`,
       });
       return null;
     }
@@ -659,7 +659,7 @@ export function createAgentRuntime(options: AgentRuntimeOptions): AgentRuntime {
       sendJsonRpcError({
         child: args.proc.child,
         id: args.parsedId,
-        message: `${formatProviderRequestKindForSentence(args.requestKind)} thread hint "${args.threadIdHint}" did not match resolved BB thread "${resolvedThreadId}" for provider thread "${args.providerThreadId}"`,
+        message: `${formatProviderRequestKindForSentence(args.requestKind)} thread hint "${args.threadIdHint}" did not match resolved Cloudroom thread "${resolvedThreadId}" for provider thread "${args.providerThreadId}"`,
       });
       return null;
     }
@@ -1198,7 +1198,7 @@ export function createAgentRuntime(options: AgentRuntimeOptions): AgentRuntime {
 
       if (!resolvedBbThreadId) {
         options.onStderr?.(
-          `Dropping unscoped provider event ${event.type}; no bb thread could be resolved`,
+          `Dropping unscoped provider event ${event.type}; no Cloudroom thread could be resolved`,
         );
         continue;
       }

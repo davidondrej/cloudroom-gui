@@ -412,6 +412,12 @@ function resolvePanelThreadId(
   );
 }
 
+const SELECT_CLOUD_EVENT = "cloudroom:select-cloud";
+export function selectCloudForNewThreads() {
+  localStorage.setItem("cloudroom.executionTarget", "cloud");
+  window.dispatchEvent(new Event(SELECT_CLOUD_EVENT));
+}
+
 export function NewThreadComposer({
   projectId: requestedProjectId,
   onProjectChange,
@@ -435,6 +441,11 @@ export function NewThreadComposer({
       : "local",
   );
   const executionTarget = cloudLocked ? "local" : storedExecutionTarget;
+  useEffect(() => {
+    const selectCloud = () => setExecutionTarget("cloud");
+    window.addEventListener(SELECT_CLOUD_EVENT, selectCloud);
+    return () => window.removeEventListener(SELECT_CLOUD_EVENT, selectCloud);
+  }, []);
   const [localPromptBoxFocusRequest, setLocalPromptBoxFocusRequest] = useState<
     number | null
   >(null);

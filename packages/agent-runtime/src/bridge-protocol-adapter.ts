@@ -452,7 +452,7 @@ export function createBridgeProtocolAdapter(
                 parsed.data.capabilities.grammarVersions;
               const [runtimeMin, runtimeMax] = ASSEMBLER_GRAMMAR_VERSIONS;
               throw new Error(
-                `Provider bridge "${options.id}" speaks thread/delta grammar versions ${bridgeMin}-${bridgeMax}, but this runtime assembles versions ${runtimeMin}-${runtimeMax}. Update the "${options.id}" provider plugin or bb so the two ranges overlap.`,
+                `Provider bridge "${options.id}" speaks thread/delta grammar versions ${bridgeMin}-${bridgeMax}, but this runtime assembles versions ${runtimeMin}-${runtimeMax}. Update the "${options.id}" provider plugin or Cloudroom so the two ranges overlap.`,
               );
             }
             handshake = parsed.data.capabilities;

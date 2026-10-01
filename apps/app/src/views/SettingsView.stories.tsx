@@ -239,11 +239,14 @@ function AppearanceSettingsStory() {
 
   return (
     <AppearanceSettingsSection
+      agentQuestionsEnabled
       appearance={state.appearance}
       appearanceDisabled={false}
       customThemes={["Monochrome Lab", "Low Contrast"]}
       pluginThemes={[]}
       faviconColor={state.appearance.faviconColor}
+      generalSettingsDisabled={false}
+      onAgentQuestionsEnabledChange={() => undefined}
       onAppearanceThemeChange={(themeId) =>
         state.setAppearance((current) => ({ ...current, themeId }))
       }

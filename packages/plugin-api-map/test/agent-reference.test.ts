@@ -45,7 +45,7 @@ describe("Plugin Guide agent references", () => {
     const context = pluginSurfaceAgentContext("composer-actions");
     expect(context).toContain("Inline actions (composer-actions)");
     expect(context).toContain("PluginComposerApi");
-    expect(context).toContain("bb-plugin-authoring skill");
+    expect(context).toContain("plugin-authoring skill");
     expect(context?.split("\n")).toHaveLength(3);
     expect(pluginSurfaceAgentContext("missing-surface")).toBeNull();
   });

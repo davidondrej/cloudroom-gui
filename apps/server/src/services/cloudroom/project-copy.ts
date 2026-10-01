@@ -13,14 +13,17 @@ import { saveProjectCopyProgress } from "./store.js";
 
 type Deps = Pick<AppDeps, "db" | "hub">;
 // `key` is the copy target: one folder on a shared VM, or one per thread sandbox.
-// New threads get a default-branch clone and `.env` files; Teleport also brings the local branch and uncommitted work.
-export type ProjectCopyJob = { threadId: string; workspace: string; key: string; localPath: string; repository: string | null; clone: boolean; teleport: boolean };
+// New threads get a default-branch clone and `.env` files, or all files of a small project not on GitHub.
+// Teleport also brings the local branch and uncommitted work.
+export type ProjectCopyJob = { threadId: string; workspace: string; key: string; localPath: string; repository: string | null; clone: boolean; copyAll: boolean; teleport: boolean };
 
 const exec = promisify(execFile);
 // A stalled piece counts as dropped, so the retry sends it again.
 const PIECE_TIMEOUT = 120_000;
 const MAX_FILE = 50 * 1024 * 1024;
 const MAX_TOTAL = 1024 * 1024 * 1024;
+// About 10-20 seconds on a home connection.
+const SMALL_PROJECT = 50 * 1024 * 1024;
 export const SKIPPED = new Set(["node_modules", ".git", ".venv", "venv", ".next", ".turbo", ".cache", "__pycache__", "target", "dist", "build", ".DS_Store"]);
 const copying = new Set<string>();
 const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
@@ -35,11 +38,17 @@ function localProjectPath(deps: Deps, projectId: string): string | undefined {
   return (sources.find((source) => source.isDefault) ?? sources[0])?.path;
 }
 
-/** Tells a new cloud thread where a project without GitHub lives, since its files stay on the Mac. */
-export function localProjectNote(deps: Deps, projectId: string): string | undefined {
+/** Small projects not on GitHub are uploaded whole. Counting stops at the limit, so a huge folder answers fast. */
+async function smallProject(root: string): Promise<boolean> {
+  return localFiles(root, "all", SMALL_PROJECT).then(() => true, () => false);
+}
+
+/** Tells a new cloud thread where a large project without GitHub lives, since its files stay on the Mac. */
+export async function localProjectNote(deps: Deps, projectId: string): Promise<string | undefined> {
   const project = getProject(deps.db, projectId);
   const path = project && !githubRepository(project.gitRemoteUrl) ? localProjectPath(deps, project.id) : undefined;
-  return path && `This project is not on GitHub, so only its \`.env\` files were copied here. The rest is on the user's Mac at \`${path}\`. Pull only what the task needs with \`cloudroom mac pull\`.`;
+  if (!path || await smallProject(path)) return undefined;
+  return `This project is not on GitHub and too large to copy, so only its \`.env\` files are here. The rest is on the user's Mac at \`${path}\`. Pull only what the task needs with \`cloudroom mac pull\`.`;
 }
 
 export async function planProjectCopy(deps: Deps, client: CloudroomClient, threadId: string, workspace: string, { localPath, key = workspace, teleport = false }: { localPath?: string; key?: string; teleport?: boolean } = {}): Promise<ProjectCopyJob | null> {
@@ -52,8 +61,10 @@ export async function planProjectCopy(deps: Deps, client: CloudroomClient, threa
     const empty = !existing || (await client.runOnVm({ command: `[ -z "$(ls -A -- ${quote(existing.path)} 2>/dev/null | grep -Fvx .cloudroom)" ]`, stdin: "" })).code === 0;
     if (!empty && teleport) return null;
     const repository = githubRepository(project.gitRemoteUrl);
-    const job = { threadId, workspace, key, localPath: path, repository, clone: empty && Boolean(repository), teleport };
-    return job.clone || teleport || (await localFiles(path, "env")).length ? job : null;
+    const clone = empty && Boolean(repository);
+    const copyAll = empty && !repository && !teleport && await smallProject(path);
+    const job = { threadId, workspace, key, localPath: path, repository, clone, copyAll, teleport };
+    return clone || copyAll || teleport || (await localFiles(path, "env")).length ? job : null;
   } catch {
     return null;
   }
@@ -63,7 +74,7 @@ export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCop
   if (copying.has(job.key)) return;
   copying.add(job.key);
   const report = (progress: ProjectCopyProgress) => {
-    if (!job.clone && !job.teleport && progress.phase !== "error") return;
+    if (!job.clone && !job.copyAll && !job.teleport && progress.phase !== "error") return;
     saveProjectCopyProgress(deps.db, job.threadId, progress);
     deps.hub.notifyThread(job.threadId, ["status-changed"]);
     const projectId = getThread(deps.db, job.threadId)?.projectId;
@@ -92,7 +103,7 @@ async function run(client: CloudroomClient, job: ProjectCopyJob, report: (progre
   }
   const cloned = job.clone && !cloneError;
   if (!cloned) report({ phase: "uploading", completed: 0, total: 0 });
-  const scope = !job.teleport ? "env" : cloned ? "changed" : "all";
+  const scope = job.teleport ? (cloned ? "changed" : "all") : job.copyAll ? "all" : "env";
   const files = await localFiles(job.localPath, scope);
   if (files.length) await upload(client, job.localPath, target, files, scope !== "changed", report);
   if (cloneError) throw new Error(job.teleport ? `The GitHub clone failed, so your files were copied without Git history: ${cloneError}` : `The GitHub clone failed: ${cloneError}`);
@@ -143,34 +154,34 @@ async function clone(client: CloudroomClient, target: string, repository: string
 
 const isEnv = (path: string) => basename(path).startsWith(".env");
 
-/** `all`: every project file; `changed`: uncommitted and untracked files; `env`: only `.env` files. Ignored `.env` files always count. */
-async function localFiles(root: string, scope: "all" | "changed" | "env"): Promise<string[]> {
+/** `all`: every project file; `changed`: uncommitted and untracked files; `env`: only `.env` files. Ignored `.env` files always count.
+ *  Throws once the files pass `limit` bytes. */
+async function localFiles(root: string, scope: "all" | "changed" | "env", limit = MAX_TOTAL): Promise<string[]> {
   const listed = await git(root, ["ls-files", "-z", scope === "all" ? "--cached" : "--modified", "--others", "--exclude-standard"]);
   const ignored = listed === null ? "" : await git(root, ["ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--directory"]) ?? "";
   const env = ignored.split("\0").filter((path) => path && !path.endsWith("/") && isEnv(path));
-  const found = listed === null ? await walk(root, "") : [...new Set([...listed.split("\0").filter(Boolean), ...env])];
-  const candidates = scope === "env" ? found.filter(isEnv) : found;
+  const found = listed === null ? walk(root, "") : [...new Set([...listed.split("\0").filter(Boolean), ...env])];
   const files: string[] = [];
   let total = 0;
-  for (const path of candidates) {
+  for await (const path of found) {
+    if (scope === "env" && !isEnv(path)) continue;
     const info = await lstat(join(root, path)).catch(() => null);
     if (!info || !(info.isFile() || info.isSymbolicLink()) || info.size > MAX_FILE) continue;
     total += info.size;
-    if (total > MAX_TOTAL) throw new Error("This project is over 1 GB without ignored and large files, so it was not copied. Push it to GitHub to use it in Cloud.");
+    if (total > limit) throw new Error("This project is over 1 GB without ignored and large files, so it was not copied. Push it to GitHub to use it in Cloud.");
     files.push(path);
   }
   return files;
 }
 
-async function walk(root: string, folder: string): Promise<string[]> {
-  const files: string[] = [];
+// A generator, so a size check can stop early in a huge folder.
+async function* walk(root: string, folder: string): AsyncGenerator<string> {
   for (const entry of await readdir(join(root, folder), { withFileTypes: true })) {
     if (SKIPPED.has(entry.name)) continue;
     const path = folder ? `${folder}/${entry.name}` : entry.name;
-    if (entry.isDirectory()) files.push(...await walk(root, path));
-    else files.push(path);
+    if (entry.isDirectory()) yield* walk(root, path);
+    else yield path;
   }
-  return files;
 }
 
 async function upload(client: CloudroomClient, root: string, target: string, files: string[], keepExisting: boolean, report: (progress: ProjectCopyProgress) => void): Promise<void> {

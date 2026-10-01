@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import ts from "typescript";
 
 const GUIDE_URL = new URL(
-  "../../../../../plugins/bb-guide/skills/bb-plugin-authoring/references/backend-machines.md",
+  "../../../../../plugins/bb-guide/skills/plugin-authoring/references/backend-machines.md",
   import.meta.url,
 );
 
-describe("bb-plugin-authoring skill", () => {
+describe("plugin-authoring skill", () => {
   it("typechecks the machine provider guide example against the public SDK", () => {
     const source = readFileSync(GUIDE_URL, "utf8").match(
       /```ts\n([\s\S]*?)```/u,

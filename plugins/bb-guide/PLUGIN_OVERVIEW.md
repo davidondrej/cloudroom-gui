@@ -6,7 +6,7 @@ prompt has its own switch in Settings → System prompt.
 
 - `skills`: make the selected bundled skills available.
 - `bbCli`: include `room-cli`.
-- `pluginAuthoring`: include `bb-plugin-authoring`.
+- `pluginAuthoring`: include `plugin-authoring`.
 - `skillCreator`: include `skill-creator`.
 
 Use `room-cli plugin config bb-guide set <key> true|false` from the CLI, or

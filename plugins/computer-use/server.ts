@@ -16,7 +16,7 @@ import {
   type AppIdentity,
   type HostStatus,
 } from "./contract.js";
-import { BLOCKED_TOOLS, PID_REQUIRED_TOOLS, WHOLE_SCREEN } from "./driver.js";
+import { BLOCKED_TOOLS, LIME_CURSOR_SUFFIX, PID_REQUIRED_TOOLS, WHOLE_SCREEN } from "./driver.js";
 
 const APPROVAL_WAIT_MS = 90_000;
 const APP_BUSY_MS = 60_000;
@@ -250,7 +250,7 @@ export default async function computerUsePlugin(bb: BbPluginApi) {
       {
         tool,
         args: input,
-        session: `cr-${threadId.slice(-24)}`,
+        session: `cr-${threadId.slice(-24)}${LIME_CURSOR_SUFFIX}`,
         shotsDir: join(tmpdir(), "cloudroom-computer-use", threadId.replace(/[^A-Za-z0-9_-]/g, "_")),
       },
       { hostId, timeoutMs: 150_000, ...(ctx.signal ? { signal: ctx.signal } : {}) },

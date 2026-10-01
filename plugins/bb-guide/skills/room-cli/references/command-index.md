@@ -13,6 +13,10 @@ This index lists every command path that the core CLI registers. Read the task-s
 - `room-cli cloud codex status`
 - `room-cli cloud codex login`
 - `room-cli cloud codex cancel`
+- `room-cli cloud github`
+- `room-cli cloud github status`
+- `room-cli cloud github login`
+- `room-cli cloud github cancel`
 - `room-cli cloud cursor`
 - `room-cli cloud cursor status`
 - `room-cli cloud cursor login`

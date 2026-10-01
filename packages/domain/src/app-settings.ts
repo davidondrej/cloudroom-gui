@@ -29,6 +29,7 @@ export const appSettingsSchema = z
     commandGuardEnabled: z.boolean().default(true),
     systemPromptEnabled: z.boolean().default(true),
     bugReportsEnabled: z.boolean().default(true),
+    agentQuestionsEnabled: z.boolean().default(true),
     managedBranchPrefix: managedBranchPrefixSchema,
     machineServerUrl: z
       .string()
@@ -60,6 +61,7 @@ export const defaultAppSettings: AppSettings = {
   commandGuardEnabled: true,
   systemPromptEnabled: true,
   bugReportsEnabled: true,
+  agentQuestionsEnabled: true,
   managedBranchPrefix: DEFAULT_MANAGED_BRANCH_PREFIX,
   machineServerUrl: null,
   defaultMachineAccess: null,
@@ -71,6 +73,7 @@ export const appSettingsUpdateSchema = z.union([
     commandGuardEnabled: z.boolean().optional(),
     systemPromptEnabled: z.boolean().optional(),
     bugReportsEnabled: z.boolean().optional(),
+    agentQuestionsEnabled: z.boolean().optional(),
     telemetryEnabled: z.boolean().optional(),
     showUnhandledProviderEvents: z.boolean().optional(),
   }),
@@ -78,6 +81,7 @@ export const appSettingsUpdateSchema = z.union([
     commandGuardEnabled: z.boolean().optional(),
     systemPromptEnabled: z.boolean().optional(),
     bugReportsEnabled: z.boolean().optional(),
+    agentQuestionsEnabled: z.boolean().optional(),
     telemetryEnabled: z.boolean().optional(),
     showUnhandledProviderEvents: z.boolean(),
   }),

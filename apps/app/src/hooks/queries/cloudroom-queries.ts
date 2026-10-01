@@ -83,16 +83,16 @@ export function useCloudroomAccount() {
       void fetchWithAppSurface("/api/v1/cloudroom/account/activity", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {});
     }
     return status;
-  }, refetchInterval: (query) => query.state.data?.signingIn ? 1500 : 10000 });
+  }, refetchInterval: (query) => query.state.data?.signingIn ? 500 : 10000 });
 }
 
-/** Starts browser sign-in, or cancels the one in progress. */
+/** Starts browser sign-in, or cancels the one in progress. GitHub and Google skip the website's login page. */
 export function useCloudroomSignIn() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (cancel: boolean) => {
-      if (cancel) await sdk.cloudroom.cancel();
-      else openUrlInExternalBrowser((await sdk.cloudroom.signIn()).url);
+    mutationFn: async (action: "github" | "google" | "email" | "cancel") => {
+      if (action === "cancel") await sdk.cloudroom.cancel();
+      else openUrlInExternalBrowser((await sdk.cloudroom.signIn(action === "email" ? {} : { provider: action })).url);
     },
     onSuccess: () => client.invalidateQueries({ queryKey: ["cloudroom-account"] }),
     onError: (error) => appToast.error(error.message),
@@ -101,6 +101,31 @@ export function useCloudroomSignIn() {
 
 export function useCloudroomConnection() {
   return useQuery({ queryKey: ["cloudroom-connection"], queryFn: async ({ signal }) => cloudroomStatusSchema.parse(await (await fetchWithAppSurface("/api/v1/cloudroom", { signal })).json()), refetchInterval: 10000 });
+}
+
+const desktopUpdateSchema = z.object({ version: z.string(), installAt: z.number().nullable(), installing: z.boolean() }).nullable();
+
+export function useDesktopUpdate() {
+  return useQuery({
+    queryKey: ["cloudroom-desktop-update"],
+    refetchInterval: 15_000,
+    queryFn: async ({ signal }) => {
+      const update = desktopUpdateSchema.parse(await (await fetchWithAppSurface("/api/v1/cloudroom/desktop-update", { signal })).json());
+      return update && { ...update, minutes: update.installAt === null ? null : Math.max(1, Math.ceil((update.installAt - Date.now()) / 60_000)) };
+    },
+  });
+}
+
+export function useInstallDesktopUpdate() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetchWithAppSurface("/api/v1/cloudroom/desktop-update/install", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      if (!response.ok) throw new Error("Could not restart to update.");
+    },
+    onSuccess: () => client.invalidateQueries({ queryKey: ["cloudroom-desktop-update"] }),
+    onError: (error) => appToast.error(error.message),
+  });
 }
 
 export function useCloudroomThread(threadId: string, enabled: boolean) {

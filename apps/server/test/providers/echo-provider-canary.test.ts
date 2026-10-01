@@ -608,7 +608,7 @@ describe("echo-provider canary: plugin install → server command → runtime �
     expect(
       command.injectedSkillSources.map((source) => source.name).sort(),
     ).toEqual([
-      "bb-plugin-authoring",
+      "plugin-authoring",
       "room-cli",
       "skill-creator",
     ]);

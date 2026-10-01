@@ -20,7 +20,7 @@ import { inferThreadMetadata, queueThreadTitle } from "../threads/thread-metadat
 import { copyLogins, importCodexLogin, importPiLogin, setupSync, stopSync, syncStatus } from "./sync.js";
 import { setupPreviews, stopPreviews, previewStatus } from "./previews.js";
 import { CloudSecrets } from "./secrets.js";
-import { macCursorLogin, SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject } from "./sandboxes.js";
+import { macCursorLogin, SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject, type SandboxTrigger } from "./sandboxes.js";
 import type { AppDeps, LoggedWorkSessionDeps } from "../../types.js";
 import type { EditMessageRequest, EditMessageResponse } from "@bb/server-contract";
 
@@ -100,7 +100,7 @@ function storageMessage(storage: Storage | null): string | null {
   if (!storage?.enabled || storage.level !== "blocked") return null;
   if (storage.reason === "measurement_unavailable") return "Cloud disk space could not be measured. Work is paused until storage can be verified.";
   const bytes = storage.workspace_available_bytes === null || storage.history_available_bytes === null ? null : Math.min(storage.workspace_available_bytes, storage.history_available_bytes);
-  return `Cloud disk space is critically low${bytes === null ? "" : ` (${(bytes / 1e9).toFixed(1)} GB available)`}. Work resumes automatically when space recovers. Saved messages are kept.`;
+  return `The cloud disk is almost full${bytes === null ? "" : ` (${(bytes / 1e9).toFixed(1)} GB free)`}. Within 30 seconds Cloudroom stops the command filling it, and work resumes. Saved messages are kept.`;
 }
 type Deps = Pick<AppDeps, "db" | "hub" | "config" | "providerRegistry"> & Partial<LoggedWorkSessionDeps> & Partial<Pick<AppDeps, "pendingInteractions">>;
 const services = new WeakMap<DbConnection, CloudroomService>();
@@ -430,7 +430,7 @@ class CloudroomService {
         const logins = this.uploadMacLogins();
         if (!this.sandboxes.loginsCopied) await logins;
       }
-      const found = await this.sandboxes.connection(sandbox, this.sandboxProject(getThread(this.deps.db, sandbox)?.projectId), wake, saved?.sessionId ? undefined : saved?.startRequestId);
+      const found = await this.sandboxes.connection(sandbox, this.sandboxProject(getThread(this.deps.db, sandbox)?.projectId), wake);
       if (!found) throw new SandboxAsleep();
       return new CloudroomClient(found);
     }
@@ -517,23 +517,33 @@ class CloudroomService {
     return { id: project?.id ?? PERSONAL_PROJECT_ID, repository: project && project.id !== PERSONAL_PROJECT_ID ? githubRepository(project.gitRemoteUrl) : null, folder: workspaceName(project?.name ?? "project") };
   }
 
-  private async warmRecentProject(): Promise<void> {
+  /** The project of the newest cloud thread from the last 7 days, if any. */
+  private recentCloudProject(): string | undefined {
     const recent = bindings(this.deps.db).filter(saved => sandboxThread(saved.coreUrl))
       .map(saved => getThread(this.deps.db, saved.threadId))
       .filter(thread => thread && !thread.archivedAt && !thread.deletedAt)
       .sort((a, b) => b!.createdAt - a!.createdAt)[0];
-    if (recent && Date.now() - recent.createdAt < 7 * 86_400_000) await this.warmSandbox(recent.projectId, "app_launch");
+    return recent && Date.now() - recent.createdAt < 7 * 86_400_000 ? recent.projectId : undefined;
   }
 
-  async warmSandbox(projectId: string, trigger: "app_launch" | "composer" | "thread_typing" = "composer"): Promise<void> {
+  private async warmRecentProject(): Promise<void> {
+    const project = this.recentCloudProject();
+    if (project) await this.warmSandbox(project, "app_launch");
+  }
+
+  async warmSandbox(projectId: string, trigger: SandboxTrigger = "composer"): Promise<void> {
     if (!await this.newThreadsInSandboxes()) return;
     await this.uploadMacLogins();
     void this.uploadMacConfig();
     await this.sandboxes.warm(this.sandboxProject(projectId), trigger);
   }
 
+  private activityAt = 0;
+  /** Any app use, Local threads included, keeps the spares warm, so no cloud thread boots (ADRs 0159, 0164). */
   async noteActivity(): Promise<void> {
-    if (await this.newThreadsInSandboxes()) await this.sandboxes.activity();
+    if (Date.now() - this.activityAt < 30_000) return;
+    this.activityAt = Date.now();
+    await this.warmSandbox(this.recentCloudProject() ?? PERSONAL_PROJECT_ID, "app_activity");
   }
 
   async selectOnboardingProject(projectId: string): Promise<void> {
@@ -880,6 +890,7 @@ class CloudroomService {
     if (capabilities && remoteModel && !(sandbox && profile?.models === null)) validateReasoning(request.providerId, remoteModel.model, reasoning, capabilities);
     const workspace = project.id === PERSONAL_PROJECT_ID ? { workspace: ROOT_WORKSPACE } : { workspace: workspaceId(project.id), workspace_name: workspaceName(project.name) };
     const providerId = request.providerId;
+    const projectNote = project.id === PERSONAL_PROJECT_ID ? undefined : await localProjectNote(this.deps, project.id);
     const thread = this.deps.db.transaction((tx) => {
       const previous = existingThread(tx);
       if (previous) return previous;
@@ -895,7 +906,7 @@ class CloudroomService {
         input: JSON.stringify(this.snapshotInstructions(thread, "prompt", {
           ...payload, ...workspace, provider: remoteModel?.provider,
           command_guard_enabled: getAppSettings(this.deps.db).commandGuardEnabled,
-          system_prompt: [cloudroomSystemPrompt(this.deps.db), project.id === PERSONAL_PROJECT_ID ? undefined : localProjectNote(this.deps, project.id)].filter(Boolean).join("\n\n") || undefined,
+          system_prompt: [cloudroomSystemPrompt(this.deps.db), projectNote].filter(Boolean).join("\n\n") || undefined,
           ...(request.serviceTier && request.serviceTier !== "default" ? { service_tier: request.serviceTier } : {}),
         })),
         createdAt: Date.now(),
@@ -1382,7 +1393,8 @@ class CloudroomService {
         ]);
         saveBinding(this.deps.db, threadId, { sessionId: accepted.session_id, error: null });
         saved = binding(this.deps.db, threadId)!;
-        const files: StartStep[] = copy?.clone && copy.repository ? [{ key: "files", text: `Cloning ${copy.repository.replace("https://github.com/", "")}`, status: "started" }] : [];
+        const copying = copy?.clone && copy.repository ? `Cloning ${copy.repository.replace("https://github.com/", "")}` : copy?.copyAll ? "Copying project from your Mac" : null;
+        const files: StartStep[] = copying ? [{ key: "files", text: copying, status: "started" }] : [];
         this.progress(threadId, [{ key: "agent", status: "completed" }, ...files], "completed");
         if (copy) copyProject(this.deps, client, copy, (error) => {
           if (files.length) this.progress(threadId, [{ key: "files", status: error ? "failed" : "completed" }]);

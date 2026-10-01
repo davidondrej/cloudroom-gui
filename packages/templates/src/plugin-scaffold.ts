@@ -1465,7 +1465,7 @@ room-cli plugin types          # sync this plugin's SDK surface to the running C
 room-cli plugin types --check  # CI: fail when it does not match
 \`\`\`
 
-Ask Cloudroom to write plugins for you: the \`bb-plugin-authoring\` skill documents
+Ask Cloudroom to write plugins for you: the \`plugin-authoring\` skill documents
 the whole surface with examples.
 
 Confused by the API, or need something the types don't explain? Clone the Cloudroom

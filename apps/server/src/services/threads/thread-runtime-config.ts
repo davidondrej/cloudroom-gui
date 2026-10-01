@@ -2,7 +2,7 @@ import {
   resolveHostEnvironment,
   mergeHostAndProviderEnvironment,
 } from "../hosts/host-environment.js";
-import { getEnvironment, getHost, getProject } from "@bb/db";
+import { getAppSettings, getEnvironment, getHost, getProject } from "@bb/db";
 import type {
   DynamicTool,
   InstructionMode,
@@ -45,6 +45,10 @@ import {
   PLUGIN_INSTRUCTION_MAX_CHARS,
 } from "./custom-instructions.js";
 
+// Claude Code's native question tool and the ask-user-question plugin tool
+// share this name, so one setting hides question cards for every provider.
+const ASK_USER_QUESTION_TOOL_NAME = "AskUserQuestion";
+
 const UPDATE_ENVIRONMENT_DIRECTORY_INSTRUCTIONS =
   "If the user asks you to move this thread to another checkout, worktree, or directory, make sure the target directory exists, then call `update_environment_directory` with its absolute path. After it succeeds, stop work in the current turn; future turns will run in the updated environment.";
 
@@ -67,6 +71,7 @@ interface ResolvePermissionEscalationArgs {
 
 export interface ResolvedThreadRuntimeCommandConfig {
   contributedEnv: HostDaemonContributedEnvEntry[];
+  disallowedTools?: string[];
   dynamicTools: DynamicTool[];
   injectedSkillSources: HostDaemonInjectedSkillSource[];
   instructionMode: InstructionMode;
@@ -221,8 +226,14 @@ export async function resolveThreadRuntimeCommandConfig(
     deps.logger,
     deps.config.dataDir,
   );
+  const questionsEnabled = getAppSettings(deps.db).agentQuestionsEnabled;
   const dynamicToolContributions = resolveDynamicTools(
-    conditionalConfiguration.tools,
+    questionsEnabled
+      ? conditionalConfiguration.tools
+      : conditionalConfiguration.tools.filter(
+          (contribution) =>
+            contribution.tool.name !== ASK_USER_QUESTION_TOOL_NAME,
+        ),
   );
   const dynamicTools = dynamicToolContributions.map(
     (contribution) => contribution.tool,
@@ -293,6 +304,9 @@ export async function resolveThreadRuntimeCommandConfig(
   });
   return {
     contributedEnv,
+    ...(questionsEnabled
+      ? {}
+      : { disallowedTools: [ASK_USER_QUESTION_TOOL_NAME] }),
     dynamicTools,
     injectedSkillSources,
     instructionMode: "append",

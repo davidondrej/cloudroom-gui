@@ -4,7 +4,6 @@ import type {
   EnvironmentStatus,
   GitBranchRefClassification,
   ThreadPullRequest,
-  ThreadRuntimeDisplayStatus,
 } from "@bb/domain";
 import type { PullRequestMergeMethod } from "@bb/server-contract";
 import {
@@ -13,15 +12,8 @@ import {
 } from "@/components/pickers/BranchPicker";
 import {
   PromptStackCard,
-  PromptStackCardChevron,
-  PROMPT_STACK_CARD_HEADER_BUTTON_CLASS,
-  PROMPT_STACK_CARD_ROW_HEIGHT,
   PROMPT_STACK_INLAY_SEGMENT_CLASS,
 } from "@/components/promptbox/banner/PromptStackCard";
-import {
-  activityIconClass,
-  activityRowClass,
-} from "@bb/shared-ui/activity-row-styles";
 import { WorkspaceChangesList } from "@/components/thread/WorkspaceChangesList";
 import {
   formatChangeSummary,
@@ -77,17 +69,7 @@ export interface ThreadPromptParentThreadSection {
   parentThreadTitle: string;
   href: string;
   relationship: "parent" | "fork" | "side-chat";
-}
-
-interface ThreadPromptChildThreadItem {
-  id: string;
-  title: string;
-  href: string;
-  hasPendingInteraction: boolean;
-}
-
-export interface ThreadPromptChildThreadsSection {
-  items: readonly ThreadPromptChildThreadItem[];
+  onDismiss?: () => void;
 }
 
 export interface ThreadPromptPullRequestSection {
@@ -111,25 +93,9 @@ export interface ThreadPromptEnvironmentGoneSection {
   status: Extract<EnvironmentStatus, "destroyed">;
 }
 
-const THREAD_BANNER_ACTIVE_CHILD_RUNTIME_STATUSES: ReadonlySet<ThreadRuntimeDisplayStatus> =
-  new Set([
-    "active",
-    "host-reconnecting",
-    "provisioning",
-    "starting",
-    "waiting-for-host",
-  ]);
-
-export function isThreadDisplayStatusBannerActive(
-  status: ThreadRuntimeDisplayStatus,
-): boolean {
-  return THREAD_BANNER_ACTIVE_CHILD_RUNTIME_STATUSES.has(status);
-}
-
 export type ThreadPromptContextBannerExpandedSection =
   | "git"
-  | "parentThread"
-  | "childThreads";
+  | "parentThread";
 
 interface ThreadPromptContextBannerProps {
   gitSection: ThreadPromptGitSection | null;
@@ -137,7 +103,6 @@ interface ThreadPromptContextBannerProps {
   archivedSection: ThreadPromptArchivedSection | null;
   environmentGoneSection: ThreadPromptEnvironmentGoneSection | null;
   parentThreadSection: ThreadPromptParentThreadSection | null;
-  childThreadsSection: ThreadPromptChildThreadsSection | null;
   pullRequestSection: ThreadPromptPullRequestSection | null;
   expandedSection: ThreadPromptContextBannerExpandedSection | null;
   onToggleSection: (section: ThreadPromptContextBannerExpandedSection) => void;
@@ -167,10 +132,6 @@ const SECTION_IDS = {
     toggle: "thread-prompt-banner-parent-thread-toggle",
     body: "thread-prompt-banner-parent-thread-body",
   },
-  childThreads: {
-    toggle: "thread-prompt-banner-child-threads-toggle",
-    body: "thread-prompt-banner-child-threads-body",
-  },
   git: {
     toggle: "thread-prompt-banner-git-toggle",
     body: "thread-prompt-banner-git-body",
@@ -188,16 +149,6 @@ const MINIMAL_GIT_BANNER_CLASS = cn(
   "relative z-10 mr-3 min-w-0 sm:mr-4",
   "[[data-app-composer]_&:last-child]:-mb-5 [[data-app-composer]_&:last-child]:pb-3",
 );
-
-function ChildThreadIcon({ className }: { className?: string }) {
-  return (
-    <Icon
-      name="ChevronDown"
-      className={cn("size-3.5 shrink-0 rotate-45", className)}
-      aria-hidden="true"
-    />
-  );
-}
 
 interface SectionToggleButtonProps {
   id: string;
@@ -368,42 +319,6 @@ function ParentThreadSectionBody({
         .
       </div>
     </AnimatedBody>
-  );
-}
-
-function ChildThreadsBody({
-  items,
-}: {
-  items: readonly ThreadPromptChildThreadItem[];
-}) {
-  return (
-    <ul className="max-h-40 space-y-0.5 overflow-y-auto px-3 pb-2 pt-1.5">
-      {items.map((item) => (
-        <li key={item.id} className="text-xs">
-          <NavLink
-            to={item.href}
-            title={item.title}
-            className="flex min-w-0 items-center gap-2 py-0.5 text-foreground/90 underline-offset-2 hover:underline"
-          >
-            {item.hasPendingInteraction ? (
-              <Icon
-                name="CircleQuestion"
-                className="size-3.5 shrink-0 text-muted-foreground/75 no-underline"
-                aria-hidden="true"
-              />
-            ) : (
-              <ChildThreadIcon className="text-subtle-foreground no-underline" />
-            )}
-            <span className="min-w-0 flex-1 truncate">{item.title}</span>
-            {item.hasPendingInteraction ? (
-              <span className="shrink-0 text-muted-foreground">
-                Needs input
-              </span>
-            ) : null}
-          </NavLink>
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -585,108 +500,6 @@ function PullRequestBannerLink({
   );
 }
 
-function childThreadsLabel(args: {
-  count: number;
-  pendingCount: number;
-}): string {
-  if (args.pendingCount > 0) {
-    return `${args.pendingCount} child ${args.pendingCount === 1 ? "thread needs" : "threads need"} input`;
-  }
-  return `${args.count} active child ${args.count === 1 ? "thread" : "threads"}`;
-}
-
-function ActiveChildThreadsCard({
-  childThreadsSection,
-  isExpanded,
-  onToggle,
-}: {
-  childThreadsSection: ThreadPromptChildThreadsSection;
-  isExpanded: boolean;
-  onToggle: () => void;
-}) {
-  const items = [...childThreadsSection.items].sort((left, right) =>
-    left.hasPendingInteraction === right.hasPendingInteraction
-      ? 0
-      : left.hasPendingInteraction
-        ? -1
-        : 1,
-  );
-  const primary = items[0];
-  if (!primary) {
-    return null;
-  }
-  const pendingCount = items.filter(
-    (item) => item.hasPendingInteraction,
-  ).length;
-  const otherCount = items.length - 1;
-  const groupLabel = childThreadsLabel({
-    count: items.length,
-    pendingCount,
-  });
-  const needsApproval = pendingCount > 0;
-  return (
-    <PromptStackCard
-      ariaLabel="Child threads"
-      className="overflow-hidden"
-      style={{ minHeight: PROMPT_STACK_CARD_ROW_HEIGHT }}
-    >
-      <div className="flex items-center">
-        <button
-          type="button"
-          id={SECTION_IDS.childThreads.toggle}
-          aria-expanded={isExpanded}
-          aria-controls={SECTION_IDS.childThreads.body}
-          aria-label={`${groupLabel}: ${primary.title}`}
-          onClick={onToggle}
-          className={
-            needsApproval
-              ? PROMPT_STACK_CARD_HEADER_BUTTON_CLASS
-              : activityRowClass(
-                  "active",
-                  PROMPT_STACK_CARD_HEADER_BUTTON_CLASS,
-                )
-          }
-        >
-          <Icon
-            name={needsApproval ? "CircleQuestion" : "UserRound"}
-            className={
-              needsApproval
-                ? "size-3.5 shrink-0 text-muted-foreground/75"
-                : activityIconClass("active", "size-3.5 shrink-0")
-            }
-            aria-hidden="true"
-          />
-          <span className="min-w-0 flex-1 truncate text-left">
-            <span className="text-muted-foreground">
-              {needsApproval ? "Needs your input: " : "Active child thread: "}
-            </span>
-            <span className="font-medium text-foreground/80">
-              {primary.title}
-            </span>
-          </span>
-          {otherCount > 0 ? (
-            <span className="shrink-0 text-muted-foreground">
-              +{otherCount} more
-            </span>
-          ) : null}
-          <PromptStackCardChevron
-            isExpanded={isExpanded}
-            className="text-muted-foreground"
-          />
-        </button>
-      </div>
-      <AnimatedBody
-        collapsedBorder="reserve"
-        id={SECTION_IDS.childThreads.body}
-        labelledBy={SECTION_IDS.childThreads.toggle}
-        isExpanded={isExpanded}
-      >
-        <ChildThreadsBody items={items} />
-      </AnimatedBody>
-    </PromptStackCard>
-  );
-}
-
 function MinimalGitBanner({
   gitSection,
   isExpanded,
@@ -863,7 +676,6 @@ export function ThreadPromptContextBanner({
   archivedSection,
   environmentGoneSection,
   parentThreadSection,
-  childThreadsSection,
   pullRequestSection,
   expandedSection,
   onToggleSection,
@@ -907,10 +719,8 @@ export function ThreadPromptContextBanner({
   }
   const showGit = gitSection !== null;
   const showParentThread = parentThreadSection !== null;
-  const showChildThreads =
-    childThreadsSection !== null && childThreadsSection.items.length > 0;
   const showPullRequest = pullRequestSection !== null;
-  if (!showGit && !showParentThread && !showChildThreads && !showPullRequest) {
+  if (!showGit && !showParentThread && !showPullRequest) {
     return leading ?? null;
   }
   const visibleSegmentCount =
@@ -921,16 +731,6 @@ export function ThreadPromptContextBanner({
   const isGitExpanded = expandedSection === "git" && showGit;
   const isParentThreadExpanded =
     expandedSection === "parentThread" && showParentThread;
-  const isChildThreadsExpanded =
-    expandedSection === "childThreads" && showChildThreads;
-  const activeChildThreadsCard =
-    showChildThreads && childThreadsSection ? (
-      <ActiveChildThreadsCard
-        childThreadsSection={childThreadsSection}
-        isExpanded={isChildThreadsExpanded}
-        onToggle={() => onToggleSection("childThreads")}
-      />
-    ) : null;
   const gitTally = showGit
     ? toChangeTally(gitSection.changedFiles.stats)
     : null;
@@ -1012,6 +812,16 @@ export function ThreadPromptContextBanner({
                   {parentThreadSection.parentThreadTitle}
                 </NavLink>
               </span>
+              {parentThreadSection.onDismiss ? (
+                <button
+                  type="button"
+                  aria-label="Dismiss"
+                  className="ml-1 shrink-0 cursor-pointer text-muted-foreground/70 transition-colors hover:text-foreground"
+                  onClick={parentThreadSection.onDismiss}
+                >
+                  <Icon name="CircleX" className="size-3.5" aria-hidden />
+                </button>
+              ) : null}
             </div>
           ) : null}
           {showParentThread && parentThreadSection && !isParentThreadOnly ? (
@@ -1079,16 +889,14 @@ export function ThreadPromptContextBanner({
     ) : null;
 
   const leadingNode = hasSingleVisibleSegment && showGit ? null : leading;
-  const parts = [leadingNode, activeChildThreadsCard, compactContextBanner];
-  if (parts.filter(Boolean).length > 1) {
+  if (leadingNode && compactContextBanner) {
     return (
       <div className="contents">
         {leadingNode}
-        {activeChildThreadsCard}
         {compactContextBanner}
       </div>
     );
   }
 
-  return leadingNode ?? activeChildThreadsCard ?? compactContextBanner;
+  return leadingNode ?? compactContextBanner;
 }

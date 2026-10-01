@@ -65,7 +65,6 @@ export function installFirstResponseTelemetry(
           sandbox_woke: sent.execution === "cloud_sandbox" ? current.wokeSince(message.id, sent.sentAt) : null,
           startup_source: startup?.startup_source ?? null,
           sandbox_start_ms: startup?.sandbox_start_ms ?? null,
-          startup_id: startup?.startup_id ?? null,
           model: sent.model ?? null,
           reasoning_level: sent.reasoningLevel ?? null,
           service_tier: sent.serviceTier ?? null,

@@ -699,7 +699,7 @@ fs.writeFileSync(path.join(process.env.ROOM_DATA_DIR, "config.json"), JSON.strin
     expect(result.stdout).toContain(
       "Setting up this machine as host-test for https://machine.getbb.app",
     );
-    expect(result.stdout).toContain("\n  bb machine setup\n\n");
+    expect(result.stdout).toContain("\n  Cloudroom machine setup\n\n");
     expect(result.stdout).toContain(
       "  ○  Setting up this machine as host-test for https://machine.getbb.app",
     );
@@ -1033,15 +1033,15 @@ fi
     expect(firstResult.status, firstResult.stderr).toBe(0);
     expect(firstResult.stdout).toContain("already joined");
     expect(firstResult.stdout).toContain(
-      "Installing the persistent bb host daemon service",
+      "Installing the persistent Cloudroom host daemon service",
     );
     expect(firstResult.stdout).toContain(
       "Waiting for the launch agent to connect",
     );
-    expect(firstResult.stdout).toContain("  ●  bb machine is ready");
+    expect(firstResult.stdout).toContain("  ●  Cloudroom machine is ready");
     expect(secondResult.status, secondResult.stderr).toBe(0);
     expect(secondResult.stdout).toContain("already joined");
-    expect(secondResult.stdout).toContain("  ●  bb machine is ready");
+    expect(secondResult.stdout).toContain("  ●  Cloudroom machine is ready");
     expect(secondResult.stdout).toContain("server  https://machine.getbb.app");
     expect(secondResult.stdout).toContain(
       "service " +
@@ -1156,7 +1156,7 @@ fi
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain(
-      "Could not register the bb host-daemon launch agent app.getbb.host-daemon.machine-getbb-app-host-test.",
+      "Could not register the Cloudroom host-daemon launch agent app.getbb.host-daemon.machine-getbb-app-host-test.",
     );
     expect(result.stderr).toContain("launchctl: fixture bootstrap failure");
   });
@@ -1178,7 +1178,7 @@ printf '%s\n' "$*" >>"${join(fixture.dataDir, "launchctl.log")}"
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain(
-      "The bb host-daemon launch agent started but did not connect to https://machine.getbb.app.",
+      "The Cloudroom host-daemon launch agent started but did not connect to https://machine.getbb.app.",
     );
     expect(result.stderr).toContain(
       `See ${fixture.dataDir}/logs/launchd.log for the daemon error.`,

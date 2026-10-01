@@ -1554,7 +1554,7 @@ async function handleFsWriteTextFile(
   ) {
     responder.error(
       -32000,
-      `File writes outside the workspace are denied by BB's accept-edits permission mode: ${parsed.data.path}`,
+      `File writes outside the workspace are denied by Cloudroom's accept-edits permission mode: ${parsed.data.path}`,
     );
     return;
   }

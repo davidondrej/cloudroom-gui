@@ -108,6 +108,19 @@ export function registerCloudCommands(program: Command, getUrl: () => string): v
     const result = await createCliBbSdk(getUrl()).cloudroom.cancelCodexLogin(id);
     if (!outputJson(options, result)) console.log(result.message ?? result.state);
   }));
+  const github = group.command("github").description("Connect GitHub for cloud sandboxes");
+  github.command("status").option("--json", "Print JSON").action(action(async (options: JsonOutputOptions) => {
+    const result = await createCliBbSdk(getUrl()).cloudroom.githubAuth();
+    if (!outputJson(options, result)) console.log(`${result.state}${result.message ? `\n${result.message}` : ""}`);
+  }));
+  github.command("login").requiredOption("--request-id <id>", "Reuse this ID after an uncertain response").option("--json", "Print JSON").action(action(async (options: JsonOutputOptions & { requestId: string }) => {
+    const result = await createCliBbSdk(getUrl()).cloudroom.githubLogin(options.requestId);
+    if (!outputJson(options, result)) console.log(result.state === "waiting" ? `Open ${result.verification_url}\nEnter code: ${result.user_code}\nRun room-cli cloud github status to verify.` : result.message ?? result.state);
+  }));
+  github.command("cancel <request-id>").option("--json", "Print JSON").action(action(async (id: string, options: JsonOutputOptions) => {
+    const result = await createCliBbSdk(getUrl()).cloudroom.cancelGithubLogin(id);
+    if (!outputJson(options, result)) console.log(result.message ?? result.state);
+  }));
   const cursor = group.command("cursor").description("Connect Cursor on your cloud VM");
   cursor.command("status").option("--json", "Print JSON").action(action(async (options: JsonOutputOptions) => {
     const result = await createCliBbSdk(getUrl()).cloudroom.cursorAuth();

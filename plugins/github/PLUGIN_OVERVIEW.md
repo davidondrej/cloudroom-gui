@@ -13,7 +13,7 @@ The plugin tracks every cloudroom project whose checkout has a GitHub `origin` r
 
 ## For agents
 
-The `bb github` command lists cached data. Use `bb github repos`, `bb github issues [owner/repo]`, `bb github prs [owner/repo]`, or `bb github sync`.
+The `room-cli github` command lists cached data. Use `room-cli github repos`, `room-cli github issues [owner/repo]`, `room-cli github prs [owner/repo]`, or `room-cli github sync`.
 
 ## Requirements
 

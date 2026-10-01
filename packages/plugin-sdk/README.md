@@ -7,7 +7,7 @@ that `bb plugin build` replaces with BB's shared implementation.
 The authoritative contracts are the exported declarations in
 [`src/backend-contract.ts`](src/backend-contract.ts) and
 [`src/app-contract.ts`](src/app-contract.ts). Keep author-facing guidance in
-the built-in `bb-plugin-authoring` skill synchronized with those declarations.
+the built-in `plugin-authoring` skill synchronized with those declarations.
 
 ## Composer customization
 

@@ -1,12 +1,13 @@
 import { spawn } from "node:child_process";
 
 export const IDLE_INSTALL_AFTER_MS = 10 * 60_000;
-const IDLE_CHECK_MS = 60_000;
+const IDLE_CHECK_MS = 15_000;
 
 export interface IdleInstallArgs {
   isUpdateDownloaded(): boolean;
   systemIdleSeconds(): number;
   hasRunningThreads(): Promise<boolean>;
+  report?(installAt: number | null): Promise<boolean>;
   install(): Promise<void>;
   now?: () => number;
 }
@@ -24,16 +25,14 @@ export function startIdleInstall(args: IdleInstallArgs): {
       busyAt = now();
       return;
     }
-    if (await args.hasRunningThreads().catch(() => true)) {
-      busyAt = now();
-      return;
-    }
-    if (
-      now() - busyAt < IDLE_INSTALL_AFTER_MS ||
-      args.systemIdleSeconds() * 1000 < IDLE_INSTALL_AFTER_MS
-    ) {
-      return;
-    }
+    const running = await args.hasRunningThreads().catch(() => true);
+    if (running) busyAt = now();
+    const installAt = running
+      ? null
+      : Math.max(busyAt, now() - args.systemIdleSeconds() * 1000) +
+        IDLE_INSTALL_AFTER_MS;
+    const requested = (await args.report?.(installAt).catch(() => false)) ?? false;
+    if (!requested && (installAt === null || now() < installAt)) return;
     installing = true;
     await args.install();
   }
