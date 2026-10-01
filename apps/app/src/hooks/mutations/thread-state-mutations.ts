@@ -202,8 +202,10 @@ export function useUnpinAndMoveThread() {
       errorMessage: "Failed to unpin and move thread.",
     },
     mutationFn: async ({ sectionId, id }) => {
-      await sdk.threads.unpin({ threadId: id });
-      return sdk.threads.update({ sectionId, threadId: id });
+      // HI-3 (TG8): one atomic server mutation replaces the unpin -> update
+      // pair whose partial failure left the backend unpinned in the
+      // original section while the client rolled back to "pinned".
+      return sdk.threads.unpinAndMove({ sectionId, threadId: id });
     },
     onMutate: async ({ sectionId, id }) =>
       beginUnpinAndMoveThreadTransaction({

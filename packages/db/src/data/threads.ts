@@ -405,6 +405,11 @@ export interface UnpinThreadArgs {
   threadId: string;
 }
 
+export interface UnpinAndMoveThreadArgs {
+  sectionId: string | null;
+  threadId: string;
+}
+
 export interface ReorderPinnedThreadArgs {
   db: DbConnection;
   nextThreadId: string | null;
@@ -1572,6 +1577,52 @@ export function unpinThread(
   return result?.thread ?? null;
 }
 
+/**
+ * HI-3 (TG8): unpin and section membership commit in one transaction, so a
+ * pinned thread can never be left unpinned in its original section by a
+ * half-applied move (SP-4: pin and section never partially commit).
+ */
+export function unpinAndMoveThread(
+  db: ThreadWriteConnection,
+  notifier: DbNotifier,
+  args: UnpinAndMoveThreadArgs,
+) {
+  const result = db.transaction(
+    (tx): PinThreadMutationResult | null => {
+      const existing =
+        tx.select().from(threads).where(eq(threads.id, args.threadId)).get() ??
+        null;
+      if (!existing || existing.deletedAt !== null) {
+        return null;
+      }
+      const updated = tx
+        .update(threads)
+        .set({
+          pinnedAt: null,
+          pinSortKey: null,
+          sectionId: args.sectionId,
+          updatedAt: Date.now(),
+        })
+        .where(nonDeletedThreads(eq(threads.id, args.threadId)))
+        .returning()
+        .get();
+      return updated ? { changed: true, thread: updated } : null;
+    },
+    { behavior: "immediate" },
+  );
+
+  if (result?.changed) {
+    notifier.notifyThread(
+      args.threadId,
+      ["pin-state-changed", "title-changed"],
+      {
+        projectId: result.thread.projectId,
+      },
+    );
+  }
+  return result?.thread ?? null;
+}
+
 export function reorderPinnedThread({
   db,
   nextThreadId,
@@ -1688,61 +1739,82 @@ export function updateThread(
   input: UpdateThreadInput,
 ) {
   const now = Date.now();
-  const existing = db.select().from(threads).where(eq(threads.id, id)).get();
-  if (!existing) {
-    return null;
-  }
-  const changes: ThreadChangeKind[] = [];
-  if ("title" in input || "sectionId" in input) changes.push("title-changed");
-  if ("lastReadAt" in input) changes.push("read-state-changed");
-  if ("visibility" in input && input.visibility !== existing.visibility) {
-    changes.push("title-changed");
-  }
-  if (
-    "parentThreadId" in input &&
-    input.parentThreadId !== existing.parentThreadId
-  ) {
-    changes.push("parent-changed");
-  }
-  if (
-    "environmentId" in input &&
-    input.environmentId !== existing.environmentId
-  ) {
-    changes.push("environment-changed");
-  }
+  // ME-2 (TG8): the canonical row update and the title search-segment
+  // upsert commit in one transaction — title and search index can never
+  // diverge (SP-4), matching createThread's established pattern.
+  const result = db.transaction(
+    (tx): {
+      updated: ThreadRow | null;
+      existing: ThreadRow | null;
+      changes: ThreadChangeKind[];
+    } => {
+      const existing = tx
+        .select()
+        .from(threads)
+        .where(eq(threads.id, id))
+        .get();
+      if (!existing) {
+        return { updated: null, existing: null, changes: [] };
+      }
+      const changes: ThreadChangeKind[] = [];
+      if ("title" in input || "sectionId" in input) {
+        changes.push("title-changed");
+      }
+      if ("lastReadAt" in input) changes.push("read-state-changed");
+      if ("visibility" in input && input.visibility !== existing.visibility) {
+        changes.push("title-changed");
+      }
+      if (
+        "parentThreadId" in input &&
+        input.parentThreadId !== existing.parentThreadId
+      ) {
+        changes.push("parent-changed");
+      }
+      if (
+        "environmentId" in input &&
+        input.environmentId !== existing.environmentId
+      ) {
+        changes.push("environment-changed");
+      }
 
-  const set: Partial<typeof threads.$inferInsert> = { updatedAt: now };
-  if ("title" in input) set.title = input.title;
-  if ("sectionId" in input) {
-    set.sectionId = input.sectionId;
-  }
-  if ("environmentId" in input) set.environmentId = input.environmentId;
-  if ("lastReadAt" in input) {
-    set.lastReadAt = input.lastReadAt;
-  }
-  if ("parentThreadId" in input) set.parentThreadId = input.parentThreadId;
-  if ("visibility" in input) set.visibility = input.visibility;
+      const set: Partial<typeof threads.$inferInsert> = { updatedAt: now };
+      if ("title" in input) set.title = input.title;
+      if ("sectionId" in input) {
+        set.sectionId = input.sectionId;
+      }
+      if ("environmentId" in input) set.environmentId = input.environmentId;
+      if ("lastReadAt" in input) {
+        set.lastReadAt = input.lastReadAt;
+      }
+      if ("parentThreadId" in input) set.parentThreadId = input.parentThreadId;
+      if ("visibility" in input) set.visibility = input.visibility;
 
-  const updated = db
-    .update(threads)
-    .set(set)
-    .where(eq(threads.id, id))
-    .returning()
-    .get();
-  if (updated && "title" in input) {
-    upsertThreadTitleSearchSegments(db, {
-      threadId: updated.id,
-      title: updated.title,
-      titleFallback: updated.titleFallback,
-      updatedAt: now,
+      const updated = tx
+        .update(threads)
+        .set(set)
+        .where(eq(threads.id, id))
+        .returning()
+        .get();
+      if (updated && "title" in input) {
+        upsertThreadTitleSearchSegments(tx, {
+          threadId: updated.id,
+          title: updated.title,
+          titleFallback: updated.titleFallback,
+          updatedAt: now,
+        });
+      }
+      return { updated: updated ?? null, existing, changes };
+    },
+    { behavior: "immediate" },
+  );
+
+  const updated = result.updated;
+  if (updated && result.changes && result.changes.length > 0) {
+    notifier.notifyThread(id, result.changes, {
+      projectId: result.existing?.projectId,
     });
   }
-  if (updated && changes.length > 0) {
-    notifier.notifyThread(id, changes, {
-      projectId: existing.projectId,
-    });
-  }
-  return updated ?? null;
+  return updated;
 }
 
 export interface ThreadExecutionOverride {

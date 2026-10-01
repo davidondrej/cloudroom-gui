@@ -28,7 +28,9 @@ import {
 } from "./thread-state-mutations";
 
 vi.mock("@/lib/sdk", () => ({
-  sdk: { threads: { unpin: vi.fn(), update: vi.fn() } },
+  sdk: {
+    threads: { unpin: vi.fn(), update: vi.fn(), unpinAndMove: vi.fn() },
+  },
 }));
 
 function makeThreadWithRuntime(
@@ -97,15 +99,15 @@ afterEach(() => {
 
 describe("thread state mutations", () => {
   it.each([
-    ["leaves the current section unchanged", null, "sec_work", 0, 0],
-    ["moves an unpinned thread to Threads", null, null, 0, 1],
-    ["unpins into the stored section", 10, "sec_work", 1, 0],
-    ["unpins and moves to another section", 10, "sec_personal", 1, 1],
-  ] as const)("%s", async (_name, pinnedAt, sectionId, unpins, updates) => {
+    ["leaves the current section unchanged", null, "sec_work", "none"],
+    ["moves an unpinned thread to Threads", null, null, "update"],
+    ["unpins into the stored section", 10, "sec_work", "unpin"],
+    ["unpins and moves to another section", 10, "sec_personal", "atomic"],
+  ] as const)("%s", async (_name, pinnedAt, sectionId, route) => {
     const { queryClient, wrapper } = createQueryClientTestHarness();
     const thread = makeThreadListEntry({ pinnedAt, sectionId: "sec_work" });
-    vi.mocked(sdk.threads.unpin).mockResolvedValue(
-      makeThreadResponse({ pinnedAt: null, sectionId: "sec_work" }),
+    vi.mocked(sdk.threads.unpinAndMove).mockResolvedValue(
+      makeThreadResponse({ pinnedAt: null, sectionId }),
     );
     vi.mocked(sdk.threads.update).mockResolvedValue(
       makeThreadResponse({ pinnedAt: null, sectionId }),
@@ -115,17 +117,78 @@ describe("thread state mutations", () => {
     act(() => result.current({ thread, sectionId }));
 
     await waitFor(() => expect(queryClient.isMutating()).toBe(0));
-    expect(sdk.threads.unpin).toHaveBeenCalledTimes(unpins);
-    expect(sdk.threads.update).toHaveBeenCalledTimes(updates);
-    if (unpins) {
-      expect(sdk.threads.unpin).toHaveBeenCalledWith({ threadId: thread.id });
-    }
-    if (updates) {
-      expect(sdk.threads.update).toHaveBeenCalledWith({
+    expect(sdk.threads.update).toHaveBeenCalledTimes(
+      route === "update" ? 1 : 0,
+    );
+    expect(sdk.threads.unpin).toHaveBeenCalledTimes(route === "unpin" ? 1 : 0);
+    // HI-3 (TG8): a pinned thread moving to another section takes the one
+    // atomic mutation, not an unpin -> update pair.
+    expect(sdk.threads.unpinAndMove).toHaveBeenCalledTimes(
+      route === "atomic" ? 1 : 0,
+    );
+    if (route === "atomic") {
+      expect(sdk.threads.unpinAndMove).toHaveBeenCalledWith({
         threadId: thread.id,
         sectionId,
       });
     }
+  });
+
+  it("rolls back consistently when the atomic unpin-and-move fails (8.6)", async () => {
+    const { queryClient, wrapper } = createQueryClientTestHarness();
+    const thread = makeThreadListEntry({ pinnedAt: 10, sectionId: "sec_work" });
+    const threadListKey = threadListQueryKey({
+      archived: false,
+      projectId: "project-1",
+    });
+    queryClient.setQueryData(threadListKey, [thread]);
+    queryClient.setQueryData(
+      sidebarNavigationQueryKey(),
+      makeSidebarNavigation([thread]),
+    );
+    vi.mocked(sdk.threads.unpinAndMove).mockRejectedValue(
+      new Error("request failed"),
+    );
+    const { result } = renderHook(() => useUnpinAndMoveThread(), { wrapper });
+
+    act(() => {
+      result.current.mutate({ id: thread.id, sectionId: "sec_personal" });
+    });
+
+    await waitFor(() => expect(queryClient.isMutating()).toBe(0));
+    // Nothing committed server-side, so the rollback must land on the
+    // original pinned state in the original section.
+    const entries = queryClient.getQueryData<ThreadListEntry[]>(threadListKey);
+    expect(entries?.[0]?.pinnedAt).toBe(10);
+    expect(entries?.[0]?.sectionId).toBe("sec_work");
+  });
+
+  it("tolerates a duplicate unpin-and-move click (8.6)", async () => {
+    const { queryClient, wrapper } = createQueryClientTestHarness();
+    const thread = makeThreadListEntry({ pinnedAt: 10, sectionId: "sec_work" });
+    const threadListKey = threadListQueryKey({
+      archived: false,
+      projectId: "project-1",
+    });
+    queryClient.setQueryData(threadListKey, [thread]);
+    vi.mocked(sdk.threads.unpinAndMove).mockResolvedValue(
+      makeThreadResponse({ pinnedAt: null, sectionId: "sec_personal" }),
+    );
+    const { result } = renderHook(() => useUnpinAndMoveThread(), { wrapper });
+
+    act(() => {
+      result.current.mutate({ id: thread.id, sectionId: "sec_personal" });
+      result.current.mutate({ id: thread.id, sectionId: "sec_personal" });
+    });
+
+    await waitFor(() => expect(queryClient.isMutating()).toBe(0));
+    expect(sdk.threads.unpinAndMove).toHaveBeenCalledTimes(2);
+    // The second application is idempotent: the same target section, the
+    // same unpinned end state.
+    const entries = queryClient.getQueryData<ThreadListEntry[]>(threadListKey);
+    const moved = entries?.find((entry) => entry.id === thread.id);
+    expect(moved?.pinnedAt ?? null).toBeNull();
+    expect(moved?.sectionId).toBe("sec_personal");
   });
 
   it("optimistically renames a thread while the update request is pending", async () => {
@@ -269,7 +332,7 @@ describe("thread state mutations", () => {
     });
   });
 
-  it("serializes unpin before section move while optimistically applying both fields", async () => {
+  it("optimistically applies the atomic unpin-and-move and settles on the response", async () => {
     const { queryClient, wrapper } = createQueryClientTestHarness();
     const threadId = "thread-1";
     const destinationSectionId = "sec_personal";
@@ -288,8 +351,7 @@ describe("thread state mutations", () => {
       archived: false,
       projectId: "project-1",
     });
-    let resolveUnpin: (thread: ThreadResponse) => void = () => {};
-    let resolveUpdate: (thread: ThreadResponse) => void = () => {};
+    let resolveMove: (thread: ThreadResponse) => void = () => {};
 
     queryClient.setQueryData(threadQueryKey(threadId), thread);
     queryClient.setQueryData(threadListKey, [listEntry]);
@@ -297,16 +359,10 @@ describe("thread state mutations", () => {
       sidebarNavigationQueryKey(),
       makeSidebarNavigation([listEntry]),
     );
-    vi.mocked(sdk.threads.unpin).mockImplementation(
+    vi.mocked(sdk.threads.unpinAndMove).mockImplementation(
       () =>
         new Promise<ThreadResponse>((resolve) => {
-          resolveUnpin = resolve;
-        }),
-    );
-    vi.mocked(sdk.threads.update).mockImplementation(
-      () =>
-        new Promise<ThreadResponse>((resolve) => {
-          resolveUpdate = resolve;
+          resolveMove = resolve;
         }),
     );
 
@@ -331,14 +387,21 @@ describe("thread state mutations", () => {
       sectionId: destinationSectionId,
       pinnedAt: null,
     });
-    expect(sdk.threads.unpin).toHaveBeenCalledWith({ threadId });
+    // HI-3 (TG8): a single atomic call replaces the serialized unpin ->
+    // update pair, so there is no window in which the backend is unpinned
+    // but not yet moved.
+    expect(sdk.threads.unpinAndMove).toHaveBeenCalledWith({
+      threadId,
+      sectionId: destinationSectionId,
+    });
+    expect(sdk.threads.unpin).not.toHaveBeenCalled();
     expect(sdk.threads.update).not.toHaveBeenCalled();
 
     act(() => {
-      resolveUnpin(
+      resolveMove(
         makeThreadResponse({
           id: threadId,
-          sectionId: null,
+          sectionId: destinationSectionId,
           pinnedAt: null,
           updatedAt: 2,
         }),
@@ -346,32 +409,9 @@ describe("thread state mutations", () => {
     });
 
     await waitFor(() => {
-      expect(sdk.threads.update).toHaveBeenCalledWith({
-        threadId,
-        sectionId: destinationSectionId,
-      });
-    });
-
-    act(() => {
-      resolveUpdate(
-        makeThreadResponse({
-          id: threadId,
-          sectionId: destinationSectionId,
-          pinnedAt: null,
-          updatedAt: 3,
-        }),
-      );
-    });
-
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-    expect(
-      queryClient.getQueryData<ThreadListEntry[]>(threadListKey)?.[0],
-    ).toMatchObject({
-      sectionId: destinationSectionId,
-      pinnedAt: null,
-      pinSortKey: null,
+      expect(
+        queryClient.getQueryData<ThreadListEntry[]>(threadListKey)?.[0],
+      ).toMatchObject({ sectionId: destinationSectionId, pinnedAt: null });
     });
   });
 });

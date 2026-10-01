@@ -10,6 +10,7 @@ import {
   reorderQueuedThreadMessage,
   setQueuedThreadMessageGroupBoundary,
   unarchiveThread,
+  unpinAndMoveThread,
   unpinThread,
   updateQueuedThreadMessage,
   updateThread,
@@ -321,7 +322,13 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
   patch(routes.updateQueuedMessage, async (context, payload) => {
     const thread = requirePublicThread(deps.db, context.req.param("id"));
     if (isCloudThread(thread)) {
-      return context.json(await cloudroom(deps).editQueued(thread, context.req.param("queuedMessageId"), payload));
+      return context.json(
+        await cloudroom(deps).editQueued(
+          thread,
+          context.req.param("queuedMessageId"),
+          payload,
+        ),
+      );
     }
     ensureThreadQueueIsWritable(thread);
     await validatePromptAttachmentReferences({
@@ -358,7 +365,10 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
   del(routes.deleteQueuedMessage, async (context) => {
     const thread = requirePublicThread(deps.db, context.req.param("id"));
     if (isCloudThread(thread)) {
-      await cloudroom(deps).cancelQueued(thread, context.req.param("queuedMessageId"));
+      await cloudroom(deps).cancelQueued(
+        thread,
+        context.req.param("queuedMessageId"),
+      );
       return context.json({ ok: true });
     }
     const queuedMessage = getQueuedThreadMessage(
@@ -540,6 +550,21 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
     return context.json(toThreadResponseFromThread(deps, { thread }));
   });
 
+  post(routes.unpinAndMove, (context, payload) => {
+    const publicThread = requirePublicThread(deps.db, context.req.param("id"));
+    // HI-3 (TG8): unpin + section membership commit atomically, replacing
+    // the client-composed unpin -> update pair whose partial failure left
+    // the backend unpinned in the original section.
+    const thread = unpinAndMoveThread(deps.db, deps.hub, {
+      threadId: publicThread.id,
+      sectionId: payload.sectionId,
+    });
+    if (!thread) {
+      throw new ApiError(404, "thread_not_found", "Thread not found");
+    }
+    return context.json(toThreadResponseFromThread(deps, { thread }));
+  });
+
   patch(routes.pinOrder, (context, payload) => {
     const thread = requirePublicThread(deps.db, context.req.param("id"));
     assertPinnedThreadOrderResult(
@@ -571,7 +596,10 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
     unarchiveThread(deps.db, deps.hub, thread.id);
     const unarchivedThread = getThread(deps.db, thread.id);
     if (unarchivedThread !== null) {
-      if (!isCloudThread(unarchivedThread) && unarchivedThread.environmentId !== null)
+      if (
+        !isCloudThread(unarchivedThread) &&
+        unarchivedThread.environmentId !== null
+      )
         refreshProviderRetirement(deps, unarchivedThread.environmentId);
       emitPluginThreadUnarchived(unarchivedThread);
     }

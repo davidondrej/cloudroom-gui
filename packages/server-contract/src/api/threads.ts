@@ -100,7 +100,10 @@ export const createThreadRequestSchema = z
   .object({
     projectId: z.string().min(1),
     executionTarget: z.enum(["local", "cloud"]).optional(),
-    requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/).optional(),
+    requestId: z
+      .string()
+      .regex(/^[a-zA-Z0-9_-]{1,64}$/)
+      .optional(),
     providerId: z.string().min(1).optional(),
     origin: threadCreateOriginSchema,
     originPluginId: z.string().min(1).optional(),
@@ -241,7 +244,10 @@ export type ForkThreadRequest = z.infer<typeof forkThreadRequestSchema>;
 
 const sendMessageRequestFieldsSchema = z.object({
   input: z.array(promptInputSchema).min(1),
-  requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/).optional(),
+  requestId: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]{1,64}$/)
+    .optional(),
   model: z.string().optional(),
   serviceTier: serviceTierSchema.optional(),
   reasoningLevel: reasoningLevelSchema.optional(),
@@ -643,6 +649,13 @@ export const updateThreadRequestSchema = z
     "At least one field must be provided",
   );
 export type UpdateThreadRequest = z.infer<typeof updateThreadRequestSchema>;
+
+export const unpinAndMoveThreadRequestSchema = z.object({
+  sectionId: z.string().min(1).nullable(),
+});
+export type UnpinAndMoveThreadRequest = z.infer<
+  typeof unpinAndMoveThreadRequestSchema
+>;
 
 export const reorderPinnedThreadRequestSchema = z.object({
   previousThreadId: z.string().min(1).nullable(),

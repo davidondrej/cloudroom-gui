@@ -412,6 +412,7 @@ type ExpectedThreadsKey =
   | "timelineTurnSummaryDetails"
   | "unarchive"
   | "unpin"
+  | "unpinAndMove"
   | "update"
   | "wait";
 

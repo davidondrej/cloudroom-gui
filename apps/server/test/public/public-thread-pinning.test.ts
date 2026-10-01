@@ -1,4 +1,9 @@
-import { getThread, markThreadDeleted, pinThread } from "@bb/db";
+import {
+  getThread,
+  markThreadDeleted,
+  pinThread,
+  threadSections,
+} from "@bb/db";
 import { threadSchema } from "@bb/domain";
 import { apiErrorSchema, threadListResponseSchema } from "@bb/server-contract";
 import { describe, expect, it } from "vitest";
@@ -76,6 +81,71 @@ describe("public thread pinning", () => {
         await readJson(repeatedUnpinResponse),
       );
       expect(repeatedUnpinnedThread.pinnedAt).toBeNull();
+    });
+  });
+
+  it("moves a pinned thread atomically via unpin-and-move (HI-3, TG8.7)", async () => {
+    await withTestHarness(async (harness) => {
+      const { host } = seedHostSession(harness.deps, {
+        id: "host-thread-unpin-move",
+      });
+      const { project } = seedProjectWithSource(harness.deps, {
+        hostId: host.id,
+        path: "/tmp/thread-unpin-move-source",
+      });
+      const thread = seedThread(harness.deps, {
+        projectId: project.id,
+      });
+
+      const pinResponse = await harness.app.request(
+        `/api/v1/threads/${thread.id}/pin`,
+        { method: "POST" },
+      );
+      expect(pinResponse.status).toBe(200);
+
+      const now = Date.now();
+      harness.db
+        .insert(threadSections)
+        .values({
+          id: "sec_destination",
+          name: "Destination",
+          createdAt: now,
+          updatedAt: now,
+        })
+        .run();
+
+      const moveResponse = await harness.app.request(
+        `/api/v1/threads/${thread.id}/unpin-and-move`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ sectionId: "sec_destination" }),
+        },
+      );
+      expect(moveResponse.status).toBe(200);
+      const movedThread = threadSchema.parse(await readJson(moveResponse));
+      expect(movedThread.pinnedAt ?? null).toBeNull();
+      expect(movedThread.sectionId).toBe("sec_destination");
+
+      const row = getThread(harness.db, thread.id);
+      if (!row) {
+        throw new Error("Expected thread row");
+      }
+      // One committed outcome: unpinned AND moved — never one without the
+      // other (SP-4).
+      expect(row.pinnedAt ?? null).toBeNull();
+      expect(row.pinSortKey ?? null).toBeNull();
+      expect(row.sectionId).toBe("sec_destination");
+
+      const missingResponse = await harness.app.request(
+        "/api/v1/threads/thread_missing/unpin-and-move",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ sectionId: "sec_destination" }),
+        },
+      );
+      expect(missingResponse.status).toBe(404);
     });
   });
 

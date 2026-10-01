@@ -242,6 +242,11 @@ export interface ThreadForkArgs extends Omit<
   visibility?: ForkThreadRequest["visibility"];
 }
 
+export interface ThreadUnpinAndMoveArgs {
+  sectionId: string | null;
+  threadId: string;
+}
+
 export interface ThreadUpdateArgs extends UpdateThreadRequest {
   threadId: string;
 }
@@ -609,6 +614,7 @@ export interface ThreadsArea {
   storagePaths(args: ThreadStoragePathsArgs): Promise<ThreadStoragePathsResult>;
   unarchive(args: ThreadActionArgs): Promise<ThreadUnarchiveResult>;
   unpin(args: ThreadActionArgs): Promise<ThreadMutationResult>;
+  unpinAndMove(args: ThreadUnpinAndMoveArgs): Promise<ThreadMutationResult>;
   update(args: ThreadUpdateArgs): Promise<ThreadMutationResult>;
   wait(args: ThreadWaitArgs): Promise<ThreadWaitResult>;
 }
@@ -1429,6 +1435,14 @@ export function createThreadsArea(args: CreateSdkAreaArgs): ThreadsArea {
       return transport.readJson(
         transport.api.v1.threads[":id"].unpin.$post({
           param: { id: input.threadId },
+        }),
+      );
+    },
+    async unpinAndMove(input) {
+      return transport.readJson(
+        transport.api.v1.threads[":id"]["unpin-and-move"].$post({
+          param: { id: input.threadId },
+          json: { sectionId: input.sectionId },
         }),
       );
     },

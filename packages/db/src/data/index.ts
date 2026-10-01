@@ -88,6 +88,7 @@ export {
   markThreadDeleted,
   markThreadStorageDeleted,
   unpinThread,
+  unpinAndMoveThread,
   unarchiveThread,
   applyThreadLifecycleEvent,
   applyThreadLifecycleEventInTransaction,
