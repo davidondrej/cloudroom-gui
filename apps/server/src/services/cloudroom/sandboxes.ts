@@ -120,6 +120,12 @@ export class SandboxDirectory {
     return value;
   }
 
+  /** The member's friend invite codes. `create` makes one more, up to 3 for life (ADR 0169). */
+  async invites(action: "list" | "create") {
+    const value = await this.call({ action }, "invites");
+    return z.object({ codes: z.array(z.object({ code: z.string(), used: z.boolean() })), left: z.number(), created: z.string().nullable() }).parse(value);
+  }
+
   /** Whether the website judges a generated thread title too vague to keep, at the user's sensitivity (2–5). */
   async titleTooVague(check: { title: string; firstMessage: string; agentReply: string; sensitivity: number }): Promise<boolean> {
     const value = await this.call({ ...check, sensitivity: String(check.sensitivity) }, "thread-title");

@@ -10,6 +10,8 @@ import {
 import { AppLayout } from "./components/layout/AppLayout";
 import { CloudroomAccountPanels } from "./components/CloudroomAccountPanels";
 import { Onboarding } from "./components/Onboarding";
+import { EarlyAccessOffer } from "./components/EarlyAccessOffer";
+import { InviteOffer } from "./components/InviteOffer";
 import { AuthCallbackView } from "./views/AuthCallbackView";
 import { QuickCreateProjectProvider } from "./hooks/useQuickCreateProject";
 import { RouteNavigationProvider } from "./components/ui/app-route-anchor";
@@ -443,6 +445,8 @@ export function App() {
               </Routes>
               <ProviderCliInstallLogDialogHost />
               <Onboarding />
+              <EarlyAccessOffer />
+              <InviteOffer />
               <CloudroomAccountPanels />
             </AppFileExternalNavigationHost>
           </AppNavigationUrlHost>

@@ -1,18 +1,19 @@
 import { appToast } from "@/components/ui/app-toast";
 import { useCloudroomAccount } from "@/hooks/queries/cloudroom-queries";
+import { sdk } from "@/lib/sdk";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
 
-export const CLOUD_WAITLIST_URL = "https://www.cloudroom.dev/#waitlist";
-export const CLOUD_LOCKED_REASON = "Invite-only beta. Join the waitlist.";
+export const CLOUD_LOCKED_REASON = "Sign in to use Cloud.";
 
 export function useCloudLocked(): boolean {
   const status = useCloudroomAccount();
   return status.isSuccess && !status.data.account;
 }
 
-export function showCloudWaitlist(): void {
-  appToast.message("Cloud is an invite-only beta", {
-    description: "Join the waitlist to get access. Already invited? Sign in at the bottom left.",
-    action: { label: "Join the waitlist", onClick: () => openUrlInExternalBrowser(CLOUD_WAITLIST_URL) },
+/** The website asks for an invite code, or joins the waitlist, after sign-in when the account has no access yet. */
+export function showCloudSignIn(): void {
+  appToast.message("Sign in to use Cloud", {
+    description: "Cloud agents need a Cloudroom account. Sign in or create one for free.",
+    action: { label: "Sign in", onClick: () => { void sdk.cloudroom.signIn().then(({ url }) => openUrlInExternalBrowser(url), (error: Error) => appToast.error(error.message)); } },
   });
 }

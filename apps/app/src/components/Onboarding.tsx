@@ -173,7 +173,6 @@ function Heading({ lead, mark }: { lead: string; mark: string }) {
   );
 }
 
-const Lede = ({ children }: { children: ReactNode }) => <p className="mt-3 max-w-[520px] text-base text-(--ob-muted)">{children}</p>;
 const Note = ({ children }: { children: ReactNode }) => <p className="text-[13px] text-(--ob-muted)">{children}</p>;
 const LINK = "text-(--ob-ink) underline underline-offset-[3px] disabled:opacity-50";
 
@@ -227,7 +226,6 @@ function AccountStep({ email, signingIn, next }: { email: string | null; signing
   return (
     <>
       <Heading lead="Create your" mark="account" />
-      <Lede>It's free. It unlocks cloud agents that keep working when your laptop is closed.</Lede>
       {email ? (
         <div className="mt-8 flex items-center gap-5">
           <Cta onClick={next}>Continue <Icon name="ArrowRight" aria-hidden /></Cta>
@@ -282,7 +280,6 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
   return (
     <>
       <Heading lead="Connect an" mark="agent" />
-      <Lede>Use the Claude or ChatGPT plan you already pay for. One is enough.</Lede>
       <div className="mt-8 flex flex-col gap-3">
         <Card on={agents.claude} logo={<span className="grid size-11 place-items-center bg-[#f4e4d6]"><ClaudeIcon className="size-6" /></span>} name="Claude Code" detail={claudeLocal.data?.state === "connected" ? "Found on this Mac" : "Uses your Claude plan"}>
           {action(agents.claude, <ClaudeConnectionButton target="cloud" presentation="inline" />)}
@@ -346,7 +343,6 @@ function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupPr
   return (
     <>
       <Heading lead="Connect" mark="GitHub" />
-      <Lede>So cloud agents can clone, commit, and push to your private repos.</Lede>
       <div className="mt-8">
         <Card on={connected} logo={<span className="grid size-11 place-items-center bg-black text-white"><Icon name="Github" className="size-6" aria-hidden /></span>} name="GitHub" detail={detail}>
           {connected && <Connected />}
@@ -421,7 +417,6 @@ function ProjectStep({ close }: { close: () => void }) {
   return (
     <>
       <Heading lead="Pick your first" mark="project" />
-      <Lede>Choose what your agents work on. You can add more projects anytime.</Lede>
       <div className="mt-7 flex flex-col gap-2">
         {projects.slice(0, 5).map((project) => (
           <ProjectRow key={project.id} name={project.name} detail="Already in Cloudroom" disabled={busy} onClick={() => open(project.id)} />

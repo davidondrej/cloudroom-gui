@@ -9,7 +9,7 @@ import {
   cloudroomRequestId,
   clearCloudroomRequestId,
 } from "@/hooks/queries/cloudroom-queries";
-import { CLOUD_LOCKED_REASON, showCloudWaitlist, useCloudLocked } from "@/hooks/useCloudLocked";
+import { CLOUD_LOCKED_REASON, showCloudSignIn, useCloudLocked } from "@/hooks/useCloudLocked";
 import { fetchWithAppSurface } from "@/lib/app-surface";
 import { ProviderRequirementBanner } from "./banner/ProviderRequirementBanner";
 import { Button } from "@bb/shared-ui/button";
@@ -1743,7 +1743,7 @@ export function NewThreadComposer({
                 unavailableReason: null,
                 ...(cloudLocked ? { note: CLOUD_LOCKED_REASON } : {}),
                 onSelect: () => {
-                  if (cloudLocked) return showCloudWaitlist();
+                  if (cloudLocked) return showCloudSignIn();
                   snapshotDraftBeforeOptionChange();
                   setExecutionTarget("cloud");
                   localStorage.setItem("cloudroom.executionTarget", "cloud");

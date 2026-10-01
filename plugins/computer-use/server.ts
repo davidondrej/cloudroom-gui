@@ -70,6 +70,8 @@ export function decideGate(args: {
   return { kind: "free" };
 }
 
+const sessionFor = (threadId: string) => `cr-${threadId.slice(-24)}${LIME_CURSOR_SUFFIX}`;
+
 function fail(code: string, message: string, exitCode = 1): PluginCliResult {
   return { exitCode, stdout: `${JSON.stringify({ error: code, message })}\n` };
 }
@@ -93,6 +95,7 @@ export default async function computerUsePlugin(bb: BbPluginApi) {
   const track = (name: string, properties: Record<string, string | number | boolean | null>) =>
     bb.experimental_telemetry.capture(name, { execution: "local", ...properties });
   const busy = new Map<string, { threadId: string; at: number }>();
+  const active = new Map<string, string>();
   const threadKey = (threadId: string) => `thread/${encodeURIComponent(threadId)}`;
 
   const readList = async (key: string) =>
@@ -245,12 +248,13 @@ export default async function computerUsePlugin(bb: BbPluginApi) {
         "permissions_missing",
         "Cloudroom needs macOS Accessibility permission. Ask the user to grant it in Settings > Plugins > Computer Use (or run `room-cli computer-use setup` while they watch), then retry.",
       );
+    active.set(threadId, hostId);
     const result = await host.call(
       "call",
       {
         tool,
         args: input,
-        session: `cr-${threadId.slice(-24)}${LIME_CURSOR_SUFFIX}`,
+        session: sessionFor(threadId),
         shotsDir: join(tmpdir(), "cloudroom-computer-use", threadId.replace(/[^A-Za-z0-9_-]/g, "_")),
       },
       { hostId, timeoutMs: 150_000, ...(ctx.signal ? { signal: ctx.signal } : {}) },
@@ -352,10 +356,22 @@ export default async function computerUsePlugin(bb: BbPluginApi) {
 
   host.experimental_onWorkerExit(() => track("computer_use_crash", { component: "host_worker" }));
 
+  // Computer use lasts one turn: when it ends, the thread's driver session ends too,
+  // and the driver (with its screen capture) stops once no other thread uses it.
+  async function release(threadId: string) {
+    for (const [key, holder] of busy) if (holder.threadId === threadId) busy.delete(key);
+    const hostId = active.get(threadId);
+    if (!hostId) return;
+    active.delete(threadId);
+    await host.call("release", { session: sessionFor(threadId) }, { hostId }).catch(() => {});
+  }
+
+  for (const event of ["thread.idle", "thread.failed"] as const)
+    bb.events.on(event, ({ thread }) => release(thread.id));
   for (const event of ["thread.archived", "thread.deleted"] as const) {
     bb.events.on(event, async ({ thread }) => {
       await bb.storage.kv.delete(threadKey(thread.id));
-      for (const [key, holder] of busy) if (holder.threadId === thread.id) busy.delete(key);
+      await release(thread.id);
     });
   }
 }

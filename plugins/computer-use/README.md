@@ -2,7 +2,7 @@
 
 Built-in computer use for Local threads. Agents call `room-cli computer-use`; the
 plugin asks the user before each new app, then forwards the call to a private
-[Cua Driver](https://github.com/trycua/cua) daemon. Scope: [docs/scopes/computer-use.md](../../../docs/scopes/computer-use.md).
+[Cua Driver](https://github.com/trycua/cua) daemon.
 
 ## How it works
 
@@ -10,6 +10,13 @@ plugin asks the user before each new app, then forwards the call to a private
 - **Host** (`host.ts`): downloads the pinned driver on first use, starts it on a private socket, runs calls, saves screenshots to files.
 - **App** (`app.tsx`): the approval card and the Settings section (macOS permissions, always-allowed apps).
 - **Skill** (`skills/computer-use`): teaches agents the observe, act, verify loop.
+
+## Lifecycle
+
+- The driver runs only while agents use it. A thread's session ends when its turn ends or it is archived.
+- The driver stops when no thread still uses it, after 2 idle minutes, or when Cloudroom quits or crashes.
+- Its stderr goes to `home/driver.log`, never a pipe. With a pipe, it outlived a crashed Cloudroom and kept screen capture running.
+- On start, the host kills drivers left behind by a dead Cloudroom.
 
 ## Driver pin
 

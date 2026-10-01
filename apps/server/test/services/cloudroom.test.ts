@@ -332,7 +332,7 @@ it("routes Cloud through the core, projects conversations, pauses queues, and re
   const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
   const service = cloudroom(harness.deps);
   const token = "fixture-" + "x".repeat(40);
-  const gateToken = "synthetic-boat-gate";
+  const gateToken = "synthetic-gate";
   let coreRequests = 0;
   const records: object[] = [];
   const streams = new Set<ServerResponse>();

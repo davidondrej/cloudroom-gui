@@ -153,7 +153,11 @@ import {
   runningLocalThreadIds,
   stopThreadsForUpdate,
 } from "./desktop-update-resume.js";
-import { reopenAfterExit, startIdleInstall } from "./desktop-update-install.js";
+import {
+  installNeedsPassword,
+  reopenAfterExit,
+  startIdleInstall,
+} from "./desktop-update-install.js";
 import {
   BB_DESKTOP_CHECK_FOR_UPDATES_CHANNEL,
   BB_DESKTOP_GET_INFO_CHANNEL,
@@ -2285,6 +2289,15 @@ async function runDesktopApp(): Promise<void> {
     logger: desktopLogger,
     platform: desktopPlatform,
   });
+  const updateNeedsPassword =
+    process.platform === "darwin" &&
+    app.isPackaged &&
+    installNeedsPassword(process.execPath);
+  if (updateNeedsPassword) {
+    desktopLogger.warn(
+      "This user can't write the Cloudroom app, so updates install only when the user clicks Restart to update.",
+    );
+  }
   desktopAutoUpdateService = createDesktopAutoUpdateService({
     currentVersion: desktopVersion,
     enabled:
@@ -2295,6 +2308,7 @@ async function runDesktopApp(): Promise<void> {
       }),
     forceDevUpdateConfig:
       !app.isPackaged && process.env.BB_DESKTOP_AUTO_UPDATE === "1",
+    installNeedsPassword: updateNeedsPassword,
     logger: desktopLogger,
     platform: desktopPlatform,
     updater: createElectronAutoUpdaterAdapter(autoUpdater),
@@ -2305,7 +2319,8 @@ async function runDesktopApp(): Promise<void> {
   desktopAutoUpdateService.subscribe(() => {
     sendDesktopInfoChanged();
   });
-  if (process.platform === "darwin") {
+  // A password prompt must never pop up unattended, so skip idle and remote-window installs.
+  if (process.platform === "darwin" && !updateNeedsPassword) {
     idleInstall = startIdleInstall({
       isUpdateDownloaded: () =>
         desktopAutoUpdateService?.getInfo().updateDownloaded === true,

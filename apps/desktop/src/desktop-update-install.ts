@@ -1,4 +1,6 @@
 import { spawn } from "node:child_process";
+import { accessSync, constants } from "node:fs";
+import { dirname } from "node:path";
 
 export const IDLE_INSTALL_AFTER_MS = 10 * 60_000;
 const IDLE_CHECK_MS = 15_000;
@@ -57,6 +59,20 @@ running || open "$1"
 
 export function macAppBundle(execPath: string): string | null {
   return /^(.+?\.app)\/Contents\/MacOS\/[^/]+$/u.exec(execPath)?.[1] ?? null;
+}
+
+// Squirrel.Mac needs an admin password ("trying to add a new helper tool") when
+// this user can't write the app bundle or its folder, e.g. another account installed it.
+export function installNeedsPassword(execPath: string): boolean {
+  const bundle = macAppBundle(execPath);
+  if (bundle === null) return false;
+  try {
+    accessSync(bundle, constants.W_OK);
+    accessSync(dirname(bundle), constants.W_OK);
+    return false;
+  } catch {
+    return true;
+  }
 }
 
 export function reopenAfterExit(execPath: string, pid: number): boolean {

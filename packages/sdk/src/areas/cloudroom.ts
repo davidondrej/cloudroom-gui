@@ -30,6 +30,8 @@ export interface CloudroomStatus {
   localLogins?: { codex: boolean };
   signingIn: boolean;
   signInError: string | null;
+  /** Signed-out installs from before 2026-09-30 21:48 PDT may claim free access until this moment (docs/scopes/waitlist.md). */
+  earlyAccessUntil?: string | null;
 }
 
 export interface CloudroomCodexAuth {

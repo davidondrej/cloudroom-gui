@@ -93,6 +93,11 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     const input = z.object({ message: z.string().trim().min(1).max(4000), threadId: z.string().min(1).max(200).optional() }).strict().parse(await context.req.json());
     return context.json(await reportBug(deps, input));
   });
+  app.get("/api/v1/cloudroom/account/invites", async (context) => context.json(await cloudroom(deps).sandboxes.invites("list")));
+  app.post("/api/v1/cloudroom/account/invites", async (context) => {
+    z.object({}).strict().parse(await context.req.json());
+    return context.json(await cloudroom(deps).sandboxes.invites("create"));
+  });
   app.post("/api/v1/cloudroom/account/mac-access", async (context) => {
     const input = z.object({ enabled: z.boolean() }).strict().parse(await context.req.json());
     await setMacAccess(deps, input.enabled);
@@ -243,7 +248,7 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   app.use("/api/v1/threads/:id/*", guard);
 }
 
-/** Moves a VM thread into its own sandbox (moving off Boat): Teleport to Local, then Teleport to Cloud, which picks a
+/** Moves a VM thread into its own sandbox (moving off the VM): Teleport to Local, then Teleport to Cloud, which picks a
  *  sandbox. The VM keeps its copy, so moving back only needs the account switch (docs/scopes/sandboxes.md). */
 async function moveToSandbox(deps: AppDeps, threadId: string, choice?: { model: string; reasoning: string }) {
   const saved = binding(deps.db, threadId);

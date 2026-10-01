@@ -375,7 +375,7 @@ async function runWhileFollowUpShortcutSending(
   }
 }
 
-import { showCloudWaitlist, useCloudLocked } from "@/hooks/useCloudLocked";
+import { showCloudSignIn, useCloudLocked } from "@/hooks/useCloudLocked";
 import { useCloudroomThread, useCloudroomThreadWorkspace, useCloudroomConnection, useRetryCloudStart, useTeleportThread, useTeleportLocal, cloudroomRequestId, clearCloudroomRequestId, cloudReasoningLevels, cloudServiceTierSupported, cloudFeatureSupported } from "@/hooks/queries/cloudroom-queries";
 import { reasoningLevelSchema } from "@bb/domain";
 import { reasoningLevelLabel } from "@/lib/reasoning-labels";
@@ -433,7 +433,7 @@ export function ThreadDetailPromptArea({
   const teleport = useTeleportThread(thread.id);
   const canTeleport = canTeleportThread(thread);
   const cloudLocked = useCloudLocked();
-  const startTeleport = useCallback(() => cloudLocked ? showCloudWaitlist() : teleport.mutate("start"), [cloudLocked, teleport.mutate]);
+  const startTeleport = useCallback(() => cloudLocked ? showCloudSignIn() : teleport.mutate("start"), [cloudLocked, teleport.mutate]);
   const teleportLocal = useTeleportLocal(thread.id);
   const movingToLocal = teleportLocal.isPending;
   const canTeleportLocal = canTeleportLocalThread(thread) && !movingToLocal;

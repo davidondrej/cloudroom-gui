@@ -40,7 +40,7 @@ import { sdk } from "@/lib/sdk";
 import { openTeleportLogin } from "@/components/CodexConnectionPanel";
 import { showMutationErrorToast } from "@/lib/mutation-errors";
 import { useTeleportLocal, useTeleportThread } from "@/hooks/queries/cloudroom-queries";
-import { showCloudWaitlist, useCloudLocked } from "@/hooks/useCloudLocked";
+import { showCloudSignIn, useCloudLocked } from "@/hooks/useCloudLocked";
 
 interface ThreadActionsMenuBaseProps {
   thread: Thread;
@@ -216,7 +216,7 @@ function ThreadActionsMenuItems({
   const teleport = useTeleportThread(thread.id);
   const cloudLocked = useCloudLocked();
   const startTeleport = async () => {
-    if (cloudLocked) return showCloudWaitlist();
+    if (cloudLocked) return showCloudSignIn();
     try { await teleport.mutateAsync("start"); }
     catch (error) { if (!openTeleportLogin(error, thread.providerId)) showMutationErrorToast({ error, fallbackMessage: "Could not start Teleport" }); }
   };

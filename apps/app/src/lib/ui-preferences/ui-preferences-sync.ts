@@ -101,6 +101,12 @@ export function registerSyncedUiPreference<Key extends UiPreferenceKey>(
   registration: RegisteredPreference<Key>,
 ): void {
   registry.set(key, registration as RegisteredPreference<UiPreferenceKey>);
+  // Lazy-loaded pages register after startup, so apply the already-loaded value.
+  if (context === null) return;
+  const cached = getCachedUiPreferences(context.queryClient);
+  if (cached !== undefined) {
+    reconcileUiPreference(context, key, registration.valueAtom, cached);
+  }
 }
 
 export function startUiPreferencesSync(

@@ -5,6 +5,7 @@ import {
   access,
   mkdir,
   mkdtemp,
+  open,
   readFile,
   rename,
   rm,
@@ -25,7 +26,7 @@ import { hostContract, type HostStatus } from "./contract.js";
 import { DRIVER, SESSION_TOOLS, assetFor } from "./driver.js";
 
 const run = promisify(execFile);
-const IDLE_STOP_MS = 10 * 60_000;
+const IDLE_STOP_MS = 2 * 60_000;
 
 type Paths = ExperimentalHostRpcContext["experimental_paths"];
 
@@ -134,6 +135,17 @@ async function saveImages(stdout: string, shotsDir: string) {
   return JSON.stringify(result, null, 2);
 }
 
+// Drivers whose Cloudroom died (parent is now launchd), e.g. from builds that piped stderr.
+async function reapOrphans() {
+  if (process.platform === "win32") return;
+  const { stdout } = await run("/bin/ps", ["-axo", "pid=,ppid=,command="]);
+  for (const line of stdout.split("\n")) {
+    const [, pid, ppid, command] = /^\s*(\d+)\s+(\d+)\s+(.*)$/.exec(line) ?? [];
+    if (ppid === "1" && command?.includes("/host-data/cua-driver/") && command.includes(" serve --socket "))
+      process.kill(Number(pid), "SIGKILL");
+  }
+}
+
 export function createHostEntry() {
   let daemon: ChildProcess | null = null;
   let socket: string | null = null;
@@ -144,6 +156,7 @@ export function createHostEntry() {
   let driverExits = 0;
   let lease: ExperimentalHostWorkerLease | null = null;
   let paths: Paths | null = null;
+  const sessions = new Set<string>();
 
   const dir = () => join(paths!.dataDir, "cua-driver", DRIVER.version);
   const binary = () => join(dir(), "cua-driver");
@@ -193,7 +206,12 @@ export function createHostEntry() {
   }
 
   function stopDaemon() {
-    daemon?.kill("SIGTERM");
+    const child = daemon;
+    child?.kill("SIGTERM");
+    setTimeout(() => {
+      if (child && child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
+    }, 3_000).unref();
+    sessions.clear();
     daemon = null;
     socket = null;
     void lease?.dispose();
@@ -223,15 +241,16 @@ export function createHostEntry() {
     const args = ["serve", "--socket", path];
     if (process.platform === "darwin")
       args.push("--embedded", "--host-bundle-id", process.env.__CFBundleIdentifier ?? "dev.cloudroom.gui");
+    // stderr must be a file: when Cloudroom dies, the driver logs its shutdown, and a
+    // broken stderr pipe kept it running forever (with screen capture on).
+    const logFile = join(home(), "driver.log");
+    const log = await open(logFile, "w");
     const child = spawn(binary(), args, {
       env: { ...driverEnv(home()), CUA_DRIVER_PARENT_LIVENESS_STDIN: "1" },
-      stdio: ["pipe", "ignore", "pipe"],
+      stdio: ["pipe", "ignore", log.fd],
     });
+    await log.close();
     child.stdin?.on("error", () => {});
-    let log = "";
-    child.stderr?.on("data", (chunk: Buffer) => {
-      log = (log + chunk.toString()).slice(-2000);
-    });
     child.once("exit", () => {
       if (daemon !== child) return;
       driverExits++;
@@ -247,13 +266,15 @@ export function createHostEntry() {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
     stopDaemon();
-    throw new Error(`Cua Driver did not start. ${log.trim()}`.trim());
+    const tail = (await readFile(logFile, "utf8").catch(() => "")).slice(-2000);
+    throw new Error(`Cua Driver did not start. ${tail.trim()}`.trim());
   }
 
   const timer = setInterval(() => {
     if (daemon && Date.now() - lastUsed > IDLE_STOP_MS) stopDaemon();
   }, 30_000);
   timer.unref();
+  void reapOrphans().catch(() => {});
 
   return experimental_defineHostEntry({
     contract: hostContract,
@@ -271,6 +292,7 @@ export function createHostEntry() {
       },
       async call(input, context) {
         paths = context.experimental_paths;
+        sessions.add(input.session);
         const path = await ensureDaemon(context);
         const args: Record<string, unknown> = { ...input.args };
         if (SESSION_TOOLS.has(input.tool) && args.session === undefined) args.session = input.session;
@@ -291,6 +313,16 @@ export function createHostEntry() {
         const exits = driverExits;
         driverExits = 0;
         return { ...result, stdout: await saveImages(result.stdout, input.shotsDir), driverExits: exits };
+      },
+      async release({ session }) {
+        if (!sessions.delete(session) || !daemon || !socket) return null;
+        if (sessions.size === 0) stopDaemon();
+        else
+          await run(binary(), ["call", "--socket", socket, "end_session", JSON.stringify({ session })], {
+            env: driverEnv(home()),
+            timeout: 10_000,
+          }).catch(() => {});
+        return null;
       },
       async describe(input, context) {
         paths = context.experimental_paths;

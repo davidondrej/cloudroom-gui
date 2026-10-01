@@ -51,6 +51,10 @@ export const hostContract = defineRpcContract({
       })
       .strict(),
   },
+  release: {
+    input: z.object({ session: z.string().min(1).max(64) }).strict(),
+    output: z.null(),
+  },
   describe: {
     input: z.object({ tool: z.string().max(80).nullable() }).strict(),
     output: z.string(),

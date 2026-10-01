@@ -25,7 +25,7 @@ it("pairs through a loopback callback, keeps secrets out of status, persists/rec
   const { host } = seedHostSession(harness.deps);
   const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
   const account = cloudroomAccount(harness.deps);
-  const token = "core-fixture-" + "x".repeat(40), gateToken = "boat-fixture-secret";
+  const token = "core-fixture-" + "x".repeat(40), gateToken = "gate-fixture-secret";
   let owner = owners[0]!;
   let offline = false;
   const coreCalls: string[] = [];
@@ -161,7 +161,7 @@ it("pairs through a loopback callback, keeps secrets out of status, persists/rec
   }
 }, 15000);
 
-it("keeps browser sign-in open while a VM is provisioned and does not call the website or Boat when it expires", async () => {
+it("keeps browser sign-in open while a VM is provisioned and does not call the website or hosting when it expires", async () => {
   const harness = await createTestAppHarness();
   const account = cloudroomAccount(harness.deps);
   const calls: string[] = [];
@@ -194,7 +194,7 @@ it("keeps browser sign-in open while a VM is provisioned and does not call the w
     expire?.();
     expect((await account.status()).signInError).toBe("Sign-in expired. Try again.");
     expect((await account.status()).signingIn).toBe(false);
-    expect(calls.filter(url => /ascii\.dev|boat\.dev|\/api\/setup/.test(url))).toEqual([]);
+    expect(calls.filter(url => /^https:|\/api\/setup/.test(url))).toEqual([]);
   } finally {
     globalThis.fetch = realFetch;
     globalThis.setTimeout = realTimeout;

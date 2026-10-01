@@ -1429,9 +1429,8 @@ function ProjectListComponent({
     },
     [reorderPinnedThreadMutate],
   );
-  const openRootComposeForProject = useCallback(
-    (projectId: string, sectionId?: string) => {
-      setRootComposeProjectId(projectId);
+  const openRootCompose = useCallback(
+    (sectionId?: string) => {
       onProjectSelect?.();
       navigate(getRootComposeRoutePath(), {
         state: {
@@ -1440,22 +1439,14 @@ function ProjectListComponent({
         },
       });
     },
-    [navigate, onProjectSelect, setRootComposeProjectId],
+    [navigate, onProjectSelect],
   );
   const handleCreateProjectThread = useCallback(
     (projectId: string) => {
-      openRootComposeForProject(projectId);
+      setRootComposeProjectId(projectId);
+      openRootCompose();
     },
-    [openRootComposeForProject],
-  );
-  const handleCreateProjectlessThread = useCallback(() => {
-    openRootComposeForProject(PERSONAL_PROJECT_ID);
-  }, [openRootComposeForProject]);
-  const handleCreateThreadInSection = useCallback(
-    (sectionId: string) => {
-      openRootComposeForProject(PERSONAL_PROJECT_ID, sectionId);
-    },
-    [openRootComposeForProject],
+    [openRootCompose, setRootComposeProjectId],
   );
   const [isSectionCreateDialogOpen, setIsSectionCreateDialogOpen] =
     useState(false);
@@ -1584,7 +1575,7 @@ function ProjectListComponent({
       <SidebarHeaderControls
         label={label}
         sectionId={sectionId}
-        onNewThread={handleCreateProjectlessThread}
+        onNewThread={openRootCompose}
         open={openSidebarMenu === menuId}
         onOpenChange={(open) => setSidebarMenuOpen(menuId, open)}
       />
@@ -1928,7 +1919,7 @@ function ProjectListComponent({
                 collapsedEnvironmentIds={collapsedEnvironmentIds}
                 compareThreadsForSection={compareThreadsForSection}
                 onProjectSelect={onProjectSelect}
-                onCreateThreadInSection={handleCreateThreadInSection}
+                onCreateThreadInSection={openRootCompose}
                 onRenameSection={handleOpenRenameThreadSection}
                 onRemoveSection={handleRemoveThreadSection}
                 onToggleCollapsed={toggleSidebarSectionCollapsed}

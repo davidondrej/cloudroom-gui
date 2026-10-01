@@ -54,6 +54,7 @@ interface CreateDesktopAutoUpdateServiceArgs {
   currentVersion: string;
   enabled: boolean;
   forceDevUpdateConfig: boolean;
+  installNeedsPassword?: boolean;
   logger: DesktopAutoUpdateLogger;
   now?: () => number;
   platform: BbDesktopInfo["platform"];
@@ -88,10 +89,12 @@ function createBaseInfo(
   currentVersion: string,
   platform: BbDesktopInfo["platform"],
   autoUpdateEnabled: boolean,
+  installNeedsPassword: boolean,
 ): BbDesktopInfo {
   return {
     autoUpdateEnabled,
     downloadState: "idle",
+    ...(installNeedsPassword ? { installNeedsPassword: true } : {}),
     lastCheckedAt: null,
     latestVersion: null,
     pendingVersion: null,
@@ -170,7 +173,12 @@ export function createDesktopAutoUpdateService(
   let downloadInFlight: Promise<Array<string>> | null = null;
   const scheduler = createDesktopUpdateScheduler({
     enabled: args.enabled,
-    initialInfo: createBaseInfo(args.currentVersion, args.platform, args.enabled),
+    initialInfo: createBaseInfo(
+      args.currentVersion,
+      args.platform,
+      args.enabled,
+      args.installNeedsPassword === true,
+    ),
     now,
     runCheck,
   });
@@ -286,7 +294,9 @@ export function createDesktopAutoUpdateService(
     args.updater.setLogger(args.logger);
     args.updater.setFeedURL(DESKTOP_AUTO_UPDATE_FEED_CONFIG);
     args.updater.setAutoDownload(false);
-    args.updater.setAutoInstallOnAppQuit(true);
+    // Squirrel.Mac asks for a password as soon as it stages an update it can't
+    // write, so stage only after the user clicks Restart to update.
+    args.updater.setAutoInstallOnAppQuit(args.installNeedsPassword !== true);
     args.updater.setForceDevUpdateConfig(args.forceDevUpdateConfig);
     args.updater.onUpdateAvailable((info) => {
       applyUpdateAvailable({

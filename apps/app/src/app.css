@@ -959,3 +959,12 @@
     opacity: 0;
   }
 }
+
+/* Sharp design: every corner in the app is square, including circles and
+ * pills. Unlayered and !important so it beats Tailwind utilities and inline
+ * styles. */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+}

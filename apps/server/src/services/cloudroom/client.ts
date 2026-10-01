@@ -259,7 +259,7 @@ function sessionPath(id: string): string {
 }
 
 const MAX_RESPONSE_BYTES = 16 * 1024 * 1024;
-/** The most one upload request may carry: some sandbox proxies (Upstash) drop requests over about 8 MB. */
+/** The most one upload request may carry: some sandbox proxies drop requests over about 8 MB. */
 export const UPLOAD_PART = 4 * 1024 * 1024;
 
 export class CloudroomClient {
@@ -291,7 +291,7 @@ export class CloudroomClient {
       throw new CloudroomError("A core access token is required");
     }
     if (options.gateToken !== undefined && !/^[a-zA-Z0-9._~-]{1,4096}$/.test(options.gateToken)) {
-      throw new CloudroomError("Invalid Boat gate credential");
+      throw new CloudroomError("Invalid gate credential");
     }
     this.#base = url.href.replace(/\/$/, "");
     this.#token = options.token;

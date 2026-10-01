@@ -43,6 +43,9 @@ export function mergeDesktopUpdateInfo(
     ...(nativeDownloadState === undefined
       ? {}
       : { downloadState: nativeDownloadState }),
+    ...(args.autoInfo?.installNeedsPassword === true
+      ? { installNeedsPassword: true }
+      : {}),
     lastCheckedAt: latestCheckedAt(
       args.feedInfo?.lastCheckedAt ?? null,
       args.autoInfo?.lastCheckedAt ?? null,
