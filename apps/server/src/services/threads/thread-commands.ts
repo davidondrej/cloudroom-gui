@@ -706,11 +706,7 @@ export async function reconcilePendingThreadUnarchiveOperations(
       operation.providerId,
     );
     if (bridgeLaunch === null) {
-      markProviderOperationFailed(
-        deps.db,
-        operation.id,
-        "bridge_unavailable",
-      );
+      markProviderOperationFailed(deps.db, operation.id, "bridge_unavailable");
       continue;
     }
     const outcome = await dispatchUnarchiveOperation(

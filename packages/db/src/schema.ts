@@ -548,7 +548,9 @@ export const threads = sqliteTable(
   "threads",
   {
     id: text("id").primaryKey(),
-    executionTarget: text("execution_target", { enum: ["local", "cloud"] }).notNull().default("local"),
+    executionTarget: text("execution_target", { enum: ["local", "cloud"] })
+      .notNull()
+      .default("local"),
     projectId: text("project_id")
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
@@ -634,7 +636,9 @@ export const threads = sqliteTable(
 );
 
 export const cloudroomThreads = sqliteTable("cloudroom_threads", {
-  threadId: text("thread_id").primaryKey().references(() => threads.id, { onDelete: "cascade" }),
+  threadId: text("thread_id")
+    .primaryKey()
+    .references(() => threads.id, { onDelete: "cascade" }),
   coreUrl: text("core_url").notNull(),
   startRequestId: text("start_request_id").notNull().unique(),
   sessionId: text("session_id").unique(),
@@ -643,14 +647,31 @@ export const cloudroomThreads = sqliteTable("cloudroom_threads", {
   cursor: integer("cursor").notNull().default(0),
   nativeId: text("native_id"),
   turnId: text("turn_id"),
-  queuePaused: integer("queue_paused", { mode: "boolean" }).notNull().default(false),
+  queuePaused: integer("queue_paused", { mode: "boolean" })
+    .notNull()
+    .default(false),
   error: text("error"),
 });
 
 export const cloudroomCommands = sqliteTable("cloudroom_commands", {
   id: text("id").primaryKey(),
-  threadId: text("thread_id").notNull().references(() => cloudroomThreads.threadId, { onDelete: "cascade" }),
-  command: text("command", { enum: ["prompt", "stop", "resume", "edit", "cancel", "steer", "compact", "rewind", "attach", "title"] }).notNull(),
+  threadId: text("thread_id")
+    .notNull()
+    .references(() => cloudroomThreads.threadId, { onDelete: "cascade" }),
+  command: text("command", {
+    enum: [
+      "prompt",
+      "stop",
+      "resume",
+      "edit",
+      "cancel",
+      "steer",
+      "compact",
+      "rewind",
+      "attach",
+      "title",
+    ],
+  }).notNull(),
   input: text("input").notNull(),
   state: text("state").notNull().default("sending"),
   createdAt: integer("created_at").notNull(),
