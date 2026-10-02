@@ -8,8 +8,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { Profiler, startTransition, type ReactNode } from "react";
-import { flushSync } from "react-dom";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EMPTY_ORDERED_MENTION_SUGGESTIONS } from "@bb/client-core";
 import { AppCommandProvider } from "@/components/commands/AppCommandProvider";
@@ -34,7 +33,6 @@ const mocks = vi.hoisted(() => {
   };
   return Object.assign(values, {});
 });
-let resizeObserverCallback: ResizeObserverCallback | null = null;
 
 vi.mock("@/components/ui/bottom-anchored-scroll-body.js", () => ({
   useBottomAnchoredScroll: () => ({
@@ -316,13 +314,9 @@ beforeEach(() => {
   mocks.isCompactViewport = false;
   mocks.isPointerCoarse = false;
   mocks.voiceState = "idle";
-  resizeObserverCallback = null;
   vi.stubGlobal(
     "ResizeObserver",
     class {
-      constructor(callback: ResizeObserverCallback) {
-        resizeObserverCallback = callback;
-      }
       observe() {}
       disconnect() {}
       unobserve() {}
@@ -331,113 +325,23 @@ beforeEach(() => {
 });
 
 describe("FollowUpPromptBox", () => {
-  it("does not commit an unchanged measurement while a height update is pending", () => {
-    const onRender = vi.fn();
-    render(
-      <Profiler id="follow-up-prompt-box" onRender={onRender}>
-        <FollowUpPromptBox
-          {...createFollowUpPromptBoxProps({ kind: "ready" })}
-          stack={<div data-testid="measured-stack">Stack</div>}
-        />
-      </Profiler>,
-    );
-    const stackElement = screen.getByTestId("measured-stack").parentElement;
-    if (!stackElement) throw new Error("Expected measured composer stack");
-    Object.defineProperty(stackElement, "offsetHeight", {
-      configurable: true,
-      value: 24,
-    });
-    let commitsAfterSynchronousSignal = -1;
-    const resizeEntries = [
-      {
-        target: stackElement,
-        borderBoxSize: [{ blockSize: 24 }],
-        contentRect: { height: 999 },
-      } as unknown as ResizeObserverEntry,
-    ];
-
-    act(() => {
-      startTransition(() => {
-        resizeObserverCallback?.(resizeEntries, {} as ResizeObserver);
-      });
-      flushSync(() => {
-        resizeObserverCallback?.(resizeEntries, {} as ResizeObserver);
-      });
-      commitsAfterSynchronousSignal = onRender.mock.calls.length;
-    });
-
-    expect(commitsAfterSynchronousSignal).toBe(1);
-    expect(onRender).toHaveBeenCalledTimes(2);
-    expect(onRender.mock.calls[0]?.[1]).toBe("mount");
-    expect(onRender.mock.calls[1]?.[1]).toBe("update");
-    expect(screen.getByTestId("prompt-box").dataset.minHeight).toBe("52");
-  });
-
-  it("includes expanding plugin banners in measured stack compensation", () => {
-    setPluginSlotRegistrations(
-      "measured-banner",
-      makePluginRegistrationSet({
-        composerCustomizations: [
-          {
-            id: "measured",
-            banners: [
-              {
-                id: "banner",
-                component: () => <div>Expandable plugin banner</div>,
-              },
-            ],
-          },
-        ],
-        pendingInteractions: [],
-        sidebarFooterActions: [],
-        fileOpeners: [],
-      }),
-    );
-    const draft = { text: "Follow up", mentions: [], attachments: [] };
+  it("keeps a constant editor min height whether or not cards sit above it", () => {
     const props = createFollowUpPromptBoxProps({ kind: "ready" });
-    render(
+    const { rerender } = render(<FollowUpPromptBox {...props} stack={<></>} />);
+    expect(screen.getByTestId("prompt-box").dataset.minHeight).toBe("52");
+
+    rerender(
       <FollowUpPromptBox
         {...props}
-        stack={<></>}
-        pluginComposerHost={{
-          scope: { kind: "thread", threadId: "thr_test" },
-          textEffectKey: "thread:thr_test",
-          getCurrent: () => draft,
-          subscribeDraft: () => () => {},
-          setDraft: vi.fn(),
-          focus: vi.fn(),
-        }}
-        pluginComposerScope={{ kind: "thread", threadId: "thr_test" }}
+        stack={
+          <>
+            <div>Changes card</div>
+            <div>Terminal card</div>
+          </>
+        }
       />,
     );
-    expect(screen.getByText("Expandable plugin banner")).toBeTruthy();
-    const promptBox = screen.getByTestId("prompt-box");
-    const initialMinHeight = Number(promptBox.getAttribute("data-min-height"));
-    const stackElement = screen
-      .getByText("Expandable plugin banner")
-      .closest("[data-bb-plugin-root]")?.parentElement;
-    if (!stackElement) throw new Error("Expected measured composer stack");
-    Object.defineProperty(stackElement, "offsetHeight", {
-      configurable: true,
-      value: 24,
-    });
-
-    act(() => {
-      resizeObserverCallback?.(
-        [
-          {
-            target: stackElement,
-            borderBoxSize: [{ blockSize: 24 }],
-            contentRect: { height: 999 },
-          } as unknown as ResizeObserverEntry,
-        ],
-        {} as ResizeObserver,
-      );
-      resizeObserverCallback?.([], {} as ResizeObserver);
-    });
-
-    expect(initialMinHeight).toBe(76);
-    expect(promptBox.getAttribute("data-min-height")).toBe("52");
+    expect(screen.getByTestId("prompt-box").dataset.minHeight).toBe("52");
   });
 
   it("renders plugin banners above native stack content", () => {

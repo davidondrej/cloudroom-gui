@@ -28,7 +28,7 @@ describe("ThreadGoalCard", () => {
       />,
     );
 
-    const clear = screen.getByRole("button", { name: "Clear active Goal" });
+    const clear = screen.getByRole("button", { name: "Clear Goal" });
     const controls = screen.getByRole("group", { name: "Goal controls" });
     expect(clear.parentElement).toBe(controls);
     fireEvent.click(clear);
@@ -48,9 +48,25 @@ describe("ThreadGoalCard", () => {
 
     expect(
       screen
-        .getByRole("button", { name: "Clear active Goal" })
+        .getByRole("button", { name: "Clear Goal" })
         .hasAttribute("disabled"),
     ).toBe(true);
     expect(screen.getByText("Goal")).not.toBeNull();
+  });
+
+  it("keeps a blocked Goal visible so the user can resume it", () => {
+    const onSetGoalStatus = vi.fn();
+    render(
+      <ThreadGoalCard
+        goal={{ ...goal, status: "blocked" }}
+        isExpanded={false}
+        onSetGoalStatus={onSetGoalStatus}
+        onToggle={() => {}}
+      />,
+    );
+
+    expect(screen.getByText("Goal · blocked")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Resume Goal" }));
+    expect(onSetGoalStatus).toHaveBeenCalledWith("active");
   });
 });

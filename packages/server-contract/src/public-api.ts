@@ -222,6 +222,7 @@ import type {
   ThreadListResponse,
   ThreadConversationOutlineResponse,
   ThreadOpenRequest,
+  ThreadGoalSetRequest,
   ThreadOpenResponse,
   ThreadPaneActionRequest,
   ThreadPaneActionResponse,
@@ -352,6 +353,7 @@ import {
   threadCountQuerySchema,
   threadListQuerySchema,
   threadOpenRequestSchema,
+  threadGoalSetRequestSchema,
   threadPaneActionRequestSchema,
   threadSearchQuerySchema,
   threadStorageContentQuerySchema,
@@ -1354,6 +1356,12 @@ export const publicApiRoutes = {
       path: "/threads/:id/goal/clear",
       method: "post",
       request: noRequest<PathId>(),
+      response: jsonResponse<{ ok: true }>(),
+    }),
+    setGoal: defineRoute({
+      path: "/threads/:id/goal",
+      method: "post",
+      request: jsonRequest<PathId, ThreadGoalSetRequest>(threadGoalSetRequestSchema),
       response: jsonResponse<{ ok: true }>(),
     }),
     open: defineRoute({

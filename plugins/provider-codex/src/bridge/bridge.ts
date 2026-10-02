@@ -25,6 +25,7 @@ import {
   threadDiscardParamsSchema,
   threadForkParamsSchema,
   threadGoalClearParamsSchema,
+  threadGoalSetParamsSchema,
   threadNameSetParamsSchema,
   threadResumeParamsSchema,
   threadStartParamsSchema,
@@ -46,6 +47,7 @@ import {
   type ProviderPostInitializeRequest,
   type ProviderRuntimeEvent,
   experimental_defineProviderBridge,
+  experimental_findBrokenCliLink as findBrokenCliLink,
   type ProviderRecoveryHint,
 } from "@get-bb/plugin-sdk/provider-bridge";
 import { z } from "zod";
@@ -85,6 +87,7 @@ import {
   type CodexAppServerRequestResponder,
 } from "./app-server-connection.js";
 import {
+  codexExecutable,
   getCodexProviderHealth,
   getCodexProviderInstallationRun,
   getCodexProviderInstallationStatus,
@@ -152,6 +155,10 @@ const codexBridgeCommandSchema = z.discriminatedUnion("method", [
   z.object({
     method: z.literal("thread/goal/clear"),
     params: threadGoalClearParamsSchema,
+  }),
+  z.object({
+    method: z.literal("thread/goal/set"),
+    params: threadGoalSetParamsSchema,
   }),
   z.object({
     method: z.literal("skills/configure"),
@@ -329,10 +336,19 @@ async function delay(ms: number): Promise<void> {
     setTimeout(resolve, ms);
   });
 }
-const MISSING_CODEX_CLI_GUIDANCE =
-  "Cloudroom could not find the Codex CLI on this machine. Install Codex (https://developers.openai.com/codex/cli) or put `codex` on PATH, then retry.";
+function missingCodexCliGuidance(): string {
+  const brokenLink = findBrokenCliLink("codex");
+  const cause =
+    brokenLink === null
+      ? ""
+      : ` \`${brokenLink}\` points to a file that no longer exists.`;
+  return `Cloudroom could not find the Codex CLI on this machine.${cause} Install Codex (https://developers.openai.com/codex/cli) or put \`codex\` on PATH, then retry.`;
+}
 
-export function resolveAppServerLaunch(env: NodeJS.ProcessEnv = process.env): {
+export function resolveAppServerLaunch(
+  env: NodeJS.ProcessEnv = process.env,
+  codexCommand = "codex",
+): {
   command: string;
   args: string[];
 } {
@@ -345,9 +361,10 @@ export function resolveAppServerLaunch(env: NodeJS.ProcessEnv = process.env): {
     : ["app-server"];
   const poolBaseUrl = env[CODEX_POOL_BASE_URL_ENV];
   const poolToken = env[CODEX_POOL_AUTH_TOKEN_ENV];
-  if (!poolBaseUrl || !poolToken) return { command: command ?? "codex", args };
+  if (!poolBaseUrl || !poolToken)
+    return { command: command ?? codexCommand, args };
   return {
-    command: command ?? "codex",
+    command: command ?? codexCommand,
     args: [
       ...args,
       "-c",
@@ -398,7 +415,7 @@ function buildAppServerEnv(
 
 function describeCodexLaunchError(error: unknown): string {
   if (error instanceof CodexAppServerExitedError && error.spawnFailed) {
-    return MISSING_CODEX_CLI_GUIDANCE;
+    return missingCodexCliGuidance();
   }
   return error instanceof Error ? error.message : String(error);
 }
@@ -841,7 +858,8 @@ function spawnChildConnection(callbacks: {
   onExit: (info: CodexAppServerExitInfo) => void;
 }): CodexAppServerConnection {
   const env = buildAppServerEnv(callbacks.envVars);
-  const launch = resolveAppServerLaunch(appServerLaunchEnv(callbacks.envVars));
+  const launchEnv = appServerLaunchEnv(callbacks.envVars);
+  const launch = resolveAppServerLaunch(launchEnv, codexExecutable(launchEnv));
   const { envVars: _envVars, ...connectionCallbacks } = callbacks;
   return createCodexAppServerConnection({
     command: launch.command,
@@ -1281,6 +1299,7 @@ function handleInitialize(id: string | number): void {
       threadArchive: true,
       threadRename: true,
       threadGoalClear: true,
+      threadGoalSet: true,
       fork: "checkpoint",
       approvalEnforcedBy: "runtime",
       grammarVersions: [THREAD_DELTA_GRAMMAR_V3, THREAD_DELTA_GRAMMAR_V3],
@@ -1582,6 +1601,7 @@ async function handleThreadStop(
   }
 
   try {
+    await pauseActiveGoal(session.connection, session.codexThreadId);
     await session.connection.request({
       method: "turn/interrupt",
       params: {
@@ -1621,6 +1641,74 @@ async function handleThreadStop(
   );
   await releaseSession(session);
   sendResult(id, { ok: true });
+}
+
+const goalClearResultSchema = z.object({ cleared: z.boolean() }).passthrough();
+const goalGetResultSchema = z
+  .object({ goal: z.object({ status: z.string() }).passthrough().nullable() })
+  .passthrough();
+
+/** User goal changes carry `origin: "user"` so Codex treats them as the user's instruction. */
+async function handleThreadGoal(
+  request: Extract<
+    CodexBridgeCommand,
+    { method: "thread/goal/clear" | "thread/goal/set" }
+  > & { id: string | number },
+): Promise<void> {
+  const { threadId, providerThreadId } = request.params;
+  try {
+    const result = await withChildForThread(threadId, (connection) =>
+      request.method === "thread/goal/clear"
+        ? connection.request({
+            method: "thread/goal/clear",
+            params: { threadId: providerThreadId, origin: "user" },
+            resultSchema: goalClearResultSchema,
+            timeoutMs: CHILD_REQUEST_TIMEOUT_MS,
+          })
+        : connection
+            .request({
+              method: "thread/goal/set",
+              params: {
+                threadId: providerThreadId,
+                origin: "user",
+                ...(request.params.status ? { status: request.params.status } : {}),
+                ...(request.params.objective
+                  ? { objective: request.params.objective }
+                  : {}),
+              },
+              resultSchema: ignoredChildResultSchema,
+              timeoutMs: CHILD_REQUEST_TIMEOUT_MS,
+            })
+            .then(() => ({})),
+    );
+    sendResult(request.id, "cleared" in result ? { cleared: result.cleared } : {});
+  } catch (error) {
+    rejectWithCodexError(request.id, error);
+  }
+}
+
+/** Codex's own UI pauses an active Goal before Stop; otherwise the Goal starts its next turn at once. */
+async function pauseActiveGoal(
+  connection: CodexAppServerConnection,
+  codexThreadId: string,
+): Promise<void> {
+  try {
+    const { goal } = await connection.request({
+      method: "thread/goal/get",
+      params: { threadId: codexThreadId },
+      resultSchema: goalGetResultSchema,
+      timeoutMs: CHILD_REQUEST_TIMEOUT_MS,
+    });
+    if (goal?.status !== "active") return;
+    await connection.request({
+      method: "thread/goal/set",
+      params: { threadId: codexThreadId, status: "paused", origin: "user" },
+      resultSchema: ignoredChildResultSchema,
+      timeoutMs: CHILD_REQUEST_TIMEOUT_MS,
+    });
+  } catch (error) {
+    process.stderr.write(`could not pause the Goal before Stop: ${String(error)}\n`);
+  }
 }
 
 function waitForCodexTurnSettlement(
@@ -1875,10 +1963,8 @@ async function handleRequest(
       );
       break;
     case "thread/goal/clear":
-      await handleThreadMaintenance(request.id, request.params, {
-        method: "thread/goal/clear",
-        params: { threadId: request.params.providerThreadId },
-      });
+    case "thread/goal/set":
+      await handleThreadGoal(request);
       break;
     case "skills/configure":
       await handleSkillsConfigure(request.id, request.params);

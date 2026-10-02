@@ -5,7 +5,7 @@ export type Json =
   | string
   | Json[]
   | { [key: string]: Json };
-export type Harness = "codex" | "pi" | "cursor" | "claude-code" | "fx";
+export type Harness = "codex" | "pi" | "cursor" | "claude-code" | "fx" | "opencode";
 export type CodexAuthStatus = {
   state: "missing" | "waiting" | "connected" | "limited" | "unavailable" | "error" | "expired";
   email: string | null; plan: string | null; message: string | null;
@@ -563,8 +563,8 @@ export class CloudroomClient {
     }
   }
 
-  start(id: string, harness: Harness = "codex", options: { model?: string; reasoning?: string; workspace?: string; workspace_name?: string; provider?: string; command_guard_enabled?: boolean; system_prompt?: string } = {}) {
-    if (harness !== "codex" && harness !== "pi" && harness !== "cursor" && harness !== "claude-code" && harness !== "fx")
+  start(id: string, harness: Harness = "codex", options: { model?: string; reasoning?: string; workspace?: string; workspace_name?: string; provider?: string; command_guard_enabled?: boolean; system_prompt?: string; parent_session?: string; prompt?: string; title?: string } = {}) {
+    if (harness !== "codex" && harness !== "pi" && harness !== "cursor" && harness !== "claude-code" && harness !== "fx" && harness !== "opencode")
       throw new CloudroomError("Unsupported Cloudroom harness");
     return this.#command("/v1/sessions", "start", { request_id: id, harness, ...options });
   }
@@ -648,6 +648,11 @@ export class CloudroomClient {
 
   compact(sessionId: string, id: string) {
     return this.#command(`${sessionPath(sessionId)}/compact`, "compact", { request_id: id }, sessionId);
+  }
+
+  /** The user's goal control: pause or resume (`status`), replace the `objective`, or `clear`. */
+  goal(sessionId: string, id: string, goal: { status?: "active" | "paused"; objective?: string; clear?: boolean }) {
+    return this.#command(`${sessionPath(sessionId)}/goal`, "goal", { request_id: id, ...goal }, sessionId);
   }
 
   rewind(sessionId: string, id: string, before?: string, lastTurnId?: string, replacement?: { request_id: string; text: string; content?: Json; attachments?: Json; reasoning?: string; service_tier?: string }) {
@@ -761,7 +766,7 @@ export class CloudroomClient {
     );
     if (
       value.session_id !== sessionId ||
-      (value.harness !== "codex" && value.harness !== "pi" && value.harness !== "cursor" && value.harness !== "claude-code" && value.harness !== "fx")
+      (value.harness !== "codex" && value.harness !== "pi" && value.harness !== "cursor" && value.harness !== "claude-code" && value.harness !== "fx" && value.harness !== "opencode")
     ) {
       throw new CloudroomError(
         "Cloudroom session mismatch or unsupported harness",

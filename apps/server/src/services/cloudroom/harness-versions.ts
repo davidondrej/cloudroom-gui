@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { findCliExecutable } from "@bb/process-utils";
 import type { AppDeps } from "../../types.js";
 import { claudeBinary } from "./claude-token.js";
 import type { CloudroomClient } from "./client.js";
@@ -16,10 +17,10 @@ function versionOf(binary: string | undefined): Promise<string | undefined> {
 }
 
 let cached: { at: number; versions: Promise<HarnessVersions> } | undefined;
-/** Read at most once a minute. Codex is the one on PATH, as Local threads run it. */
+/** Read at most once a minute, from the same binaries Local threads run. */
 export function macHarnessVersions(): Promise<HarnessVersions> {
   if (!cached || Date.now() - cached.at > 60_000) {
-    const versions = Promise.all([versionOf("codex"), versionOf(claudeBinary())])
+    const versions = Promise.all([versionOf(findCliExecutable("codex") ?? undefined), versionOf(claudeBinary())])
       .then(([codex, claude]) => ({ ...(codex ? { codex } : {}), ...(claude ? { claude } : {}) }));
     cached = { at: Date.now(), versions };
   }

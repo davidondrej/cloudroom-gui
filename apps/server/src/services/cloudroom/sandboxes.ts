@@ -5,6 +5,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { gzipSync } from "node:zlib";
+import { findCliExecutable } from "@bb/process-utils";
 import matter from "gray-matter";
 import { z } from "zod";
 import { CloudroomConnectionError, CloudroomError } from "./client.js";
@@ -24,7 +25,7 @@ export type SandboxAccount = { website: string; userId: string; token: string };
 export type SandboxConnection = { url: string; token: string };
 export type SandboxTrigger = "app_launch" | "app_activity" | "composer" | "thread_typing";
 /** Logins the website keeps for every sandbox of an account (ADR 0145). */
-export type SandboxLogin = "claude" | "codex" | "pi" | "github" | "cursor";
+export type SandboxLogin = "claude" | "codex" | "pi" | "github" | "cursor" | "opencode";
 /** GitHub projects also name their repository and cloud folder, so the website can build a template. */
 export type SandboxProject = { id: string; repository: string | null; folder: string };
 // A sleeping sandbox is only looked up again after this long; sending work wakes it at once.
@@ -42,7 +43,7 @@ let macCodexLoginRun: MacCodexLogin | null = null;
 /** Runs `codex login` on this Mac. Codex opens the default browser and saves the login itself; one run at a time, 10 minutes at most. */
 export function startMacCodexLogin(): MacCodexLogin {
   if (macCodexLoginRun && !macCodexLoginRun.done) return macCodexLoginRun;
-  const child = spawn("codex", ["login"], { stdio: ["ignore", "pipe", "pipe"], timeout: 10 * 60_000 });
+  const child = spawn(findCliExecutable("codex") ?? "codex", ["login"], { stdio: ["ignore", "pipe", "pipe"], timeout: 10 * 60_000 });
   const run: MacCodexLogin = { child, url: null, error: null, done: false };
   let output = "";
   const read = (chunk: Buffer) => { output += chunk.toString(); run.url ??= output.match(/https:\/\/auth\.openai\.com\/\S+/)?.[0] ?? null; };
@@ -190,6 +191,10 @@ export class SandboxDirectory {
     return this.limit?.on ?? false;
   }
 
+  async active(): Promise<void> {
+    await this.call({}, "active");
+  }
+
   async requestMoreUsage() {
     return z.object({ sent: z.boolean() }).parse(await this.call({}, "usage-request"));
   }
@@ -321,21 +326,22 @@ export class SandboxDirectory {
   /** Which logins the website holds for this account's sandboxes. */
   async logins(): Promise<Record<SandboxLogin, boolean>> {
     // Missing names mean an older website that cannot hold that login yet.
-    return z.object({ claude: z.boolean(), codex: z.boolean(), pi: z.boolean(), github: z.boolean(), cursor: z.boolean().default(false) }).parse(await this.call({ action: "status" }, "logins"));
+    return z.object({ claude: z.boolean(), codex: z.boolean(), pi: z.boolean(), github: z.boolean(), cursor: z.boolean().default(false), opencode: z.boolean().default(false) }).parse(await this.call({ action: "status" }, "logins"));
   }
 
   private copiedAt = 0;
   get loginsCopied(): boolean { return this.copiedAt > 0; }
-  /** Copies this Mac's Codex, Pi, Cursor, and GitHub logins when the user allowed it (ADRs 0128, 0130).
+  /** Copies this Mac's Codex, Pi, opencode, Cursor, and GitHub logins when the user allowed it (ADRs 0128, 0130).
    *  At most once a minute, unless the user just clicked Connect. */
   async copyMacLogins(force = false): Promise<void> {
     if (!force && Date.now() - this.copiedAt < RECHECK_MS) return;
     this.copiedAt = Date.now();
     const piHome = process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi/agent");
-    const files = [["codex", codexAuthPath()], ["pi", join(piHome, "auth.json")]] as const;
+    const opencodeData = process.env.XDG_DATA_HOME || join(homedir(), ".local/share");
+    const files = [["codex", codexAuthPath()], ["pi", join(piHome, "auth.json")], ["opencode", join(opencodeData, "opencode/auth.json")]] as const;
     // One failed login never stops the others; all failures are reported together.
     const failed: string[] = [];
-    const save = (name: "codex" | "pi" | "cursor" | "github", value: string) => this.saveLogin(name, value).catch((error: unknown) => { failed.push(`${name}: ${error instanceof Error ? error.message : String(error)}`); });
+    const save = (name: "codex" | "pi" | "opencode" | "cursor" | "github", value: string) => this.saveLogin(name, value).catch((error: unknown) => { failed.push(`${name}: ${error instanceof Error ? error.message : String(error)}`); });
     for (const [name, path] of files) {
       const value = await readFile(path, "utf8").catch(() => null);
       if (!value) continue;

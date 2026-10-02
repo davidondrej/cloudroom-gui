@@ -62,7 +62,8 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const quickCreateProject = useQuickCreateProjectController();
   const threadListReplacement = useThreadListReplacement();
-  const { threadId: activeThreadId } = useRouteState();
+  const { projectId: activeProjectId, threadId: activeThreadId } =
+    useRouteState();
   const navigate = useNavigate();
   const newThreadSplit = usePaneContentSplitDrag({
     content: NEW_THREAD_PANE_CONTENT,
@@ -124,20 +125,8 @@ export function AppSidebar({
     return true;
   }, []);
 
-  const activateAdjacentThread = useCallback(
-    (offset: -1 | 1): boolean => {
-      const targets = getSidebarThreadNavigationTargets(sidebarRef.current);
-      if (targets.length === 0) return false;
-      const activeIndex = targets.findIndex(
-        (target) => target.threadId === activeThreadId,
-      );
-      const nextIndex =
-        activeIndex === -1
-          ? offset === 1
-            ? 0
-            : targets.length - 1
-          : (activeIndex + offset + targets.length) % targets.length;
-      const target = targets[nextIndex];
+  const openNavigationTarget = useCallback(
+    (target: SidebarThreadShortcutTarget | undefined): boolean => {
       if (!target) return false;
       if (target.element) {
         target.element.click();
@@ -153,8 +142,37 @@ export function AppSidebar({
       );
       return true;
     },
-    [activeThreadId, closeOnMobile, navigate],
+    [closeOnMobile, navigate],
   );
+
+  const activateAdjacentThread = useCallback(
+    (offset: -1 | 1): boolean => {
+      const targets = getSidebarThreadNavigationTargets(sidebarRef.current);
+      if (targets.length === 0) return false;
+      const activeIndex = targets.findIndex(
+        (target) => target.threadId === activeThreadId,
+      );
+      const nextIndex =
+        activeIndex === -1
+          ? offset === 1
+            ? 0
+            : targets.length - 1
+          : (activeIndex + offset + targets.length) % targets.length;
+      return openNavigationTarget(targets[nextIndex]);
+    },
+    [activeThreadId, openNavigationTarget],
+  );
+
+  const activateOldestProjectThread = useCallback((): boolean => {
+    const targets = getSidebarThreadNavigationTargets(sidebarRef.current);
+    const projectId =
+      activeProjectId ??
+      targets.find((target) => target.threadId === activeThreadId)?.projectId;
+    if (!projectId) return false;
+    return openNavigationTarget(
+      targets.filter((target) => target.projectId === projectId).at(-1),
+    );
+  }, [activeProjectId, activeThreadId, openNavigationTarget]);
 
   const isHiddenHostedBody = mobileHosted?.hidden === true;
   const isCompactCustomizeModeActive =
@@ -178,6 +196,9 @@ export function AppSidebar({
   );
   useAppCommandHandler("thread.next", () =>
     isHiddenHostedBody ? false : activateAdjacentThread(1),
+  );
+  useAppCommandHandler("thread.oldestInProject", () =>
+    isHiddenHostedBody ? false : activateOldestProjectThread(),
   );
 
   useEffect(() => {

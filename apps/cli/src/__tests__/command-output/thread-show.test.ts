@@ -451,6 +451,7 @@ describe("room-cli thread show command output", () => {
       JSON.parse(String(vi.mocked(console.log).mock.calls[0]?.[0])),
     ).toEqual({
       thread,
+      execution: null,
       environment: {
         ...environment,
         pullRequest: {
@@ -487,6 +488,7 @@ describe("room-cli thread show command output", () => {
       JSON.parse(String(vi.mocked(console.log).mock.calls[0]?.[0])),
     ).toEqual({
       thread,
+      execution: null,
       environment: null,
       pendingTodos: null,
     });

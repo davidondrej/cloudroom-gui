@@ -21,6 +21,7 @@ const claudeCodeLogoUrl = new URL(
 ).href;
 
 type ScenarioName =
+  | "local"
   | "healthy"
   | "emptyPool"
   | "loading"
@@ -92,6 +93,35 @@ function machine(
   };
 }
 
+function local(
+  providerId: string,
+  fiveHour: number,
+  weekly: number,
+): UsageProvider {
+  return {
+    ...provider(providerId, providerId, {
+      status: "ok",
+      accountEmail: "david@example.com",
+      planLabel: "Max",
+      windows: [
+        {
+          label: "Five-hour limit",
+          usedPercent: fiveHour,
+          resetsAt: futureIso(1),
+          cost: null,
+        },
+        {
+          label: "Weekly limit",
+          usedPercent: weekly,
+          resetsAt: futureIso(40),
+          cost: null,
+        },
+      ],
+    }),
+    accountLabel: null,
+  };
+}
+
 const healthyPool = machine("source:account-pool", "Account Pooler", [
   provider("alex-codex", "codex", measured("alex@example.com", 28, "Pro")),
   provider("sam-codex", "codex", measured("sam@example.com", 86, "Team")),
@@ -106,6 +136,14 @@ const healthyMachine = machine("host-m4", "Michael-M4", [
 ]);
 
 const scenarios: Record<Exclude<ScenarioName, "loading">, UsageSnapshot> = {
+  local: {
+    machines: [
+      machine("host-mbp", "macbook pro", [
+        local("claude-code", 21, 74),
+        local("codex", 12, 86),
+      ]),
+    ],
+  },
   healthy: { machines: [healthyMachine, healthyPool] },
   emptyPool: {
     machines: [
@@ -186,7 +224,8 @@ function FooterPreview({ scenario }: { scenario: ScenarioName }) {
 }
 
 const descriptions: Record<ScenarioName, string> = {
-  healthy: "Multiple pooled accounts with provider grouping and quota badges.",
+  local: "Every local provider at once, with 5h and 7d limits.",
+  healthy: "Multiple pooled accounts grouped by provider.",
   emptyPool: "Account Pooler is enabled and selectable but has no accounts.",
   loading: "The initial usage request has not completed.",
   offline: "The selected persistent machine is currently disconnected.",
@@ -197,6 +236,7 @@ const descriptions: Record<ScenarioName, string> = {
 };
 
 const storyRows: readonly { label: string; scenario: ScenarioName }[] = [
+  { label: "local machine", scenario: "local" },
   { label: "healthy", scenario: "healthy" },
   { label: "empty account pool", scenario: "emptyPool" },
   { label: "loading", scenario: "loading" },

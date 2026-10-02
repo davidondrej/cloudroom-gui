@@ -109,6 +109,7 @@ import {
   useCreateThreadQueuedMessage,
   useCancelThreadPlan,
   useClearThreadGoal,
+  useSetThreadGoalStatus,
   useStopThread,
 } from "@/hooks/mutations/thread-runtime-mutations";
 import {
@@ -377,7 +378,7 @@ async function runWhileFollowUpShortcutSending(
 }
 
 import { showCloudSignIn, useCloudLocked } from "@/hooks/useCloudLocked";
-import { useCloudroomThread, useCloudroomThreadWorkspace, useCloudroomConnection, useRetryCloudStart, useTeleportThread, useTeleportLocal, cloudroomRequestId, clearCloudroomRequestId, cloudReasoningLevels, cloudServiceTierSupported, cloudFeatureSupported } from "@/hooks/queries/cloudroom-queries";
+import { useCloudroomThread, useSetCloudReasoning, useCloudroomThreadWorkspace, useCloudroomConnection, useRetryCloudStart, useTeleportThread, useTeleportLocal, cloudroomRequestId, clearCloudroomRequestId, cloudReasoningLevels, cloudServiceTierSupported, cloudFeatureSupported } from "@/hooks/queries/cloudroom-queries";
 import { reasoningLevelSchema } from "@bb/domain";
 import { reasoningLevelLabel } from "@/lib/reasoning-labels";
 import { fetchWithAppSurface } from "@/lib/app-surface";
@@ -474,7 +475,8 @@ export function ThreadDetailPromptArea({
       : display;
   }, [cloudWorkspace.data, cloudWorkspace.isError]);
   const cloudConnection = useCloudroomConnection();
-  const cloudReasoning = cloudState.data?.reasoning ?? "medium";
+  const setCloudReasoning = useSetCloudReasoning(thread.id);
+  const cloudReasoning = (setCloudReasoning.isPending ? setCloudReasoning.variables : undefined) ?? cloudState.data?.reasoning ?? "medium";
   const { mutate: updateExecution } = useUpdateThread({
     threadId: thread.id,
     errorMessage: "Failed to save thread execution settings.",
@@ -553,6 +555,7 @@ export function ThreadDetailPromptArea({
   const stopThread = useStopThread();
   const cancelThreadPlan = useCancelThreadPlan();
   const clearThreadGoal = useClearThreadGoal();
+  const setThreadGoalStatus = useSetThreadGoalStatus();
   const unarchiveThread = useUnarchiveThread();
   const createThread = useCreateThread();
   const projectName = useProjectDisplayName(
@@ -744,7 +747,7 @@ export function ThreadDetailPromptArea({
     initialEnvironmentSelectionValue: thread.environmentId ?? undefined,
   });
   const cloudFollowUpReasoningOptions = useMemo(() => {
-    const levels = thread.providerId === "acp-cursor" || thread.providerId === "acp-fx" ? [cloudReasoning] : cloudReasoningLevels(cloudConnection.data, thread.providerId, cloudState.data?.model);
+    const levels = thread.providerId === "acp-cursor" || thread.providerId === "acp-fx" || thread.providerId === "acp-opencode" ? [cloudReasoning] : cloudReasoningLevels(cloudConnection.data, thread.providerId, cloudState.data?.model);
     const options = levels.flatMap((level) => {
       const parsed = reasoningLevelSchema.safeParse(level);
       return parsed.success ? [{ value: parsed.data, label: reasoningLevelLabel(parsed.data, undefined) }] : [];
@@ -790,10 +793,14 @@ export function ThreadDetailPromptArea({
         setReasoningLevel(level);
         return;
       }
+      if (isCloud) {
+        setCloudReasoning.mutate(level);
+        return;
+      }
       updateExecution({
         id: thread.id,
         reasoningLevel: level,
-        ...(!isCloud && effectiveSelectedModel !== defaultExecutionOptions?.model
+        ...(effectiveSelectedModel !== defaultExecutionOptions?.model
           ? { model: effectiveSelectedModel }
           : {}),
       });
@@ -801,6 +808,7 @@ export function ThreadDetailPromptArea({
     [
       isHandoffSelection,
       setReasoningLevel,
+      setCloudReasoning.mutate,
       updateExecution,
       thread.id,
       isCloud,
@@ -1022,6 +1030,12 @@ export function ThreadDetailPromptArea({
   const handleClearGoal = useCallback(() => {
     clearThreadGoal.mutate(thread.id);
   }, [clearThreadGoal, thread.id]);
+  const handleSetGoalStatus = useCallback(
+    (status: "active" | "paused") => {
+      setThreadGoalStatus.mutate({ threadId: thread.id, status });
+    },
+    [setThreadGoalStatus, thread.id],
+  );
   const submitMode = useMemo<FollowUpSubmitMode>(() => {
     if (isHandoffSelection && !isStopRequested) {
       if (effectiveSelectedModel.length > 0) {
@@ -1917,12 +1931,21 @@ export function ThreadDetailPromptArea({
       <ThreadGoalCard
         goal={goal}
         isClearPending={clearThreadGoal.isPending}
+        isStatusPending={setThreadGoalStatus.isPending}
         isExpanded={isGoalExpanded}
         onClearGoal={handleClearGoal}
+        onSetGoalStatus={handleSetGoalStatus}
         onToggle={() => setIsGoalExpanded((value) => !value)}
       />
     ),
-    [clearThreadGoal.isPending, goal, handleClearGoal, isGoalExpanded],
+    [
+      clearThreadGoal.isPending,
+      goal,
+      handleClearGoal,
+      handleSetGoalStatus,
+      isGoalExpanded,
+      setThreadGoalStatus.isPending,
+    ],
   );
   const inlineEditSessionId = inlineEditingQueuedMessage?.editSessionId ?? null;
   const inlineEditQueuedMessageId =

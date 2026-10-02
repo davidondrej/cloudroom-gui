@@ -7,8 +7,10 @@ description: "Diagnose Cloudroom-specific Codex session controls, model acceptan
 
 Codex supports structured plan requests, editing and rerunning eligible messages,
 and compaction through the corresponding core `room-cli thread` commands.
-`room-cli thread clear-goal <id>` clears its durable active Goal and waits for provider
-confirmation. Inspect the thread before recovery actions.
+Goals work the same on Local and Cloud. `room-cli thread pause-goal`, `resume-goal`,
+`set-goal <objective>`, and `clear-goal` act as the user. Only the user can resume a
+paused or blocked Goal; Stop pauses an active Goal, as in Codex's own UI. Inspect the
+thread before recovery actions.
 
 Unlisted model IDs are accepted by this provider; acceptance does not establish
 account access. Inspect models on the actual execution host with

@@ -3,6 +3,7 @@ import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { getThread } from "@bb/db";
 import { z } from "zod";
+import { threadGoalSetRequestSchema } from "@bb/server-contract";
 import { cloudroom, isCloudThread } from "./commands.js";
 import { cloudroomAccount } from "./account.js";
 import { setMacAccess } from "./previews.js";
@@ -261,13 +262,23 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     const path = context.req.path.slice(`/api/v1/threads/${thread.id}`.length);
     if (context.req.method === "PATCH" && path === "") {
       const body = await context.req.json<unknown>();
-      if (body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).every((key) => key === "title" || key === "reasoningLevel")) return next();
+      if (body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).every((key) => ["title", "reasoningLevel", "model"].includes(key))) {
+        const model = (body as { model?: unknown }).model;
+        if (model === undefined || model === binding(deps.db, thread.id)?.model) return next();
+        return context.json({ message: "Model is fixed for this cloud thread. Start a new thread to change it.", code: "cloudroom_launch_settings" }, 409);
+      }
     }
     if (["/tabs", "/read", "/unread", "/pin", "/unpin", "/pin-order"].includes(path)) return next();
     if (context.req.method === "POST" && ["/archive-all", "/unarchive"].includes(path)) return next();
     if (context.req.method === "POST" && ["/send", "/queued-messages", "/stop", "/compact", "/edit-message"].includes(path)) return next();
     if (context.req.method === "PATCH" && /^\/queued-messages\/[^/]+$/.test(path)) return next();
     if (context.req.method === "DELETE" && /^\/queued-messages\/[^/]+$/.test(path)) return next();
+    if (context.req.method === "POST" && /^\/interactions\/[^/]+\/(respond|cancel)$/.test(path)) return next();
+    if (context.req.method === "POST" && (path === "/goal" || path === "/goal/clear")) {
+      const goal = path === "/goal" ? threadGoalSetRequestSchema.parse(await context.req.json()) : { clear: true };
+      await cloudroom(deps).goal(thread, goal);
+      return context.json({ ok: true });
+    }
     if (context.req.method === "POST" && /^\/queued-messages\/[^/]+\/send$/.test(path)) {
       return context.json(await cloudroom(deps).sendQueued(thread, path.split("/")[2]!));
     }

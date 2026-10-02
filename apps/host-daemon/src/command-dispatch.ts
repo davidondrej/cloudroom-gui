@@ -471,6 +471,16 @@ const commandHandlers: CommandHandlerMap = {
     await options.eventSink.flush();
     return result;
   },
+  "thread.goal.set": async (command, options) => {
+    const entry = await ensureThreadRuntime(command, options);
+    await entry.runtime.setThreadGoal({
+      threadId: command.threadId,
+      ...(command.status ? { status: command.status } : {}),
+      ...(command.objective ? { objective: command.objective } : {}),
+    });
+    await options.eventSink.flush();
+    return {};
+  },
   "thread.plan.cancel": async (command, options) => {
     const owners = options.runtimeManager.listThreadOwnerEntries(
       command.threadId,

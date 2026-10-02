@@ -23,6 +23,7 @@ export const BRIDGE_REQUEST_METHODS = {
   threadArchive: "thread/archive",
   threadUnarchive: "thread/unarchive",
   threadGoalClear: "thread/goal/clear",
+  threadGoalSet: "thread/goal/set",
   turnStart: "turn/start",
   turnSteer: "turn/steer",
   skillsConfigure: "skills/configure",
@@ -83,6 +84,11 @@ export const threadDiscardParamsSchema = threadRefParams;
 export const threadArchiveParamsSchema = threadRefParams;
 export const threadUnarchiveParamsSchema = threadRefParams;
 export const threadGoalClearParamsSchema = threadRefParams;
+/** Pauses, resumes, or replaces the provider's durable goal. At least one field is set. */
+export const threadGoalSetParamsSchema = threadRefParams.extend({
+  status: z.enum(["active", "paused"]).optional(),
+  objective: z.string().min(1).optional(),
+});
 
 export const threadNameSetParamsSchema = z
   .object({

@@ -70,18 +70,6 @@ export type UsageProvider = z.infer<typeof usageProviderSchema>;
 export type UsageMachine = z.infer<typeof usageMachineSchema>;
 export type UsageSnapshot = z.infer<typeof usageSnapshotSchema>;
 
-export function providerUsageTone(
-  provider: UsageProvider,
-): "warning" | "critical" | null {
-  if (provider.usage?.status !== "ok") return null;
-  const usedPercent = Math.max(
-    0,
-    ...provider.usage.windows.map((window) => window.usedPercent),
-  );
-  if (usedPercent >= 95) return "critical";
-  return usedPercent >= 80 ? "warning" : null;
-}
-
 export function selectUsageMachine(
   machines: UsageMachine[],
   requestedId: string | null,

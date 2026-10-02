@@ -102,6 +102,8 @@ export interface CloudroomArea {
   cancel(): Promise<void>;
   logout(): Promise<void>;
   threadWorkspace(threadId: string, signal?: AbortSignal): Promise<CloudroomThreadWorkspace | null>;
+  /** A Cloud thread's model and current effort, or null when it has no cloud session. */
+  threadStatus(threadId: string, signal?: AbortSignal): Promise<{ model: string; reasoning: string } | null>;
   retryStart(threadId: string): Promise<void>;
   /** `choice` runs the cloud thread on another model when the cloud cannot offer the local one. */
   teleport(threadId: string, action?: "start" | "cancel", choice?: { model: string; reasoning: string }): Promise<TeleportProgress>;
@@ -164,6 +166,7 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     setCloudSkills: (names, cloud) => transport.readJson(request("/skills", { names, cloud })) as Promise<{ skills: CloudSkill[] }>,
     runOnVm: (input) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/vm/run`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })) as Promise<{ code: number | null; stdout: string; stderr: string; truncated: boolean }>,
     logout: () => transport.readVoid(request("/logout", {})),
+    threadStatus: (threadId, signal) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}`, { signal })) as Promise<{ model: string; reasoning: string } | null>,
     threadWorkspace: (threadId, signal) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/workspace`, { signal })) as Promise<CloudroomThreadWorkspace | null>,
     teleport: (threadId, action = "start", choice) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/teleport`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ...choice }) })) as Promise<TeleportProgress>,
     teleportStatus: (threadId, signal) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/teleport`, { signal })) as Promise<TeleportProgress | null>,

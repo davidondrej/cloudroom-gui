@@ -455,9 +455,8 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
 
   post(routes.clearGoal, async (context) => {
     const thread = requirePublicThread(deps.db, context.req.param("id"));
-    const activity = getThreadPromptBannerActivity(deps, thread);
-    if (activity.activeGoalCount === 0) {
-      throw new ApiError(409, "invalid_request", "No active Goal to clear");
+    if (!getThreadPromptBannerActivity(deps, thread).hasGoal) {
+      throw new ApiError(409, "invalid_request", "No Goal to clear");
     }
     const environment = await requireThreadCommandEnvironment(deps, {
       thread,
@@ -504,6 +503,41 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
         "The provider did not confirm that the active Goal was cleared",
       );
     }
+    return context.json({ ok: true });
+  });
+
+  post(routes.setGoal, async (context, payload) => {
+    const thread = requirePublicThread(deps.db, context.req.param("id"));
+    const environment = await requireThreadCommandEnvironment(deps, {
+      thread,
+    });
+    requireConnectedHostSession(deps, environment.hostId);
+    const execution = await buildExecutionOptions(
+      deps,
+      {},
+      { threadId: thread.id },
+    );
+    const preparedRuntimeCommand = await prepareTurnSubmitCommandPayload(deps, {
+      environment,
+      execution,
+      input: [],
+      permissionEscalation: "deny",
+      target: { mode: "auto", expectedTurnId: null },
+      thread,
+    });
+    await runLiveHostCommand(deps, {
+      command: {
+        type: "thread.goal.set",
+        environmentId: environment.id,
+        threadId: thread.id,
+        ...payload,
+        options: preparedRuntimeCommand.options,
+        resumeContext: preparedRuntimeCommand.resumeContext,
+        bridgeLaunch: preparedRuntimeCommand.bridgeLaunch,
+      },
+      hostId: environment.hostId,
+      timeoutMs: LIVE_DAEMON_COMMAND_TIMEOUT_MS,
+    });
     return context.json({ ok: true });
   });
 

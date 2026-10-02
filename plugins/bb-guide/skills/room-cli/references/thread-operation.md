@@ -2,7 +2,7 @@
 
 ## Cloud limits
 
-`room-cli thread tell` automatically queues Cloud messages. Local messages steer by default. Cloud supports follow-ups, inspection, stop, title changes, pinning, and archive/restore. Stop pauses the queue; `room-cli thread queue send THREAD FIRST_MESSAGE_ID` resumes in order. Inspect `room-cli cloud status --json`: steering, attachments, compaction, message editing (`rewind`), and queue editing/cancellation depend on the connected core and harness. Forks/children, scheduling, and session-model changes remain unavailable. Confirm actual outputs, not just advertised capabilities.
+`room-cli thread tell` automatically queues Cloud messages. Local messages steer by default. Cloud supports follow-ups, inspection, stop, title changes, pinning, and archive/restore. Stop pauses the queue; `room-cli thread queue send THREAD FIRST_MESSAGE_ID` resumes in order. Inspect `room-cli cloud status --json`: steering, attachments, compaction, message editing (`rewind`), and queue editing/cancellation depend on the connected core and harness. Forks, scheduling, and session-model changes remain unavailable. Confirm actual outputs, not just advertised capabilities.
 
 ## Coordinating Work
 

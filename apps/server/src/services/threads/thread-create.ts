@@ -514,15 +514,16 @@ export async function createThreadFromRequest(
   );
   const sourceId = rawRequestInput.sourceThreadId ?? rawRequestInput.parentThreadId;
   const source = sourceId ? getThread(deps.db, sourceId) : null;
-  if (source && isCloudThread(source)) {
-    throw new ApiError(409, "cloudroom_unsupported", "Cloud child/fork launches are not enabled; native fallback is blocked.");
+  const cloudChild = source !== null && isCloudThread(source) && !rawRequestInput.sourceThreadId && !rawRequestInput.originKind;
+  if (source && isCloudThread(source) && !cloudChild) {
+    throw new ApiError(409, "cloudroom_unsupported", "Cloud forks are not enabled; native fallback is blocked.");
   }
-  if (rawRequestInput.executionTarget === "cloud") {
+  if (rawRequestInput.executionTarget === "cloud" || cloudChild) {
     const thread = await cloudroom(deps).create({ ...rawRequestInput, origin: rawRequestInput.origin ?? "sdk", originKind: rawRequestInput.originKind ?? null });
     // Cloud threads count in the same anonymous usage events as local ones, tagged with where they run.
     const execution = cloudExecution(deps, thread.id);
-    deps.telemetry.capture({ name: "thread_created", properties: { execution, is_child_thread: false, provider: thread.providerId } });
-    if (rawRequestInput.input.length > 0) captureUserMessageSentTelemetry(deps, { execution, isChildThread: false, messageSource: "thread_create", providerId: thread.providerId, threadId: thread.id });
+    deps.telemetry.capture({ name: "thread_created", properties: { execution, is_child_thread: cloudChild, provider: thread.providerId } });
+    if (rawRequestInput.input.length > 0) captureUserMessageSentTelemetry(deps, { execution, isChildThread: cloudChild, messageSource: "thread_create", providerId: thread.providerId, threadId: thread.id });
     return thread;
   }
   if (rawRequestInput.origin === "plugin") {

@@ -1,3 +1,4 @@
+export * from "./cli-locations.js";
 export * from "./event-loop-delay.js";
 export * from "./plugin-process-paths.js";
 import type { ChildProcess, StdioOptions } from "node:child_process";

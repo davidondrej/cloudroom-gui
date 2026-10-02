@@ -3,7 +3,7 @@ import { commandGuardBlockReason } from "@get-bb/plugin-sdk/internal/command-gua
 import { cloudroomCommands, cloudroomThreads, deleteThreadEventSuffixInTransaction, events, threadConversationOutlines, threadSearchSegments, getThread, type DbConnection, type DbQueryConnection, type DbTransaction, type AppendStoredThreadEventArgs } from "@bb/db";
 import { and, desc, eq } from "drizzle-orm";
 import { appendThreadEventsInTransaction, appendThreadProvisioningEventInTransaction } from "../threads/thread-events.js";
-import { reasoningLevelSchema, threadEventSchema, threadScope, turnScope, encodeClientTurnRequestIdNumber, type ProvisioningTranscriptEntry, type SystemThreadProvisioningStatus, type ThreadEvent } from "@bb/domain";
+import { LEGACY_CODEX_GOAL_EXTENSION_KIND, reasoningLevelSchema, threadEventSchema, threadScope, turnScope, encodeClientTurnRequestIdNumber, type ProvisioningTranscriptEntry, type SystemThreadProvisioningStatus, type ThreadEvent } from "@bb/domain";
 import { z } from "zod";
 import { CloudroomError, type SessionRecord } from "./client.js";
 import { codexErrorFields } from "./codex-errors.js";
@@ -12,11 +12,11 @@ import { binding, command, queuedPrompts, saveBinding, saveCommandState, saveSta
 const object = z.record(z.string(), z.unknown());
 const nativeFrame = z.object({ method: z.string(), params: object.optional() });
 // GUI provider ID → cloud core harness ID.
-export const CLOUD_HARNESSES = { codex: "codex", pi: "pi", "claude-code": "claude-code", "acp-cursor": "cursor", "acp-fx": "fx" } as const;
+export const CLOUD_HARNESSES = { codex: "codex", pi: "pi", "claude-code": "claude-code", "acp-cursor": "cursor", "acp-fx": "fx", "acp-opencode": "opencode" } as const;
 export type CloudProvider = keyof typeof CLOUD_HARNESSES;
 export const isCloudProvider = (id: string | undefined): id is CloudProvider => id !== undefined && Object.hasOwn(CLOUD_HARNESSES, id);
-export const HARNESS_NAMES: Record<CloudProvider, string> = { codex: "Codex", pi: "Pi", "claude-code": "Claude Code", "acp-cursor": "Cursor", "acp-fx": "fx" };
-const isAcpProvider = (id: string | undefined): id is "acp-cursor" | "acp-fx" => id === "acp-cursor" || id === "acp-fx";
+export const HARNESS_NAMES: Record<CloudProvider, string> = { codex: "Codex", pi: "Pi", "claude-code": "Claude Code", "acp-cursor": "Cursor", "acp-fx": "fx", "acp-opencode": "opencode" };
+const isAcpProvider = (id: string | undefined): id is "acp-cursor" | "acp-fx" | "acp-opencode" => id === "acp-cursor" || id === "acp-fx" || id === "acp-opencode";
 const bbRequestId = (id: string) => encodeClientTurnRequestIdNumber({ value: createHash("sha256").update(id).digest().readUIntBE(0, 6) });
 
 function messageReasoning(input: string, fallback: string): string {
@@ -140,6 +140,10 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
       emit({ type: "system/operation", scope: threadScope(), threadId, operation: record.kind,
         operationId: `cloud-storage:${record.sequence}`, status: "completed", message: z.string().parse(data.text) });
     }
+    if (record.kind === "prompt_warning" && saved.nativeId) {
+      emit({ type: "provider/warning", scope: threadScope(), threadId, providerThreadId: saved.nativeId, category: "general",
+        summary: z.string().parse(data.message), ...(typeof data.detail === "string" ? { details: data.detail } : {}) });
+    }
     if (record.kind === "teleport") {
       const imported = z.array(z.object({ request_id: z.string(), input: object, state: z.string() })).parse(data.prompts);
       for (const [index, prompt] of imported.entries()) {
@@ -157,7 +161,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
       saveCommandState(tx, threadId, receipt.request_id, receipt.state);
       if (receipt.command === "start" && receipt.state === "accepted" && object.parse(data.input).workspace) saveStatus(tx, threadId, "pending");
       const turnStarted = () => Boolean(tx.select({ id: events.id }).from(events).where(and(eq(events.threadId, threadId), eq(events.turnId, receipt.request_id), eq(events.type, "turn/started"))).get());
-      if ((harness === "pi" || isAcpProvider(harness) || harness === "claude-code") && previous && receipt.command === "prompt" && ["completed", "failed", "interrupted", "unknown", "unknown_after_restart"].includes(receipt.state) && saved.nativeId && turnStarted()) {
+      if ((harness === "pi" || isAcpProvider(harness) || harness === "claude-code") && (receipt.command === "auto" || (previous && receipt.command === "prompt")) && ["completed", "failed", "interrupted", "unknown", "unknown_after_restart"].includes(receipt.state) && saved.nativeId && turnStarted()) {
         emit({ threadId, providerThreadId: saved.nativeId, scope: turnScope(receipt.request_id), type: "turn/completed", status: receipt.state === "completed" ? "completed" : receipt.state === "interrupted" ? "interrupted" : "failed" });
       }
       const lastError = () => tx.select({ data: events.data }).from(events).where(and(eq(events.threadId, threadId), eq(events.type, "system/error"))).orderBy(desc(events.sequence)).limit(1).get();
@@ -254,7 +258,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
         if ((harness === "pi" || isAcpProvider(harness) || harness === "claude-code") && saved.nativeId) {
           const base = { threadId, providerThreadId: saved.nativeId, scope: turnScope(data.request_id) };
           emit({ ...base, type: "turn/started" });
-          emit({ ...base, type: "turn/input/accepted", clientRequestId: bbRequestId(data.request_id) });
+          if (request) emit({ ...base, type: "turn/input/accepted", clientRequestId: bbRequestId(data.request_id) });
         }
       }
       const status =
@@ -410,6 +414,13 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
             emit({ ...base, type: method, itemId: itemId(params.itemId), delta: z.string().parse(params.delta) });
           } else if (method === "thread/compacted") {
             emit({ ...base, type: "thread/compacted" });
+          } else if (method === "thread/goal/updated" || method === "thread/goal/cleared") {
+            // The same goal card as Local threads (ADR 0137).
+            const goal = method === "thread/goal/updated" ? object.parse(params.goal) : null;
+            emit({
+              threadId, providerThreadId: saved.nativeId, scope: threadScope(), type: "thread/extensionState/updated", kind: LEGACY_CODEX_GOAL_EXTENSION_KIND,
+              payload: goal && { objective: goal.objective, status: goal.status, tokenBudget: goal.tokenBudget ?? null, tokensUsed: goal.tokensUsed, timeUsedSeconds: goal.timeUsedSeconds },
+            });
           } else if (method === "hook/completed") {
             const reason = commandGuardBlockReason(params);
             if (reason) emit({ ...base, type: "provider/warning", category: "general", summary: reason });

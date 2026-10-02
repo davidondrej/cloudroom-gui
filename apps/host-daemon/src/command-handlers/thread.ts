@@ -22,7 +22,8 @@ import { requireResolvedWorkspaceForCommand } from "../workspace-resolution.js";
 type TurnSubmitCommand = CommandOf<"turn.submit">;
 type ExistingThreadRuntimeCommand =
   | TurnSubmitCommand
-  | CommandOf<"thread.goal.clear">;
+  | CommandOf<"thread.goal.clear">
+  | CommandOf<"thread.goal.set">;
 
 const TURN_SUBMIT_ACTIVE_TURN_WAIT_MS = 5_000;
 const TURN_SUBMIT_STEER_ATTEMPTS = 2;

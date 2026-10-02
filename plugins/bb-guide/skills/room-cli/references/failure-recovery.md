@@ -29,4 +29,6 @@ sendAt?, reason? })`.
   workspace, durable event history, and sticky execution settings.
 - Use `room-cli thread cancel-plan <id>` to exit an active Plan turn without
   optimistically clearing its banner. Use `room-cli thread clear-goal <id>` to clear
-  a thread's durable active Goal when supported by its provider. Both wait for provider confirmation.
+  a thread's durable Goal when supported by its provider. Both wait for provider confirmation.
+- An agent can pause or finish its Codex Goal, never resume it. When a Goal is paused or blocked
+  and the user wants it to continue, run `room-cli thread resume-goal <id>` (Local and Cloud).

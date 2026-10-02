@@ -9,6 +9,7 @@ const hostCommandWakePolicy = {
   "thread.teleport": "work",
   "thread.storage.delete": "never",
   "thread.goal.clear": "never",
+  "thread.goal.set": "never",
   "thread.plan.cancel": "never",
   "thread.rename": "never",
   "thread.archive": "never",

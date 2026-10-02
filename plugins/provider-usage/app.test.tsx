@@ -52,7 +52,7 @@ function threadOnMachine(
 }
 
 describe("provider usage footer disclosure", () => {
-  it("aggregates every machine and keeps machine and provider selection local to the card", async () => {
+  it("aggregates every machine and shows every provider at once", async () => {
     const pooledAccounts: UsageProvider[] = (
       [
         ["codex", "Codex", "team@example.com", 46],
@@ -258,34 +258,22 @@ describe("provider usage footer disclosure", () => {
       name: "Usage machine: M5",
     });
     expect(slot.getByRole("heading", { name: "Codex" })).toBeTruthy();
-    expect(slot.getByText("codex@example.com")).toBeTruthy();
     expect(slot.getByText("97%")).toBeTruthy();
 
     fireEvent.pointerDown(machinePicker, { button: 0 });
     fireEvent.click(slot.getByRole("menuitemradio", { name: "M4" }));
-    const claudeTab = slot.getByRole("tab", { name: "Claude Code" });
-    const codexTab = slot.getByRole("tab", { name: "Codex" });
+    expect(slot.queryByRole("tab")).toBeNull();
+    const claudeSection = slot.getByRole("region", { name: "Claude Code" });
+    const codexSection = slot.getByRole("region", { name: "Codex" });
     expect(
-      slot
-        .getByRole("button", { name: "Usage machine: M4" })
-        .closest('[data-provider-usage-header=""]'),
-    ).toBe(claudeTab.closest('[data-provider-usage-header=""]'));
-    expect(
-      claudeTab.querySelector("[data-provider-logo*='claude-code']"),
+      claudeSection.querySelector("[data-provider-logo*='claude-code']"),
     ).not.toBeNull();
     expect(
-      codexTab.querySelector("[data-provider-logo*='/codex/']"),
+      codexSection.querySelector("[data-provider-logo*='/codex/']"),
     ).not.toBeNull();
-    expect(slot.getByRole("heading", { name: "Claude Code" })).toBeTruthy();
-    expect(slot.getByText("claude@example.com")).toBeTruthy();
     expect(slot.getByText("82%")).toBeTruthy();
-
-    fireEvent.click(codexTab);
-    expect(slot.getByRole("heading", { name: "Codex" })).toBeTruthy();
-    expect(slot.getByText("codex@example.com")).toBeTruthy();
     expect(slot.getByText("37%")).toBeTruthy();
-    fireEvent.keyDown(codexTab, { key: "ArrowLeft" });
-    expect(claudeTab.getAttribute("aria-selected")).toBe("true");
+    expect(slot.queryByText("claude@example.com")).toBeNull();
 
     fireEvent.pointerDown(
       slot.getByRole("button", { name: "Usage machine: M4" }),
@@ -348,30 +336,27 @@ describe("provider usage footer disclosure", () => {
     fireEvent.click(
       slot.getByRole("menuitemradio", { name: "Account Pooler" }),
     );
-    expect(slot.getAllByRole("tab")).toHaveLength(2);
-    const poolCodexTab = slot.getByRole("tab", { name: "Codex" });
-    expect(
-      poolCodexTab.querySelector("[data-provider-logo*='/codex/']"),
-    ).not.toBeNull();
-    expect(
-      poolCodexTab.querySelector('[data-provider-usage-tone="warning"]'),
-    ).not.toBeNull();
+    expect(slot.getAllByRole("region")).toHaveLength(2);
     expect(slot.getAllByText("team@example.com")).toHaveLength(1);
     expect(slot.getAllByText("personal@example.com")).toHaveLength(1);
     expect(slot.getByText("46%")).toBeTruthy();
     expect(slot.getByText("2d 3h")).toBeTruthy();
     expect(
       slot.getAllByRole("heading").map((heading) => heading.textContent),
-    ).toEqual(["team@example.com", "personal@example.com"]);
+    ).toEqual([
+      "Codex",
+      "team@example.com",
+      "personal@example.com",
+      "Claude Code",
+      "claude-team@example.com",
+    ]);
     const windowButton = slot.getByRole("button", {
       name: "Weekly limit: 46% used. Reset time not reported",
     });
     fireEvent.click(windowButton);
     expect(slot.getByText("Reset time not reported.")).toBeTruthy();
     expect(slot.getByText("82%")).toBeTruthy();
-    fireEvent.click(slot.getByRole("tab", { name: "Claude Code" }));
-    expect(slot.getByText("claude-team@example.com")).toBeTruthy();
-    expect(slot.queryByText("personal@example.com")).toBeNull();
+    expect(slot.getByText("97%")).toBeTruthy();
     const diagnostics = vi
       .spyOn(console, "warn")
       .mockImplementation(() => undefined);

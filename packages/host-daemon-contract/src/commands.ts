@@ -386,6 +386,17 @@ const threadGoalClearCommandSchema = hostDaemonThreadTargetSchema
   })
   .strict();
 
+const threadGoalSetCommandSchema = hostDaemonThreadTargetSchema
+  .extend({
+    type: z.literal("thread.goal.set"),
+    status: z.enum(["active", "paused"]).optional(),
+    objective: z.string().trim().min(1).optional(),
+    options: runtimeThreadExecutionOptionsSchema,
+    bridgeLaunch: hostDaemonBridgeLaunchSchema,
+    resumeContext: turnResumeContextSchema,
+  })
+  .strict();
+
 const threadPlanCancelCommandSchema = hostDaemonThreadTargetSchema
   .extend({
     type: z.literal("thread.plan.cancel"),
@@ -1484,6 +1495,15 @@ export const hostDaemonCommandRegistry = {
     type: "thread.goal.clear",
     schema: threadGoalClearCommandSchema,
     resultSchema: z.object({ cleared: z.boolean() }).strict(),
+    transport: "settled",
+    retryable: false,
+    flushEventsBeforeResult: true,
+    envLane: "read",
+  }),
+  "thread.goal.set": defineHostDaemonCommandDescriptor({
+    type: "thread.goal.set",
+    schema: threadGoalSetCommandSchema,
+    resultSchema: z.object({}).strict(),
     transport: "settled",
     retryable: false,
     flushEventsBeforeResult: true,

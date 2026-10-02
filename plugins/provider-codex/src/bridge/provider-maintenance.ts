@@ -8,6 +8,7 @@ import {
   experimental_clampPercent as clampPercent,
   experimental_commandOutput as commandOutput,
   experimental_compareVersions as compareVersions,
+  experimental_findCliExecutable as findCliExecutable,
   experimental_formatCommand as formatCommand,
   experimental_installationVerification as installationVerification,
   experimental_npmGlobalInstallCommand as npmGlobalInstallCommand,
@@ -69,14 +70,18 @@ function minimumSupportedVersionForRequirement(
     : CODEX_MINIMUM_SUPPORTED_VERSION;
 }
 
-function codexUpdateCommand(): {
+export function codexExecutable(env: NodeJS.ProcessEnv = process.env): string {
+  return findCliExecutable("codex", env) ?? "codex";
+}
+
+function codexUpdateCommand(command = "codex"): {
   command: string;
   args: string[];
   displayCommand: string;
 } {
   const args = ["update"];
   return {
-    command: "codex",
+    command,
     args,
     displayCommand: formatCommand("codex", args),
   };
@@ -87,10 +92,11 @@ export async function getCodexProviderInstallationStatus(
 ): Promise<ProviderInstallationStatus> {
   const minimumSupportedVersion =
     minimumSupportedVersionForRequirement(requirement);
+  const command = codexExecutable();
   const [resolvedExecutable, versionOutput, latestVersion, npmGlobal] =
     await Promise.all([
-      resolveExecutablePath("codex"),
-      commandOutput("codex", ["--version"]),
+      resolveExecutablePath(command),
+      commandOutput(command, ["--version"]),
       npmLatestVersion(CODEX_NPM_PACKAGE),
       probeNpmGlobalPackage(CODEX_NPM_PACKAGE),
     ]);
@@ -164,7 +170,7 @@ function buildCodexProviderInstallationRun(
     command:
       action === "install"
         ? npmGlobalInstallCommand(CODEX_NPM_PACKAGE)
-        : codexUpdateCommand(),
+        : codexUpdateCommand(status.executablePath ?? "codex"),
     verification: installationVerification(status, action),
   };
 }
@@ -200,10 +206,11 @@ function healthResult(
 }
 
 export async function getCodexProviderHealth(): Promise<ProviderHealthResult> {
-  if ((await resolveExecutablePath("codex")) === null) {
+  const command = codexExecutable();
+  if ((await resolveExecutablePath(command)) === null) {
     return healthResult("not_installed");
   }
-  const version = await readCliVersion("codex");
+  const version = await readCliVersion(command);
   if (
     version !== null &&
     compareVersions(version, CODEX_MINIMUM_SUPPORTED_VERSION) < 0
@@ -316,7 +323,7 @@ function normalizeUsage(raw: unknown, email: string | null): ProviderUsage {
 }
 
 export async function getCodexProviderUsage(): Promise<ProviderUsageResult> {
-  if ((await resolveExecutablePath("codex")) === null) {
+  if ((await resolveExecutablePath(codexExecutable())) === null) {
     return { supported: true, usage: { status: "not_installed" } };
   }
   let credentials: CodexAuthCredentials | null;

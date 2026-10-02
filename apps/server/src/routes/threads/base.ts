@@ -391,10 +391,12 @@ export function registerThreadBaseRoutes(app: Hono, deps: AppDeps): void {
 
     if ("model" in payload || "reasoningLevel" in payload) {
       if (isCloudThread(thread)) {
-        await cloudroom(deps).updateReasoningOverride(
-          thread,
-          payload.reasoningLevel ?? null,
-        );
+        if ("reasoningLevel" in payload) {
+          await cloudroom(deps).updateReasoningOverride(
+            thread,
+            payload.reasoningLevel ?? null,
+          );
+        }
       } else {
         await applyThreadExecutionOverride(deps, {
           thread,

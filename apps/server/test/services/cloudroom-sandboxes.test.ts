@@ -4,7 +4,7 @@ import { expect, it, vi } from "vitest";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
 import { createTestAppHarness } from "../helpers/test-app.js";
 import { seedHostSession, seedProjectWithSource } from "../helpers/seed.js";
-import { cloudroomThreads } from "@bb/db";
+import { cloudroomThreads, getThread } from "@bb/db";
 
 const listen = async (server: ReturnType<typeof createServer>) => {
   server.listen(0, "127.0.0.1"); await once(server, "listening");
@@ -33,7 +33,7 @@ it("gives each cloud thread its own sandbox, wakes it only for work, and archive
     if (req.url === "/v1/health") return json({});
     if (req.url === "/v1/ready") return json({ ready: true });
     if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code", stop: true, resume: true, launch_settings: true, workspaces: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: "codex", model: "test-model" }] });
-    if (req.url?.includes("/stream?")) { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.end(); return; }
+    if (req.url?.includes("/stream?")) { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.end(`id: 1\nevent: record\ndata: ${JSON.stringify({ sequence: 1, session_id: "cr_one", kind: "state", data: { state: "running" } })}\n\n`); return; }
     const input = await body(req);
     if (req.url === "/v1/sessions") return json({ session_id: "cr_one", receipt: { request_id: input.request_id, command: "start", input, state: "accepted" }, saving: {} }, 202);
     if (req.url?.startsWith("/v1/sessions/cr_one/prompts")) return json({ session_id: "cr_one", receipt: { request_id: input.request_id, command: "prompt", input, state: "accepted" }, saving: {} }, 202);
@@ -71,13 +71,15 @@ it("gives each cloud thread its own sandbox, wakes it only for work, and archive
     expect(website.every(call => call.auth === `Basic ${Buffer.from(`${account.id}:${"a".repeat(64)}`).toString("base64")}`)).toBe(true);
     expect(core.find(call => call.path === "/v1/sessions")?.auth).toBe(`Bearer ${"t".repeat(64)}`);
 
-    // The sandbox falls asleep. Idle delivery ticks must not wake it.
+    // The sandbox falls asleep mid-turn. Idle delivery ticks must not wake it, and the thread stops showing as running.
+    await waitFor(() => getThread(harness.deps.db, thread.id)?.status === "active", "running turn");
     state = "asleep";
     service.sandboxes.forget(thread.id);
     const wakes = () => website.filter(call => call.action === "wake").length;
     const before = wakes();
     await new Promise(resolve => setTimeout(resolve, 3200));
     expect(wakes()).toBe(before);
+    expect(getThread(harness.deps.db, thread.id)?.status).toBe("idle");
 
     // New work wakes it, and the message reaches the sandbox's Core.
     const sent = await request(`/threads/${thread.id}/send`, { requestId: "follow-up", mode: "auto", input: [{ type: "text", text: "Follow-up", mentions: [] }] });

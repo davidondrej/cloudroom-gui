@@ -678,6 +678,7 @@ vi.mock("@/hooks/mutations/thread-runtime-mutations", () => ({
     isPending: false,
     mutate: mocks.clearThreadGoalMutate,
   }),
+  useSetThreadGoalStatus: () => ({ isPending: false, mutate: vi.fn() }),
   useCreateThread: () => ({
     isPending: false,
     mutateAsync: mocks.createThreadMutateAsync,

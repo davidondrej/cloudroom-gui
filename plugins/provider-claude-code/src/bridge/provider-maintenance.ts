@@ -14,6 +14,7 @@ import {
   experimental_commandOutput as commandOutput,
   experimental_compareVersions as compareVersions,
   experimental_downloadedInstallerCommand as downloadedInstallerCommand,
+  experimental_findCliExecutable as findCliExecutable,
   experimental_formatCommand as formatCommand,
   experimental_installationVerification as installationVerification,
   experimental_npmCommand as npmCommand,
@@ -55,7 +56,11 @@ const claudeAccountSchema = z.object({
 });
 
 export function claudeExecutable(): string {
-  return process.env.BB_CLAUDE_CODE_EXECUTABLE?.trim() || "claude";
+  return (
+    process.env.BB_CLAUDE_CODE_EXECUTABLE?.trim() ||
+    findCliExecutable("claude") ||
+    "claude"
+  );
 }
 
 function claudeDistTags(value: string | null): {

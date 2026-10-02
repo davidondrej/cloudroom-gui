@@ -151,7 +151,7 @@ export function registerActionsCommands(
     .option("--clear-section", "Remove the thread from its section")
     .option(
       "--model <model>",
-      "Set the sticky model applied on the thread's next turn",
+      "Set the sticky model applied on the thread's next turn (Local only; Cloud threads keep their starting model)",
     )
     .option(
       "--reasoning-level <level>",
@@ -558,6 +558,40 @@ export function registerActionsCommands(
         }),
       );
   }
+  // Only the user (or their CLI) may resume a Goal; the agent can only pause or finish it.
+  for (const [name, description, status, done] of [
+    ["pause-goal", "Pause the active Goal", "paused", "paused its Goal"],
+    ["resume-goal", "Resume a paused or blocked Goal", "active", "resumed its Goal"],
+  ] as const) {
+    parent
+      .command(`${name} [id]`)
+      .description(description)
+      .option("--self", "Target the current thread (from ROOM_THREAD_ID)")
+      .option("--json", "Print machine-readable JSON output")
+      .action(
+        action(async (id: string | undefined, opts: ThreadActionOptions) => {
+          const threadId = requireThreadIdOrSelf(id, opts);
+          await createCliBbSdk(getUrl()).threads.setGoal({ threadId, status });
+          if (outputJson(opts, { ok: true, threadId })) return;
+          console.log(`Thread ${threadId} ${done}`);
+        }),
+      );
+  }
+  parent
+    .command("set-goal <objective> [id]")
+    .description("Start a Goal, or replace the current Goal's objective")
+    .option("--self", "Target the current thread (from ROOM_THREAD_ID)")
+    .option("--json", "Print machine-readable JSON output")
+    .action(
+      action(
+        async (objective: string, id: string | undefined, opts: ThreadActionOptions) => {
+          const threadId = requireThreadIdOrSelf(id, opts);
+          await createCliBbSdk(getUrl()).threads.setGoal({ threadId, objective });
+          if (outputJson(opts, { ok: true, threadId })) return;
+          console.log(`Thread ${threadId} set its Goal`);
+        },
+      ),
+    );
 }
 
 async function postThreadMessage(

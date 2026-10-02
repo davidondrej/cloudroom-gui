@@ -517,7 +517,7 @@ describe("public thread banner actions", () => {
       expect(response.status).toBe(409);
       expect(await readJson(response)).toMatchObject({
         code: "invalid_request",
-        message: "No active Goal to clear",
+        message: "No Goal to clear",
       });
     });
   });

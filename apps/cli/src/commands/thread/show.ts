@@ -69,7 +69,10 @@ type ThreadShowEnvironmentJsonPayload = Environment & {
   pullRequest: ThreadShowPullRequestPayload;
 };
 
+type ThreadExecution = { model: string; reasoningLevel: string } | null;
+
 interface ThreadShowJsonPayload extends ThreadStatusPayload {
+  execution: ThreadExecution;
   environment: ThreadShowEnvironmentJsonPayload | null;
   pendingTodos: ThreadTimelinePendingTodos | null;
   workStatus?: WorkspaceStatus | null;
@@ -97,6 +100,19 @@ type CliEnvironmentDiffQuery =
   | { mergeBaseBranch?: string; target: "branch_committed" }
   | { mergeBaseBranch?: string; target: "all" }
   | { sha: string; target: "commit" };
+
+async function fetchExecution(sdk: BbSdk, thread: Thread): Promise<ThreadExecution> {
+  try {
+    if (thread.executionTarget === "cloud") {
+      const status = await sdk.cloudroom.threadStatus(thread.id);
+      return status && { model: status.model, reasoningLevel: status.reasoning };
+    }
+    const options = await sdk.threads.defaultExecutionOptions({ threadId: thread.id });
+    return options && { model: options.model, reasoningLevel: options.reasoningLevel };
+  } catch {
+    return null;
+  }
+}
 
 async function fetchWorkStatus(args: {
   environmentId: string;
@@ -315,11 +331,13 @@ export function registerShowCommand(
           sdk,
           threadId,
         });
+        const execution = await fetchExecution(sdk, thread);
 
         if (opts.json) {
           const environment = await getEnvironment();
           const jsonPayload: ThreadShowJsonPayload = {
             ...statusPayload,
+            execution,
             environment: threadShowEnvironmentJson(
               environment,
               fetchedPullRequest,
@@ -340,7 +358,7 @@ export function registerShowCommand(
           return;
         }
 
-        printThreadStatus(statusPayload, environmentInfo, fetchedPullRequest);
+        printThreadStatus(statusPayload, execution, environmentInfo, fetchedPullRequest);
 
         printPendingTodos(pendingTodos);
 
@@ -530,6 +548,7 @@ export function registerShowCommand(
 
 function printThreadStatus(
   payload: ThreadStatusPayload,
+  execution: ThreadExecution,
   environmentInfo: ThreadEnvironmentInfo | null,
   pullRequest: FetchedPullRequest | null,
 ): void {
@@ -540,6 +559,9 @@ function printThreadStatus(
     console.log(`  Title: ${thread.title}`);
   }
   console.log(`  Project: ${thread.projectId}`);
+  if (execution) {
+    console.log(`  Model: ${execution.model} (effort: ${execution.reasoningLevel})`);
+  }
   if (thread.parentThreadId) {
     console.log(`  Parent: ${thread.parentThreadId}`);
   }

@@ -114,6 +114,13 @@ export type AdapterCommand =
       providerThreadId: string;
     }
   | {
+      type: "thread/goal/set";
+      threadId: string;
+      providerThreadId: string;
+      status?: "active" | "paused";
+      objective?: string;
+    }
+  | {
       type: "thread/name/set";
       threadId: string;
       providerThreadId: string;

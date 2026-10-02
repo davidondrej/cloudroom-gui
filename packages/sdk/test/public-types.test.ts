@@ -402,6 +402,7 @@ type ExpectedThreadsKey =
   | "retry"
   | "search"
   | "send"
+  | "setGoal"
   | "spawn"
   | "stop"
   | "storageFiles"

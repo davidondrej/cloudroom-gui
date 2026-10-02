@@ -63,7 +63,7 @@ type TimelineStatusDecorationStatus = "denied" | "error" | "interrupted";
 
 export type TimelineTitleLink = { kind: "thread"; threadId: string };
 
-export type TimelineTitleSegmentAccent = "muted" | "subtle" | "file";
+export type TimelineTitleSegmentAccent = "muted" | "subtle" | "file" | "warning";
 
 export interface TimelineTitleSegment {
   text: string;
@@ -1601,6 +1601,9 @@ function mapSystemTitle(row: TimelineSystemViewRow): TimelineTitle {
     row.systemKind === "operation" && row.operationKind === "reasoning";
   const isCompaction =
     row.systemKind === "operation" && row.operationKind === "compaction";
+  const isWarning =
+    row.systemKind === "operation" &&
+    (row.operationKind === "warning" || row.operationKind === "deprecation");
   const titleText = isReasoning
     ? row.status === "pending"
       ? "Thinking…"
@@ -1617,7 +1620,13 @@ function mapSystemTitle(row: TimelineSystemViewRow): TimelineTitle {
       : [];
   const shimmer = row.status === "pending";
   return makeTitle({
-    segments: [segment(titleText, { shimmer, truncate: true })],
+    segments: [
+      segment(titleText, {
+        shimmer,
+        truncate: true,
+        ...(isWarning ? { accent: "warning" as const } : {}),
+      }),
+    ],
     decorations,
   });
 }

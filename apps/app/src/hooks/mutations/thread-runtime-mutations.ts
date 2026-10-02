@@ -561,3 +561,17 @@ export function useClearThreadGoal() {
     },
   });
 }
+
+export function useSetThreadGoalStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    meta: { errorMessage: "Failed to update the Goal." },
+    mutationFn: async (args: { threadId: string; status: "active" | "paused" }) => {
+      await sdk.threads.setGoal(args);
+    },
+    onSuccess: (_data, { threadId }) => {
+      invalidateThreadBannerQueries({ queryClient, threadId });
+    },
+  });
+}

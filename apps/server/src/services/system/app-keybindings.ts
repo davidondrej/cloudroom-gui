@@ -181,6 +181,15 @@ export const DEFAULT_APP_KEYBINDINGS: AppDefaultKeybindings = [
       desktopOnly: true,
     },
   ),
+  binding(
+    "thread.oldestInProject",
+    "l",
+    { mod: true },
+    {
+      all: ["mainSurface"],
+      none: ["modalOpen", "browserFocus"],
+    },
+  ),
   ...numberedChatBindings(THREAD_JUMP_APP_COMMAND_IDS, mainWithoutModal),
   unassignedBinding("pane.focus.previous", splitWithoutModal),
   unassignedBinding("pane.focus.next", splitWithoutModal),

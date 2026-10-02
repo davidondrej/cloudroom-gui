@@ -68,6 +68,11 @@ export const APP_COMMAND_GROUPS: readonly AppCommandGroup[] = [
         "Next thread",
         "Open the next visible sidebar thread.",
       ),
+      command(
+        "thread.oldestInProject",
+        "Last thread in project",
+        "Open the bottom visible sidebar thread in the active project.",
+      ),
       ...THREAD_JUMP_APP_COMMAND_IDS.map((id, index) =>
         paletteHiddenCommand(
           id,

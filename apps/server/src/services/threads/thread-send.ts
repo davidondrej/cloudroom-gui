@@ -376,7 +376,7 @@ type UserMessageSentProperties = Extract<
 >["properties"];
 
 export function captureUserMessageSentTelemetry(
-  deps: Pick<LoggedPendingInteractionWorkSessionDeps, "telemetry">,
+  deps: Pick<LoggedPendingInteractionWorkSessionDeps, "telemetry" | "db" | "hub" | "config" | "providerRegistry">,
   args: {
     execution?: UserMessageSentProperties["execution"];
     isChildThread: boolean;
@@ -386,6 +386,7 @@ export function captureUserMessageSentTelemetry(
     threadId: string;
   },
 ): void {
+  if (!args.isChildThread) cloudroom(deps).noteActiveDay();
   noteMessageSent(args.threadId, {
     execution: args.execution ?? "local",
     isChildThread: args.isChildThread,
@@ -466,6 +467,7 @@ function appendAndQueueSendThreadMessageInTransaction({
   };
 }
 
+import { cloudroom } from "../cloudroom/commands.js";
 import { teleportBlocked } from "../cloudroom/store.js";
 
 export async function sendThreadMessage(

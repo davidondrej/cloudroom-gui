@@ -721,6 +721,12 @@ def systemd(folder, label, stop):
     systemctl('enable', '--now', unit)
 
 
+# Runs the helper under the signed Cloudroom app, so macOS applies Cloudroom's Desktop/Documents/Downloads permission, not python3's.
+LAUNCHER = ("const e={...process.env};delete e.ELECTRON_RUN_AS_NODE;"
+            "const c=require('child_process').spawn(process.argv[1],process.argv.slice(2),{stdio:'inherit',env:e});"
+            "for(const s of['SIGTERM','SIGINT','SIGHUP'])process.on(s,()=>c.kill(s));c.on('exit',code=>process.exit(code??1))")
+
+
 def launch(folder, stop=False):
     if sys.platform.startswith('linux'):
         return systemd(folder, label(folder), stop)
@@ -746,14 +752,18 @@ def launch(folder, stop=False):
                         raise OSError('Previous preview helper is still shutting down')
                     time.sleep(.1)
         path.unlink(missing_ok=True); return
+    command = [sys.executable, '-B', '-E', '-s', str(folder / 'client.py'), 'run', str(folder)]
+    job = {'Label': name, 'ProgramArguments': command, 'RunAtLoad': True, 'KeepAlive': True, 'ThrottleInterval': 5, 'ProcessType': 'Background'}
+    launcher = private_json(folder / 'config.json').get('launcher')
+    if launcher:
+        job.update(ProgramArguments=[launcher, '-e', LAUNCHER, *command], EnvironmentVariables={'ELECTRON_RUN_AS_NODE': '1'})
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open('wb') as file:
-        plistlib.dump({'Label': name, 'ProgramArguments': [sys.executable, '-B', '-E', '-s', str(folder / 'client.py'), 'run', str(folder)],
-                      'RunAtLoad': True, 'KeepAlive': True, 'ThrottleInterval': 5, 'ProcessType': 'Background'}, file)
+        plistlib.dump(job, file)
     subprocess.run(['launchctl', 'bootstrap', domain, str(path)], check=True, capture_output=True)
 
 
-def configure(folder, connection_file, activate, allow_private, mac_access=None):
+def configure(folder, connection_file, activate, allow_private, mac_access=None, launcher=None):
     folder.mkdir(mode=0o700, parents=True, exist_ok=True); folder.chmod(0o700)
     connection = private_json(connection_file)
     # Sandbox-only accounts have no VM address; their cores come from the website while awake.
@@ -767,7 +777,7 @@ def configure(folder, connection_file, activate, allow_private, mac_access=None)
     mac_access = bool(mac_access if mac_access is not None else (old or {}).get('macAccess', False))
     if (activate and old and old.get('connectionFile') == str(connection_file)
             and old.get('allowPrivateSsh', False) == allow_private and old.get('macAccess', False) == mac_access
-            and target.is_file() and target.read_bytes() == source.read_bytes()):
+            and old.get('launcher') == launcher and target.is_file() and target.read_bytes() == source.read_bytes()):
         check = ['systemctl', '--user', 'is-active', '--quiet', label(folder) + '.service'] if sys.platform.startswith('linux') else ['launchctl', 'print', f'gui/{os.getuid()}/' + label(folder)]
         active = subprocess.run(check, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if active.returncode == 0:
@@ -778,7 +788,7 @@ def configure(folder, connection_file, activate, allow_private, mac_access=None)
         temporary = folder / 'client.pending'
         temporary.write_bytes(source.read_bytes()); temporary.chmod(0o600); temporary.replace(target)
     config = {'device': old['device'] if old else uuid.uuid4().hex, 'binding': binding, 'connectionFile': str(connection_file),
-              'allowPrivateSsh': allow_private, 'macAccess': mac_access}
+              'allowPrivateSsh': allow_private, 'macAccess': mac_access, 'launcher': launcher}
     save(folder / 'config.json', config)
     identity(folder)
     if activate:
@@ -794,13 +804,15 @@ def main():
     parser.add_argument('--no-start', action='store_true')
     parser.add_argument('--allow-private-ssh', action='store_true', default=None, help='Explicitly allow a self-hosted private/loopback SSH address')
     parser.add_argument('--mac-access', choices=['on', 'off'], help='Let cloud agents run commands on this Mac (ADR 0113)')
+    parser.add_argument('--launcher', type=Path, help='Signed Cloudroom executable that starts the macOS helper in Node mode')
     args = parser.parse_args()
     folder = args.directory.expanduser().resolve()
     if args.command == 'configure':
         if args.connection is None:
             raise ValueError('--connection is required')
         print(json.dumps(configure(folder, args.connection.expanduser().resolve(strict=True), not args.no_start, args.allow_private_ssh,
-                                   None if args.mac_access is None else args.mac_access == 'on')))
+                                   None if args.mac_access is None else args.mac_access == 'on',
+                                   str(args.launcher.resolve(strict=True)) if args.launcher else None)))
     elif args.command == 'run':
         run(folder)
     elif args.command in {'stop', 'pause'}:

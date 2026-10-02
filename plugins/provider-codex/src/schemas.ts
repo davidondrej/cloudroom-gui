@@ -35,6 +35,8 @@ const codexPlanStepStatusSchema = z.enum([
 const codexThreadGoalStatusSchema = z.enum([
   "active",
   "paused",
+  "blocked",
+  "usageLimited",
   "budgetLimited",
   "complete",
 ]);

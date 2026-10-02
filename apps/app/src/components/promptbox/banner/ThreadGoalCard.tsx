@@ -24,11 +24,22 @@ function formatTokenUsage(goal: ThreadTimelineGoal): string {
   return `${used} / ${goal.tokenBudget.toLocaleString()} tokens`;
 }
 
+/** Statuses the user can resume, as in Codex's own UI. */
+const RESUMABLE = new Set<ThreadTimelineGoal["status"]>(["paused", "blocked", "usageLimited"]);
+const STATUS_LABELS: Partial<Record<ThreadTimelineGoal["status"], string>> = {
+  paused: "paused",
+  blocked: "blocked",
+  usageLimited: "usage limit",
+  budgetLimited: "budget reached",
+};
+
 interface ThreadGoalCardProps {
   goal: ThreadTimelineGoal | null;
   isClearPending?: boolean;
+  isStatusPending?: boolean;
   isExpanded: boolean;
   onClearGoal?: () => void;
+  onSetGoalStatus?: (status: "active" | "paused") => void;
   onToggle: () => void;
 }
 
@@ -38,14 +49,18 @@ const TOGGLE_ID = "thread-goal-card-toggle";
 export function ThreadGoalCard({
   goal,
   isClearPending = false,
+  isStatusPending = false,
   isExpanded,
   onClearGoal,
+  onSetGoalStatus,
   onToggle,
 }: ThreadGoalCardProps) {
-  if (!goal || goal.status !== "active") {
+  if (!goal || goal.status === "complete") {
     return null;
   }
   const objective = goal.objective.trim();
+  const statusLabel = STATUS_LABELS[goal.status];
+  const next = goal.status === "active" ? "paused" : RESUMABLE.has(goal.status) ? "active" : null;
   return (
     <CollapsibleActiveStackCard
       cardAriaLabel="Goal"
@@ -54,13 +69,23 @@ export function ThreadGoalCard({
       bodyId={BODY_ID}
       toggleAriaLabel="Goal"
       iconName="Target"
-      title="Goal"
+      title={statusLabel ? `Goal · ${statusLabel}` : "Goal"}
       isExpanded={isExpanded}
       onToggle={onToggle}
+      action={
+        onSetGoalStatus && next
+          ? {
+              ariaLabel: next === "paused" ? "Pause Goal" : "Resume Goal",
+              iconName: next === "paused" ? "Pause" : "Play",
+              isPending: isStatusPending,
+              onClick: () => onSetGoalStatus(next),
+            }
+          : null
+      }
       dismiss={
         onClearGoal
           ? {
-              ariaLabel: "Clear active Goal",
+              ariaLabel: "Clear Goal",
               isPending: isClearPending,
               onDismiss: onClearGoal,
             }

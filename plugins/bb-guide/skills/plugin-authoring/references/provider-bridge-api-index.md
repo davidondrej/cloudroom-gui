@@ -85,6 +85,8 @@ Context breakdowns are optional snapshots on `contextWindow` deltas:
 - `experimental_defineProviderBridge`
 - `experimental_downloadedInstallerCommand`
 - `experimental_fileReadPresentation`
+- `experimental_findBrokenCliLink`
+- `experimental_findCliExecutable`
 - `experimental_formatCommand`
 - `experimental_installationVerification`
 - `experimental_isProviderBridgeRecording`

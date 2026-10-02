@@ -1,10 +1,10 @@
 import {
+  experimental_findCliExecutable as findCliExecutable,
   type InstructionMode,
   type ReasoningLevel,
   type RuntimePermissionScope,
 } from "@get-bb/plugin-sdk/provider-bridge";
-import { accessSync, constants, statSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { accessSync, constants } from "node:fs";
 import type { Options, Settings } from "@anthropic-ai/claude-agent-sdk";
 import type { ClaudePermissionMode } from "../interactive-contract.js";
 import type {
@@ -34,11 +34,6 @@ export interface PermissionEscalationWorkContext {
   agentId?: string;
   promptId?: string;
   toolUseId?: string;
-}
-
-interface ResolveExecutableOnPathArgs {
-  executableName: string;
-  pathEnv: string | undefined;
 }
 
 interface ResolveClaudeCodeExecutableArgs {
@@ -126,51 +121,6 @@ function buildWorkspaceWriteSandbox(
   };
 }
 
-function isExecutableFile(candidatePath: string): boolean {
-  try {
-    accessSync(candidatePath, constants.X_OK);
-    return statSync(candidatePath).isFile();
-  } catch {
-    return false;
-  }
-}
-
-function resolveExecutableOnPath(
-  args: ResolveExecutableOnPathArgs,
-): string | null {
-  if (!args.pathEnv) {
-    return null;
-  }
-
-  for (const searchDir of args.pathEnv.split(delimiter)) {
-    if (!searchDir) {
-      continue;
-    }
-    const candidate = join(searchDir, args.executableName);
-    if (isExecutableFile(candidate)) {
-      return candidate;
-    }
-  }
-
-  return null;
-}
-
-function wellKnownClaudeExecutablePaths(env: NodeJS.ProcessEnv): string[] {
-  if (process.getuid?.() === 0) {
-    return [];
-  }
-  const candidatePaths: string[] = [];
-  const home = env.HOME?.trim();
-  if (home) {
-    candidatePaths.push(
-      join(home, ".local", "bin", "claude"),
-      join(home, ".claude", "local", "claude"),
-    );
-  }
-  candidatePaths.push("/opt/homebrew/bin/claude", "/usr/local/bin/claude");
-  return candidatePaths;
-}
-
 export function resolveClaudeCodeExecutable(
   args: ResolveClaudeCodeExecutableArgs,
 ): string | null {
@@ -187,21 +137,7 @@ export function resolveClaudeCodeExecutable(
     }
   }
 
-  const executableOnPath = resolveExecutableOnPath({
-    executableName: "claude",
-    pathEnv: args.env.PATH,
-  });
-  if (executableOnPath) {
-    return executableOnPath;
-  }
-
-  for (const candidate of wellKnownClaudeExecutablePaths(args.env)) {
-    if (isExecutableFile(candidate)) {
-      return candidate;
-    }
-  }
-
-  return null;
+  return findCliExecutable("claude", args.env);
 }
 
 export function buildSessionOptions(

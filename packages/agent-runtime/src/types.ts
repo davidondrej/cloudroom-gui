@@ -261,6 +261,12 @@ interface ClearThreadGoalArgs {
   threadId: string;
 }
 
+export interface SetThreadGoalArgs {
+  threadId: string;
+  status?: "active" | "paused";
+  objective?: string;
+}
+
 interface ArchiveThreadArgs {
   bridgeLaunch: AgentRuntimeBridgeLaunch;
   providerId: string;
@@ -312,6 +318,8 @@ export interface AgentRuntime {
   stopThread(args: StopThreadArgs): Promise<StopThreadResult>;
 
   clearThreadGoal(args: ClearThreadGoalArgs): Promise<{ cleared: boolean }>;
+
+  setThreadGoal(args: SetThreadGoalArgs): Promise<void>;
 
   renameThread(args: RenameThreadArgs): Promise<void>;
 

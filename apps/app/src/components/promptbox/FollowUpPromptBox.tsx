@@ -5,7 +5,6 @@ import {
   memo,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -13,7 +12,6 @@ import {
   type FocusEvent as ReactFocusEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
-  type RefObject,
 } from "react";
 import type {
   PromptTextMention,
@@ -60,10 +58,7 @@ import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
 import { ThreadTimelineScrollToBottomButton } from "@/views/thread-detail/ThreadTimelineScrollToBottomButton";
 import { useOptionalPaneContext } from "@/views/thread-detail/PaneContext";
 import { ThreadContextWindowIndicator } from "@/components/thread/timeline";
-import {
-  PROMPT_STACK_CARD_ROW_HEIGHT,
-  PROMPT_STACK_TRACK_CLASS,
-} from "@/components/promptbox/banner/PromptStackCard";
+import { PROMPT_STACK_TRACK_CLASS } from "@/components/promptbox/banner/PromptStackCard";
 
 type PromptBoxWithScrollAnchorProps = ComponentProps<
   typeof PromptBoxInternal
@@ -113,9 +108,8 @@ function PromptBoxWithScrollAnchor({
   );
 }
 
-const FOLLOW_UP_PROMPT_BOX_DEFAULT_MIN_HEIGHT = 44;
-const FOLLOW_UP_PROMPT_BOX_ELASTIC_TARGET_HEIGHT =
-  FOLLOW_UP_PROMPT_BOX_DEFAULT_MIN_HEIGHT + PROMPT_STACK_CARD_ROW_HEIGHT;
+// Constant so cards above the composer never resize the text area.
+const FOLLOW_UP_PROMPT_BOX_MIN_HEIGHT = 52;
 const COMPOSER_CONTROL_SELECTOR = "button, [role='button'], [aria-haspopup]";
 const COMPOSER_OVERLAY_TRIGGER_SELECTOR = "[aria-haspopup]";
 const OPEN_COMPOSER_OVERLAY_TRIGGER_SELECTOR = `${COMPOSER_OVERLAY_TRIGGER_SELECTOR}[aria-expanded="true"]`;
@@ -651,44 +645,6 @@ function FollowUpPromptBoxWithComposer({
       permissionPickerDisabled,
     ],
   );
-  const stackRef = useRef<HTMLDivElement>(null);
-  const lastStackHeightRef = useRef(0);
-  const [stackHeight, setStackHeight] = useState(0);
-  const applyStackHeight = useCallback((measured: number) => {
-    if (lastStackHeightRef.current === measured) return;
-    lastStackHeightRef.current = measured;
-    setStackHeight(measured);
-  }, []);
-
-  useLayoutEffect(() => {
-    const element = stackRef.current;
-    if (element) {
-      applyStackHeight(element.offsetHeight);
-    }
-  }, [applyStackHeight]);
-
-  useEffect(() => {
-    const element = stackRef.current;
-    if (!element || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries.find((candidate) => candidate.target === element);
-      if (!entry) return;
-      const borderBoxSize = Array.isArray(entry.borderBoxSize)
-        ? entry.borderBoxSize[0]
-        : entry.borderBoxSize;
-      applyStackHeight(borderBoxSize?.blockSize ?? entry.contentRect.height);
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [applyStackHeight]);
-  const elasticTextareaMinHeight =
-    stack === null
-      ? FOLLOW_UP_PROMPT_BOX_DEFAULT_MIN_HEIGHT
-      : Math.max(
-          FOLLOW_UP_PROMPT_BOX_DEFAULT_MIN_HEIGHT,
-          FOLLOW_UP_PROMPT_BOX_ELASTIC_TARGET_HEIGHT - stackHeight,
-        );
-
   const composerElement = (
     <div
       ref={composerInteractionRef}
@@ -704,7 +660,7 @@ function FollowUpPromptBoxWithComposer({
         id={id}
         promptBoxRef={promptBoxRef}
         voice={voice}
-        minHeight={elasticTextareaMinHeight}
+        minHeight={FOLLOW_UP_PROMPT_BOX_MIN_HEIGHT}
         value={composer.message}
         mentionRanges={composer.mentionRanges}
         onChange={composer.onChangeMessage}
@@ -843,7 +799,6 @@ function FollowUpPromptBoxWithComposer({
             showScrollToBottomButton && !isWidePromptBoxCollapsed
           }
           stack={stack}
-          stackRef={stackRef}
         />
       }
     />
@@ -858,7 +813,6 @@ interface DefaultFollowUpComposerProps {
   pendingInteraction?: ReactNode;
   showScrollToBottomButton: boolean;
   stack: ReactNode | null;
-  stackRef: RefObject<HTMLDivElement | null>;
 }
 
 function DefaultFollowUpComposer({
@@ -869,7 +823,6 @@ function DefaultFollowUpComposer({
   pendingInteraction = null,
   showScrollToBottomButton,
   stack,
-  stackRef,
 }: DefaultFollowUpComposerProps) {
   return (
     <>
@@ -882,10 +835,7 @@ function DefaultFollowUpComposer({
         data-promptbox-shell=""
         className="space-y-2"
       >
-        <div
-          ref={stackRef}
-          className={`grid gap-2 ${PROMPT_STACK_TRACK_CLASS}`}
-        >
+        <div className={`grid gap-2 ${PROMPT_STACK_TRACK_CLASS}`}>
           {hasPluginComposerScope ? (
             <ComposerBannersSlot>{stack}</ComposerBannersSlot>
           ) : (

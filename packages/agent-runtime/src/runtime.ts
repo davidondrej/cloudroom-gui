@@ -2227,6 +2227,29 @@ export function createAgentRuntime(options: AgentRuntimeOptions): AgentRuntime {
       });
     },
 
+    async setThreadGoal({ threadId, status, objective }) {
+      return runThreadOperation({
+        threadId,
+        work: async () => {
+          const pid = threadIdentityRegistry.resolveProviderForThread(threadId);
+          const proc = requireProviderProcessForThread(threadId);
+          const adapterCommand: AdapterCommand = {
+            type: "thread/goal/set",
+            threadId,
+            providerThreadId: requireProviderThreadId(threadId),
+            ...(status ? { status } : {}),
+            ...(objective ? { objective } : {}),
+          };
+          const cmd = requireProviderRequestPlan({
+            commandType: adapterCommand.type,
+            plan: proc.adapter.buildCommandPlan(adapterCommand),
+            providerId: pid,
+          });
+          await sendCommand({ proc, message: cmd, resultSchema: z.unknown() });
+        },
+      });
+    },
+
     async renameThread({ threadId, title }) {
       return runThreadOperation({
         threadId,

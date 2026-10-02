@@ -86,7 +86,7 @@ describe("Codex provider maintenance", () => {
     ).toEqual({
       available: true,
       command: {
-        command: "codex",
+        command: "/usr/local/bin/codex",
         args: ["update"],
         displayCommand: "codex update",
       },

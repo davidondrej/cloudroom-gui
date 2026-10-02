@@ -409,6 +409,17 @@ export function createBridgeProtocolAdapter(
               providerThreadId: command.providerThreadId,
             },
           });
+        case "thread/goal/set":
+          return gate("threadGoalSet", {
+            kind: "request",
+            method: BRIDGE_REQUEST_METHODS.threadGoalSet,
+            params: {
+              threadId: command.threadId,
+              providerThreadId: command.providerThreadId,
+              ...(command.status ? { status: command.status } : {}),
+              ...(command.objective ? { objective: command.objective } : {}),
+            },
+          });
       }
     },
 

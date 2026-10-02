@@ -733,12 +733,12 @@ it("keeps each queued follow-up's reasoning and rejects locked or conflicting ch
     expect((await send(thread.id, { mode: "auto", model: "other-model", reasoningLevel: "max", input: text })).status).toBe(409);
     expect((await send(thread.id, { mode: "auto", reasoningLevel: "low", input: text })).status).toBe(400);
     expect((await send(thread.id, { requestId: "plain", mode: "auto", input: text })).status).toBe(200);
-    await expect.poll(() => prompts.at(-1)).toEqual({ request_id: "plain", text: "queued" });
+    await expect.poll(() => prompts.at(-1)).toEqual({ request_id: "plain", text: "queued", reasoning: "xhigh" });
     record("state", { state: "starting_turn", request_id: "same-launch" });
     record("state", { state: "starting_turn", request_id: "max-turn" });
     record("state", { state: "starting_turn", request_id: "xhigh-turn" });
     await expect.poll(() => harness.db.select().from(events).all().filter((event) => event.type === "client/turn/requested").map((event) => JSON.parse(event.data).execution.reasoningLevel)).toEqual(["high", "high", "max", "xhigh"]);
-    expect(service.threadStatus(thread.id)?.reasoning).toBe("high");
+    expect(service.threadStatus(thread.id)?.reasoning).toBe("xhigh");
     expect(harness.db.select().from(cloudroomThreads).get()?.reasoning).toBe("high");
     harness.deps.db.insert(cloudroomCommands).values({ id: "legacy-launch", threadId: thread.id, command: "prompt", input: JSON.stringify({ text: "queued", reasoning: "high" }), state: "sending", createdAt: Date.now() }).run();
     expect((await send(thread.id, { requestId: "legacy-launch", mode: "auto", reasoningLevel: "high", input: text })).status).toBe(200);

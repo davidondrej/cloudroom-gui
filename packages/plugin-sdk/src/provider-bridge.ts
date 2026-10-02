@@ -111,6 +111,7 @@ export {
   threadDiscardParamsSchema,
   threadForkParamsSchema,
   threadGoalClearParamsSchema,
+  threadGoalSetParamsSchema,
   threadNameSetParamsSchema,
   threadResumeParamsSchema,
   threadStartParamsSchema,
@@ -257,6 +258,17 @@ export type {
  * (incident rule: ambient env leaks).
  */
 export { sanitizeInheritedChildProcessEnv } from "@bb/process-utils";
+
+/**
+ * Finds the `codex` or `claude` CLI the way a shell would, then in common
+ * install folders and app bundles, so an app update that moves the CLI does
+ * not break bridges. `experimental_findBrokenCliLink` names a PATH link whose
+ * target is gone, for a clearer "not installed" error.
+ */
+export {
+  findBrokenCliLink as experimental_findBrokenCliLink,
+  findCliExecutable as experimental_findCliExecutable,
+} from "@bb/process-utils";
 
 // ---------------------------------------------------------------------------
 // 4. The domain vocabulary the protocol's payloads reference

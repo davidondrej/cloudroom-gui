@@ -31,6 +31,13 @@ interface CollapsibleActiveStackCardProps {
   title: string;
   isExpanded: boolean;
   onToggle: () => void;
+  /** An optional header button before Dismiss, such as Pause or Resume. */
+  action?: {
+    ariaLabel: string;
+    iconName: IconName;
+    isPending: boolean;
+    onClick: () => void;
+  } | null;
   dismiss: {
     ariaLabel: string;
     isPending: boolean;
@@ -49,6 +56,7 @@ export function CollapsibleActiveStackCard({
   title,
   isExpanded,
   onToggle,
+  action = null,
   dismiss,
   children,
 }: CollapsibleActiveStackCardProps) {
@@ -90,6 +98,22 @@ export function CollapsibleActiveStackCard({
             className={activityIconClass("active")}
           />
         </button>
+        {action ? (
+          <button
+            type="button"
+            aria-label={action.ariaLabel}
+            title={action.ariaLabel}
+            onClick={action.onClick}
+            disabled={action.isPending}
+            className={DISMISS_BUTTON_CLASS}
+          >
+            <Icon
+              name={action.isPending ? "Loading" : action.iconName}
+              className={cn("size-3.5", action.isPending && "animate-spin")}
+              aria-hidden="true"
+            />
+          </button>
+        ) : null}
         {dismiss ? (
           <button
             type="button"

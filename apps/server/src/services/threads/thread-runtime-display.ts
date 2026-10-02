@@ -106,6 +106,8 @@ interface PromptBannerActivityState extends Pick<
   "activeGoalCount" | "activePlanModeCount"
 > {
   activePlanTurnId: string | null;
+  /** Any Goal, including a paused or blocked one, which only the user can resume. */
+  hasGoal: boolean;
 }
 
 const EMPTY_THREAD_ACTIVITY: ThreadActivityState = {
@@ -388,6 +390,7 @@ function getThreadPromptBannerActivityState(
     activeGoalCount: goal?.status === "active" ? 1 : 0,
     activePlanModeCount: activePlanTurn === null ? 0 : 1,
     activePlanTurnId: activePlanTurn?.turnId ?? null,
+    hasGoal: goal !== null,
   };
 }
 
@@ -474,6 +477,7 @@ export function getThreadPromptBannerActivity(
       activeGoalCount: 0,
       activePlanModeCount: 0,
       activePlanTurnId: null,
+      hasGoal: false,
     }
   );
 }

@@ -1,7 +1,7 @@
 import { createServer, type ServerResponse } from "node:http";
 import { once } from "node:events";
 import { expect, it } from "vitest";
-import { events, getThread } from "@bb/db";
+import { cloudroomThreads, events, getThread } from "@bb/db";
 import { command } from "../../src/services/cloudroom/store.js";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
 import { runThreadLifecycleSweep } from "../../src/services/system/periodic-sweeps.js";
@@ -34,6 +34,11 @@ it.each([false, true])("routes Pi through the core and replays messages without 
     if (req.url === "/v1/health") return json({});
     if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code/test", stop: true, resume: true, launch_settings: true, direct_workspaces: true, command_guard: true, prompt_reasoning: true, harnesses: [{ id: "pi", provider: "openrouter", provider_selection: providerSelection, model: "test-model" }] });
     if (req.url === "/v1/ready") return json({ ready: true });
+    if (req.url?.startsWith("/v1/sessions/cr_child_example")) {
+      if (req.url.includes("/stream?")) { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.flushHeaders(); return; }
+      return json({ session: { session_id: "cr_child_example", harness: "pi", state: "running", native_id: null, current_request: null, last_sequence: 0, queue: [],
+        receipts: { child_example: { request_id: "child_example", command: "start", state: "completed", input: { harness: "pi", parent_session: sid, prompt: "Check the tests", reasoning: "high" } } } } });
+    }
     if (req.url?.includes("/stream?")) {
       res.writeHead(200, { "Content-Type": "text/event-stream" });
       const after = Number(new URL(req.url, "http://fixture").searchParams.get("after"));
@@ -117,7 +122,10 @@ it.each([false, true])("routes Pi through the core and replays messages without 
     expect(starts).toBe(1);
     record("child", { id: "cr_child_example", request_id: "pi-follow", state: "started", tool_call_id: "child-tool" });
     record("child", { id: "cr_child_example", request_id: "pi-follow", state: "completed", tool_call_id: "child-tool", result: { result: "Child result" } });
-    await expect.poll(() => app.db.select().from(events).all().filter(e => e.type === "item/delegation/completed").map(e => JSON.parse(e.data).item)).toEqual([expect.objectContaining({ childRef: "cr_child_example", status: "completed", summary: "Child result" })]);
+    await expect.poll(() => app.db.select().from(cloudroomThreads).all().find(row => row.sessionId === "cr_child_example")?.threadId).toBeDefined();
+    const childId = app.db.select().from(cloudroomThreads).all().find(row => row.sessionId === "cr_child_example")!.threadId;
+    expect(getThread(app.db, childId)).toMatchObject({ parentThreadId: thread.id, providerId: "pi", executionTarget: "cloud", titleFallback: "Check the tests" });
+    await expect.poll(() => app.db.select().from(events).all().filter(e => e.type === "item/delegation/completed").map(e => JSON.parse(e.data).item)).toEqual([expect.objectContaining({ childRef: childId, status: "completed", summary: "Child result" })]);
     record("usage", { contextUsage: { tokens: null, contextWindow: 100000 } });
     await expect.poll(() => app.db.select().from(events).all().filter(e => e.type === "thread/contextWindowUsage/updated").map(e => JSON.parse(e.data).contextWindowUsage).at(-1)).toEqual({ usedTokens: null, modelContextWindow: 100000, estimated: true });
   } finally { finishStartup(); service.stop(); core.closeAllConnections(); await new Promise<void>(resolve => core.close(() => resolve())); await app.cleanup(); }

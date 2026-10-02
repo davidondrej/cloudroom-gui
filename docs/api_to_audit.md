@@ -1068,11 +1068,16 @@ whether `retryable` should be per kind (only `sessionArchived` and
 `rateLimited` read it today) and whether the runtime should bound the
 `rateLimited` ladder from the hint rather than from a constant.
 
-## Provider maintenance toolkit (`experimental_resolveExecutablePath`, `experimental_readCliVersion`, `experimental_commandOutput`, `experimental_versionFrom`, `experimental_compareVersions`, `experimental_formatCommand`, `experimental_npmCommand`, `experimental_npmGlobalInstallCommand`, `experimental_npmLatestVersion`, `experimental_probeNpmGlobalPackage`, `experimental_npmGlobalInstallSource`, `experimental_installationVerification`, `experimental_downloadedInstallerCommand`, `experimental_clampPercent`) (`@get-bb/plugin-sdk/provider-bridge`)
+## Provider maintenance toolkit (`experimental_findCliExecutable`, `experimental_findBrokenCliLink`, `experimental_resolveExecutablePath`, `experimental_readCliVersion`, `experimental_commandOutput`, `experimental_versionFrom`, `experimental_compareVersions`, `experimental_formatCommand`, `experimental_npmCommand`, `experimental_npmGlobalInstallCommand`, `experimental_npmLatestVersion`, `experimental_probeNpmGlobalPackage`, `experimental_npmGlobalInstallSource`, `experimental_installationVerification`, `experimental_downloadedInstallerCommand`, `experimental_clampPercent`) (`@get-bb/plugin-sdk/provider-bridge`)
 
 **What it does.** The host-local probes and install-action plumbing behind a
 bridge's `provider/health`, `provider/usage` and `provider/installation/*`
 answers when its provider is a user-installed CLI. The probes:
+`experimental_findCliExecutable` (the first executable `codex` or `claude`
+on PATH, then in common install folders, the Codex standalone package and,
+on macOS, the ChatGPT and Codex app bundles, old and new layout; null when
+absent), `experimental_findBrokenCliLink` (a PATH entry for that CLI whose
+symlink target is gone, for the "not installed" message),
 `experimental_resolveExecutablePath` (the command's absolute path — the path
 itself when given absolute and executable, else the first `which`/`where`
 hit, null when absent; 5 s), `experimental_readCliVersion` (`<command>

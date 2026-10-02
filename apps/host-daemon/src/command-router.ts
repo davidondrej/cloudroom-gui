@@ -416,6 +416,7 @@ export class CommandRouter {
       case "thread.storage.delete":
       case "thread.plan.cancel":
       case "thread.goal.clear":
+      case "thread.goal.set":
         return `${command.environmentId}\0thread:${command.threadId}`;
       default:
         return null;

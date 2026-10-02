@@ -103,6 +103,7 @@
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
   --shadow-lift: var(--shadow-lift);
+  --shadow-message: var(--shadow-message);
 }
 
 /*
@@ -588,6 +589,10 @@
   /* Soft upward-cast lift for bottom-anchored surfaces (the composer), so the
    * shadow reads on the content above rather than below the screen edge. */
   --shadow-lift: 0px -4px 12px -4px hsl(0 0% 20% / 0.07);
+  /* Borderless user message bubble: a faint ring plus a soft drop shadow. */
+  --shadow-message:
+    0px 0px 0px 1px hsl(0 0% 0% / 0.04), 0px 1px 2px 0px hsl(0 0% 0% / 0.06),
+    0px 4px 14px 0px hsl(0 0% 0% / 0.06);
   --shadow-lg:
     0px 2px 0px 0px hsl(0 0% 20% / 0.15), 0px 4px 6px -1px hsl(0 0% 20% / 0.15);
   --shadow-xl:
@@ -811,6 +816,9 @@
   --shadow-md:
     0px 2px 0px 0px hsl(0 0% 0% / 0.3), 0px 2px 4px -1px hsl(0 0% 0% / 0.5);
   --shadow-lift: 0px -4px 12px -4px hsl(0 0% 0% / 0.26);
+  --shadow-message:
+    inset 0px 1px 0px 0px hsl(0 0% 100% / 0.05),
+    0px 1px 2px 0px hsl(0 0% 0% / 0.5), 0px 4px 14px 0px hsl(0 0% 0% / 0.25);
   --shadow-lg:
     0px 2px 0px 0px hsl(0 0% 0% / 0.3), 0px 4px 6px -1px hsl(0 0% 0% / 0.5);
   --shadow-xl:

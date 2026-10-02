@@ -286,7 +286,10 @@ Messaging:
   room-cli thread compact [id]                   Request compaction of an idle or errored thread's context
   room-cli thread clear [id]                     Clear model context for an idle or failed thread
   room-cli thread cancel-plan [id]               Exit the provider's active Plan mode
-  room-cli thread clear-goal [id]                Clear the provider's active Goal
+  room-cli thread clear-goal [id]                Clear the provider's Goal
+  room-cli thread pause-goal [id]                Pause the active Goal
+  room-cli thread resume-goal [id]               Resume a paused or blocked Goal
+  room-cli thread set-goal <objective> [id]      Start a Goal or replace its objective
     --self                                 Target current thread
 
   `thread compact` enqueues the same structured /compact turn used by the

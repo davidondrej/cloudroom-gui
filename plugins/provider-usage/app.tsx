@@ -1,11 +1,9 @@
 import {
   useCallback,
   useEffect,
-  useId,
   useMemo,
   useState,
   useSyncExternalStore,
-  type KeyboardEvent,
 } from "react";
 import {
   definePluginApp,
@@ -34,7 +32,6 @@ import {
   OPTION_INTERACTIVE_CLASS_NAME,
 } from "@bb/shared-ui/option-display";
 import {
-  providerUsageTone,
   selectUsageMachine,
   usageRpcSuccessSchema,
   type UsageMachine,
@@ -69,7 +66,6 @@ let storeSnapshot: UsageStoreSnapshot = {
 };
 let activeRefreshCount = 0;
 let lastMachineId: string | null = null;
-let lastProviderIdByMachine = new Map<string, string>();
 
 function updateStore(next: UsageStoreSnapshot): void {
   storeSnapshot = next;
@@ -358,9 +354,6 @@ export function ProviderUsageStatusContent({
   const [requestedMachineId, setRequestedMachineId] = useState<string | null>(
     lastMachineId,
   );
-  const [requestedProviderIds, setRequestedProviderIds] = useState(
-    lastProviderIdByMachine,
-  );
   const activeMachine = selectUsageMachine(
     machines,
     requestedMachineId,
@@ -384,16 +377,9 @@ export function ProviderUsageStatusContent({
     }
     return [...groups.values()];
   }, [activeMachine]);
-  const requestedProviderId =
-    activeMachine === null
-      ? null
-      : (requestedProviderIds.get(activeMachine.id) ?? null);
-  const activeProvider =
-    providers.find((provider) => provider.id === requestedProviderId) ??
-    providers[0] ??
-    null;
-  const activeAccounts = activeProvider?.accounts ?? [];
-  const hasActiveUsage = hasReportedUsage(activeAccounts);
+  const hasUsage = hasReportedUsage(
+    providers.flatMap((provider) => provider.accounts),
+  );
   const feedback =
     activeMachine === null
       ? snapshot.error !== null
@@ -402,27 +388,24 @@ export function ProviderUsageStatusContent({
           ? usageFeedbackMessages.loading
           : usageFeedbackMessages.noSources
       : activeMachine.status === "disconnected"
-        ? offlineUsageMessage(activeMachine, hasActiveUsage)
+        ? offlineUsageMessage(activeMachine, hasUsage)
         : snapshot.error !== null || activeMachine.error !== null
-          ? hasActiveUsage
+          ? hasUsage
             ? usageFeedbackMessages.refreshFailed
             : usageFeedbackMessages.loadFailed
-          : activeProvider === null
+          : providers.length === 0
             ? emptyUsageMessage(activeMachine)
             : null;
-  const panelId = useId();
   const activeMachineId = activeMachine?.id ?? null;
-  const activeProviderId = activeProvider?.id ?? null;
+  const hasProviders = providers.length > 0;
 
   useEffect(() => {
-    if (!refreshEnabled) return;
-    if (activeMachineId === null || activeProviderId === null) return;
+    if (!refreshEnabled || activeMachineId === null || !hasProviders) return;
     const refresh = () => {
       if (document.visibilityState === "hidden") return;
       void refreshUsage({
         force: false,
         machineIds: [activeMachineId],
-        providerId: activeProviderId,
         maxAgeMs: CARD_MAX_AGE_MS,
       });
     };
@@ -433,51 +416,12 @@ export function ProviderUsageStatusContent({
       window.clearInterval(timer);
       window.removeEventListener("focus", refresh);
     };
-  }, [activeMachineId, activeProviderId, refreshEnabled]);
+  }, [activeMachineId, hasProviders, refreshEnabled]);
 
   const selectMachine = useCallback((machineId: string) => {
     lastMachineId = machineId;
     setRequestedMachineId(machineId);
   }, []);
-
-  const selectProvider = useCallback(
-    (providerId: string) => {
-      if (activeMachine === null) return;
-      setRequestedProviderIds((current) => {
-        const next = new Map(current);
-        next.set(activeMachine.id, providerId);
-        lastProviderIdByMachine = next;
-        return next;
-      });
-    },
-    [activeMachine],
-  );
-
-  const handleTabKeyDown = (
-    event: KeyboardEvent<HTMLButtonElement>,
-    currentIndex: number,
-  ) => {
-    let nextIndex: number;
-    if (event.key === "ArrowRight") {
-      nextIndex = (currentIndex + 1) % providers.length;
-    } else if (event.key === "ArrowLeft") {
-      nextIndex = (currentIndex - 1 + providers.length) % providers.length;
-    } else if (event.key === "Home") {
-      nextIndex = 0;
-    } else if (event.key === "End") {
-      nextIndex = providers.length - 1;
-    } else {
-      return;
-    }
-    const nextProvider = providers[nextIndex];
-    if (nextProvider === undefined) return;
-    event.preventDefault();
-    selectProvider(nextProvider.id);
-    event.currentTarget.parentElement
-      ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-      .item(nextIndex)
-      .focus();
-  };
 
   return (
     <div className="flex max-h-80 flex-col">
@@ -485,65 +429,7 @@ export function ProviderUsageStatusContent({
         data-provider-usage-header=""
         className="flex h-10 min-w-0 shrink-0 items-center gap-1 border-b border-sidebar-border px-1.5"
       >
-        {providers.length === 0 ? null : (
-          <div
-            role="tablist"
-            aria-label="Usage provider"
-            className="flex min-w-0 shrink items-center gap-0.5 overflow-x-auto"
-          >
-            {providers.map((provider, index) => {
-              const isActive = provider.id === activeProvider?.id;
-              const tones = provider.accounts.map(providerUsageTone);
-              const tone = tones.includes("critical")
-                ? "critical"
-                : tones.includes("warning")
-                  ? "warning"
-                  : null;
-              return (
-                <button
-                  key={provider.id}
-                  type="button"
-                  role="tab"
-                  title={
-                    tone === null
-                      ? provider.displayName
-                      : `${provider.displayName}: an account usage window is at least ${tone === "critical" ? "95" : "80"}% used.`
-                  }
-                  aria-label={provider.displayName}
-                  aria-selected={isActive}
-                  aria-controls={panelId}
-                  tabIndex={isActive ? 0 : -1}
-                  className={cn(
-                    "relative flex h-10 w-8 shrink-0 items-center justify-center border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sidebar-ring",
-                    isActive
-                      ? "border-sidebar-foreground text-sidebar-foreground"
-                      : "border-transparent text-muted-foreground hover:text-sidebar-foreground",
-                  )}
-                  onClick={() => selectProvider(provider.id)}
-                  onKeyDown={(event) => handleTabKeyDown(event, index)}
-                >
-                  <ProviderIcon
-                    providerKind="agent"
-                    provider={provider}
-                    fallback="Bot"
-                    className="size-4"
-                  />
-                  {tone === null ? null : (
-                    <span
-                      aria-hidden="true"
-                      data-provider-usage-tone={tone}
-                      className={cn(
-                        "absolute right-1 top-1.5 size-1.5 rounded-full ring-2 ring-sidebar-accent",
-                        tone === "critical" ? "bg-destructive" : "bg-warning",
-                      )}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-        <div className="flex min-w-0 flex-1 justify-end">
+        <div className="flex min-w-0 flex-1">
           <MachineSelector
             machines={machines}
             activeMachine={activeMachine}
@@ -560,7 +446,6 @@ export function ProviderUsageStatusContent({
               force: true,
               machineIds: activeMachineId === null ? null : [activeMachineId],
               maxAgeMs: 0,
-              providerId: activeProvider?.id ?? null,
             })
           }
         >
@@ -581,81 +466,50 @@ export function ProviderUsageStatusContent({
           <Icon name="ChevronDown" aria-hidden="true" className="size-4" />
         </button>
       </div>
-      <div
-        id={panelId}
-        role="tabpanel"
-        aria-label={
-          activeMachine === null || activeProvider === null
-            ? "Provider usage"
-            : activeMachine.displayName +
-              " " +
-              activeProvider.displayName +
-              " usage"
-        }
-        className="min-h-0 overflow-y-auto p-2.5"
-      >
+      <div className="min-h-0 space-y-3 overflow-y-auto p-2.5">
         {feedback === null ? null : (
           <UsageFeedback
             message={feedback}
             loading={feedback === usageFeedbackMessages.loading}
-            className={activeProvider === null ? undefined : "mb-2"}
           />
         )}
-        {activeProvider === null ? null : (
-          <>
-            <div className="divide-y divide-sidebar-border">
-              {activeProvider.accounts.map((account) => (
-                <section
-                  key={account.id}
-                  aria-label={account.accountLabel ?? account.displayName}
-                  className="py-2 first:pt-0 last:pb-0"
-                >
-                  <div className="flex min-w-0 items-start gap-2">
-                    <div className="min-w-0 flex-1">
-                      <h2
-                        title={account.accountLabel ?? account.displayName}
-                        className="truncate text-xs font-medium text-sidebar-foreground"
-                      >
-                        {account.accountLabel ?? account.displayName}
-                      </h2>
-                      {account.usage?.status === "ok" &&
-                      account.usage.accountEmail !== null &&
-                      account.usage.accountEmail !== account.accountLabel ? (
-                        <p
-                          title={account.usage.accountEmail}
-                          className="truncate text-2xs text-subtle-foreground"
-                        >
-                          {account.usage.accountEmail}
-                        </p>
-                      ) : null}
-                    </div>
-                    {account.usage?.status === "ok" &&
-                    account.usage.planLabel !== null ? (
-                      <span className="ml-auto shrink-0 rounded-sm bg-sidebar-border/60 px-1 py-0.5 text-2xs leading-none text-subtle-foreground">
-                        {account.usage.planLabel}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="mt-1">
-                    {account.usage === null && snapshot.isRefreshing ? (
-                      <p className="text-xs text-muted-foreground">
-                        {usageFeedbackMessages.loading}
-                      </p>
-                    ) : account.usage === null &&
-                      (activeMachine?.error != null ||
-                        snapshot.error !== null) ? (
-                      <p className="text-xs text-muted-foreground">
-                        {usageFeedbackMessages.unavailable}
-                      </p>
-                    ) : (
-                      <ProviderUsageBody provider={account} />
-                    )}
-                  </div>
-                </section>
-              ))}
-            </div>
-          </>
-        )}
+        {providers.map((provider) => (
+          <section key={provider.id} aria-label={provider.displayName}>
+            <h2 className="flex min-w-0 items-center gap-2 text-xs font-medium text-sidebar-foreground">
+              <ProviderIcon
+                providerKind="agent"
+                provider={provider}
+                fallback="Bot"
+                className="size-3.5 shrink-0"
+              />
+              <span className="truncate">{provider.displayName}</span>
+            </h2>
+            {provider.accounts.map((account) => (
+              <div key={account.id} className="mt-1 pl-5.5">
+                {account.accountLabel === null ? null : (
+                  <h3
+                    title={account.accountLabel}
+                    className="truncate text-2xs text-subtle-foreground"
+                  >
+                    {account.accountLabel}
+                  </h3>
+                )}
+                {account.usage === null && snapshot.isRefreshing ? (
+                  <p className="text-xs text-muted-foreground">
+                    {usageFeedbackMessages.loading}
+                  </p>
+                ) : account.usage === null &&
+                  (activeMachine?.error != null || snapshot.error !== null) ? (
+                  <p className="text-xs text-muted-foreground">
+                    {usageFeedbackMessages.unavailable}
+                  </p>
+                ) : (
+                  <ProviderUsageBody provider={account} />
+                )}
+              </div>
+            ))}
+          </section>
+        ))}
       </div>
     </div>
   );

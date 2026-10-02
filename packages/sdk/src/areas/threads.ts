@@ -293,6 +293,11 @@ export interface ThreadActionArgs {
   threadId: string;
 }
 
+export interface ThreadGoalSetArgs extends ThreadActionArgs {
+  status?: "active" | "paused";
+  objective?: string;
+}
+
 export interface ThreadStatusArgs extends ThreadActionArgs {
   signal?: AbortSignal;
 }
@@ -552,6 +557,7 @@ export interface ThreadsArea {
   cancelPlan(args: ThreadActionArgs): Promise<ThreadBannerActionResult>;
   clearContext(args: ThreadActionArgs): Promise<ThreadBannerActionResult>;
   clearGoal(args: ThreadActionArgs): Promise<ThreadBannerActionResult>;
+  setGoal(args: ThreadGoalSetArgs): Promise<ThreadBannerActionResult>;
   conversationOutline(
     args: ThreadStatusArgs,
   ): Promise<ThreadConversationOutlineResult>;
@@ -1338,6 +1344,15 @@ export function createThreadsArea(args: CreateSdkAreaArgs): ThreadsArea {
       await transport.readVoid(
         transport.api.v1.threads[":id"].goal.clear.$post({
           param: { id: input.threadId },
+        }),
+      );
+      return { ok: true };
+    },
+    async setGoal({ threadId, status, objective }) {
+      await transport.readVoid(
+        transport.api.v1.threads[":id"].goal.$post({
+          param: { id: threadId },
+          json: { ...(status ? { status } : {}), ...(objective ? { objective } : {}) },
         }),
       );
       return { ok: true };

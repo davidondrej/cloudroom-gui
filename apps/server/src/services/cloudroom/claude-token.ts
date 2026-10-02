@@ -1,14 +1,11 @@
 import { execFile, spawn } from "node:child_process";
-import { existsSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { findCliExecutable } from "@bb/process-utils";
 import { ApiError } from "../../errors.js";
 
 const TOKEN = /(sk-ant-oat[A-Za-z0-9_-]{20,})[^A-Za-z0-9_-]/;
 export const isClaudeApiKey = (value: string) => /^sk-ant-(?!oat|ort|admin)[A-Za-z0-9_-]{1,1017}$/.test(value);
-/** Same lookup as the shell: the native install first, then PATH (npm, nvm, bun), then other common folders. */
-export const claudeBinary = () => [join(homedir(), ".local/bin"), ...(process.env.PATH ?? "").split(":").filter(dir => dir.startsWith("/")), join(homedir(), ".claude/local"), "/opt/homebrew/bin", "/usr/local/bin"]
-  .map(dir => join(dir, "claude")).find(existsSync);
+/** The Claude Code that Local threads run: PATH first, then common install folders. */
+export const claudeBinary = () => findCliExecutable("claude") ?? undefined;
 const failed = (message: string) => new ApiError(409, "claude_token_failed", message);
 
 /** Installs Claude Code with Anthropic's official installer, which needs no terminal and puts it in ~/.local/bin. */

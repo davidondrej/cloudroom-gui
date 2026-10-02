@@ -30,8 +30,9 @@ export async function setMacAccess(deps: Deps, enabled: boolean): Promise<void> 
 }
 
 export async function setupPreviews(deps: Deps): Promise<void> {
+  const launcher = process.platform === "darwin" && process.versions.electron ? ["--launcher", process.execPath] : [];
   try {
-    await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", CLOUDROOM_PREVIEW_SCRIPT_PATH, "configure", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json"), "--mac-access", await macAccess(deps) ? "on" : "off"], { timeout: 30_000, maxBuffer: 64 * 1024 });
+    await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", CLOUDROOM_PREVIEW_SCRIPT_PATH, "configure", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json"), "--mac-access", await macAccess(deps) ? "on" : "off", ...launcher], { timeout: 30_000, maxBuffer: 64 * 1024 });
   } catch { throw new ApiError(503, "cloudroom_preview_setup", "Cloud previews could not start. Inspect the private preview helper status. Cloud sessions are unaffected."); }
 }
 

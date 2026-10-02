@@ -709,6 +709,18 @@ export const threadOpenRequestSchema = z
   .strict();
 export type ThreadOpenRequest = z.infer<typeof threadOpenRequestSchema>;
 
+/** Pause or resume the durable Goal, or replace its objective (Codex `/goal`). */
+export const threadGoalSetRequestSchema = z
+  .object({
+    status: z.enum(["active", "paused"]).optional(),
+    objective: z.string().trim().min(1).max(4000).optional(),
+  })
+  .strict()
+  .refine((goal) => goal.status !== undefined || goal.objective !== undefined, {
+    message: "Set a status or an objective",
+  });
+export type ThreadGoalSetRequest = z.infer<typeof threadGoalSetRequestSchema>;
+
 export const threadOpenResponseSchema = z.object({
   delivered: z.number().int().nonnegative(),
 });

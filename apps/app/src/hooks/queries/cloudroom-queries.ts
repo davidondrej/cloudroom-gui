@@ -1,6 +1,6 @@
 import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { reasoningLevelSchema, serviceTierSchema, type Thread } from "@bb/domain";
+import { reasoningLevelSchema, serviceTierSchema, type ReasoningLevel, type Thread } from "@bb/domain";
 import { fetchWithAppSurface } from "@/lib/app-surface";
 import { sdk } from "@/lib/sdk";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
@@ -40,7 +40,7 @@ export const cloudroomStatusSchema = z.object({
   })).nullable().default([]),
 });
 
-const CORE_HARNESS_IDS: Record<string, string> = { "acp-cursor": "cursor", "acp-fx": "fx" };
+const CORE_HARNESS_IDS: Record<string, string> = { "acp-cursor": "cursor", "acp-fx": "fx", "acp-opencode": "opencode" };
 
 export function cloudHarness(status: z.infer<typeof cloudroomStatusSchema> | undefined, harness: string | undefined) {
   const id = harness === undefined ? undefined : (CORE_HARNESS_IDS[harness] ?? harness);
@@ -52,9 +52,10 @@ export function cloudCatalogKnown(status: z.infer<typeof cloudroomStatusSchema> 
   return status?.ready === true && status.harnesses !== null;
 }
 
-const HARNESS_NAMES: Record<string, string> = { "claude-code": "Claude Code", codex: "Codex", pi: "Pi", cursor: "Cursor", fx: "fx" };
+const HARNESS_NAMES: Record<string, string> = { "claude-code": "Claude Code", codex: "Codex", pi: "Pi", cursor: "Cursor", fx: "fx", opencode: "opencode" };
 export function cloudHarnessNames(status: z.infer<typeof cloudroomStatusSchema> | undefined): string {
-  return (status?.harnesses ?? []).map((item) => HARNESS_NAMES[item.id] ?? item.id).join(", ") || "none";
+  // Cursor stays off in Cloud (ADR 0161), even where a sandbox still has it.
+  return (status?.harnesses ?? []).filter((item) => item.id !== "cursor").map((item) => HARNESS_NAMES[item.id] ?? item.id).join(", ") || "none";
 }
 
 export function cloudServiceTierSupported(status: z.infer<typeof cloudroomStatusSchema> | undefined, harness: string | undefined): boolean {
@@ -130,6 +131,20 @@ export function useInstallDesktopUpdate() {
 
 export function useCloudroomThread(threadId: string, enabled: boolean) {
   return useQuery({ queryKey: ["cloudroom-thread", threadId], enabled, queryFn: async ({ signal }) => threadStatusSchema.parse(await (await fetchWithAppSurface(`/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}`, { signal })).json()), refetchInterval: 1500 });
+}
+
+export function useSetCloudReasoning(threadId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationKey: ["thread-update", threadId],
+    scope: { id: `thread-update:${threadId}` },
+    meta: { errorMessage: "Failed to save thread execution settings." },
+    mutationFn: (reasoningLevel: ReasoningLevel) => sdk.threads.update({ threadId, reasoningLevel }),
+    onSuccess: async (_thread, reasoning) => {
+      await client.cancelQueries({ queryKey: ["cloudroom-thread", threadId] });
+      client.setQueryData<z.infer<typeof threadStatusSchema>>(["cloudroom-thread", threadId], (data) => data && { ...data, reasoning });
+    },
+  });
 }
 
 const cloudWorkspaceSchema = z.object({ path: z.string(), branch: z.string().nullable(), head: z.string().nullable() }).nullable();

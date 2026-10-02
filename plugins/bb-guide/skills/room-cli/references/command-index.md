@@ -222,6 +222,9 @@ configures the machine with optional configured `preset` and `image` names;
 - `room-cli thread clear`
 - `room-cli thread cancel-plan`
 - `room-cli thread clear-goal`
+- `room-cli thread pause-goal`
+- `room-cli thread resume-goal`
+- `room-cli thread set-goal`
 - `room-cli thread interactions`
 - `room-cli thread interactions list`
 - `room-cli thread interactions show`
