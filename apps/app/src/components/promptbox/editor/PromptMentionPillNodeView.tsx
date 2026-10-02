@@ -1,7 +1,9 @@
 import { useContext, type KeyboardEvent, type MouseEvent } from "react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import {
+  isSkillMention,
   PROMPT_MENTION_PILL_CLASS,
+  PROMPT_SKILL_MENTION_CLASS,
   promptMentionTooltipLabel,
 } from "@/components/promptbox/mentions/prompt-mention-display";
 import { PromptMentionIcon } from "@/components/promptbox/mentions/PromptMentionIcon";
@@ -11,11 +13,8 @@ import { PromptMentionLinkContext } from "./prompt-mention-link";
 import { parsePromptEditorMentionAttrs } from "./prompt-editor-serialization";
 import { useThreadTitleDisplayText } from "@/components/thread/ThreadTitleMentions";
 
-const EDITOR_MENTION_PILL_CLASS = cn(
-  "group",
-  PROMPT_MENTION_PILL_CLASS,
-  "selection:bg-transparent [&_*]:selection:bg-transparent",
-);
+const EDITOR_MENTION_CLASS =
+  "group selection:bg-transparent [&_*]:selection:bg-transparent";
 
 export function PromptMentionPillNodeView({
   node,
@@ -39,7 +38,11 @@ export function PromptMentionPillNodeView({
     return (
       <NodeViewWrapper
         as="span"
-        className={cn(EDITOR_MENTION_PILL_CLASS, selectedClass)}
+        className={cn(
+          PROMPT_MENTION_PILL_CLASS,
+          EDITOR_MENTION_CLASS,
+          selectedClass,
+        )}
         data-prompt-mention="true"
       >
         {fallbackSerializedText ?? "@mention"}
@@ -51,6 +54,7 @@ export function PromptMentionPillNodeView({
     attrs.resource.kind === "thread"
       ? { ...attrs.resource, label: threadDisplayLabel }
       : attrs.resource;
+  const isSkill = isSkillMention(resource);
   const activate = resolveLink?.(resource) ?? null;
   const title = promptMentionTooltipLabel(resource);
   const activationLabel = activate ? `Open ${title}` : undefined;
@@ -89,9 +93,11 @@ export function PromptMentionPillNodeView({
     <NodeViewWrapper
       as="span"
       className={cn(
-        EDITOR_MENTION_PILL_CLASS,
+        isSkill ? PROMPT_SKILL_MENTION_CLASS : PROMPT_MENTION_PILL_CLASS,
+        EDITOR_MENTION_CLASS,
         selectedClass,
         activate && "cursor-pointer",
+        activate && isSkill && "hover:underline",
       )}
       {...promptMentionClipboardDataAttributes(attrs)}
       role={activate ? "button" : undefined}
@@ -100,13 +106,19 @@ export function PromptMentionPillNodeView({
       onClick={handleClick}
       onKeyDown={handleKeyDown}
     >
-      <PromptMentionIcon
-        resource={resource}
-        className="-ml-px size-4 shrink-0 self-center"
-      />
-      <span className={cn("truncate", activate && "group-hover:underline")}>
-        {resource.label}
-      </span>
+      {isSkill ? (
+        `/${resource.label}`
+      ) : (
+        <>
+          <PromptMentionIcon
+            resource={resource}
+            className="-ml-px size-4 shrink-0 self-center"
+          />
+          <span className={cn("truncate", activate && "group-hover:underline")}>
+            {resource.label}
+          </span>
+        </>
+      )}
     </NodeViewWrapper>
   );
 }

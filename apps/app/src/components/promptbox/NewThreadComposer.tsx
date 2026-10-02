@@ -12,6 +12,7 @@ import {
 import { CLOUD_LOCKED_REASON, showCloudSignIn, useCloudLocked } from "@/hooks/useCloudLocked";
 import { fetchWithAppSurface } from "@/lib/app-surface";
 import { ProviderRequirementBanner } from "./banner/ProviderRequirementBanner";
+import { CloudBranchPicker } from "./CloudBranchPicker";
 import { Button } from "@bb/shared-ui/button";
 import {
   getPluginConfigurationRoutePath,
@@ -442,6 +443,10 @@ export function NewThreadComposer({
     ),
   );
   const executionTarget = cloudLocked ? "local" : storedExecutionTarget;
+  const [cloudBranch, setCloudBranch] = useState<{
+    projectId: string | null;
+    branch: string | null;
+  }>({ projectId: null, branch: null });
   useEffect(() => {
     const selectCloud = () => setExecutionTarget("cloud");
     window.addEventListener(SELECT_CLOUD_EVENT, selectCloud);
@@ -558,6 +563,13 @@ export function NewThreadComposer({
   const { providers: projectEnvironmentProviders } =
     useSystemEnvironmentProviders({ projectId });
   const projectGitRemoteUrl = currentProject?.gitRemoteUrl;
+  // Cloud clones only GitHub repositories; other projects upload their files, so there is no branch to pick.
+  const cloudBranchPickerShown =
+    !isProjectless && /github\.com[/:]/.test(projectGitRemoteUrl ?? "");
+  const cloudBaseBranch =
+    cloudBranchPickerShown && cloudBranch.projectId === projectId
+      ? cloudBranch.branch
+      : null;
   const environmentProvidersByHostId = useMemo(
     () =>
       new Map(
@@ -1230,7 +1242,7 @@ export function NewThreadComposer({
       attachments: [],
     });
   }, [seed?.initialPrompt, seedInitialPrompt]);
-  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [composerError, setComposerError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isCopyingAttachments, setIsCopyingAttachments] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1247,7 +1259,7 @@ export function NewThreadComposer({
     async (files: File[]) => {
       if (!projectId || files.length === 0 || isUploadingRef.current) return;
       const capturedTarget = `${projectId}\0${promptDraft.storageKey}`;
-      setAttachmentError(null);
+      setComposerError(null);
       isUploadingRef.current = true;
       setIsUploading(true);
       try {
@@ -1261,7 +1273,7 @@ export function NewThreadComposer({
             promptDraft.addAttachment(uploaded);
           } catch (error) {
             if (currentUploadTargetRef.current === capturedTarget) {
-              setAttachmentError(
+              setComposerError(
                 getMutationErrorMessage({
                   error,
                   fallbackMessage: "Attachment upload failed",
@@ -1296,7 +1308,7 @@ export function NewThreadComposer({
       setIsCopyingAttachments(true);
       try {
         if (attachmentPaths.length > 0) {
-          setAttachmentError(null);
+          setComposerError(null);
           try {
             await sdk.projects.attachments.copy({
               projectId: nextValue,
@@ -1304,7 +1316,7 @@ export function NewThreadComposer({
               paths: attachmentPaths,
             });
           } catch (error) {
-            setAttachmentError(
+            setComposerError(
               getMutationErrorMessage({
                 error,
                 fallbackMessage:
@@ -1564,7 +1576,7 @@ export function NewThreadComposer({
         reasoningLevel,
         permissionMode: executionTarget === "cloud" ? "full" : permissionMode,
         ...(executionTarget === "cloud"
-          ? { executionTarget, serviceTier: cloudFastSupported && serviceTier ? serviceTier : "default" }
+          ? { executionTarget, serviceTier: cloudFastSupported && serviceTier ? serviceTier : "default", ...(cloudBaseBranch ? { baseBranch: cloudBaseBranch } : {}) }
           : supportsServiceTier && serviceTier
             ? { serviceTier }
             : {}),
@@ -1586,20 +1598,22 @@ export function NewThreadComposer({
         );
       isSubmittingRef.current = true;
       setIsSubmitting(true);
-      setAttachmentError(null);
-      const clearedSubmittedDraft =
-        promptDraft.clearIfCurrentMatches(submittedDraft);
+      setComposerError(null);
       try {
         await onSubmit(request);
+        promptDraft.clearIfCurrentMatches(submittedDraft);
         if (executionTarget === "cloud")
           clearCloudroomRequestId(promptDraft.storageKey);
         clearReuseEnvironment();
         if (selectionScope === "new-thread")
           setExecutionTarget(startingExecutionTarget(true));
       } catch (submitError) {
-        if (clearedSubmittedDraft) {
-          promptDraft.restoreIfEmpty(submittedDraft);
-        }
+        setComposerError(
+          getMutationErrorMessage({
+            error: submitError,
+            fallbackMessage: "Failed to create thread. Your prompt is saved.",
+          }),
+        );
         throw submitError;
       } finally {
         isSubmittingRef.current = false;
@@ -1625,6 +1639,7 @@ export function NewThreadComposer({
       serviceTier,
       supportsServiceTier,
       cloudFastSupported,
+      cloudBaseBranch,
     ],
   );
 
@@ -1738,7 +1753,7 @@ export function NewThreadComposer({
             onAttachFiles: handleAttachFiles,
             onRemove: promptDraft.removeAttachment,
             isAttaching: isUploading || isCopyingAttachments,
-            error: attachmentError,
+            error: composerError,
           }}
           promptActions={promptActions}
           modeConfig={{
@@ -1783,6 +1798,16 @@ export function NewThreadComposer({
             },
             environmentProviderInputsSlot,
             machineProviderInputsSlot: machineProviderInputs.control,
+            cloudInputsSlot:
+              cloudBranchPickerShown && projectId !== null ? (
+                <CloudBranchPicker
+                  projectId={projectId}
+                  hostId={primaryHostId}
+                  value={cloudBaseBranch}
+                  onChange={(branch) => setCloudBranch({ projectId, branch })}
+                  disabled={locks.environment}
+                />
+              ) : null,
             banner:
               executionTarget === "cloud" ? (
                 cloudBlockedReason === null ? null : (
@@ -1885,7 +1910,7 @@ export function NewThreadComposer({
       executionTarget,
       snapshotDraftBeforeOptionChange,
       activeModel,
-      attachmentError,
+      composerError,
       commandSuggestions,
       currentDraft,
       defaultMentionLinkResolver,
@@ -1948,6 +1973,9 @@ export function NewThreadComposer({
       navigate,
       environmentProviderInputsSlot,
       machineProviderInputs.control,
+      cloudBranchPickerShown,
+      cloudBaseBranch,
+      primaryHostId,
       inputsControlProviderIds,
       providerHostId,
       textEffects,

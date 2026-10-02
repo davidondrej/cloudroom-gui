@@ -1448,6 +1448,13 @@ function ProjectListComponent({
     },
     [openRootCompose, setRootComposeProjectId],
   );
+  const handleCreateProjectlessThread = useCallback(
+    (sectionId?: string) => {
+      setRootComposeProjectId(PERSONAL_PROJECT_ID);
+      openRootCompose(sectionId);
+    },
+    [openRootCompose, setRootComposeProjectId],
+  );
   const [isSectionCreateDialogOpen, setIsSectionCreateDialogOpen] =
     useState(false);
   const [sectionCreateErrorMessage, setSectionCreateErrorMessage] = useState<
@@ -1575,7 +1582,11 @@ function ProjectListComponent({
       <SidebarHeaderControls
         label={label}
         sectionId={sectionId}
-        onNewThread={openRootCompose}
+        onNewThread={
+          sectionId === "pinned"
+            ? openRootCompose
+            : handleCreateProjectlessThread
+        }
         open={openSidebarMenu === menuId}
         onOpenChange={(open) => setSidebarMenuOpen(menuId, open)}
       />
@@ -1919,7 +1930,7 @@ function ProjectListComponent({
                 collapsedEnvironmentIds={collapsedEnvironmentIds}
                 compareThreadsForSection={compareThreadsForSection}
                 onProjectSelect={onProjectSelect}
-                onCreateThreadInSection={openRootCompose}
+                onCreateThreadInSection={handleCreateProjectlessThread}
                 onRenameSection={handleOpenRenameThreadSection}
                 onRemoveSection={handleRemoveThreadSection}
                 onToggleCollapsed={toggleSidebarSectionCollapsed}

@@ -233,6 +233,21 @@ export const KNOWN_ACP_AGENTS: readonly AcpAgentDefinition[] = [
     },
     nativeRootsResolver: resolveHermesNativeRoots,
   },
+  {
+    id: "acp-devin",
+    displayName: "Devin",
+    icon: declaredIcon("devin"),
+    signInCommand: "devin auth login",
+    installUrl: "https://devin.ai",
+    visibility: "installed",
+    fork: "none",
+    launch: {
+      displayName: "Devin",
+      command: "devin",
+      args: ["acp"],
+      env: {},
+    },
+  },
 ];
 
 export const RESERVED_ACP_PROVIDER_IDS: ReadonlySet<string> = new Set(

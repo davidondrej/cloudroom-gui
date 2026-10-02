@@ -14,6 +14,13 @@ import {
   voiceUnsupportedMessage,
   type VoiceUnsupportedReason,
 } from "./voice-input-support";
+import { useLatestRef } from "./useLatestRef";
+import { retryTransient } from "@/lib/retry-transient";
+import {
+  clearVoiceRecording,
+  loadVoiceRecording,
+  saveVoiceRecording,
+} from "@/lib/voice-recording-backup";
 
 type VoiceInputState = "idle" | "recording" | "transcribing" | "error";
 
@@ -131,10 +138,76 @@ export function useVoiceInput(options: UseVoiceInputOptions) {
     useState<VoiceUnsupportedReason | null>("unsupported-browser");
   const [stream, setStream] = useState<MediaStream | null>(null);
 
-  const showError = useCallback((message: string) => {
+  const showError = useCallback((message: string, retry?: () => void) => {
     setState("error");
-    appToast.error("Voice input failed", { description: message });
+    appToast.error("Voice input failed", {
+      description: message,
+      ...(retry
+        ? { action: { label: "Retry", onClick: retry }, duration: Infinity }
+        : {}),
+    });
   }, []);
+
+  const transcribe = useCallback(
+    async function transcribeRecording(
+      file: File,
+      promptContext?: string,
+    ): Promise<void> {
+      setState("transcribing");
+      const abortController = new AbortController();
+      transcriptionAbortRef.current = abortController;
+      try {
+        const transcript = await retryTransient(() =>
+          options.onTranscribe({
+            file,
+            promptContext,
+            signal: abortController.signal,
+          }),
+        );
+        const normalized = normalizeTranscript(transcript);
+        if (normalized.length === 0) {
+          throw new Error("Voice transcription returned an empty result.");
+        }
+        options.onTranscript(normalized);
+        void clearVoiceRecording();
+        setState("idle");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          setState("idle");
+          return;
+        }
+        showError(resolveRecordingErrorMessage(error), () => {
+          void transcribeRecording(file, promptContext);
+        });
+      } finally {
+        if (transcriptionAbortRef.current === abortController) {
+          transcriptionAbortRef.current = null;
+        }
+      }
+    },
+    [options, showError],
+  );
+  const transcribeRef = useLatestRef(transcribe);
+
+  useEffect(() => {
+    void loadVoiceRecording().then((saved) => {
+      if (!saved) return;
+      appToast.warning("Unsent voice recording", {
+        id: "voice-recording-backup",
+        description: "Your last recording was never transcribed.",
+        duration: Infinity,
+        action: {
+          label: "Transcribe",
+          onClick: () => {
+            void transcribeRef.current(
+              createRecordingFile(saved, saved.type || "audio/webm"),
+            );
+          },
+        },
+        cancel: { label: "Discard", onClick: () => void clearVoiceRecording() },
+      });
+    });
+  }, [transcribeRef]);
 
   const stopMediaStream = useCallback(() => {
     const stream = streamRef.current;
@@ -320,32 +393,8 @@ export function useVoiceInput(options: UseVoiceInputOptions) {
         const promptContext = promptContextRef.current;
         promptContextRef.current = undefined;
 
-        setState("transcribing");
-        const abortController = new AbortController();
-        transcriptionAbortRef.current = abortController;
-        try {
-          const transcript = await options.onTranscribe({
-            file: audioFile,
-            promptContext,
-            signal: abortController.signal,
-          });
-          const normalized = normalizeTranscript(transcript);
-          if (normalized.length === 0) {
-            throw new Error("Voice transcription returned an empty result.");
-          }
-          options.onTranscript(normalized);
-          setState("idle");
-        } catch (error) {
-          if (error instanceof DOMException && error.name === "AbortError") {
-            setState("idle");
-            return;
-          }
-          showError(resolveRecordingErrorMessage(error));
-        } finally {
-          if (transcriptionAbortRef.current === abortController) {
-            transcriptionAbortRef.current = null;
-          }
-        }
+        void saveVoiceRecording(audioFile);
+        await transcribe(audioFile, promptContext);
       };
 
       recorder.start(CHUNK_TIMESLICE_MS);
@@ -375,6 +424,7 @@ export function useVoiceInput(options: UseVoiceInputOptions) {
     showError,
     state,
     stopMediaStream,
+    transcribe,
   ]);
 
   const stop = useCallback(() => {
@@ -409,6 +459,7 @@ export function useVoiceInput(options: UseVoiceInputOptions) {
     }
 
     if (state === "transcribing") {
+      void clearVoiceRecording();
       const abortController = transcriptionAbortRef.current;
       if (abortController) {
         abortController.abort();

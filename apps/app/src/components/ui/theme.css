@@ -526,6 +526,8 @@
   --pill-foreground: var(--ink);
   --pill-icon: var(--ink);
   --pill-shadow: 0 1px 1px 0 oklch(0.2 0 0 / 0.02);
+  /* Skill mentions: electric lime is unreadable on white, so light uses olive-lime. */
+  --skill-mention-foreground: #4d7c0f;
   --pill-surface-selected: linear-gradient(
     to bottom,
     color-mix(in oklch, var(--ink) 11.8%, var(--canvas)),
@@ -756,6 +758,7 @@
   --pill-foreground: var(--ink);
   --pill-icon: var(--ink);
   --pill-shadow: 0 1px 1px 0 oklch(0 0 0 / 0.08);
+  --skill-mention-foreground: #ccff00;
   --pill-surface-selected: linear-gradient(
     to bottom,
     color-mix(in oklch, var(--ink) 20.7%, var(--canvas)),

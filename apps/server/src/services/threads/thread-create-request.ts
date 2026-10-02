@@ -16,6 +16,7 @@ import type {
 export interface ThreadCreateServiceRequestInput {
   executionTarget?: "local" | "cloud";
   requestId?: string;
+  baseBranch?: string;
   environment: CreateThreadEnvironmentArgs;
   executionInputSources?: CreateThreadRequest["executionInputSources"];
   /**

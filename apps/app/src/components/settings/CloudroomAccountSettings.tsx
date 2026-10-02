@@ -9,6 +9,7 @@ import { useCloudroomAccount, useSetMacAccess } from "@/hooks/queries/cloudroom-
 import { openCodexConnection, openCursorConnection } from "@/components/CodexConnectionPanel";
 import { FixPrompt } from "@/components/ui/fix-prompt";
 import { cloudUnavailableFixPrompt, syncFixPrompt } from "@/lib/fix-prompts";
+import { SelfHostedCoreForm } from "./SelfHostedCoreForm";
 
 export function CloudroomAccountSettings() {
   const queryClient = useQueryClient();
@@ -58,7 +59,8 @@ export function CloudroomAccountSettings() {
         <div className="flex gap-2">{signInUrl && <Button variant="outline" onClick={() => openUrlInExternalBrowser(signInUrl)}>Open browser again</Button>}<Button variant="outline" disabled={action.isPending} onClick={() => action.mutate("cancel")}>Cancel sign-in</Button></div>
       </> : <div className="flex gap-2">{status.data?.account
         ? <Button variant="outline" disabled={action.isPending} onClick={() => action.mutate("logout")}>Sign out of this app</Button>
-        : <Button disabled={action.isPending || status.isPending || status.isError} onClick={() => action.mutate("sign-in")}>Sign in to Cloudroom</Button>}</div>}
+        : !status.data?.selfHosted && <Button disabled={action.isPending || status.isPending || status.isError} onClick={() => action.mutate("sign-in")}>Sign in to Cloudroom</Button>}</div>}
+      {status.data && !status.data.account && !status.data.signingIn && <SelfHostedCoreForm connected={status.data.selfHosted === true} ready={status.data.ready} error={status.data.error} />}
       {ready && <div className="flex items-center justify-between gap-3 border-t pt-3"><span>Codex</span><Button variant="outline" onClick={() => openCodexConnection()}>Manage connection</Button></div>}
       {ready && <div className="flex items-center justify-between gap-3 border-t pt-3"><span>Cursor</span><Button variant="outline" onClick={() => openCursorConnection()}>Manage connection</Button></div>}
       <p className="text-xs text-muted-foreground">Signing out leaves cloud agents running and preserves local history. To switch accounts, sign out first. Existing cloud threads stay bound to their original account and VM.</p>

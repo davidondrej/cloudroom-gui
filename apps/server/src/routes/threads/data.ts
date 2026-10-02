@@ -1,5 +1,7 @@
 import { cloudroom, isCloudThread } from "../../services/cloudroom/commands.js";
+import { cloudFile } from "../../services/cloudroom/teleport-local.js";
 import { extractThreadContextWindowUsage } from "@bb/thread-view";
+import mimeTypes from "mime-types";
 import { clearTimelineOrderingContextCache } from "../../services/threads/timeline-context-order.js";
 import path from "node:path";
 import {
@@ -802,6 +804,11 @@ export function registerThreadDataRoutes(app: Hono, deps: AppDeps): void {
 
   get(routes.hostFileContent, async (context, query) => {
     const thread = requirePublicThread(deps.db, context.req.param("id"));
+    if (isCloudThread(thread)) {
+      return new Response(new Uint8Array(await cloudFile(deps, thread.id, query.path)), {
+        headers: { "content-type": mimeTypes.lookup(query.path) || "application/octet-stream" },
+      });
+    }
     if (!thread.environmentId) {
       throwThreadEnvironmentUnavailable(
         threadEnvironmentUnavailableDetails("never_attached", null),

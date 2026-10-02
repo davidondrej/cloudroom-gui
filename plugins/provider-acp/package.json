@@ -19,7 +19,8 @@
         "omp": "./icons/omp.svg",
         "grok": "./icons/grok.svg",
         "fx": "./icons/fx.svg",
-        "hermes-agent": "./icons/hermes-agent.svg"
+        "hermes-agent": "./icons/hermes-agent.svg",
+        "devin": "./icons/devin.svg"
       }
     },
     "server": "./server.ts",

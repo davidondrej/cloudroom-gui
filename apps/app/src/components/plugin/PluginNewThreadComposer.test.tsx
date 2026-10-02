@@ -1690,14 +1690,15 @@ describe("PluginNewThreadComposer seeding", () => {
       latestPromptBoxProps().onSubmit();
     });
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(latestPromptBoxProps().value).toBe("");
+    expect(latestPromptBoxProps().value).toBe("review every PR for slop");
 
     await act(async () => {
       finishSubmit?.();
     });
+    await waitFor(() => expect(latestPromptBoxProps().value).toBe(""));
   });
 
-  it("restores the optimistically cleared draft when submission fails", async () => {
+  it("keeps the draft and shows an inline error when submission fails", async () => {
     let failSubmit: (() => void) | null = null;
     const onSubmit = vi.fn(
       () =>
@@ -1712,7 +1713,7 @@ describe("PluginNewThreadComposer seeding", () => {
 
     act(() => latestPromptBoxProps().onSubmit());
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-    expect(latestPromptBoxProps().value).toBe("");
+    expect(latestPromptBoxProps().value).toBe("review every PR for slop");
     await act(async () => {
       failSubmit?.();
     });
@@ -1720,27 +1721,27 @@ describe("PluginNewThreadComposer seeding", () => {
       expect(latestPromptBoxProps().isSubmitting).toBe(false);
     });
     expect(latestPromptBoxProps().value).toBe("review every PR for slop");
+    expect(latestPromptBoxProps().attachments.error).toBe("create failed");
   });
 
-  it("does not replace a new draft when submission fails", async () => {
-    let failSubmit: (() => void) | null = null;
+  it("does not clear a draft edited while submission is pending", async () => {
+    let finishSubmit: (() => void) | null = null;
     const onSubmit = vi.fn(
       () =>
-        new Promise<void>((_resolve, reject) => {
-          failSubmit = () => reject(new Error("create failed"));
+        new Promise<void>((resolve) => {
+          finishSubmit = resolve;
         }),
     );
-    renderComposer(STORED_REQUEST, onSubmit, "failed-submit-new-draft");
+    renderComposer(STORED_REQUEST, onSubmit, "edited-during-submit");
     await waitFor(() => {
       expect(latestPromptBoxProps().disabled).toBe(false);
     });
 
     act(() => latestPromptBoxProps().onSubmit());
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-    expect(latestPromptBoxProps().value).toBe("");
     act(() => latestPromptBoxProps().onChange("next thread", []));
     await act(async () => {
-      failSubmit?.();
+      finishSubmit?.();
     });
 
     await waitFor(() => {

@@ -9,6 +9,8 @@ export interface WorkspaceCheckoutDisplay {
   copyValue: string | null;
   label: string;
   rowLabel: "Branch" | "Checkout";
+  /** Last known value; the latest refresh failed. */
+  stale?: boolean;
   title: string;
 }
 

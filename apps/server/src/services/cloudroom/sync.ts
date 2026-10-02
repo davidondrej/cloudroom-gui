@@ -30,6 +30,15 @@ export async function setCopyLogins(deps: Deps, enabled: boolean): Promise<void>
   if (await readFile(join(folder(deps), "config.json")).then(() => true, () => false)) await setupSync(deps);
 }
 
+/** Which of this Mac's skills cloud sandboxes get, by name; null until the user changes it, which means all of them. */
+const cloudSkillsFile = (deps: Deps) => join(deps.config.dataDir, "cloudroom-cloud-skills.json");
+export async function cloudSkills(deps: Deps): Promise<string[] | null> {
+  return readFile(cloudSkillsFile(deps), "utf8").then((text) => z.array(z.string()).parse(JSON.parse(text).names), () => null);
+}
+export async function setCloudSkills(deps: Deps, names: string[]): Promise<void> {
+  await writeFile(cloudSkillsFile(deps), JSON.stringify({ names }), { mode: 0o600 });
+}
+
 export async function setupSync(deps: Deps): Promise<void> {
   const choice = await copyLogins(deps);
   try {

@@ -1055,14 +1055,14 @@ export function PrivacySettingsSection({
         </SettingsWithControl>
 
         <SettingsWithControl
-          label="Send bug reports"
-          description="Let your agents report Cloudroom bugs they run into, so we can fix them fast. Reports describe what went wrong, never your code or secrets."
+          label="Send agent feedback"
+          description="Let your agents send Cloudroom bugs, friction, and ideas straight to our founder, so we can fix them fast. Never your code or secrets."
         >
           <Switch
             checked={bugReportsEnabled}
             disabled={disabled}
             onCheckedChange={onBugReportsEnabledChange}
-            aria-label="Send bug reports"
+            aria-label="Send agent feedback"
           />
         </SettingsWithControl>
 

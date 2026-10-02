@@ -20,6 +20,7 @@ import { useQuickCreateProjectController } from "@/hooks/useQuickCreateProject";
 import { booleanLocalStorage } from "@/lib/browser-storage";
 import { MACOS_APP_REGION_NO_DRAG_CLASS, MACOS_WINDOW_DRAG_CLASS } from "@/lib/bb-desktop";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
+import { fetchWithAppSurface } from "@/lib/app-surface";
 import { useSystemProviders } from "@/hooks/queries/system-queries";
 import { getProviderIconInfo, getProviderIconTintStyle } from "@/lib/provider-icon";
 import { getRootComposeRoutePath } from "@/lib/route-paths";
@@ -32,7 +33,15 @@ const openAtom = atom(false);
 export const useOpenSetup = () => useSetAtom(openAtom);
 
 const STEPS = ["Create account", "Connect an agent", "Connect GitHub", "Pick a project"];
-const LATER = ["Free", "Claude Code or Codex", "For private repos", "Last step"];
+const STEP_IDS = ["account", "agent", "github", "project"] as const;
+type SetupStepId = (typeof STEP_IDS)[number];
+type SetupDetail = "github" | "google" | "email" | "claude" | "codex" | "both" | "none" | "existing" | "found" | "folder" | "bb_import";
+function track(step: SetupStepId, action: "viewed" | "started" | "done" | "skipped" | "closed" | "detected" | "waitlist", detail: SetupDetail | null = null) {
+  void fetchWithAppSurface("/api/v1/cloudroom/setup-step", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ step, action, detail }),
+  }).catch(() => {});
+}
+const LATER = ["Invite-only", "Claude Code or Codex", "For private repos", "Last step"];
 const PALETTE = {
   "--ob-bg": "#faf7ef", "--ob-rail": "#f2ecde", "--ob-card": "#fffdf7", "--ob-line": "#e2dac6", "--ob-dash": "#c9bfa6",
   "--ob-ink": "#29251e", "--ob-muted": "#7a7263", "--ob-lime": "#bfff00", "--ob-ok": "#4d6b00",
@@ -66,12 +75,14 @@ export function Onboarding() {
   const [dismissed, setDismissed] = useAtom(dismissedAtom);
   const [open, setOpen] = useAtom(openAtom);
   const projects = useSidebarNavigation().data?.projects;
-  const visible = open || (!dismissed && projects !== undefined && projects.length === 0);
+  const account = useCloudroomAccount();
+  const locked = account.isSuccess && !account.data.account;
+  const visible = locked || open || (!dismissed && projects !== undefined && projects.length === 0);
   if (!visible) return null;
-  return <Setup close={() => { setDismissed(true); setOpen(false); }} />;
+  return <Setup locked={locked} close={() => { setDismissed(true); setOpen(false); }} />;
 }
 
-function Setup({ close }: { close: () => void }) {
+function Setup({ locked, close }: { locked: boolean; close: () => void }) {
   const progress = useSetupProgress();
   const { done, account } = progress;
   const first = done.findIndex((isDone) => !isDone);
@@ -84,6 +95,18 @@ function Setup({ close }: { close: () => void }) {
     if (signedIn && !wasSignedIn.current && step === 0) setPicked(nextStep(done, 0));
     wasSignedIn.current = signedIn;
   }, [signedIn, step, done]);
+  const viewed = useRef(new Set<number>());
+  useEffect(() => {
+    if (progress.checking || viewed.current.has(step)) return;
+    const timer = setTimeout(() => { viewed.current.add(step); track(STEP_IDS[step] ?? "project", "viewed"); }, 1500);
+    return () => clearTimeout(timer);
+  }, [progress.checking, step]);
+  const knownSignedIn = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (progress.checking) return;
+    if (knownSignedIn.current === false && signedIn) track("account", "done");
+    knownSignedIn.current = signedIn;
+  }, [progress.checking, signedIn]);
   if (progress.checking) return null;
 
   return (
@@ -137,10 +160,12 @@ function Setup({ close }: { close: () => void }) {
           <p className="mt-auto px-3 text-[12.5px] text-(--ob-muted)">Reopen setup anytime from the account button in the sidebar.</p>
         </aside>
         <main className="relative flex min-w-0 flex-1 items-center overflow-y-auto px-[110px] py-10">
-          <button type="button" onClick={close} className={cn("absolute top-5 right-6 flex items-center gap-1.5 text-[13px] text-(--ob-muted) hover:text-(--ob-ink)", MACOS_APP_REGION_NO_DRAG_CLASS)}>
-            {signedIn ? "Skip setup" : "Use without an account"}
-            <Icon name="X" className="size-3" aria-hidden />
-          </button>
+          {!locked && (
+            <button type="button" onClick={() => { track(STEP_IDS[step] ?? "project", "closed"); close(); }} className={cn("absolute top-5 right-6 flex items-center gap-1.5 text-[13px] text-(--ob-muted) hover:text-(--ob-ink)", MACOS_APP_REGION_NO_DRAG_CLASS)}>
+              Skip setup
+              <Icon name="X" className="size-3" aria-hidden />
+            </button>
+          )}
           <div key={step} className="w-full max-w-[600px] duration-300 animate-in fade-in-0 slide-in-from-bottom-1">
             <BbLogo className="mb-6 size-[72px] -rotate-[5deg]" />
             <p className="font-serif text-base text-(--ob-muted) italic">Step {step + 1} of 4</p>
@@ -176,6 +201,7 @@ function Heading({ lead, mark }: { lead: string; mark: string }) {
 }
 
 const Note = ({ children }: { children: ReactNode }) => <p className="text-[13px] text-(--ob-muted)">{children}</p>;
+const WAITLIST_URL = "https://www.cloudroom.dev/#waitlist";
 const LINK = "text-(--ob-ink) underline underline-offset-[3px] disabled:opacity-50";
 
 function Cta({ children, className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
@@ -227,6 +253,7 @@ const Connected = () => (
 function AccountStep({ email, signingIn, next }: { email: string | null; signingIn: boolean; next: () => void }) {
   const signIn = useCloudroomSignIn();
   const busy = signingIn || signIn.isPending;
+  const start = (provider: "github" | "google" | "email") => { track("account", "started", provider); signIn.mutate(provider); };
   return (
     <>
       <Heading lead="Create your" mark="account" />
@@ -242,9 +269,10 @@ function AccountStep({ email, signingIn, next }: { email: string | null; signing
         </div>
       ) : (
         <div className="mt-8 flex max-w-[420px] flex-col gap-3">
-          <Cta className="w-full" onClick={() => signIn.mutate("github")}><Icon name="Github" aria-hidden />Continue with GitHub</Cta>
-          <Outline className="h-12 w-full justify-center text-[15.5px] font-semibold" onClick={() => signIn.mutate("google")}><GoogleLogo />Continue with Google</Outline>
-          <Note>Opens your browser, then brings you right back. <button type="button" className={LINK} onClick={() => signIn.mutate("email")}>Use email instead</button></Note>
+          <Cta className="w-full" onClick={() => start("github")}><Icon name="Github" aria-hidden />Continue with GitHub</Cta>
+          <Outline className="h-12 w-full justify-center text-[15.5px] font-semibold" onClick={() => start("google")}><GoogleLogo />Continue with Google</Outline>
+          <Note>Opens your browser, then brings you right back. <button type="button" className={LINK} onClick={() => start("email")}>Use email instead</button></Note>
+          <Note>Cloudroom is invite-only. You enter your invite code after signing in. No code yet? <button type="button" className={LINK} onClick={() => { track("account", "waitlist"); openUrlInExternalBrowser(WAITLIST_URL); }}>Join the waitlist</button></Note>
         </div>
       )}
     </>
@@ -255,6 +283,19 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
   const { account, agents, codex, ready } = progress;
   const { localHostId } = useHostDaemon();
   const claudeLocal = useClaudeConnection({ target: "local", hostId: localHostId });
+  const detected = useRef(false);
+  useEffect(() => {
+    if (detected.current || claudeLocal.isPending || !account.data) return;
+    detected.current = true;
+    const claude = claudeLocal.data?.state === "connected", codexFound = Boolean(account.data.localLogins?.codex);
+    track("agent", "detected", claude && codexFound ? "both" : claude ? "claude" : codexFound ? "codex" : "none");
+  }, [claudeLocal.isPending, claudeLocal.data?.state, account.data]);
+  const startedAgents = useRef(new Set<"claude" | "codex">());
+  const started = (agent: "claude" | "codex") => {
+    if (startedAgents.current.has(agent)) return;
+    startedAgents.current.add(agent);
+    track("agent", "started", agent);
+  };
   const client = useQueryClient();
   const saveMacAccess = useSetMacAccess();
   const saveCopyLogins = useSetCopyLogins();
@@ -279,7 +320,7 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
     onError: (error) => appToast.error(error.message),
     onSettled: () => client.invalidateQueries({ queryKey: ["cloudroom-codex-auth"] }),
   });
-  const finish = useMutation({ mutationFn: saveChoices, onSuccess: next, meta: { showErrorToast: false }, onError: (error) => appToast.error(error.message) });
+  const finish = useMutation({ mutationFn: saveChoices, onSuccess: () => { track("agent", "done", agents.claude && agents.codex ? "both" : agents.claude ? "claude" : "codex"); next(); }, meta: { showErrorToast: false }, onError: (error) => appToast.error(error.message) });
   const codexBrowser = codex.data?.state === "waiting" && !codex.data.user_code ? codex.data : null;
   const waiting = !account.data?.account ? "Log in first" : !ready ? "Starting your cloud…" : null;
   const action = (connected: boolean, button: ReactNode) => (connected ? <Connected /> : waiting ? <Note>{waiting}</Note> : button);
@@ -288,7 +329,7 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
       <Heading lead="Connect an" mark="agent" />
       <div className="mt-8 flex flex-col gap-3">
         <Card on={agents.claude} logo={<AgentLogo id="claude-code" className="bg-[#f4e4d6]" />} name="Claude Code" detail={claudeLocal.data?.state === "connected" ? "Found on this Mac" : "Uses your Claude plan"}>
-          {action(agents.claude, <ClaudeConnectionButton target="cloud" presentation="inline" className={OUTLINE} />)}
+          {action(agents.claude, <span onClickCapture={() => started("claude")}><ClaudeConnectionButton target="cloud" presentation="inline" className={OUTLINE} /></span>)}
         </Card>
         <Card on={agents.codex} logo={<AgentLogo id="codex" className="bg-black text-white" />} name="Codex" detail={account.data?.localLogins?.codex ? "Found on this Mac" : "Uses your ChatGPT plan"}>
           {action(agents.codex, codexBrowser ? (
@@ -297,7 +338,7 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
               {codexBrowser.verification_url && <button type="button" className={LINK} onClick={() => openUrlInExternalBrowser(codexBrowser.verification_url!)}>Reopen</button>}
             </Note>
           ) : (
-            <Outline disabled={connectCodex.isPending} onClick={() => connectCodex.mutate()}>{connectCodex.isPending ? "Connecting…" : "Connect"}</Outline>
+            <Outline disabled={connectCodex.isPending} onClick={() => { started("codex"); connectCodex.mutate(); }}>{connectCodex.isPending ? "Connecting…" : "Connect"}</Outline>
           ))}
         </Card>
       </div>
@@ -343,6 +384,7 @@ function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupPr
   const refresh = () => client.invalidateQueries({ queryKey: ["cloudroom-github-auth"] });
   const connect = useMutation({
     mutationFn: async () => {
+      track("github", "started");
       requestId.current = crypto.randomUUID();
       const result = await sdk.cloudroom.githubLogin(requestId.current);
       if (result.state === "waiting" && result.verification_url) {
@@ -381,7 +423,7 @@ function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupPr
       )}
       <div className="mt-8 flex items-center gap-5">
         {connected ? (
-          <Cta onClick={next}>Continue <Icon name="ArrowRight" aria-hidden /></Cta>
+          <Cta onClick={() => { track("github", "done"); next(); }}>Continue <Icon name="ArrowRight" aria-hidden /></Cta>
         ) : code ? (
           <Cta disabled><Icon name="Loading" className="animate-spin" aria-hidden />Waiting for GitHub…</Cta>
         ) : (
@@ -390,7 +432,7 @@ function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupPr
         {code ? (
           <Note><button type="button" className={LINK} onClick={() => cancel.mutate()}>Cancel</button></Note>
         ) : !connected && (
-          <Note><button type="button" className={LINK} onClick={next}>Skip this step</button> if you only use public repos.</Note>
+          <Note><button type="button" className={LINK} onClick={() => { track("github", "skipped"); next(); }}>Skip this step</button> if you only use public repos.</Note>
         )}
       </div>
     </>
@@ -407,7 +449,8 @@ function ProjectStep({ close }: { close: () => void }) {
   const repos = useQuery({ queryKey: ["cloudroom-local-repos"], queryFn: ({ signal }) => sdk.cloudroom.localRepos(signal), retry: false, staleTime: 60_000 });
   const { localHostId } = useHostDaemon();
   const importBb = useImportBb();
-  const open = (projectId: string) => {
+  const open = (projectId: string, how: "existing" | "found" | "folder") => {
+    track("project", "done", how);
     setProjectId(projectId);
     selectCloudForNewThreads();
     void navigate(getRootComposeRoutePath());
@@ -419,17 +462,19 @@ function ProjectStep({ close }: { close: () => void }) {
       if (!folder || !hostId) return null;
       return createProject.mutateAsync({ name: deriveProjectNameFromPath(folder), source: { type: "local_path", hostId, path: folder } });
     },
-    onSuccess: (project) => { if (project) open(project.id); },
+    onSuccess: (project, path) => { if (project) open(project.id, path ? "found" : "folder"); },
     onError: (error) => appToast.error(error.message),
   });
   const addFolder = () => {
     if (canUseNativeFolderPicker) return add.mutate(null);
     selectCloudForNewThreads();
+    track("project", "started", "folder");
     close();
     quickCreate.openCreateDialog();
   };
   const bringWorkOver = () => {
     if (!localHostId) return appToast.error("This Mac is not connected yet. Try again in a moment.");
+    track("project", "started", "bb_import");
     importBb.mutate(localHostId, {
       onSuccess: ({ imported }) => appToast.success(`Imported ${imported.length} BB thread${imported.length === 1 ? "" : "s"}`),
       onError: (error) => appToast.error(error.message),
@@ -443,7 +488,7 @@ function ProjectStep({ close }: { close: () => void }) {
       <Heading lead="Pick your first" mark="project" />
       <div className="mt-7 flex flex-col gap-2">
         {projects.slice(0, 5).map((project) => (
-          <ProjectRow key={project.id} name={project.name} detail="Already in Cloudroom" disabled={busy} onClick={() => open(project.id)} />
+          <ProjectRow key={project.id} name={project.name} detail="Already in Cloudroom" disabled={busy} onClick={() => open(project.id, "existing")} />
         ))}
         {found.map((repo) => (
           <ProjectRow key={repo.path} name={repo.name} detail={repo.path.replace(/^\/Users\/[^/]+/, "~")} disabled={busy} onClick={() => add.mutate(repo.path)} />
@@ -455,7 +500,7 @@ function ProjectStep({ close }: { close: () => void }) {
         </button>
       </div>
       <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
-        <Note><button type="button" className={LINK} onClick={close}>Start without a project</button></Note>
+        <Note><button type="button" className={LINK} onClick={() => { track("project", "skipped"); close(); }}>Start without a project</button></Note>
         <Note>
           <button type="button" className={LINK} disabled={importBb.isPending} onClick={bringWorkOver}>
             {importBb.isPending ? "Bringing your work over…" : "Coming from BB? Bring your work over."}

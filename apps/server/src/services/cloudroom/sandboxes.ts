@@ -1,10 +1,11 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, readFile, stat } from "node:fs/promises";
+import { access, readdir, readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { gzipSync } from "node:zlib";
+import matter from "gray-matter";
 import { z } from "zod";
 import { CloudroomConnectionError, CloudroomError } from "./client.js";
 import { macHarnessVersions } from "./harness-versions.js";
@@ -28,8 +29,10 @@ export type SandboxLogin = "claude" | "codex" | "pi" | "github" | "cursor";
 export type SandboxProject = { id: string; repository: string | null; folder: string };
 // A sleeping sandbox is only looked up again after this long; sending work wakes it at once.
 const RECHECK_MS = 60_000;
+const USAGE_LIMIT = "cloud_usage_limit";
 // The Mac's skills and global instructions that sandboxes receive, one way (docs/scopes/sandboxes.md).
-const CONFIG_PATHS = [".agents/skills", ".claude/skills", ".claude/CLAUDE.md", ".codex/skills", ".codex/AGENTS.md", ".pi/agent/skills", ".pi/agent/AGENTS.md"];
+const SKILL_ROOTS = [".agents/skills", ".claude/skills", ".codex/skills", ".pi/agent/skills"];
+const INSTRUCTION_FILES = [".claude/CLAUDE.md", ".codex/AGENTS.md", ".pi/agent/AGENTS.md"];
 const CONFIG_LIMIT = 45 * 1024 * 1024;
 const codexAuthPath = () => join(process.env.CODEX_HOME || join(homedir(), ".codex"), "auth.json");
 export const hasMacCodexLogin = () => access(codexAuthPath()).then(() => true, () => false);
@@ -117,6 +120,23 @@ export async function macVariables(): Promise<Record<string, string>> {
   }));
 }
 
+export type MacSkill = { name: string; description: string; paths: string[] };
+/** This Mac's skills: folders with a SKILL.md in a harness skill root. One name may sit in several roots. */
+export async function macSkills(): Promise<MacSkill[]> {
+  const home = homedir();
+  const found = new Map<string, MacSkill>();
+  for (const root of SKILL_ROOTS) {
+    for (const name of await readdir(join(home, root)).catch(() => [])) {
+      const file = join(home, root, name, "SKILL.md");
+      if (name.startsWith(".") || !await stat(file).then(info => info.isFile(), () => false)) continue;
+      const skill = found.get(name) ?? { name, paths: [], description: await readFile(file, "utf8").then(text => String(matter(text).data.description ?? "").replace(/\s+/g, " ").trim(), () => "") };
+      skill.paths.push(`${root}/${name}`);
+      found.set(name, skill);
+    }
+  }
+  return [...found.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 /** Asks the website to delete this sign-in's token. Best effort: signing out never waits for the network. */
 export function revokeDesktopToken(account: SandboxAccount): void {
   void fetch(`${account.website}/api/desktop/sign-out`, {
@@ -149,13 +169,29 @@ export class SandboxDirectory {
         body: JSON.stringify(body),
       });
     } catch (error) { throw new CloudroomConnectionError(`Cloudroom could not reach the website to manage this thread's sandbox: ${error instanceof Error ? error.message : String(error)}`); }
-    const value = await response.json().catch(() => ({})) as { error?: unknown };
+    const value = await response.json().catch(() => ({})) as { error?: unknown; code?: unknown };
     if (!response.ok) {
       const message = typeof value.error === "string" ? value.error : `The website returned HTTP ${response.status}.`;
       if (response.status === 409 && /busy/i.test(message)) throw new CloudroomConnectionError(message);
-      throw new CloudroomError(message, response.status >= 500 ? null : response.status);
+      const code = typeof value.code === "string" ? value.code : null;
+      if (code === USAGE_LIMIT) this.limit = { on: true, at: Date.now() };
+      throw new CloudroomError(message, response.status >= 500 ? null : response.status, code);
     }
     return value;
+  }
+
+  private limit: { on: boolean; at: number } | null = null;
+  private checkingLimit = false;
+  usageLimited(): boolean {
+    if (!this.checkingLimit && (!this.limit || Date.now() - this.limit.at > RECHECK_MS)) {
+      this.checkingLimit = true;
+      void this.checkMode().catch(() => { this.limit = { on: this.limit?.on ?? false, at: Date.now() }; }).finally(() => { this.checkingLimit = false; });
+    }
+    return this.limit?.on ?? false;
+  }
+
+  async requestMoreUsage() {
+    return z.object({ sent: z.boolean() }).parse(await this.call({}, "usage-request"));
   }
 
   /** The member's friend invite codes. `create` makes one more, up to 3 for life (ADR 0169). */
@@ -195,7 +231,11 @@ export class SandboxDirectory {
       pending = macHarnessVersions().then(harnesses => {
         this.wakeHarnesses.set(thread, harnesses);
         return this.call({ action: "wake", ...place, harnesses, ...(this.backoff.has(thread) ? { trigger: "retry" } : {}) });
-      }).then(value => this.remember(viewSchema.parse(value))).then(view => { this.backoff.delete(thread); return view; }, error => {
+      }).then(value => this.remember(viewSchema.parse(value))).then(view => {
+        this.backoff.delete(thread);
+        if (this.limit?.on) this.limit = { on: false, at: Date.now() };
+        return view;
+      }, error => {
         const delay = Math.min((this.backoff.get(thread)?.delay ?? 2_500) * 2, 300_000);
         this.backoff.set(thread, { until: Date.now() + delay, delay });
         throw error;
@@ -211,9 +251,15 @@ export class SandboxDirectory {
   /** Whether the account's new cloud threads get sandboxes. Unknown (website unreachable) keeps the last answer. */
   async forNewThreads(): Promise<boolean> {
     if (this.mode && Date.now() - this.mode.at < RECHECK_MS) return this.mode.on;
-    try { this.mode = { on: z.object({ sandboxes: z.boolean() }).parse(await this.call({ action: "mode" })).sandboxes, at: Date.now() }; }
+    try { return await this.checkMode(); }
     catch { return this.mode?.on ?? true; }
-    return this.mode.on;
+  }
+
+  private async checkMode(): Promise<boolean> {
+    const value = z.object({ sandboxes: z.boolean(), limited: z.boolean().default(false) }).parse(await this.call({ action: "mode" }));
+    this.mode = { on: value.sandboxes, at: Date.now() };
+    this.limit = { on: value.limited, at: Date.now() };
+    return value.sandboxes;
   }
 
   /** What the account's cloud offers, read by the website from a running spare or sandbox. Null until one runs. */
@@ -245,6 +291,7 @@ export class SandboxDirectory {
     this.backoff.clear();
     this.uploaded.clear();
     this.mode = null;
+    this.limit = null;
     this.warmed = null;
     this.copiedAt = 0;
     this.configAt = 0;
@@ -304,19 +351,30 @@ export class SandboxDirectory {
 
   private configAt = 0;
   private configDigest = "";
-  /** Uploads this Mac's skills and instructions when they change, then pushes them to awake sandboxes. At most once a minute. */
-  async copyMacConfig(): Promise<void> {
-    if (Date.now() - this.configAt < RECHECK_MS) return;
+  private configRun: Promise<unknown> = Promise.resolve();
+  /** Uploads this Mac's skills and instructions when they change, then pushes them to awake sandboxes. At most once a minute,
+   *  unless the user just changed which skills the cloud gets. `skills` names them; null means all. */
+  copyMacConfig(skills: string[] | null, force = false): Promise<void> {
+    // One upload at a time, so an older skill choice never lands after a newer one.
+    const run = this.configRun.then(() => this.uploadConfig(skills, force));
+    this.configRun = run.catch(() => {});
+    return run;
+  }
+
+  private async uploadConfig(skills: string[] | null, force: boolean): Promise<void> {
+    if (!force && Date.now() - this.configAt < RECHECK_MS) return;
     this.configAt = Date.now();
     const home = homedir();
-    const present = (await Promise.all(CONFIG_PATHS.map(path => stat(join(home, path)).then(() => path, () => null)))).filter((path): path is string => path !== null);
-    if (!present.length) return;
+    const wanted = skills && new Set(skills);
+    const instructions = (await Promise.all(INSTRUCTION_FILES.map(path => stat(join(home, path)).then(() => path, () => null)))).filter((path): path is string => path !== null);
+    const present = [...(await macSkills()).filter(skill => !wanted || wanted.has(skill.name)).flatMap(skill => skill.paths), ...instructions];
     // Links are followed: sandboxes lack the targets. The digest skips file times, since Claude Code re-saves unchanged skills at every start.
-    const { stdout } = await promisify(execFile)("tar", ["-c", "-h", "--format", "ustar", "--exclude", ".git", "--exclude", "node_modules", "--exclude", ".DS_Store", "-C", home, ...present],
-      { encoding: "buffer", maxBuffer: 4 * CONFIG_LIMIT, timeout: 30_000, env: { ...process.env, COPYFILE_DISABLE: "1" } });
-    const digest = contentDigest(stdout);
+    // Nothing chosen still uploads an empty archive, so new sandboxes stop getting the old skills.
+    const tar = present.length ? (await promisify(execFile)("tar", ["-c", "-h", "--format", "ustar", "--exclude", ".git", "--exclude", "node_modules", "--exclude", ".DS_Store", "-C", home, ...present],
+      { encoding: "buffer", maxBuffer: 4 * CONFIG_LIMIT, timeout: 30_000, env: { ...process.env, COPYFILE_DISABLE: "1" } })).stdout : Buffer.alloc(1024);
+    const digest = contentDigest(tar);
     if (digest === this.configDigest) return;
-    const body = gzipSync(stdout);
+    const body = gzipSync(tar);
     if (body.length > CONFIG_LIMIT) throw new CloudroomError("Your skills are too large to copy to cloud sandboxes.");
     const { url } = z.object({ url: z.string().url() }).parse(await this.call({ action: "upload" }, "config"));
     const response = await fetch(url, { method: "PUT", redirect: "error", headers: { "Content-Type": "application/gzip", "x-upsert": "true" }, body, signal: AbortSignal.timeout(120_000) });

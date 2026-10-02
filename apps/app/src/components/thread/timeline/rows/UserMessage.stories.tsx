@@ -502,7 +502,7 @@ const mixedAttachments: TimelineConversationAttachments = {
 };
 
 const mentionedMessageText =
-  "Ask @thread:thr_parent and @apps/app/src/components/promptbox/PromptBoxInternal.tsx to review the prompt mention flow.";
+  "Ask @thread:thr_parent and @apps/app/src/components/promptbox/PromptBoxInternal.tsx to review the prompt mention flow with /sandbox-inspect.";
 const mentionedMessageMentions: PromptTextMention[] = [
   storyMention({
     text: mentionedMessageText,
@@ -523,6 +523,19 @@ const mentionedMessageMentions: PromptTextMention[] = [
       entryKind: "file",
       path: "apps/app/src/components/promptbox/PromptBoxInternal.tsx",
       label: "PromptBoxInternal.tsx",
+    },
+  }),
+  storyMention({
+    text: mentionedMessageText,
+    token: "/sandbox-inspect",
+    resource: {
+      kind: "command",
+      trigger: "/",
+      name: "sandbox-inspect",
+      source: "skill",
+      origin: "user",
+      label: "sandbox-inspect",
+      argumentHint: null,
     },
   }),
 ];

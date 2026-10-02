@@ -13,9 +13,9 @@ import { saveProjectCopyProgress } from "./store.js";
 
 type Deps = Pick<AppDeps, "db" | "hub">;
 // `key` is the copy target: one folder on a shared VM, or one per thread sandbox.
-// New threads get a default-branch clone and `.env` files, or all files of a small project not on GitHub.
+// New threads get a clone of the chosen branch (default branch if none) and `.env` files, or all files of a small project not on GitHub.
 // Teleport also brings the local branch and uncommitted work.
-export type ProjectCopyJob = { threadId: string; workspace: string; key: string; localPath: string; repository: string | null; clone: boolean; copyAll: boolean; teleport: boolean };
+export type ProjectCopyJob = { threadId: string; workspace: string; key: string; localPath: string; repository: string | null; clone: boolean; copyAll: boolean; teleport: boolean; branch?: string };
 
 const exec = promisify(execFile);
 // A stalled piece counts as dropped, so the retry sends it again.
@@ -51,7 +51,7 @@ export async function localProjectNote(deps: Deps, projectId: string): Promise<s
   return `This project is not on GitHub and too large to copy, so only its \`.env\` files are here. The rest is on the user's Mac at \`${path}\`. Pull only what the task needs with \`cloudroom mac pull\`.`;
 }
 
-export async function planProjectCopy(deps: Deps, client: CloudroomClient, threadId: string, workspace: string, { localPath, key = workspace, teleport = false }: { localPath?: string; key?: string; teleport?: boolean } = {}): Promise<ProjectCopyJob | null> {
+export async function planProjectCopy(deps: Deps, client: CloudroomClient, threadId: string, workspace: string, { localPath, key = workspace, teleport = false, branch }: { localPath?: string; key?: string; teleport?: boolean; branch?: string } = {}): Promise<ProjectCopyJob | null> {
   try {
     const project = getProject(deps.db, getThread(deps.db, threadId)?.projectId ?? "");
     if (!project || copying.has(key)) return null;
@@ -63,7 +63,7 @@ export async function planProjectCopy(deps: Deps, client: CloudroomClient, threa
     const repository = githubRepository(project.gitRemoteUrl);
     const clone = empty && Boolean(repository);
     const copyAll = empty && !repository && !teleport && await smallProject(path);
-    const job = { threadId, workspace, key, localPath: path, repository, clone, copyAll, teleport };
+    const job = { threadId, workspace, key, localPath: path, repository, clone, copyAll, teleport, ...(branch ? { branch } : {}) };
     return clone || copyAll || teleport || (await localFiles(path, "env")).length ? job : null;
   } catch {
     return null;
@@ -97,7 +97,7 @@ async function run(client: CloudroomClient, job: ProjectCopyJob, report: (progre
   // A failed Teleport clone falls back to uploading the files, so the agent can still work, then reports why Git is missing.
   let cloneError: string | null = null;
   if (job.clone && job.repository) {
-    const branch = job.teleport ? (await git(job.localPath, ["rev-parse", "--abbrev-ref", "HEAD"]))?.trim() : undefined;
+    const branch = job.teleport ? (await git(job.localPath, ["rev-parse", "--abbrev-ref", "HEAD"]))?.trim() : job.branch;
     cloneError = await clone(client, target, job.repository, branch);
     if (cloneError) cloneError = await clone(client, target, job.repository, branch);
   }

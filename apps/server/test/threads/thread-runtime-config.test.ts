@@ -417,16 +417,16 @@ describe("thread runtime config", () => {
   it.each([
     {
       childProviderId: "codex",
-      expectedPermissionMode: "auto",
+      expectedPermissionMode: "full",
       parentProviderId: null,
-      name: "defaults root-thread execution permission mode to auto",
+      name: "defaults root-thread execution permission mode to full",
       requestedModel: "gpt-5",
     },
     {
       childProviderId: "codex",
-      expectedPermissionMode: "auto",
+      expectedPermissionMode: "full",
       parentProviderId: "codex",
-      name: "defaults child execution permission mode to auto without parent history or project defaults",
+      name: "defaults child execution permission mode to full without parent history or project defaults",
       requestedModel: "gpt-5",
     },
     {
@@ -789,7 +789,18 @@ describe("thread runtime config", () => {
         thread,
       });
 
+      const sharedSkill = (name: string) => ({
+        kind: "tree",
+        sourceType: "builtin",
+        name,
+        description: expect.stringMatching(/\S/),
+        treeHash: readSkillTreeManifest(
+          path.join(harness.config.dataDir, "shared-skills", name),
+        ).treeHash,
+        entryPath: "SKILL.md",
+      });
       expect(command.injectedSkillSources).toEqual([
+        ...["adr-verbatim", "decisions", "file-tree"].map(sharedSkill),
         {
           kind: "workspace-path",
           sourceType: "project",
@@ -806,6 +817,7 @@ describe("thread runtime config", () => {
           treeHash: readSkillTreeManifest(sourceRootPath).treeHash,
           entryPath: "SKILL.md",
         },
+        ...["risky-changes", "self-archive", "setup-help"].map(sharedSkill),
       ]);
     });
   });
@@ -867,6 +879,7 @@ describe("thread runtime config", () => {
       const claudeCode = await build("claude-code");
       expect(claudeCode.options.providerOptions).toEqual({
         chromeEnabled: false,
+        claudeAiConnectorsEnabled: false,
         memoryEnabled: true,
         providerSubagentsEnabled: true,
         workflowsEnabled: true,

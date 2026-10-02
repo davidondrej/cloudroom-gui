@@ -1,25 +1,20 @@
 import {
   useCallback,
   useContext,
-  useLayoutEffect,
-  useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 import { Button } from "@bb/shared-ui/button";
 import { useAtomValue } from "jotai";
-import { COARSE_POINTER_TOOLBAR_ACTION_BUTTON_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
 import { Icon } from "@bb/shared-ui/icon";
 import { Pill } from "@bb/shared-ui/pill";
-import { SplitButton } from "@/components/ui/split-button.js";
 import {
   AppPageHeader,
   COMPACT_SHELF_HIDDEN_PAGE_HEADER_ACTIONS_CLASS,
   HEADER_ICON_BUTTON_CLASS,
   HEADER_PANE_ACTION_ICON_BUTTON_CLASS,
 } from "@/components/layout/AppPageHeader";
-import type { ThreadGitActionDialogTarget } from "@/components/dialogs/ThreadGitActionDialog";
 import {
   getBbDesktopInfo,
   MACOS_WINDOW_NO_DRAG_CLASS,
@@ -42,26 +37,16 @@ import {
 } from "@/components/ui/context-selection";
 import { usePaneContext } from "./PaneContext";
 import { PaneMaximizeButton } from "./PaneMaximizeButton";
-import type { ThreadHeaderGitAction } from "./useThreadGitActions";
-
-const THREAD_HEADER_ACTION_BUTTON_CLASS = cn(
-  COARSE_POINTER_TOOLBAR_ACTION_BUTTON_CLASS,
-  "border-border/70 bg-transparent font-normal hover:bg-state-hover",
-);
-const NARROW_SPLIT_HEADER_MAX_WIDTH = 560;
 
 interface ThreadDetailHeaderProps {
-  actionsMenu: ((includeResponsiveActions: boolean) => ReactNode) | null;
+  actionsMenu: ReactNode;
   childPillLabel: "child" | "side chat" | null;
   isSecondaryPanelOpen: boolean;
   onClosePane?: () => void;
-  onOpenThreadGitAction: (target: ThreadGitActionDialogTarget) => void;
   onToggleSecondaryPanel: () => void;
   pluginActions?: ReactNode;
-  threadHeaderGitActions: ThreadHeaderGitAction[];
   threadId: string;
   threadTitle: string;
-  workspaceOpenButton?: ReactNode;
 }
 
 export function ThreadDetailHeader({
@@ -69,16 +54,12 @@ export function ThreadDetailHeader({
   childPillLabel,
   isSecondaryPanelOpen,
   onClosePane,
-  onOpenThreadGitAction,
   onToggleSecondaryPanel,
   pluginActions,
-  threadHeaderGitActions,
   threadId,
   threadTitle,
-  workspaceOpenButton,
 }: ThreadDetailHeaderProps) {
   const isCompactViewport = useIsCompactViewport();
-  const [primaryAction, ...secondaryActions] = threadHeaderGitActions;
   const { renameThread } = useThreadActions();
   const handleRename = useCallback(
     (nextTitle: string) => {
@@ -95,7 +76,6 @@ export function ThreadDetailHeader({
   const dimsInactiveSplits = useAtomValue(dimInactiveSplitsAtom);
   const panelShortcut = useAppCommandShortcut("panel.toggle");
   const usesDesktopChrome = shouldUseMacosDesktopChrome(desktopInfo);
-  const headerRef = useRef<HTMLElement>(null!);
   const {
     beginPaneDrag,
     isFocused,
@@ -107,32 +87,6 @@ export function ThreadDetailHeader({
   const isWindowPanelOpen =
     useContext(SecondaryPanelHostLayoutContext)?.isOpen === true;
   const isSplitPaneHeader = beginPaneDrag !== undefined;
-  const [measuredPaneWidth, setMeasuredPaneWidth] = useState(0);
-  const usesResponsiveActionOverflow =
-    isSplitPaneHeader &&
-    measuredPaneWidth > 0 &&
-    measuredPaneWidth < NARROW_SPLIT_HEADER_MAX_WIDTH;
-  useLayoutEffect(() => {
-    if (!isSplitPaneHeader) {
-      return;
-    }
-
-    const header = headerRef.current;
-    const pane = header.closest<HTMLElement>("[data-split-pane-id]");
-    const measuredElement = pane ?? header;
-    const measure = () => {
-      const width = measuredElement.getBoundingClientRect().width;
-      if (width > 0) {
-        setMeasuredPaneWidth(width);
-      }
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(measuredElement);
-    return () => {
-      observer.disconnect();
-    };
-  }, [isSplitPaneHeader]);
   const handleTitlePointerDown = (event: ReactPointerEvent) => {
     if (isEditing || !beginPaneDrag || event.button !== 0) {
       return;
@@ -200,7 +154,7 @@ export function ThreadDetailHeader({
             usesDesktopChrome && MACOS_WINDOW_NO_DRAG_CLASS,
           )}
         >
-          {actionsMenu(usesResponsiveActionOverflow)}
+          {actionsMenu}
         </span>
       )}
     </>
@@ -213,38 +167,6 @@ export function ThreadDetailHeader({
         data-thread-header-workflow-actions=""
       >
         {pluginActions}
-        {!usesResponsiveActionOverflow && workspaceOpenButton ? (
-          <span className="inline-flex" data-thread-header-responsive-action="">
-            {workspaceOpenButton}
-          </span>
-        ) : null}
-        {!usesResponsiveActionOverflow && primaryAction ? (
-          <span className="inline-flex" data-thread-header-responsive-action="">
-            {secondaryActions.length > 0 ? (
-              <SplitButton
-                className={THREAD_HEADER_ACTION_BUTTON_CLASS}
-                primaryAction={{
-                  label: primaryAction.label,
-                  onSelect: () => onOpenThreadGitAction(primaryAction.target),
-                }}
-                secondaryActions={secondaryActions.map((action) => ({
-                  label: action.label,
-                  onSelect: () => onOpenThreadGitAction(action.target),
-                }))}
-              />
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={THREAD_HEADER_ACTION_BUTTON_CLASS}
-                onClick={() => onOpenThreadGitAction(primaryAction.target)}
-              >
-                {primaryAction.label}
-              </Button>
-            )}
-          </span>
-        ) : null}
       </div>
       <div
         className="ml-1 flex items-center gap-0.5"
@@ -299,9 +221,9 @@ export function ThreadDetailHeader({
 
   return (
     <AppPageHeader
-      headerRef={headerRef}
       center={center}
       actions={actions}
+      compact
       isWindowDragRegion={isTopRow}
       ownsWindowTopLeft={ownsWindowTopLeft}
       className={beginPaneDrag ? "z-[21]" : undefined}

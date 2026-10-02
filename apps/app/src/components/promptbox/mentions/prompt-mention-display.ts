@@ -12,6 +12,15 @@ export const PROMPT_MENTION_PILL_CLASS = cn(
   "align-baseline",
 );
 
+// Skills render as plain lime `/name` text, not a pill, so they read apart
+// from agent, file, and project mentions.
+export const PROMPT_SKILL_MENTION_CLASS =
+  "prompt-skill-mention rounded-sm font-medium align-baseline";
+
+export function isSkillMention(resource: PromptMentionResource): boolean {
+  return resource.kind === "command" && resource.source === "skill";
+}
+
 function promptMentionIconLabel(resource: PromptMentionResource): string {
   if (resource.kind === "thread") {
     return "Thread";

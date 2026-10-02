@@ -74,7 +74,7 @@ export function cloudFeatureSupported(status: z.infer<typeof cloudroomStatusSche
   const profile = cloudHarness(status, harness);
   return status?.[feature] === true && profile?.[feature] !== false;
 }
-const threadStatusSchema = z.object({ authRequired: z.boolean().default(false), starting: z.boolean().default(false), sessionId: z.string().nullable(), paused: z.boolean(), failedStart: z.boolean().default(false), model: z.string(), reasoning: reasoningLevelSchema, serviceTier: serviceTierSchema.default("default"), error: z.string().nullable(), reconnecting: z.boolean().default(false), pendingDelivery: z.number() }).nullable();
+const threadStatusSchema = z.object({ authRequired: z.boolean().default(false), starting: z.boolean().default(false), sessionId: z.string().nullable(), paused: z.boolean(), failedStart: z.boolean().default(false), model: z.string(), reasoning: reasoningLevelSchema, serviceTier: serviceTierSchema.default("default"), error: z.string().nullable(), reconnecting: z.boolean().default(false), usageLimit: z.boolean().default(false), pendingDelivery: z.number() }).nullable();
 
 export function useCloudroomAccount() {
   return useQuery({ queryKey: ["cloudroom-account"], queryFn: async ({ signal }) => {
@@ -132,14 +132,19 @@ export function useCloudroomThread(threadId: string, enabled: boolean) {
   return useQuery({ queryKey: ["cloudroom-thread", threadId], enabled, queryFn: async ({ signal }) => threadStatusSchema.parse(await (await fetchWithAppSurface(`/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}`, { signal })).json()), refetchInterval: 1500 });
 }
 
+const cloudWorkspaceSchema = z.object({ path: z.string(), branch: z.string().nullable(), head: z.string().nullable() }).nullable();
+
 export function useCloudroomThreadWorkspace(threadId: string, enabled: boolean) {
+  const client = useQueryClient();
   return useQuery({
     queryKey: ["cloudroom-thread-workspace", threadId],
     enabled,
     retry: false,
     refetchInterval: 10000,
-    queryFn: async ({ signal }) => {
-      return z.object({ path: z.string(), branch: z.string().nullable(), head: z.string().nullable() }).nullable().parse(await sdk.cloudroom.threadWorkspace(threadId, signal));
+    queryFn: async ({ queryKey, signal }) => {
+      const workspace = cloudWorkspaceSchema.parse(await sdk.cloudroom.threadWorkspace(threadId, signal));
+      // An asleep sandbox answers null, and its checkout cannot change while asleep, so keep the last one.
+      return workspace ?? client.getQueryData<z.infer<typeof cloudWorkspaceSchema>>(queryKey) ?? null;
     },
   });
 }

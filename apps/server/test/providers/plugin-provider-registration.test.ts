@@ -372,8 +372,18 @@ describe("buildPluginProviderRegistration", () => {
         icon: undefined,
       },
       {
+        id: "acp-fx",
+        logoUrl: "/api/v1/system/providers/acp-fx/logo",
+        icon: undefined,
+      },
+      {
         id: "acp-hermes-agent",
         logoUrl: "/api/v1/system/providers/acp-hermes-agent/logo",
+        icon: undefined,
+      },
+      {
+        id: "acp-devin",
+        logoUrl: "/api/v1/system/providers/acp-devin/logo",
         icon: undefined,
       },
     ]);
@@ -401,7 +411,9 @@ describe("buildPluginProviderRegistration", () => {
       "acp-opencode": "collapse",
       "acp-omp": "collapse",
       "acp-grok": "collapse",
+      "acp-fx": "collapse",
       "acp-hermes-agent": "collapse",
+      "acp-devin": "collapse",
     });
   });
 });

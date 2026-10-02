@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import {
   buildLocalAppOrigins,
   type BuildLocalAppOriginsArgs,
@@ -75,6 +76,36 @@ function parseRequestHost(host: string, protocol: string): URL | null {
   }
 }
 
+function isAllowedHost(
+  context: BrowserRequestContext,
+  deps: BrowserRequestGuardDeps,
+): boolean {
+  const host = context.req.header("host");
+  if (host === undefined) {
+    return true;
+  }
+  const target = parseRequestHost(host, "http:");
+  if (target === null) {
+    return false;
+  }
+  const hostname = target.hostname.replace(/^\[(.*)\]$/u, "$1");
+  if (
+    hostname === "localhost" ||
+    hostname.endsWith(".ts.net") ||
+    isIP(hostname) !== 0
+  ) {
+    return true;
+  }
+  try {
+    return (
+      deps.config.appUrl !== undefined &&
+      new URL(deps.config.appUrl).hostname === target.hostname
+    );
+  } catch {
+    return false;
+  }
+}
+
 function requestTargets(context: BrowserRequestContext): URL[] {
   const requestUrl = new URL(context.req.url);
   const targets = [requestUrl];
@@ -143,6 +174,12 @@ export function browserRequestProblem(
   deps: BrowserRequestGuardDeps,
   options: BrowserRequestGuardOptions = {},
 ): BrowserRequestProblem | null {
+  if (!isAllowedHost(context, deps)) {
+    return {
+      status: 403,
+      error: `host "${context.req.header("host")}" is not a local Cloudroom host`,
+    };
+  }
   const origin = context.req.header("origin");
   if (origin !== undefined && !isTrustedOrigin(context, deps, origin)) {
     return {

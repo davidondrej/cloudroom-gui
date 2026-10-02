@@ -281,6 +281,8 @@ export const providerCommandSchema = z.object({
   description: z.string().nullable(),
   argumentHint: z.string().nullable(),
   pluginId: z.string().min(1).optional(),
+  /** Recency-weighted uses in sent prompts; breaks ranking ties in the slash menu. */
+  usage: z.number().nonnegative().optional(),
 });
 export type ProviderCommand = z.infer<typeof providerCommandSchema>;
 

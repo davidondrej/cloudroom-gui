@@ -1,6 +1,6 @@
 import { useState, type ClipboardEvent, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { CloudEnvironment, CloudEnvironmentChange } from "@bb/sdk/browser";
+import type { CloudEnvironment, CloudEnvironmentChange, CloudSkill } from "@bb/sdk/browser";
 import { Button } from "@bb/shared-ui/button";
 import { Icon } from "@bb/shared-ui/icon";
 import { Input } from "@bb/shared-ui/input";
@@ -8,6 +8,7 @@ import { Textarea } from "@bb/shared-ui/textarea";
 import { sdk } from "@/lib/sdk";
 
 const ENVIRONMENT_KEY = ["cloudroom-environment"];
+const SKILLS_KEY = ["cloudroom-cloud-skills"];
 const VARIABLE_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const PREINSTALLED = "Node.js · Git · GitHub CLI · Claude Code · Codex · Pi · Cursor";
 // Dimmer than the default placeholder, so the example never reads as saved text.
@@ -34,7 +35,7 @@ export function CloudEnvironmentSettingsSection() {
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-foreground">Cloud environment</h2>
           <p className="mt-1 max-w-xl text-xs leading-relaxed text-subtle-foreground">
-            Every new cloud thread starts with these API keys and this setup. Change them here or on your cloudroom.dev dashboard. Both stay in sync.
+            Every new cloud thread starts with these API keys, skills, and this setup. Change them here or on your cloudroom.dev dashboard. Both stay in sync.
           </p>
         </div>
         {data && !environment.isError && (
@@ -51,6 +52,7 @@ export function CloudEnvironmentSettingsSection() {
       ) : (
         <>
           <VariablesCard environment={data} busy={update.isPending} onChange={(change) => update.mutateAsync(change)} onImported={saved} />
+          <SkillsCard />
           <SetupScriptCard setup={data.setup} onSave={(setup) => update.mutateAsync({ action: "setup", setup })} />
         </>
       )}
@@ -215,6 +217,98 @@ function VariablesCard({
             Add a key manually
           </Button>
         </div>
+      )}
+    </Card>
+  );
+}
+
+function SkillsCard() {
+  const queryClient = useQueryClient();
+  const skills = useQuery({ queryKey: SKILLS_KEY, queryFn: ({ signal }) => sdk.cloudroom.cloudSkills(signal), retry: false });
+  const change = useMutation({
+    mutationFn: ({ names, cloud }: { names: string[]; cloud: boolean }) => sdk.cloudroom.setCloudSkills(names, cloud),
+    onSuccess: (data) => queryClient.setQueryData(SKILLS_KEY, data),
+  });
+  const all = skills.data?.skills ?? [];
+  const inCloud = all.filter((skill) => skill.cloud);
+  const missing = all.filter((skill) => !skill.cloud);
+  const set = (list: CloudSkill[], cloud: boolean) => change.mutate({ names: list.map((skill) => skill.name), cloud });
+  const label = (skill: CloudSkill) => (
+    <div className="min-w-0 flex-1">
+      <code className={`block truncate font-mono text-xs ${skill.cloud ? "text-foreground" : "text-muted-foreground"}`}>{skill.name}</code>
+      {skill.description && <p className="truncate text-2xs text-subtle-foreground">{skill.description}</p>}
+    </div>
+  );
+  return (
+    <Card
+      icon="Brain"
+      title="Skills"
+      description="Skills from this Mac that every new cloud thread gets. Edits sync automatically."
+      action={
+        inCloud.length > 1 && (
+          <Button size="sm" variant="ghost" className="text-subtle-foreground" disabled={change.isPending} onClick={() => set(inCloud, false)}>
+            Remove all
+          </Button>
+        )
+      }
+    >
+      {!skills.data ? (
+        <p role={skills.isError ? "alert" : "status"} className="border-t border-border px-4 py-3 text-xs text-subtle-foreground">
+          {skills.isError ? errorText(skills.error) : "Looking for skills on this Mac…"}
+        </p>
+      ) : !all.length ? (
+        <p className="border-t border-border px-4 py-3 text-xs text-subtle-foreground">
+          No skills on this Mac yet. Add them to <code>~/.agents/skills</code>.
+        </p>
+      ) : null}
+      {inCloud.length > 0 && (
+        <ul className="max-h-72 divide-y divide-border overflow-y-auto border-t border-border">
+          {inCloud.map((skill) => (
+            <li key={skill.name} className="flex items-center gap-3 px-4 py-2">
+              {label(skill)}
+              <span className="rounded-full border border-primary/30 px-1.5 text-2xs text-primary-text">in cloud</span>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-7 text-subtle-foreground hover:text-destructive-text"
+                aria-label={`Remove ${skill.name} from the cloud`}
+                disabled={change.isPending}
+                onClick={() => set([skill], false)}
+              >
+                <Icon name="X" className="size-3.5" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {missing.length > 0 && (
+        <>
+          <div className="flex items-center justify-between gap-3 border-t border-border bg-primary/5 px-4 py-2">
+            <p className="text-xs text-foreground">
+              <span className="font-semibold">{missing.length} more on this Mac</span>
+              <span className="text-subtle-foreground"> · not in the cloud</span>
+            </p>
+            <Button size="sm" disabled={change.isPending} onClick={() => set(missing, true)}>
+              {change.isPending ? "Saving…" : missing.length > 1 ? `Import all ${missing.length}` : "Import"}
+            </Button>
+          </div>
+          <ul className="max-h-72 divide-y divide-border overflow-y-auto border-t border-border bg-primary/[0.02]">
+            {missing.map((skill) => (
+              <li key={skill.name} className="flex items-center gap-3 px-4 py-2">
+                {label(skill)}
+                <Button size="sm" variant="outline" className="h-7" disabled={change.isPending} onClick={() => set([skill], true)}>
+                  <Icon name="Plus" />
+                  Import
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {change.error && (
+        <p role="alert" className="border-t border-border px-4 py-2 text-xs text-destructive-text">
+          {errorText(change.error)}
+        </p>
       )}
     </Card>
   );

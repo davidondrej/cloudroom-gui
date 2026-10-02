@@ -16,6 +16,8 @@ export interface CloudroomStatus {
   storage?: CloudroomStorage | null;
   ready: boolean;
   account: { id: string; email: string } | null;
+  /** Connected to a core the user hosts, by URL and token, without a Cloudroom account. */
+  selfHosted?: boolean;
   projectId: string | null;
   repository: string | null;
   model: string | null;
@@ -30,8 +32,6 @@ export interface CloudroomStatus {
   localLogins?: { codex: boolean };
   signingIn: boolean;
   signInError: string | null;
-  /** Signed-out installs from before 2026-09-30 21:48 PDT may claim free access until this moment (docs/scopes/waitlist.md). */
-  earlyAccessUntil?: string | null;
 }
 
 export interface CloudroomCodexAuth {
@@ -55,6 +55,13 @@ export type CloudEnvironmentChange =
   | { action: "remove"; name: string }
   | { action: "setup"; setup: string };
 
+/** A skill on this Mac. `cloud` means every new cloud thread gets it. */
+export interface CloudSkill {
+  name: string;
+  description: string;
+  cloud: boolean;
+}
+
 export interface ClaudeAccountInput { action?: "login" | "cancel" | "complete" | "setup-token" | "key"; requestId?: string; code?: string; state?: string; apiKey?: string }
 
 export interface CloudroomArea {
@@ -76,6 +83,8 @@ export interface CloudroomArea {
   status(signal?: AbortSignal): Promise<CloudroomStatus>;
   /** `provider` opens that provider's sign-in directly instead of the website's sign-in page. */
   signIn(input?: { projectId?: string; websiteUrl?: string; provider?: "github" | "google" }): Promise<{ url: string }>;
+  /** Connects a self-hosted core by its HTTPS URL and API token. The backend checks it before saving. */
+  connect(input: { url: string; token: string }): Promise<void>;
   setMacAccess(enabled: boolean): Promise<void>;
   setCopyLogins(enabled: boolean): Promise<void>;
   environment(signal?: AbortSignal): Promise<CloudEnvironment>;
@@ -84,6 +93,10 @@ export interface CloudroomArea {
   macVariables(signal?: AbortSignal): Promise<{ names: string[] }>;
   /** Copies the named variables from this Mac's login shell into the Cloud environment. */
   importMacVariables(names: string[]): Promise<CloudEnvironment>;
+  /** This Mac's skills and which of them new cloud threads get. */
+  cloudSkills(signal?: AbortSignal): Promise<{ skills: CloudSkill[] }>;
+  /** Adds or removes skills from the cloud, then uploads the new choice. */
+  setCloudSkills(names: string[], cloud: boolean): Promise<{ skills: CloudSkill[] }>;
   /** Mac → cloud: runs a shell command as the agent account of the VM, or of `threadId`'s sandbox. Input and output bytes are hex. */
   runOnVm(input: { command: string; stdin?: string; cwd?: string; threadId?: string }): Promise<{ code: number | null; stdout: string; stderr: string; truncated: boolean }>;
   cancel(): Promise<void>;
@@ -139,6 +152,7 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     cancelGithubLogin: (requestId) => transport.readJson(request("/github/cancel", { requestId })) as Promise<CloudroomCodexAuth>,
     status: (signal) => transport.readJson(request("", undefined, signal)) as Promise<CloudroomStatus>,
     signIn: (input = {}) => transport.readJson(request("/sign-in", input)) as Promise<{ url: string }>,
+    connect: (input) => transport.readVoid(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })),
     cancel: () => transport.readVoid(request("/cancel", {})),
     setMacAccess: (enabled) => transport.readVoid(request("/mac-access", { enabled })),
     setCopyLogins: (enabled) => transport.readVoid(request("/copy-logins", { enabled })),
@@ -146,6 +160,8 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     updateEnvironment: (change) => transport.readJson(request("/environment", change)) as Promise<CloudEnvironment>,
     macVariables: (signal) => transport.readJson(request("/environment/mac", undefined, signal)) as Promise<{ names: string[] }>,
     importMacVariables: (names) => transport.readJson(request("/environment/mac", { names })) as Promise<CloudEnvironment>,
+    cloudSkills: (signal) => transport.readJson(request("/skills", undefined, signal)) as Promise<{ skills: CloudSkill[] }>,
+    setCloudSkills: (names, cloud) => transport.readJson(request("/skills", { names, cloud })) as Promise<{ skills: CloudSkill[] }>,
     runOnVm: (input) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/vm/run`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })) as Promise<{ code: number | null; stdout: string; stderr: string; truncated: boolean }>,
     logout: () => transport.readVoid(request("/logout", {})),
     threadWorkspace: (threadId, signal) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/workspace`, { signal })) as Promise<CloudroomThreadWorkspace | null>,

@@ -101,6 +101,8 @@ export const createThreadRequestSchema = z
     projectId: z.string().min(1),
     executionTarget: z.enum(["local", "cloud"]).optional(),
     requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/).optional(),
+    /** Cloud only: the GitHub branch the sandbox starts from. Omitted means the default branch. */
+    baseBranch: z.string().regex(/^(?!-)[\w./-]{1,255}$/).optional(),
     providerId: z.string().min(1).optional(),
     origin: threadCreateOriginSchema,
     originPluginId: z.string().min(1).optional(),

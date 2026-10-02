@@ -99,6 +99,7 @@ function compareCommands(a: ProviderCommand, b: ProviderCommand): number {
 
 interface BuildCommandListResponseArgs {
   commands: HostProviderCommand[];
+  commandUsage?: ReadonlyMap<string, number>;
   includeBuiltinCompact: boolean;
   includeBuiltinTeleport?: boolean;
   skillCatalog: readonly ResolvedSkillCatalogEntry[];
@@ -116,6 +117,11 @@ export function buildCommandListResponse(
       ),
       ...args.skillCatalog.map(toSkillCommand),
       ...args.commands.map(toProviderCommand),
-    ]).sort(compareCommands),
+    ])
+      .sort(compareCommands)
+      .map((command) => {
+        const usage = args.commandUsage?.get(command.name);
+        return usage ? { ...command, usage } : command;
+      }),
   };
 }

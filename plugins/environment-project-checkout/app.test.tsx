@@ -24,7 +24,7 @@ function inputsSlot() {
 }
 
 describe("checkout inputs control", () => {
-  it("selects a remote branch before the new machine exists", async () => {
+  it("selects a GitHub branch before the new machine exists", async () => {
     const onChange = vi.fn();
     const slot = renderSlot(
       inputsSlot(),
@@ -45,8 +45,10 @@ describe("checkout inputs control", () => {
     expect(trigger.textContent).toContain("Default branch");
     expect(trigger.hasAttribute("disabled")).toBe(false);
     fireEvent.click(trigger);
-    fireEvent.click(await slot.findByRole("button", { name: "Checkout" }));
-    fireEvent.click(await slot.findByRole("button", { name: "release" }));
+    expect(await slot.findByText("On GitHub")).toBeTruthy();
+    expect(slot.queryByText("On this Mac")).toBeNull();
+    expect(slot.queryByRole("button", { name: "local-only" })).toBeNull();
+    fireEvent.click(slot.getByRole("button", { name: "release" }));
     expect(onChange).toHaveBeenLastCalledWith({
       status: "ready",
       value: { branch: { kind: "existing", name: "release" } },
@@ -66,40 +68,56 @@ describe("checkout inputs control", () => {
     });
   });
 
-  it("renders the current checkout chip", () => {
-    const slot = renderSlot(inputsSlot(), {
+  it("shows the current branch, or the picked one, on the chip", () => {
+    const current = renderSlot(inputsSlot(), {
       projectId: "project-1",
       target: { kind: "existing-host", hostId: "host-a" },
       value: null,
       onChange: vi.fn(),
     });
     expect(
-      slot.getByRole("combobox", { name: "Branch" }).textContent,
-    ).toContain("Current (main)");
-  });
-
-  it("renders an existing branch pick on the chip", () => {
-    const slot = renderSlot(inputsSlot(), {
+      current.getByRole("combobox", { name: "Branch" }).textContent,
+    ).toBe("main");
+    cleanup();
+    const picked = renderSlot(inputsSlot(), {
       projectId: "project-1",
       target: { kind: "existing-host", hostId: "host-a" },
       value: { branch: { kind: "existing", name: "release" } },
       onChange: vi.fn(),
     });
     expect(
-      slot.getByRole("combobox", { name: "Branch" }).textContent,
-    ).toContain("Checkout:release");
+      picked.getByRole("combobox", { name: "Branch" }).textContent,
+    ).toBe("release");
   });
 
-  it("renders a new branch base on the chip", () => {
-    const slot = renderSlot(inputsSlot(), {
-      projectId: "project-1",
-      target: { kind: "existing-host", hostId: "host-a" },
-      value: { branch: { kind: "new", baseBranch: "origin/main" } },
-      onChange: vi.fn(),
+  it("groups branches by where they live and checks out a GitHub-only one", async () => {
+    const onChange = vi.fn();
+    const slot = renderSlot(
+      inputsSlot(),
+      {
+        projectId: "project-1",
+        target: { kind: "existing-host", hostId: "host-a" },
+        value: null,
+        onChange,
+      },
+      {
+        branchesState: {
+          branches: ["main", "release"],
+          remoteBranches: ["origin/HEAD", "origin/main", "origin/feature"],
+        },
+      },
+    );
+    fireEvent.click(slot.getByRole("combobox", { name: "Branch" }));
+    expect(await slot.findByText("On this Mac")).toBeTruthy();
+    expect(slot.getByText("On GitHub")).toBeTruthy();
+    expect(slot.getByRole("button", { name: /^main\s*current$/ })).toBeTruthy();
+    expect(slot.getAllByRole("button", { name: /^main/ })).toHaveLength(1);
+    expect(slot.queryByRole("button", { name: "HEAD" })).toBeNull();
+    fireEvent.click(slot.getByRole("button", { name: "feature" }));
+    expect(onChange).toHaveBeenLastCalledWith({
+      status: "ready",
+      value: { branch: { kind: "existing", name: "feature" } },
     });
-    const chipText = slot.getByRole("combobox", { name: "Branch" }).textContent;
-    expect(chipText).toContain("New branch from");
-    expect(chipText).toContain("origin/main");
   });
 
   it("keeps a seeded path while the branch changes", async () => {
@@ -115,7 +133,6 @@ describe("checkout inputs control", () => {
       { branchesState: { branches: ["main", "release"] } },
     );
     fireEvent.click(slot.getByRole("combobox", { name: "Branch" }));
-    fireEvent.click(await slot.findByRole("button", { name: "Checkout" }));
     fireEvent.click(await slot.findByRole("button", { name: "release" }));
     expect(onChange).toHaveBeenLastCalledWith({
       status: "ready",
@@ -125,24 +142,28 @@ describe("checkout inputs control", () => {
       },
     });
     cleanup();
-    const cleared = renderSlot(inputsSlot(), {
-      projectId: "project-1",
-      target: { kind: "existing-host", hostId: "host-a" },
-      value: {
-        path: "/srv/other-checkout",
-        branch: { kind: "existing", name: "release" },
+    const cleared = renderSlot(
+      inputsSlot(),
+      {
+        projectId: "project-1",
+        target: { kind: "existing-host", hostId: "host-a" },
+        value: {
+          path: "/srv/other-checkout",
+          branch: { kind: "existing", name: "release" },
+        },
+        onChange,
       },
-      onChange,
-    });
+      { branchesState: { branches: ["main", "release"] } },
+    );
     fireEvent.click(cleared.getByRole("combobox", { name: "Branch" }));
-    fireEvent.click(await cleared.findByTitle("Current: main"));
+    fireEvent.click(await cleared.findByRole("button", { name: /^main\s*current$/ }));
     expect(onChange).toHaveBeenLastCalledWith({
       status: "ready",
       value: { path: "/srv/other-checkout" },
     });
   });
 
-  it("selects a searched existing branch with Enter and closes", async () => {
+  it("selects a searched branch with Enter and closes", async () => {
     const onChange = vi.fn();
     const slot = renderSlot(
       inputsSlot(),
@@ -156,7 +177,6 @@ describe("checkout inputs control", () => {
     );
     const trigger = slot.getByRole("combobox", { name: "Branch" });
     fireEvent.click(trigger);
-    fireEvent.click(await slot.findByRole("button", { name: "Checkout" }));
     const search = await slot.findByRole("textbox", {
       name: "Search branches",
     });
@@ -169,33 +189,7 @@ describe("checkout inputs control", () => {
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("selects a searched new-branch base with Enter and closes", async () => {
-    const onChange = vi.fn();
-    const slot = renderSlot(
-      inputsSlot(),
-      {
-        projectId: "project-1",
-        target: { kind: "existing-host", hostId: "host-a" },
-        value: { branch: { kind: "new", baseBranch: "main" } },
-        onChange,
-      },
-      { branchesState: { branches: ["main", "release"] } },
-    );
-    const trigger = slot.getByRole("combobox", { name: "Branch" });
-    fireEvent.click(trigger);
-    const search = await slot.findByRole("textbox", {
-      name: "Search branches",
-    });
-    fireEvent.change(search, { target: { value: "release" } });
-    fireEvent.keyDown(search, { key: "Enter" });
-    expect(onChange).toHaveBeenLastCalledWith({
-      status: "ready",
-      value: { branch: { kind: "new", baseBranch: "release" } },
-    });
-    expect(trigger.getAttribute("aria-expanded")).toBe("false");
-  });
-
-  it("reports the checkout blocker through the inputs channel", async () => {
+  it("reports the checkout blocker and only allows the current or picked branch", async () => {
     const onChange = vi.fn();
     const slot = renderSlot(
       inputsSlot(),
@@ -206,7 +200,7 @@ describe("checkout inputs control", () => {
         onChange,
       },
       {
-        branchesState: { branches: ["main", "release"] },
+        branchesState: { branches: ["main", "release", "hotfix"] },
         checkoutState: { dirty: true },
       },
     );
@@ -216,56 +210,22 @@ describe("checkout inputs control", () => {
         reason: "Checkout blocked by uncommitted changes",
       });
     });
-    expect(
-      slot.getByRole("combobox", { name: "Branch" }).textContent,
-    ).toContain("Checkout:release");
     fireEvent.click(slot.getByRole("combobox", { name: "Branch" }));
-    const newBranch = (await slot.findByText("New")).closest("button");
-    expect(newBranch).not.toBeNull();
-    expect(newBranch).toHaveProperty("disabled", true);
-    expect(newBranch?.getAttribute("title")).toBe(
-      "Checkout blocked by uncommitted changes",
+    expect(
+      await slot.findByText("Checkout blocked by uncommitted changes"),
+    ).toBeTruthy();
+    expect(slot.getByRole("button", { name: "hotfix" })).toHaveProperty(
+      "disabled",
+      true,
     );
-    expect(slot.queryByRole("button", { name: "release" })).toBeNull();
-    expect(slot.queryByRole("textbox", { name: "Search branches" })).toBeNull();
-  });
-
-  it("matches the checkout menu structure and enters new-branch mode in place", async () => {
-    const onChange = vi.fn();
-    const slot = renderSlot(
-      inputsSlot(),
-      {
-        projectId: "project-1",
-        target: { kind: "existing-host", hostId: "host-a" },
-        value: null,
-        onChange,
-      },
-      {
-        branchesState: {
-          branches: ["main", "release"],
-          remoteBranches: ["origin/main"],
-        },
-      },
+    expect(slot.getByRole("button", { name: "release" })).toHaveProperty(
+      "disabled",
+      false,
     );
-    const trigger = slot.getByRole("combobox", { name: "Branch" });
-    fireEvent.click(trigger);
-
-    expect(await slot.findByText("Start from:")).toBeTruthy();
-    expect(slot.getAllByTitle("Current: main")).toHaveLength(2);
-    expect(slot.getByTitle("New branch")).toBeTruthy();
-    expect(slot.getByTitle("Checkout an existing branch")).toBeTruthy();
-    expect(slot.queryByRole("textbox", { name: "Search branches" })).toBeNull();
-
-    fireEvent.click(slot.getByTitle("New branch"));
-
-    expect(trigger.getAttribute("aria-expanded")).toBe("true");
-    expect(await slot.findByText("Branch from:")).toBeTruthy();
-    expect(slot.getByRole("textbox", { name: "Search branches" })).toBeTruthy();
-    expect(slot.getByRole("button", { name: "origin/main" })).toBeTruthy();
-    expect(onChange).toHaveBeenLastCalledWith({
-      status: "ready",
-      value: { branch: { kind: "new", baseBranch: "main" } },
-    });
+    const current = slot.getByRole("button", { name: /^main\s*current$/ });
+    expect(current).toHaveProperty("disabled", false);
+    fireEvent.click(current);
+    expect(onChange).toHaveBeenLastCalledWith({ status: "ready", value: {} });
   });
 
   it("reads only a well-formed branch out of the current value", () => {

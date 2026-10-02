@@ -121,6 +121,7 @@ export interface NewThreadModeConfig {
   permission: ExecutionPermissionConfig;
   environmentProviderInputsSlot?: ReactNode;
   machineProviderInputsSlot?: ReactNode;
+  cloudInputsSlot?: ReactNode;
   banner?: ReactNode;
   header?: ReactNode;
 }
@@ -424,6 +425,7 @@ const DefaultNewThreadComposer = memo(function DefaultNewThreadComposer({
               modeConfig.environmentProviderInputsSlot
             }
             machineProviderInputsSlot={modeConfig.machineProviderInputsSlot}
+            cloudInputsSlot={modeConfig.cloudInputsSlot}
           />
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -448,6 +450,7 @@ interface EnvironmentSlotProps {
   worktree: NewThreadWorktreeConfig;
   environmentProviderInputsSlot?: ReactNode;
   machineProviderInputsSlot?: ReactNode;
+  cloudInputsSlot?: ReactNode;
 }
 
 export function EnvironmentSlot({
@@ -456,6 +459,7 @@ export function EnvironmentSlot({
   worktree,
   environmentProviderInputsSlot,
   machineProviderInputsSlot,
+  cloudInputsSlot,
 }: EnvironmentSlotProps) {
   const providers = (environment.providers ?? []).filter(
     (provider) => provider.requires.projectless === projectless,
@@ -528,6 +532,7 @@ export function EnvironmentSlot({
       {selectedProvider !== undefined && selectedProvider.inputs !== null
         ? environmentProviderInputsSlot
         : null}
+      {environment.cloud?.selected ? cloudInputsSlot : null}
     </>
   );
 }

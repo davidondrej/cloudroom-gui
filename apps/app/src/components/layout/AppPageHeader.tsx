@@ -29,6 +29,10 @@ export const HEADER_SEAM_CLASS = "border-b border-border-seam-vertical/60";
 
 export const APP_PAGE_HEADER_SURFACE_CLASS = "bg-surface-scrim";
 
+// Slim row with no seam. The collapsed sidebar trigger and macOS traffic
+// lights are pinned to the full chrome row, so headers that reserve them keep it.
+const COMPACT_HEADER_CLASS = "[--bb-app-chrome-row-height:2.125rem]";
+
 export const COMPACT_SHELF_HIDDEN_PAGE_HEADER_ACTIONS_CLASS =
   "group-data-[panel-shelf=open]/page-inset:invisible group-data-[panel-shelf=shelf]/page-inset:invisible";
 
@@ -36,6 +40,7 @@ interface AppPageHeaderProps {
   center?: ReactNode;
   actions?: ReactNode;
   className?: string;
+  compact?: boolean;
   headerRef?: Ref<HTMLElement>;
   isWindowDragRegion?: boolean;
   ownsWindowTopLeft?: boolean;
@@ -45,6 +50,7 @@ export function AppPageHeader({
   center,
   actions,
   className,
+  compact = false,
   headerRef,
   isWindowDragRegion = true,
   ownsWindowTopLeft = true,
@@ -65,7 +71,8 @@ export function AppPageHeader({
       ref={headerRef}
       className={cn(
         CHROME_ROW_HEIGHT_CLASS,
-        HEADER_SEAM_CLASS,
+        !compact && HEADER_SEAM_CLASS,
+        compact && !shouldReserveSidebarTrigger && COMPACT_HEADER_CLASS,
         APP_PAGE_HEADER_SURFACE_CLASS,
         "relative shrink-0 select-none px-4",
         usesDesktopChrome && isWindowDragRegion && MACOS_WINDOW_DRAG_CLASS,

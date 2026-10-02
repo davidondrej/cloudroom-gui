@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import {
   PROMPT_HISTORY_ENTRY_LIMIT,
   type PromptHistoryScope,
@@ -14,6 +14,11 @@ export interface StoredPromptHistoryEntryRow {
   input: string;
   requestSequence: number;
   threadId: string;
+}
+
+export interface PromptHistoryCommandUseRow {
+  createdAt: number;
+  name: string;
 }
 
 export interface CreatePromptHistoryEntryInput {
@@ -128,4 +133,21 @@ export function listStoredThreadPromptHistoryRows(
     )
     .limit(rawPromptHistoryRowLimit(args.limit))
     .all();
+}
+
+/** Every slash command or skill chip in prompts sent since `since`. */
+export function listPromptHistoryCommandUses(
+  db: DbQueryConnection,
+  since: number,
+): PromptHistoryCommandUseRow[] {
+  return db.all<PromptHistoryCommandUseRow>(sql`
+    SELECT
+      json_extract(mention.value, '$.resource.name') AS name,
+      entry.created_at AS createdAt
+    FROM ${promptHistoryEntries} AS entry,
+      json_each(entry.input) AS item,
+      json_each(item.value, '$.mentions') AS mention
+    WHERE entry.created_at >= ${since}
+      AND json_extract(mention.value, '$.resource.kind') = 'command'
+  `);
 }

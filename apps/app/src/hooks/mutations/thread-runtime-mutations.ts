@@ -9,6 +9,7 @@ import type {
 } from "@bb/server-contract";
 import type { AppCreateThreadRequest } from "@bb/client-core";
 import { BbHttpError, sdk } from "@/lib/sdk";
+import { retryTransient } from "@/lib/retry-transient";
 import { wsManager } from "@/lib/ws";
 import type { QueuedMessageReorderRequest } from "@/lib/queued-message-reorder";
 import type {
@@ -129,12 +130,16 @@ export function useCreateThread() {
       lifecycleOperation: "create_thread",
     },
     mutationFn: (request: AppCreateThreadRequest) =>
-      sdk.threads.spawn({
-        ...request,
-        origin: "app",
-        originKind: request.originKind ?? null,
-        startedOnBehalfOf: request.startedOnBehalfOf ?? null,
-      }),
+      retryTransient(
+        () =>
+          sdk.threads.spawn({
+            ...request,
+            origin: "app",
+            originKind: request.originKind ?? null,
+            startedOnBehalfOf: request.startedOnBehalfOf ?? null,
+          }),
+        request.requestId ? 3 : 1,
+      ),
     onMutate: async () => beginCreateThreadTransaction({ queryClient }),
     onSuccess: (thread, variables) => {
       if (thread.queuedMessageCount > 0) {

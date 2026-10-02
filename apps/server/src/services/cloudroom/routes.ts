@@ -6,7 +6,7 @@ import { z } from "zod";
 import { cloudroom, isCloudThread } from "./commands.js";
 import { cloudroomAccount } from "./account.js";
 import { setMacAccess } from "./previews.js";
-import { setCopyLogins } from "./sync.js";
+import { cloudSkills, setCloudSkills, setCopyLogins } from "./sync.js";
 import { teleports } from "./teleport.js";
 import { binding, teleportBlocked, teleportProgress } from "./store.js";
 import { browserRequestProblem } from "../../browser-request-guard.js";
@@ -14,12 +14,13 @@ import { claudePlan, createClaudeToken, isClaudeApiKey } from "./claude-token.js
 import { startClaudeVersionSync } from "./harness-versions.js";
 import { importBbThreads } from "./bb-import.js";
 import { copyToMac, openOnMac, teleportingToLocal, teleportToLocal } from "./teleport-local.js";
-import { cloudEnvironmentRequestSchema, macVariables, sandboxThread, type CloudEnvironmentRequest } from "./sandboxes.js";
+import { cloudEnvironmentRequestSchema, macSkills, macVariables, sandboxThread, type CloudEnvironmentRequest } from "./sandboxes.js";
 import { CloudroomError } from "./client.js";
 import { archiveThreadAndChildren } from "../threads/thread-archive.js";
 import { reportBug } from "./bug-reports.js";
 import { githubAuth } from "./github-login.js";
 import { localRepos } from "./local-repos.js";
+import { SETUP_ACTIONS, SETUP_DETAILS, SETUP_STEPS } from "../system/telemetry.js";
 
 export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   cloudroom(deps).teleportRecovery = () => teleports(deps).recover();
@@ -89,6 +90,12 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     desktopUpdate.install = true;
     return context.json({ ok: true }, 202);
   });
+  app.post("/api/v1/cloudroom/setup-step", async (context) => {
+    const parsed = z.object({ step: z.enum(SETUP_STEPS), action: z.enum(SETUP_ACTIONS), detail: z.enum(SETUP_DETAILS).nullable().default(null) }).strict().safeParse(await context.req.json().catch(() => null));
+    if (!parsed.success) throw new ApiError(400, "invalid_setup_step", "Invalid setup step.");
+    deps.telemetry.capture({ name: "setup_step", properties: parsed.data });
+    return context.json({ ok: true });
+  });
   app.post("/api/v1/cloudroom/bug-reports", async (context) => {
     const input = z.object({ message: z.string().trim().min(1).max(4000), threadId: z.string().min(1).max(200).optional() }).strict().parse(await context.req.json());
     return context.json(await reportBug(deps, input));
@@ -97,6 +104,12 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   app.post("/api/v1/cloudroom/account/invites", async (context) => {
     z.object({}).strict().parse(await context.req.json());
     return context.json(await cloudroom(deps).sandboxes.invites("create"));
+  });
+  app.post("/api/v1/cloudroom/account/more-usage", async (context) => {
+    z.object({}).strict().parse(await context.req.json());
+    return context.json(await cloudroom(deps).sandboxes.requestMoreUsage().catch((error: unknown) => {
+      throw new ApiError(503, "cloud_usage_request", error instanceof Error ? error.message : String(error));
+    }));
   });
   app.post("/api/v1/cloudroom/account/mac-access", async (context) => {
     const input = z.object({ enabled: z.boolean() }).strict().parse(await context.req.json());
@@ -118,6 +131,22 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     const variables = Object.fromEntries(names.flatMap(name => found[name] ? [[name, found[name]]] : []));
     if (!Object.keys(variables).length) throw new ApiError(404, "mac_variables_missing", "Those variables are no longer set in your shell on this Mac.");
     return context.json(await environment({ action: "set", variables }));
+  });
+  // Skills from this Mac that every new cloud thread gets. A change uploads the chosen skills right away.
+  const skillList = async () => {
+    const chosen = await cloudSkills(deps);
+    return { skills: (await macSkills()).map(({ name, description }) => ({ name, description, cloud: !chosen || chosen.includes(name) })) };
+  };
+  app.get("/api/v1/cloudroom/account/skills", async (context) => context.json(await skillList()));
+  app.post("/api/v1/cloudroom/account/skills", async (context) => {
+    const { names, cloud } = z.object({ names: z.array(z.string().min(1)).min(1).max(1000), cloud: z.boolean() }).strict().parse(await context.req.json());
+    const chosen = new Set(await cloudSkills(deps) ?? (await macSkills()).map(skill => skill.name));
+    for (const name of names) if (cloud) chosen.add(name); else chosen.delete(name);
+    await setCloudSkills(deps, [...chosen].sort());
+    await cloudroom(deps).sandboxes.copyMacConfig([...chosen], true).catch((error: unknown) => {
+      throw new ApiError(503, "cloud_skills", `Your choice is saved on this Mac, but the cloud did not get it yet: ${error instanceof Error ? error.message : String(error)}`);
+    });
+    return context.json(await skillList());
   });
   app.post("/api/v1/cloudroom/account/copy-logins", async (context) => {
     const input = z.object({ enabled: z.boolean() }).strict().parse(await context.req.json());

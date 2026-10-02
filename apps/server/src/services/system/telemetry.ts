@@ -12,6 +12,11 @@ const telemetryAppSurfaceStorage = new AsyncLocalStorage<RequestAppSurface>();
 /** Where a thread runs: on this computer, in its own cloud sandbox, or on the older shared cloud VM. */
 export type TelemetryExecution = "local" | "cloud_sandbox" | "cloud_vm";
 
+/** The desktop app's first-run setup funnel: which step people see, act on, finish, skip, or leave. */
+export const SETUP_STEPS = ["account", "agent", "github", "project"] as const;
+export const SETUP_ACTIONS = ["viewed", "started", "done", "skipped", "closed", "detected", "waitlist"] as const;
+export const SETUP_DETAILS = ["github", "google", "email", "claude", "codex", "both", "none", "existing", "found", "folder", "bb_import"] as const;
+
 export type TelemetryEvent =
   | { name: "app_started" }
   | {
@@ -55,6 +60,14 @@ export type TelemetryEvent =
         provider: string;
         provider_code: string | null;
         running_threads: number;
+      };
+    }
+  | {
+      name: "setup_step";
+      properties: {
+        step: (typeof SETUP_STEPS)[number];
+        action: (typeof SETUP_ACTIONS)[number];
+        detail: (typeof SETUP_DETAILS)[number] | null;
       };
     }
   | {

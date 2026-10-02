@@ -8,7 +8,9 @@ import {
 } from "@/lib/route-paths";
 import { cn } from "@bb/shared-ui/lib/utils";
 import {
+  isSkillMention,
   PROMPT_MENTION_PILL_CLASS,
+  PROMPT_SKILL_MENTION_CLASS,
   promptMentionTooltipLabel,
 } from "@/components/promptbox/mentions/prompt-mention-display";
 import { PromptMentionIcon } from "@/components/promptbox/mentions/PromptMentionIcon";
@@ -84,7 +86,13 @@ export function clipMentionTextToVisibleRange({
   };
 }
 
-function mentionPillClassName(interactive: boolean): string {
+function mentionPillClassName(interactive: boolean, isSkill: boolean): string {
+  if (isSkill) {
+    return cn(
+      PROMPT_SKILL_MENTION_CLASS,
+      interactive ? "cursor-pointer hover:underline" : "cursor-default",
+    );
+  }
   return cn(
     PROMPT_MENTION_PILL_CLASS,
     "bg-surface-raised/50 font-normal no-underline hover:no-underline",
@@ -105,8 +113,11 @@ export function PromptMentionPill({
     resource,
     serializedText,
   });
+  const isSkill = isSkillMention(resource);
   const iconClassName = "size-3.5 shrink-0 self-center text-muted-foreground";
-  const labelNode = (
+  const labelNode = isSkill ? (
+    `/${resource.label}`
+  ) : (
     <>
       <PromptMentionIcon resource={resource} className={iconClassName} />
       <span className="truncate">{resource.label}</span>
@@ -116,7 +127,7 @@ export function PromptMentionPill({
   if (!interactive) {
     return (
       <span
-        className={mentionPillClassName(false)}
+        className={mentionPillClassName(false, isSkill)}
         {...clipboardAttributes}
         title={title}
       >
@@ -130,7 +141,7 @@ export function PromptMentionPill({
       <span
         role="link"
         tabIndex={0}
-        className={mentionPillClassName(true)}
+        className={mentionPillClassName(true, isSkill)}
         {...clipboardAttributes}
         onClick={(event: MouseEvent<HTMLSpanElement>) => {
           event.stopPropagation();
@@ -153,7 +164,7 @@ export function PromptMentionPill({
   if (resource.kind === "thread" && linkHref) {
     return (
       <RouteAnchor
-        className={mentionPillClassName(true)}
+        className={mentionPillClassName(true, isSkill)}
         {...clipboardAttributes}
         href={linkHref}
         title={title}
@@ -166,7 +177,7 @@ export function PromptMentionPill({
   if (resource.kind === "thread" && resource.projectId) {
     return (
       <Link
-        className={mentionPillClassName(true)}
+        className={mentionPillClassName(true, isSkill)}
         {...clipboardAttributes}
         to={getThreadRoutePath({
           projectId: resource.projectId,
@@ -182,7 +193,7 @@ export function PromptMentionPill({
   if (resource.kind === "project") {
     return (
       <Link
-        className={mentionPillClassName(true)}
+        className={mentionPillClassName(true, isSkill)}
         {...clipboardAttributes}
         to={getProjectComposeRoutePath(resource.projectId)}
         title={title}
@@ -198,7 +209,7 @@ export function PromptMentionPill({
       return (
         <button
           type="button"
-          className={mentionPillClassName(true)}
+          className={mentionPillClassName(true, isSkill)}
           {...clipboardAttributes}
           onClick={activate}
           title={title}
@@ -211,7 +222,7 @@ export function PromptMentionPill({
 
   return (
     <span
-      className={mentionPillClassName(false)}
+      className={mentionPillClassName(false, isSkill)}
       {...clipboardAttributes}
       title={title}
     >

@@ -75,7 +75,10 @@ import {
   requestProjectDeletionAdvance,
 } from "../services/projects/project-deletion.js";
 import { resolveDefaultWorktreeBaseBranch } from "../services/projects/worktree-base-branch.js";
-import { listProjectPromptHistory } from "../services/prompt-history.js";
+import {
+  listCommandUsage,
+  listProjectPromptHistory,
+} from "../services/prompt-history.js";
 import { parsePathKindInclusion } from "./path-list-inclusion.js";
 import {
   DEFAULT_PATH_LIST_EXCLUDE_NAMES,
@@ -692,6 +695,7 @@ export function registerProjectRoutes(app: Hono, deps: AppDeps): void {
     return context.json(
       buildCommandListResponse({
         commands: result.commands,
+        commandUsage: listCommandUsage(deps),
         includeBuiltinCompact: deps.providerRegistry.supportsManualCompaction(
           query.provider,
         ),

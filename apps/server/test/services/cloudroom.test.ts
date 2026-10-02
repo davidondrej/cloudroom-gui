@@ -986,9 +986,13 @@ it.each(["codex", "pi"])("edits and cancels queued Cloud %s prompts, then steers
     await expect.poll(() => getThread(harness.db, thread.id)?.status).toBe("idle");
     expect((await request(`/threads/${thread.id}/compact`, {})).status).toBe(200);
     await expect.poll(() => commands.some((item) => (item as { url?: string }).url?.endsWith("/compact"))).toBe(true);
+    await service.control(thread.id, "stop");
+    await expect.poll(() => service.threadStatus(thread.id)?.paused).toBe(true);
     const requested = harness.db.select().from(events).all().find((event) => event.type === "client/turn/requested");
     expect((await request(`/threads/${thread.id}/edit-message`, { operationId: "edit-1", input: input("rewritten"), expectedRequestSequence: requested?.sequence })).status).toBe(200);
     await expect.poll(() => commands.some((item) => (item as { url?: string }).url?.endsWith("/rewind"))).toBe(true);
+    // Editing after Stop must not leave the replacement stuck behind a paused queue.
+    expect(commands.map((item) => (item as { url?: string }).url?.split("/").pop()).filter((name) => name === "resume" || name === "rewind")).toEqual(["resume", "rewind"]);
     expect(commands.some((item) => (item as { url?: string; text?: string }).url?.endsWith("/prompts") && (item as { text?: string }).text === "rewritten")).toBe(false);
     const rewind = commands.find((item) => (item as { url?: string }).url?.endsWith("/rewind")) as { request_id: string; before: string; replacement: { request_id: string; text: string; content: unknown } };
     expect(rewind.replacement.text).toBe("rewritten");

@@ -175,6 +175,10 @@
     border-color: var(--pill-surface-selected-border);
   }
 
+  .prompt-skill-mention {
+    color: var(--skill-mention-foreground);
+  }
+
   /*
    * The compact mobile composer is a single-line preview of a rich editor,
    * not a separate plain-text field. Flatten every Markdown block and hard

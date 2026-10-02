@@ -61,6 +61,18 @@ export async function listLocalBranches(cwd: string): Promise<string[]> {
     .filter(Boolean);
 }
 
+/** `git switch <name>` creates a local tracking branch from this ref. */
+export async function hasOriginBranch(
+  cwd: string,
+  name: string,
+): Promise<boolean> {
+  const result = await runGit(
+    ["show-ref", "--verify", "--quiet", `refs/remotes/origin/${name}`],
+    { cwd, allowFailure: true },
+  );
+  return result.exitCode === 0;
+}
+
 const CONFLICT_PORCELAIN_STATUSES = new Set([
   "DD",
   "AU",

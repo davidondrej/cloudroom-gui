@@ -1,7 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { createServer, type Server } from "node:http";
-import { readFile, stat } from "node:fs/promises";
-import { join } from "node:path";
 import { z } from "zod";
 import { getProject, type DbConnection } from "@bb/db";
 import type { AppDeps } from "../../types.js";
@@ -24,17 +22,6 @@ const handoffSchema = z.object({
 type Deps = Pick<AppDeps, "db" | "hub" | "config" | "providerRegistry">;
 type Pending = { server: Server; abort: AbortController; timer: ReturnType<typeof setTimeout>; claimed: boolean };
 const accounts = new WeakMap<DbConnection, CloudroomAccountService>();
-// Installs from before this moment may claim free access while the website's window is open (docs/scopes/waitlist.md).
-const earlyAccessCutoff = Date.parse("2026-10-01T04:48:27Z");
-
-/** This install's random telemetry ID, if it existed before the cutoff. The website checks it against its own list. */
-async function earlyInstallId(dataDir: string): Promise<string | null> {
-  try {
-    const path = join(dataDir, "telemetry-id");
-    const [id, info] = await Promise.all([readFile(path, "utf8"), stat(path)]);
-    return /^[a-f0-9]{32}$/.test(id.trim()) && info.mtimeMs < earlyAccessCutoff ? id.trim() : null;
-  } catch { return null; }
-}
 
 function callbackPage(success: boolean, message: string, nonce: string): string {
   const title = success ? "You’re signed in" : "Sign-in not completed";
@@ -68,23 +55,13 @@ export class CloudroomAccountService {
   private pending: Pending | null = null;
   private error: string | null = null;
   private attempt = 0;
-  private offer: { checkedAt: number; until: string | null } | null = null;
   constructor(private readonly deps: Deps) {}
 
   async status() {
     const status = await cloudroom(this.deps).status();
-    return { ...status, macAccess: await macAccess(this.deps), copyLogins: await copyLogins(this.deps), localLogins: { codex: await hasMacCodexLogin() }, signingIn: this.pending !== null, signInError: this.error, earlyAccessUntil: status.account ? null : await this.earlyAccessUntil() };
+    return { ...status, macAccess: await macAccess(this.deps), copyLogins: await copyLogins(this.deps), localLogins: { codex: await hasMacCodexLogin() }, signingIn: this.pending !== null, signInError: this.error };
   }
 
-  /** When a signed-out early install can still claim free access, from the website (checked every 10 minutes). */
-  private async earlyAccessUntil(): Promise<string | null> {
-    if (!await earlyInstallId(this.deps.config.dataDir)) return null;
-    if (!this.offer || Date.now() - this.offer.checkedAt > 10 * 60_000) {
-      const body = await fetch(`${website}/api/desktop/early-access`, { signal: AbortSignal.timeout(5_000) }).then((response) => response.ok ? response.json() : null).catch(() => null) as { until?: unknown } | null;
-      this.offer = { checkedAt: Date.now(), until: typeof body?.until === "string" ? body.until : null };
-    }
-    return this.offer.until && Date.parse(this.offer.until) > Date.now() ? this.offer.until : null;
-  }
 
   cancel(): void {
     this.attempt++;
@@ -189,7 +166,6 @@ export class CloudroomAccountService {
     const timer = setTimeout(() => { if (this.pending?.server === server) { this.cancel(); this.error = "Sign-in expired. Try again."; } }, pendingLoginTimeoutMs);
     timer.unref();
     this.pending = { server, abort, timer, claimed: false };
-    const install = await earlyInstallId(this.deps.config.dataDir);
-    return { url: `${origin.origin}/desktop?${new URLSearchParams({ callback, state, challenge, ...(input.provider ? { provider: input.provider } : {}), ...(install ? { install } : {}) })}` };
+    return { url: `${origin.origin}/desktop?${new URLSearchParams({ callback, state, challenge, ...(input.provider ? { provider: input.provider } : {})})}` };
   }
 }

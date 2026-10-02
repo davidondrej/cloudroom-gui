@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
-import { basename, dirname, extname, isAbsolute, join, sep } from "node:path";
+import { basename, dirname, extname, isAbsolute, join, normalize, sep } from "node:path";
 import { promisify } from "node:util";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import {
@@ -25,6 +25,7 @@ import { resolvePrimaryHostId } from "../hosts/primary-host.js";
 import { provisionUnmanagedEnvironmentForPath } from "../threads/thread-environment-directory.js";
 import { getLastProviderThreadId } from "../threads/thread-events.js";
 import { requestQueuedMessageDispatch } from "../threads/queued-message-dispatch.js";
+import { requireThreadStoragePath } from "../threads/thread-storage.js";
 import { cloudroom } from "./commands.js";
 import type { CloudroomClient } from "./client.js";
 import { SKIPPED } from "./project-copy.js";
@@ -168,6 +169,22 @@ export async function openOnMac(deps: AppDeps, threadId: string, path: string): 
   await writeFile(target, data, { flag: "wx" });
   await exec("open", VIEWABLE.test(target) ? [target] : ["-R", target]);
   return { path: target };
+}
+
+export async function cloudFile(deps: AppDeps, threadId: string, path: string): Promise<Buffer> {
+  if (!isAbsolute(path)) throw new ApiError(400, "invalid_path", "Cloud file paths must be absolute.");
+  const hostId = resolvePrimaryHostId(deps);
+  if (!hostId) throw new ApiError(409, "host_unavailable", "This computer's local host is not ready.");
+  const saved = join(await requireThreadStoragePath(deps, { hostId, threadId }), "Cloud files", normalize(path));
+  try {
+    const data = await download(await cloudroom(deps).threadClient(threadId, !existsSync(saved)), path);
+    await mkdir(dirname(saved), { recursive: true });
+    await writeFile(saved, data);
+    return data;
+  } catch {
+    if (existsSync(saved)) return readFile(saved);
+    throw new ApiError(404, "cloud_file_missing", `${path} is not a file in the cloud.`);
+  }
 }
 
 async function localEnvironment(deps: AppDeps, thread: Thread) {

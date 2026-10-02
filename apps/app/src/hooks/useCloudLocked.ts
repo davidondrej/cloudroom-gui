@@ -7,10 +7,9 @@ export const CLOUD_LOCKED_REASON = "Sign in to use Cloud.";
 
 export function useCloudLocked(): boolean {
   const status = useCloudroomAccount();
-  return status.isSuccess && !status.data.account;
+  return status.isSuccess && !status.data.account && !status.data.selfHosted;
 }
 
-/** The website asks for an invite code, or joins the waitlist, after sign-in when the account has no access yet. */
 export function showCloudSignIn(): void {
   appToast.message("Sign in to use Cloud", {
     description: "Cloud agents need a Cloudroom account. Sign in or create one for free.",

@@ -1,5 +1,6 @@
 import {
   createPromptHistoryEntry,
+  listPromptHistoryCommandUses,
   listQueuedThreadMessages,
   listStoredProjectPromptHistoryRows,
   listStoredThreadPromptHistoryRows,
@@ -21,6 +22,9 @@ import { toThreadQueuedMessage } from "./threads/thread-queued-messages.js";
 import type { AppDeps } from "../types.js";
 
 const storedPromptHistoryInputSchema = z.array(promptInputSchema).min(1);
+const COMMAND_USAGE_HALF_LIFE_MS = 14 * 24 * 60 * 60 * 1000;
+// Older uses weigh under 2% of a fresh one, so skip them.
+const COMMAND_USAGE_WINDOW_MS = 6 * COMMAND_USAGE_HALF_LIFE_MS;
 
 interface PromptHistoryArgs {
   limit: number;
@@ -239,4 +243,22 @@ export function recordAcceptedPromptHistoryEntry(
     input,
   });
   return true;
+}
+
+/** Recency-weighted uses per command or skill name: each use halves in weight every 14 days. */
+export function listCommandUsage(
+  deps: PromptHistoryServiceDeps,
+  now = Date.now(),
+): Map<string, number> {
+  const usage = new Map<string, number>();
+  const uses = listPromptHistoryCommandUses(
+    deps.db,
+    now - COMMAND_USAGE_WINDOW_MS,
+  );
+  for (const { name, createdAt } of uses) {
+    if (typeof name !== "string") continue;
+    const weight = 0.5 ** ((now - createdAt) / COMMAND_USAGE_HALF_LIFE_MS);
+    usage.set(name, (usage.get(name) ?? 0) + weight);
+  }
+  return usage;
 }

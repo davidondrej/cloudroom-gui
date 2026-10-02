@@ -60,6 +60,9 @@ export const ThreadEnvironmentSummary = memo(function ThreadEnvironmentSummary({
   }
 
   const checkoutCopyValue = environmentCheckout?.copyValue ?? null;
+  const staleDot = environmentCheckout?.stale ? (
+    <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-warning" />
+  ) : null;
   const environmentNode = environmentHost ? (
     <MachineLabel
       host={environmentHost}
@@ -169,6 +172,7 @@ export const ThreadEnvironmentSummary = memo(function ThreadEnvironmentSummary({
             >
               <Icon name="GitBranch" className="size-3.5 shrink-0" />
               <span className="truncate">{environmentCheckout.label}</span>
+              {staleDot}
             </button>
           </TooltipTrigger>
           <TooltipContent>{environmentCheckout.title}</TooltipContent>
@@ -181,6 +185,7 @@ export const ThreadEnvironmentSummary = memo(function ThreadEnvironmentSummary({
         >
           <Icon name="GitBranch" className="size-3.5 shrink-0" />
           <span className="truncate">{environmentCheckout.label}</span>
+          {staleDot}
         </span>
       ) : null}
       {onCreateNewThreadInEnvironment ? (

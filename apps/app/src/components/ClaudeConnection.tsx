@@ -245,11 +245,16 @@ function ClaudeConnectionPanel({
         kind === "login" ? crypto.randomUUID() : auth.data?.login_id;
       if (!requestId) throw new Error("Sign-in expired. Start again.");
       // Cloud first tries a one-year token made on this Mac (ADR 0121); the VM code flow is the fallback.
+      // Sandboxes have no fallback, so its error must not hide why the token failed.
+      let tokenError: unknown = null;
       if (kind === "login" && target.target === "cloud") {
         const result = await request(target, {
           action: "setup-token",
           requestId,
-        }).catch(() => null);
+        }).catch((error: unknown) => {
+          tokenError = error;
+          return null;
+        });
         if (result?.state === "connected") return result;
       }
       let input: Action = { action: kind, requestId };
@@ -269,7 +274,9 @@ function ClaudeConnectionPanel({
           );
         input = { ...input, code: authorizationCode, state: expected };
       }
-      const result = await request(target, input);
+      const result = await request(target, input).catch((error: unknown) => {
+        throw tokenError ?? error;
+      });
       if (kind === "login" && result.verification_url) {
         setManual(false);
         openUrlInExternalBrowser(result.verification_url);
@@ -281,11 +288,12 @@ function ClaudeConnectionPanel({
         throw new Error(result.message ?? "Claude sign-in failed.");
       return result;
     },
+    meta: { showErrorToast: false },
     onSettled: () =>
       client.invalidateQueries({ queryKey: ["claude-connection"] }),
   });
   const state = auth.data?.state;
-  const error = auth.error?.message ?? action.error?.message;
+  const error = (auth.error?.message ?? action.error?.message)?.replace(/^HTTP \d+: /, "");
   return (
     <div className="space-y-2 text-xs">
       <div className="flex items-center justify-between gap-2">
@@ -414,7 +422,7 @@ function ClaudeConnectionPanel({
           >
             {action.isPending
               ? target.target === "cloud"
-                ? "Approve in your browser…"
+                ? "Setting up… approve in your browser"
                 : "Opening sign-in…"
               : "Sign in with Claude"}
           </Button>

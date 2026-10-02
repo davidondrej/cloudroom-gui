@@ -17,7 +17,7 @@ import { binding, bindings, command, commands, queuedPrompts, saveBinding, saveC
 import { copyProject, githubRepository, localProjectNote, planProjectCopy } from "./project-copy.js";
 import { deriveTitleFallback, shouldGenerateThreadTitle } from "../threads/title-generation.js";
 import { inferThreadMetadata, queueThreadTitle } from "../threads/thread-metadata-inference.js";
-import { copyLogins, importCodexLogin, importPiLogin, setupSync, stopSync, syncStatus } from "./sync.js";
+import { cloudSkills, copyLogins, importCodexLogin, importPiLogin, setupSync, stopSync, syncStatus } from "./sync.js";
 import { setupPreviews, stopPreviews, previewStatus } from "./previews.js";
 import { CloudSecrets } from "./secrets.js";
 import { cancelMacCodexLogin, hasMacCodexLogin, macCodexLogin, macCursorLogin, revokeDesktopToken, startMacCodexLogin, SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject, type SandboxTrigger } from "./sandboxes.js";
@@ -118,6 +118,12 @@ export function cloudroom(deps: Deps): CloudroomService {
 /** Where a cloud thread runs, for anonymous usage events: its own sandbox or the older shared VM. */
 export function cloudExecution(deps: Pick<AppDeps, "db">, threadId: string): "cloud_sandbox" | "cloud_vm" {
   return sandboxThread(binding(deps.db, threadId)?.coreUrl ?? "") ? "cloud_sandbox" : "cloud_vm";
+}
+
+/** The branch a new cloud thread starts from, saved on its first prompt. Validated by the create request schema. */
+function baseBranch(input: string | undefined): string | undefined {
+  const branch: unknown = input ? JSON.parse(input).base_branch : undefined;
+  return typeof branch === "string" && /^(?!-)[\w./-]{1,255}$/.test(branch) ? branch : undefined;
 }
 
 export function isCloudThread(thread: Pick<Thread, "executionTarget">): boolean {
@@ -298,10 +304,10 @@ class CloudroomService {
     this.teleportUrl = connection.url;
     return new CloudroomClient(connection);
   }
-  async threadClient(threadId: string): Promise<CloudroomClient> {
+  async threadClient(threadId: string, wake = true): Promise<CloudroomClient> {
     const saved = binding(this.deps.db, threadId);
     if (!saved) throw new ApiError(409, "cloudroom_thread_unstarted", "This cloud thread has not started yet.");
-    return this.client(saved);
+    return this.client(saved, wake);
   }
   followTeleport(threadId: string): void { void this.deliver(threadId).catch(() => {}); }
   detach(threadId: string): void {
@@ -639,9 +645,12 @@ class CloudroomService {
     let account: CloudroomAccount | null = null;
     let projectId: string | null = null;
     let storage: Storage | null = null;
+    // A core connected by URL and token, with no Cloudroom account: the user hosts it (docs/cloudroom.md).
+    let selfHosted = false;
     try {
       const saved = await this.savedConnection();
       account = saved?.token ? saved.account ?? null : null;
+      selfHosted = Boolean(saved?.token && !saved.account);
       projectId = saved?.projectId ?? null;
       if (saved?.sandboxToken && saved.account && await this.newThreadsInSandboxes()) {
         // New threads start in sandboxes, which sleep between tasks; report their latest capabilities, never a VM's.
@@ -668,7 +677,7 @@ class CloudroomService {
       await client.ready();
       void this.ensurePreviews(capabilities);
       return {
-        ready: true, account, projectId, storage, harnesses: capabilities.harnesses,
+        ready: true, account, selfHosted, projectId, storage, harnesses: capabilities.harnesses,
         sync: capabilities.sync ? { ...await syncStatus(this.deps), issue: this.syncIssue } : null,
         previews: capabilities.previews ? { ...await previewStatus(this.deps), issue: this.previewIssue } : null,
         workspaces: capabilities.workspaces, teleport: capabilities.teleport, repository: capabilities.repository,
@@ -677,7 +686,7 @@ class CloudroomService {
         compact: capabilities.compact, queue_edit: capabilities.queue_edit, queue_cancel: capabilities.queue_cancel,
         queue_reorder: capabilities.queue_reorder, error: null,
       };
-    } catch (error) { return { ready: false, account, projectId, storage, workspaces: false, repository: null, model: null, error: publicError(error) }; }
+    } catch (error) { return { ready: false, account, selfHosted, projectId, storage, workspaces: false, repository: null, model: null, error: publicError(error) }; }
   }
 
   /** Mac → cloud access (ADR 0113). Local agents reach this through `room-cli vm`.
@@ -701,7 +710,7 @@ class CloudroomService {
   }
 
   private async uploadMacConfig(): Promise<void> {
-    if (await this.sandboxMode()) await this.sandboxes.copyMacConfig().catch(error => this.warn("Skills could not be copied to cloud sandboxes", error));
+    if (await this.sandboxMode()) await this.sandboxes.copyMacConfig(await cloudSkills(this.deps)).catch(error => this.warn("Skills could not be copied to cloud sandboxes", error));
   }
 
   private async uploadMacLogins(): Promise<void> {
@@ -863,7 +872,7 @@ class CloudroomService {
     const serviceTier = input.service_tier === "fast" ? "fast" : "default";
     const initial = prompts.find(item => item.id === `first_${threadId}`);
     const issues = Object.values(this.connectionIssues.get(threadId) ?? {});
-    return { authRequired: !saved.sessionId && authRequiredMessages.has(saved.error ?? ""), starting: !saved.queuePaused && Boolean(initial && ["sending", "accepted"].includes(initial.state)), sessionId: saved.sessionId, paused: saved.queuePaused, failedStart: !saved.sessionId && initial?.state === "failed", model: saved.model, reasoning, serviceTier, error: saved.error ?? issues.find(issue => !issue.reconnecting)?.message ?? null, reconnecting: issues.some(issue => issue.reconnecting), pendingDelivery: commands(this.deps.db, threadId).filter((c) => c.state === "sending").length };
+    return { authRequired: !saved.sessionId && authRequiredMessages.has(saved.error ?? ""), starting: !saved.queuePaused && Boolean(initial && ["sending", "accepted"].includes(initial.state)), sessionId: saved.sessionId, paused: saved.queuePaused, failedStart: !saved.sessionId && initial?.state === "failed", model: saved.model, reasoning, serviceTier, error: saved.error ?? issues.find(issue => !issue.reconnecting)?.message ?? null, reconnecting: issues.some(issue => issue.reconnecting), usageLimit: Boolean(sandboxThread(saved.coreUrl)) && this.sandboxes.usageLimited(), pendingDelivery: commands(this.deps.db, threadId).filter((c) => c.state === "sending").length };
   }
 
   async create(request: CreateThreadRequest): Promise<Thread> {
@@ -931,6 +940,7 @@ class CloudroomService {
           command_guard_enabled: getAppSettings(this.deps.db).commandGuardEnabled,
           system_prompt: [cloudroomSystemPrompt(this.deps.db), projectNote].filter(Boolean).join("\n\n") || undefined,
           ...(request.serviceTier && request.serviceTier !== "default" ? { service_tier: request.serviceTier } : {}),
+          ...(request.baseBranch ? { base_branch: request.baseBranch } : {}),
         })),
         createdAt: Date.now(),
       }).run();
@@ -1055,8 +1065,11 @@ class CloudroomService {
       if (create) this.progress(threadId, [{ key: "workspace", text: `Using workspace: ${workspace.path}`, status: "completed" }]);
       if (!workspace.head) return;
       const quoted = `'${name}'`;
+      // A warm project snapshot skips the clone, so switch to the chosen base branch here.
+      const base = baseBranch(command(this.deps.db, `first_${threadId}`)?.input);
+      const switchBase = base ? `[ "$current" = '${base}' ] || { git fetch -q origin '${base}' && git checkout -q -B '${base}' 'origin/${base}'; } 2>/dev/null; ` : "";
       const script = create
-        ? `current=$(git symbolic-ref --quiet --short HEAD) || exit 0; case "$current" in room/*|cloudroom/*) ;; *) git pull -q --ff-only 2>/dev/null; git checkout -q -b ${quoted} ;; esac`
+        ? `current=$(git symbolic-ref --quiet --short HEAD) || exit 0; case "$current" in room/*|cloudroom/*) ;; *) ${switchBase}git pull -q --ff-only 2>/dev/null; git checkout -q -b ${quoted} ;; esac`
         : `current=$(git symbolic-ref --quiet --short HEAD) || exit 0; case "$current" in room/*|cloudroom/*) [ "$current" = ${quoted} ] || git rev-parse -q --verify "$current@{upstream}" >/dev/null || git branch -m ${quoted} ;; esac`;
       const result = await client.runOnVm({ command: `${script}\ngit symbolic-ref --quiet --short HEAD`, cwd: workspace.path });
       const branch = Buffer.from(result.stdout, "hex").toString().trim().split("\n").at(-1);
@@ -1255,6 +1268,8 @@ class CloudroomService {
       if (this.queue(thread.id).length) throw new ApiError(409, "invalid_request", "Send or remove queued messages before editing a message");
       if (thread.status !== "idle" && thread.status !== "error") throw new ApiError(409, "invalid_request", "Wait for the active turn to finish before editing a sent message");
       const before = nativeRewindBefore(this.deps.db, thread.id, payload.expectedRequestSequence);
+      // An edit is an explicit send, so it lifts the pause left by Stop. Core rejects resume mid-rewind, so it goes first.
+      if (saved.queuePaused) this.enqueue(thread.id, `resume_${payload.operationId}`, "resume", {});
       this.enqueue(thread.id, rewindId, "rewind", { before, expected_request_sequence: payload.expectedRequestSequence, replacement });
     }
     await this.deliver(thread.id);
@@ -1412,7 +1427,7 @@ class CloudroomService {
         if (harness === "codex" && capabilities.codex_auth_import && !sandbox) await importCodexLogin(this.deps);
         if (harness === "pi") await importPiLogin(this.deps);
         const [copy, accepted] = await Promise.all([
-          options.workspace && options.workspace !== ROOT_WORKSPACE ? planProjectCopy(this.deps, client, threadId, options.workspace, { key: sandbox ? `${sandbox}:${options.workspace}` : options.workspace }) : null,
+          options.workspace && options.workspace !== ROOT_WORKSPACE ? planProjectCopy(this.deps, client, threadId, options.workspace, { key: sandbox ? `${sandbox}:${options.workspace}` : options.workspace, branch: baseBranch(initial?.input) }) : null,
           client.start(saved.startRequestId, CLOUD_HARNESSES[harness], { model, reasoning: saved.reasoning, ...options, ...(provider ? { provider } : {}) }),
         ]);
         saveBinding(this.deps.db, threadId, { sessionId: accepted.session_id, error: null });

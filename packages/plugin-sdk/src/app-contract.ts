@@ -2246,6 +2246,8 @@ export interface ExperimentalPermissionModePickerProps {
 export interface NewThreadRequest {
   executionTarget?: "local" | "cloud";
   requestId?: string;
+  /** Cloud only: the GitHub branch the sandbox starts from. Omitted means the default branch. */
+  baseBranch?: string;
   /**
    * The selected project id. Choosing "Don't work in a project" submits BB's
    * personal-project id (not `null`) together with a `personal` workspace

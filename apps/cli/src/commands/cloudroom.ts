@@ -81,9 +81,9 @@ export function registerImportCommands(program: Command, getUrl: () => string): 
     }));
 }
 
-/** Agents report Cloudroom bugs by themselves (ADR 0158). Prints {"sent":false} while reports are off in Settings. */
-export function registerReportCommand(program: Command, getUrl: () => string): void {
-  program.command("report <message>").description("Report a Cloudroom bug to the Cloudroom team: what happened, what you expected, exact errors. No secrets or code.")
+/** Agents send Cloudroom feedback straight to David (ADR 0158). `report` is the old hidden name. Prints {"sent":false} while it is off in Settings. */
+export function registerFeedbackCommand(program: Command, getUrl: () => string, name: "feedback" | "report"): void {
+  program.command(`${name} <message>`, { hidden: name === "report" }).description("Send David, Cloudroom's founder, a bug, friction, or idea: what happened and the exact error. No secrets or code.")
     .action(action(async (message: string) => {
       console.log(JSON.stringify(await createCliBbSdk(getUrl()).cloudroom.reportBug({ message, threadId: resolveContextThreadId() })));
     }));

@@ -23,6 +23,7 @@ import { useIsMutating } from "@tanstack/react-query";
 import type { IconName } from "@bb/shared-ui/icon";
 import { Button } from "@bb/shared-ui/button";
 import { PromptStackCard } from "@/components/promptbox/banner/PromptStackCard";
+import { CloudUsageLimitNotice } from "@/components/CloudUsageLimitNotice";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
 import {
   getFollowUpPromptPlaceholder,
@@ -451,31 +452,27 @@ export function ThreadDetailPromptArea({
     isCloud && Boolean(cloudState.data?.sessionId),
   );
   const cloudCheckout = useMemo(() => {
-    const workspace = cloudWorkspace.isError ? null : cloudWorkspace.data;
-    if (workspace?.branch) {
-      return formatWorkspaceCheckoutDisplay({
-        checkout: workspace.head
-          ? { kind: "branch", branchName: workspace.branch, headSha: workspace.head }
-          : { kind: "unborn", branchName: workspace.branch },
-      });
-    }
-    if (workspace?.head) {
-      return formatWorkspaceCheckoutDisplay({
-        checkout: { kind: "detached", headSha: workspace.head },
-      });
-    }
-    return {
-      ...formatWorkspaceCheckoutDisplay({
-        checkout: {
-          kind: "unknown",
-          reason: workspace
-            ? "No Git branch information is available for this cloud folder."
-            : "Cloud branch information is unavailable. The cloud core may need an update.",
-        },
-      }),
-      label: workspace ? "No Git repository" : cloudWorkspace.isFetching ? "Loading branch…" : "Branch unavailable",
-    };
-  }, [cloudWorkspace.data, cloudWorkspace.isError, cloudWorkspace.isFetching]);
+    // Hide the chip until the branch is known; after a failed refresh keep the last one, marked stale.
+    const workspace = cloudWorkspace.data;
+    if (!workspace) return undefined;
+    const display = workspace.branch
+      ? formatWorkspaceCheckoutDisplay({
+          checkout: workspace.head
+            ? { kind: "branch", branchName: workspace.branch, headSha: workspace.head }
+            : { kind: "unborn", branchName: workspace.branch },
+        })
+      : workspace.head
+        ? formatWorkspaceCheckoutDisplay({ checkout: { kind: "detached", headSha: workspace.head } })
+        : {
+            ...formatWorkspaceCheckoutDisplay({
+              checkout: { kind: "unknown", reason: "No Git branch information is available for this cloud folder." },
+            }),
+            label: "No Git repository",
+          };
+    return cloudWorkspace.isError
+      ? { ...display, stale: true, title: `${display.title} (last known, cloud not reachable right now)` }
+      : display;
+  }, [cloudWorkspace.data, cloudWorkspace.isError]);
   const cloudConnection = useCloudroomConnection();
   const cloudReasoning = cloudState.data?.reasoning ?? "medium";
   const { mutate: updateExecution } = useUpdateThread({
@@ -2364,6 +2361,7 @@ export function ThreadDetailPromptArea({
 
   const cloudError = retryCloudStart.error?.message ?? cloudState.error?.message ?? cloudState.data?.error;
   const cloudReconnecting = !cloudError && cloudState.data?.reconnecting;
+  const cloudLimitNotice = isCloud && !shouldHideComposer && cloudState.data?.usageLimit ? <CloudUsageLimitNotice /> : null;
   const cloudFixPrompt = cloudError || cloudState.data?.failedStart ? cloudThreadFixPrompt(thread.id, thread.providerId, cloudError) : null;
   const cloudAuthNotice = isCloud && !shouldHideComposer && cloudState.data?.authRequired ? (
     <PromptStackCard ariaLabel="Connect your account" className="w-full max-w-sm justify-self-center p-3 text-xs">
@@ -2379,7 +2377,7 @@ export function ThreadDetailPromptArea({
       {retryCloudStart.error && <p role="alert" className="mt-2 text-destructive">{retryCloudStart.error.message}</p>}
     </PromptStackCard>
   ) : null;
-  const cloudNotice = cloudAuthNotice ?? (isCloud && !shouldHideComposer && (cloudError || cloudReconnecting || cloudState.data?.failedStart || cloudState.data?.paused) ? (
+  const cloudNotice = cloudAuthNotice ?? cloudLimitNotice ?? (isCloud && !shouldHideComposer && (cloudError || cloudReconnecting || cloudState.data?.failedStart || cloudState.data?.paused) ? (
     <PromptStackCard ariaLabel="Cloud thread status" className="space-y-2 p-3 text-xs">
       {cloudError && <div role="alert" className="whitespace-pre-wrap break-words text-destructive">{cloudError}</div>}
       {cloudReconnecting && <div role="status" className="text-muted-foreground">Reconnecting…</div>}

@@ -66,6 +66,7 @@ export interface ProviderCommandSuggestion {
   description: string | null;
   argumentHint: string | null;
   pluginId?: string;
+  usage?: number;
 }
 
 export function toProviderCommandSuggestion(
@@ -79,6 +80,7 @@ export function toProviderCommandSuggestion(
     description: command.description,
     argumentHint: command.argumentHint,
     ...(command.pluginId !== undefined ? { pluginId: command.pluginId } : {}),
+    ...(command.usage !== undefined ? { usage: command.usage } : {}),
   };
 }
 
@@ -155,6 +157,16 @@ function commandSuggestionMatchRank(
   return nameMatches.has(suggestion) ? 4 : 5;
 }
 
+// Usage only counts in steps of 3, so one stray pick never reorders the menu
+// and two equally used rows don't swap back and forth.
+const COMMAND_USAGE_STEP = 3;
+
+function commandSuggestionUsageRank(
+  suggestion: ProviderCommandSuggestion,
+): number {
+  return Math.floor((suggestion.usage ?? 0) / COMMAND_USAGE_STEP);
+}
+
 function compareCommandSuggestions(
   left: ProviderCommandSuggestion,
   right: ProviderCommandSuggestion,
@@ -164,8 +176,12 @@ function compareCommandSuggestions(
   const byMatch =
     commandSuggestionMatchRank(left, normalizedQuery, nameMatches) -
     commandSuggestionMatchRank(right, normalizedQuery, nameMatches);
-  return byMatch !== 0
-    ? byMatch
+  if (byMatch !== 0) return byMatch;
+  // A better name match always wins; usage only breaks ties within a tier.
+  const byUsage =
+    commandSuggestionUsageRank(right) - commandSuggestionUsageRank(left);
+  return byUsage !== 0
+    ? byUsage
     : compareCommandSuggestionSections(left, right);
 }
 

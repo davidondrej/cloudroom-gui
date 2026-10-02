@@ -13,6 +13,7 @@ import {
   getCheckoutRef,
   getWorkspaceGitOperation,
   hasUncommittedChanges,
+  hasOriginBranch,
   listLocalBranches,
   pathExists,
 } from "./git.js";
@@ -85,7 +86,10 @@ async function assertSwitchable(
   }
   if (branch.kind === "existing") {
     const branches = await listLocalBranches(cwd);
-    if (!branches.includes(branch.name)) {
+    if (
+      !branches.includes(branch.name) &&
+      !(await hasOriginBranch(cwd, branch.name))
+    ) {
       throw new WorkspaceError(
         "checkout_missing_branch",
         `Cannot checkout missing branch ${branch.name}`,

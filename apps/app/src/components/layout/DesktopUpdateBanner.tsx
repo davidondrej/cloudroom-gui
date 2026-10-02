@@ -88,6 +88,14 @@ export function DesktopUpdateBanner() {
   }
 
   const dismiss = () => dismissal.dismiss(version);
+  // A failed download (e.g. Wi-Fi still off after sleep) retries in-app; the website is only for apps that can't self-update.
+  const download = () => {
+    if (desktopInfo.autoUpdateEnabled === true && desktopApi !== null) {
+      void desktopApi.checkForUpdates().catch(() => undefined);
+      return;
+    }
+    openUrlInExternalBrowser(DESKTOP_DOWNLOAD_URL);
+  };
   const restart = () => {
     setRestarting(true);
     void desktopApi?.installUpdate().catch(() => setRestarting(false));
@@ -122,10 +130,7 @@ export function DesktopUpdateBanner() {
           {restarting ? "Restarting…" : "Restart to update"}
         </Button>
       ) : (
-        <Button
-          size="sm"
-          onClick={() => openUrlInExternalBrowser(DESKTOP_DOWNLOAD_URL)}
-        >
+        <Button size="sm" onClick={download}>
           Download
         </Button>
       )}

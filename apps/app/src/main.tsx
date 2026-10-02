@@ -14,10 +14,12 @@ import { installAppQueryClientBrowserEvents } from "./lib/query-client";
 import { appQueryClient } from "./lib/app-query-client";
 import { applyCachedAppThemeCss } from "./lib/themes";
 import { installPerfMonitor } from "./lib/perf";
+import { installNewThreadKeyboardPrimer } from "./lib/new-thread-keyboard-primer";
 import "./app.css";
 
 installForeignDomMutationGuard();
 installPerfMonitor();
+installNewThreadKeyboardPrimer();
 
 Error.stackTraceLimit = 50;
 

@@ -103,7 +103,9 @@ describe("resolveCreateThreadExecutionDefaults", () => {
         "acp-opencode",
         "acp-omp",
         "acp-grok",
+        "acp-fx",
         "acp-hermes-agent",
+        "acp-devin",
       ],
     });
   });
@@ -126,7 +128,9 @@ describe("resolveCreateThreadExecutionDefaults", () => {
       "acp-opencode",
       "acp-omp",
       "acp-grok",
+      "acp-fx",
       "acp-hermes-agent",
+      "acp-devin",
     ]);
     expect(
       resolveCreateThreadExecutionDefaults(userRegistry, {
@@ -169,7 +173,9 @@ describe("resolveCreateThreadExecutionDefaults", () => {
       "acp-opencode",
       "acp-omp",
       "acp-grok",
+      "acp-fx",
       "acp-hermes-agent",
+      "acp-devin",
     ]);
   });
 
@@ -242,7 +248,9 @@ describe("resolveCreateThreadExecutionDefaults", () => {
         "acp-opencode",
         "acp-omp",
         "acp-grok",
+        "acp-fx",
         "acp-hermes-agent",
+        "acp-devin",
       ],
     });
   });

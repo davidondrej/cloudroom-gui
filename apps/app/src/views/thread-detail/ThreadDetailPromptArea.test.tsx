@@ -972,7 +972,7 @@ describe("environment follow-up summary", () => {
     [{ path: "/code/CEO", branch: "cloud-feature", head: "abc1234" }, "cloud-feature"],
     [{ path: "/code/CEO", branch: "cloud-feature", head: null }, "cloud-feature (empty)"],
     [{ path: "/code/CEO", branch: null, head: "abc123456789" }, "detached abc1234"],
-    [undefined, "Branch unavailable"],
+    [undefined, ""],
   ])("shows the cloud project, checkout and branch without a local environment", (workspace, branchLabel) => {
     const queryKey = ["cloudroom-thread-workspace", "thr_1"];
     testQueryClient.setQueryDefaults(queryKey, { staleTime: Infinity });
