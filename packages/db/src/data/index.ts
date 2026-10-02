@@ -473,3 +473,4 @@ export {
   shouldRunIncrementalVacuum,
 } from "./maintenance.js";
 export * from "./machines.js";
+export * from "./thread-provider-operations.js";

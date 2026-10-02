@@ -59,7 +59,7 @@ import { editThreadMessage } from "../../services/threads/thread-edit-message.js
 import { clearThreadContext } from "../../services/threads/thread-context-clear.js";
 import {
   buildExecutionOptions,
-  dispatchThreadUnarchiveCommand,
+  requestThreadUnarchiveOperation,
   prepareTurnSubmitCommandPayload,
 } from "../../services/threads/thread-commands.js";
 import { getLastProviderThreadId } from "../../services/threads/thread-events.js";
@@ -590,7 +590,7 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
     });
   });
 
-  post(routes.unarchive, (context) => {
+  post(routes.unarchive, async (context) => {
     const thread = requirePublicThread(deps.db, context.req.param("id"));
     const providerThreadId = getLastProviderThreadId(deps, thread.id);
     unarchiveThread(deps.db, deps.hub, thread.id);
@@ -606,14 +606,18 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
     const environment = thread.environmentId
       ? getEnvironment(deps.db, thread.environmentId)
       : null;
-    if (!isCloudThread(thread) && providerThreadId && environment) {
-      dispatchThreadUnarchiveCommand(deps, {
-        environment,
-        providerThreadId,
-        thread,
-      });
-    }
-    return context.json({ ok: true });
+    // ME-3 (TG9): the provider restore is awaited against a durable
+    // operation record; the response reports its truthful status instead
+    // of assuming success.
+    const providerUnarchiveStatus =
+      !isCloudThread(thread) && providerThreadId && environment
+        ? await requestThreadUnarchiveOperation(deps, {
+            environment,
+            providerThreadId,
+            thread,
+          })
+        : "skipped";
+    return context.json({ ok: true, providerUnarchiveStatus });
   });
 
   post(routes.read, (context) => {

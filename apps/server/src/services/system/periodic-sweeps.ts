@@ -49,6 +49,7 @@ import {
   requestThreadStorageDeletion,
 } from "../threads/thread-lifecycle.js";
 import { advanceThreadProvisioning } from "../threads/thread-provisioning.js";
+import { reconcilePendingThreadUnarchiveOperations } from "../threads/thread-commands.js";
 import {
   runQueuedMessageDispatch,
   type QueueWaitPluginDirectory,
@@ -583,6 +584,9 @@ export async function runStartupRecoverySweep(
   await deliverLegacyDeferredThreadMessages(deps);
   await runEnvironmentProvisioningSweep(deps);
   await runThreadLifecycleSweep(deps);
+  // ME-3 (TG9.2): pending provider operations (e.g. unarchive) are
+  // reconciled once at startup — re-dispatched or marked failed.
+  await reconcilePendingThreadUnarchiveOperations(deps);
 }
 
 export async function runPeriodicSweeps(

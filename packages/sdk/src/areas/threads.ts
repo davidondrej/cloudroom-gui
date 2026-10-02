@@ -188,7 +188,10 @@ export type ThreadEditMessageResult = EditMessageResponse;
 export type ThreadStopResult = { ok: true };
 export type ThreadCompactResult = { ok: true };
 export type ThreadBannerActionResult = { ok: true };
-export type ThreadUnarchiveResult = { ok: true };
+export type ThreadUnarchiveResult = {
+  ok: true;
+  providerUnarchiveStatus: "skipped" | "pending" | "succeeded" | "failed";
+};
 export type ThreadArchiveAllResult = ThreadArchiveAllResponse;
 export type ThreadReadStateResult = ThreadResponse;
 export type ThreadPinOrderResult = ThreadListResponse;
@@ -1424,12 +1427,11 @@ export function createThreadsArea(args: CreateSdkAreaArgs): ThreadsArea {
       );
     },
     async unarchive(input) {
-      await transport.readVoid(
+      return transport.readJson(
         transport.api.v1.threads[":id"].unarchive.$post({
           param: { id: input.threadId },
         }),
       );
-      return { ok: true };
     },
     async unpin(input) {
       return transport.readJson(

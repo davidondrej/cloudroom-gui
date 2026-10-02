@@ -650,6 +650,14 @@ export const updateThreadRequestSchema = z
   );
 export type UpdateThreadRequest = z.infer<typeof updateThreadRequestSchema>;
 
+export const threadUnarchiveResponseSchema = z.object({
+  ok: z.literal(true),
+  providerUnarchiveStatus: z.enum(["skipped", "pending", "succeeded", "failed"]),
+});
+export type ThreadUnarchiveResponse = z.infer<
+  typeof threadUnarchiveResponseSchema
+>;
+
 export const unpinAndMoveThreadRequestSchema = z.object({
   sectionId: z.string().min(1).nullable(),
 });

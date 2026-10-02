@@ -1,3 +1,4 @@
+import { appToast } from "@/components/ui/app-toast";
 import { useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Thread } from "@bb/domain";
@@ -324,7 +325,10 @@ export function useUnarchiveThread() {
       errorMessage: "Failed to unarchive thread.",
     },
     mutationFn: async ({ id }: ThreadMutationRequest) => {
-      await sdk.threads.unarchive({ threadId: id });
+      // ME-3 (TG9): the response carries the truthful provider-restore
+      // status; the DB unarchive is committed, but a failed or pending
+      // provider restore is surfaced (9.3) instead of silently swallowed.
+      return sdk.threads.unarchive({ threadId: id });
     },
     onMutate: async ({ id }): Promise<ThreadListMutationTransaction> =>
       beginUnarchiveThreadTransaction({ queryClient, threadId: id }),
@@ -334,6 +338,17 @@ export function useUnarchiveThread() {
         threadId: variables.id,
         transaction: context,
       });
+    },
+    onSuccess: (response) => {
+      if (response.providerUnarchiveStatus === "failed") {
+        appToast.error("Thread unarchived, but the provider session could not be restored", {
+          description: "Retry unarchive or check the provider connection.",
+        });
+      } else if (response.providerUnarchiveStatus === "pending") {
+        appToast.warning(
+          "Thread unarchived; the provider restore is in progress",
+        );
+      }
     },
     onSettled: (_data, _error, variables) => {
       settleThreadListMembershipMutation({

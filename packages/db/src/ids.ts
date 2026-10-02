@@ -34,6 +34,10 @@ export function createThreadSectionId(): string {
   return createId("sec");
 }
 
+export function createProviderOperationId(): string {
+  return createId("pop");
+}
+
 export function createThreadProvisioningId(): string {
   return createId("tpv");
 }

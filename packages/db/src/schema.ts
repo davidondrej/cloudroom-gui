@@ -656,6 +656,39 @@ export const cloudroomCommands = sqliteTable("cloudroom_commands", {
   createdAt: integer("created_at").notNull(),
 });
 
+/**
+ * Durable provider-operation record (ME-3, TG9): provider-side transitions
+ * that must be reported truthfully instead of fire-and-forget. One pending
+ * operation per (thread, kind) — the idempotency mechanism — so duplicate
+ * requests cannot double-dispatch.
+ */
+export const threadProviderOperations = sqliteTable(
+  "thread_provider_operations",
+  {
+    id: text("id").primaryKey(),
+    threadId: text("thread_id")
+      .notNull()
+      .references(() => threads.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    hostId: text("host_id").notNull(),
+    environmentId: text("environment_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    providerThreadId: text("provider_thread_id").notNull(),
+    status: text("status")
+      .$type<"pending" | "succeeded" | "failed">()
+      .notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    failureReason: text("failure_reason"),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("thread_provider_operations_pending_idx")
+      .on(table.threadId, table.kind)
+      .where(sql`${table.status} = 'pending'`),
+  ],
+);
+
 export const threadPluginMetadata = sqliteTable(
   "thread_plugin_metadata",
   {

@@ -136,7 +136,7 @@ beforeEach(() => {
     archivedThreadIds: ["thr_parent", "thr_child"],
     ok: true,
   });
-  vi.mocked(sdk.threads.unarchive).mockResolvedValue({ ok: true });
+  vi.mocked(sdk.threads.unarchive).mockResolvedValue({ ok: true, providerUnarchiveStatus: "skipped" });
   mocks.closePanesForThreads.mockReturnValue({
     focusedRoute: null,
     removedAny: false,

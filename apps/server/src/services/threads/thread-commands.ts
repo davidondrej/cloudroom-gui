@@ -13,6 +13,7 @@ import {
   promptInputHasCommandMention,
 } from "@bb/domain";
 import {
+  type HostDaemonBridgeLaunch,
   type HostDaemonCommand,
   type ThreadStopIntent,
   type TurnSubmitTarget,
@@ -24,6 +25,18 @@ import {
   LIVE_DAEMON_COMMAND_TIMEOUT_MS,
   startLiveHostCommand,
 } from "../hosts/live-command.js";
+import { runLiveCommandAndWait } from "../hosts/live-command-wait.js";
+import {
+  createPendingProviderOperation,
+  getThread,
+  listPendingProviderOperations,
+  markProviderOperationFailed,
+  markProviderOperationPending,
+  markProviderOperationSucceeded,
+  type ThreadProviderOperation,
+  type ThreadProviderOperationKind,
+} from "@bb/db";
+import { getEnvironment } from "@bb/db";
 import { getLastProviderThreadId } from "./thread-events.js";
 import type { ThreadForkDescriptor } from "./thread-startup-store.js";
 import {
@@ -543,20 +556,35 @@ export function dispatchArchivedThreadProviderArchiveCommand(
   return true;
 }
 
-export function dispatchThreadUnarchiveCommand(
+const THREAD_UNARCHIVE_OPERATION_KIND: ThreadProviderOperationKind =
+  "thread.unarchive";
+
+export type ThreadUnarchiveOperationStatus =
+  | "skipped"
+  | "pending"
+  | "succeeded"
+  | "failed";
+
+/**
+ * ME-3 (TG9): the provider unarchive is a durable, awaited operation. The
+ * pending record is the idempotency mechanism — one pending operation per
+ * (thread, kind), so duplicate requests never double-dispatch — and the
+ * failure is persisted and surfaced instead of being logged away.
+ */
+export async function requestThreadUnarchiveOperation(
   deps: CommandResultSideEffectsDeps,
   args: DispatchThreadUnarchiveCommandArgs,
-): boolean {
+): Promise<ThreadUnarchiveOperationStatus> {
   if (
     !providerSupportsThreadArchiveForwarding(
       deps.providerRegistry,
       args.thread.providerId,
     )
   ) {
-    return false;
+    return "skipped";
   }
   if (args.environment.status !== "ready") {
-    return false;
+    return "skipped";
   }
 
   const bridgeLaunch = resolveBridgeLaunchForProviderId(
@@ -564,28 +592,139 @@ export function dispatchThreadUnarchiveCommand(
     args.thread.providerId,
   );
   if (bridgeLaunch === null) {
-    return false;
+    return "skipped";
   }
 
-  startLiveHostCommand(deps, {
-    command: {
-      type: "thread.unarchive",
-      environmentId: args.environment.id,
-      threadId: args.thread.id,
-      providerId: args.thread.providerId,
-      providerThreadId: args.providerThreadId,
-      bridgeLaunch,
-    },
+  const { operation, created } = createPendingProviderOperation(deps.db, {
+    kind: THREAD_UNARCHIVE_OPERATION_KIND,
+    threadId: args.thread.id,
     hostId: args.environment.hostId,
-    timeoutMs: LIVE_DAEMON_COMMAND_TIMEOUT_MS,
-    onError: ({ error }) => {
-      deps.logger.warn(
-        { err: error, threadId: args.thread.id },
-        "Live thread unarchive command failed",
-      );
-    },
+    environmentId: args.environment.id,
+    providerId: args.thread.providerId,
+    providerThreadId: args.providerThreadId,
   });
-  return true;
+  if (!created) {
+    // A duplicate request while the operation is pending: the idempotency
+    // guarantee (TG9.5/9.8) — exactly one dispatch per pending operation.
+    deps.logger.info(
+      { threadId: args.thread.id, operationId: operation.id },
+      "Provider unarchive already pending; not re-dispatching",
+    );
+    return "pending";
+  }
+  if (bridgeLaunch === null) {
+    markProviderOperationFailed(deps.db, operation.id, "bridge_unavailable");
+    return "failed";
+  }
+  return dispatchUnarchiveOperation(deps, operation, bridgeLaunch);
+}
+
+/**
+ * One awaited dispatch attempt against an existing pending record.
+ * `attempts` counts dispatch attempts.
+ */
+async function dispatchUnarchiveOperation(
+  deps: CommandResultSideEffectsDeps,
+  operation: ThreadProviderOperation,
+  bridgeLaunch: HostDaemonBridgeLaunch,
+): Promise<"succeeded" | "failed"> {
+  markProviderOperationPending(deps.db, operation.id);
+  try {
+    await runLiveCommandAndWait(deps, {
+      command: {
+        type: "thread.unarchive",
+        environmentId: operation.environmentId,
+        threadId: operation.threadId,
+        providerId: operation.providerId,
+        providerThreadId: operation.providerThreadId,
+        bridgeLaunch,
+      },
+      hostId: operation.hostId,
+      timeoutMs: LIVE_DAEMON_COMMAND_TIMEOUT_MS,
+    });
+  } catch (error) {
+    const failureReason = classifyProviderOperationFailure(error);
+    markProviderOperationFailed(deps.db, operation.id, failureReason);
+    deps.logger.warn(
+      {
+        err: error,
+        operationId: operation.id,
+        threadId: operation.threadId,
+      },
+      "Provider unarchive operation failed",
+    );
+    return "failed";
+  }
+  markProviderOperationSucceeded(deps.db, operation.id);
+  return "succeeded";
+}
+
+/**
+ * Sanitized failure classification (TG9.9): the persisted reason is one of
+ * a fixed set — never an error message, which can carry host internals.
+ */
+function classifyProviderOperationFailure(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.body.code;
+  }
+  if (error instanceof Error) {
+    return error.name;
+  }
+  return "unknown_error";
+}
+
+/**
+ * TG9.2: pending provider operations are reconciled once on server start —
+ * re-dispatched when their environment is still usable, marked failed with
+ * a sanitized reason when it is not.
+ */
+export async function reconcilePendingThreadUnarchiveOperations(
+  deps: CommandResultSideEffectsDeps,
+): Promise<void> {
+  const pending = listPendingProviderOperations(
+    deps.db,
+    THREAD_UNARCHIVE_OPERATION_KIND,
+  );
+  for (const operation of pending) {
+    const environment = getEnvironment(deps.db, operation.environmentId);
+    const thread = getThread(deps.db, operation.threadId);
+    if (
+      environment == null ||
+      environment.status !== "ready" ||
+      thread === null ||
+      thread.deletedAt !== null
+    ) {
+      markProviderOperationFailed(
+        deps.db,
+        operation.id,
+        "environment_unavailable",
+      );
+      continue;
+    }
+    const bridgeLaunch = resolveBridgeLaunchForProviderId(
+      deps,
+      operation.providerId,
+    );
+    if (bridgeLaunch === null) {
+      markProviderOperationFailed(
+        deps.db,
+        operation.id,
+        "bridge_unavailable",
+      );
+      continue;
+    }
+    const outcome = await dispatchUnarchiveOperation(
+      deps,
+      operation,
+      bridgeLaunch,
+    );
+    if (outcome === "failed") {
+      deps.logger.warn(
+        { operationId: operation.id, threadId: operation.threadId },
+        "Provider unarchive reconciliation failed",
+      );
+    }
+  }
 }
 
 export function buildThreadStopCommand(

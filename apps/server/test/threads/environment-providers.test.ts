@@ -2853,26 +2853,22 @@ describe("a provider-produced environment over its life", () => {
             )
           ).status,
         ).toBe(200);
-        expect(
-          (
-            await harness.app.request(
-              `/api/v1/threads/${thread.id}/unarchive`,
-              { method: "POST" },
-            )
-          ).status,
-        ).toBe(200);
+        // ME-3 (TG9): the unarchive route awaits the provider operation, so
+        // the request settles only after the queued command is answered.
+        const unarchiveResponse = harness.app.request(
+          `/api/v1/threads/${thread.id}/unarchive`,
+          { method: "POST" },
+        );
+        const queued = await waitForQueuedCommand(
+          harness,
+          ({ command }) => command.type === "thread.unarchive",
+        );
+        await reportQueuedCommandSuccess(harness, queued, {});
+        expect((await unarchiveResponse).status).toBe(200);
         expect(unarchived).toEqual([thread.id]);
         expect(
           listQueuedThreadCommands(harness, "thread.unarchive", thread.id),
-        ).toEqual([
-          expect.objectContaining({
-            environmentId: environment.id,
-            providerThreadId,
-            providerId: thread.providerId,
-            threadId: thread.id,
-            type: "thread.unarchive",
-          }),
-        ]);
+        ).toHaveLength(0);
       } finally {
         setPluginThreadEventEmitter(undefined);
       }
