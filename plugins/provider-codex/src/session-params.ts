@@ -51,6 +51,7 @@ export type BbThreadStartParams = ThreadStartParams & {
 export type BbThreadForkParams = {
   threadId: string;
   lastTurnId?: string | null;
+  excludeTurns?: boolean;
   model?: string | null;
   serviceTier?: string | null;
   cwd?: string | null;

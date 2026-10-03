@@ -3,6 +3,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type ReactNode,
   type UIEvent,
 } from "react";
@@ -14,7 +15,12 @@ import type { ReasoningLevel } from "@bb/domain";
 import { directoryFromPath } from "@bb/thread-view";
 import { promptMentionResourceFromSuggestion } from "@/components/promptbox/editor/prompt-editor-serialization";
 import { promptCommandIconName } from "@/components/promptbox/mentions/prompt-mention-display";
-import { PromptMentionIcon } from "@/components/promptbox/mentions/PromptMentionIcon";
+import {
+  PromptMentionIcon,
+  ThreadLocationIcon,
+} from "@/components/promptbox/mentions/PromptMentionIcon";
+import { ThreadStatusGlyph } from "@/components/sidebar/ThreadRow";
+import { formatRelativeTime } from "@/lib/relative-time";
 import { shouldLoadMoreCommandResults } from "@/components/promptbox/mentions/mention-menu-scroll";
 import { PluginIcon } from "@/components/plugin/PluginIcon";
 import { Icon } from "@bb/shared-ui/icon";
@@ -22,6 +28,7 @@ import { TruncateStart } from "@/components/ui/truncate-start.js";
 import { cn } from "@bb/shared-ui/lib/utils";
 import {
   EMPTY_ORDERED_MENTION_SUGGESTIONS,
+  resolveThreadListIndicator,
   type OrderedMentionSuggestions,
   type PromptMentionSuggestion,
   type ProviderCommandSuggestion,
@@ -132,6 +139,10 @@ function groupSections<TKind extends string, TItem>(args: {
 }
 
 type PathMentionSuggestion = Extract<PromptMentionSuggestion, { kind: "path" }>;
+type ThreadMentionSuggestion = Extract<
+  PromptMentionSuggestion,
+  { kind: "thread" }
+>;
 type SecondaryContextKind = "path" | "project";
 
 function getPathSectionLabel(item: PathMentionSuggestion): string {
@@ -278,6 +289,35 @@ function MutedTrailing({ children }: { children: string }) {
     <span className="truncate text-subtle-foreground [flex-shrink:9999]">
       {children}
     </span>
+  );
+}
+
+function ThreadSuggestionTrailing({ item }: { item: ThreadMentionSuggestion }) {
+  const [now] = useState(Date.now);
+  const indicator = item.indicator;
+  const hasStatus =
+    indicator !== undefined && resolveThreadListIndicator(indicator) !== "none";
+  return (
+    <>
+      {hasStatus ? (
+        <span className="flex shrink-0 items-center [&_[data-icon-root]]:size-3">
+          <ThreadStatusGlyph {...indicator} />
+        </span>
+      ) : null}
+      <span className="ml-auto flex shrink-0 items-center gap-2 pl-3 text-subtle-foreground">
+        {item.projectName ? (
+          <span className="max-w-32 truncate">{item.projectName}</span>
+        ) : null}
+        {item.lastActivityAt === undefined ? null : (
+          <span className="tabular-nums">
+            {formatRelativeTime({
+              timestamp: item.lastActivityAt,
+              now,
+            })}
+          </span>
+        )}
+      </span>
+    </>
   );
 }
 
@@ -429,9 +469,6 @@ function MentionResults({
 
               if (item.kind === "thread") {
                 primary = item.title || "Untitled thread";
-                secondaryContext = item.projectName ?? null;
-                secondaryContextKind =
-                  item.projectName === undefined ? null : "project";
               } else if (item.kind === "project") {
                 primary = item.name;
               } else if (item.kind === "section") {
@@ -454,14 +491,26 @@ function MentionResults({
                   index={index}
                   selectedIndex={selectedIndex}
                   icon={
-                    <PromptMentionIcon
-                      resource={promptMentionResourceFromSuggestion(item)}
-                      className={ROW_ICON_CLASS}
-                    />
+                    item.kind === "thread" ? (
+                      <ThreadLocationIcon
+                        isCloud={item.executionTarget === "cloud"}
+                        className={cn(
+                          ROW_ICON_CLASS,
+                          item.executionTarget !== "cloud" && "opacity-50",
+                        )}
+                      />
+                    ) : (
+                      <PromptMentionIcon
+                        resource={promptMentionResourceFromSuggestion(item)}
+                        className={ROW_ICON_CLASS}
+                      />
+                    )
                   }
                   primary={primary}
                   trailing={
-                    secondaryContext === null ? null : secondaryContextKind ===
+                    item.kind === "thread" ? (
+                      <ThreadSuggestionTrailing item={item} />
+                    ) : secondaryContext === null ? null : secondaryContextKind ===
                       "path" ? (
                       <MutedTrailingPath>{secondaryContext}</MutedTrailingPath>
                     ) : (

@@ -1,6 +1,10 @@
 import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { reasoningLevelSchema, serviceTierSchema, type ReasoningLevel, type Thread } from "@bb/domain";
+import { deriveProjectNameFromPath, reasoningLevelSchema, serviceTierSchema, type ReasoningLevel, type Thread } from "@bb/domain";
+import type { RepoSuggestion } from "@bb/sdk/browser";
+import type { ProjectSelectorSuggestions } from "@/components/pickers/ProjectSelector";
+import { usePathPickerHost } from "@/hooks/useLocalPathPicker";
+import { useSetRootComposeProjectId } from "@/lib/root-compose-selection";
 import { fetchWithAppSurface } from "@/lib/app-surface";
 import { sdk } from "@/lib/sdk";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
@@ -232,6 +236,43 @@ export function useImportBb() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (hostId: string) => sdk.cloudroom.importBb(hostId),
+    onSettled: () => client.invalidateQueries(),
+  });
+}
+
+export function useNativeSessions() {
+  return useQuery({ queryKey: ["cloudroom-native-sessions"], queryFn: ({ signal }) => sdk.cloudroom.nativeSessions(signal), retry: false, staleTime: 30_000 });
+}
+
+/** Repos on this Mac and GitHub that are not projects yet. Adding one makes it a project and picks it for the next thread. */
+export function useProjectSuggestions(): ProjectSelectorSuggestions | undefined {
+  const client = useQueryClient();
+  const { hostId } = usePathPickerHost();
+  const setProjectId = useSetRootComposeProjectId();
+  const query = useQuery({ queryKey: ["cloudroom-repo-suggestions"], queryFn: ({ signal }) => sdk.cloudroom.repoSuggestions(signal), retry: false, staleTime: 60_000 });
+  const add = useMutation({
+    mutationFn: async ({ hostId, repo }: { hostId: string; repo: RepoSuggestion }) => repo.source === "mac"
+      ? (await sdk.projects.create({ name: deriveProjectNameFromPath(repo.path), source: { type: "local_path", hostId, path: repo.path } })).id
+      : (await sdk.cloudroom.addGithubRepo({ hostId, repo: repo.repo })).projectId,
+    // The composer drops a selected project it can't find, so the project list refreshes first.
+    onSuccess: async (projectId) => { await client.invalidateQueries(); setProjectId(projectId); },
+    onError: (error) => appToast.error(error.message),
+  });
+  if (!hostId) return undefined;
+  const adding = add.isPending ? add.variables.repo : null;
+  return {
+    repos: query.data?.repos ?? [],
+    githubConnected: query.data?.githubConnected ?? true,
+    isLoading: query.isPending,
+    addingKey: adding ? (adding.source === "mac" ? adding.path : adding.repo) : null,
+    onAdd: (repo) => add.mutateAsync({ hostId, repo }),
+  };
+}
+
+export function useImportSessions() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ hostId, sessions }: { hostId: string; sessions: { harness: "claude-code" | "codex"; id: string }[] }) => sdk.cloudroom.importSessions(hostId, sessions),
     onSettled: () => client.invalidateQueries(),
   });
 }

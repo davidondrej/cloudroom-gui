@@ -698,19 +698,35 @@ function registerBinaryResolutionCommand(
           opts: ThreadInteractionTargetOptions,
         ) => {
           const threadId = requireThreadIdOrSelf(id, opts);
-          await resolveInteraction({
-            buildResolution: (interaction) =>
-              buildBinaryResolution(interaction, name),
-            failureAction: name,
+          await resolveBinaryInteraction({
+            action: name,
             getUrl,
             interactionId,
             json: opts.json,
             threadId,
-            successMessage: formatResolutionSuccessMessage,
           });
         },
       ),
     );
+}
+
+export async function resolveBinaryInteraction(args: {
+  action: "approve" | "deny";
+  getUrl: () => string;
+  interactionId: string;
+  json?: boolean;
+  threadId: string;
+}): Promise<void> {
+  await resolveInteraction({
+    buildResolution: (interaction) =>
+      buildBinaryResolution(interaction, args.action),
+    failureAction: args.action,
+    getUrl: args.getUrl,
+    interactionId: args.interactionId,
+    json: args.json,
+    threadId: args.threadId,
+    successMessage: formatResolutionSuccessMessage,
+  });
 }
 
 export function registerInteractionCommands(

@@ -97,13 +97,19 @@ export async function sandboxGithubLogin(token: string): Promise<string> {
   return JSON.stringify({ token, ...(name ? { name } : {}), ...(email ? { email } : {}) });
 }
 
-const environmentSchema = z.object({ variables: z.array(z.object({ name: z.string(), hint: z.string() })), setup: z.string() });
+const environmentSchema = z.object({
+  variables: z.array(z.object({ name: z.string(), hint: z.string() })), setup: z.string(),
+  repos: z.array(z.string()).default([]), available: z.array(z.string()).optional(), pushed: z.record(z.string(), z.number()).optional(),
+});
 export type CloudEnvironment = z.infer<typeof environmentSchema>;
 export const cloudEnvironmentRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("get") }),
   z.object({ action: z.literal("set"), variables: z.record(z.string(), z.string()) }),
   z.object({ action: z.literal("remove"), name: z.string().min(1) }),
   z.object({ action: z.literal("setup"), setup: z.string() }),
+  z.object({ action: z.literal("addRepo"), repo: z.string().min(1) }),
+  z.object({ action: z.literal("removeRepo"), repo: z.string().min(1) }),
+  z.object({ action: z.literal("githubRepos") }),
 ]);
 export type CloudEnvironmentRequest = z.infer<typeof cloudEnvironmentRequestSchema>;
 
@@ -301,6 +307,7 @@ export class SandboxDirectory {
     this.copiedAt = 0;
     this.configAt = 0;
     this.configDigest = "";
+    this.configIssue = null;
   }
 
   /** A broken stream or failed request may mean the sandbox went to sleep; look it up again next time. */
@@ -318,7 +325,7 @@ export class SandboxDirectory {
     this.uploaded.set(name, digest);
   }
 
-  /** The account's Cloud environment, shared with the website: variables (names only) and the setup script. */
+  /** The account's Cloud environment, shared with the website: variables (names only), repos, and the setup script. */
   async environment(request: CloudEnvironmentRequest): Promise<CloudEnvironment> {
     return environmentSchema.parse(await this.call(request, "environment"));
   }
@@ -358,34 +365,39 @@ export class SandboxDirectory {
   private configAt = 0;
   private configDigest = "";
   private configRun: Promise<unknown> = Promise.resolve();
+  /** Why the last skills upload failed, until one succeeds. */
+  configIssue: string | null = null;
   /** Uploads this Mac's skills and instructions when they change, then pushes them to awake sandboxes. At most once a minute,
-   *  unless the user just changed which skills the cloud gets. `skills` names them; null means all. */
-  copyMacConfig(skills: string[] | null, force = false): Promise<void> {
+   *  unless the user just changed which skills the cloud gets. `inCloud` picks the skills by name. */
+  copyMacConfig(inCloud: (name: string) => boolean, force = false): Promise<void> {
     // One upload at a time, so an older skill choice never lands after a newer one.
-    const run = this.configRun.then(() => this.uploadConfig(skills, force));
+    const run = this.configRun.then(() => this.uploadConfig(inCloud, force)).catch((error: unknown) => {
+      this.configIssue = error instanceof Error ? error.message : String(error);
+      throw error;
+    });
     this.configRun = run.catch(() => {});
     return run;
   }
 
-  private async uploadConfig(skills: string[] | null, force: boolean): Promise<void> {
+  private async uploadConfig(inCloud: (name: string) => boolean, force: boolean): Promise<void> {
     if (!force && Date.now() - this.configAt < RECHECK_MS) return;
     this.configAt = Date.now();
     const home = homedir();
-    const wanted = skills && new Set(skills);
     const instructions = (await Promise.all(INSTRUCTION_FILES.map(path => stat(join(home, path)).then(() => path, () => null)))).filter((path): path is string => path !== null);
-    const present = [...(await macSkills()).filter(skill => !wanted || wanted.has(skill.name)).flatMap(skill => skill.paths), ...instructions];
+    const present = [...(await macSkills()).filter(skill => inCloud(skill.name)).flatMap(skill => skill.paths), ...instructions];
     // Links are followed: sandboxes lack the targets. The digest skips file times, since Claude Code re-saves unchanged skills at every start.
     // Nothing chosen still uploads an empty archive, so new sandboxes stop getting the old skills.
     const tar = present.length ? (await promisify(execFile)("tar", ["-c", "-h", "--format", "ustar", "--exclude", ".git", "--exclude", "node_modules", "--exclude", ".DS_Store", "-C", home, ...present],
       { encoding: "buffer", maxBuffer: 4 * CONFIG_LIMIT, timeout: 30_000, env: { ...process.env, COPYFILE_DISABLE: "1" } })).stdout : Buffer.alloc(1024);
     const digest = contentDigest(tar);
-    if (digest === this.configDigest) return;
+    if (digest === this.configDigest) { this.configIssue = null; return; }
     const body = gzipSync(tar);
     if (body.length > CONFIG_LIMIT) throw new CloudroomError("Your skills are too large to copy to cloud sandboxes.");
     const { url } = z.object({ url: z.string().url() }).parse(await this.call({ action: "upload" }, "config"));
     const response = await fetch(url, { method: "PUT", redirect: "error", headers: { "Content-Type": "application/gzip", "x-upsert": "true" }, body, signal: AbortSignal.timeout(120_000) });
     if (!response.ok) throw new CloudroomError(`Your skills could not be copied to cloud sandboxes (HTTP ${response.status}).`);
     this.configDigest = digest;
+    this.configIssue = null;
     // Awake sandboxes get the change now; sleeping ones apply it when they wake.
     await this.call({ action: "push" }, "config").catch((error: unknown) => {
       throw new CloudroomError(`Your skills were saved, but awake sandboxes could not get them yet: ${error instanceof Error ? error.message : String(error)}`);

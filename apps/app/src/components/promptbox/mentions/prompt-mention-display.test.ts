@@ -9,7 +9,7 @@ describe("promptMentionIconName", () => {
         threadId: "thr_test",
         label: "Test thread",
       }),
-    ).toBe("UserRound");
+    ).toBe("Laptop");
     expect(
       promptMentionIconName({
         kind: "project",

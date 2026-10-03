@@ -9,6 +9,7 @@ import { cn } from "@bb/shared-ui/lib/utils";
 import { ClaudeConnectionButton, useClaudeConnection } from "@/components/ClaudeConnection";
 import { openCodexConnection } from "@/components/CodexConnectionPanel";
 import { selectCloudForNewThreads } from "@/components/promptbox/NewThreadComposer";
+import { ImportChats } from "@/components/settings/ImportChats";
 import { BbLogo } from "@/components/ui/bb-logo";
 import { appToast } from "@/components/ui/app-toast";
 import { useCreateProject } from "@/hooks/mutations/project-mutations";
@@ -35,7 +36,7 @@ export const useOpenSetup = () => useSetAtom(openAtom);
 const STEPS = ["Create account", "Connect an agent", "Connect GitHub", "Pick a project"];
 const STEP_IDS = ["account", "agent", "github", "project"] as const;
 type SetupStepId = (typeof STEP_IDS)[number];
-type SetupDetail = "github" | "google" | "email" | "claude" | "codex" | "both" | "none" | "existing" | "found" | "folder" | "bb_import";
+type SetupDetail = "github" | "google" | "email" | "claude" | "codex" | "both" | "none" | "existing" | "found" | "folder" | "bb_import" | "chat_import";
 function track(step: SetupStepId, action: "viewed" | "started" | "done" | "skipped" | "closed" | "detected" | "waitlist", detail: SetupDetail | null = null) {
   void fetchWithAppSurface("/api/v1/cloudroom/setup-step", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ step, action, detail }),
@@ -449,6 +450,7 @@ function ProjectStep({ close }: { close: () => void }) {
   const repos = useQuery({ queryKey: ["cloudroom-local-repos"], queryFn: ({ signal }) => sdk.cloudroom.localRepos(signal), retry: false, staleTime: 60_000 });
   const { localHostId } = useHostDaemon();
   const importBb = useImportBb();
+  const [importing, setImporting] = useState(false);
   const open = (projectId: string, how: "existing" | "found" | "folder") => {
     track("project", "done", how);
     setProjectId(projectId);
@@ -502,11 +504,21 @@ function ProjectStep({ close }: { close: () => void }) {
       <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
         <Note><button type="button" className={LINK} onClick={() => { track("project", "skipped"); close(); }}>Start without a project</button></Note>
         <Note>
-          <button type="button" className={LINK} disabled={importBb.isPending} onClick={bringWorkOver}>
-            {importBb.isPending ? "Bringing your work over…" : "Coming from BB? Bring your work over."}
+          <button type="button" className={LINK} onClick={() => { if (!importing) track("project", "started", "chat_import"); setImporting(!importing); }}>
+            Bring your Claude Code and Codex chats over
           </button>
         </Note>
       </div>
+      {importing && (
+        <div className="mt-5 flex flex-col gap-3">
+          <ImportChats onDone={() => setImporting(false)} />
+          <Note>
+            <button type="button" className={LINK} disabled={importBb.isPending} onClick={bringWorkOver}>
+              {importBb.isPending ? "Bringing your BB threads over…" : "Coming from BB? Bring your BB threads over."}
+            </button>
+          </Note>
+        </div>
+      )}
     </>
   );
 }

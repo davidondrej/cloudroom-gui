@@ -78,6 +78,7 @@ describe("SettingsSidebarContent navigation", () => {
         "Defaults",
         "Cloud environment",
         "Providers",
+        "Import chats",
         "Appearance",
         "Keyboard",
         "Machines",

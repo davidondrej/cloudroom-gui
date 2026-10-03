@@ -268,9 +268,12 @@ export default function providerUsagePlugin(bb: BbPluginApi): void {
             resource.scope.kind === "shared"
               ? `source:${source.pluginId}`
               : resource.scope.hostId;
+          // A provider or a machine selection triggers fetches; neither means
+          // inventory only, so background refreshes never fetch every source.
           return (
-            request.providerId !== null &&
-            resource.providerId === request.providerId &&
+            (request.providerId === null
+              ? request.machineIds !== null
+              : resource.providerId === request.providerId) &&
             (request.machineIds === null ||
               request.machineIds.includes(machineId)) &&
             (resource.scope.kind === "shared" ||

@@ -75,6 +75,7 @@ import { MachinesSettingsSection } from "@/components/settings/MachinesSettingsS
 import { CloudroomAccountSettings } from "@/components/settings/CloudroomAccountSettings";
 import { ProjectsSettingsSection } from "@/components/settings/ProjectsSettingsSection";
 import { ArchivedThreadsSettingsSection } from "@/components/settings/ArchivedThreadsSettingsSection";
+import { ImportChatsSettingsSection } from "@/components/settings/ImportChats";
 import { CliSkillsSettingsSection } from "@/components/settings/CliSkillsSettingsSection";
 import { MarketplacesSettingsSection } from "@/components/settings/MarketplacesSettingsSection";
 import {
@@ -1363,6 +1364,8 @@ export function SettingsView() {
     content = <CommunitySettingsSection />;
   } else if (activeSection === "archived") {
     content = <ArchivedThreadsSettingsSection />;
+  } else if (activeSection === "import") {
+    content = <ImportChatsSettingsSection />;
   } else {
     content = (
       <>

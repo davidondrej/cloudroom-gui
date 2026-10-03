@@ -680,7 +680,7 @@ function refreshScriptFileCommand(
 ): string {
   if (automation.execution.mode !== "script") return "";
   const argv = [
-    "bb",
+    "room-cli",
     "automation",
     "update",
     automation.id,

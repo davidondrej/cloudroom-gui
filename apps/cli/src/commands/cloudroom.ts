@@ -79,6 +79,27 @@ export function registerImportCommands(program: Command, getUrl: () => string): 
       for (const thread of result.skipped) console.log(`Skipped   ${thread.title}: ${thread.reason}`);
       if (!result.imported.length && !result.skipped.length) console.log("No open BB threads found.");
     }));
+  for (const [harness, app] of [["claude-code", "Claude Code"], ["codex", "Codex"]] as const) {
+    group.command(harness).description(`Copy recent ${app} chats from this Mac into idle Local threads with their messages. Sends no prompts; ${app} is never changed.`)
+      .option("--days <days>", "Only chats active in the last N days", "30")
+      .option("--dry-run", "List the chats without importing them")
+      .option("--json", "Print JSON")
+      .action(action(async (options: JsonOutputOptions & { days: string; dryRun?: boolean }) => {
+        const sdk = createCliBbSdk(getUrl()).cloudroom;
+        const since = Date.now() - Number(options.days) * 86_400_000;
+        const sessions = (await sdk.nativeSessions()).sessions.filter((session) => session.harness === harness && session.updatedAt >= since);
+        if (options.dryRun || !sessions.length) {
+          if (outputJson(options, { sessions })) return;
+          for (const session of sessions) console.log(`${session.title}  (${session.cwd})`);
+          if (!sessions.length) console.log(`No new ${app} chats from the last ${options.days} days.`);
+          return;
+        }
+        const result = await sdk.importSessions(await resolveLocalHostId(), sessions.map(({ harness, id }) => ({ harness, id })));
+        if (outputJson(options, result)) return;
+        for (const thread of result.imported) console.log(`Imported  ${thread.title} → ${thread.threadId}`);
+        for (const thread of result.skipped) console.log(`Skipped   ${thread.title}: ${thread.reason}`);
+      }));
+  }
 }
 
 /** Agents send Cloudroom feedback straight to David (ADR 0158). `report` is the old hidden name. Prints {"sent":false} while it is off in Settings. */

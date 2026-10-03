@@ -145,7 +145,11 @@ function seedActivePlan(harness: TestAppHarness, fixture: BannerFixture): void {
   });
 }
 
-function seedActiveGoal(harness: TestAppHarness, fixture: BannerFixture): void {
+function seedActiveGoal(
+  harness: TestAppHarness,
+  fixture: BannerFixture,
+  status: "active" | "paused" = "active",
+): void {
   seedThreadRuntimeState(harness.deps, {
     environmentId: fixture.environmentId,
     providerThreadId: "provider-thread-1",
@@ -162,7 +166,7 @@ function seedActiveGoal(harness: TestAppHarness, fixture: BannerFixture): void {
     data: {
       providerThreadId: "provider-thread-1",
       objective: "Verify authoritative Goal cancellation",
-      status: "active",
+      status,
       tokenBudget: null,
       tokensUsed: 100,
       timeUsedSeconds: 10,
@@ -581,6 +585,59 @@ describe("public thread banner actions", () => {
           activeGoalCount: 0,
         },
       );
+    });
+  });
+
+  it("clears a paused Goal", async () => {
+    await withTestHarness(async (harness) => {
+      const fixture = seedBannerFixture(harness, { status: "idle" });
+      seedActiveGoal(harness, fixture, "paused");
+      const responder = registerHostRpcResponder(harness, {
+        hostId: fixture.hostId,
+        sessionId: fixture.sessionId,
+        handle: ({ command }) => {
+          if (command.type === "host.list_files") {
+            return { ok: true, result: { files: [], truncated: false } };
+          }
+          if (command.type === "host.read_file") {
+            return {
+              ok: false,
+              errorCode: "ENOENT",
+              errorMessage: `Path does not exist: ${command.path}`,
+            };
+          }
+          seedEvent(harness.deps, {
+            threadId: fixture.threadId,
+            environmentId: fixture.environmentId,
+            providerThreadId: "provider-thread-1",
+            sequence: 4,
+            type: "thread/goal/cleared",
+            scope: threadScope(),
+            data: { providerThreadId: "provider-thread-1" },
+          });
+          return { ok: true, result: { cleared: true } };
+        },
+      });
+
+      const response = await harness.app.request(
+        `/api/v1/threads/${fixture.threadId}/goal/clear`,
+        { method: "POST" },
+      );
+
+      expect(
+        response.status,
+        JSON.stringify(await readJson(response.clone())),
+      ).toBe(200);
+      expect(
+        responder.requests.some(
+          ({ command }) => command.type === "thread.goal.clear",
+        ),
+      ).toBe(true);
+      const again = await harness.app.request(
+        `/api/v1/threads/${fixture.threadId}/goal/clear`,
+        { method: "POST" },
+      );
+      expect(again.status).toBe(409);
     });
   });
 

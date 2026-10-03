@@ -45,8 +45,12 @@ This index lists every command path that the core CLI registers. Read the task-s
 
 - `room-cli import`
 - `room-cli import bb`
+- `room-cli import claude-code [--days N] [--dry-run] [--json]`
+- `room-cli import codex [--days N] [--dry-run] [--json]`
 
 `import bb` copies every open BB thread into an idle Local thread with its full history, title, harness, and model. It forks each native session, so it sends no prompts and never changes BB. Re-running skips threads already imported.
+
+`import claude-code` and `import codex` copy this Mac's chats from the last N days (default 30) into idle Local threads. Each forks the native session, so the agent keeps its memory; the timeline shows user and agent messages. Cloudroom's own sessions, subagents, and already-imported chats are skipped. `--dry-run` lists them without importing. The same picker is in Settings → Import chats.
 
 ## feedback
 
@@ -215,6 +219,7 @@ configures the machine with optional configured `preset` and `image` names;
 - `room-cli thread delete`
 - `room-cli thread edit-message`
 - `room-cli thread tell`
+- `room-cli thread chat`
 - `room-cli thread retry`
 - `room-cli thread stop`
 - `room-cli thread compact`

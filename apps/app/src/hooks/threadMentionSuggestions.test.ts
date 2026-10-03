@@ -1,5 +1,5 @@
-import { PERSONAL_PROJECT_ID, type Thread } from "@bb/domain";
-import { makeThread as makeThreadFixture } from "@bb/test-helpers/domain-fixtures";
+import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@bb/domain";
+import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
 import { describe, expect, it } from "vitest";
 import { buildThreadMentionSuggestions } from "./threadMentionSuggestions";
 
@@ -9,19 +9,19 @@ interface ThreadFixtureOptions {
   projectId?: string;
   title: string | null;
   titleFallback?: string | null;
-  visibility?: Thread["visibility"];
+  visibility?: ThreadListEntry["visibility"];
 }
 
 interface BuildSuggestionFixtureArgs {
-  threads: readonly Thread[];
+  threads: readonly ThreadListEntry[];
   query: string;
   currentProjectId?: string;
   currentThreadId?: string;
   limit?: number;
 }
 
-function makeThread(options: ThreadFixtureOptions): Thread {
-  return makeThreadFixture({
+function makeThread(options: ThreadFixtureOptions): ThreadListEntry {
+  return makeThreadListEntry({
     id: options.id,
     projectId: options.projectId ?? "proj-1",
     environmentId: "env-1",

@@ -31,6 +31,7 @@ import {
   EMPTY_SIDEBAR_THREAD_SHORTCUT_KEYS,
   getSidebarThreadNavigationTargets,
   getSidebarThreadShortcutTargets,
+  revealSidebarThread,
   SidebarThreadShortcutKeysContext,
   type SidebarThreadShortcutPresentation,
   type SidebarThreadShortcutTarget,
@@ -128,6 +129,7 @@ export function AppSidebar({
   const openNavigationTarget = useCallback(
     (target: SidebarThreadShortcutTarget | undefined): boolean => {
       if (!target) return false;
+      revealSidebarThread(sidebarRef.current, target.threadId);
       if (target.element) {
         target.element.click();
         return true;

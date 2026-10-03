@@ -23,6 +23,7 @@ const VISIBLE_SECTIONS = new Set<SettingsSectionId>([
   "defaults",
   "cloud-environment",
   "providers",
+  "import",
   "appearance",
   "keyboard",
   "machines",

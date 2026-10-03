@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { useProjectSuggestions } from "@/hooks/queries/cloudroom-queries";
 import {
   findCachedProviderInfo,
   useSystemProviders,
@@ -663,6 +664,7 @@ function RootComposeSurface({
   const navigate = useNavigate();
   const isPointerCoarse = usePointerCoarse();
   const quickCreateProject = useQuickCreateProjectController();
+  const projectSuggestions = useProjectSuggestions();
   const {
     projectId,
     isProjectless,
@@ -1937,6 +1939,7 @@ function RootComposeSurface({
       disabled:
         !quickCreateProject.isAvailable || quickCreateProject.isCreating,
       isCreating: quickCreateProject.isCreating,
+      suggestions: projectSuggestions,
     },
     onRequestMachineSetup: handleRequestMachineSetup,
     locks: {

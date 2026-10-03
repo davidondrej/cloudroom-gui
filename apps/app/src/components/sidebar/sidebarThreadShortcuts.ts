@@ -107,6 +107,39 @@ export function getSidebarThreadNavigationTargets(
   return collectSidebarThreadTargets(root, Number.POSITIVE_INFINITY, true);
 }
 
+const MAX_REVEAL_FRAMES = 30;
+
+export function revealSidebarThread(
+  root: HTMLElement | null,
+  threadId: string,
+  framesLeft = MAX_REVEAL_FRAMES,
+): void {
+  if (!root) return;
+  const row = [
+    ...root.querySelectorAll<HTMLAnchorElement>(
+      SIDEBAR_THREAD_SHORTCUT_TARGET_SELECTOR,
+    ),
+  ].find((element) => element.dataset.sidebarThreadId === threadId);
+  if (row) {
+    row.scrollIntoView({ block: "nearest" });
+    return;
+  }
+  const placeholder = [
+    ...root.querySelectorAll(`[${SIDEBAR_WINDOWED_NAV_ATTRIBUTE}]`),
+  ].find((element) =>
+    element
+      .getAttribute(SIDEBAR_WINDOWED_NAV_ATTRIBUTE)
+      ?.split(" ")
+      .some((pair) => pair.startsWith(`${threadId}:`)),
+  );
+  placeholder?.scrollIntoView({ block: "nearest" });
+  if (framesLeft > 0) {
+    requestAnimationFrame(() =>
+      revealSidebarThread(root, threadId, framesLeft - 1),
+    );
+  }
+}
+
 export function useSidebarThreadShortcut(
   threadId: string,
 ): SidebarThreadShortcutPresentation | undefined {

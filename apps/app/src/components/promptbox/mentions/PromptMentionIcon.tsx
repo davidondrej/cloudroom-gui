@@ -1,7 +1,41 @@
 import type { PromptMentionResource } from "@bb/domain";
 import { Icon } from "@bb/shared-ui/icon";
+import { cn } from "@bb/shared-ui/lib/utils";
 import { PluginIcon } from "@/components/plugin/PluginIcon";
+import { useThreadTitleMentionResources } from "@/components/thread/ThreadTitleMentions";
 import { promptMentionIconName } from "./prompt-mention-display";
+
+export function ThreadLocationIcon({
+  className,
+  isCloud,
+}: {
+  className?: string;
+  isCloud: boolean;
+}) {
+  return (
+    <Icon
+      name={isCloud ? "Cloud" : "Laptop"}
+      className={cn(className, isCloud && "text-primary [&_path]:stroke-[1.9]")}
+      aria-hidden
+    />
+  );
+}
+
+function ThreadMentionIcon({
+  className,
+  threadId,
+}: {
+  className?: string;
+  threadId: string;
+}) {
+  const { threadById } = useThreadTitleMentionResources();
+  return (
+    <ThreadLocationIcon
+      isCloud={threadById.get(threadId)?.executionTarget === "cloud"}
+      className={className}
+    />
+  );
+}
 
 export function PromptMentionIcon({
   className,
@@ -17,6 +51,11 @@ export function PromptMentionIcon({
         icon={resource.icon ?? null}
         className={className}
       />
+    );
+  }
+  if (resource.kind === "thread") {
+    return (
+      <ThreadMentionIcon threadId={resource.threadId} className={className} />
     );
   }
   return (

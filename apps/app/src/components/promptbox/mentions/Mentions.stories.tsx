@@ -4,6 +4,7 @@ import type {
   MentionMenuState,
   ProviderCommandSuggestion,
   PromptMentionSuggestion,
+  ThreadListIndicatorState,
   TypeaheadMenuState,
 } from "@bb/client-core";
 import { orderPromptMentionSuggestions } from "@/hooks/promptMentionCandidates";
@@ -75,6 +76,22 @@ const pathSuggestions: PromptMentionSuggestion[] = [
   storageFolder("scratch/reports"),
 ];
 
+const idleThread: ThreadListIndicatorState = {
+  hasPendingInteraction: false,
+  hasUnsubmittedDraft: false,
+  hasUnreadError: false,
+  hasUnreadSuccess: false,
+  isBackgroundAgentActive: false,
+  isBackgroundCommandActive: false,
+  isGoalActive: false,
+  isPlanModeActive: false,
+  isRuntimeActive: false,
+  isWorkflowActive: false,
+  queuedWork: "none",
+};
+
+const storyNow = Date.now();
+
 const threadSuggestions: PromptMentionSuggestion[] = [
   {
     kind: "thread",
@@ -83,6 +100,9 @@ const threadSuggestions: PromptMentionSuggestion[] = [
     projectId: "proj_bb",
     threadId: "thr_qfk8ksbxkk",
     title: "Wire up promptbox stories and trim FollowUp API",
+    executionTarget: "cloud",
+    indicator: { ...idleThread, isRuntimeActive: true },
+    lastActivityAt: storyNow - 2 * 60_000,
   },
   {
     kind: "thread",
@@ -91,6 +111,9 @@ const threadSuggestions: PromptMentionSuggestion[] = [
     projectId: "proj_bb",
     threadId: "thr_mgr_kj4n2x",
     title: "Parent: app/timeline cleanup sprint",
+    executionTarget: "local",
+    indicator: { ...idleThread, hasUnreadSuccess: true },
+    lastActivityAt: storyNow - 14 * 60_000,
   },
   {
     kind: "thread",
@@ -100,6 +123,9 @@ const threadSuggestions: PromptMentionSuggestion[] = [
     projectName: "Docs Site",
     threadId: "thr_untitled_3",
     title: undefined,
+    executionTarget: "cloud",
+    indicator: idleThread,
+    lastActivityAt: storyNow - 3 * 3_600_000,
   },
 ];
 

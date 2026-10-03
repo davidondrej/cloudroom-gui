@@ -19,9 +19,10 @@ import {
   OPTION_TRIGGER_CONTENT_CLASS_NAME,
 } from "@bb/shared-ui/option-display";
 
-const OPTION_WARNING_TEXT_CLASS_NAME = "text-warning-text";
+// Risky options (Full Access) recede to a dim gray instead of a loud color.
+const OPTION_WARNING_TEXT_CLASS_NAME = "text-subtle-foreground/80";
 const OPTION_WARNING_INTERACTIVE_CLASS_NAME =
-  "hover:text-warning-text data-[state=open]:text-warning-text";
+  "hover:text-muted-foreground data-[state=open]:text-muted-foreground";
 
 export interface PickerOption<T extends string> {
   value: T;
@@ -158,12 +159,7 @@ export function OptionPicker<T extends string>({
                 LIST_HOVER_TRANSITION,
               )}
             >
-              <span
-                className={cn(
-                  "flex min-w-0 flex-1 items-start gap-2",
-                  option.tone === "warning" && "text-warning-text",
-                )}
-              >
+              <span className="flex min-w-0 flex-1 items-start gap-2">
                 {OptionIcon ? (
                   <OptionIcon className="size-4 shrink-0 max-md:pointer-coarse:mt-0.5" />
                 ) : null}

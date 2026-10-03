@@ -27,7 +27,7 @@ import { getThreadDisplayTitle } from "@/lib/thread-title";
 
 type ThreadTitleMentionThread = Pick<
   ThreadListEntry,
-  "id" | "projectId" | "title" | "titleFallback"
+  "id" | "projectId" | "title" | "titleFallback" | "executionTarget"
 >;
 
 export interface ThreadTitleMentionResources {
@@ -75,7 +75,8 @@ function areThreadTitleMentionThreadsEqual(
     left.id === right.id &&
     left.projectId === right.projectId &&
     left.title === right.title &&
-    left.titleFallback === right.titleFallback
+    left.titleFallback === right.titleFallback &&
+    left.executionTarget === right.executionTarget
   );
 }
 
@@ -133,6 +134,7 @@ export function buildThreadTitleMentionResources(
       projectId: thread.projectId,
       title: thread.title,
       titleFallback: thread.titleFallback,
+      executionTarget: thread.executionTarget,
     });
   };
   for (const project of navigation.projects) {

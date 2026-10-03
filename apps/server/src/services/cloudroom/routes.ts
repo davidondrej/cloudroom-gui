@@ -7,13 +7,14 @@ import { threadGoalSetRequestSchema } from "@bb/server-contract";
 import { cloudroom, isCloudThread } from "./commands.js";
 import { cloudroomAccount } from "./account.js";
 import { setMacAccess } from "./previews.js";
-import { cloudSkills, setCloudSkills, setCopyLogins } from "./sync.js";
+import { cloudSkills, setCloudSkills, setCopyLogins, skillInCloud } from "./sync.js";
 import { teleports } from "./teleport.js";
 import { binding, teleportBlocked, teleportProgress } from "./store.js";
 import { browserRequestProblem } from "../../browser-request-guard.js";
 import { claudePlan, createClaudeToken, isClaudeApiKey } from "./claude-token.js";
 import { startClaudeVersionSync } from "./harness-versions.js";
 import { importBbThreads } from "./bb-import.js";
+import { importNativeSessions, listNativeSessions } from "./session-import.js";
 import { copyToMac, openOnMac, teleportingToLocal, teleportToLocal } from "./teleport-local.js";
 import { cloudEnvironmentRequestSchema, macSkills, macVariables, sandboxThread, type CloudEnvironmentRequest } from "./sandboxes.js";
 import { CloudroomError } from "./client.js";
@@ -21,6 +22,7 @@ import { archiveThreadAndChildren } from "../threads/thread-archive.js";
 import { reportBug } from "./bug-reports.js";
 import { githubAuth } from "./github-login.js";
 import { localRepos } from "./local-repos.js";
+import { addGithubRepo, repoSuggestions } from "./repo-suggestions.js";
 import { SETUP_ACTIONS, SETUP_DETAILS, SETUP_STEPS } from "../system/telemetry.js";
 
 export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
@@ -61,6 +63,14 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     if (problem) return context.json({ message: "Use the local Cloudroom app or CLI." }, problem.status);
     const input = z.object({ hostId: z.string().min(1) }).strict().parse(await context.req.json());
     return context.json(await importBbThreads(deps, input.hostId));
+  });
+  app.get("/api/v1/cloudroom/import/sessions", async context => context.json({ sessions: await listNativeSessions(deps) }));
+  app.post("/api/v1/cloudroom/import/sessions", async context => {
+    const input = z.object({
+      hostId: z.string().min(1),
+      sessions: z.array(z.object({ harness: z.enum(["claude-code", "codex"]), id: z.string().min(1) }).strict()).min(1).max(2000),
+    }).strict().parse(await context.req.json());
+    return context.json(await importNativeSessions(deps, input.hostId, input.sessions));
   });
   app.post("/api/v1/cloudroom/account/project", async (context) => {
     const input = z.object({ projectId: z.string().min(1) }).strict().parse(await context.req.json());
@@ -133,20 +143,34 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     if (!Object.keys(variables).length) throw new ApiError(404, "mac_variables_missing", "Those variables are no longer set in your shell on this Mac.");
     return context.json(await environment({ action: "set", variables }));
   });
-  // Skills from this Mac that every new cloud thread gets. A change uploads the chosen skills right away.
+  // Skills from this Mac that every new cloud thread gets. A change saves at once; the upload runs in the background.
   const skillList = async () => {
-    const chosen = await cloudSkills(deps);
-    return { skills: (await macSkills()).map(({ name, description }) => ({ name, description, cloud: !chosen || chosen.includes(name) })) };
+    const choice = await cloudSkills(deps);
+    const inCloud = skillInCloud(choice);
+    const skills = (await macSkills()).map(({ name, description }) => ({ name, description, cloud: inCloud(name) }));
+    return { auto: choice.auto, skills, issue: cloudroom(deps).sandboxes.configIssue };
   };
+  let skillChange = Promise.resolve();
   app.get("/api/v1/cloudroom/account/skills", async (context) => context.json(await skillList()));
   app.post("/api/v1/cloudroom/account/skills", async (context) => {
-    const { names, cloud } = z.object({ names: z.array(z.string().min(1)).min(1).max(1000), cloud: z.boolean() }).strict().parse(await context.req.json());
-    const chosen = new Set(await cloudSkills(deps) ?? (await macSkills()).map(skill => skill.name));
-    for (const name of names) if (cloud) chosen.add(name); else chosen.delete(name);
-    await setCloudSkills(deps, [...chosen].sort());
-    await cloudroom(deps).sandboxes.copyMacConfig([...chosen], true).catch((error: unknown) => {
-      throw new ApiError(503, "cloud_skills", `Your choice is saved on this Mac, but the cloud did not get it yet: ${error instanceof Error ? error.message : String(error)}`);
+    const input = z.union([
+      z.object({ names: z.array(z.string().min(1)).min(1).max(1000), cloud: z.boolean() }).strict(),
+      z.object({ auto: z.boolean() }).strict(),
+    ]).parse(await context.req.json());
+    // One change at a time, so quick clicks never overwrite each other.
+    const change = skillChange.then(async () => {
+      const choice = await cloudSkills(deps);
+      if ("auto" in input) {
+        // Skills already on this Mac keep their place; only skills added later follow the new setting.
+        const inCloud = skillInCloud(choice);
+        for (const { name } of await macSkills()) choice.chosen[name] = inCloud(name);
+        choice.auto = input.auto;
+      } else for (const name of input.names) choice.chosen[name] = input.cloud;
+      await setCloudSkills(deps, choice);
+      void cloudroom(deps).sandboxes.copyMacConfig(skillInCloud(choice), true).catch((error: unknown) => deps.logger.warn({ error }, "Skills could not be copied to cloud sandboxes"));
     });
+    skillChange = change.catch(() => {});
+    await change;
     return context.json(await skillList());
   });
   app.post("/api/v1/cloudroom/account/copy-logins", async (context) => {
@@ -203,6 +227,11 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   }
   app.get("/api/v1/cloudroom/account/github", async context => context.json(await githubAuth(deps)));
   app.get("/api/v1/cloudroom/account/local-repos", async context => context.json({ repos: await localRepos() }));
+  app.get("/api/v1/cloudroom/account/repo-suggestions", async context => context.json(await repoSuggestions(deps)));
+  app.post("/api/v1/cloudroom/account/repo-suggestions/github", async context => {
+    const input = z.object({ hostId: z.string().min(1), repo: z.string().regex(/^[\w.-]+\/[\w.-]+$/) }).strict().parse(await context.req.json());
+    return context.json(await addGithubRepo(deps, input.hostId, input.repo));
+  });
   for (const action of ["login", "cancel"] as const) {
     app.post(`/api/v1/cloudroom/account/github/${action}`, async context => {
       const input = z.object({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/) }).strict().parse(await context.req.json());

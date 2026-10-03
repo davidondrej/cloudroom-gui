@@ -459,7 +459,7 @@ function buildThreadPromptBannerActivityByThreadId(
       thread,
       eventsByThreadId.get(thread.id) ?? [],
     );
-    if (activity.activeGoalCount > 0 || activity.activePlanModeCount > 0) {
+    if (activity.hasGoal || activity.activePlanModeCount > 0) {
       result.set(thread.id, activity);
     }
   }

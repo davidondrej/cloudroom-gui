@@ -251,6 +251,12 @@ Opening threads and files in the app:
 
 Messaging:
 
+  room-cli thread chat <id>                      Chat with a Local or Cloud thread in this terminal
+    Shows the latest turn, then new output as it settles. Enter sends a message
+    like tell. /approve or /deny answers a pending approval, /stop stops the
+    agent, /exit or Ctrl+C leaves. Inside Herdr (HERDR_ENV=1) it reports
+    idle, working, or blocked to the pane and registers itself as the resume command.
+
   room-cli thread tell <id> <message>            Send a follow-up message
     --mode <mode>                          Message mode: steer, queue, or auto; default: Local steer, Cloud queue
     --model <model>                        Model override for this turn

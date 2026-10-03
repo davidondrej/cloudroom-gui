@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import type { RepoSuggestion } from "@bb/sdk/browser";
 import { Button } from "@bb/shared-ui/button";
 import {
   Command,
@@ -17,22 +18,43 @@ import {
   OPTION_TRIGGER_CONTENT_CLASS_NAME,
 } from "@bb/shared-ui/option-display";
 import { Popover, PopoverContent, PopoverTrigger } from "@bb/shared-ui/popover";
+import { formatRelativeTime } from "@/lib/relative-time";
 import { searchPickerOptions } from "./picker-search";
 import { useResetPickerScroll } from "./useResetPickerScroll";
 
 const PROJECT_SEARCH_MIN_OPTIONS = 5;
 const NO_HIGHLIGHT_VALUE = "__project-picker-idle__";
 const PROJECT_PICKER_ITEM_CLASS_NAME = "py-[0.3125rem] text-xs max-md:py-2";
+const VISIBLE_REPO_SUGGESTIONS = 5;
+const REPO_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "github", label: "GitHub" },
+  { id: "mac", label: "Mac" },
+] as const;
+type RepoFilter = (typeof REPO_FILTERS)[number]["id"];
+
+const repoKey = (repo: RepoSuggestion) =>
+  repo.source === "mac" ? repo.path : repo.repo;
 
 export interface ProjectSelectorOption {
   id: string;
   name: string;
 }
 
+/** Repos on this Mac and GitHub that are not projects yet, each one click from becoming one. */
+export interface ProjectSelectorSuggestions {
+  repos: readonly RepoSuggestion[];
+  githubConnected: boolean;
+  isLoading: boolean;
+  addingKey: string | null;
+  onAdd: (repo: RepoSuggestion) => Promise<unknown>;
+}
+
 export interface ProjectSelectorCreateProjectConfig {
   onCreate: () => void;
   disabled?: boolean;
   isCreating?: boolean;
+  suggestions?: ProjectSelectorSuggestions;
 }
 
 interface ProjectSelectorProps {
@@ -65,11 +87,15 @@ export function ProjectSelector({
   const [open, setOpen] = useState(defaultOpen ?? false);
   const [searchQuery, setSearchQuery] = useState("");
   const [highlightedValue, setHighlightedValue] = useState(NO_HIGHLIGHT_VALUE);
+  const [repoFilter, setRepoFilter] = useState<RepoFilter>("all");
   const commandRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listRef = useResetPickerScroll<HTMLDivElement>(searchQuery);
   const disabled = disabledProp || isLoading;
-  const showSearch = projects.length > PROJECT_SEARCH_MIN_OPTIONS;
+  const suggestions = createProject?.suggestions;
+  const showSearch =
+    projects.length + (suggestions?.repos.length ?? 0) >
+    PROJECT_SEARCH_MIN_OPTIONS;
   const filteredProjects = useMemo(
     () =>
       showSearch
@@ -81,6 +107,16 @@ export function ProjectSelector({
         : projects,
     [projects, searchQuery, showSearch],
   );
+  const visibleRepos = useMemo(() => {
+    const repos = (suggestions?.repos ?? [])
+      .filter((repo) => repoFilter === "all" || repo.source === repoFilter)
+      .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+    return searchPickerOptions({
+      options: repos,
+      query: searchQuery,
+      getLabel: (repo) => repo.name,
+    }).slice(0, VISIBLE_REPO_SUGGESTIONS);
+  }, [repoFilter, searchQuery, suggestions?.repos]);
   const selected = value !== null ? projects.find((p) => p.id === value) : null;
   const fallback = !allowNoProject && !selected ? projects[0] : null;
   const triggerLabel = isLoading
@@ -107,6 +143,13 @@ export function ProjectSelector({
   const selectProject = (projectId: string | null) => {
     onChange(projectId);
     handleOpenChange(false);
+  };
+  const addRepo = (repo: RepoSuggestion) => {
+    if (!suggestions || suggestions.addingKey !== null) return;
+    void suggestions.onAdd(repo).then(
+      () => handleOpenChange(false),
+      () => {},
+    );
   };
 
   return (
@@ -162,7 +205,10 @@ export function ProjectSelector({
             commandRef.current?.focus();
           }
         }}
-        className="flex max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-0.5rem))] w-52 flex-col overflow-hidden p-0 max-md:min-h-0 max-md:flex-1"
+        className={cn(
+          "flex max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-0.5rem))] flex-col overflow-hidden p-0 max-md:min-h-0 max-md:flex-1",
+          suggestions ? "w-80" : "w-52",
+        )}
       >
         <Command
           ref={commandRef}
@@ -176,7 +222,9 @@ export function ProjectSelector({
             <CommandInput
               ref={searchInputRef}
               aria-label="Search projects"
-              placeholder="Search projects"
+              placeholder={
+                suggestions ? "Search projects and repos" : "Search projects"
+              }
               value={searchQuery}
               onValueChange={setSearchQuery}
               className="h-8 text-xs"
@@ -187,34 +235,53 @@ export function ProjectSelector({
             className="min-h-0 max-h-none flex-1 overscroll-contain"
           >
             {projects.length > 0 ? (
-              <CommandGroup heading="Project">
-                {filteredProjects.map((project) => (
-                  <CommandItem
-                    key={project.id}
-                    value={project.id}
-                    keywords={[project.name]}
-                    aria-current={project.id === value ? "true" : undefined}
-                    onSelect={() => selectProject(project.id)}
-                    className={PROJECT_PICKER_ITEM_CLASS_NAME}
-                  >
-                    <Icon
-                      name="Folder"
-                      className="size-4 text-muted-foreground"
-                      aria-hidden
-                    />
-                    <span className="min-w-0 flex-1 truncate">
-                      {project.name}
-                    </span>
-                    <Icon
-                      name="Check"
-                      className={cn(
-                        "ml-auto size-4",
-                        project.id === value ? "opacity-100" : "opacity-0",
-                      )}
-                      aria-hidden
-                    />
-                  </CommandItem>
-                ))}
+              <CommandGroup
+                heading={
+                  suggestions ? (
+                    <>
+                      In Cloudroom{" "}
+                      <span className="font-normal opacity-70">
+                        {projects.length}
+                      </span>
+                    </>
+                  ) : (
+                    "Project"
+                  )
+                }
+              >
+                <div
+                  className={cn(
+                    suggestions && "max-h-[9.5rem] overflow-y-auto",
+                  )}
+                >
+                  {filteredProjects.map((project) => (
+                    <CommandItem
+                      key={project.id}
+                      value={project.id}
+                      keywords={[project.name]}
+                      aria-current={project.id === value ? "true" : undefined}
+                      onSelect={() => selectProject(project.id)}
+                      className={PROJECT_PICKER_ITEM_CLASS_NAME}
+                    >
+                      <Icon
+                        name="Folder"
+                        className="size-4 text-muted-foreground"
+                        aria-hidden
+                      />
+                      <span className="min-w-0 flex-1 truncate">
+                        {project.name}
+                      </span>
+                      <Icon
+                        name="Check"
+                        className={cn(
+                          "ml-auto size-4",
+                          project.id === value ? "opacity-100" : "opacity-0",
+                        )}
+                        aria-hidden
+                      />
+                    </CommandItem>
+                  ))}
+                </div>
                 {showSearch && filteredProjects.length === 0 ? (
                   <div className="px-2 py-1.5 text-xs text-muted-foreground max-md:py-2">
                     No projects found
@@ -222,10 +289,24 @@ export function ProjectSelector({
                 ) : null}
               </CommandGroup>
             ) : null}
-            {showActionSeparator ? <CommandSeparator /> : null}
+            {suggestions ? (
+              <>
+                {projects.length > 0 ? <CommandSeparator /> : null}
+                <RepoSuggestionsGroup
+                  suggestions={suggestions}
+                  repos={visibleRepos}
+                  filter={repoFilter}
+                  onFilterChange={setRepoFilter}
+                  onAdd={addRepo}
+                />
+              </>
+            ) : null}
+            {showActionSeparator || suggestions ? <CommandSeparator /> : null}
             {createProjectAction || allowNoProject ? (
               <CommandGroup
-                heading={projects.length === 0 ? "Project" : undefined}
+                heading={
+                  projects.length === 0 && !suggestions ? "Project" : undefined
+                }
               >
                 {createProjectAction ? (
                   <CommandItem
@@ -274,5 +355,101 @@ export function ProjectSelector({
         </Command>
       </PopoverContent>
     </Popover>
+  );
+}
+
+interface RepoSuggestionsGroupProps {
+  suggestions: ProjectSelectorSuggestions;
+  repos: readonly RepoSuggestion[];
+  filter: RepoFilter;
+  onFilterChange: (filter: RepoFilter) => void;
+  onAdd: (repo: RepoSuggestion) => void;
+}
+
+function RepoSuggestionsGroup({
+  suggestions,
+  repos,
+  filter,
+  onFilterChange,
+  onAdd,
+}: RepoSuggestionsGroupProps) {
+  const now = Date.now();
+  const emptyMessage = suggestions.isLoading
+    ? "Looking for repos…"
+    : filter === "github" && !suggestions.githubConnected
+      ? "GitHub isn't connected."
+      : "No other repos found.";
+  return (
+    <CommandGroup>
+      <div className="flex items-center gap-1 px-2 pb-1.5 pt-1 text-xs font-medium text-muted-foreground">
+        <span className="mr-auto whitespace-nowrap">Not in Cloudroom yet</span>
+        {REPO_FILTERS.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={filter === id}
+            onClick={() => onFilterChange(id)}
+            className={cn(
+              "flex items-center gap-1 rounded-full border px-1.5 text-[0.6875rem] leading-4",
+              filter === id
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border hover:text-foreground",
+            )}
+          >
+            {id === "all" ? null : (
+              <Icon
+                name={id === "github" ? "Github" : "Laptop"}
+                className="size-2.5"
+                aria-hidden
+              />
+            )}
+            {label}
+          </button>
+        ))}
+      </div>
+      {repos.map((repo) => {
+        const key = repoKey(repo);
+        const adding = suggestions.addingKey === key;
+        return (
+          <CommandItem
+            key={key}
+            value={`repo:${key}`}
+            keywords={[repo.name]}
+            disabled={suggestions.addingKey !== null && !adding}
+            onSelect={() => onAdd(repo)}
+            className={cn(PROJECT_PICKER_ITEM_CLASS_NAME, "group")}
+          >
+            <Icon
+              name={repo.source === "github" ? "Github" : "Laptop"}
+              className="size-4 text-muted-foreground"
+              aria-hidden
+            />
+            <span className="min-w-0 flex-1 truncate">
+              {repo.name}
+              {repo.updatedAt === null ? null : (
+                <span className="ml-1.5 text-muted-foreground">
+                  {formatRelativeTime({ timestamp: repo.updatedAt, now })}
+                </span>
+              )}
+            </span>
+            <span className="flex shrink-0 items-center gap-1 rounded border px-1.5 text-[0.6875rem] leading-4 text-muted-foreground group-data-[selected=true]:border-primary/50 group-data-[selected=true]:text-primary">
+              {adding ? (
+                <>
+                  <Icon name="Loading" className="size-3 animate-spin" />
+                  Adding
+                </>
+              ) : (
+                "+ Add"
+              )}
+            </span>
+          </CommandItem>
+        );
+      })}
+      {repos.length === 0 ? (
+        <div className="px-2 py-1.5 text-xs text-muted-foreground max-md:py-2">
+          {emptyMessage}
+        </div>
+      ) : null}
+    </CommandGroup>
   );
 }

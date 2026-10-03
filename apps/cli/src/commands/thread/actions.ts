@@ -594,7 +594,7 @@ export function registerActionsCommands(
     );
 }
 
-async function postThreadMessage(
+export async function postThreadMessage(
   args: PostThreadMessageArgs,
 ): Promise<PostThreadMessageResult> {
   const sdk = createCliBbSdk(args.getUrl());
@@ -635,7 +635,7 @@ async function postThreadMessage(
   return { ...response, mode };
 }
 
-function describeThreadTellOutcome(
+export function describeThreadTellOutcome(
   threadId: string,
   response: PostThreadMessageResult,
 ): string {

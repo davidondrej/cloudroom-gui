@@ -25,8 +25,12 @@ vi.mock("@/hooks/useUpdateInventory", () => ({
 }));
 
 vi.mock("@/components/provider-cli/provider-cli-install", () => ({
+  hasProviderCliAction: (issue: ProviderCliIssue) => issue.action !== null,
   useProviderCliInstallRunner: () => ({
+    failuresByJobKey: new Map(),
+    queuedJobKeys: new Set(),
     runningJobKey: providerCliInstallRunnerState.runningJobKey,
+    startInstall: vi.fn(),
   }),
 }));
 

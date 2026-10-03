@@ -489,18 +489,18 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
     });
     const updatedThread = requirePublicThread(deps.db, thread.id);
     const updatedActivity = getThreadPromptBannerActivity(deps, updatedThread);
-    if (updatedActivity.activeGoalCount > 0 && !result.cleared) {
+    if (updatedActivity.hasGoal && !result.cleared) {
       throw new ApiError(
         409,
         "invalid_request",
-        "The provider did not clear the active Goal",
+        "The provider did not clear the Goal",
       );
     }
-    if (updatedActivity.activeGoalCount > 0) {
+    if (updatedActivity.hasGoal) {
       throw new ApiError(
         409,
         "invalid_request",
-        "The provider did not confirm that the active Goal was cleared",
+        "The provider did not confirm that the Goal was cleared",
       );
     }
     return context.json({ ok: true });

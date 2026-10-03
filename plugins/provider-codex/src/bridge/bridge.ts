@@ -1080,6 +1080,7 @@ async function constructThreadSession(
         method = "thread/fork";
         const forkParams: BbThreadForkParams = {
           threadId: args.request.sourceProviderThreadId,
+          excludeTurns: true,
           ...(args.request.sourceProviderCheckpointId !== undefined
             ? {
                 lastTurnId: stripLegacyBridgeIdPrefix(

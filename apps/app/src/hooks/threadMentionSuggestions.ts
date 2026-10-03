@@ -1,7 +1,10 @@
 import { fuzzyMatchText } from "@bb/fuzzy-match";
-import { PERSONAL_PROJECT_ID, type Thread } from "@bb/domain";
+import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@bb/domain";
 import type { PromptMentionSuggestion } from "@bb/client-core";
-import { compareCodepoint } from "@bb/client-core";
+import {
+  compareCodepoint,
+  threadListIndicatorStateForThread,
+} from "@bb/client-core";
 
 type ThreadMentionSuggestion = Extract<
   PromptMentionSuggestion,
@@ -9,7 +12,7 @@ type ThreadMentionSuggestion = Extract<
 >;
 
 interface BuildThreadMentionSuggestionsArgs {
-  threads: readonly Thread[];
+  threads: readonly ThreadListEntry[];
   query: string;
   currentProjectId?: string;
   currentThreadId?: string;
@@ -36,7 +39,7 @@ const THREAD_RELATION_RANK = {
   unrelated: 3,
 };
 
-function getThreadDisplayTitle(thread: Thread): string | undefined {
+function getThreadDisplayTitle(thread: ThreadListEntry): string | undefined {
   const title = thread.title?.trim();
   if (title) {
     return title;
@@ -46,20 +49,20 @@ function getThreadDisplayTitle(thread: Thread): string | undefined {
   return titleFallback || undefined;
 }
 
-function getThreadSearchText(thread: Thread): string {
+function getThreadSearchText(thread: ThreadListEntry): string {
   const title = getThreadDisplayTitle(thread);
   return title ?? thread.id;
 }
 
 function canSuggestThread(
-  thread: Thread,
+  thread: ThreadListEntry,
   args: BuildThreadMentionSuggestionsArgs,
 ): boolean {
   return thread.id !== args.currentThreadId && thread.visibility !== "hidden";
 }
 
 function shouldShowProjectName(
-  thread: Thread,
+  thread: ThreadListEntry,
   context: ThreadMentionContext,
 ): boolean {
   if (thread.projectId === PERSONAL_PROJECT_ID) {
@@ -73,7 +76,7 @@ function shouldShowProjectName(
 }
 
 function toThreadMentionSuggestion(
-  thread: Thread,
+  thread: ThreadListEntry,
   context: ThreadMentionContext,
   projectNamesById: ReadonlyMap<string, string>,
 ): ThreadMentionSuggestion {
@@ -88,6 +91,9 @@ function toThreadMentionSuggestion(
     ...(projectName ? { projectName } : {}),
     threadId: thread.id,
     title: getThreadDisplayTitle(thread),
+    executionTarget: thread.executionTarget,
+    indicator: threadListIndicatorStateForThread(thread, false),
+    lastActivityAt: thread.latestAttentionAt,
   };
 }
 
@@ -106,7 +112,7 @@ function getThreadMentionContext(
 }
 
 function getThreadRelationRank(
-  thread: Thread,
+  thread: ThreadListEntry,
   context: ThreadMentionContext,
 ): number {
   if (

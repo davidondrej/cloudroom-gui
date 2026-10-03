@@ -49,11 +49,25 @@ export interface CloudroomCodexAuth {
 export interface CloudEnvironment {
   variables: { name: string; hint: string }[];
   setup: string;
+  /** `owner/name` GitHub repos every sandbox clones into /repos/<name>. */
+  repos: string[];
+  /** The account's GitHub repos, newest first; only answered to `githubRepos`. */
+  available?: string[];
+  /** Last push time of each `available` repo, in ms. */
+  pushed?: Record<string, number>;
 }
+
+/** A repo that is not a Cloudroom project yet: a Git folder on this Mac, or a GitHub repo. */
+export type RepoSuggestion =
+  | { source: "mac"; name: string; path: string; updatedAt: number }
+  | { source: "github"; name: string; repo: string; updatedAt: number | null };
 export type CloudEnvironmentChange =
   | { action: "set"; variables: Record<string, string> }
   | { action: "remove"; name: string }
-  | { action: "setup"; setup: string };
+  | { action: "setup"; setup: string }
+  | { action: "addRepo"; repo: string }
+  | { action: "removeRepo"; repo: string }
+  | { action: "githubRepos" };
 
 /** A skill on this Mac. `cloud` means every new cloud thread gets it. */
 export interface CloudSkill {
@@ -61,6 +75,13 @@ export interface CloudSkill {
   description: string;
   cloud: boolean;
 }
+/** `auto`: skills added to this Mac later go to the cloud too. `issue`: why the last upload failed. */
+export interface CloudSkills {
+  auto: boolean;
+  skills: CloudSkill[];
+  issue: string | null;
+}
+export type CloudSkillsChange = { names: string[]; cloud: boolean } | { auto: boolean };
 
 export interface ClaudeAccountInput { action?: "login" | "cancel" | "complete" | "setup-token" | "key"; requestId?: string; code?: string; state?: string; apiKey?: string }
 
@@ -80,6 +101,10 @@ export interface CloudroomArea {
   cancelGithubLogin(requestId: string): Promise<CloudroomCodexAuth>;
   /** Recently used Git folders on this Mac, for picking a first project. */
   localRepos(signal?: AbortSignal): Promise<{ repos: { name: string; path: string; updatedAt: number }[] }>;
+  /** Recently updated repos on this Mac and GitHub that no project uses yet. */
+  repoSuggestions(signal?: AbortSignal): Promise<{ githubConnected: boolean; repos: RepoSuggestion[] }>;
+  /** Clones an `owner/name` GitHub repo onto the host and makes it a project. */
+  addGithubRepo(input: { hostId: string; repo: string }): Promise<{ projectId: string }>;
   status(signal?: AbortSignal): Promise<CloudroomStatus>;
   /** `provider` opens that provider's sign-in directly instead of the website's sign-in page. */
   signIn(input?: { projectId?: string; websiteUrl?: string; provider?: "github" | "google" }): Promise<{ url: string }>;
@@ -94,9 +119,9 @@ export interface CloudroomArea {
   /** Copies the named variables from this Mac's login shell into the Cloud environment. */
   importMacVariables(names: string[]): Promise<CloudEnvironment>;
   /** This Mac's skills and which of them new cloud threads get. */
-  cloudSkills(signal?: AbortSignal): Promise<{ skills: CloudSkill[] }>;
-  /** Adds or removes skills from the cloud, then uploads the new choice. */
-  setCloudSkills(names: string[], cloud: boolean): Promise<{ skills: CloudSkill[] }>;
+  cloudSkills(signal?: AbortSignal): Promise<CloudSkills>;
+  /** Adds or removes skills, or sets whether new skills go to the cloud. Uploads in the background. */
+  setCloudSkills(change: CloudSkillsChange): Promise<CloudSkills>;
   /** Mac → cloud: runs a shell command as the agent account of the VM, or of `threadId`'s sandbox. Input and output bytes are hex. */
   runOnVm(input: { command: string; stdin?: string; cwd?: string; threadId?: string }): Promise<{ code: number | null; stdout: string; stderr: string; truncated: boolean }>;
   cancel(): Promise<void>;
@@ -118,6 +143,10 @@ export interface CloudroomArea {
   moveToSandbox(threadId: string): Promise<TeleportProgress>;
   /** Copies open BB threads into idle Local threads by forking their native sessions. Sends no prompts. */
   importBb(hostId: string): Promise<BbImportResult>;
+  /** Claude Code and Codex chats on this Mac that are not in Cloudroom yet, newest first. */
+  nativeSessions(signal?: AbortSignal): Promise<{ sessions: NativeSession[] }>;
+  /** Copies chosen chats into idle Local threads by forking their native sessions. Sends no prompts. */
+  importSessions(hostId: string, sessions: { harness: NativeSession["harness"]; id: string }[]): Promise<SessionImportResult>;
   /** Sends a Local agent's Cloudroom bug report. `sent` is false while bug reports are off in Settings. */
   reportBug(input: { message: string; threadId?: string }): Promise<{ sent: boolean }>;
 }
@@ -125,6 +154,19 @@ export interface CloudroomArea {
 export interface BbImportResult {
   imported: { bbThreadId: string; threadId: string; title: string }[];
   skipped: { bbThreadId: string; title: string; reason: string }[];
+}
+
+export interface NativeSession {
+  harness: "claude-code" | "codex";
+  id: string;
+  title: string;
+  cwd: string;
+  updatedAt: number;
+}
+
+export interface SessionImportResult {
+  imported: { harness: NativeSession["harness"]; id: string; threadId: string; title: string }[];
+  skipped: { harness: NativeSession["harness"]; id: string; title: string; reason: string }[];
 }
 
 export interface CloudroomThreadWorkspace {
@@ -150,6 +192,8 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     cancelCodexLogin: (requestId) => transport.readJson(request("/codex/cancel", { requestId })) as Promise<CloudroomCodexAuth>,
     githubAuth: (signal) => transport.readJson(request("/github", undefined, signal)) as Promise<CloudroomCodexAuth>,
     localRepos: (signal) => transport.readJson(request("/local-repos", undefined, signal)) as Promise<{ repos: { name: string; path: string; updatedAt: number }[] }>,
+    repoSuggestions: (signal) => transport.readJson(request("/repo-suggestions", undefined, signal)) as Promise<{ githubConnected: boolean; repos: RepoSuggestion[] }>,
+    addGithubRepo: (input) => transport.readJson(request("/repo-suggestions/github", input)) as Promise<{ projectId: string }>,
     githubLogin: (requestId) => transport.readJson(request("/github/login", { requestId })) as Promise<CloudroomCodexAuth>,
     cancelGithubLogin: (requestId) => transport.readJson(request("/github/cancel", { requestId })) as Promise<CloudroomCodexAuth>,
     status: (signal) => transport.readJson(request("", undefined, signal)) as Promise<CloudroomStatus>,
@@ -162,8 +206,8 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     updateEnvironment: (change) => transport.readJson(request("/environment", change)) as Promise<CloudEnvironment>,
     macVariables: (signal) => transport.readJson(request("/environment/mac", undefined, signal)) as Promise<{ names: string[] }>,
     importMacVariables: (names) => transport.readJson(request("/environment/mac", { names })) as Promise<CloudEnvironment>,
-    cloudSkills: (signal) => transport.readJson(request("/skills", undefined, signal)) as Promise<{ skills: CloudSkill[] }>,
-    setCloudSkills: (names, cloud) => transport.readJson(request("/skills", { names, cloud })) as Promise<{ skills: CloudSkill[] }>,
+    cloudSkills: (signal) => transport.readJson(request("/skills", undefined, signal)) as Promise<CloudSkills>,
+    setCloudSkills: (change) => transport.readJson(request("/skills", change)) as Promise<CloudSkills>,
     runOnVm: (input) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/vm/run`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })) as Promise<{ code: number | null; stdout: string; stderr: string; truncated: boolean }>,
     logout: () => transport.readVoid(request("/logout", {})),
     threadStatus: (threadId, signal) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}`, { signal })) as Promise<{ model: string; reasoning: string } | null>,
@@ -175,6 +219,8 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     copyToMac: (threadId) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/teleport`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "copy" }) })) as Promise<{ branch: string }>,
     openCloudFile: (threadId, path) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/open-file`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path }) })) as Promise<{ path: string }>,
     importBb: (hostId) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/import/bb`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hostId }) })) as Promise<BbImportResult>,
+    nativeSessions: (signal) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/import/sessions`, { signal })) as Promise<{ sessions: NativeSession[] }>,
+    importSessions: (hostId, sessions) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/import/sessions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hostId, sessions }) })) as Promise<SessionImportResult>,
     reportBug: (input) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/bug-reports`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })) as Promise<{ sent: boolean }>,
     retryStart: (threadId) => transport.readVoid(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/retry-start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })),
   };

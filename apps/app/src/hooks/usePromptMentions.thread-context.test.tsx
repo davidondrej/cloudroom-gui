@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, renderHook } from "@testing-library/react";
-import { makeThread } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { usePromptMentions } from "./usePromptMentions";
 
@@ -49,7 +49,7 @@ beforeEach(() => {
   mocks.useSidebarNavigation.mockReturnValue({ data: undefined });
   mocks.useThreadMentionCandidates.mockReturnValue({
     data: [
-      makeThread({
+      makeThreadListEntry({
         id: "thr_existing",
         projectId: "proj_1",
         environmentId: "env_worktree",

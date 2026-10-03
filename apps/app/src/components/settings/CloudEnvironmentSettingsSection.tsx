@@ -1,9 +1,10 @@
 import { useState, type ClipboardEvent, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { CloudEnvironment, CloudEnvironmentChange, CloudSkill } from "@bb/sdk/browser";
+import type { CloudEnvironment, CloudEnvironmentChange, CloudSkillsChange } from "@bb/sdk/browser";
 import { Button } from "@bb/shared-ui/button";
 import { Icon } from "@bb/shared-ui/icon";
 import { Input } from "@bb/shared-ui/input";
+import { Switch } from "@bb/shared-ui/switch";
 import { Textarea } from "@bb/shared-ui/textarea";
 import { sdk } from "@/lib/sdk";
 
@@ -35,7 +36,7 @@ export function CloudEnvironmentSettingsSection() {
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-foreground">Cloud environment</h2>
           <p className="mt-1 max-w-xl text-xs leading-relaxed text-subtle-foreground">
-            Every new cloud thread starts with these API keys, skills, and this setup. Change them here or on your cloudroom.dev dashboard. Both stay in sync.
+            Every new cloud thread starts with these skills, API keys, repos, and this setup. Change them here or on your cloudroom.dev dashboard. Both stay in sync.
           </p>
         </div>
         {data && !environment.isError && (
@@ -51,8 +52,9 @@ export function CloudEnvironmentSettingsSection() {
         </div>
       ) : (
         <>
-          <VariablesCard environment={data} busy={update.isPending} onChange={(change) => update.mutateAsync(change)} onImported={saved} />
           <SkillsCard />
+          <VariablesCard environment={data} busy={update.isPending} onChange={(change) => update.mutateAsync(change)} onImported={saved} />
+          <ReposCard repos={data.repos} busy={update.isPending} onChange={(change) => update.mutateAsync(change)} />
           <SetupScriptCard setup={data.setup} onSave={(setup) => update.mutateAsync({ action: "setup", setup })} />
         </>
       )}
@@ -224,35 +226,42 @@ function VariablesCard({
 
 function SkillsCard() {
   const queryClient = useQueryClient();
-  const skills = useQuery({ queryKey: SKILLS_KEY, queryFn: ({ signal }) => sdk.cloudroom.cloudSkills(signal), retry: false });
+  const [search, setSearch] = useState("");
+  // Refreshes, so skills added on this Mac and background upload problems show up.
+  const skills = useQuery({ queryKey: SKILLS_KEY, queryFn: ({ signal }) => sdk.cloudroom.cloudSkills(signal), refetchInterval: 15_000, retry: false });
   const change = useMutation({
-    mutationFn: ({ names, cloud }: { names: string[]; cloud: boolean }) => sdk.cloudroom.setCloudSkills(names, cloud),
+    mutationFn: (change: CloudSkillsChange) => sdk.cloudroom.setCloudSkills(change),
     onSuccess: (data) => queryClient.setQueryData(SKILLS_KEY, data),
   });
-  const all = skills.data?.skills ?? [];
-  const inCloud = all.filter((skill) => skill.cloud);
-  const missing = all.filter((skill) => !skill.cloud);
-  const set = (list: CloudSkill[], cloud: boolean) => change.mutate({ names: list.map((skill) => skill.name), cloud });
-  const label = (skill: CloudSkill) => (
-    <div className="min-w-0 flex-1">
-      <code className={`block truncate font-mono text-xs ${skill.cloud ? "text-foreground" : "text-muted-foreground"}`}>{skill.name}</code>
-      {skill.description && <p className="truncate text-2xs text-subtle-foreground">{skill.description}</p>}
-    </div>
-  );
+  const data = skills.data;
+  const all = data?.skills ?? [];
+  const query = search.trim().toLowerCase();
+  const shown = query ? all.filter((skill) => skill.name.includes(query) || skill.description.toLowerCase().includes(query)) : all;
+  const set = (cloud: boolean) => {
+    const names = shown.filter((skill) => skill.cloud !== cloud).map((skill) => skill.name);
+    if (names.length) change.mutate({ names, cloud });
+  };
   return (
     <Card
       icon="Brain"
       title="Skills"
-      description="Skills from this Mac that every new cloud thread gets. Edits sync automatically."
+      description="Click a skill to add it to or remove it from every new cloud thread."
       action={
-        inCloud.length > 1 && (
-          <Button size="sm" variant="ghost" className="text-subtle-foreground" disabled={change.isPending} onClick={() => set(inCloud, false)}>
-            Remove all
-          </Button>
+        all.length > 0 && (
+          <div className="relative w-56 shrink-0">
+            <Icon name="Search" className="absolute inset-y-0 left-2.5 my-auto size-3.5 text-subtle-foreground" />
+            <Input
+              className={`h-8 pl-8 text-xs ${DIM_PLACEHOLDER}`}
+              placeholder={`Search ${all.length} skills…`}
+              aria-label="Search skills"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
         )
       }
     >
-      {!skills.data ? (
+      {!data ? (
         <p role={skills.isError ? "alert" : "status"} className="border-t border-border px-4 py-3 text-xs text-subtle-foreground">
           {skills.isError ? errorText(skills.error) : "Looking for skills on this Mac…"}
         </p>
@@ -260,56 +269,115 @@ function SkillsCard() {
         <p className="border-t border-border px-4 py-3 text-xs text-subtle-foreground">
           No skills on this Mac yet. Add them to <code>~/.agents/skills</code>.
         </p>
-      ) : null}
-      {inCloud.length > 0 && (
-        <ul className="max-h-72 divide-y divide-border overflow-y-auto border-t border-border">
-          {inCloud.map((skill) => (
-            <li key={skill.name} className="flex items-center gap-3 px-4 py-2">
-              {label(skill)}
-              <span className="rounded-full border border-primary/30 px-1.5 text-2xs text-primary-text">in cloud</span>
+      ) : (
+        <>
+          <div className="max-h-52 overflow-y-auto border-t border-border">
+            <div className="flex flex-wrap gap-1.5 px-4 pt-3">
+              {shown.map((skill) => (
+                <button
+                  key={skill.name}
+                  type="button"
+                  title={skill.description || undefined}
+                  aria-pressed={skill.cloud}
+                  disabled={change.isPending}
+                  onClick={() => change.mutate({ names: [skill.name], cloud: !skill.cloud })}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-mono text-xs transition-colors disabled:cursor-wait ${
+                    skill.cloud
+                      ? "border-primary/40 bg-primary/15 text-primary-text hover:bg-primary/25"
+                      : "border-dashed border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                  }`}
+                >
+                  <Icon name={skill.cloud ? "Check" : "Plus"} className="size-3" />
+                  {skill.name}
+                </button>
+              ))}
+              {!shown.length && <p className="py-1 text-xs text-subtle-foreground">No skills match “{search}”.</p>}
+            </div>
+            {/* Fades the cut-off row while there is more to scroll; at the end it is just bottom padding. */}
+            <div className="pointer-events-none sticky bottom-0 h-3 bg-gradient-to-t from-card to-transparent" />
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-surface-recessed/40 px-4 py-2">
+            <label className="flex items-center gap-2 text-xs text-subtle-foreground">
+              <Switch checked={data.auto} disabled={change.isPending} onCheckedChange={(auto) => change.mutate({ auto })} />
+              New skills go to the cloud automatically
+            </label>
+            <div className="flex items-center gap-1">
+              <span className="mr-1 text-xs text-subtle-foreground">
+                {all.filter((skill) => skill.cloud).length} of {all.length} in cloud
+              </span>
+              <Button size="sm" variant="ghost" className="text-subtle-foreground" disabled={change.isPending || shown.every((skill) => skill.cloud)} onClick={() => set(true)}>
+                Select all
+              </Button>
+              <Button size="sm" variant="ghost" className="text-subtle-foreground" disabled={change.isPending || shown.every((skill) => !skill.cloud)} onClick={() => set(false)}>
+                Clear
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+      {(change.error || data?.issue) && (
+        <p role="alert" className="border-t border-border px-4 py-2 text-xs text-destructive-text">
+          {change.error ? errorText(change.error) : `Skills could not be copied to the cloud: ${data?.issue}`}
+        </p>
+      )}
+    </Card>
+  );
+}
+
+function ReposCard({ repos, busy, onChange }: { repos: string[]; busy: boolean; onChange: (change: CloudEnvironmentChange) => Promise<unknown> }) {
+  const [repo, setRepo] = useState("");
+  // The account's GitHub repos, newest first, suggested while typing.
+  const github = useQuery({
+    queryKey: ["cloudroom-github-repos"],
+    queryFn: () => sdk.cloudroom.updateEnvironment({ action: "githubRepos" }).then((data) => data.available ?? []),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const add = (event: FormEvent) => {
+    event.preventDefault();
+    if (!repo.trim()) return;
+    void onChange({ action: "addRepo", repo }).then(() => setRepo(""), () => {});
+  };
+  return (
+    <Card icon="FolderGit" title="Repos" description="Cloned into /repos in every cloud sandbox, next to the project, and kept up to date.">
+      {repos.length > 0 && (
+        <ul className="divide-y divide-border border-t border-border">
+          {repos.map((name) => (
+            <li key={name} className="flex items-center gap-3 px-4 py-2">
+              <code className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">{name}</code>
               <Button
                 size="icon"
                 variant="ghost"
                 className="size-7 text-subtle-foreground hover:text-destructive-text"
-                aria-label={`Remove ${skill.name} from the cloud`}
-                disabled={change.isPending}
-                onClick={() => set([skill], false)}
+                aria-label={`Remove ${name}`}
+                disabled={busy}
+                onClick={() => void onChange({ action: "removeRepo", repo: name }).catch(() => {})}
               >
-                <Icon name="X" className="size-3.5" />
+                <Icon name="Trash2" className="size-3.5" />
               </Button>
             </li>
           ))}
         </ul>
       )}
-      {missing.length > 0 && (
-        <>
-          <div className="flex items-center justify-between gap-3 border-t border-border bg-primary/5 px-4 py-2">
-            <p className="text-xs text-foreground">
-              <span className="font-semibold">{missing.length} more on this Mac</span>
-              <span className="text-subtle-foreground"> · not in the cloud</span>
-            </p>
-            <Button size="sm" disabled={change.isPending} onClick={() => set(missing, true)}>
-              {change.isPending ? "Saving…" : missing.length > 1 ? `Import all ${missing.length}` : "Import"}
-            </Button>
-          </div>
-          <ul className="max-h-72 divide-y divide-border overflow-y-auto border-t border-border bg-primary/[0.02]">
-            {missing.map((skill) => (
-              <li key={skill.name} className="flex items-center gap-3 px-4 py-2">
-                {label(skill)}
-                <Button size="sm" variant="outline" className="h-7" disabled={change.isPending} onClick={() => set([skill], true)}>
-                  <Icon name="Plus" />
-                  Import
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      {change.error && (
-        <p role="alert" className="border-t border-border px-4 py-2 text-xs text-destructive-text">
-          {errorText(change.error)}
-        </p>
-      )}
+      <form onSubmit={add} className="flex gap-2 border-t border-border bg-surface-recessed/40 px-4 py-3">
+        <Input
+          className={`h-8 min-w-0 flex-1 font-mono text-xs ${DIM_PLACEHOLDER}`}
+          list="cloudroom-github-repos"
+          placeholder="owner/name or GitHub link"
+          aria-label="GitHub repo"
+          autoComplete="off"
+          spellCheck={false}
+          value={repo}
+          onChange={(event) => setRepo(event.target.value)}
+        />
+        <datalist id="cloudroom-github-repos">
+          {(github.data ?? []).filter((name) => !repos.includes(name)).map((name) => <option key={name} value={name} />)}
+        </datalist>
+        <Button type="submit" size="sm" disabled={busy || !repo.trim()}>
+          <Icon name="Plus" />
+          Add
+        </Button>
+      </form>
     </Card>
   );
 }

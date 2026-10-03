@@ -586,7 +586,7 @@
     0px 2px 0px 0px hsl(0 0% 20% / 0.15), 0px 1px 2px -1px hsl(0 0% 20% / 0.15);
   --shadow-md:
     0px 2px 0px 0px hsl(0 0% 20% / 0.15), 0px 2px 4px -1px hsl(0 0% 20% / 0.15);
-  /* Soft upward-cast lift for bottom-anchored surfaces (the composer), so the
+  /* Soft upward-cast lift for bottom-anchored surfaces, so the
    * shadow reads on the content above rather than below the screen edge. */
   --shadow-lift: 0px -4px 12px -4px hsl(0 0% 20% / 0.07);
   /* Borderless user message bubble: a faint ring plus a soft drop shadow. */
@@ -673,7 +673,7 @@
   --popover: var(--canvas);
   --popover-foreground: var(--ink);
   /* The chat input lifts to a lighter gray than the page. */
-  --composer: color-mix(in oklch, var(--ink) 16%, var(--canvas));
+  --composer: color-mix(in oklch, var(--ink) 12%, var(--canvas));
   --primary: #bfff00;
   --primary-text: var(--primary);
   --primary-foreground: color-mix(in oklch, var(--ink) 20%, black);

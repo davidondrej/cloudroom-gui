@@ -140,8 +140,8 @@ function describePiModel(model: PiCatalogModel): string {
 
 const PI_DEFAULT_MODEL_PER_PROVIDER: Partial<Record<string, string>> = {
   anthropic: "claude-opus-4-8",
-  openai: "gpt-5.4",
-  "openai-codex": "gpt-5.6-sol",
+  openai: "gpt-6.1-sol",
+  "openai-codex": "gpt-6.1-sol",
   "amazon-bedrock": "us.anthropic.claude-opus-4-8",
   google: "gemini-2.5-pro",
   "google-gemini-cli": "gemini-2.5-pro",

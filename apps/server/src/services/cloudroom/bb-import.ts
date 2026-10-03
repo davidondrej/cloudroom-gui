@@ -61,7 +61,7 @@ async function run(deps: AppDeps, hostId: string): Promise<BbImportResult> {
   return result;
 }
 
-async function waitForStart(deps: AppDeps, threadId: string): Promise<string | undefined> {
+export async function waitForStart(deps: AppDeps, threadId: string): Promise<string | undefined> {
   for (let waited = 0; waited < 120_000; waited += 500) {
     const status = getThread(deps.db, threadId)?.status;
     if (status !== "pending" && status !== "starting") return status;

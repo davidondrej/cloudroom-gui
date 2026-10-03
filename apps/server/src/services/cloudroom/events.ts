@@ -155,8 +155,8 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
     if (record.kind === "receipt") {
       const receipt = z.object({ request_id: z.string(), command: z.string(), state: z.string(), error: z.string().optional() }).parse(data);
       const previous = command(tx, receipt.request_id);
-      if (!previous && ["prompt", "edit", "cancel", "reorder"].includes(receipt.command) && data.input) {
-        tx.insert(cloudroomCommands).values({ id: receipt.request_id, threadId, command: receipt.command as "prompt" | "edit" | "cancel" | "reorder", input: JSON.stringify(data.input), state: receipt.state, createdAt: record.timestamp_ms ?? 0 }).run();
+      if (!previous && ["prompt", "edit", "cancel", "reorder", "steer"].includes(receipt.command) && data.input) {
+        tx.insert(cloudroomCommands).values({ id: receipt.request_id, threadId, command: receipt.command as "prompt" | "edit" | "cancel" | "reorder" | "steer", input: JSON.stringify(data.input), state: receipt.state, createdAt: record.timestamp_ms ?? 0 }).run();
       }
       saveCommandState(tx, threadId, receipt.request_id, receipt.state);
       if (receipt.command === "start" && receipt.state === "accepted" && object.parse(data.input).workspace) saveStatus(tx, threadId, "pending");

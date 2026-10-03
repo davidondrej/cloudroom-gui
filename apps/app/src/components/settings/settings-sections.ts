@@ -6,6 +6,7 @@ export const SETTINGS_NAV_SECTIONS = [
   { icon: "Star", id: "defaults", label: "Defaults" },
   { icon: "Cloud", id: "cloud-environment", label: "Cloud environment" },
   { icon: "Bot", id: "providers", label: "Providers" },
+  { icon: "Download", id: "import", label: "Import chats" },
   { icon: "Palette", id: "appearance", label: "Appearance" },
   { icon: "SlidersHorizontal", id: "keyboard", label: "Keyboard" },
   { icon: "Browser", id: "browser", label: "Browser" },

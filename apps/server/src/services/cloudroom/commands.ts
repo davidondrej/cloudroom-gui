@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { readFile, writeFile, mkdir, stat, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gt, inArray } from "drizzle-orm";
 import { createThread, getAppSettings, getProject, getThread, getThreadExecutionOverride, setThreadExecutionOverride, updateThread, cloudroomThreads, cloudroomCommands, events, type DbConnection, type DbQueryConnection } from "@bb/db";
 import { PERSONAL_PROJECT_ID, encodeClientTurnRequestIdNumber, isStandaloneBuiltinCompactCommand, promptInputSchema, reasoningLevelSchema, threadQueuedMessageSchema, type Thread, type PromptInput, type ThreadEventType, type ThreadChangeKind, type ReasoningLevel } from "@bb/domain";
 import type { CreateThreadRequest, SendMessageRequest, SendMessageResponse } from "@bb/server-contract";
@@ -17,7 +17,7 @@ import { binding, bindings, command, commands, queuedPrompts, saveBinding, saveC
 import { copyProject, githubRepository, localProjectNote, planProjectCopy } from "./project-copy.js";
 import { deriveTitleFallback, shouldGenerateThreadTitle } from "../threads/title-generation.js";
 import { inferThreadMetadata, queueThreadTitle } from "../threads/thread-metadata-inference.js";
-import { cloudSkills, copyLogins, importCodexLogin, importPiLogin, setupSync, stopSync, syncStatus } from "./sync.js";
+import { cloudSkills, copyLogins, importCodexLogin, importPiLogin, setupSync, skillInCloud, stopSync, syncStatus } from "./sync.js";
 import { setupPreviews, stopPreviews, previewStatus } from "./previews.js";
 import { CloudSecrets } from "./secrets.js";
 import { cancelMacCodexLogin, hasMacCodexLogin, macCodexLogin, macCursorLogin, revokeDesktopToken, startMacCodexLogin, SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject, type SandboxTrigger } from "./sandboxes.js";
@@ -336,6 +336,7 @@ class CloudroomService {
   private lastCapabilities: Capabilities | null = null;
   private claudeConnected: boolean | null = null;
   private readonly resumingStarts = new Set<string>();
+  private readonly filesReady = new Map<string, number>();
   /** What sandboxes run, kept apart from a VM's: an account with both starts new threads in sandboxes. */
   private sandboxCapabilities: Capabilities | null = null;
   private readonly secrets: CloudSecrets;
@@ -724,7 +725,7 @@ class CloudroomService {
   }
 
   private async uploadMacConfig(): Promise<void> {
-    if (await this.sandboxMode()) await this.sandboxes.copyMacConfig(await cloudSkills(this.deps)).catch(error => this.warn("Skills could not be copied to cloud sandboxes", error));
+    if (await this.sandboxMode()) await this.sandboxes.copyMacConfig(skillInCloud(await cloudSkills(this.deps))).catch(error => this.warn("Skills could not be copied to cloud sandboxes", error));
   }
 
   private async uploadMacLogins(): Promise<void> {
@@ -1502,6 +1503,11 @@ class CloudroomService {
         if (copy) copyProject(this.deps, client, copy, (error) => {
           if (files.length) this.progress(threadId, [{ key: "files", status: error ? "failed" : "completed" }]);
           void this.ensureBranch(threadId, true);
+          if (!error) {
+            const last = this.deps.db.select({ sequence: events.sequence }).from(events).where(eq(events.threadId, threadId)).orderBy(desc(events.sequence)).limit(1).get();
+            this.filesReady.set(threadId, last?.sequence ?? 0);
+            this.nudgeAfterCopy(threadId);
+          }
         });
         else if (sandbox) void this.ensureBranch(threadId, true);
       }
@@ -1712,6 +1718,7 @@ class CloudroomService {
           this.setConnectionIssue(saved.threadId, "replay");
           if (record.kind === "rewind") this.deps.hub.notifyThread(saved.threadId, ["history-rewritten"]);
           this.notify(saved.threadId, eventTypes, ["state", "receipt", "native_identity"].includes(record.kind));
+          this.nudgeAfterCopy(saved.threadId);
         }
         if (!controller.signal.aborted) this.setConnectionIssue(saved.threadId, "stream", new CloudroomConnectionError("Cloudroom event stream ended"));
       } catch (error) {
@@ -1723,6 +1730,18 @@ class CloudroomService {
         }
       } finally { if (this.streams.get(saved.threadId) === controller) this.streams.delete(saved.threadId); }
     })();
+  }
+
+  private nudgeAfterCopy(threadId: string): void {
+    const readyAfter = this.filesReady.get(threadId);
+    const thread = readyAfter === undefined ? null : getThread(this.deps.db, threadId);
+    if (readyAfter === undefined || (thread && ["pending", "starting", "active", "stopping"].includes(thread.status))) return;
+    this.filesReady.delete(threadId);
+    if (thread?.status !== "idle" || this.queue(threadId).length) return;
+    const usedFiles = this.deps.db.select({ id: events.id }).from(events).where(and(eq(events.threadId, threadId), eq(events.type, "item/started"), eq(events.itemKind, "toolCall"), gt(events.sequence, readyAfter))).get();
+    if (usedFiles) return;
+    void this.send(thread, { input: [{ type: "text", text: "files are ready, keep going", mentions: [] }], mode: "auto" })
+      .catch(error => this.warn("The agent could not be told its project files are ready", error, { threadId }));
   }
 
   private setConnectionIssue(threadId: string, phase: ConnectionPhase, error?: unknown): void {

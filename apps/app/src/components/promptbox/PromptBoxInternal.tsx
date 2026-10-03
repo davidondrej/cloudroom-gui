@@ -3311,9 +3311,9 @@ export function PromptBoxInternal({
         emitAttachmentFiles(Array.from(event.dataTransfer.files));
       }}
       className={cn(
-        "group/promptbox relative w-full rounded-xl border border-border bg-composer shadow-lift",
+        "group/promptbox relative w-full rounded-xl bg-composer shadow-message",
         // Mobile: soft, rounded iOS-style card.
-        "max-md:pointer-coarse:rounded-[26px] max-md:pointer-coarse:border-foreground/15 max-md:pointer-coarse:shadow-[0_6px_24px_-8px_rgb(0_0_0/0.18)]",
+        "max-md:pointer-coarse:rounded-[26px] max-md:pointer-coarse:border max-md:pointer-coarse:border-foreground/15 max-md:pointer-coarse:shadow-[0_6px_24px_-8px_rgb(0_0_0/0.18)]",
         showCompactLayout && "overflow-hidden",
       )}
     >
