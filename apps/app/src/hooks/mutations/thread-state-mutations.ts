@@ -117,7 +117,6 @@ export function useUpdateThread(options?: UpdateThreadMutationOptions) {
       rollbackThreadListMutationTransaction({
         queryClient,
         threadId: variables.id,
-        transaction: context,
       });
     },
     onSuccess: (thread) => {
@@ -145,7 +144,6 @@ export function usePinThread() {
       rollbackThreadListMutationTransaction({
         queryClient,
         threadId: variables.id,
-        transaction: context,
       });
     },
     onSuccess: (thread) => {
@@ -175,7 +173,6 @@ export function useUnpinThread() {
       rollbackThreadListMutationTransaction({
         queryClient,
         threadId: variables.id,
-        transaction: context,
       });
     },
     onSuccess: (thread) => {
@@ -218,7 +215,6 @@ export function useUnpinAndMoveThread() {
       rollbackThreadListMutationTransaction({
         queryClient,
         threadId: variables.id,
-        transaction: context,
       });
     },
     onSuccess: (thread) => {
@@ -277,7 +273,6 @@ export function useReorderPinnedThread() {
     onError: (_error, _variables, context) => {
       rollbackReorderPinnedThreadTransaction({
         queryClient,
-        transaction: context,
       });
     },
     onSuccess: (orderedRoots) => {
@@ -336,7 +331,6 @@ export function useUnarchiveThread() {
       rollbackThreadListMutationTransaction({
         queryClient,
         threadId: variables.id,
-        transaction: context,
       });
     },
     onSuccess: (response) => {
@@ -439,7 +433,6 @@ export function useMarkThreadUnread() {
       rollbackThreadListMutationTransaction({
         queryClient,
         threadId: input.threadId,
-        transaction: context,
       });
     },
     onSuccess: (thread) => {

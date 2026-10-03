@@ -25,7 +25,6 @@ import {
   applyToCachedSidebarNavigationThreads,
   listSidebarNavigationThreads,
   getCachedSidebarNavigationThreads,
-  restoreCachedSidebarNavigation,
   snapshotCachedSidebarNavigation,
   type CachedSidebarNavigationSnapshot,
 } from "./query-cache";
@@ -33,7 +32,6 @@ import {
   applyToCachedThreadLists,
   getCachedThreadLists,
   iterateThreadListCacheEntries,
-  restoreCachedThreadLists,
   type CachedThreadListSnapshot,
 } from "./thread-list-cache-data";
 import {
@@ -95,13 +93,10 @@ interface PinnedRootOrderListArgs {
   request: ReorderPinnedThreadTransactionRequest;
 }
 
-interface RollbackThreadListMutationTransactionArgs extends ThreadIdCacheArgs {
-  transaction: ThreadListMutationTransaction | undefined;
-}
+interface RollbackThreadListMutationTransactionArgs extends ThreadIdCacheArgs {}
 
 interface RollbackPinnedThreadOrderTransactionArgs {
   queryClient: QueryClient;
-  transaction: PinnedThreadOrderTransaction | undefined;
 }
 
 interface ArchiveThreadAndChildrenTransactionArgs {
@@ -520,24 +515,23 @@ export function beginThreadMetadataTransaction({
   });
 }
 
+/**
+ * ME-4 (TG10.1/10.2): failed optimistic mutations invalidate and refetch
+ * instead of restoring snapshots. A snapshot restore erases any newer
+ * committed state — a concurrent mutation or realtime event that wrote
+ * after the snapshot was taken — and a same-value concurrent write is
+ * indistinguishable from the failed optimistic write by content
+ * comparison alone (the TG10.6 property demonstrated the hole). The
+ * refetch brings the server-committed truth, so the cache always
+ * converges.
+ */
 export function rollbackThreadListMutationTransaction({
   queryClient,
   threadId,
-  transaction,
 }: RollbackThreadListMutationTransactionArgs): void {
-  if (!transaction) {
-    return;
-  }
-
-  queryClient.setQueryData(
-    threadQueryKey(threadId),
-    transaction.previousThread,
-  );
-  restoreCachedThreadLists(queryClient, transaction.previousThreadLists);
-  restoreCachedSidebarNavigation(
-    queryClient,
-    transaction.previousSidebarNavigation,
-  );
+  queryClient.invalidateQueries({ queryKey: threadQueryKey(threadId) });
+  queryClient.invalidateQueries({ queryKey: threadsQueryKey() });
+  queryClient.invalidateQueries({ queryKey: sidebarNavigationQueryKey() });
 }
 
 export function applyThreadPinStateResult({
@@ -576,16 +570,10 @@ export async function beginReorderPinnedThreadTransaction({
 
 export function rollbackReorderPinnedThreadTransaction({
   queryClient,
-  transaction,
 }: RollbackPinnedThreadOrderTransactionArgs): void {
-  if (!transaction) {
-    return;
-  }
-  restoreCachedThreadLists(queryClient, transaction.previousThreadLists);
-  restoreCachedSidebarNavigation(
-    queryClient,
-    transaction.previousSidebarNavigation,
-  );
+  // ME-4 (TG10.3): invalidate and refetch — no snapshot restore.
+  queryClient.invalidateQueries({ queryKey: threadsQueryKey() });
+  queryClient.invalidateQueries({ queryKey: sidebarNavigationQueryKey() });
 }
 
 export function applyReorderPinnedThreadResult({
@@ -680,13 +668,11 @@ export function rollbackArchiveThreadsTransaction({
     return;
   }
 
-  restoreCachedThreadLists(queryClient, transaction.previousThreadLists);
-  restoreCachedSidebarNavigation(
-    queryClient,
-    transaction.previousSidebarNavigation,
-  );
+  // ME-4 (TG10.3): invalidate and refetch — no snapshot restore.
+  queryClient.invalidateQueries({ queryKey: threadsQueryKey() });
+  queryClient.invalidateQueries({ queryKey: sidebarNavigationQueryKey() });
   for (const snapshot of transaction.previousThreads) {
-    queryClient.setQueryData(threadQueryKey(snapshot.id), snapshot.thread);
+    queryClient.invalidateQueries({ queryKey: threadQueryKey(snapshot.id) });
   }
 }
 
@@ -748,16 +734,11 @@ export function rollbackDeleteThreadTransaction({
     return;
   }
 
-  queryClient.setQueryData(
-    threadQueryKey(threadId),
-    transaction.previousThread,
-  );
-  restoreCachedThreadLists(queryClient, transaction.previousThreadLists);
-  restoreCachedSidebarNavigation(
-    queryClient,
-    transaction.previousSidebarNavigation,
-  );
-  queryClient.setQueryData(projectsQueryKey(), transaction.previousProjects);
+  // ME-4 (TG10.3): invalidate and refetch — no snapshot restore.
+  queryClient.invalidateQueries({ queryKey: threadQueryKey(threadId) });
+  queryClient.invalidateQueries({ queryKey: threadsQueryKey() });
+  queryClient.invalidateQueries({ queryKey: sidebarNavigationQueryKey() });
+  queryClient.invalidateQueries({ queryKey: projectsQueryKey() });
 }
 
 export function settleDeleteThreadTransaction({

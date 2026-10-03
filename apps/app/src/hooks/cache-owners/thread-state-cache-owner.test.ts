@@ -125,7 +125,7 @@ describe("thread state cache owner", () => {
           makeThreadWithRuntime(parent),
         );
       }
-      const transaction = await beginThreadMetadataTransaction({
+      await beginThreadMetadataTransaction({
         queryClient,
         threadId: child.id,
         parentThreadId: null,
@@ -147,16 +147,32 @@ describe("thread state cache owner", () => {
       ];
       for (const cached of cachedChild())
         expect(cached).toMatchObject(expected);
+      // ME-4 (TG10): the rollback invalidates for a refetch instead of
+      // restoring snapshots — the optimistic values stay visible (no flash
+      // of the old section) until the modeled refetch converges to server
+      // truth.
       rollbackThreadListMutationTransaction({
         queryClient,
         threadId: child.id,
-        transaction,
       });
       for (const cached of cachedChild())
-        expect(cached).toMatchObject({
+        expect(cached).toMatchObject(expected);
+      expect(
+        queryClient.getQueryState(threadQueryKey(child.id))?.isInvalidated,
+      ).toBe(true);
+      queryClient.setQueryData(
+        threadQueryKey(child.id),
+        makeThreadWithRuntime({
           parentThreadId: "parent",
           sectionId: "old-section",
-        });
+        }),
+      );
+      expect(
+        queryClient.getQueryData<ThreadWithRuntime>(threadQueryKey(child.id)),
+      ).toMatchObject({
+        parentThreadId: "parent",
+        sectionId: "old-section",
+      });
     },
   );
 
@@ -183,7 +199,7 @@ describe("thread state cache owner", () => {
       makeSidebarNavigation([listEntry]),
     );
 
-    const transaction = await beginThreadMetadataTransaction({
+    await beginThreadMetadataTransaction({
       queryClient,
       threadId,
       title: "New title",
@@ -202,23 +218,27 @@ describe("thread state cache owner", () => {
       )?.projects[0]?.threads[0]?.title,
     ).toBe("New title");
 
+    // ME-4 (TG10): the rollback invalidates for a refetch — the optimistic
+    // value stays visible until the refetch lands, then converges to the
+    // server truth.
     rollbackThreadListMutationTransaction({
       queryClient,
       threadId,
-      transaction,
     });
-
+    expect(
+      queryClient.getQueryState(threadQueryKey(threadId))?.isInvalidated,
+    ).toBe(true);
     expect(
       queryClient.getQueryData<ThreadWithRuntime>(threadQueryKey(threadId))
         ?.title,
-    ).toBe("Old title");
+    ).toBe("New title");
+    queryClient.setQueryData(
+      threadQueryKey(threadId),
+      makeThreadWithRuntime({ id: threadId, title: "Old title" }),
+    );
     expect(
-      queryClient.getQueryData<ThreadListEntry[]>(threadListKey)?.[0]?.title,
-    ).toBe("Old title");
-    expect(
-      queryClient.getQueryData<SidebarBootstrapResponse>(
-        sidebarNavigationQueryKey(),
-      )?.projects[0]?.threads[0]?.title,
+      queryClient.getQueryData<ThreadWithRuntime>(threadQueryKey(threadId))
+        ?.title,
     ).toBe("Old title");
   });
 
@@ -247,7 +267,7 @@ describe("thread state cache owner", () => {
       makeSidebarNavigation([unreadListEntry]),
     );
 
-    const transaction = await beginThreadReadStateTransaction({
+    await beginThreadReadStateTransaction({
       lastReadAt: 20,
       queryClient,
       threadId,
@@ -267,24 +287,31 @@ describe("thread state cache owner", () => {
       )?.projects[0]?.threads[0]?.lastReadAt,
     ).toBe(50);
 
+    // ME-4 (TG10): the rollback invalidates for a refetch — the optimistic
+    // value stays visible until the modeled refetch converges to the
+    // server truth.
     rollbackThreadListMutationTransaction({
       queryClient,
       threadId,
-      transaction,
     });
-
+    expect(
+      queryClient.getQueryState(threadQueryKey(threadId))?.isInvalidated,
+    ).toBe(true);
     expect(
       queryClient.getQueryData<ThreadWithRuntime>(threadQueryKey(threadId))
         ?.lastReadAt,
-    ).toBe(10);
+    ).toBe(50);
+    queryClient.setQueryData(
+      threadQueryKey(threadId),
+      makeThreadWithRuntime({
+        id: threadId,
+        lastReadAt: 10,
+        latestAttentionAt: 50,
+      }),
+    );
     expect(
-      queryClient.getQueryData<ThreadListEntry[]>(threadListKey)?.[0]
+      queryClient.getQueryData<ThreadWithRuntime>(threadQueryKey(threadId))
         ?.lastReadAt,
-    ).toBe(10);
-    expect(
-      queryClient.getQueryData<SidebarBootstrapResponse>(
-        sidebarNavigationQueryKey(),
-      )?.projects[0]?.threads[0]?.lastReadAt,
     ).toBe(10);
   });
 });

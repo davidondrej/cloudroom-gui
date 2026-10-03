@@ -156,8 +156,14 @@ describe("thread state mutations", () => {
     });
 
     await waitFor(() => expect(queryClient.isMutating()).toBe(0));
-    // Nothing committed server-side, so the rollback must land on the
-    // original pinned state in the original section.
+    // ME-4 (TG10): the failed mutation invalidates for a refetch instead
+    // of restoring snapshots.
+    expect(queryClient.getQueryState(threadListKey)?.isInvalidated).toBe(
+      true,
+    );
+    // Model the refetch landing: server truth is the original pinned
+    // state (the atomic mutation committed nothing).
+    queryClient.setQueryData(threadListKey, [thread]);
     const entries = queryClient.getQueryData<ThreadListEntry[]>(threadListKey);
     expect(entries?.[0]?.pinnedAt).toBe(10);
     expect(entries?.[0]?.sectionId).toBe("sec_work");
