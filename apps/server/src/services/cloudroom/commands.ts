@@ -440,7 +440,7 @@ class CloudroomService {
     if (sandbox) {
       if (wake) {
         void this.uploadMacConfig();
-        const logins = this.uploadMacLogins();
+        const logins = this.syncLogins();
         if (!this.sandboxes.loginsCopied) await logins;
       }
       const found = await this.sandboxes.connection(sandbox, this.sandboxProject(getThread(this.deps.db, sandbox)?.projectId), wake);
@@ -561,7 +561,7 @@ class CloudroomService {
 
   async warmSandbox(projectId: string, trigger: SandboxTrigger = "composer"): Promise<void> {
     if (!await this.newThreadsInSandboxes()) return;
-    await this.uploadMacLogins();
+    await this.syncLogins();
     void this.uploadMacConfig();
     await this.sandboxes.warm(this.sandboxProject(projectId), trigger);
   }
@@ -728,8 +728,11 @@ class CloudroomService {
     if (await this.sandboxMode()) await this.sandboxes.copyMacConfig(skillInCloud(await cloudSkills(this.deps))).catch(error => this.warn("Skills could not be copied to cloud sandboxes", error));
   }
 
-  private async uploadMacLogins(): Promise<void> {
-    if (await this.sandboxMode() && await copyLogins(this.deps) === true) await this.sandboxes.copyMacLogins().catch(error => this.warn("Logins could not be copied to cloud sandboxes", error));
+  /** Copies logins both ways when the user allowed it (ADRs 0130, 0175). Only the Mac → cloud copy is awaited. */
+  private async syncLogins(cloudChanged = false): Promise<void> {
+    if (!await this.sandboxMode() || await copyLogins(this.deps) !== true) return;
+    void this.sandboxes.copyCloudLogins(cloudChanged).catch(error => this.warn("Cloud logins could not be copied to this Mac", error));
+    await this.sandboxes.copyMacLogins().catch(error => this.warn("Logins could not be copied to cloud sandboxes", error));
   }
 
   async claudeAuth(action?: "login" | "cancel" | "complete" | "token" | "key", requestId?: string, code?: string, state?: string) {
@@ -767,7 +770,10 @@ class CloudroomService {
       if (action === "token" && code) await this.sandboxes.saveLogin("claude", JSON.stringify({ token: code, ...(state ? { plan: state } : {}) }));
       else if (action === "key" && code) await this.sandboxes.saveLogin("claude", JSON.stringify({ apiKey: code }));
       else if (action === "login" || action === "complete") throw new ApiError(409, "claude_auth_unsupported", "Cloud sandboxes connect Claude with a one-year token from this Mac. Use Connect Claude.");
-      if ((action === "token" || action === "key") && code && (await this.savedConnection())?.token) await this.vmClaudeAuth(action, requestId, code, state).catch(error => this.warn("Claude could not be connected on the VM", error));
+      if ((action === "token" || action === "key") && code) {
+        void this.syncLogins(true);
+        if ((await this.savedConnection())?.token) await this.vmClaudeAuth(action, requestId, code, state).catch(error => this.warn("Claude could not be connected on the VM", error));
+      }
       return action === "token" || action === "key" ? { ...sandbox, state: "connected" as const } : sandbox;
     }
     return this.vmClaudeAuth(action, requestId, code, state);
@@ -1063,7 +1069,10 @@ class CloudroomService {
     if (previous) {
       if (!sameStoredPrompt(previous, thread.id, stored, reasoning, saved.reasoning)) throw new ApiError(409, "request_conflict", "Request ID was already used with different content");
     } else {
+      const jumpQueue = saved.queuePaused && this.queue(thread.id).length > 0 && feature(await live(), "queue_reorder");
       this.enqueue(thread.id, id, "prompt", stored);
+      if (jumpQueue) this.enqueue(thread.id, randomUUID(), "reorder", { order: [id] });
+      if (saved.queuePaused) this.enqueue(thread.id, randomUUID(), "resume", {});
       const sticky = getThreadExecutionOverride(this.deps.db, thread.id)?.reasoningLevelOverride;
       if (payload.reasoningLevel && sticky && sticky !== payload.reasoningLevel) setThreadExecutionOverride(this.deps.db, { threadId: thread.id, reasoningLevelOverride: payload.reasoningLevel });
       if (this.deps.db.transaction(tx => projectFollowUp(tx, thread.id, id))) this.notify(thread.id, ["client/turn/requested"]);
@@ -1154,7 +1163,8 @@ class CloudroomService {
     }
     const thread = getThread(this.deps.db, threadId);
     if (!thread || !binding(this.deps.db, threadId)) throw new ApiError(409, "cloudroom_missing_binding", "Cloud session is unavailable");
-    this.deps.db.insert(cloudroomCommands).values({ id, threadId, command: action, input: JSON.stringify(this.snapshotInstructions(thread, action, input)), createdAt: Date.now() }).run();
+    const createdAt = Math.max(Date.now(), (commands(this.deps.db, threadId).at(-1)?.createdAt ?? 0) + 1);
+    this.deps.db.insert(cloudroomCommands).values({ id, threadId, command: action, input: JSON.stringify(this.snapshotInstructions(thread, action, input)), createdAt }).run();
     this.notify(threadId);
   }
 
@@ -1406,7 +1416,7 @@ class CloudroomService {
     }
     this.onboardingDue = 0;
     void this.reportOnboarding();
-    void this.uploadMacLogins();
+    void this.syncLogins();
     void this.uploadMacConfig();
     void this.warmRecentProject().catch(() => {});
     this.timer = setInterval(() => {
@@ -1737,7 +1747,7 @@ class CloudroomService {
     const thread = readyAfter === undefined ? null : getThread(this.deps.db, threadId);
     if (readyAfter === undefined || (thread && ["pending", "starting", "active", "stopping"].includes(thread.status))) return;
     this.filesReady.delete(threadId);
-    if (thread?.status !== "idle" || this.queue(threadId).length) return;
+    if (thread?.status !== "idle" || binding(this.deps.db, threadId)?.queuePaused || this.queue(threadId).length) return;
     const usedFiles = this.deps.db.select({ id: events.id }).from(events).where(and(eq(events.threadId, threadId), eq(events.type, "item/started"), eq(events.itemKind, "toolCall"), gt(events.sequence, readyAfter))).get();
     if (usedFiles) return;
     void this.send(thread, { input: [{ type: "text", text: "files are ready, keep going", mentions: [] }], mode: "auto" })

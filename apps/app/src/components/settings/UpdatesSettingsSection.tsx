@@ -93,7 +93,12 @@ import {
   getSettingsRoutePath,
 } from "@/lib/route-paths";
 import { getProviderIconInfo } from "@/lib/provider-icon";
-import { useSystemProviders } from "@/hooks/queries/system-queries";
+import { Switch } from "@bb/shared-ui/switch";
+import { useUpdateGeneralSettings } from "@/hooks/mutations/settings-mutations";
+import {
+  useSystemConfig,
+  useSystemProviders,
+} from "@/hooks/queries/system-queries";
 import { sdk } from "@/lib/sdk";
 import { rawStringLocalStorage } from "@/lib/browser-storage";
 
@@ -1052,6 +1057,40 @@ function providerRowState({
   return "update-available";
 }
 
+function ProviderAutoUpdateSwitch({
+  providerId,
+  displayName,
+}: {
+  providerId: string;
+  displayName: string;
+}) {
+  const settings = useSystemConfig().data?.generalSettings;
+  const updateGeneralSettings = useUpdateGeneralSettings();
+  if (settings === undefined) {
+    return null;
+  }
+  const autoUpdate = settings.providerAutoUpdate ?? [];
+  const enabled = autoUpdate.includes(providerId);
+  return (
+    <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+      <span className="hidden sm:inline">Auto-update</span>
+      <Switch
+        checked={enabled}
+        disabled={updateGeneralSettings.isPending}
+        aria-label={`Auto-update ${displayName}`}
+        onCheckedChange={(checked) =>
+          updateGeneralSettings.mutate({
+            ...settings,
+            providerAutoUpdate: checked
+              ? [...autoUpdate, providerId]
+              : autoUpdate.filter((id) => id !== providerId),
+          })
+        }
+      />
+    </label>
+  );
+}
+
 export function MachineUpdatesRows({
   machine,
   runningJobKey,
@@ -1136,43 +1175,51 @@ export function MachineUpdatesRows({
         }
         trailingMeta={null}
         actions={
-          running ? (
-            <RowStateControl live state="in-progress" />
-          ) : queued ? (
-            <RowStateControl live state="in-progress" />
-          ) : failure !== null ? (
-            <span className="flex items-center gap-1">
-              <UpdateActionButton
-                label={`View ${status.displayName} update log`}
-                tooltipLabel="View log"
-                icon="File"
-                onClick={() =>
-                  openProviderCliInstallLog(failure.logDialogState)
+          <span className="flex items-center gap-3">
+            {status.npmPackageName === null ? null : (
+              <ProviderAutoUpdateSwitch
+                providerId={providerId}
+                displayName={status.displayName}
+              />
+            )}
+            {running ? (
+              <RowStateControl live state="in-progress" />
+            ) : queued ? (
+              <RowStateControl live state="in-progress" />
+            ) : failure !== null ? (
+              <span className="flex items-center gap-1">
+                <UpdateActionButton
+                  label={`View ${status.displayName} update log`}
+                  tooltipLabel="View log"
+                  icon="File"
+                  onClick={() =>
+                    openProviderCliInstallLog(failure.logDialogState)
+                  }
+                />
+                {actionable ? (
+                  <RowStateControl
+                    state="failed"
+                    actionLabel={`Retry ${status.displayName} on ${host.name}`}
+                    actionTooltip="Retry"
+                    onClick={() => onStartInstall(host.id, issue)}
+                  />
+                ) : null}
+              </span>
+            ) : state === null ? null : (
+              <RowStateControl
+                state={state}
+                actionLabel={
+                  actionable
+                    ? `${issue.action.label} ${status.displayName} on ${host.name}`
+                    : undefined
+                }
+                actionTooltip={actionable ? issue.action.label : undefined}
+                onClick={
+                  actionable ? () => onStartInstall(host.id, issue) : undefined
                 }
               />
-              {actionable ? (
-                <RowStateControl
-                  state="failed"
-                  actionLabel={`Retry ${status.displayName} on ${host.name}`}
-                  actionTooltip="Retry"
-                  onClick={() => onStartInstall(host.id, issue)}
-                />
-              ) : null}
-            </span>
-          ) : state === null ? null : (
-            <RowStateControl
-              state={state}
-              actionLabel={
-                actionable
-                  ? `${issue.action.label} ${status.displayName} on ${host.name}`
-                  : undefined
-              }
-              actionTooltip={actionable ? issue.action.label : undefined}
-              onClick={
-                actionable ? () => onStartInstall(host.id, issue) : undefined
-              }
-            />
-          )
+            )}
+          </span>
         }
       />
     );

@@ -172,7 +172,8 @@ function compactZodIssues(issues: z.ZodIssue[]): string {
     .join("; ");
 }
 
-function hasSupportedFrontmatterDelimiter(content: string): boolean {
+// gray-matter runs JavaScript for `---js` frontmatter; only plain YAML `---` is safe to parse.
+export function hasSupportedFrontmatterDelimiter(content: string): boolean {
   const trimmed = content.trimStart();
   return (
     trimmed.startsWith(`${SKILL_FRONTMATTER_DELIMITER}\n`) ||

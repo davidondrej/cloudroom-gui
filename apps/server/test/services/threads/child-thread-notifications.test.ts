@@ -101,7 +101,7 @@ describe("child thread notifications", () => {
         "",
         "Review the thread before deciding next steps.",
         "",
-        "If the user stopped it manually, do not resume, restart, retry, replace, or continue the work unless the user explicitly asks.",
+        "The user or Cloudroom may have stopped it. Only treat this as a request to stop if the user said so in this chat.",
       ].join("\n"),
     );
     expect(message).not.toContain("Child thread updates:");

@@ -177,3 +177,28 @@ it("lets a turn/started that lands after the turn/start response win the race", 
   ).toHaveLength(1);
   expect(events.length).toBeGreaterThan(0);
 }, 30_000);
+
+it("waits for a named turn that starts after the zero-work grace", async () => {
+  const providerThreadId = await startSession();
+  harness.sendRequest(2, "turn/start", {
+    threadId: THREAD_ID,
+    providerThreadId,
+    input: [{ type: "text", text: "/slow-start", mentions: [] }],
+    clientRequestId: "creq_swstartxyz",
+    options: { ...FULL_ACCESS_SESSION_OPTIONS },
+  });
+  await harness.waitForResponse(2);
+
+  const events = await waitForEvents((all) =>
+    all.some((event) => event.type === "turn/completed"),
+  );
+  expect(events.filter((event) => event.type === "turn/started")).toHaveLength(
+    1,
+  );
+  expect(
+    events.filter((event) => event.type === "turn/completed"),
+  ).toHaveLength(1);
+  expect(events.some((event) => event.type === "item/agentMessage/delta")).toBe(
+    true,
+  );
+}, 30_000);

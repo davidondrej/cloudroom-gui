@@ -25,6 +25,11 @@ import {
   runStartupRecoverySweep,
 } from "./services/system/periodic-sweeps.js";
 import { installProviderModelCatalogPrewarm } from "./services/providers/provider-model-catalog-prewarm.js";
+import {
+  PROVIDER_AUTO_UPDATE_FIRST_RUN_MS,
+  PROVIDER_AUTO_UPDATE_INTERVAL_MS,
+  runProviderAutoUpdates,
+} from "./services/system/provider-auto-update.js";
 import { createProviderRegistryService } from "./services/providers/provider-registry.js";
 import { installFirstResponseTelemetry } from "./services/system/first-response-telemetry.js";
 import { installTitleRecheck } from "./services/threads/title-recheck.js";
@@ -268,6 +273,14 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
     void runPeriodicSweeps(sweepDeps);
   }, 10_000);
   sweepInterval.unref();
+  const providerAutoUpdateFirstRun = setTimeout(() => {
+    void runProviderAutoUpdates(sweepDeps);
+  }, PROVIDER_AUTO_UPDATE_FIRST_RUN_MS);
+  providerAutoUpdateFirstRun.unref();
+  const providerAutoUpdateInterval = setInterval(() => {
+    void runProviderAutoUpdates(sweepDeps);
+  }, PROVIDER_AUTO_UPDATE_INTERVAL_MS);
+  providerAutoUpdateInterval.unref();
 
   let shutdownPromise: Promise<void> | null = null;
   const runShutdown = (): Promise<void> => {
@@ -282,6 +295,8 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
       stopAuthFailureTelemetry();
       stopTitleRecheck();
       clearInterval(sweepInterval);
+      clearTimeout(providerAutoUpdateFirstRun);
+      clearInterval(providerAutoUpdateInterval);
       pluginCatalogService.stopPeriodicRefresh();
       await pluginService.stopPeriodicUpdateChecks();
       await pluginService.stop().catch((error: unknown) => {

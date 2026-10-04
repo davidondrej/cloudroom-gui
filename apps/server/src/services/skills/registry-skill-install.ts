@@ -6,6 +6,7 @@ import path from "node:path";
 import { resolveDataDirSkillsRootPath } from "@bb/config/skill-storage-paths";
 import matter from "gray-matter";
 import { ApiError } from "../../errors.js";
+import { hasSupportedFrontmatterDelimiter } from "./injected-skills.js";
 import { REGISTRY_SKILL_NAME_PATTERN } from "./registry-parse.js";
 import {
   REGISTRY_SKILL_PROVENANCE_FILE_NAME,
@@ -141,6 +142,13 @@ async function validateSkillFile(
       422,
       "registry_skill_invalid",
       "Skill is missing SKILL.md",
+    );
+  }
+  if (!hasSupportedFrontmatterDelimiter(content)) {
+    throw new ApiError(
+      422,
+      "registry_skill_invalid",
+      "Skill frontmatter must start with a plain --- delimiter",
     );
   }
   let data: Record<string, unknown>;

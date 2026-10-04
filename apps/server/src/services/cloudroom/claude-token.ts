@@ -19,20 +19,29 @@ function installClaude(signal?: AbortSignal): Promise<string> {
   });
 }
 
-/** The Mac's Claude plan, such as `max`. The VM needs it to offer plan-only models like Opus 1M. */
-export function claudePlan(): Promise<string | undefined> {
+/** `claude auth status` on this Mac, or null when Claude Code is missing or the check fails. */
+function claudeAuthStatus(): Promise<{ loggedIn?: unknown; subscriptionType?: unknown } | null> {
   const binary = claudeBinary();
-  if (!binary) return Promise.resolve(undefined);
+  if (!binary) return Promise.resolve(null);
   return new Promise((resolve) => {
-    execFile(binary, ["auth", "status", "--json"], { timeout: 10_000 }, (error, stdout) => {
-      try {
-        const plan: unknown = error ? undefined : JSON.parse(stdout).subscriptionType;
-        resolve(typeof plan === "string" && /^[a-z_]{1,32}$/.test(plan) ? plan : undefined);
-      } catch {
-        resolve(undefined);
-      }
+    // Signed out exits 1 with valid JSON.
+    execFile(binary, ["auth", "status", "--json"], { timeout: 10_000 }, (_error, stdout) => {
+      try { resolve(JSON.parse(stdout) ?? null); } catch { resolve(null); }
     });
   });
+}
+
+/** The Mac's Claude plan, such as `max`. The VM needs it to offer plan-only models like Opus 1M. */
+export async function claudePlan(): Promise<string | undefined> {
+  const status = await claudeAuthStatus();
+  const plan = status?.loggedIn === true ? status.subscriptionType : undefined;
+  return typeof plan === "string" && /^[a-z_]{1,32}$/.test(plan) ? plan : undefined;
+}
+
+/** Whether Claude Code on this Mac has its own login; null when that can't be checked. */
+export async function macClaudeSignedIn(): Promise<boolean | null> {
+  const status = await claudeAuthStatus();
+  return typeof status?.loggedIn === "boolean" ? status.loggedIn : null;
 }
 
 /**

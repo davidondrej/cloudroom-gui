@@ -3,7 +3,7 @@
   "version": "0.2.1",
   "description": "Browse GitHub issues and pull requests in Cloudroom, then send them to agents.",
   "private": true,
-  "license": "MIT",
+  "license": "Apache-2.0",
   "homepage": "https://github.com/get-bb/bb#readme",
   "bugs": {
     "url": "https://github.com/get-bb/bb/issues"

@@ -2386,6 +2386,7 @@ export function ThreadDetailPromptArea({
   const cloudOffline = cloudFetchFailed || (typeof navigator !== "undefined" && !navigator.onLine);
   const cloudError = retryCloudStart.error?.message ?? (cloudFetchFailed ? undefined : cloudState.error?.message) ?? cloudState.data?.error;
   const cloudReconnecting = !cloudError && (cloudOffline || cloudState.data?.reconnecting);
+  const cloudQueuePaused = Boolean(cloudState.data?.paused) && queuedMessages.length > 0;
   const cloudLimitNotice = isCloud && !shouldHideComposer && cloudState.data?.usageLimit ? <CloudUsageLimitNotice /> : null;
   const cloudFixPrompt = cloudError || cloudState.data?.failedStart ? cloudThreadFixPrompt(thread.id, thread.providerId, cloudError) : null;
   const cloudAuthNotice = isCloud && !shouldHideComposer && cloudState.data?.authRequired ? (
@@ -2410,14 +2411,14 @@ export function ThreadDetailPromptArea({
       <button type="button" className="underline underline-offset-2 hover:text-foreground disabled:opacity-50" disabled={cloudState.isFetching} onClick={() => void cloudState.refetch()}>Retry</button>
     </div>
   ) : null;
-  const cloudNotice = cloudAuthNotice ?? cloudLimitNotice ?? (isCloud && !shouldHideComposer && (cloudError || cloudReconnecting || cloudState.data?.failedStart || cloudState.data?.paused) ? (<>
+  const cloudNotice = cloudAuthNotice ?? cloudLimitNotice ?? (isCloud && !shouldHideComposer && (cloudError || cloudReconnecting || cloudState.data?.failedStart || cloudQueuePaused) ? (<>
     {cloudReconnectingPill}
-    {(cloudError || cloudState.data?.failedStart || cloudState.data?.paused) && <PromptStackCard ariaLabel="Cloud thread status" className="space-y-2 p-3 text-xs">
+    {(cloudError || cloudState.data?.failedStart || cloudQueuePaused) && <PromptStackCard ariaLabel="Cloud thread status" className="space-y-2 p-3 text-xs">
       {cloudError && <div role="alert" className="whitespace-pre-wrap break-words text-destructive">{cloudError}</div>}
       <div className="flex items-center gap-2">
         {cloudState.data?.failedStart && <Button type="button" size="sm" variant="outline" disabled={retryCloudStart.isPending} onClick={() => retryCloudStart.mutate()}>Retry start</Button>}
         {cloudState.isError && !cloudFetchFailed && <Button type="button" size="sm" variant="outline" disabled={cloudState.isFetching} onClick={() => void cloudState.refetch()}>Reconnect</Button>}
-        {cloudState.data?.paused && <>
+        {cloudQueuePaused && <>
           <span className="text-muted-foreground">Queue paused</span>
           <Button type="button" size="sm" variant="outline" onClick={async () => {
             const response = await fetchWithAppSurface(`/api/v1/cloudroom/threads/${thread.id}/resume`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestId: await cloudroomRequestId(`resume:${thread.id}`, "resume") }) });

@@ -355,3 +355,76 @@ it("collapses known account observations per machine, preserves unknown identiti
     await harness.lifecycle.dispose();
   }
 });
+
+// The sidebar card sends a machine without a provider; v87 fetched nothing for it.
+it("fetches every provider on a selected machine when no provider is named", async () => {
+  const { bb, harness } = createFakePluginHost({
+    sdk: {
+      system: { config: async () => ({ primaryHostId: null }) },
+      hosts: {
+        list: async () => [
+          makeHostResponse({ id: "host", status: "connected" }),
+        ],
+      },
+      providers: { list: async () => [] },
+      plugins: {
+        experimental_discoverRpc: async () => [
+          { pluginId: "adapter", displayName: "Adapter" },
+        ],
+        callRpc: async ({ method }) =>
+          method === usageListMethod
+            ? {
+                resources: [
+                  {
+                    id: "codex",
+                    providerId: "codex",
+                    label: "Codex",
+                    scope: { kind: "host", hostId: "host", hostName: "Host" },
+                  },
+                ],
+              }
+            : {
+                observedAt: 1,
+                usage: {
+                  status: "ok",
+                  accountEmail: null,
+                  planLabel: null,
+                  windows: [
+                    {
+                      id: "week",
+                      label: "Weekly",
+                      usedPercent: 42,
+                      resetsAt: null,
+                      model: null,
+                      cost: null,
+                    },
+                  ],
+                },
+              },
+      },
+    },
+  });
+  try {
+    plugin(bb);
+    const snapshot = await harness.behavior.callRpc("getUsage", {
+      force: false,
+      machineIds: ["host"],
+      providerId: null,
+      maxAgeMs: 120_000,
+    });
+    expect(snapshot).toMatchObject({
+      machines: [
+        {
+          providers: [
+            {
+              id: "adapter:codex",
+              usage: { status: "ok", windows: [{ usedPercent: 42 }] },
+            },
+          ],
+        },
+      ],
+    });
+  } finally {
+    await harness.lifecycle.dispose();
+  }
+});

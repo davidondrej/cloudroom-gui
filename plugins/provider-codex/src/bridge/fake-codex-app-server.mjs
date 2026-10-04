@@ -67,6 +67,13 @@ const ZERO_WORK_PROMPT_TEXT = "/clear";
 const LATE_TURN_START_PROMPT_TEXT = "/late-start";
 const LATE_TURN_START_DELAY_MS = 60;
 
+/**
+ * A prompt whose turn/start response names the turn, but whose turn/started
+ * lands after the zero-work grace, like a busy app-server.
+ */
+const SLOW_TURN_START_PROMPT_TEXT = "/slow-start";
+const SLOW_TURN_START_DELAY_MS = 400;
+
 /** A prompt that stays open until the client sends turn/interrupt. */
 const INTERRUPTIBLE_PROMPT_TEXT = "/wait-for-interrupt";
 
@@ -454,6 +461,16 @@ async function handleRequest(message) {
         setTimeout(
           () => runScriptedTurn(params.threadId),
           LATE_TURN_START_DELAY_MS,
+        );
+        return;
+      }
+      if (firstInputText(params.input) === SLOW_TURN_START_PROMPT_TEXT) {
+        respond(id, {
+          turn: { id: `turn-fx-${turnCounter + 1}`, status: "inProgress" },
+        });
+        setTimeout(
+          () => runScriptedTurn(params.threadId),
+          SLOW_TURN_START_DELAY_MS,
         );
         return;
       }

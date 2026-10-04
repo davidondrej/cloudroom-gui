@@ -3,7 +3,7 @@
   "version": "0.1.2",
   "description": "Plan and track work in Cloudroom, delegate tasks to agents, and keep task context connected to worker threads.",
   "private": true,
-  "license": "MIT",
+  "license": "Apache-2.0",
   "homepage": "https://github.com/get-bb/bb#readme",
   "bugs": {
     "url": "https://github.com/get-bb/bb/issues"

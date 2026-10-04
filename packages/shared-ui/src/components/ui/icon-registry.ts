@@ -68,6 +68,7 @@ export const EXTENDED_ICON_NAMES = [
   "GitPullRequestDraft",
   "Globe",
   "GridView",
+  "Image",
   "Laptop",
   "Layers",
   "Limitation",

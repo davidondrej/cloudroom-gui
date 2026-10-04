@@ -1,4 +1,5 @@
 import type {
+  ProviderCliInstallActionKind,
   ProviderCliStatus,
   ProviderCliStatusResponse,
 } from "@bb/host-daemon-contract";
@@ -8,6 +9,7 @@ import type { WorkSessionDeps } from "../../types.js";
 import { COMMAND_TIMEOUT_MS } from "../../constants.js";
 import { ApiError } from "../../errors.js";
 import {
+  callHostOnlineRpcForWork,
   callHostRetryableOnlineRpc,
   isHostUnavailableApiError,
 } from "../hosts/online-rpc.js";
@@ -157,4 +159,59 @@ export async function serializeProviderInstallation<T>(
     release();
     if (hosts.get(hostId) === tail) hosts.delete(hostId);
   }
+}
+
+const PROVIDER_CLI_INSTALL_TIMEOUT_MS = 15 * 60 * 1000;
+
+export async function runProviderCliInstall(
+  deps: WorkSessionDeps,
+  args: {
+    hostId: string;
+    provider: string;
+    actionKind: ProviderCliInstallActionKind;
+  },
+) {
+  await deps.providerRegistry.whenProviderRegistered(args.provider);
+  const registration = deps.providerRegistry.get(args.provider);
+  if (registration === null || !registration.info.maintenance.installation) {
+    throw new ApiError(
+      404,
+      "provider_installation_unavailable",
+      `Provider installation is unavailable for ${args.provider}`,
+    );
+  }
+  const bridgeLaunch = resolveBridgeLaunchForProviderId(deps, args.provider);
+  if (bridgeLaunch === null) {
+    throw new ApiError(
+      409,
+      "provider_bridge_unavailable",
+      `Provider bridge is unavailable for ${args.provider}`,
+    );
+  }
+  const result = await serializeProviderInstallation(deps, args.hostId, () =>
+    callHostOnlineRpcForWork(deps, {
+      hostId: args.hostId,
+      timeoutMs: PROVIDER_CLI_INSTALL_TIMEOUT_MS,
+      command: {
+        type: "provider.installation.run",
+        providerId: args.provider,
+        action: args.actionKind,
+        bridgeLaunch,
+      },
+    }),
+  );
+  if (
+    result.events.some((event) => event.type === "completed" && event.success)
+  ) {
+    deps.providerRegistry.forgetInstalledKey({
+      hostId: args.hostId,
+      providerId: args.provider,
+    });
+    deps.lifecycleDedupers.providerModelCatalogs.clearFailure(
+      args.hostId,
+      args.provider,
+    );
+  }
+  deps.hub.notifyHost(args.hostId, ["provider-cli-status-changed"]);
+  return result.events;
 }

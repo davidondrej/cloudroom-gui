@@ -1,13 +1,16 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, readdir, readFile, stat } from "node:fs/promises";
+import { access, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 import { gzipSync } from "node:zlib";
+import type { HostDaemonContributedEnvEntry } from "@bb/host-daemon-contract";
 import { findCliExecutable } from "@bb/process-utils";
 import matter from "gray-matter";
 import { z } from "zod";
+import { hasSupportedFrontmatterDelimiter } from "../skills/injected-skills.js";
+import { macClaudeSignedIn } from "./claude-token.js";
 import { CloudroomConnectionError, CloudroomError } from "./client.js";
 import { macHarnessVersions } from "./harness-versions.js";
 
@@ -33,10 +36,23 @@ const RECHECK_MS = 60_000;
 const USAGE_LIMIT = "cloud_usage_limit";
 // The Mac's skills and global instructions that sandboxes receive, one way (docs/scopes/sandboxes.md).
 const SKILL_ROOTS = [".agents/skills", ".claude/skills", ".codex/skills", ".pi/agent/skills"];
-const INSTRUCTION_FILES = [".claude/CLAUDE.md", ".codex/AGENTS.md", ".pi/agent/AGENTS.md"];
+const INSTRUCTION_FILES = [".claude/CLAUDE.md", ".codex/AGENTS.md", ".pi/agent/AGENTS.md", ".config/opencode/AGENTS.md"];
 const CONFIG_LIMIT = 45 * 1024 * 1024;
 const codexAuthPath = () => join(process.env.CODEX_HOME || join(homedir(), ".codex"), "auth.json");
 export const hasMacCodexLogin = () => access(codexAuthPath()).then(() => true, () => false);
+
+/** The account's cloud Claude login while this Mac's Claude Code is signed out (ADR 0175). */
+let cloudClaude: Record<string, string> | null = null;
+/** Variables that sign in Local Claude threads with it. The Mac's Keychain and terminal `claude` stay untouched. */
+export const cloudClaudeEnvironment = (): HostDaemonContributedEnvEntry[] => Object.entries(cloudClaude ?? {})
+  .map(([name, value]) => ({ name, value, source: { core: "machine-environment" }, reason: "Cloud Claude login" }));
+// Same variables as Core's (core/src/runtime/claude.rs): Claude prefers an API key over a token, so pass only one.
+function claudeVariables(value: string): Record<string, string> | null {
+  const { token, plan, apiKey } = JSON.parse(value) as Record<string, unknown>;
+  if (typeof apiKey === "string" && apiKey) return { ANTHROPIC_API_KEY: apiKey };
+  if (typeof token !== "string" || !token) return null;
+  return { CLAUDE_CODE_OAUTH_TOKEN: token, ...(typeof plan === "string" && plan ? { CLAUDE_CODE_SUBSCRIPTION_TYPE: plan } : {}) };
+}
 
 type MacCodexLogin = { child: ChildProcess; url: string | null; error: string | null; done: boolean };
 let macCodexLoginRun: MacCodexLogin | null = null;
@@ -76,6 +92,17 @@ function contentDigest(tar: Buffer): string {
     at = end;
   }
   return hash.digest("hex");
+}
+
+/** OpenCode 1 keeps its logins in auth.json. OpenCode 2 keeps them in its database and exports them as a JSON array,
+ *  kept byte for byte so a sandbox's unchanged export matches it (ADR 0172). */
+async function macOpencodeLogin(): Promise<string | null> {
+  const binary = findCliExecutable("opencode");
+  const version = (await macHarnessVersions()).opencode;
+  const value = binary && version && !version.startsWith("1.")
+    ? (await promisify(execFile)(binary, ["auth", "export", "--standalone"], { timeout: 20_000 }).catch(() => null))?.stdout ?? null
+    : await readFile(join(process.env.XDG_DATA_HOME || join(homedir(), ".local/share"), "opencode/auth.json"), "utf8").catch(() => null);
+  try { const parsed: unknown = value && JSON.parse(value); return parsed && (!Array.isArray(parsed) || parsed.length) ? value : null; } catch { return null; }
 }
 
 /** This Mac's Cursor CLI login in the file shape the CLI keeps on Linux, or null when Cursor is signed out here.
@@ -136,7 +163,7 @@ export async function macSkills(): Promise<MacSkill[]> {
     for (const name of await readdir(join(home, root)).catch(() => [])) {
       const file = join(home, root, name, "SKILL.md");
       if (name.startsWith(".") || !await stat(file).then(info => info.isFile(), () => false)) continue;
-      const skill = found.get(name) ?? { name, paths: [], description: await readFile(file, "utf8").then(text => String(matter(text).data.description ?? "").replace(/\s+/g, " ").trim(), () => "") };
+      const skill = found.get(name) ?? { name, paths: [], description: await readFile(file, "utf8").then(text => hasSupportedFrontmatterDelimiter(text) ? String(matter(text).data.description ?? "").replace(/\s+/g, " ").trim() : "", () => "") };
       skill.paths.push(`${root}/${name}`);
       found.set(name, skill);
     }
@@ -205,10 +232,10 @@ export class SandboxDirectory {
     return z.object({ sent: z.boolean() }).parse(await this.call({}, "usage-request"));
   }
 
-  /** The member's friend invite codes. `create` makes one more, up to 3 for life (ADR 0169). */
+  /** The member's friend invite codes. `create` makes one more, up to 3 for life (ADR 0169). `waiting` is the waitlist size, or null. */
   async invites(action: "list" | "create") {
     const value = await this.call({ action }, "invites");
-    return z.object({ codes: z.array(z.object({ code: z.string(), used: z.boolean() })), left: z.number(), created: z.string().nullable() }).parse(value);
+    return z.object({ codes: z.array(z.object({ code: z.string(), used: z.boolean() })), left: z.number(), created: z.string().nullable(), waiting: z.number().nullable().default(null) }).parse(value);
   }
 
   /** Whether the website judges a generated thread title too vague to keep, at the user's sensitivity (2–5). */
@@ -305,6 +332,8 @@ export class SandboxDirectory {
     this.limit = null;
     this.warmed = null;
     this.copiedAt = 0;
+    this.pulledAt = 0;
+    cloudClaude = null;
     this.configAt = 0;
     this.configDigest = "";
     this.configIssue = null;
@@ -344,8 +373,7 @@ export class SandboxDirectory {
     if (!force && Date.now() - this.copiedAt < RECHECK_MS) return;
     this.copiedAt = Date.now();
     const piHome = process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi/agent");
-    const opencodeData = process.env.XDG_DATA_HOME || join(homedir(), ".local/share");
-    const files = [["codex", codexAuthPath()], ["pi", join(piHome, "auth.json")], ["opencode", join(opencodeData, "opencode/auth.json")]] as const;
+    const files = [["codex", codexAuthPath()], ["pi", join(piHome, "auth.json")]] as const;
     // One failed login never stops the others; all failures are reported together.
     const failed: string[] = [];
     const save = (name: "codex" | "pi" | "opencode" | "cursor" | "github", value: string) => this.saveLogin(name, value).catch((error: unknown) => { failed.push(`${name}: ${error instanceof Error ? error.message : String(error)}`); });
@@ -355,11 +383,41 @@ export class SandboxDirectory {
       try { JSON.parse(value); } catch { continue; }
       await save(name, value);
     }
+    const opencode = await macOpencodeLogin();
+    if (opencode) await save("opencode", opencode);
     const cursor = await macCursorLogin();
     if (cursor) await save("cursor", cursor);
     const github = await macGithubToken();
     if (github) await save("github", await sandboxGithubLogin(github));
     if (failed.length) throw new CloudroomError(`Some logins could not be copied to cloud sandboxes. ${failed.join("; ")}`);
+  }
+
+  private pulledAt = 0;
+  /** Fills in the Claude and Codex logins this Mac lacks from the account's cloud logins (ADR 0175).
+   *  At most once a minute, unless a cloud login just changed. */
+  async copyCloudLogins(force = false): Promise<void> {
+    if (!force && Date.now() - this.pulledAt < RECHECK_MS) return;
+    this.pulledAt = Date.now();
+    const [claudeHere, codexHere] = await Promise.all([macClaudeSignedIn(), hasMacCodexLogin()]);
+    if (claudeHere) cloudClaude = null;
+    if (claudeHere !== false && codexHere) return;
+    const saved = await this.logins();
+    if (claudeHere === false) {
+      const value = saved.claude ? await this.cloudLogin("claude") : null;
+      cloudClaude = value ? claudeVariables(value) : null;
+    }
+    if (!codexHere && saved.codex) {
+      const value = await this.cloudLogin("codex");
+      if (!value) return;
+      await mkdir(dirname(codexAuthPath()), { recursive: true, mode: 0o700 });
+      // `wx` never replaces a login Codex saved meanwhile.
+      await writeFile(codexAuthPath(), value, { mode: 0o600, flag: "wx" }).catch((error: NodeJS.ErrnoException) => { if (error.code !== "EEXIST") throw error; });
+      this.uploaded.set("codex", createHash("sha256").update(value).digest("hex"));
+    }
+  }
+
+  private async cloudLogin(name: "claude" | "codex"): Promise<string | null> {
+    return z.object({ value: z.string().nullable() }).parse(await this.call({ action: "get", name }, "logins")).value;
   }
 
   private configAt = 0;

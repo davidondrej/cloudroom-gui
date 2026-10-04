@@ -4,14 +4,14 @@ import type { AppDeps } from "../../types.js";
 import { claudeBinary } from "./claude-token.js";
 import type { CloudroomClient } from "./client.js";
 
-/** The Mac's Codex and Claude Code versions. Cloud runs what ran locally (ADR 0133). */
-export type HarnessVersions = { codex?: string; claude?: string };
+/** The Mac's Codex, Claude Code, and OpenCode versions. Cloud runs what ran locally (ADR 0133). */
+export type HarnessVersions = { codex?: string; claude?: string; opencode?: string };
 
 function versionOf(binary: string | undefined): Promise<string | undefined> {
   if (!binary) return Promise.resolve(undefined);
   return new Promise((resolve) => {
     execFile(binary, ["--version"], { timeout: 10_000 }, (error, stdout) => {
-      resolve(error ? undefined : /\b(\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)/.exec(stdout)?.[1]);
+      resolve(error ? undefined : /(\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)/.exec(stdout)?.[1]);
     });
   });
 }
@@ -20,8 +20,8 @@ let cached: { at: number; versions: Promise<HarnessVersions> } | undefined;
 /** Read at most once a minute, from the same binaries Local threads run. */
 export function macHarnessVersions(): Promise<HarnessVersions> {
   if (!cached || Date.now() - cached.at > 60_000) {
-    const versions = Promise.all([versionOf(findCliExecutable("codex") ?? undefined), versionOf(claudeBinary())])
-      .then(([codex, claude]) => ({ ...(codex ? { codex } : {}), ...(claude ? { claude } : {}) }));
+    const versions = Promise.all([versionOf(findCliExecutable("codex") ?? undefined), versionOf(claudeBinary()), versionOf(findCliExecutable("opencode") ?? undefined)])
+      .then(([codex, claude, opencode]) => ({ ...(codex ? { codex } : {}), ...(claude ? { claude } : {}), ...(opencode ? { opencode } : {}) }));
     cached = { at: Date.now(), versions };
   }
   return cached.versions;

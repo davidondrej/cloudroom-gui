@@ -1398,6 +1398,9 @@ export function PromptBoxInternal({
   const [expandedImageIndex, setExpandedImageIndex] = useState<number | null>(
     null,
   );
+  const [fileDropDirection, setFileDropDirection] = useState<
+    "up" | "down" | null
+  >(null);
   const [activeHistoryIndex, setActiveHistoryIndex] = useState<number | null>(
     null,
   );
@@ -3302,8 +3305,19 @@ export function PromptBoxInternal({
       onDragOver={(event) => {
         if (!onAttachFiles) return;
         event.preventDefault();
+        if (fileDropDirection || !event.dataTransfer.types.includes("Files"))
+          return;
+        setFileDropDirection(
+          event.currentTarget.getBoundingClientRect().top < 120 ? "down" : "up",
+        );
+      }}
+      onDragLeave={(event) => {
+        if (event.currentTarget.contains(event.relatedTarget as Node | null))
+          return;
+        setFileDropDirection(null);
       }}
       onDrop={(event) => {
+        setFileDropDirection(null);
         if (!onAttachFiles) return;
         event.preventDefault();
         if (!event.dataTransfer?.files || event.dataTransfer.files.length === 0)
@@ -3324,6 +3338,23 @@ export function PromptBoxInternal({
         className="hidden"
         onChange={handleAttachmentInputChange}
       />
+      <div
+        data-promptbox-drop-overlay=""
+        aria-hidden
+        className={cn(
+          "absolute z-40 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary bg-composer text-sm text-muted-foreground shadow-message transition-[top,bottom,left,right,opacity] duration-150 ease-out motion-reduce:transition-none",
+          fileDropDirection === null
+            ? "pointer-events-none inset-0 opacity-0"
+            : showCompactLayout
+              ? "inset-0"
+              : fileDropDirection === "up"
+                ? "-inset-x-20 -top-24 bottom-0 max-md:-inset-x-2"
+                : "-inset-x-20 -bottom-24 top-0 max-md:-inset-x-2",
+        )}
+      >
+        <Icon name="Image" className="size-5" />
+        Drop image here
+      </div>
       {modeHeader ? (
         <div
           inert={showVoiceActionGroup ? true : undefined}

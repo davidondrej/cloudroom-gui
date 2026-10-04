@@ -79,9 +79,9 @@ const CHILD_THREAD_OUTPUT_TRUNCATION_MARKER = "\n\n[... output truncated ...]";
 const CHILD_THREAD_INSPECTION_GUIDANCE =
   "Review the thread before deciding next steps.";
 const CHILD_THREAD_INTERRUPTED_GUIDANCE =
-  "If the user stopped it manually, do not resume, restart, retry, replace, or continue the work unless the user explicitly asks.";
+  "The user or Cloudroom may have stopped it. Only treat this as a request to stop if the user said so in this chat.";
 const CHILD_THREAD_BATCH_INTERRUPTED_GUIDANCE =
-  "If the user stopped any interrupted thread manually, do not resume, restart, retry, replace, or continue the work unless the user explicitly asks.";
+  "The user or Cloudroom may have stopped these threads. Only treat this as a request to stop if the user said so in this chat.";
 const CHILD_THREAD_NEEDS_ATTENTION_FALLBACK_SUMMARY =
   "It is blocked on a pending interaction.";
 const CHILD_THREAD_RUNNING_WORKFLOW_GUIDANCE =

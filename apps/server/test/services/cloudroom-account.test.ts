@@ -77,9 +77,7 @@ it("pairs through a loopback callback, keeps secrets out of status, persists/rec
     expect(url.href).not.toContain(gateToken);
     return url;
   };
-  const finish = (url: URL, state = url.searchParams.get("state")!, origin = websiteUrl) => fetch(url.searchParams.get("callback")!, {
-    method: "POST", headers: { Origin: origin, "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ code: "c".repeat(64), state }),
-  });
+  const finish = (url: URL, state = url.searchParams.get("state")!) => fetch(`${url.searchParams.get("callback")}?${new URLSearchParams({ code: "c".repeat(64), state })}`);
   const savedPath = join(harness.deps.config.dataDir, "cloudroom.json");
   try {
     expect((await request("/sign-in", { projectId: project.id }, { Origin: "https://attacker.invalid" })).status).toBe(403);
@@ -89,7 +87,7 @@ it("pairs through a loopback callback, keeps secrets out of status, persists/rec
     const rejected = await finish(url, "d".repeat(64));
     expect(rejected.status).toBe(400);
     expect(await rejected.text()).toContain("<h1>Sign-in not completed</h1>");
-    expect((await finish(url, undefined, "https://attacker.invalid")).status).toBe(400);
+    expect((await fetch(url.searchParams.get("callback")!, { method: "POST", body: new URLSearchParams({ code: "c".repeat(64), state: url.searchParams.get("state")! }) })).status).toBe(400);
     expect(redeemed).toBe(0);
     const callbackResponse = await finish(url);
     expect(callbackResponse.status).toBe(200);

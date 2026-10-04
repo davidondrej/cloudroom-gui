@@ -769,15 +769,18 @@ def configure(folder, connection_file, activate, allow_private, mac_access=None,
     # Sandbox-only accounts have no VM address; their cores come from the website while awake.
     binding = [(connection.get('url') or 'sandboxes').rstrip('/'), (connection.get('account') or {}).get('id')]
     old = private_json(folder / 'config.json') if (folder / 'config.json').exists() else None
-    if old and old['binding'] != binding:
-        raise ValueError('Preview setup belongs to another account/core; use a separate directory')
+    # The same account may move from its VM to sandboxes; another account never reuses this setup.
+    if old and old['binding'][1] != binding[1]:
+        raise ValueError('Preview setup belongs to another account; use a separate directory')
     source = Path(__file__).resolve()
     target = folder / 'client.py'
     allow_private = bool(allow_private if allow_private is not None else (old or {}).get('allowPrivateSsh', False))
     mac_access = bool(mac_access if mac_access is not None else (old or {}).get('macAccess', False))
-    if (activate and old and old.get('connectionFile') == str(connection_file)
+    # App updates replace these files; restart so macOS can still name the helper for Desktop/Documents/Downloads access.
+    binary = [os.stat(path).st_ino for path in (launcher, sys.executable) if path]
+    if (activate and old and old['binding'] == binding and old.get('connectionFile') == str(connection_file)
             and old.get('allowPrivateSsh', False) == allow_private and old.get('macAccess', False) == mac_access
-            and old.get('launcher') == launcher and target.is_file() and target.read_bytes() == source.read_bytes()):
+            and old.get('launcher') == launcher and old.get('binary') == binary and target.is_file() and target.read_bytes() == source.read_bytes()):
         check = ['systemctl', '--user', 'is-active', '--quiet', label(folder) + '.service'] if sys.platform.startswith('linux') else ['launchctl', 'print', f'gui/{os.getuid()}/' + label(folder)]
         active = subprocess.run(check, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if active.returncode == 0:
@@ -788,7 +791,7 @@ def configure(folder, connection_file, activate, allow_private, mac_access=None,
         temporary = folder / 'client.pending'
         temporary.write_bytes(source.read_bytes()); temporary.chmod(0o600); temporary.replace(target)
     config = {'device': old['device'] if old else uuid.uuid4().hex, 'binding': binding, 'connectionFile': str(connection_file),
-              'allowPrivateSsh': allow_private, 'macAccess': mac_access, 'launcher': launcher}
+              'allowPrivateSsh': allow_private, 'macAccess': mac_access, 'launcher': launcher, 'binary': binary}
     save(folder / 'config.json', config)
     identity(folder)
     if activate:
@@ -823,11 +826,9 @@ def main():
             return
         config = private_json(folder / 'config.json')
         if not config.get('revoked', False):
+            # Best effort: a sleeping sandbox or an archived VM must never block sign-out.
             for core in cores(config):
-                if core.sandbox:
-                    with contextlib.suppress(OSError, ValueError):
-                        core.request('/device/' + config['device'], method='DELETE')
-                else:
+                with contextlib.suppress(OSError, ValueError):
                     core.request('/device/' + config['device'], method='DELETE')
             config['revoked'] = True
             save(folder / 'config.json', config)

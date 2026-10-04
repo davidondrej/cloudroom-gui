@@ -3,7 +3,7 @@
   "version": "0.2.2",
   "description": "Create and edit Markdown documents across local and connected-host vaults.",
   "private": true,
-  "license": "MIT",
+  "license": "Apache-2.0",
   "homepage": "https://github.com/get-bb/bb#readme",
   "bugs": {
     "url": "https://github.com/get-bb/bb/issues"

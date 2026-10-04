@@ -750,6 +750,7 @@ export function projectThreadItemContainsThread(
 interface ProjectThreadItemNavigationEntry {
   threadId: string;
   projectId: string;
+  isChild: boolean;
 }
 
 function collectThreadNodeNavigationEntries(
@@ -760,6 +761,7 @@ function collectThreadNodeNavigationEntries(
   entries.push({
     threadId: node.thread.id,
     projectId: node.thread.projectId,
+    isChild: node.thread.parentThreadId !== null,
   });
   if (
     node.children.length === 0 ||

@@ -52,6 +52,7 @@ export function useSetupProgress() {
   const account = useCloudroomAccount();
   const accountId = account.data?.account?.id;
   const ready = account.data?.ready === true;
+  const offline = Boolean(account.data?.account && !ready && account.data?.error);
   const claude = useClaudeConnection({ target: "cloud" }, Boolean(accountId));
   const codex = useQuery({
     queryKey: ["cloudroom-codex-auth", accountId],
@@ -69,7 +70,7 @@ export function useSetupProgress() {
   });
   const agents = { claude: claude.data?.state === "connected", codex: codex.data?.state === "connected" };
   const done = [Boolean(accountId), agents.claude || agents.codex, github.data?.state === "connected"];
-  return { account, ready, agents, codex, github, done, complete: done.every(Boolean), checking: account.isPending };
+  return { account, ready, offline, agents, codex, github, done, complete: done.every(Boolean), checking: account.isPending };
 }
 
 export function Onboarding() {
@@ -96,6 +97,14 @@ function Setup({ locked, close }: { locked: boolean; close: () => void }) {
     if (signedIn && !wasSignedIn.current && step === 0) setPicked(nextStep(done, 0));
     wasSignedIn.current = signedIn;
   }, [signedIn, step, done]);
+  // Stay on the agent step after one agent connects; only both connecting moves on by itself.
+  const bothAgents = progress.agents.claude && progress.agents.codex;
+  const hadBothAgents = useRef(bothAgents);
+  useEffect(() => {
+    if (step === 1 && picked === null) setPicked(1);
+    if (bothAgents && !hadBothAgents.current && step === 1) setPicked(nextStep(done, 1));
+    hadBothAgents.current = bothAgents;
+  }, [bothAgents, step, picked, done]);
   const viewed = useRef(new Set<number>());
   useEffect(() => {
     if (progress.checking || viewed.current.has(step)) return;
@@ -160,14 +169,14 @@ function Setup({ locked, close }: { locked: boolean; close: () => void }) {
           </ol>
           <p className="mt-auto px-3 text-[12.5px] text-(--ob-muted)">Reopen setup anytime from the account button in the sidebar.</p>
         </aside>
-        <main className="relative flex min-w-0 flex-1 items-center overflow-y-auto px-[110px] py-10">
+        <main className="relative flex min-w-0 flex-1 overflow-y-auto px-[110px] py-10">
           {!locked && (
             <button type="button" onClick={() => { track(STEP_IDS[step] ?? "project", "closed"); close(); }} className={cn("absolute top-5 right-6 flex items-center gap-1.5 text-[13px] text-(--ob-muted) hover:text-(--ob-ink)", MACOS_APP_REGION_NO_DRAG_CLASS)}>
               Skip setup
               <Icon name="X" className="size-3" aria-hidden />
             </button>
           )}
-          <div key={step} className="w-full max-w-[600px] duration-300 animate-in fade-in-0 slide-in-from-bottom-1">
+          <div key={step} className="my-auto w-full max-w-[600px] duration-300 animate-in fade-in-0 slide-in-from-bottom-1">
             <BbLogo className="mb-6 size-[72px] -rotate-[5deg]" />
             <p className="font-serif text-base text-(--ob-muted) italic">Step {step + 1} of 4</p>
             {step === 0 && <AccountStep email={account.data?.account?.email ?? null} signingIn={account.data?.signingIn === true} next={next} />}
@@ -281,7 +290,7 @@ function AccountStep({ email, signingIn, next }: { email: string | null; signing
 }
 
 function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupProgress>; next: () => void }) {
-  const { account, agents, codex, ready } = progress;
+  const { account, agents, codex, ready, offline } = progress;
   const { localHostId } = useHostDaemon();
   const claudeLocal = useClaudeConnection({ target: "local", hostId: localHostId });
   const detected = useRef(false);
@@ -323,7 +332,7 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
   });
   const finish = useMutation({ mutationFn: saveChoices, onSuccess: () => { track("agent", "done", agents.claude && agents.codex ? "both" : agents.claude ? "claude" : "codex"); next(); }, meta: { showErrorToast: false }, onError: (error) => appToast.error(error.message) });
   const codexBrowser = codex.data?.state === "waiting" && !codex.data.user_code ? codex.data : null;
-  const waiting = !account.data?.account ? "Log in first" : !ready ? "Starting your cloud…" : null;
+  const waiting = !account.data?.account ? "Log in first" : offline ? "Cloud unreachable" : !ready ? "Starting your cloud…" : null;
   const action = (connected: boolean, button: ReactNode) => (connected ? <Connected /> : waiting ? <Note>{waiting}</Note> : button);
   return (
     <>
@@ -343,6 +352,7 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
           ))}
         </Card>
       </div>
+      {offline && <CloudOffline />}
       {(ask.mac || ask.logins) && (
         <div className="mt-5 flex flex-col gap-2 text-[13px]">
           {ask.logins && <Choice checked={copyLogins} onChange={setCopyLogins} label="Copy my logins to the cloud" detail="Agent logins, API keys, and model providers." />}
@@ -354,6 +364,19 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
         <Note>Add the other one later in Settings.</Note>
       </div>
     </>
+  );
+}
+
+function CloudOffline() {
+  const signIn = useCloudroomSignIn();
+  const signingIn = useCloudroomAccount().data?.signingIn === true;
+  return (
+    <div className="mt-3">
+      <Note>
+        Your cloud isn't responding.{" "}
+        <button type="button" className={LINK} disabled={signIn.isPending || signingIn} onClick={() => signIn.mutate("email")}>{signingIn ? "Finish in your browser…" : "Sign in again"}</button>
+      </Note>
+    </div>
   );
 }
 
@@ -379,7 +402,7 @@ function Choice({ checked, onChange, label, detail }: { checked: boolean; onChan
 }
 
 function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupProgress>; next: () => void }) {
-  const { github, account, ready } = progress;
+  const { github, account, ready, offline } = progress;
   const client = useQueryClient();
   const requestId = useRef<string | null>(null);
   const refresh = () => client.invalidateQueries({ queryKey: ["cloudroom-github-auth"] });
@@ -406,7 +429,7 @@ function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupPr
   const code = state === "waiting" ? github.data?.user_code : null;
   const detail = connected
     ? "Cloud agents can use your repos."
-    : !account.data?.account ? "Log in first" : !ready ? "Starting your cloud…" : "Not found on this Mac. Connecting opens github.com.";
+    : !account.data?.account ? "Log in first" : offline ? "Cloud unreachable" : !ready ? "Starting your cloud…" : "Not found on this Mac. Connecting opens github.com.";
   return (
     <>
       <Heading lead="Connect" mark="GitHub" />
@@ -415,6 +438,7 @@ function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupPr
           {connected && <Connected />}
         </Card>
       </div>
+      {offline && <CloudOffline />}
       {code && (
         <div className="mt-3 flex items-center gap-4 border border-dashed border-(--ob-dash) bg-(--ob-card) px-[22px] py-4">
           <span className="font-mono text-2xl font-semibold tracking-[0.2em]">{code}</span>

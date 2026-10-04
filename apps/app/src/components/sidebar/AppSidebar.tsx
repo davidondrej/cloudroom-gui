@@ -172,7 +172,9 @@ export function AppSidebar({
       targets.find((target) => target.threadId === activeThreadId)?.projectId;
     if (!projectId) return false;
     return openNavigationTarget(
-      targets.filter((target) => target.projectId === projectId).at(-1),
+      targets
+        .filter((target) => target.projectId === projectId && !target.isChild)
+        .at(-1),
     );
   }, [activeProjectId, activeThreadId, openNavigationTarget]);
 

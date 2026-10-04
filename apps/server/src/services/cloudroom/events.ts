@@ -235,14 +235,16 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
         threadId, providerThreadId: saved.nativeId,
         contextWindowUsage: { usedTokens: used, modelContextWindow: total, estimated: harness === "pi" },
       });
-      if (data.tokens && data.lastUsage && saved.turnId) {
+      // Core reads usage after the turn ends, so a follow-up may already own saved.turnId. Credit the last started turn.
+      const usageTurn = tx.select({ turnId: events.turnId }).from(events).where(and(eq(events.threadId, threadId), eq(events.type, "turn/started"))).orderBy(desc(events.sequence)).limit(1).get()?.turnId;
+      if (data.tokens && data.lastUsage && usageTurn) {
         const totals = object.parse(data.tokens);
         const last = object.parse(data.lastUsage);
         const breakdown = (value: Record<string, unknown>, total: unknown) => ({
           totalTokens: Number(total ?? 0), inputTokens: Number(value.input ?? 0), outputTokens: Number(value.output ?? 0),
           cachedInputTokens: Number(value.cacheRead ?? 0), cacheReadInputTokens: Number(value.cacheRead ?? 0), cacheWriteInputTokens: Number(value.cacheWrite ?? 0), reasoningOutputTokens: 0,
         });
-        emit({ type: "thread/tokenUsage/updated", scope: turnScope(saved.turnId), threadId, providerThreadId: saved.nativeId,
+        emit({ type: "thread/tokenUsage/updated", scope: turnScope(usageTurn), threadId, providerThreadId: saved.nativeId,
           tokenUsage: { total: breakdown(totals, totals.total), last: breakdown(last, last.totalTokens), modelContextWindow: total } });
       }
     }

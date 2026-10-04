@@ -1424,6 +1424,10 @@ async function requireLiveSessionForTurn(
 
 const ZERO_WORK_SETTLEMENT_GRACE_MS = 250;
 
+const turnStartResultSchema = z.object({
+  turn: z.object({ id: z.string() }).optional(),
+});
+
 let syntheticZeroWorkTurnCounter = 0;
 
 function scheduleZeroWorkTurnSettlement(args: {
@@ -1486,6 +1490,7 @@ async function handleTurnStart(
   });
 
   try {
+    let startedCodexTurnId: string | null = null;
     if (isStandaloneBuiltinCompactCommand(input)) {
       await connection.request({
         method: "thread/compact/start",
@@ -1501,7 +1506,7 @@ async function handleTurnStart(
         ),
         options: decoded.sessionOptions,
       });
-      await connection.request({
+      const result = await connection.request({
         method: "turn/start",
         params: {
           threadId: codexThreadId,
@@ -1512,16 +1517,19 @@ async function handleTurnStart(
           model: decoded.sessionOptions.model ?? undefined,
           serviceTier: toCodexServiceTier(decoded.sessionOptions.serviceTier),
         },
-        resultSchema: ignoredChildResultSchema,
+        resultSchema: turnStartResultSchema,
         timeoutMs: CHILD_REQUEST_TIMEOUT_MS,
       });
+      startedCodexTurnId = result.turn?.id ?? null;
     }
     sendResult(id, { threadId: params.threadId });
-    scheduleZeroWorkTurnSettlement({
-      clientRequestId: params.clientRequestId,
-      prepared,
-      session,
-    });
+    if (startedCodexTurnId === null) {
+      scheduleZeroWorkTurnSettlement({
+        clientRequestId: params.clientRequestId,
+        prepared,
+        session,
+      });
+    }
   } catch (error) {
     prepared?.rollback();
     sendError(

@@ -79,6 +79,7 @@ import { ExpandableTimelineRow } from "./ExpandableTimelineRow.js";
 import {
   TimelineLeadingIcon,
   TimelineStaticRowHeader,
+  timelineRowHorizontalPaddingClassName,
   type TimelineRowHorizontalPadding,
 } from "./TimelineRowHeader.js";
 import {
@@ -281,6 +282,7 @@ interface TimelineSystemDetailBlockProps {
 
 interface BuildTimelineRowsListItemsArgs {
   rows: readonly ThreadTimelineViewRow[];
+  scopeActive: boolean;
   unreadDividerPlacement: ThreadTimelineUnreadDividerPlacement | null;
 }
 
@@ -338,6 +340,11 @@ type TimelineRowsListItem =
   | {
       kind: "unread-divider";
       id: "thread-unread-divider";
+    }
+  | {
+      kind: "warning-group";
+      id: string;
+      rows: readonly ThreadTimelineViewRow[];
     };
 
 interface ConversationRowProps {
@@ -1398,11 +1405,7 @@ export function pastRowDimClassName({
   }
   switch (row.kind) {
     case "system":
-      if (
-        row.systemKind === "operation" &&
-        (row.operationKind === "warning" || row.operationKind === "deprecation")
-      )
-        return undefined;
+      if (isWarningRow(row)) return undefined;
       return row.status === "completed" ? PAST_ROW_DIM_CLASS_NAME : undefined;
     case "work":
       return row.status === "completed" || row.status === "error"
@@ -1717,8 +1720,21 @@ function isUnreadDividerCandidateAfterCutoff({
   return !isUserAuthoredConversationRow(row);
 }
 
+function isWarningRow(row: ThreadTimelineViewRow): boolean {
+  return (
+    row.kind === "system" &&
+    row.systemKind === "operation" &&
+    (row.operationKind === "warning" || row.operationKind === "deprecation")
+  );
+}
+
+function isAssistantReplyRow(row: ThreadTimelineViewRow): boolean {
+  return row.kind === "conversation" && row.role === "assistant";
+}
+
 function buildTimelineRowsListItems({
   rows,
+  scopeActive,
   unreadDividerPlacement,
 }: BuildTimelineRowsListItemsArgs): TimelineRowsListItem[] {
   const items: TimelineRowsListItem[] = [];
@@ -1727,14 +1743,91 @@ function buildTimelineRowsListItems({
     unreadDividerPlacement,
   });
 
-  for (const [index, row] of rows.entries()) {
+  for (let index = 0; index < rows.length; index++) {
     if (index === dividerIndex) {
       items.push({ kind: "unread-divider", id: "thread-unread-divider" });
     }
-    items.push({ kind: "row", row });
+    const row = rows[index]!;
+    if (!isWarningRow(row)) {
+      items.push({ kind: "row", row });
+      continue;
+    }
+    let end = index + 1;
+    while (
+      end < rows.length &&
+      end !== dividerIndex &&
+      isWarningRow(rows[end]!)
+    ) {
+      end++;
+    }
+    const run = rows.slice(index, end);
+    if (!scopeActive || rows.slice(end).some(isAssistantReplyRow)) {
+      items.push({
+        kind: "warning-group",
+        id: `warnings:${row.id}`,
+        rows: run,
+      });
+    } else {
+      items.push(
+        ...run.map((runRow) => ({ kind: "row" as const, row: runRow })),
+      );
+    }
+    index = end - 1;
   }
 
   return items;
+}
+
+function timelineRowsListItemKey(item: TimelineRowsListItem): string {
+  switch (item.kind) {
+    case "row":
+      return item.row.id;
+    case "unread-divider":
+      return `divider:${item.id}`;
+    case "warning-group":
+      return item.id;
+  }
+}
+
+function TimelineWarningGroup({
+  rowProps,
+  rows,
+}: {
+  rowProps: Omit<TimelineRowViewProps, "row">;
+  rows: readonly ThreadTimelineViewRow[];
+}) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="flex flex-col gap-2">
+      <div
+        className={timelineRowHorizontalPaddingClassName(
+          timelineRowHorizontalPadding(rowProps.spacing),
+        )}
+      >
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+          className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-sm leading-5 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Icon name="AlertTriangle" className="size-3.5" />
+          {rows.length === 1 ? "1 warning" : `${rows.length} warnings`}
+          <Icon
+            name="ChevronRight"
+            className={cn(
+              "size-3 transition-transform",
+              expanded && "rotate-90",
+            )}
+          />
+        </button>
+      </div>
+      {expanded
+        ? rows.map((row) => (
+            <MemoizedTimelineRowView key={row.id} {...rowProps} row={row} />
+          ))
+        : null}
+    </div>
+  );
 }
 
 function TimelineRowItemWrapper({
@@ -1837,21 +1930,16 @@ function TimelineRowsList({
     [rows],
   );
   const items = useMemo(
-    () => buildTimelineRowsListItems({ rows, unreadDividerPlacement }),
-    [rows, unreadDividerPlacement],
-  );
-  const itemKeys = useMemo(
     () =>
-      items.map((item) =>
-        item.kind === "row" ? item.row.id : `divider:${item.id}`,
-      ),
-    [items],
+      buildTimelineRowsListItems({ rows, scopeActive, unreadDividerPlacement }),
+    [rows, scopeActive, unreadDividerPlacement],
   );
+  const itemKeys = useMemo(() => items.map(timelineRowsListItemKey), [items]);
   const alwaysMountedKeys = useMemo(() => {
     const keys = new Set<string>();
-    const lastRow = rows.at(-1);
-    if (lastRow !== undefined) {
-      keys.add(lastRow.id);
+    const lastItem = items.at(-1);
+    if (lastItem !== undefined) {
+      keys.add(timelineRowsListItemKey(lastItem));
     }
     for (const item of items) {
       if (item.kind === "unread-divider") {
@@ -1874,7 +1962,6 @@ function TimelineRowsList({
     return keys;
   }, [
     items,
-    rows,
     scrollRestoreRowId,
     spacing,
     stableSearchExpandedRowIds,
@@ -1947,6 +2034,29 @@ function TimelineRowsList({
                       />
                     ) : null}
                   </div>
+                );
+              }
+              if (item.kind === "warning-group") {
+                return (
+                  <TimelineRowItemWrapper
+                    key={item.id}
+                    row={item.rows[0]!}
+                    spacing={spacing}
+                    windowedState={windowedState}
+                  >
+                    {windowedState.isRealized ? (
+                      <TimelineWarningGroup
+                        rows={item.rows}
+                        rowProps={{
+                          activeLatestBundleId,
+                          compactActivityIntents,
+                          scopeActive,
+                          showAssistantMessageActions,
+                          spacing,
+                        }}
+                      />
+                    ) : null}
+                  </TimelineRowItemWrapper>
                 );
               }
               return (

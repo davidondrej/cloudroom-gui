@@ -1,4 +1,5 @@
 import {
+  cloudClaudeLoginEnvironment,
   resolveHostEnvironment,
   mergeHostAndProviderEnvironment,
 } from "../hosts/host-environment.js";
@@ -204,10 +205,16 @@ export async function resolveThreadRuntimeCommandConfig(
     skillIdsByPlugin,
   });
   const contributedEnv = mergeHostAndProviderEnvironment(
-    await resolveHostEnvironment(deps, {
-      hostId: host.id,
-      projectId: project.id,
-    }),
+    [
+      ...(await resolveHostEnvironment(deps, {
+        hostId: host.id,
+        projectId: project.id,
+      })),
+      ...cloudClaudeLoginEnvironment(deps, {
+        hostId: host.id,
+        providerId: args.thread.providerId,
+      }),
+    ],
     await resolvePluginProviderEnv({
       providerId: args.thread.providerId,
       context: {

@@ -565,10 +565,22 @@ export function makeProviderCliStatus(
 ): ProviderCliStatus {
   const identity =
     provider === "codex"
-      ? { displayName: "Codex", executableName: "codex" }
+      ? {
+          displayName: "Codex",
+          executableName: "codex",
+          npmPackageName: "@openai/codex",
+        }
       : provider === "claude-code"
-        ? { displayName: "Claude Code", executableName: "claude" }
-        : { displayName: "Cursor", executableName: "agent" };
+        ? {
+            displayName: "Claude Code",
+            executableName: "claude",
+            npmPackageName: "@anthropic-ai/claude-code",
+          }
+        : {
+            displayName: "Cursor",
+            executableName: "agent",
+            npmPackageName: null,
+          };
   return {
     displayName: identity.displayName,
     executableName: identity.executableName,
@@ -578,7 +590,7 @@ export function makeProviderCliStatus(
     currentVersion: "1.0.0",
     latestVersion: "1.0.0",
     minimumSupportedVersion: null,
-    npmPackageName: null,
+    npmPackageName: identity.npmPackageName,
     npmGlobalPackageVersion: null,
     installAction: null,
     needsUpdate: false,

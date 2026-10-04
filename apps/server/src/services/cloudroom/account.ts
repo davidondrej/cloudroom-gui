@@ -100,17 +100,13 @@ export class CloudroomAccountService {
         response.writeHead(status, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": `default-src 'none'; style-src 'nonce-${nonce}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'` });
         response.end(callbackPage(status === 200, message, nonce));
       };
-      if (request.method !== "POST" || request.url !== "/cloudroom/callback" || request.headers.host !== new URL(callback).host || request.headers.origin !== origin.origin || !request.headers["content-type"]?.startsWith("application/x-www-form-urlencoded")) return reply(400, "Invalid sign-in callback. Return to Cloudroom.");
+      // A plain GET navigation: Safari warns when an https page posts a form to http, even 127.0.0.1. The state and verifier still bind it to this app.
+      const url = new URL(request.url ?? "/", "http://127.0.0.1");
+      if (request.method !== "GET" || url.pathname !== "/cloudroom/return" || request.url!.length > 512 || request.headers.host !== new URL(callback).host) return reply(400, "Invalid sign-in callback. Return to Cloudroom.");
       let claimed = false;
       try {
-        let text = "";
-        for await (const chunk of request) {
-          text += chunk;
-          if (text.length > 1024) return reply(413, "Invalid sign-in callback.");
-        }
-        const form = new URLSearchParams(text);
-        const receivedState = form.get("state") ?? "";
-        const code = form.get("code") ?? "";
+        const receivedState = url.searchParams.get("state") ?? "";
+        const code = url.searchParams.get("code") ?? "";
         const pending = this.pending;
         if (!/^[a-f0-9]{64}$/.test(receivedState) || !timingSafeEqual(Buffer.from(receivedState), Buffer.from(state)) || !/^[a-f0-9]{64}$/.test(code) || pending?.server !== server || pending.claimed) return reply(400, "Sign-in expired or did not match this app.");
         pending.claimed = true;
@@ -162,7 +158,7 @@ export class CloudroomAccountService {
     if (attempt !== this.attempt) { server.close(); throw new ApiError(409, "cloudroom_signin_cancelled", "Sign-in was cancelled or replaced."); }
     const address = server.address();
     if (!address || typeof address === "string") { server.close(); throw new Error("Sign-in callback unavailable"); }
-    callback = `http://127.0.0.1:${address.port}/cloudroom/callback`;
+    callback = `http://127.0.0.1:${address.port}/cloudroom/return`;
     const timer = setTimeout(() => { if (this.pending?.server === server) { this.cancel(); this.error = "Sign-in expired. Try again."; } }, pendingLoginTimeoutMs);
     timer.unref();
     this.pending = { server, abort, timer, claimed: false };

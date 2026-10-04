@@ -11,7 +11,9 @@ export function prepareCodexGuard(): ReturnType<typeof codexGuardConfig> {
   const directory = mkdtempSync(join(tmpdir(), "cloudroom-command-guard-"));
   const path = join(directory, "cloudroom-command-guard.mjs");
   writeFileSync(path, codexHookSource(), { mode: 0o600 });
-  const command = `${shellQuote(process.execPath)} ${shellQuote(path)} || true`;
+  // Codex runs without ELECTRON_RUN_AS_NODE, so without it the packaged app would
+  // launch the full GUI (a Dock icon flash) and never run the guard.
+  const command = `ELECTRON_RUN_AS_NODE=1 ${shellQuote(process.execPath)} ${shellQuote(path)} || true`;
   config = codexGuardConfig(command);
   return config;
 }

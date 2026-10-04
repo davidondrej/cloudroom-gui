@@ -56,6 +56,7 @@ export const HOST_CHANGE_KINDS = [
   "host-connected",
   "host-disconnected",
   "provider-model-catalog-changed",
+  "provider-cli-status-changed",
 ] as const;
 export type HostChangeKind = (typeof HOST_CHANGE_KINDS)[number];
 

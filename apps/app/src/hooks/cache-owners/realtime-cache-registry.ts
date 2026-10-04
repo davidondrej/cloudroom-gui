@@ -52,6 +52,7 @@ import {
   environmentFilePreviewQueryKeyPrefix,
   environmentPullRequestQueryKey,
   environmentWorkStatusQueryKeyPrefix,
+  hostProviderCliStatusQueryKey,
   hostsQueryKey,
   sidebarNavigationQueryKey,
   systemConfigQueryKey,
@@ -521,6 +522,9 @@ export const REALTIME_HOST_CHANGE_REGISTRY = {
   },
   "provider-model-catalog-changed": {
     dirty: [dirtyHostSystemExecutionOptionQueries],
+  },
+  "provider-cli-status-changed": {
+    dirty: [dirtyHostProviderCliStatusQueries],
   },
 } satisfies HostChangeRegistry;
 
@@ -1183,6 +1187,12 @@ function dirtyHostSystemExecutionOptionQueries({
 }: HostRealtimeDirtyContext): QueryKey[] | void {
   if (hostId === undefined) return [allSystemExecutionOptionsQueryKeyPrefix()];
   void invalidateSystemExecutionOptions({ hostId, queryClient });
+}
+
+function dirtyHostProviderCliStatusQueries({
+  hostId,
+}: HostRealtimeDirtyContext): QueryKey[] {
+  return hostId === undefined ? [] : [hostProviderCliStatusQueryKey(hostId)];
 }
 
 function dirtyPluginContributionQueries(): QueryKey[] {

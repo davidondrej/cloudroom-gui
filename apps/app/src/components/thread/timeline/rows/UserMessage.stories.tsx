@@ -367,7 +367,7 @@ const parentChildSystemMessageFixtures = [
           "",
           "Review the thread before deciding next steps.",
           "",
-          "If the user stopped it manually, do not resume, restart, retry, replace, or continue the work unless the user explicitly asks.",
+          "The user or Cloudroom may have stopped it. Only treat this as a request to stop if the user said so in this chat.",
         ].join("\n"),
       }),
       [
@@ -393,7 +393,7 @@ const parentChildSystemMessageFixtures = [
           "- @thread:thr_rebase failed.",
           "- @thread:thr_docs was interrupted.",
           "",
-          "If the user stopped any interrupted thread manually, do not resume, restart, retry, replace, or continue the work unless the user explicitly asks.",
+          "The user or Cloudroom may have stopped these threads. Only treat this as a request to stop if the user said so in this chat.",
         ].join("\n"),
       }),
       [

@@ -335,10 +335,16 @@ export function createHostEntry() {
         if (process.platform === "darwin") {
           const { stdout } = await run("/usr/bin/lsappinfo", ["info", "-only", "bundleid", "-only", "name", String(pid)], {
             timeout: 10_000,
-          });
-          const key = /"CFBundleIdentifier"="([^"]+)"/.exec(stdout)?.[1];
-          const name = /"LSDisplayName"="([^"]+)"/.exec(stdout)?.[1];
-          return key ? { key, name: name ?? key } : null;
+          }).catch(() => ({ stdout: "" }));
+          const key = /"CFBundleIdentifier"\s*=\s*"([^"]+)"/.exec(stdout)?.[1];
+          const name = /"LSDisplayName"\s*=\s*"([^"]+)"/.exec(stdout)?.[1];
+          if (key) return { key, name: name ?? key };
+          const app = JSON.parse(
+            await osascript(
+              `ObjC.import("AppKit"); const a = $.NSRunningApplication.runningApplicationWithProcessIdentifier(${pid}); JSON.stringify(a.isNil() ? {} : {key: a.bundleIdentifier.js, name: a.localizedName.js})`,
+            ),
+          ) as { key?: string; name?: string };
+          return app.key ? { key: app.key, name: app.name ?? app.key } : null;
         }
         const name = (await readFile(`/proc/${pid}/comm`, "utf8").catch(() => "")).trim();
         return name ? { key: name, name } : null;

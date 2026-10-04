@@ -9,13 +9,17 @@ export const SIDEBAR_WINDOWED_NAV_ATTRIBUTE = "data-sidebar-windowed-nav";
 export interface SidebarWindowedNavigationEntry {
   threadId: string;
   projectId: string;
+  isChild?: boolean;
 }
 
 export function encodeSidebarWindowedNavigationEntries(
   entries: readonly SidebarWindowedNavigationEntry[],
 ): string {
   return entries
-    .map((entry) => `${entry.threadId}:${entry.projectId}`)
+    .map(
+      (entry) =>
+        `${entry.threadId}:${entry.projectId}${entry.isChild ? ":child" : ""}`,
+    )
     .join(" ");
 }
 
@@ -26,6 +30,7 @@ export interface SidebarThreadShortcutTarget {
   key: string;
   threadId: string;
   projectId: string | null;
+  isChild: boolean;
 }
 
 export type SidebarThreadShortcutPresentation = AppShortcutPresentation;
@@ -65,6 +70,7 @@ function collectSidebarThreadTargets(
         key: String(targets.length + 1),
         threadId,
         projectId: element.dataset.sidebarProjectId ?? null,
+        isChild: element.dataset.sidebarThreadChild !== undefined,
       });
     } else {
       const encoded = element.getAttribute(SIDEBAR_WINDOWED_NAV_ATTRIBUTE);
@@ -72,15 +78,16 @@ function collectSidebarThreadTargets(
         continue;
       }
       for (const pair of encoded.split(" ")) {
-        const separator = pair.indexOf(":");
-        if (separator <= 0 || separator === pair.length - 1) {
+        const [threadId, projectId, childFlag] = pair.split(":");
+        if (!threadId || !projectId) {
           continue;
         }
         targets.push({
           element: null,
           key: String(targets.length + 1),
-          threadId: pair.slice(0, separator),
-          projectId: pair.slice(separator + 1),
+          threadId,
+          projectId,
+          isChild: childFlag === "child",
         });
         if (targets.length === limit) {
           break;

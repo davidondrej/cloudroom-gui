@@ -20,6 +20,7 @@ import { resolveBridgeLaunchForProviderId } from "./provider-bridge-launch.js";
 import { mapProviderMaintenanceRequests } from "./provider-maintenance-concurrency.js";
 import { resolvePluginProviderEnvHealth } from "../plugins/plugin-agent-contributions.js";
 import { isSuspendedHostUnavailableError } from "../lib/lifecycle-api-errors.js";
+import { cloudClaudeLoginEnvironment } from "../hosts/host-environment.js";
 
 function unknownProviderState(
   provider: ProviderInfo,
@@ -87,7 +88,21 @@ async function getProviderState(
       providerId: args.provider.id,
       hostId: args.hostId,
     });
-    if (contributed === null) return health;
+    if (contributed === null) {
+      const cloud = cloudClaudeLoginEnvironment(deps, {
+        hostId: args.hostId,
+        providerId: args.provider.id,
+      });
+      if (!cloud.length) return health;
+      return {
+        ...health,
+        status: "ready",
+        statusMessage: "Using your cloud Claude login.",
+        accountEmail: null,
+        planLabel: null,
+        loginCommand: null,
+      };
+    }
     return {
       ...health,
       status: "ready",

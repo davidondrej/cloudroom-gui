@@ -60,6 +60,7 @@ import {
   restartSystemModelDiscovery,
 } from "../services/system/execution-options.js";
 import { getProviderStates } from "../services/system/provider-states.js";
+import { runProviderAutoUpdates } from "../services/system/provider-auto-update.js";
 import { getProviderUsageLimits } from "../services/system/usage-limits.js";
 import {
   listCustomThemeNames,
@@ -273,6 +274,7 @@ export function registerSystemRoutes(
       systemPromptEnabled: settings.systemPromptEnabled ?? current.systemPromptEnabled,
       bugReportsEnabled: settings.bugReportsEnabled ?? current.bugReportsEnabled,
       agentQuestionsEnabled: settings.agentQuestionsEnabled ?? current.agentQuestionsEnabled,
+      providerAutoUpdate: settings.providerAutoUpdate ?? current.providerAutoUpdate,
       showDiagnosticEvents:
         diagnosticValue === undefined ||
         (showUnhandledProviderEvents !== undefined &&
@@ -283,6 +285,13 @@ export function registerSystemRoutes(
     setAppSettings(deps.db, updatedSettings);
     deps.telemetry.setEnabled(updatedSettings.telemetryEnabled);
     deps.hub.notifySystem(["config-changed"]);
+    if (
+      updatedSettings.providerAutoUpdate.some(
+        (provider) => !current.providerAutoUpdate.includes(provider),
+      )
+    ) {
+      void runProviderAutoUpdates(deps);
+    }
     return context.json(compatibleGeneralSettings());
   });
 

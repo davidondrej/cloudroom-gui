@@ -665,6 +665,7 @@ function ThreadRowComponent({
         data-sidebar-thread-shortcut-target=""
         data-sidebar-thread-id={thread.id}
         data-sidebar-project-id={projectId}
+        data-sidebar-thread-child={thread.parentThreadId ? "" : undefined}
         onClick={(event) => {
           if (isEditing) {
             event.preventDefault();
