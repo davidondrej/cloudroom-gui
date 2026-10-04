@@ -1,12 +1,37 @@
-# Cloudroom GUI
+# Cloudroom
 
-[Website](https://www.cloudroom.dev) · [Join the waitlist](https://www.cloudroom.dev/#waitlist) · [Changelog](https://www.cloudroom.dev/changelog) · [Security](https://www.cloudroom.dev/security)
+[Website](https://www.cloudroom.dev) · [Download](https://www.cloudroom.dev/download) · [Join the waitlist](https://www.cloudroom.dev/#waitlist) · [Changelog](https://www.cloudroom.dev/changelog) · [Security](https://www.cloudroom.dev/security)
 
-Cloudroom's desktop app, based on [BB](https://github.com/get-bb/bb). Run agents locally or connect to a compatible [Cloudroom core](https://github.com/davidondrej/cloudroom-core) for cloud execution.
+Your agents get their own room in the cloud.
 
-This is an experimental source release. Building needs no Cloudroom account or core checkout. The app works without an account: local agents need no sign-in. Cloud agents are invite-only ([join the waitlist](https://www.cloudroom.dev/#waitlist)). See [release notes and compatibility](docs/releases.md).
+Run Claude Code, Codex, and Pi side by side, on your Mac or in the cloud. You keep your harness, your subscriptions, and your traces.
 
-[Download the Mac app](https://www.cloudroom.dev/download) (macOS 13+, Apple Silicon). Found a bug? [Open an issue](https://github.com/davidondrej/cloudroom-gui/issues).
+- Teleport a running thread from your Mac to the cloud and back, with the same chat, model, and effort.
+- Each cloud agent gets its own sandbox with a copy of your repo.
+- Agents call Claude and OpenAI directly, on your own subscriptions.
+- Cloud agents can reach your Mac when you allow it.
+- Computer use for every agent, on your Mac and in the cloud.
+- Self-host the open-source [Cloudroom core](https://github.com/davidondrej/cloudroom-core), or use our hosting.
+
+Local agents are free and need no account. Cloud is invite-only for now, so [join the waitlist](https://www.cloudroom.dev/#waitlist).
+
+[Download the Mac app](https://www.cloudroom.dev/download) for Apple Silicon on macOS 13+. A Linux x64 alpha is on [Releases](https://github.com/davidondrej/cloudroom-gui/releases). Found a bug? [Open an issue](https://github.com/davidondrej/cloudroom-gui/issues).
+
+## Why Cloudroom
+
+A year ago you ran 1 agent. Today you run 20. Soon you will run 1,000.
+
+Your laptop can't handle that. Fans go crazy. Windows pop up. Agents grab your browser.
+
+Cloud agents fix this. But Codex cloud, Cursor, and Devin are closed. You use their harness, their app, and their subscription.
+
+Cloudroom runs the agents you already use, each on its own machine in the cloud. It's open source. Use our hosting, or run the core on any Linux machine you own.
+
+## How it works
+
+![Cloudroom architecture: one cloud sandbox per agent, each running Cloudroom core and the agent.](https://raw.githubusercontent.com/davidondrej/cloudroom-core/main/docs/architecture.png)
+
+The app runs local agents on your Mac. Each cloud agent runs in its own sandbox, next to [Cloudroom core](https://github.com/davidondrej/cloudroom-core).
 
 ## Security
 
@@ -19,6 +44,8 @@ This is an experimental source release. Building needs no Cloudroom account or c
 See [cloudroom.dev/security](https://www.cloudroom.dev/security). Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
 ## Build from source
+
+Building needs no Cloudroom account or core checkout. See [release notes and compatibility](docs/releases.md).
 
 Use macOS on Apple Silicon for the supported development target. Install Git, Node.js 22.19+, pnpm **9.15.0**, Python **3.11+**, and Xcode Command Line Tools for native dependencies. Keep the same Node version for installation and builds.
 
@@ -62,8 +89,8 @@ Sync and preview helpers ship in `apps/server/src/assets/cloudroom-{sync,preview
 
 The desktop build above creates runnable bundles, not a signed installer. Installer signing, notarization, and publication are separate steps.
 
-## Contributing and licenses
+## Contributing and credits
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Some deeper documentation and package names are inherited from BB; the commands above describe this fork.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-BB's [MIT license](LICENSE) and copyright notice are retained. The bundled Cloudroom Python helpers are [Apache 2.0](apps/server/src/assets/cloudroom-sync/LICENSE). Bundled third-party notices remain with their components.
+Built on [BB](https://github.com/get-bb/bb). Internal package names still use `bb`. Cloudroom is licensed under [Apache 2.0](LICENSE). BB's MIT license and copyright notice are kept in [NOTICE](NOTICE). Bundled third-party notices remain with their components.
