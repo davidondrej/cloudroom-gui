@@ -18,7 +18,7 @@ export const SETUP_ACTIONS = ["viewed", "started", "done", "skipped", "closed", 
 export const SETUP_DETAILS = ["github", "google", "email", "claude", "codex", "both", "none", "existing", "found", "folder", "bb_import", "chat_import"] as const;
 
 export type TelemetryEvent =
-  | { name: "app_started" }
+  | { name: "app_started"; properties?: { update_needs_password: boolean } }
   | {
       name: "thread_created";
       properties: {
@@ -173,7 +173,7 @@ export async function createTelemetryService(
       send(name, { ...properties, plugin_id: pluginId });
     },
     capture(event: TelemetryEvent): void {
-      send(event.name, "properties" in event ? event.properties : {});
+      send(event.name, ("properties" in event ? event.properties : undefined) ?? {});
     },
   };
 }

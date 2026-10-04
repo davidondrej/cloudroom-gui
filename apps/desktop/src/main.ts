@@ -157,6 +157,7 @@ import {
   installNeedsPassword,
   reopenAfterExit,
   startIdleInstall,
+  takeAppOwnership,
 } from "./desktop-update-install.js";
 import {
   BB_DESKTOP_CHECK_FOR_UPDATES_CHANNEL,
@@ -1605,6 +1606,14 @@ async function finishQuit(): Promise<void> {
   await stopOwnedRuntime();
 }
 
+function appUpdateNeedsPassword(): boolean {
+  return (
+    process.platform === "darwin" &&
+    app.isPackaged &&
+    installNeedsPassword(process.execPath)
+  );
+}
+
 async function installDownloadedUpdate(): Promise<void> {
   if (desktopAutoUpdateService === null) {
     return;
@@ -1622,6 +1631,13 @@ async function installDownloadedUpdate(): Promise<void> {
       `Desktop update install skipped: ${appImagePath || "this build"} cannot be replaced in place. The runtime stays up; download the new AppImage instead.`,
     );
     return;
+  }
+  if (appUpdateNeedsPassword()) {
+    const ownership = await takeAppOwnership(process.execPath);
+    desktopLogger.info(`Taking ownership of the Cloudroom app before updating: ${ownership}.`);
+    if (ownership === "canceled") {
+      throw new Error("The password prompt was canceled, so the update wasn't installed.");
+    }
   }
   if (currentRuntime?.ownership === "spawned") {
     await stopThreadsForUpdate({
@@ -1775,6 +1791,7 @@ async function startOwnedRuntime(
       ...process.env,
       [APP_SURFACE_ENV_NAME]: APP_SURFACE_DESKTOP,
       BB_DESKTOP_VERSION: process.env.BB_DESKTOP_VERSION,
+      BB_DESKTOP_UPDATE_NEEDS_PASSWORD: appUpdateNeedsPassword() ? "1" : undefined,
     },
     logLineLimit: PROCESS_LOG_LINE_LIMIT,
     runtime: resolveBbAppProcessRuntime({
@@ -2289,13 +2306,10 @@ async function runDesktopApp(): Promise<void> {
     logger: desktopLogger,
     platform: desktopPlatform,
   });
-  const updateNeedsPassword =
-    process.platform === "darwin" &&
-    app.isPackaged &&
-    installNeedsPassword(process.execPath);
+  const updateNeedsPassword = appUpdateNeedsPassword();
   if (updateNeedsPassword) {
     desktopLogger.warn(
-      "This user can't write the Cloudroom app, so updates install only when the user clicks Restart to update.",
+      "This user can't write the Cloudroom app, so the next Restart to update asks for a password once.",
     );
   }
   desktopAutoUpdateService = createDesktopAutoUpdateService({

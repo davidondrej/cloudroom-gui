@@ -4,7 +4,8 @@ import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import type { CodexAuthStatus } from "./client.js";
 import { cloudroom } from "./commands.js";
-import { macGithubToken, sandboxGithubLogin, type SandboxAccount } from "./sandboxes.js";
+import { githubAccountSchema, macGithubToken, sandboxGithubLogin, type GithubAccount, type SandboxAccount } from "./sandboxes.js";
+import { copyMacGithub, setCopyMacGithub } from "./sync.js";
 
 // The public Client ID of Cloudroom's GitHub OAuth App, with Device Flow enabled. Sign-in stays off until it is set.
 const GITHUB_OAUTH_CLIENT_ID = "Ov23li9OTKaEYO6RAHos";
@@ -38,11 +39,37 @@ export async function githubAuth(deps: AppDeps, action?: "login" | "cancel", req
   if (action === "login") return start(deps, requestId);
   if (action === "cancel" && login?.id === requestId) cancelGithubLogin();
   if (login?.status) return login.status;
-  if (await macGithubToken()) return { ...idle, state: "connected" };
+  if (await macGithub(deps)) return { ...idle, state: "connected" };
   const logins = await cloudroom(deps).sandboxes.logins().catch((error: unknown) => {
     throw new ApiError(503, "github_auth_unavailable", error instanceof Error ? error.message : String(error));
   });
   return logins.github ? { ...idle, state: "connected" } : failure ?? idle;
+}
+
+/** This Mac's `gh` token while it is the one copied to cloud sandboxes, else "". */
+const macGithub = async (deps: AppDeps) => await copyMacGithub(deps) ? macGithubToken() : "";
+
+/** The GitHub account cloud sandboxes use, or null when it can't be told. */
+export async function githubAccount(deps: AppDeps): Promise<GithubAccount | null> {
+  const token = await macGithub(deps);
+  if (!token) return cloudroom(deps).sandboxes.githubAccount().catch(() => null);
+  const response = await fetch("https://api.github.com/user", {
+    headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10_000),
+  }).catch(() => null);
+  const user = response?.ok ? z.object({ login: z.string(), name: z.string().nullable(), avatar_url: z.string().nullable() }).safeParse(await response.json()) : null;
+  return user?.success ? githubAccountSchema.parse({ login: user.data.login, name: user.data.name, avatarUrl: user.data.avatar_url }) : null;
+}
+
+/** Removes the GitHub login from cloud sandboxes and stops copying this Mac's `gh` login. */
+export async function disconnectGithub(deps: AppDeps): Promise<void> {
+  cancelGithubLogin();
+  // Stop the copy first, so it can't put the login back right after the removal.
+  const mac = await copyMacGithub(deps);
+  await setCopyMacGithub(deps, false);
+  await cloudroom(deps).sandboxes.removeGithubLogin().catch(async (error: unknown) => {
+    await setCopyMacGithub(deps, mac);
+    throw new ApiError(503, "github_auth_unavailable", error instanceof Error ? error.message : String(error));
+  });
 }
 
 async function start(deps: AppDeps, requestId: string): Promise<CodexAuthStatus> {
@@ -83,6 +110,8 @@ async function poll(deps: AppDeps, current: Login, account: SandboxAccount, devi
       if (!token) return end({ ...idle, state: "error", message: value.error === "access_denied" ? "GitHub sign-in was declined." : `GitHub sign-in failed${reason(value)}. Try again.` });
       const entry = await sandboxGithubLogin(token);
       signal.throwIfAborted();
+      // The account the user just picked wins over this Mac's `gh` login from now on.
+      await setCopyMacGithub(deps, false);
       await cloudroom(deps).sandboxes.saveLogin("github", entry, { account, signal });
       return end(null);
     }

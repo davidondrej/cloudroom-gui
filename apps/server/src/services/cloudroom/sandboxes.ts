@@ -26,7 +26,9 @@ const viewSchema = z.object({
 type View = z.infer<typeof viewSchema>;
 export type SandboxAccount = { website: string; userId: string; token: string };
 export type SandboxConnection = { url: string; token: string };
-export type SandboxTrigger = "app_launch" | "app_activity" | "composer" | "thread_typing";
+export type SandboxTrigger = "app_launch" | "app_activity" | "composer" | "thread_typing" | "thread_view";
+/** Why a sleeping thread wakes before any work is sent: the user opened it or started typing (ADR 0176). */
+export type SandboxWakeTrigger = Extract<SandboxTrigger, "thread_typing" | "thread_view">;
 /** Logins the website keeps for every sandbox of an account (ADR 0145). */
 export type SandboxLogin = "claude" | "codex" | "pi" | "github" | "cursor" | "opencode";
 /** GitHub projects also name their repository and cloud folder, so the website can build a template. */
@@ -116,6 +118,8 @@ export async function macCursorLogin(): Promise<string | null> {
 }
 
 const output = (command: string, args: string[]) => promisify(execFile)(command, args, { timeout: 10_000 }).then(result => result.stdout.trim(), () => "");
+export const githubAccountSchema = z.object({ login: z.string(), name: z.string().nullable(), avatarUrl: z.string().nullable() });
+export type GithubAccount = z.infer<typeof githubAccountSchema>;
 /** This Mac's GitHub CLI token, or "" when `gh` is missing or signed out. */
 export const macGithubToken = () => output("gh", ["auth", "token", "--hostname", "github.com"]);
 /** The GitHub login sandboxes receive. Agents commit as the user, with the Mac's Git identity. */
@@ -185,8 +189,9 @@ export class SandboxDirectory {
   private readonly wakes = new Map<string, Promise<View>>();
   private readonly wakeStarts = new Map<string, number>();
   private readonly wakeHarnesses = new Map<string, Awaited<ReturnType<typeof macHarnessVersions>>>();
-  // After a failed wake, wait before asking again: 5 s, doubling to 5 minutes. Delivery retries every tick otherwise.
-  private readonly backoff = new Map<string, { until: number; delay: number }>();
+  // After a failed wake, wait before asking again. Network and server errors retry every 2 s three times first;
+  // then 5 s, doubling to 5 minutes. Delivery retries every tick otherwise.
+  private readonly backoff = new Map<string, { until: number; delay: number; tries: number }>();
   private uploaded = new Map<string, string>();
   constructor(readonly account: () => Promise<SandboxAccount | null>) {}
 
@@ -250,7 +255,7 @@ export class SandboxDirectory {
   }
 
   /** The thread's Core, or null while it sleeps. `wake` starts it; only callers with work to send pass true. */
-  async connection(thread: string, project: SandboxProject, wake: boolean): Promise<SandboxConnection | null> {
+  async connection(thread: string, project: SandboxProject, wake: boolean, trigger?: SandboxWakeTrigger): Promise<SandboxConnection | null> {
     const cached = this.views.get(thread);
     let view = cached?.view;
     const place = { thread, project: project.id, ...(project.repository ? { repository: project.repository, folder: project.folder } : {}) };
@@ -268,14 +273,18 @@ export class SandboxDirectory {
       // The Mac's harness versions: the sandbox upgrades to them before its agent starts (ADR 0133).
       pending = macHarnessVersions().then(harnesses => {
         this.wakeHarnesses.set(thread, harnesses);
-        return this.call({ action: "wake", ...place, harnesses, ...(this.backoff.has(thread) ? { trigger: "retry" } : {}) });
+        return this.call({ action: "wake", ...place, harnesses, ...(this.backoff.has(thread) ? { trigger: "retry" } : trigger ? { trigger } : {}) });
       }).then(value => this.remember(viewSchema.parse(value))).then(view => {
         this.backoff.delete(thread);
         if (this.limit?.on) this.limit = { on: false, at: Date.now() };
         return view;
       }, error => {
-        const delay = Math.min((this.backoff.get(thread)?.delay ?? 2_500) * 2, 300_000);
-        this.backoff.set(thread, { until: Date.now() + delay, delay });
+        const previous = this.backoff.get(thread);
+        const tries = (previous?.tries ?? 0) + 1;
+        // A 4xx answer (say, usage limit) won't fix itself in 2 s, so it backs off at once.
+        const quick = tries <= 3 && error instanceof CloudroomError && error.status === null;
+        const delay = quick ? 2_000 : Math.min(Math.max(previous?.delay ?? 0, 2_500) * 2, 300_000);
+        this.backoff.set(thread, { until: Date.now() + delay, delay, tries });
         throw error;
       }).finally(() => this.wakes.delete(thread));
       this.wakes.set(thread, pending);
@@ -365,11 +374,22 @@ export class SandboxDirectory {
     return z.object({ claude: z.boolean(), codex: z.boolean(), pi: z.boolean(), github: z.boolean(), cursor: z.boolean().default(false), opencode: z.boolean().default(false) }).parse(await this.call({ action: "status" }, "logins"));
   }
 
+  /** Who the account's GitHub login belongs to, or null when GitHub or an older website can't tell. */
+  async githubAccount(): Promise<GithubAccount | null> {
+    return z.object({ account: githubAccountSchema.nullable() }).parse(await this.call({ action: "github" }, "logins")).account;
+  }
+
+  /** Forgets the account's GitHub login for every sandbox. */
+  async removeGithubLogin(): Promise<void> {
+    await this.call({ action: "remove", name: "github" }, "logins");
+    this.uploaded.delete("github");
+  }
+
   private copiedAt = 0;
   get loginsCopied(): boolean { return this.copiedAt > 0; }
   /** Copies this Mac's Codex, Pi, opencode, Cursor, and GitHub logins when the user allowed it (ADRs 0128, 0130).
-   *  At most once a minute, unless the user just clicked Connect. */
-  async copyMacLogins(force = false): Promise<void> {
+   *  At most once a minute, unless the user just clicked Connect. `github` is false after the user picked another GitHub account. */
+  async copyMacLogins(force = false, github = true): Promise<void> {
     if (!force && Date.now() - this.copiedAt < RECHECK_MS) return;
     this.copiedAt = Date.now();
     const piHome = process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi/agent");
@@ -387,8 +407,8 @@ export class SandboxDirectory {
     if (opencode) await save("opencode", opencode);
     const cursor = await macCursorLogin();
     if (cursor) await save("cursor", cursor);
-    const github = await macGithubToken();
-    if (github) await save("github", await sandboxGithubLogin(github));
+    const githubToken = github ? await macGithubToken() : "";
+    if (githubToken) await save("github", await sandboxGithubLogin(githubToken));
     if (failed.length) throw new CloudroomError(`Some logins could not be copied to cloud sandboxes. ${failed.join("; ")}`);
   }
 

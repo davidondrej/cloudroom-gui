@@ -13,6 +13,8 @@ import { ApiError } from "../../errors.js";
 import { COMMAND_TIMEOUT_MS } from "../../constants.js";
 import { callHostRetryableOnlineRpcForWork } from "../hosts/online-rpc.js";
 import { runLiveHostCommand } from "../hosts/live-command.js";
+import { readPrimaryHostIdFromDataDir } from "../hosts/primary-host.js";
+import { cloneTarget } from "../cloudroom/local-repos.js";
 import { randomUUID } from "node:crypto";
 
 export function projectSourceHostConflict(): ApiError {
@@ -74,6 +76,7 @@ export async function cloneProjectSourceOnHost(
     hostId: string;
     remoteUrl: string | null;
     targetPath?: string;
+    ownsPath?: boolean;
     report?: PluginEnvironmentProviderProgress;
   },
 ) {
@@ -118,7 +121,7 @@ export async function cloneProjectSourceOnHost(
       projectId: args.projectId,
       hostId: args.hostId,
       ...resolved,
-      ownsPath: true,
+      ownsPath: args.ownsPath ?? true,
     });
   } finally {
     unregister?.();
@@ -190,6 +193,14 @@ async function recoverOrCloneProjectSource(
       "This project needs a Git remote to set up its checkout on a new machine",
     );
   }
+  // On this Mac the clone lands next to the user's other repos, and stays theirs: Cloudroom never deletes it.
+  if (readPrimaryHostIdFromDataDir({ dataDir: deps.config.dataDir }) === args.hostId) {
+    return cloneProjectSourceOnHost(deps, {
+      ...args,
+      targetPath: await cloneTarget(args.projectName),
+      ownsPath: false,
+    });
+  }
   const { path } = await callHostRetryableOnlineRpcForWork(deps, {
     hostId: args.hostId,
     timeoutMs: COMMAND_TIMEOUT_MS,
@@ -230,4 +241,27 @@ async function recoverOrCloneProjectSource(
     );
   }
   return cloneProjectSourceOnHost(deps, { ...args, targetPath: path });
+}
+
+/** A Local thread in a project that is only on GitHub clones it onto the machine first. */
+export async function ensureProjectCheckoutForThread(
+  deps: CommandResultSideEffectsDeps,
+  args: {
+    project: { id: string; name: string; gitRemoteUrl: string | null };
+    hostId: string;
+  },
+): Promise<void> {
+  const { project, hostId } = args;
+  if (
+    project.gitRemoteUrl === null ||
+    getProjectSourceByHost(deps.db, project.id, hostId) !== null
+  ) {
+    return;
+  }
+  await ensureProjectSourceOnHost(deps, {
+    projectId: project.id,
+    projectName: project.name,
+    hostId,
+    remoteUrl: project.gitRemoteUrl,
+  });
 }

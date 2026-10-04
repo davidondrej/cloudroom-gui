@@ -5,10 +5,10 @@ import {
 } from "@bb/shared-ui/resource-list";
 import type { IconName } from "@bb/shared-ui/icon";
 import {
-  BROWSE_ARCHETYPES,
+  PLUGIN_EXAMPLES,
   UTILITY_EXAMPLES,
   briefPrompt,
-} from "@/components/plugin/browse-hero/browse-hero-archetypes";
+} from "@/components/plugin/plugin-create-examples";
 import { CREATE_PLUGIN_PROMPT, CREATE_SKILL_PROMPT } from "@bb/client-core";
 
 type CreateViaPromptKind = "skill" | "plugin";
@@ -51,11 +51,11 @@ const CONFIG: Record<CreateViaPromptKind, KindConfig> = {
   },
   plugin: {
     prefix: CREATE_PLUGIN_PROMPT,
-    examples: BROWSE_ARCHETYPES.map((archetype) => ({
-      label: archetype.title,
-      icon: archetype.icon,
-      description: archetype.hook,
-      prompt: briefPrompt(archetype),
+    examples: PLUGIN_EXAMPLES.map((example) => ({
+      label: example.title,
+      icon: example.icon,
+      description: example.hook,
+      prompt: briefPrompt(example),
     })),
   },
 };

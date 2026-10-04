@@ -28,6 +28,7 @@ import type {
   ThreadEventItemType,
 } from "@bb/domain";
 import type {
+  ThreadContextWindowUsage,
   ThreadConversationOutlineItem,
   ThreadConversationOutlineResponse,
   TimelineConversationAttachments,
@@ -47,6 +48,7 @@ import {
   getLatestCompletedThreadContextClearSequence,
   getThreadConversationOutlineRecord,
   listContextWindowUsageRows,
+  listContextWindowUsageHistory,
   isTimelineCursorSequencePresent,
   listStoredConversationOutlineEventRows,
   listStoredClientTurnRequestIdsInRange,
@@ -1277,6 +1279,13 @@ function completeThreadTimelineBuildProfile(
   };
 }
 
+function withContextWindowUsageHistory(
+  usage: ThreadContextWindowUsage,
+  history: number[],
+): ThreadContextWindowUsage {
+  return history.length > 0 ? { ...usage, history } : usage;
+}
+
 function buildThreadTimelineInternal(
   db: DbConnection,
   thread: Thread,
@@ -1493,8 +1502,14 @@ function buildThreadTimelineInternal(
     modelFallback:
       options.page.kind === "latest" ? timeline.modelFallback : null,
     contextWindowUsage:
-      options.page.kind === "latest"
-        ? (timeline.contextWindowUsage ?? undefined)
+      options.page.kind === "latest" && timeline.contextWindowUsage
+        ? withContextWindowUsageHistory(
+            timeline.contextWindowUsage,
+            listContextWindowUsageHistory(db, {
+              sequenceStart: contextBoundarySeq ?? 0,
+              threadId: thread.id,
+            }),
+          )
         : undefined,
     timelinePage: {
       kind: eventSelection.responsePageKind,

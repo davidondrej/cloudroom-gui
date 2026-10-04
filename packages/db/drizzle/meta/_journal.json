@@ -876,6 +876,13 @@
       "when": 1790873146901,
       "tag": "0124_cloud_thread_account",
       "breakpoints": true
+    },
+    {
+      "idx": 125,
+      "version": "6",
+      "when": 1791094212323,
+      "tag": "0125_cloud_thread_last_workspace",
+      "breakpoints": true
     }
   ]
 }

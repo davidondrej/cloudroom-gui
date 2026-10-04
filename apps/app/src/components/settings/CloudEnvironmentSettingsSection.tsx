@@ -1,4 +1,4 @@
-import { useState, type ClipboardEvent, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ClipboardEvent, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CloudEnvironment, CloudEnvironmentChange, CloudSkillsChange } from "@bb/sdk/browser";
 import { Button } from "@bb/shared-ui/button";
@@ -7,6 +7,8 @@ import { Input } from "@bb/shared-ui/input";
 import { Switch } from "@bb/shared-ui/switch";
 import { Textarea } from "@bb/shared-ui/textarea";
 import { sdk } from "@/lib/sdk";
+import { copyToClipboardWithToast } from "@/lib/clipboard";
+import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
 
 const ENVIRONMENT_KEY = ["cloudroom-environment"];
 const SKILLS_KEY = ["cloudroom-cloud-skills"];
@@ -52,6 +54,7 @@ export function CloudEnvironmentSettingsSection() {
         </div>
       ) : (
         <>
+          <GithubCard />
           <SkillsCard />
           <VariablesCard environment={data} busy={update.isPending} onChange={(change) => update.mutateAsync(change)} onImported={saved} />
           <ReposCard repos={data.repos} busy={update.isPending} onChange={(change) => update.mutateAsync(change)} />
@@ -84,6 +87,83 @@ function Card({ icon, title, description, action, children }: { icon: string; ti
       </div>
       {children}
     </section>
+  );
+}
+
+/** The GitHub account cloud agents clone and push as. Separate from how the user signs in to Cloudroom. */
+function GithubCard() {
+  const queryClient = useQueryClient();
+  const requestId = useRef<string | null>(null);
+  const status = useQuery({
+    queryKey: ["cloudroom-github-auth"],
+    queryFn: ({ signal }) => sdk.cloudroom.githubAuth(signal),
+    retry: false,
+    refetchInterval: (query) => (query.state.data?.state === "waiting" ? 1500 : false),
+  });
+  const state = status.data?.state;
+  const connected = state === "connected";
+  const account = useQuery({ queryKey: ["cloudroom-github-account"], queryFn: ({ signal }) => sdk.cloudroom.githubAccount(signal), enabled: connected, retry: false });
+  // A switch or reconnect may land on another account.
+  useEffect(() => { if (connected) void queryClient.invalidateQueries({ queryKey: ["cloudroom-github-account"] }); }, [connected, queryClient]);
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["cloudroom-github-auth"] });
+  const connect = useMutation({
+    mutationFn: async () => {
+      requestId.current = crypto.randomUUID();
+      const result = await sdk.cloudroom.githubLogin(requestId.current);
+      if (result.state === "waiting" && result.verification_url && new URL(result.verification_url).origin !== "https://github.com") throw new Error("Unexpected GitHub sign-in page.");
+    },
+    onSettled: refresh,
+  });
+  const cancel = useMutation({ mutationFn: () => sdk.cloudroom.cancelGithubLogin(requestId.current ?? status.data?.login_id ?? ""), onSettled: refresh });
+  const disconnect = useMutation({ mutationFn: () => sdk.cloudroom.disconnectGithub(), onSettled: refresh });
+  const code = state === "waiting" ? status.data?.user_code : null;
+  const url = state === "waiting" ? status.data?.verification_url : null;
+  const copyAndOpen = async (value: string) => {
+    await copyToClipboardWithToast(value, { successMessage: "Code copied. Paste it on github.com." });
+    if (url && new URL(url).origin === "https://github.com") openUrlInExternalBrowser(url);
+  };
+  const busy = connect.isPending || disconnect.isPending;
+  const user = account.data;
+  const problem = errorText(status.error ?? connect.error ?? disconnect.error) ?? (state === "error" || state === "expired" ? status.data?.message : null);
+
+  return (
+    <Card icon="Github" title="GitHub" description="Every cloud thread clones, pushes, and opens PRs as this account.">
+      <div className="space-y-3 border-t border-border px-4 py-3">
+        {code ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-mono text-lg font-semibold tracking-[0.2em] text-foreground">{code}</span>
+            <p className="min-w-0 flex-1 text-xs text-subtle-foreground">Paste this code on github.com. It connects the account signed in there, so switch accounts there first if needed.</p>
+            <Button size="sm" variant="outline" onClick={() => void copyAndOpen(code)}><Icon name="Copy" className="size-3.5" />Copy & open GitHub</Button>
+            <Button size="sm" variant="ghost" className="text-subtle-foreground" disabled={cancel.isPending} onClick={() => cancel.mutate()}>Cancel</Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-3">
+            {connected ? (
+              <div className="flex min-w-0 items-center gap-2.5">
+                {user?.avatarUrl ? <img src={user.avatarUrl} alt="" className="size-7 shrink-0 rounded-full" /> : <Icon name="Github" className="size-5 shrink-0 text-subtle-foreground" />}
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-foreground">
+                    {user ? <>@{user.login}{user.name && <span className="ml-1.5 text-xs text-subtle-foreground">{user.name}</span>}</> : "GitHub"}
+                  </p>
+                  <p className="text-xs text-subtle-foreground">Connected</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-subtle-foreground">{status.isPending ? "Checking GitHub…" : "Not connected. Cloud agents can only clone public repos."}</p>
+            )}
+            {!status.isPending && !status.isError && (
+              <div className="flex shrink-0 gap-2">
+                <Button size="sm" variant={connected ? "outline" : "default"} disabled={busy} onClick={() => connect.mutate()}>
+                  {connected ? "Switch account" : <><Icon name="Github" className="size-3.5" />Connect GitHub</>}
+                </Button>
+                {connected && <Button size="sm" variant="ghost" className="text-destructive-text" disabled={busy} onClick={() => disconnect.mutate()}>Disconnect</Button>}
+              </div>
+            )}
+          </div>
+        )}
+        {problem && <p role="alert" className="text-xs text-destructive-text">{problem}</p>}
+      </div>
+    </Card>
   );
 }
 

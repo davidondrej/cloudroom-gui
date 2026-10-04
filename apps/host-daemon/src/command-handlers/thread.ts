@@ -1,7 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { AgentRuntimeBridgeLaunch } from "@bb/agent-runtime";
-import { flattenPromptInputGroups } from "@bb/domain";
+import {
+  AgentRuntimeTurnBusyError,
+  type AgentRuntimeBridgeLaunch,
+} from "@bb/agent-runtime";
+import {
+  flattenPromptInputGroups,
+  isStandaloneBuiltinCompactCommand,
+} from "@bb/domain";
 import type { HostDaemonCommandResult } from "@bb/host-daemon-contract";
 import type { RuntimeEntry } from "../runtime-manager.js";
 import {
@@ -339,6 +345,31 @@ async function runSubmittedTurn(
   return { appliedAs: "new-turn" };
 }
 
+/**
+ * A provider can start a turn on its own, like Claude Code waking up when a
+ * background task ends. The server cannot see that turn yet, so a message sent
+ * at that moment arrives as "start" and loses the race. It joins the running
+ * turn instead of failing. Compaction is not a message, so it still fails.
+ */
+async function startOrJoinSubmittedTurn(
+  command: TurnSubmitCommand,
+  entry: RuntimeEntry,
+): Promise<HostDaemonCommandResult<"turn.submit">> {
+  try {
+    return await runSubmittedTurn(command, entry);
+  } catch (error) {
+    const activeTurnId = entry.runtime.getActiveTurnId(command.threadId);
+    if (
+      !(error instanceof AgentRuntimeTurnBusyError) ||
+      activeTurnId === null ||
+      isStandaloneBuiltinCompactCommand(command.input)
+    ) {
+      throw error;
+    }
+    return await steerSubmittedTurn(command, entry, activeTurnId);
+  }
+}
+
 async function steerSubmittedTurn(
   command: TurnSubmitCommand,
   entry: RuntimeEntry,
@@ -458,7 +489,7 @@ export async function submitTurn(
     );
     switch (command.target.mode) {
       case "start":
-        return await runSubmittedTurn(stagedCommand, entry);
+        return await startOrJoinSubmittedTurn(stagedCommand, entry);
       case "auto":
         return resolvedTurnId
           ? await steerSubmittedTurn(stagedCommand, entry, resolvedTurnId)

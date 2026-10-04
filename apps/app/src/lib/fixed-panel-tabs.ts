@@ -22,6 +22,7 @@ import {
 import {
   EMPTY_FIXED_PANEL_TABS_STATE,
   createGitDiffFixedPanelTab,
+  createNewTabFixedPanelTab,
   createTerminalFixedPanelTab,
   createThreadInfoFixedPanelTab,
   ensureOpenFixedPanelHasActiveTab,
@@ -193,14 +194,15 @@ function openFixedSecondaryPanelState(
     };
   }
 
-  const panel: ThreadSecondaryPanel = "thread-info";
-  const tabs = ensureSecondaryPanelTab(current.secondary.tabs, panel);
-  const activeTabId = getSecondaryPanelTabId(panel);
+  const newTab = createNewTabFixedPanelTab();
+  const tabs = current.secondary.tabs.some((tab) => tab.id === newTab.id)
+    ? current.secondary.tabs
+    : [...current.secondary.tabs, newTab];
   return {
     ...current,
     secondary: {
       tabs,
-      activeTabId,
+      activeTabId: newTab.id,
       isOpen: true,
     },
   };

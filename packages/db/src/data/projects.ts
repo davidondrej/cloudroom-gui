@@ -136,30 +136,37 @@ export function getPublicProjectByLocalPathSource(
   return getPublicProjectWithLocalPathSource(db, source)?.project ?? null;
 }
 
-function insertProject(tx: DbTransaction, input: CreateProjectInput) {
+function insertProjectRow(
+  tx: DbTransaction,
+  input: { name: string; gitRemoteUrl?: string },
+) {
   const now = Date.now();
-  const projectId = createProjectId();
-  const sourceId = createProjectSourceId();
   const lastProject = getLastPublicProject(tx);
   const sortKey = lastProject
     ? createOrderKeyAfter({ previousKey: lastProject.sortKey })
     : createOrderKeyBetween({ previousKey: null, nextKey: null });
-  const project = tx
+  return tx
     .insert(projects)
     .values({
-      id: projectId,
+      id: createProjectId(),
       name: input.name,
       sortKey,
+      ...(input.gitRemoteUrl ? { gitRemoteUrl: input.gitRemoteUrl } : {}),
       createdAt: now,
       updatedAt: now,
     })
     .returning()
     .get();
+}
+
+function insertProject(tx: DbTransaction, input: CreateProjectInput) {
+  const now = Date.now();
+  const project = insertProjectRow(tx, { name: input.name });
   const source = tx
     .insert(projectSources)
     .values({
-      id: sourceId,
-      projectId,
+      id: createProjectSourceId(),
+      projectId: project.id,
       type: input.source.type,
       hostId: input.source.hostId,
       path: input.source.path,
@@ -199,6 +206,17 @@ export function createProject(
   const { project, source } = db.transaction((tx) => insertProject(tx, input));
   notifyProjectCreated(notifier, project.id);
   return { project, source: toProjectSource(source) };
+}
+
+/** A project known only by its Git remote. Each machine clones it the first time a thread there needs it. */
+export function createRemoteProject(
+  db: DbConnection,
+  notifier: DbNotifier,
+  input: { name: string; gitRemoteUrl: string },
+) {
+  const project = db.transaction((tx) => insertProjectRow(tx, input));
+  notifier.notifyProject(project.id, ["project-created"]);
+  return project;
 }
 
 export function findOrCreateProjectByLocalPathSource(

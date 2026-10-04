@@ -579,12 +579,14 @@ export function NewThreadComposer({
             .filter(
               (provider) =>
                 !provider.machineProviderId &&
+                // A project with a Git remote is cloned onto the machine on first use.
                 (!(
                   provider.requires.projectCheckout ||
                   provider.requires.gitCheckout
                 ) ||
                   findLocalPathProjectSourceForHost(projectSources, host.id) !==
-                    undefined) &&
+                    undefined ||
+                  projectGitRemoteUrl != null) &&
                 (!provider.requires.gitRemote || projectGitRemoteUrl != null),
             )
             .map((provider) => ({

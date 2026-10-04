@@ -646,6 +646,8 @@ export const cloudroomThreads = sqliteTable("cloudroom_threads", {
   queuePaused: integer("queue_paused", { mode: "boolean" }).notNull().default(false),
   error: text("error"),
   accountId: text("account_id"),
+  /** Last workspace (path, branch, head) read from the sandbox, shown while it sleeps. */
+  lastWorkspace: text("last_workspace"),
 });
 
 export const cloudroomCommands = sqliteTable("cloudroom_commands", {

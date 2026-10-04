@@ -98,7 +98,7 @@ function resolveSecondaryPanelFilePreviewState({
 }: ResolveSecondaryPanelFilePreviewStateArgs): FilePreviewState {
   if (error) {
     const isNotFound = error instanceof HttpError && error.status === 404;
-    return { kind: isNotFound ? "not-found" : "error" };
+    return isNotFound ? { kind: "not-found" } : { kind: "error", message: error.message };
   }
 
   if (isLoading || !filePreview || filePreview.path !== activePath) {

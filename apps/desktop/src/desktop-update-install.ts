@@ -1,5 +1,6 @@
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { accessSync, constants } from "node:fs";
+import { userInfo } from "node:os";
 import { dirname } from "node:path";
 
 export const IDLE_INSTALL_AFTER_MS = 10 * 60_000;
@@ -61,18 +62,44 @@ export function macAppBundle(execPath: string): string | null {
   return /^(.+?\.app)\/Contents\/MacOS\/[^/]+$/u.exec(execPath)?.[1] ?? null;
 }
 
+function canWrite(path: string): boolean {
+  try {
+    accessSync(path, constants.W_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Squirrel.Mac needs an admin password ("trying to add a new helper tool") when
 // this user can't write the app bundle or its folder, e.g. another account installed it.
 export function installNeedsPassword(execPath: string): boolean {
   const bundle = macAppBundle(execPath);
-  if (bundle === null) return false;
-  try {
-    accessSync(bundle, constants.W_OK);
-    accessSync(dirname(bundle), constants.W_OK);
-    return false;
-  } catch {
-    return true;
+  return bundle !== null && !(canWrite(bundle) && canWrite(dirname(bundle)));
+}
+
+const TAKE_OWNERSHIP_SCRIPT = [
+  "on run argv",
+  'do shell script "/usr/sbin/chown -R " & item 1 of argv & " " & quoted form of item 2 of argv & " && /bin/chmod -R u+w " & quoted form of item 2 of argv with prompt "Cloudroom needs your password once, so future updates install by themselves." with administrator privileges',
+  "end run",
+].flatMap((line) => ["-e", line]);
+
+// One admin prompt makes this user the app's owner, so Squirrel.Mac never asks
+// again. Only a writable folder (e.g. /Applications for admins) can be fixed this way.
+export function takeAppOwnership(
+  execPath: string,
+): Promise<"fixed" | "canceled" | "failed" | "skipped"> {
+  const bundle = macAppBundle(execPath);
+  if (bundle === null || !canWrite(dirname(bundle))) {
+    return Promise.resolve("skipped");
   }
+  const args = [...TAKE_OWNERSHIP_SCRIPT, String(userInfo().uid), bundle];
+  return new Promise((resolve) => {
+    execFile("/usr/bin/osascript", args, (error, _stdout, stderr) => {
+      if (error === null) resolve(canWrite(bundle) ? "fixed" : "failed");
+      else resolve(/\(-128\)/u.test(stderr) ? "canceled" : "failed");
+    });
+  });
 }
 
 export function reopenAfterExit(execPath: string, pid: number): boolean {

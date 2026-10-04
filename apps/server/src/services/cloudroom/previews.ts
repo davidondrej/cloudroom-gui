@@ -29,10 +29,15 @@ export async function setMacAccess(deps: Deps, enabled: boolean): Promise<void> 
   if (await readFile(join(folder(deps), "config.json")).then(() => true, () => false)) await setupPreviews(deps);
 }
 
+// The helper outlives the app, so restart it once per launch: macOS only applies a newly granted Full Disk Access to new processes.
+let restartedThisLaunch = false;
+
 export async function setupPreviews(deps: Deps): Promise<void> {
   const launcher = process.platform === "darwin" && process.versions.electron ? ["--launcher", process.execPath] : [];
+  const restart = restartedThisLaunch ? [] : ["--restart"];
   try {
-    await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", CLOUDROOM_PREVIEW_SCRIPT_PATH, "configure", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json"), "--mac-access", await macAccess(deps) ? "on" : "off", ...launcher], { timeout: 30_000, maxBuffer: 64 * 1024 });
+    await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", CLOUDROOM_PREVIEW_SCRIPT_PATH, "configure", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json"), "--mac-access", await macAccess(deps) ? "on" : "off", ...launcher, ...restart], { timeout: 30_000, maxBuffer: 64 * 1024 });
+    restartedThisLaunch = true;
   } catch { throw new ApiError(503, "cloudroom_preview_setup", "Cloud previews could not start. Inspect the private preview helper status. Cloud sessions are unaffected."); }
 }
 

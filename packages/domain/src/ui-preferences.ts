@@ -3,8 +3,11 @@ import { z } from "zod";
 const UI_PREFERENCE_STRING_MAX_LENGTH = 1_024;
 const UI_PREFERENCE_LIST_MAX_LENGTH = 10_000;
 const THREAD_NAMING_RULES_MAX_LENGTH = 4_000;
-export const DEFAULT_THREAD_NAMING_RULES =
-  "Name the thread after the main thing the user wants to do. All lowercase, just 2-5 clear descriptive words.";
+export const DEFAULT_THREAD_NAMING_RULES = `Name the thread after the main thing the user wants to do. All lowercase, just 3-6 clear, unique, descriptive words. in plain english.
+
+but keep terms like "PR" or "AGI" as they are... no need to rewrite that as "pull request" and definitely dont make these lower caps
+
+the name should contain unique things about that thread, like a specific name of a user, or feature name, or clear description of the bug -- so it's obvious how that thread is unique at a first glance`;
 
 const sidebarOrganizationModeSchema = z.enum([
   "project",

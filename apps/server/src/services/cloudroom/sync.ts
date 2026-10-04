@@ -30,6 +30,15 @@ export async function setCopyLogins(deps: Deps, enabled: boolean): Promise<void>
   if (await readFile(join(folder(deps), "config.json")).then(() => true, () => false)) await setupSync(deps);
 }
 
+/** False once the user disconnected GitHub or picked another account in Settings, so this Mac's `gh` login stops replacing it. */
+const macGithubFile = (deps: Deps) => join(deps.config.dataDir, "cloudroom-github.json");
+export async function copyMacGithub(deps: Deps): Promise<boolean> {
+  return readFile(macGithubFile(deps), "utf8").then((text) => JSON.parse(text).mac !== false, () => true);
+}
+export async function setCopyMacGithub(deps: Deps, mac: boolean): Promise<void> {
+  await writeFile(macGithubFile(deps), JSON.stringify({ mac }), { mode: 0o600 });
+}
+
 /** Which of this Mac's skills cloud sandboxes get. `chosen` holds the user's clicks; skills never clicked follow `auto`. */
 const cloudSkillsSchema = z.object({ auto: z.boolean(), chosen: z.record(z.string(), z.boolean()) });
 export type CloudSkillChoice = z.infer<typeof cloudSkillsSchema>;

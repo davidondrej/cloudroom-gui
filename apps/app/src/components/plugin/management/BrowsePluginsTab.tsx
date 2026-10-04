@@ -1,14 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Button } from "@bb/shared-ui/button";
 import { PLUGIN_CATALOG_CATEGORIES, pluginCatalogCategory } from "@bb/domain";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { Icon } from "@bb/shared-ui/icon";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
@@ -21,9 +13,6 @@ import {
   ResourceShelfSeeAllAction,
   ResourceSourceShelf,
 } from "@bb/shared-ui/resource-list";
-import { BrowseArchetypeCards } from "@/components/plugin/browse-hero/BrowseArchetypeCards";
-import { BrowseHeroCarousel } from "@/components/plugin/browse-hero/BrowseHeroCarousel";
-import { nextComposerRequestNonce } from "@/components/plugin/browse-hero/browse-hero-archetypes";
 import { TOOLS_PAGE_BAND_CLASSES } from "@/components/tools/tools-navigation";
 import {
   usePluginCatalogSearch,
@@ -56,31 +45,20 @@ import {
 const SHELF_ENTRY_LIMIT = 6;
 
 export function BrowsePluginsTab({
+  actions,
   onInstall,
   onOpenPlugin,
-  onInstallFromSource,
 }: {
+  actions: ReactNode;
   onInstall: (initial: AddPluginInitial) => void;
   onOpenPlugin: (pluginId: string, trigger: HTMLButtonElement) => void;
-  onInstallFromSource: () => void;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("query") ?? "";
-  const creationViewActive = searchParams.get("view") === "create";
   const selectedCategories = searchParams.getAll("category");
   const requestedSort = pluginBrowseSort(searchParams.get("sort"));
   const sortDirection =
     pluginBrowseSortDirection(searchParams.get("direction")) ?? "desc";
-  const [heroRequest, setHeroRequest] = useState<{
-    nonce: number;
-    seed?: string;
-    close?: boolean;
-  } | null>(() =>
-    creationViewActive ? { nonce: nextComposerRequestNonce() } : null,
-  );
-  const [requestedCreationView, setRequestedCreationView] =
-    useState(creationViewActive);
-  const [composing, setComposing] = useState(false);
   const [expandedShelves, setExpandedShelves] = useState<Set<string>>(
     () => new Set(),
   );
@@ -129,136 +107,76 @@ export function BrowsePluginsTab({
     change(next);
     setSearchParams(next, { replace });
   };
-  const openComposer = (seed?: string) =>
-    setHeroRequest({
-      nonce: nextComposerRequestNonce(),
-      ...(seed === undefined ? {} : { seed }),
-    });
-  if (requestedCreationView !== creationViewActive) {
-    setRequestedCreationView(creationViewActive);
-    setHeroRequest({
-      nonce: nextComposerRequestNonce(),
-      ...(creationViewActive ? {} : { close: true }),
-    });
-  }
-  useEffect(() => {
-    if (heroRequest === null) return;
-    const viewport = document.getElementById("plugins-browse-results");
-    viewport?.scrollTo?.({
-      top: 0,
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
-        : "smooth",
-    });
-  }, [heroRequest]);
 
   return (
     <ResourceCollectionViewport scrollId="plugins-browse-results">
       <div className={cn("space-y-7 pb-8", TOOLS_PAGE_BAND_CLASSES)}>
-        <div className="flex items-center justify-end gap-3">
-          <div className="flex items-stretch">
-            <Button
-              className="rounded-r-none"
-              onClick={() => {
-                if (creationViewActive) return;
-                changeSearchParams((next) => next.set("view", "create"), false);
-              }}
-            >
-              <Icon name="MessageSquarePlus" className="size-3.5" />
-              Create a plugin
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  aria-label="Create a plugin options"
-                  className="rounded-l-none border-l border-l-primary-foreground/20 px-1.5"
-                >
-                  <Icon name="ChevronDown" className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-max min-w-40">
-                <DropdownMenuItem onSelect={onInstallFromSource}>
-                  <Icon name="Download" className="size-4" />
-                  Install from source
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+        <div className="flex items-center justify-end gap-3">{actions}</div>
 
-        <BrowseHeroCarousel
-          openRequest={heroRequest}
-          onComposingChange={setComposing}
-        />
+        <section className="space-y-6">
+          <PluginBrowseToolbar
+            query={query}
+            selectedCategories={selectedCategories}
+            categoryOptions={categoryOptions}
+            sort={sort}
+            sortDirection={sortDirection}
+            installsKnown={installsKnown}
+            changeSearchParams={changeSearchParams}
+          />
 
-        {composing ? (
-          <BrowseArchetypeCards onCreate={openComposer} />
-        ) : (
-          <section className="space-y-6">
-            <PluginBrowseToolbar
-              query={query}
-              selectedCategories={selectedCategories}
-              categoryOptions={categoryOptions}
-              sort={sort}
-              sortDirection={sortDirection}
-              installsKnown={installsKnown}
-              changeSearchParams={changeSearchParams}
-            />
-
-            {searchQuery.isError && entries.length > 0 ? (
-              <p className="text-xs text-warning-text" role="status">
-                The latest search failed. The page shows saved catalog results.
-              </p>
-            ) : null}
-            {searchQuery.isPending ? (
-              <ResourceListState state="loading" message="Loading plugins" />
-            ) : entries.length === 0 ? (
-              <ResourceListState
-                state={searchQuery.isError ? "error" : "empty"}
-                message={
-                  searchQuery.isError
-                    ? "The plugin catalog is not available."
-                    : "No plugins match this search."
-                }
-                onRetry={
-                  searchQuery.isError
-                    ? () => {
-                        void searchQuery.refetch();
-                      }
-                    : undefined
-                }
-              />
-            ) : filteredEntries.length === 0 ? (
-              <ResourceListState
-                state="empty"
-                message="No plugins match these category filters."
-              />
-            ) : sort === null ? (
-              <div className="space-y-8" data-testid="plugin-browse-shelves">
-                {shelves.map((shelf) => (
-                  <BrowseShelf
-                    key={shelf.key}
-                    shelf={shelf}
-                    expanded={expandedShelves.has(shelf.key)}
-                    onExpand={() =>
-                      setExpandedShelves((current) =>
-                        new Set(current).add(shelf.key),
-                      )
+          {searchQuery.isError && entries.length > 0 ? (
+            <p className="text-xs text-warning-text" role="status">
+              The latest search failed. The page shows saved catalog results.
+            </p>
+          ) : null}
+          {searchQuery.isPending ? (
+            <ResourceListState state="loading" message="Loading plugins" />
+          ) : entries.length === 0 ? (
+            <ResourceListState
+              state={searchQuery.isError ? "error" : "empty"}
+              message={
+                searchQuery.isError
+                  ? "The plugin catalog is not available."
+                  : "No plugins match this search."
+              }
+              onRetry={
+                searchQuery.isError
+                  ? () => {
+                      void searchQuery.refetch();
                     }
-                    onInstall={onInstall}
-                    onOpenPlugin={onOpenPlugin}
-                  />
-                ))}
-              </div>
-            ) : (
-              <PluginCatalogGrid
-                entries={flatEntries}
-                onInstall={onInstall}
-                onOpenPlugin={onOpenPlugin}
-              />
-            )}
-          </section>
-        )}
+                  : undefined
+              }
+            />
+          ) : filteredEntries.length === 0 ? (
+            <ResourceListState
+              state="empty"
+              message="No plugins match these category filters."
+            />
+          ) : sort === null ? (
+            <div className="space-y-8" data-testid="plugin-browse-shelves">
+              {shelves.map((shelf) => (
+                <BrowseShelf
+                  key={shelf.key}
+                  shelf={shelf}
+                  expanded={expandedShelves.has(shelf.key)}
+                  onExpand={() =>
+                    setExpandedShelves((current) =>
+                      new Set(current).add(shelf.key),
+                    )
+                  }
+                  onInstall={onInstall}
+                  onOpenPlugin={onOpenPlugin}
+                />
+              ))}
+            </div>
+          ) : (
+            <PluginCatalogGrid
+              entries={flatEntries}
+              onInstall={onInstall}
+              onOpenPlugin={onOpenPlugin}
+            />
+          )}
+        </section>
       </div>
     </ResourceCollectionViewport>
   );

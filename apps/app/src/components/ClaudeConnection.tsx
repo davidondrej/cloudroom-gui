@@ -6,7 +6,7 @@ import { cn } from "@bb/shared-ui/lib/utils";
 import { Icon } from "@bb/shared-ui/icon";
 import { Popover, PopoverContent, PopoverTrigger } from "@bb/shared-ui/popover";
 import { useCloudroomAccount } from "@/hooks/queries/cloudroom-queries";
-import { sdk } from "@/lib/sdk";
+import { BbHttpError, sdk } from "@/lib/sdk";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
 import { ClaudeApiKeyForm } from "./ClaudeApiKeyForm";
 
@@ -50,8 +50,9 @@ const schema = z.object({
   manual_url: signInUrl.nullable().optional(),
 });
 type Status = z.infer<typeof schema>;
+const returnsToMac = (url: string) => new URL(url).searchParams.get("redirect_uri")?.startsWith("http://localhost") === true;
 type Action = {
-  action?: "login" | "cancel" | "complete" | "setup-token";
+  action?: "login" | "cancel" | "complete" | "setup-token" | "install";
   requestId?: string;
   code?: string;
   state?: string;
@@ -238,12 +239,18 @@ function ClaudeConnectionPanel({
   const client = useQueryClient();
   const auth = useClaudeConnection(target);
   const action = useMutation({
-    mutationFn: async (kind: "login" | "cancel" | "complete") => {
+    mutationFn: async (kind: "login" | "cancel" | "complete" | "install") => {
       const codeInput = code.trim();
       setCode("");
       const requestId =
-        kind === "login" ? crypto.randomUUID() : auth.data?.login_id;
+        kind === "login" || kind === "install" ? crypto.randomUUID() : auth.data?.login_id;
       if (!requestId) throw new Error("Sign-in expired. Start again.");
+      const openSignIn = (result: Status) => {
+        if (result.state === "error") throw new Error(result.message ?? "Claude sign-in failed.");
+        if (result.state === "waiting" && result.verification_url) openUrlInExternalBrowser(result.verification_url);
+        return result;
+      };
+      if (kind === "install") return openSignIn(await request(target, { action: "install", requestId }));
       // Cloud first tries a one-year token made on this Mac (ADR 0121); the VM code flow is the fallback.
       // Sandboxes have no fallback, so its error must not hide why the token failed.
       let tokenError: unknown = null;
@@ -255,7 +262,8 @@ function ClaudeConnectionPanel({
           tokenError = error;
           return null;
         });
-        if (result?.state === "connected") return result;
+        if (result && result.state !== "error") return openSignIn(result);
+        if (result) tokenError = new Error(result.message ?? "Claude sign-in failed.");
       }
       let input: Action = { action: kind, requestId };
       if (kind === "complete") {
@@ -294,6 +302,12 @@ function ClaudeConnectionPanel({
   });
   const state = auth.data?.state;
   const error = (auth.error?.message ?? action.error?.message)?.replace(/^HTTP \d+: /, "");
+  const signInUrl = manual ? auth.data?.manual_url : auth.data?.verification_url;
+  const pasteCode = target.target === "cloud" ? Boolean(signInUrl) && !returnsToMac(signInUrl!) : manual;
+  const needsInstall =
+    target.target === "cloud" &&
+    action.isError &&
+    (action.variables === "install" || (action.error instanceof BbHttpError && action.error.code === "claude_missing"));
   return (
     <div className="space-y-2 text-xs">
       <div className="flex items-center justify-between gap-2">
@@ -331,11 +345,11 @@ function ClaudeConnectionPanel({
       {state === "waiting" ? (
         <>
           <p className="text-muted-foreground">
-            {target.target === "cloud" || manual
+            {pasteCode
               ? "Approve in your browser, then paste the one-time code."
               : "Approve in your browser. This updates automatically."}
           </p>
-          {(target.target === "cloud" || manual) && (
+          {pasteCode && (
             <form
               className="flex gap-1.5"
               onSubmit={(event) => {
@@ -369,11 +383,9 @@ function ClaudeConnectionPanel({
               variant="outline"
               size="sm"
               className="h-7 text-xs"
+              disabled={!signInUrl}
               onClick={() => {
-                const url = manual
-                  ? auth.data?.manual_url
-                  : auth.data?.verification_url;
-                if (url) openUrlInExternalBrowser(url);
+                if (signInUrl) openUrlInExternalBrowser(signInUrl);
               }}
             >
               Open sign-in page
@@ -412,6 +424,21 @@ function ClaudeConnectionPanel({
         >
           Check again
         </Button>
+      ) : needsInstall || (action.isPending && action.variables === "install") ? (
+        <>
+          <p className="text-muted-foreground">
+            Cloudroom installs it with Anthropic&apos;s official installer, then opens Claude sign-in.
+          </p>
+          <Button
+            size="sm"
+            className="h-7 w-full text-xs"
+            disabled={action.isPending}
+            onClick={() => action.mutate("install")}
+          >
+            {action.isPending ? "Installing Claude Code… 1–3 minutes" : "Install Claude Code"}
+          </Button>
+          <ClaudeApiKeyForm />
+        </>
       ) : (
         <>
           <Button
@@ -420,11 +447,7 @@ function ClaudeConnectionPanel({
             disabled={action.isPending}
             onClick={() => action.mutate("login")}
           >
-            {action.isPending
-              ? target.target === "cloud"
-                ? "Setting up… approve in your browser"
-                : "Opening sign-in…"
-              : "Sign in with Claude"}
+            {action.isPending ? "Opening sign-in…" : "Sign in with Claude"}
           </Button>
           {target.target === "cloud" && <ClaudeApiKeyForm />}
         </>

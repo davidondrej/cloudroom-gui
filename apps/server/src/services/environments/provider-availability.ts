@@ -63,9 +63,11 @@ export function environmentProviderMatchesContext(
       source !== null && isLocalPathProjectSource(source)
         ? { path: source.path }
         : null;
+    // A project with a Git remote is cloned onto the machine on first use.
     if (
       (requires.projectCheckout || requires.gitCheckout) &&
-      projectCheckout === null
+      projectCheckout === null &&
+      project.gitRemoteUrl === null
     ) {
       return false;
     }

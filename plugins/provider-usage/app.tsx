@@ -181,39 +181,37 @@ function UsageWindow({ window }: { window: UsageWindowValue }) {
   return (
     <button
       type="button"
-      className="col-span-full grid grid-cols-subgrid rounded-sm py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+      className="block w-full rounded-sm py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
       title={`${window.label} · ${reset ?? "Reset time not reported"}`}
       aria-label={`${window.label}: ${value}. ${reset ?? "Reset time not reported"}`}
       aria-expanded={showReset}
       onClick={() => setShowReset((shown) => !shown)}
     >
-      <span className="col-span-full grid grid-cols-subgrid items-center text-2xs">
-        <span className="max-w-20 truncate text-subtle-foreground">
-          {label}
-        </span>
-        <span className="h-1 min-w-0 overflow-hidden rounded-full bg-sidebar-border">
-          <span
-            className={
-              "block h-full rounded-full " +
-              usageBarColorClass(window.usedPercent)
-            }
-            style={{
-              width: Math.max(2, Math.min(100, window.usedPercent)) + "%",
-            }}
-          />
-        </span>
-        <span className="text-right tabular-nums text-sidebar-foreground">
+      <span className="flex items-baseline gap-3 text-2xs">
+        <span className="min-w-0 flex-1 text-subtle-foreground">{label}</span>
+        <span className="tabular-nums text-sidebar-foreground">
           {Math.round(window.usedPercent)}%
         </span>
         <span
           aria-hidden="true"
-          className="text-right tabular-nums text-subtle-foreground"
+          className="tabular-nums text-subtle-foreground"
         >
           {countdown ?? "—"}
         </span>
       </span>
+      <span className="mt-1 block h-1 overflow-hidden rounded-full bg-sidebar-border">
+        <span
+          className={
+            "block h-full rounded-full " +
+            usageBarColorClass(window.usedPercent)
+          }
+          style={{
+            width: Math.max(2, Math.min(100, window.usedPercent)) + "%",
+          }}
+        />
+      </span>
       {showReset ? (
-        <span className="col-span-full mt-1 text-2xs text-subtle-foreground">
+        <span className="mt-1 block text-2xs text-subtle-foreground">
           {reset ?? "Reset time not reported."}
           {window.cost === null ? "" : ` · ${value}`}
         </span>
@@ -234,7 +232,7 @@ function ProviderUsageBody({ provider }: { provider: UsageProvider }) {
           No usage limits reported for this plan.
         </p>
       ) : (
-        <div className="grid grid-cols-[max-content_minmax(0,1fr)_max-content_max-content] gap-x-3 gap-y-0.5">
+        <div className="space-y-1.5">
           {usage.windows.map((window) => (
             <UsageWindow key={window.label} window={window} />
           ))}

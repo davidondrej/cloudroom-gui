@@ -14,8 +14,9 @@ import { saveProjectCopyProgress } from "./store.js";
 type Deps = Pick<AppDeps, "db" | "hub">;
 // `key` is the copy target: one folder on a shared VM, or one per thread sandbox.
 // New threads get a clone of the chosen branch (default branch if none) and `.env` files, or all files of a small project not on GitHub.
+// A GitHub project with no folder on the Mac (`localPath` null) is cloned only.
 // Teleport also brings the local branch and uncommitted work.
-export type ProjectCopyJob = { threadId: string; workspace: string; key: string; localPath: string; repository: string | null; clone: boolean; copyAll: boolean; teleport: boolean; branch?: string };
+export type ProjectCopyJob = { threadId: string; workspace: string; key: string; localPath: string | null; repository: string | null; clone: boolean; copyAll: boolean; teleport: boolean; branch?: string };
 
 const exec = promisify(execFile);
 // A stalled piece counts as dropped, so the retry sends it again.
@@ -55,22 +56,23 @@ export async function planProjectCopy(deps: Deps, client: CloudroomClient, threa
   try {
     const project = getProject(deps.db, getThread(deps.db, threadId)?.projectId ?? "");
     if (!project || copying.has(key)) return null;
-    const path = localPath ?? localProjectPath(deps, project.id);
-    if (!path) return null;
+    const path = localPath ?? localProjectPath(deps, project.id) ?? null;
+    const repository = githubRepository(project.gitRemoteUrl);
+    if (!path && !repository) return null;
     const existing = await client.workspace(workspace);
     const empty = !existing || (await client.runOnVm({ command: `[ -z "$(ls -A -- ${quote(existing.path)} 2>/dev/null | grep -Fvx .cloudroom)" ]`, stdin: "" })).code === 0;
     if (!empty && teleport) return null;
-    const repository = githubRepository(project.gitRemoteUrl);
     const clone = empty && Boolean(repository);
-    const copyAll = empty && !repository && !teleport && await smallProject(path);
+    const copyAll = empty && !repository && !teleport && path !== null && await smallProject(path);
     const job = { threadId, workspace, key, localPath: path, repository, clone, copyAll, teleport, ...(branch ? { branch } : {}) };
-    return clone || copyAll || teleport || (await localFiles(path, "env")).length ? job : null;
+    return clone || copyAll || teleport || (path !== null && (await localFiles(path, "env")).length) ? job : null;
   } catch {
     return null;
   }
 }
 
-export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCopyJob, done?: (error?: string) => void): void {
+/** The copy shows as started at once, but its transfer waits for `after`, so it can't crowd out the first message on a slow connection. */
+export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCopyJob, done?: (error?: string) => void, after: Promise<void> = Promise.resolve()): void {
   if (copying.has(job.key)) return;
   copying.add(job.key);
   const report = (progress: ProjectCopyProgress) => {
@@ -81,7 +83,7 @@ export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCop
     if (projectId) deps.hub.notifyProject(projectId, ["threads-changed"]);
   };
   report({ phase: job.clone ? "cloning" : "uploading", completed: 0, total: 0 });
-  void run(client, job, report)
+  void after.then(() => run(client, job, report))
     .then(() => { report({ phase: "complete", completed: 0, total: 0 }); done?.(); })
     .catch((error: unknown) => {
       const message = (error instanceof Error ? error.message : String(error)).slice(0, 500);
@@ -97,15 +99,17 @@ async function run(client: CloudroomClient, job: ProjectCopyJob, report: (progre
   // A failed Teleport clone falls back to uploading the files, so the agent can still work, then reports why Git is missing.
   let cloneError: string | null = null;
   if (job.clone && job.repository) {
-    const branch = job.teleport ? (await git(job.localPath, ["rev-parse", "--abbrev-ref", "HEAD"]))?.trim() : job.branch;
+    const branch = job.teleport && job.localPath ? (await git(job.localPath, ["rev-parse", "--abbrev-ref", "HEAD"]))?.trim() : job.branch;
     cloneError = await clone(client, target, job.repository, branch);
     if (cloneError) cloneError = await clone(client, target, job.repository, branch);
   }
   const cloned = job.clone && !cloneError;
   if (!cloned) report({ phase: "uploading", completed: 0, total: 0 });
   const scope = job.teleport ? (cloned ? "changed" : "all") : job.copyAll ? "all" : "env";
-  const files = await localFiles(job.localPath, scope);
-  if (files.length) await upload(client, job.localPath, target, files, scope !== "changed", report);
+  if (job.localPath) {
+    const files = await localFiles(job.localPath, scope);
+    if (files.length) await upload(client, job.localPath, target, files, scope !== "changed", report);
+  }
   if (cloneError) throw new Error(job.teleport ? `The GitHub clone failed, so your files were copied without Git history: ${cloneError}` : `The GitHub clone failed: ${cloneError}`);
 }
 

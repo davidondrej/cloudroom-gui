@@ -1,6 +1,7 @@
 export {
   createProject,
   ensurePersonalProject,
+  createRemoteProject,
   findOrCreateProjectByLocalPathSource,
   getPersonalProject,
   getProject,
@@ -282,6 +283,7 @@ export {
   insertEvents,
   listActiveBackgroundTaskCountsByThreadIds,
   listContextWindowUsageRows,
+  listContextWindowUsageHistory,
   listEvents,
   listStoredConversationOutlineEventRows,
   listTimelineSegmentAnchorsDescending,

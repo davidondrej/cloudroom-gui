@@ -17,10 +17,10 @@ import { binding, bindings, command, commands, queuedPrompts, saveBinding, saveC
 import { copyProject, githubRepository, localProjectNote, planProjectCopy } from "./project-copy.js";
 import { deriveTitleFallback, shouldGenerateThreadTitle } from "../threads/title-generation.js";
 import { inferThreadMetadata, queueThreadTitle } from "../threads/thread-metadata-inference.js";
-import { cloudSkills, copyLogins, importCodexLogin, importPiLogin, setupSync, skillInCloud, stopSync, syncStatus } from "./sync.js";
+import { cloudSkills, copyLogins, copyMacGithub, importCodexLogin, importPiLogin, setupSync, skillInCloud, stopSync, syncStatus } from "./sync.js";
 import { setupPreviews, stopPreviews, previewStatus } from "./previews.js";
 import { CloudSecrets } from "./secrets.js";
-import { cancelMacCodexLogin, hasMacCodexLogin, macCodexLogin, macCursorLogin, revokeDesktopToken, startMacCodexLogin, SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject, type SandboxTrigger } from "./sandboxes.js";
+import { cancelMacCodexLogin, hasMacCodexLogin, macCodexLogin, macCursorLogin, revokeDesktopToken, startMacCodexLogin, SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject, type SandboxTrigger, type SandboxWakeTrigger } from "./sandboxes.js";
 import type { AppDeps, LoggedWorkSessionDeps } from "../../types.js";
 import type { EditMessageRequest, EditMessageResponse } from "@bb/server-contract";
 
@@ -181,7 +181,9 @@ export function promptPayload(input: PromptInput[], harness: string, attachments
   if (harness === "pi" && skill) texts[skill.chunk] = texts[skill.chunk]!.slice(0, skill.start) + texts[skill.chunk]!.slice(skill.end);
   let text = texts.join("\n");
   if (harness === "pi" && skill) text = `/skill:${skill.name}${text ? `${text.startsWith(" ") ? "" : " "}${text}` : ""}`;
-  if ((!text.trim() && attachments.length === 0) || Buffer.byteLength(text) > 32768) throw new ApiError(400, "invalid_request", "Prompt must contain 1–32768 bytes of text");
+  if (!text.trim() && attachments.length === 0) throw new ApiError(400, "invalid_request", "Message is empty.");
+  const bytes = Buffer.byteLength(text);
+  if (bytes > 32768) throw new ApiError(400, "invalid_request", `Message is too long (${Math.ceil(bytes / 1024)} KB). Cloud messages can be up to 32 KB. Shorten it or remove quoted messages.`);
   return { text, content: input, attachments };
 }
 
@@ -287,6 +289,8 @@ function connectionFailure(error: unknown): boolean {
     || (error instanceof DOMException && error.name === "AbortError")
     || (error instanceof CloudroomError && error.status !== null && (error.status >= 500 || error.status === 408 || error.status === 429));
 }
+
+const retiredVmMessage = "This thread ran on the old shared cloud VM, which was shut down on October 2. Start a new Cloud thread to keep going.";
 
 type ConnectionPhase = "delivery" | "stream" | "replay";
 type ConnectionIssue = { message: string; reconnecting: boolean };
@@ -434,7 +438,7 @@ class CloudroomService {
   }
 
   /** A thread's Core. Sandbox threads wake only when `wake` is true, for work that must be sent. */
-  private async client(saved?: Binding, wake = true): Promise<CloudroomClient> {
+  private async client(saved?: Binding, wake = true, trigger?: SandboxWakeTrigger): Promise<CloudroomClient> {
     if (saved) await this.requireOwnThread(saved);
     const sandbox = saved ? sandboxThread(saved.coreUrl) : null;
     if (sandbox) {
@@ -443,7 +447,7 @@ class CloudroomService {
         const logins = this.syncLogins();
         if (!this.sandboxes.loginsCopied) await logins;
       }
-      const found = await this.sandboxes.connection(sandbox, this.sandboxProject(getThread(this.deps.db, sandbox)?.projectId), wake);
+      const found = await this.sandboxes.connection(sandbox, this.sandboxProject(getThread(this.deps.db, sandbox)?.projectId), wake, trigger);
       if (!found) throw new SandboxAsleep();
       return new CloudroomClient(found);
     }
@@ -732,7 +736,7 @@ class CloudroomService {
   private async syncLogins(cloudChanged = false): Promise<void> {
     if (!await this.sandboxMode() || await copyLogins(this.deps) !== true) return;
     void this.sandboxes.copyCloudLogins(cloudChanged).catch(error => this.warn("Cloud logins could not be copied to this Mac", error));
-    await this.sandboxes.copyMacLogins().catch(error => this.warn("Logins could not be copied to cloud sandboxes", error));
+    await this.sandboxes.copyMacLogins(false, await copyMacGithub(this.deps)).catch(error => this.warn("Logins could not be copied to cloud sandboxes", error));
   }
 
   async claudeAuth(action?: "login" | "cancel" | "complete" | "token" | "key", requestId?: string, code?: string, state?: string) {
@@ -830,11 +834,11 @@ class CloudroomService {
       if (action === "login") {
         if (await copyLogins(this.deps) !== true) throw new ApiError(409, "codex_auth_unsupported", "Cloud sandboxes use this Mac's Codex login. Allow copying logins in Cloudroom's setup, then try again.");
         // Signed out here: sign in on this Mac first, then the next status check copies the new login.
-        if (await hasMacCodexLogin()) await this.sandboxes.copyMacLogins(true);
+        if (await hasMacCodexLogin()) await this.sandboxes.copyMacLogins(true, await copyMacGithub(this.deps));
         else startMacCodexLogin();
       }
       const run = macCodexLogin();
-      if (run?.done && !run.error) await this.sandboxes.copyMacLogins(true);
+      if (run?.done && !run.error) await this.sandboxes.copyMacLogins(true, await copyMacGithub(this.deps));
       const status = (await this.sandboxLogin("codex"))!;
       if (status.state === "connected" || !run) return status;
       if (run.error) return { ...status, state: "error" as const, message: run.error };
@@ -855,15 +859,24 @@ class CloudroomService {
   async threadWorkspace(threadId: string, signal?: AbortSignal) {
     const saved = binding(this.deps.db, threadId);
     if (!saved?.sessionId) return null;
-    try { return (await this.client(saved, false)).sessionWorkspace(saved.sessionId, signal); }
-    catch (error) { if (error instanceof SandboxAsleep) return null; throw error; }
+    try {
+      const workspace = await (await this.client(saved, false)).sessionWorkspace(saved.sessionId, signal);
+      const lastWorkspace = JSON.stringify(workspace);
+      if (lastWorkspace !== saved.lastWorkspace) saveBinding(this.deps.db, threadId, { lastWorkspace });
+      return workspace;
+    } catch (error) {
+      // A sleeping sandbox can't change its checkout, so the last one read is still right.
+      if (error instanceof SandboxAsleep) return saved.lastWorkspace ? JSON.parse(saved.lastWorkspace) as unknown : null;
+      throw error;
+    }
   }
 
-  async wakeForTyping(threadId: string): Promise<void> {
+  /** Wakes a sleeping cloud thread before work is sent, when the user opens it or starts typing (ADR 0176). */
+  async wakeAhead(threadId: string, trigger: SandboxWakeTrigger): Promise<void> {
     const saved = binding(this.deps.db, threadId);
     const thread = getThread(this.deps.db, threadId);
     if (!saved?.sessionId || !sandboxThread(saved.coreUrl) || !thread || thread.archivedAt || thread.deletedAt) return;
-    await this.client(saved, true);
+    await this.client(saved, true, trigger);
   }
 
   async updateReasoningOverride(thread: Thread, reasoningLevel: ReasoningLevel | null): Promise<void> {
@@ -1090,11 +1103,11 @@ class CloudroomService {
     return queued ? { ok: true, delivery: "queued", queuedMessage: queued } : { ok: true, delivery: "sent" };
   }
 
-  async control(threadId: string, action: "stop" | "resume", requestId: string = randomUUID()): Promise<void> {
+  async control(threadId: string, action: "stop" | "resume"): Promise<void> {
     const saved = binding(this.deps.db, threadId);
     if (!saved) throw new ApiError(409, "cloudroom_missing_binding", "Cloud session is unavailable");
     await this.client(saved);
-    this.enqueue(threadId, requestId, action, {});
+    this.enqueue(threadId, randomUUID(), action, {});
     await this.deliver(threadId);
   }
 
@@ -1474,6 +1487,8 @@ class CloudroomService {
     const epoch = this.epoch;
     let deliveringCommand = false;
     let rejectedCommand = false;
+    // A new thread's project copy waits until its first message is sent or fails (ADR 0160).
+    let releaseCopy: (() => void) | undefined;
     try {
       const work = !saved.sessionId || commands(this.deps.db, threadId).some(c => c.state === "sending");
       const client = await this.client(saved, work);
@@ -1519,7 +1534,7 @@ class CloudroomService {
             this.filesReady.set(threadId, last?.sequence ?? 0);
             this.nudgeAfterCopy(threadId);
           }
-        });
+        }, new Promise(resolve => { releaseCopy = resolve; }));
         else if (sandbox) void this.ensureBranch(threadId, true);
       }
       if (epoch !== this.epoch) return;
@@ -1656,7 +1671,7 @@ class CloudroomService {
         this.notify(threadId);
       }
       throw new ApiError(permanent ? 400 : 503, error instanceof CloudroomError ? error.code ?? "cloudroom_unavailable" : "cloudroom_unavailable", message);
-    }
+    } finally { releaseCopy?.(); }
   }
 
   private async followChild(parent: Binding, client: CloudroomClient, childId: string): Promise<void> {
@@ -1758,7 +1773,8 @@ class CloudroomService {
   private setConnectionIssue(threadId: string, phase: ConnectionPhase, error?: unknown): void {
     const issues = this.connectionIssues.get(threadId) ?? {};
     const previous = issues[phase];
-    const issue = error === undefined ? undefined : {
+    const vmShutDown = error instanceof CloudroomConnectionError && error.message.includes("unexpected redirect") && !sandboxThread(binding(this.deps.db, threadId)?.coreUrl ?? "");
+    const issue = error === undefined ? undefined : vmShutDown ? { message: retiredVmMessage, reconnecting: false } : {
       message: phase === "replay" && !(error instanceof CloudroomError) ? `Cloudroom history could not be restored: ${error instanceof Error ? error.message : String(error)}` : publicError(error),
       reconnecting: phase !== "replay" && connectionFailure(error),
     };

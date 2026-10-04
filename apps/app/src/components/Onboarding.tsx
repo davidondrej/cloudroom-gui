@@ -4,6 +4,7 @@ import { atomWithStorage } from "jotai/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { deriveProjectNameFromPath } from "@bb/domain";
+import type { RepoSuggestion } from "@bb/sdk/browser";
 import { Icon } from "@bb/shared-ui/icon";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { ClaudeConnectionButton, useClaudeConnection } from "@/components/ClaudeConnection";
@@ -13,7 +14,9 @@ import { ImportChats } from "@/components/settings/ImportChats";
 import { BbLogo } from "@/components/ui/bb-logo";
 import { appToast } from "@/components/ui/app-toast";
 import { useCreateProject } from "@/hooks/mutations/project-mutations";
-import { useCloudroomAccount, useCloudroomSignIn, useImportBb, useSetCopyLogins, useSetMacAccess } from "@/hooks/queries/cloudroom-queries";
+import { useCloudroomAccount, useCloudroomSignIn, useImportBb, useProjectSuggestions, useSetCopyLogins, useSetMacAccess } from "@/hooks/queries/cloudroom-queries";
+import { repoKey } from "@/components/pickers/ProjectSelector";
+import { formatRelativeTime } from "@/lib/relative-time";
 import { useSidebarNavigation } from "@/hooks/queries/sidebar-navigation-query";
 import { useHostDaemon } from "@/hooks/useHostDaemon";
 import { usePathPickerHost } from "@/hooks/useLocalPathPicker";
@@ -35,6 +38,8 @@ export const useOpenSetup = () => useSetAtom(openAtom);
 
 const STEPS = ["Create account", "Connect an agent", "Connect GitHub", "Pick a project"];
 const STEP_IDS = ["account", "agent", "github", "project"] as const;
+// The last step has the whole screen, so it shows more repos than the project menu.
+const ONBOARDING_REPOS = 8;
 type SetupStepId = (typeof STEP_IDS)[number];
 type SetupDetail = "github" | "google" | "email" | "claude" | "codex" | "both" | "none" | "existing" | "found" | "folder" | "bb_import" | "chat_import";
 function track(step: SetupStepId, action: "viewed" | "started" | "done" | "skipped" | "closed" | "detected" | "waitlist", detail: SetupDetail | null = null) {
@@ -413,8 +418,6 @@ function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupPr
       const result = await sdk.cloudroom.githubLogin(requestId.current);
       if (result.state === "waiting" && result.verification_url) {
         if (new URL(result.verification_url).origin !== "https://github.com") throw new Error("Unexpected GitHub sign-in page.");
-        if (result.user_code) await navigator.clipboard?.writeText(result.user_code).catch(() => undefined);
-        openUrlInExternalBrowser(result.verification_url);
       } else if (result.state !== "connected") throw new Error(result.message ?? "GitHub could not connect. Try again.");
     },
     onError: (error) => appToast.error(error.message),
@@ -427,6 +430,11 @@ function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupPr
   const state = github.data?.state;
   const connected = state === "connected";
   const code = state === "waiting" ? github.data?.user_code : null;
+  const url = state === "waiting" ? github.data?.verification_url : null;
+  const copyAndOpen = async (value: string) => {
+    await copyToClipboardWithToast(value, { successMessage: "Code copied. Paste it on github.com." });
+    if (url && new URL(url).origin === "https://github.com") openUrlInExternalBrowser(url);
+  };
   const detail = connected
     ? "Cloud agents can use your repos."
     : !account.data?.account ? "Log in first" : offline ? "Cloud unreachable" : !ready ? "Starting your cloud…" : "Not found on this Mac. Connecting opens github.com.";
@@ -442,8 +450,8 @@ function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupPr
       {code && (
         <div className="mt-3 flex items-center gap-4 border border-dashed border-(--ob-dash) bg-(--ob-card) px-[22px] py-4">
           <span className="font-mono text-2xl font-semibold tracking-[0.2em]">{code}</span>
-          <Note>Enter this code on github.com. We copied it for you.</Note>
-          <Outline className="ml-auto" onClick={() => void copyToClipboardWithToast(code, { successMessage: "Code copied." })}><Icon name="Copy" className="size-3.5" aria-hidden />Copy</Outline>
+          <Note>Copy this code, then paste it on github.com.</Note>
+          <Outline className="ml-auto" onClick={() => void copyAndOpen(code)}><Icon name="Copy" className="size-3.5" aria-hidden />Copy & open GitHub</Outline>
         </div>
       )}
       <div className="mt-8 flex items-center gap-5">
@@ -471,7 +479,7 @@ function ProjectStep({ close }: { close: () => void }) {
   const quickCreate = useQuickCreateProjectController();
   const { canUseNativeFolderPicker, clientHostId, hostId } = usePathPickerHost();
   const projects = useSidebarNavigation().data?.projects ?? [];
-  const repos = useQuery({ queryKey: ["cloudroom-local-repos"], queryFn: ({ signal }) => sdk.cloudroom.localRepos(signal), retry: false, staleTime: 60_000 });
+  const suggestions = useProjectSuggestions();
   const { localHostId } = useHostDaemon();
   const importBb = useImportBb();
   const [importing, setImporting] = useState(false);
@@ -506,9 +514,11 @@ function ProjectStep({ close }: { close: () => void }) {
       onError: (error) => appToast.error(error.message),
     });
   };
-  const names = new Set(projects.map((project) => project.name.toLowerCase()));
-  const found = (repos.data?.repos ?? []).filter((repo) => !names.has(deriveProjectNameFromPath(repo.path).toLowerCase())).slice(0, Math.max(0, 5 - projects.length));
-  const busy = add.isPending;
+  const addRepo = (repo: RepoSuggestion) => {
+    void suggestions?.onAdd(repo).then((projectId) => open(projectId, "found"), () => {});
+  };
+  const now = Date.now();
+  const busy = add.isPending || Boolean(suggestions?.addingKey);
   return (
     <>
       <Heading lead="Pick your first" mark="project" />
@@ -516,10 +526,17 @@ function ProjectStep({ close }: { close: () => void }) {
         {projects.slice(0, 5).map((project) => (
           <ProjectRow key={project.id} name={project.name} detail="Already in Cloudroom" disabled={busy} onClick={() => open(project.id, "existing")} />
         ))}
-        {found.map((repo) => (
-          <ProjectRow key={repo.path} name={repo.name} detail={repo.path.replace(/^\/Users\/[^/]+/, "~")} disabled={busy} onClick={() => add.mutate(repo.path)} />
+        {suggestions?.repos.slice(0, ONBOARDING_REPOS).map((repo) => (
+          <ProjectRow
+            key={repoKey(repo)}
+            icon={repo.source === "github" ? "Github" : "Laptop"}
+            name={repo.name}
+            detail={[repo.source === "github" ? `${repo.repo} on GitHub` : repo.path.replace(/^\/Users\/[^/]+/, "~"), repo.updatedAt === null ? null : formatRelativeTime({ timestamp: repo.updatedAt, now })].filter(Boolean).join(" · ")}
+            disabled={busy}
+            onClick={() => addRepo(repo)}
+          />
         ))}
-        {repos.isPending && <Note>Looking for projects on this Mac…</Note>}
+        {suggestions?.isLoading && <Note>Looking for your repos…</Note>}
         <button type="button" disabled={busy} onClick={addFolder} className="flex items-center gap-3.5 border border-(--ob-line) bg-(--ob-card) px-4 py-3 text-left text-[14.5px] font-medium hover:border-(--ob-ink) disabled:opacity-50">
           <Icon name={busy ? "Loading" : "FolderPlus"} className={cn("size-4", busy && "animate-spin")} aria-hidden />
           {busy ? "Adding your project…" : "Choose another folder"}
@@ -547,10 +564,10 @@ function ProjectStep({ close }: { close: () => void }) {
   );
 }
 
-function ProjectRow({ name, detail, disabled, onClick }: { name: string; detail: string; disabled: boolean; onClick: () => void }) {
+function ProjectRow({ icon = "Folder", name, detail, disabled, onClick }: { icon?: "Folder" | "Github" | "Laptop"; name: string; detail: string; disabled: boolean; onClick: () => void }) {
   return (
     <button type="button" disabled={disabled} onClick={onClick} className="group flex items-center gap-3.5 border border-(--ob-line) bg-(--ob-card) px-4 py-3 text-left hover:border-(--ob-ink) hover:shadow-[inset_3px_0_0_var(--ob-lime)] disabled:opacity-50">
-      <Icon name="Folder" className="size-4 shrink-0 text-(--ob-muted)" aria-hidden />
+      <Icon name={icon} className="size-4 shrink-0 text-(--ob-muted)" aria-hidden />
       <span className="min-w-0 flex-1">
         <b className="block truncate text-[14.5px] font-semibold">{name}</b>
         <span className="block truncate font-mono text-xs text-(--ob-muted)">{detail}</span>

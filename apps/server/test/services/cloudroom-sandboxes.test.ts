@@ -1,5 +1,8 @@
 import { createServer } from "node:http";
 import { once } from "node:events";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { expect, it, vi } from "vitest";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
 import { createTestAppHarness } from "../helpers/test-app.js";
@@ -157,5 +160,56 @@ it("moving back to the VM: new threads start on the VM while sandbox threads sta
   } finally {
     service.stop();
     coreServer.close(); websiteServer.close();
+  }
+});
+
+it("sends a new thread's first message before its project copy starts, so a slow upload can't hold it back", async () => {
+  const folder = await mkdtemp(join(tmpdir(), "cloudroom-copy-order-"));
+  await writeFile(join(folder, "notes.txt"), "small project not on GitHub");
+  const harness = await createTestAppHarness();
+  const { host } = seedHostSession(harness.deps);
+  const { project } = seedProjectWithSource(harness.deps, { hostId: host.id, path: folder });
+  const service = cloudroom(harness.deps);
+  const core: string[] = [];
+  let firstPrompt: { text: string; copyStarted: boolean } | null = null;
+  let coreUrl = "";
+  // The first workspace lookup plans the copy; the second one is the copy itself starting.
+  const copyStarted = () => core.filter(path => path.startsWith("/v1/workspaces/")).length >= 2;
+  const coreServer = createServer(async (req, res) => {
+    const json = (value: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(value)); };
+    core.push(req.url!);
+    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code", stop: true, resume: true, launch_settings: true, workspaces: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: "codex", model: "test-model" }] });
+    if (req.url?.includes("/stream?")) { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.end(); return; }
+    const input = await body(req);
+    if (req.url === "/v1/sessions") return json({ session_id: "cr_one", receipt: { request_id: input.request_id, command: "start", input, state: "accepted" }, saving: {} }, 202);
+    if (req.url?.startsWith("/v1/sessions/cr_one/prompts")) {
+      // A slow connection: the message takes a while to land. The copy must not start meanwhile.
+      await new Promise(resolve => setTimeout(resolve, 400));
+      firstPrompt ??= { text: input.text, copyStarted: copyStarted() };
+      return json({ session_id: "cr_one", receipt: { request_id: input.request_id, command: "prompt", input, state: "accepted" }, saving: {} }, 202);
+    }
+    return json({}, 404);
+  });
+  const websiteServer = createServer(async (req, res) => {
+    const json = (value: unknown) => { res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify(value)); };
+    const input = await body(req);
+    if (req.url === "/api/desktop/logins") return json({ claude: false, codex: false, pi: false, github: false });
+    json({ thread: input.thread, state: "awake", generation: 1, issue: null, origin: coreUrl, token: "t".repeat(64) });
+  });
+  coreUrl = await listen(coreServer);
+  const websiteUrl = await listen(websiteServer);
+  try {
+    await service.configure(null, { id: "11111111-1111-4111-8111-111111111111", email: "sandbox@example.com" }, undefined, websiteUrl, "a".repeat(64));
+    const created = await harness.app.request("/api/v1/threads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ executionTarget: "cloud", requestId: "copy-order", projectId: project.id, providerId: "codex", origin: "app", model: "test-model", reasoningLevel: "medium", environment: { type: "project-default" }, input: [{ type: "text", text: "test", mentions: [] }] }) });
+    expect(created.status).toBe(201);
+    await waitFor(() => firstPrompt !== null, "first message");
+    expect(firstPrompt!.copyStarted).toBe(false);
+    // The agent still learns that its files are on the way.
+    expect(firstPrompt!.text).toContain("Cloudroom is copying its files");
+    await waitFor(copyStarted, "copy after the first message");
+  } finally {
+    service.stop();
+    coreServer.close(); websiteServer.close();
+    await rm(folder, { recursive: true, force: true });
   }
 });

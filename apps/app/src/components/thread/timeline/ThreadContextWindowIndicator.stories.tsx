@@ -19,7 +19,13 @@ function usage(
   return { usedTokens, modelContextWindow: WINDOW, estimated };
 }
 
-const low = usage(36_000);
+const low = {
+  ...usage(36_000),
+  history: [
+    8_000, 14_000, 22_000, 31_000, 42_000, 55_000, 68_000, 84_000, 101_000,
+    122_000, 140_000, 158_000, 176_000, 12_000, 18_000, 24_000, 29_000, 36_000,
+  ],
+};
 const moderate = usage(110_000);
 const approachingLimit = usage(166_000);
 const critical = usage(192_000);

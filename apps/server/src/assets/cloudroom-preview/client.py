@@ -763,7 +763,7 @@ def launch(folder, stop=False):
     subprocess.run(['launchctl', 'bootstrap', domain, str(path)], check=True, capture_output=True)
 
 
-def configure(folder, connection_file, activate, allow_private, mac_access=None, launcher=None):
+def configure(folder, connection_file, activate, allow_private, mac_access=None, launcher=None, restart=False):
     folder.mkdir(mode=0o700, parents=True, exist_ok=True); folder.chmod(0o700)
     connection = private_json(connection_file)
     # Sandbox-only accounts have no VM address; their cores come from the website while awake.
@@ -777,8 +777,9 @@ def configure(folder, connection_file, activate, allow_private, mac_access=None,
     allow_private = bool(allow_private if allow_private is not None else (old or {}).get('allowPrivateSsh', False))
     mac_access = bool(mac_access if mac_access is not None else (old or {}).get('macAccess', False))
     # App updates replace these files; restart so macOS can still name the helper for Desktop/Documents/Downloads access.
+    # restart: each app launch also restarts the helper so newly granted Full Disk Access applies.
     binary = [os.stat(path).st_ino for path in (launcher, sys.executable) if path]
-    if (activate and old and old['binding'] == binding and old.get('connectionFile') == str(connection_file)
+    if (activate and not restart and old and old['binding'] == binding and old.get('connectionFile') == str(connection_file)
             and old.get('allowPrivateSsh', False) == allow_private and old.get('macAccess', False) == mac_access
             and old.get('launcher') == launcher and old.get('binary') == binary and target.is_file() and target.read_bytes() == source.read_bytes()):
         check = ['systemctl', '--user', 'is-active', '--quiet', label(folder) + '.service'] if sys.platform.startswith('linux') else ['launchctl', 'print', f'gui/{os.getuid()}/' + label(folder)]
@@ -808,6 +809,7 @@ def main():
     parser.add_argument('--allow-private-ssh', action='store_true', default=None, help='Explicitly allow a self-hosted private/loopback SSH address')
     parser.add_argument('--mac-access', choices=['on', 'off'], help='Let cloud agents run commands on this Mac (ADR 0113)')
     parser.add_argument('--launcher', type=Path, help='Signed Cloudroom executable that starts the macOS helper in Node mode')
+    parser.add_argument('--restart', action='store_true', help='Restart a running helper even if its setup is unchanged')
     args = parser.parse_args()
     folder = args.directory.expanduser().resolve()
     if args.command == 'configure':
@@ -815,7 +817,7 @@ def main():
             raise ValueError('--connection is required')
         print(json.dumps(configure(folder, args.connection.expanduser().resolve(strict=True), not args.no_start, args.allow_private_ssh,
                                    None if args.mac_access is None else args.mac_access == 'on',
-                                   str(args.launcher.resolve(strict=True)) if args.launcher else None)))
+                                   str(args.launcher.resolve(strict=True)) if args.launcher else None, args.restart)))
     elif args.command == 'run':
         run(folder)
     elif args.command in {'stop', 'pause'}:

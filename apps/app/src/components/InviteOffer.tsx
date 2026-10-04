@@ -74,7 +74,7 @@ function InviteTickets({ data, finish }: { data: Invites; finish: () => void }) 
   const steps: { title: ReactNode; lede: string; actions: ReactNode; art: ReactNode }[] = [
     {
       title: waiting === null ? <>The line is <em>long</em>.</> : <>{waiting.toLocaleString("en-US")} people<br />joined the <em>waitlist</em>.</>,
-      lede: "Your friends would wait in line too. You can skip them to the front.",
+      lede: "Your ticket lets a friend skip the waitlist and start using Cloudroom today.",
       actions: <Primary onClick={next}>Continue <Arrow /></Primary>,
       art: (
         <Ticket style={{ left: 90, top: 220, transform: "rotate(-4deg) scale(1.15)" }} number="No." label="WAITLIST" kicker="Cloudroom · waitlist"

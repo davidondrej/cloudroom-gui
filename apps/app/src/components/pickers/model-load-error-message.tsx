@@ -1,12 +1,4 @@
-import type { ReactNode } from "react";
 import type { SystemExecutionOptionsModelLoadError } from "@bb/server-contract";
-import { useUrlAnchorClickHandler } from "@/lib/url-open-routing";
-
-interface ModelLoadErrorMessageProps {
-  error: SystemExecutionOptionsModelLoadError;
-  providerLabel: string;
-  installUrl?: string;
-}
 
 interface FormatModelLoadErrorTextArgs {
   error: SystemExecutionOptionsModelLoadError;
@@ -34,36 +26,4 @@ export function formatModelLoadErrorText({
   }
 
   return `Could not load models for ${providerLabel}.`;
-}
-
-export function ModelLoadErrorMessage({
-  error,
-  providerLabel,
-  installUrl,
-}: ModelLoadErrorMessageProps): ReactNode {
-  const helpUrl = error.code === "missing_executable" ? installUrl : undefined;
-  const handleHelpLinkClick = useUrlAnchorClickHandler(helpUrl);
-
-  if (error.code === "missing_executable") {
-    if (helpUrl === undefined) {
-      return formatModelLoadErrorText({ error, providerLabel });
-    }
-    return (
-      <>
-        Could not load models for {providerLabel}. Please make sure the{" "}
-        <a
-          href={helpUrl}
-          target="_blank"
-          rel="noreferrer"
-          onClick={handleHelpLinkClick}
-          className="underline underline-offset-2 hover:text-foreground"
-        >
-          {providerLabel} CLI
-        </a>{" "}
-        is installed.
-      </>
-    );
-  }
-
-  return formatModelLoadErrorText({ error, providerLabel });
 }

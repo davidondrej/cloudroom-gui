@@ -98,11 +98,12 @@ export function prepareCloudInstructionInput(
   const text = enriched
     .map((part) => (part.type === "text" ? part.text : ""))
     .join("\n");
-  if (Buffer.byteLength(text, "utf8") > 32768) {
+  const bytes = Buffer.byteLength(text, "utf8");
+  if (bytes > 32768) {
     throw new ApiError(
       400,
       "invalid_request",
-      "Message plus custom instructions exceeds Cloud's 32768-byte limit. Shorten the message or custom instructions.",
+      `Message plus custom instructions is too long (${Math.ceil(bytes / 1024)} KB). Cloud messages can be up to 32 KB. Shorten the message or custom instructions.`,
     );
   }
   return {

@@ -39,6 +39,7 @@ const VM_SESSIONS: Record<Harness, string> = {
   "acp-cursor": "$HOME/.cursor/chats",
 };
 const CHUNK = 8 * 1024 * 1024;
+const PREVIEW_MB = 20;
 const VIEWABLE = /\.(png|jpe?g|gif|webp|heic|svg|pdf|zip|txt|md|csv|json|mp4|mov|mp3|wav)$/i;
 const exec = promisify(execFile);
 const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
@@ -156,10 +157,7 @@ export async function copyToMac(deps: AppDeps, threadId: string): Promise<{ bran
 export async function openOnMac(deps: AppDeps, threadId: string, path: string): Promise<{ path: string }> {
   if (getThread(deps.db, threadId)?.executionTarget !== "cloud")
     throw new ApiError(409, "open_unavailable", "Only cloud threads have cloud files.");
-  const client = await cloudroom(deps).threadClient(threadId);
-  if ((await vm(client, `[ -f ${quote(path)} ] && echo file || echo missing`)).toString().trim() !== "file")
-    throw new ApiError(404, "cloud_file_missing", `${path} is not a file in the cloud.`);
-  const data = await download(client, path);
+  const data = await download(await cloudroom(deps).threadClient(threadId), path);
   const folder = join(homedir(), "Downloads");
   await mkdir(folder, { recursive: true });
   const name = basename(path);
@@ -177,13 +175,13 @@ export async function cloudFile(deps: AppDeps, threadId: string, path: string): 
   if (!hostId) throw new ApiError(409, "host_unavailable", "This computer's local host is not ready.");
   const saved = join(await requireThreadStoragePath(deps, { hostId, threadId }), "Cloud files", normalize(path));
   try {
-    const data = await download(await cloudroom(deps).threadClient(threadId, !existsSync(saved)), path);
+    const data = await download(await cloudroom(deps).threadClient(threadId, !existsSync(saved)), path, PREVIEW_MB);
     await mkdir(dirname(saved), { recursive: true });
     await writeFile(saved, data);
     return data;
-  } catch {
+  } catch (error) {
     if (existsSync(saved)) return readFile(saved);
-    throw new ApiError(404, "cloud_file_missing", `${path} is not a file in the cloud.`);
+    throw error instanceof ApiError ? error : new ApiError(502, "cloud_file_unavailable", `Could not read ${path} from the cloud. ${error instanceof Error ? error.message : ""}`.trim());
   }
 }
 
@@ -250,8 +248,10 @@ mkdir -p ~/.cache/cloudroom && tar -czf ~/.cache/cloudroom/cursor-${nativeId}.tg
 done; exit 0`;
 }
 
-async function download(client: CloudroomClient, path: string): Promise<Buffer> {
-  const size = Number((await vm(client, `wc -c < ${quote(path)}`)).toString().trim());
+async function download(client: CloudroomClient, path: string, maxMb = Infinity): Promise<Buffer> {
+  const size = Number((await vm(client, `[ -f ${quote(path)} ] && wc -c < ${quote(path)} || echo -1`)).toString().trim());
+  if (size < 0) throw new ApiError(404, "cloud_file_missing", `${path} is not a file in the cloud.`);
+  if (size > maxMb * 1024 * 1024) throw new ApiError(413, "cloud_file_too_large", `${basename(path)} is over ${maxMb} MB, too big to preview. Use Open in editor to download it.`);
   const parts: Buffer[] = [];
   for (let offset = 0; offset < size; offset += CHUNK)
     parts.push(await vm(client, `tail -c +${offset + 1} ${quote(path)} | head -c ${CHUNK}`));

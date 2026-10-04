@@ -464,7 +464,7 @@ it("routes Cloud through the core, projects conversations, pauses queues, and re
     service.start();
     await new Promise((resolve) => setTimeout(resolve, 1800));
     expect(harness.db.select().from(events).all()).toHaveLength(count);
-    expect((await request(`/cloudroom/threads/${thread.id}/resume`, { requestId: "resume" })).status).toBe(200);
+    expect((await request(`/threads/${thread.id}/queued-messages/follow/send`, {})).status).toBe(200);
     await expect.poll(() => getThread(harness.db, thread.id)?.status).toBe("active");
     finish();
     await expect.poll(() => getThread(harness.db, thread.id)?.status).toBe("idle");
@@ -493,7 +493,7 @@ it("routes Cloud through the core, projects conversations, pauses queues, and re
     expect((await request(`/threads/${thread.id}/unarchive`, {})).status).toBe(200);
     expect(getThread(harness.db, thread.id)?.archivedAt).toBeNull();
     expect(service.threadStatus(thread.id)?.paused).toBe(true);
-    expect((await request(`/cloudroom/threads/${thread.id}/resume`, { requestId: "after-archive" })).status).toBe(200);
+    expect((await request(`/threads/${thread.id}/queued-messages/archive-queued/send`, {})).status).toBe(200);
     await expect.poll(() => getThread(harness.db, thread.id)?.status).toBe("active");
     expect(starts).toBe(1);
     finish();

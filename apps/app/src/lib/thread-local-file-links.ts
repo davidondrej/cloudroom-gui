@@ -12,7 +12,6 @@ const THREAD_LOCAL_FILE_LINK_INVALID_PATH_DESCRIPTION =
   "Thread file links must use absolute file paths.";
 
 interface ResolveThreadLocalFileLinkArgs {
-  cloudThread?: boolean;
   hostFileLinksAvailable: boolean;
   link: ThreadTimelineLocalFileLink;
   threadStorageRootPath: string | null;
@@ -36,11 +35,6 @@ interface ThreadStorageFileLinkOpenRequest {
   path: string;
   relativePath: string;
   threadStorageRootPath: string;
-}
-
-interface ThreadCloudFileLinkOpenResolution {
-  kind: "open-cloud-path";
-  path: string;
 }
 
 interface ThreadLocalFileLinkAppRouteResolution {
@@ -79,7 +73,6 @@ interface NormalizedLocalFilePathWithinRoot {
 }
 
 export type ThreadLocalFileLinkResolution =
-  | ThreadCloudFileLinkOpenResolution
   | ThreadLocalFileLinkAppRouteResolution
   | ThreadLocalFileLinkErrorResolution
   | ThreadWorkspaceFileLinkOpenResolution
@@ -176,10 +169,6 @@ export function resolveThreadLocalFileLink(
         threadStorageRootPath: storageOpenRequest.rootPath,
       },
     };
-  }
-
-  if (args.cloudThread) {
-    return { kind: "open-cloud-path", path: normalizedPath };
   }
 
   if (!args.hostFileLinksAvailable) {

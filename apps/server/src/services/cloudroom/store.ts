@@ -1,6 +1,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { cloudroomCommands, cloudroomThreads, threads, threadPluginMetadata, type DbQueryConnection } from "@bb/db";
 import type { ProjectCopyProgress } from "@bb/domain";
+import { emitPluginThreadStatusEntered } from "../plugins/plugin-thread-events.js";
 
 export type TeleportProgress = {
   id: string; owner: string; phase: "checking" | "stopping" | "uploading" | "running" | "complete" | "cancelled" | "error" | "cancelling";
@@ -111,5 +112,6 @@ export function effectivePrompt(db: DbQueryConnection, threadId: string, id: str
 }
 
 export function saveStatus(db: DbQueryConnection, threadId: string, status: typeof threads.$inferSelect["status"]): void {
-  db.update(threads).set({ status, updatedAt: Date.now(), latestAttentionAt: Date.now() }).where(and(eq(threads.id, threadId), sql`${threads.status} != ${status}`)).run();
+  const thread = db.update(threads).set({ status, updatedAt: Date.now(), latestAttentionAt: Date.now() }).where(and(eq(threads.id, threadId), sql`${threads.status} != ${status}`)).returning().get();
+  if (thread) emitPluginThreadStatusEntered(thread);
 }

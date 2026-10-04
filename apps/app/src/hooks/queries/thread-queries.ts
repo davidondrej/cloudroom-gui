@@ -862,7 +862,6 @@ export function useThreadHostFilePreview(
   const enabled =
     (options?.enabled ?? true) &&
     Boolean(id) &&
-    Boolean(environmentId) &&
     Boolean(path);
   useThreadDetailRealtimeSubscription(id, { enabled });
 

@@ -34,6 +34,7 @@ export const threadContextWindowUsageSchema = z.object({
   usedTokens: z.number(),
   modelContextWindow: z.number(),
   estimated: z.boolean(),
+  history: z.array(z.number()).optional(),
 });
 export type ThreadContextWindowUsage = z.infer<
   typeof threadContextWindowUsageSchema

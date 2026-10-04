@@ -176,10 +176,15 @@ async function spawnCatalog(
       type: "get_available_models",
     })) as { models?: unknown[] } | undefined;
     touch();
-    return (data?.models ?? []).filter(
+    const models = (data?.models ?? []).filter(
       (entry): entry is PiRpcModel =>
         typeof entry === "object" && entry !== null,
     );
+    if (models.length === 0 && generation === active) {
+      generation = null;
+      active.child.kill();
+    }
+    return models;
   };
   const fetchGeneration = async (): Promise<{
     active: CatalogChildGeneration;

@@ -34,6 +34,7 @@ import {
 export const PROVIDER_MODEL_CATALOG_PUSH_COALESCE_MS = 250;
 export const PROVIDER_MODEL_CATALOG_MEMORY_ENTRY_LIMIT = 256;
 const FRESH_MS = 10 * 60_000;
+const EMPTY_FRESH_MS = 60_000;
 const VALIDATION_MIN_AGE_MS = 60_000;
 const FAILURE_TTL_MS = 30_000;
 const PREWARM_MIN_AGE_MS = 4 * 60 * 60_000;
@@ -220,7 +221,10 @@ function evaluate(
         models: servable.models,
         selectedOnlyModels: servable.selectedOnlyModels,
       },
-      backgroundRefresh: !refreshed && !active && age >= FRESH_MS,
+      backgroundRefresh:
+        !refreshed &&
+        !active &&
+        age >= (servable.models.length === 0 ? EMPTY_FRESH_MS : FRESH_MS),
     };
   }
   if (refreshed) {

@@ -44,6 +44,13 @@ export interface CloudroomCodexAuth {
   user_code: string | null;
 }
 
+/** The GitHub account cloud sandboxes clone and push as. */
+export interface CloudroomGithubAccount {
+  login: string;
+  name: string | null;
+  avatarUrl: string | null;
+}
+
 /** Every new cloud thread starts with these (synced with the website). Values are never returned; `hint` is the
  *  last 4 characters of long values. */
 export interface CloudEnvironment {
@@ -83,7 +90,7 @@ export interface CloudSkills {
 }
 export type CloudSkillsChange = { names: string[]; cloud: boolean } | { auto: boolean };
 
-export interface ClaudeAccountInput { action?: "login" | "cancel" | "complete" | "setup-token" | "key"; requestId?: string; code?: string; state?: string; apiKey?: string }
+export interface ClaudeAccountInput { action?: "login" | "cancel" | "complete" | "setup-token" | "install" | "key"; requestId?: string; code?: string; state?: string; apiKey?: string }
 
 export interface CloudroomArea {
   claudeAuth(input?: ClaudeAccountInput, signal?: AbortSignal): Promise<CloudroomCodexAuth>;
@@ -99,12 +106,14 @@ export interface CloudroomArea {
   githubAuth(signal?: AbortSignal): Promise<CloudroomCodexAuth>;
   githubLogin(requestId: string): Promise<CloudroomCodexAuth>;
   cancelGithubLogin(requestId: string): Promise<CloudroomCodexAuth>;
-  /** Recently used Git folders on this Mac, for picking a first project. */
-  localRepos(signal?: AbortSignal): Promise<{ repos: { name: string; path: string; updatedAt: number }[] }>;
+  /** Null when GitHub can't tell right now. */
+  githubAccount(signal?: AbortSignal): Promise<CloudroomGithubAccount | null>;
+  /** Removes the cloud GitHub login and stops copying this Mac's `gh` login. */
+  disconnectGithub(): Promise<void>;
   /** Recently updated repos on this Mac and GitHub that no project uses yet. */
   repoSuggestions(signal?: AbortSignal): Promise<{ githubConnected: boolean; repos: RepoSuggestion[] }>;
-  /** Clones an `owner/name` GitHub repo onto the host and makes it a project. */
-  addGithubRepo(input: { hostId: string; repo: string }): Promise<{ projectId: string }>;
+  /** Makes an `owner/name` GitHub repo a project right away. Machines and sandboxes clone it when first needed. */
+  addGithubRepo(input: { repo: string }): Promise<{ projectId: string }>;
   status(signal?: AbortSignal): Promise<CloudroomStatus>;
   /** `provider` opens that provider's sign-in directly instead of the website's sign-in page. */
   signIn(input?: { projectId?: string; websiteUrl?: string; provider?: "github" | "google" }): Promise<{ url: string }>;
@@ -191,11 +200,12 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     codexLogin: (requestId) => transport.readJson(request("/codex/login", { requestId })) as Promise<CloudroomCodexAuth>,
     cancelCodexLogin: (requestId) => transport.readJson(request("/codex/cancel", { requestId })) as Promise<CloudroomCodexAuth>,
     githubAuth: (signal) => transport.readJson(request("/github", undefined, signal)) as Promise<CloudroomCodexAuth>,
-    localRepos: (signal) => transport.readJson(request("/local-repos", undefined, signal)) as Promise<{ repos: { name: string; path: string; updatedAt: number }[] }>,
     repoSuggestions: (signal) => transport.readJson(request("/repo-suggestions", undefined, signal)) as Promise<{ githubConnected: boolean; repos: RepoSuggestion[] }>,
     addGithubRepo: (input) => transport.readJson(request("/repo-suggestions/github", input)) as Promise<{ projectId: string }>,
     githubLogin: (requestId) => transport.readJson(request("/github/login", { requestId })) as Promise<CloudroomCodexAuth>,
     cancelGithubLogin: (requestId) => transport.readJson(request("/github/cancel", { requestId })) as Promise<CloudroomCodexAuth>,
+    githubAccount: (signal) => transport.readJson(request("/github/account", undefined, signal)) as Promise<CloudroomGithubAccount | null>,
+    disconnectGithub: () => transport.readVoid(request("/github/disconnect", {})),
     status: (signal) => transport.readJson(request("", undefined, signal)) as Promise<CloudroomStatus>,
     signIn: (input = {}) => transport.readJson(request("/sign-in", input)) as Promise<{ url: string }>,
     connect: (input) => transport.readVoid(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })),

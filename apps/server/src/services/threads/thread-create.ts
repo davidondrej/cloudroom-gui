@@ -1,4 +1,5 @@
 import { cloudExecution, cloudroom, isCloudThread } from "../cloudroom/commands.js";
+import { ensureProjectCheckoutForThread } from "../projects/project-source-setup.js";
 import { assertEnvironmentPathAvailable } from "../environments/path-admission.js";
 import {
   deleteThread,
@@ -547,6 +548,24 @@ export async function createThreadFromRequest(
     await appendPluginMentionContext({ input: requestInput.input })
   ).input;
   assertProjectWorkspaceCompatibility(project, requestInput);
+  const { environment } = requestInput;
+  const checkoutHostId =
+    environment.type === "provider" && environment.machine?.type === "existing"
+      ? environment.machine.hostId
+      : environment.type === "host" &&
+          environment.workspace.type !== "personal" &&
+          !(
+            environment.workspace.type === "unmanaged" &&
+            environment.workspace.path !== null
+          )
+        ? environment.hostId
+        : undefined;
+  if (checkoutHostId !== undefined) {
+    await ensureProjectCheckoutForThread(deps, {
+      project,
+      hostId: checkoutHostId,
+    });
+  }
   const originKind = requestInput.originKind ?? null;
   const sourceThreadId =
     requestInput.sourceThreadId ??

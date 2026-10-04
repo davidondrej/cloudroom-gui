@@ -1,6 +1,6 @@
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 export interface LocalRepo { name: string; path: string; updatedAt: number; remote: string | null }
 
@@ -26,4 +26,25 @@ export async function localRepos(limit = 8): Promise<LocalRepo[]> {
     }));
   }));
   return [...found.values()].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, limit);
+}
+
+/** The folder that holds most of the user's recent repos, so new clones land next to them. Falls back to ~/code. */
+export async function repoHome(): Promise<string> {
+  const home = homedir();
+  const counts = new Map<string, number>();
+  // Repos come newest first, so a tie goes to the folder with the most recent work.
+  for (const repo of await localRepos(10)) {
+    const parent = dirname(repo.path);
+    if (parent !== home) counts.set(parent, (counts.get(parent) ?? 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? join(home, "code");
+}
+
+/** A free folder for a new clone of `name`: <repo home>/<name>, then <name>-2, <name>-3, and so on. */
+export async function cloneTarget(name: string): Promise<string> {
+  const home = await repoHome();
+  for (let n = 1; ; n++) {
+    const path = join(home, n === 1 ? name : `${name}-${n}`);
+    if (!(await stat(path).then(() => true, () => false))) return path;
+  }
 }

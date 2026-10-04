@@ -3219,6 +3219,36 @@ export function listContextWindowUsageRows(
   });
 }
 
+export function listContextWindowUsageHistory(
+  db: DbConnection,
+  args: ListContextWindowUsageRowsArgs,
+  maxTurns = 40,
+): number[] {
+  const usedTokens = sql<number>`json_extract(${events.data}, '$.contextWindowUsage.usedTokens')`;
+  const rows = db
+    .select({ turnId: events.turnId, usedTokens })
+    .from(events)
+    .where(
+      and(
+        eq(events.threadId, args.threadId),
+        gte(events.sequence, args.sequenceStart),
+        eq(events.type, "thread/contextWindowUsage/updated"),
+        isNotNestedTurnUsageEvent,
+        sql`${usedTokens} IS NOT NULL`,
+        sql`${events.turnId} IS NOT NULL`,
+      ),
+    )
+    .orderBy(desc(events.sequence))
+    .limit(maxTurns * 10)
+    .all();
+  const byTurn = new Map<string, number>();
+  for (const row of rows) {
+    if (byTurn.size >= maxTurns) break;
+    if (row.turnId && !byTurn.has(row.turnId)) byTurn.set(row.turnId, row.usedTokens);
+  }
+  return [...byTurn.values()].reverse();
+}
+
 export function getLatestThreadOutputEventRow(
   db: DbConnection,
   args: GetLatestThreadOutputEventRowArgs,

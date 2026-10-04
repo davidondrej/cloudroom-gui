@@ -943,13 +943,25 @@ function MarkdownRenderedImage({
 }: MarkdownImageRendererArgs) {
   const openGallery = useContext(InlineImageGalleryContext);
   const imageUrl = typeof src === "string" ? src : "";
+  // Cloud images can take many seconds to arrive; show a skeleton until then.
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   if (!imageUrl) return null;
-  return (
+  const loading = loadedUrl !== imageUrl;
+  const image = (
     <img
       {...imageAttributes}
+      ref={(element) => {
+        if (element?.complete && element.naturalWidth > 0) setLoadedUrl(imageUrl);
+      }}
+      onLoad={() => setLoadedUrl(imageUrl)}
+      onError={() => setLoadedUrl(imageUrl)}
       src={imageUrl}
       alt={typeof alt === "string" ? alt : "Image"}
-      className="my-2 max-h-[max(384px,50vh)] max-w-full cursor-zoom-in object-contain"
+      className={
+        loading
+          ? "absolute inset-0 size-full opacity-0"
+          : "my-2 max-h-[max(384px,50vh)] max-w-full cursor-zoom-in object-contain"
+      }
       loading="lazy"
       data-markdown-image=""
       data-markdown-image-offset={sourceOffset}
@@ -975,6 +987,15 @@ function MarkdownRenderedImage({
         });
       }}
     />
+  );
+  if (!loading) return image;
+  return (
+    <span
+      className="relative my-2 block h-44 w-80 max-w-full animate-pulse rounded-md bg-muted"
+      data-markdown-image-loading=""
+    >
+      {image}
+    </span>
   );
 }
 

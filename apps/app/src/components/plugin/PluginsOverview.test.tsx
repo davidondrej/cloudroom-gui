@@ -19,15 +19,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { focusManager } from "@tanstack/react-query";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
 import { makeSystemConfig } from "@/test/fixtures/system-config";
-import { SidebarHistoryNavigationControls } from "@/components/sidebar/SidebarHistoryNavigationControls";
 import { resetAppRouteHistoryForTest } from "@/lib/app-route-history";
 import { PluginsOverview } from "./PluginsOverview";
-
-vi.mock("@/components/plugin/PluginNewThreadComposer", () => ({
-  PluginNewThreadComposer: ({ initialPrompt }: { initialPrompt?: string }) => (
-    <div data-testid="inline-composer">{initialPrompt}</div>
-  ),
-}));
 
 function SwitchViewButton({ view }: { view: "browse" | "installed" }) {
   const navigate = useNavigate();
@@ -212,18 +205,14 @@ describe("PluginsOverview", () => {
     expect(await screen.findByText("GitHub")).toBeTruthy();
     expect(screen.queryByRole("tab", { name: "Browse" })).toBeNull();
     expect(screen.queryByRole("tab", { name: /Installed/ })).toBeNull();
-    expect(
-      screen.getByRole("button", { name: "Create a plugin" }),
-    ).toBeTruthy();
-    const comboTrigger = screen.getByRole("button", {
-      name: "Create a plugin options",
-    });
-    fireEvent.pointerDown(comboTrigger);
+    expect(screen.getByRole("button", { name: "New plugin" })).toBeTruthy();
+    fireEvent.pointerDown(
+      screen.getByRole("button", { name: "New plugin options" }),
+    );
     expect(
       screen.getByRole("menuitem", { name: "Install from source" }),
     ).toBeTruthy();
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("button", { name: "New plugin" })).toBeNull();
 
     const catalogRequests = () =>
       vi.mocked(fetch).mock.calls.filter(([input]) => {
@@ -245,41 +234,22 @@ describe("PluginsOverview", () => {
     await waitFor(() => expect(catalogRequests()).toHaveLength(1));
   });
 
-  it("uses the existing sidebar history control to return from creation", async () => {
+  it("sends Browse's New plugin to the new-thread page with the seed", async () => {
     installFetch();
     const { wrapper: QueryClientWrapper } = createQueryClientTestHarness();
     render(
       <MemoryRouter initialEntries={["/plugins"]}>
         <QueryClientWrapper>
-          <SidebarHistoryNavigationControls />
           <PluginsOverview />
+          <LocationPath />
         </QueryClientWrapper>
       </MemoryRouter>,
     );
 
     await screen.findByText("GitHub");
-    const createPlugin = screen.getByRole("button", {
-      name: "Create a plugin",
-    });
+    fireEvent.click(screen.getByRole("button", { name: "New plugin" }));
 
-    fireEvent.click(createPlugin);
-    expect(await screen.findByTestId("inline-composer")).toBeTruthy();
-    expect(screen.queryByText("Back to browse plugins")).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: "Close the composer" }),
-    ).toBeNull();
-
-    fireEvent.click(createPlugin);
-    expect(screen.getByTestId("inline-composer")).toBeTruthy();
-
-    const goBack = screen.getByRole("button", { name: "Go back" });
-    await waitFor(() =>
-      expect((goBack as HTMLButtonElement).disabled).toBe(false),
-    );
-    fireEvent.click(goBack);
-    await waitFor(() =>
-      expect(screen.queryByTestId("inline-composer")).toBeNull(),
-    );
+    expect(screen.getByTestId("location-path").textContent).toBe("/");
   });
 
   it("shows category filters only in Browse", async () => {
@@ -388,14 +358,6 @@ describe("PluginsOverview", () => {
     const sort = screen.getByRole("button", { name: /^Sort:/ });
     expect(toolbar.contains(category)).toBe(true);
     expect(toolbar.contains(sort)).toBe(true);
-    const heroHeading = screen.getByRole("heading", {
-      level: 2,
-      name: /^Turn Cloudroom into/,
-    });
-    expect(
-      heroHeading.compareDocumentPosition(toolbar) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
   });
 
   it("opens installed resources on the canonical Settings detail route", async () => {

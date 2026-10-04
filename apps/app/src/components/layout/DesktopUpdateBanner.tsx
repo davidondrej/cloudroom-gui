@@ -115,7 +115,7 @@ export function DesktopUpdateBanner() {
             <strong>A new version of Cloudroom is ready.</strong> Restart to
             update.{" "}
             {desktopInfo.installNeedsPassword
-              ? "macOS will ask for your Mac password to install it."
+              ? "Enter your Mac password once, and future updates install by themselves."
               : "Running agents resume automatically."}
           </>
         ) : (

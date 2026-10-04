@@ -1219,6 +1219,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     environment?.status === "ready" &&
     connectedHostIds.has(environment.hostId);
   const isCloudThread = thread?.executionTarget === "cloud";
+  const hostFileLinksAvailable = isCloudThread || Boolean(thread?.environmentId);
   const { mutate: openCloudFile } = useOpenCloudFile(threadId);
   const createThreadInEnvironment = useCreateThreadInEnvironment({
     projectId,
@@ -2057,10 +2058,6 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
       if (resolution.kind === "app-route") {
         return false;
       }
-      if (resolution.kind === "open-cloud-path") {
-        openCloudFile(resolution.path);
-        return true;
-      }
       if (resolution.kind === "error") {
         appToast.error("Failed to open file locally", {
           description: resolution.description,
@@ -2101,7 +2098,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
       );
       return true;
     },
-    [openCloudFile, openHostFile, openStorageFile, openWorkspaceFile],
+    [openHostFile, openStorageFile, openWorkspaceFile],
   );
   const handleOpenTimelineLocalFileLink = useCallback(
     (
@@ -2109,9 +2106,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
       options?: ThreadSecondaryPanelFileOpenOptions,
     ) => {
       const resolution = resolveThreadLocalFileLink({
-        cloudThread: isCloudThread,
-        hostFileLinksAvailable:
-          thread?.environmentId !== null && thread?.environmentId !== undefined,
+        hostFileLinksAvailable,
         link,
         threadStorageRootPath,
         workspaceRootPath: workspacePreviewRootPath,
@@ -2119,7 +2114,8 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
 
       if (
         resolution.kind !== "open-host-path" ||
-        threadStorageRootPath !== null
+        threadStorageRootPath !== null ||
+        isCloudThread
       ) {
         return handleTimelineLocalFileLinkResolution(resolution, options);
       }
@@ -2153,9 +2149,9 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     },
     [
       handleTimelineLocalFileLinkResolution,
+      hostFileLinksAvailable,
       isCloudThread,
       refetchThreadStorageFiles,
-      thread?.environmentId,
       threadStorageRootPath,
       workspacePreviewRootPath,
     ],
@@ -2163,9 +2159,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
   const handleAutoOpenImage = useCallback(
     (link: ThreadTimelineLocalFileLink) => {
       const { kind } = resolveThreadLocalFileLink({
-        cloudThread: isCloudThread,
-        hostFileLinksAvailable:
-          thread?.environmentId !== null && thread?.environmentId !== undefined,
+        hostFileLinksAvailable,
         link,
         threadStorageRootPath,
         workspaceRootPath: workspacePreviewRootPath,
@@ -2180,8 +2174,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     },
     [
       handleOpenTimelineLocalFileLink,
-      isCloudThread,
-      thread?.environmentId,
+      hostFileLinksAvailable,
       threadStorageRootPath,
       workspacePreviewRootPath,
     ],
@@ -2266,6 +2259,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
   const handleOpenHostFileInEditor = useMemo<
     OpenInEditorHandler | undefined
   >(() => {
+    if (isCloudThread) return (path) => openCloudFile(path);
     if (!canOpenPreferredFileTarget) {
       return undefined;
     }
@@ -2280,6 +2274,8 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
   }, [
     activeHostFileLineRange,
     canOpenPreferredFileTarget,
+    isCloudThread,
+    openCloudFile,
     openPathInPreferredFileTarget,
   ]);
   const workspaceOpenPath = resolveThreadWorkspaceOpenPath({

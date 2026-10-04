@@ -144,7 +144,7 @@ export function PluginsOverview({
     });
   };
 
-  const installedActions = (
+  const createActions = (
     <>
       <CreateWithTemplatesButton
         kind="plugin"
@@ -169,11 +169,9 @@ export function PluginsOverview({
     content =
       authorKey === null ? (
         <BrowsePluginsTab
+          actions={createActions}
           onInstall={(initial) => setAddDialog({ open: true, initial })}
           onOpenPlugin={openPlugin}
-          onInstallFromSource={() =>
-            setAddDialog({ open: true, initial: null })
-          }
         />
       ) : (
         <PluginAuthorPage
@@ -193,7 +191,7 @@ export function PluginsOverview({
             searchValue={installedQuery}
             searchPlaceholder="Search installed plugins"
             onSearchChange={setInstalledQuery}
-            action={installedActions}
+            action={createActions}
             controls={
               <>
                 <ResourceMultiSelectMenu

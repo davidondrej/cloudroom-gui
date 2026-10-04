@@ -1,11 +1,6 @@
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { findOrCreateProjectByLocalPathSource, listProjectSourcesByProjectIds, listPublicProjects, setProjectGitRemoteUrlIfMissing } from "@bb/db";
+import { createRemoteProject, listProjectSourcesByProjectIds, listPublicProjects } from "@bb/db";
 import type { AppDeps } from "../../types.js";
-import { requireNonDestroyedHostWithStatus } from "../lib/entity-lookup.js";
-import { assertUsableHostId } from "../hosts/primary-host.js";
-import { resolveHostEnvironment } from "../hosts/host-environment.js";
-import { runLiveHostCommand } from "../hosts/live-command.js";
 import { cloudroom } from "./commands.js";
 import { localRepos } from "./local-repos.js";
 import { githubRepository } from "./project-copy.js";
@@ -57,26 +52,11 @@ export async function repoSuggestions(deps: AppDeps): Promise<{ githubConnected:
   };
 }
 
-/** Clones a GitHub repo into Cloudroom's checkouts folder on the host and makes it a project. Returns the existing project if one already uses the repo. */
-export async function addGithubRepo(deps: AppDeps, hostId: string, repo: string): Promise<{ projectId: string }> {
-  requireNonDestroyedHostWithStatus(deps, hostId);
-  assertUsableHostId(deps, { hostId });
+/** Makes a GitHub repo a project right away, with no clone. Each machine or sandbox clones it when a thread there first needs it.
+ *  Returns the existing project if one already uses the repo. */
+export function addGithubRepo(deps: AppDeps, repo: string): { projectId: string } {
   const url = `https://github.com/${repo}`;
   const existing = listPublicProjects(deps.db).find((project) => repoKey(project.gitRemoteUrl) === url.toLowerCase());
   if (existing) return { projectId: existing.id };
-  const name = repo.split("/")[1] ?? repo;
-  const cloned = await runLiveHostCommand(deps, {
-    hostId,
-    timeoutMs: 20 * 60 * 1000,
-    command: {
-      type: "project.clone",
-      operationId: `project-clone-${randomUUID()}`,
-      contributedEnv: await resolveHostEnvironment(deps, { hostId, projectId: null }),
-      remoteUrl: `${url}.git`,
-      projectSlug: name,
-    },
-  });
-  const { project } = findOrCreateProjectByLocalPathSource(deps.db, deps.hub, { name, source: { type: "local_path", hostId, path: cloned.path } });
-  if (cloned.gitRemoteUrl) setProjectGitRemoteUrlIfMissing(deps.db, deps.hub, project.id, cloned.gitRemoteUrl);
-  return { projectId: project.id };
+  return { projectId: createRemoteProject(deps.db, deps.hub, { name: repo.split("/")[1] ?? repo, gitRemoteUrl: `${url}.git` }).id };
 }

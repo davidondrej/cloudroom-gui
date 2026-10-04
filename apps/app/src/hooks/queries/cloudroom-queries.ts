@@ -162,7 +162,7 @@ export function useCloudroomThreadWorkspace(threadId: string, enabled: boolean) 
     refetchInterval: 10000,
     queryFn: async ({ queryKey, signal }) => {
       const workspace = cloudWorkspaceSchema.parse(await sdk.cloudroom.threadWorkspace(threadId, signal));
-      // An asleep sandbox answers null, and its checkout cannot change while asleep, so keep the last one.
+      // The server answers null only for a sleeping sandbox it never read; its checkout cannot change while asleep, so keep the last one.
       return workspace ?? client.getQueryData<z.infer<typeof cloudWorkspaceSchema>>(queryKey) ?? null;
     },
   });
@@ -244,7 +244,7 @@ export function useNativeSessions() {
   return useQuery({ queryKey: ["cloudroom-native-sessions"], queryFn: ({ signal }) => sdk.cloudroom.nativeSessions(signal), retry: false, staleTime: 30_000 });
 }
 
-/** Repos on this Mac and GitHub that are not projects yet. Adding one makes it a project and picks it for the next thread. */
+/** Repos on this Mac and GitHub that are not projects yet, newest first. Adding one makes it a project and picks it for the next thread. */
 export function useProjectSuggestions(): ProjectSelectorSuggestions | undefined {
   const client = useQueryClient();
   const { hostId } = usePathPickerHost();
@@ -253,7 +253,7 @@ export function useProjectSuggestions(): ProjectSelectorSuggestions | undefined 
   const add = useMutation({
     mutationFn: async ({ hostId, repo }: { hostId: string; repo: RepoSuggestion }) => repo.source === "mac"
       ? (await sdk.projects.create({ name: deriveProjectNameFromPath(repo.path), source: { type: "local_path", hostId, path: repo.path } })).id
-      : (await sdk.cloudroom.addGithubRepo({ hostId, repo: repo.repo })).projectId,
+      : (await sdk.cloudroom.addGithubRepo({ repo: repo.repo })).projectId,
     // The composer drops a selected project it can't find, so the project list refreshes first.
     onSuccess: async (projectId) => { await client.invalidateQueries(); setProjectId(projectId); },
     onError: (error) => appToast.error(error.message),
@@ -261,7 +261,7 @@ export function useProjectSuggestions(): ProjectSelectorSuggestions | undefined 
   if (!hostId) return undefined;
   const adding = add.isPending ? add.variables.repo : null;
   return {
-    repos: query.data?.repos ?? [],
+    repos: [...(query.data?.repos ?? [])].sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0)),
     githubConnected: query.data?.githubConnected ?? true,
     isLoading: query.isPending,
     addingKey: adding ? (adding.source === "mac" ? adding.path : adding.repo) : null,

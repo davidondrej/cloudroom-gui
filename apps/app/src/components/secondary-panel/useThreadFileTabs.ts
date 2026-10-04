@@ -349,7 +349,7 @@ function createTabForOpenRequest({
           threadId: null,
         });
       }
-      if (!threadId || !resolvedEnvironmentId) return null;
+      if (!threadId || resolvedEnvironmentId === undefined) return null;
       return createHostFilePreviewFixedPanelTab({
         environmentId: resolvedEnvironmentId,
         tab: request.tab,

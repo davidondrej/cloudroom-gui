@@ -253,7 +253,13 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
     },
     "Server listening",
   );
-  telemetry.capture({ name: "app_started" });
+  telemetry.capture({
+    name: "app_started",
+    properties: {
+      // Set by the desktop app when this Mac user can't write Cloudroom.app.
+      update_needs_password: process.env.BB_DESKTOP_UPDATE_NEEDS_PASSWORD === "1",
+    },
+  });
 
   pluginService.bindSdk({
     baseUrl: `http://127.0.0.1:${serverConfig.BB_SERVER_PORT}`,

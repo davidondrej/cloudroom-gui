@@ -33,7 +33,7 @@ const REPO_FILTERS = [
 ] as const;
 type RepoFilter = (typeof REPO_FILTERS)[number]["id"];
 
-const repoKey = (repo: RepoSuggestion) =>
+export const repoKey = (repo: RepoSuggestion) =>
   repo.source === "mac" ? repo.path : repo.repo;
 
 export interface ProjectSelectorOption {
@@ -41,13 +41,13 @@ export interface ProjectSelectorOption {
   name: string;
 }
 
-/** Repos on this Mac and GitHub that are not projects yet, each one click from becoming one. */
+/** Repos on this Mac and GitHub that are not projects yet, newest first. `onAdd` resolves to the new project's id. */
 export interface ProjectSelectorSuggestions {
   repos: readonly RepoSuggestion[];
   githubConnected: boolean;
   isLoading: boolean;
   addingKey: string | null;
-  onAdd: (repo: RepoSuggestion) => Promise<unknown>;
+  onAdd: (repo: RepoSuggestion) => Promise<string>;
 }
 
 export interface ProjectSelectorCreateProjectConfig {
@@ -108,9 +108,9 @@ export function ProjectSelector({
     [projects, searchQuery, showSearch],
   );
   const visibleRepos = useMemo(() => {
-    const repos = (suggestions?.repos ?? [])
-      .filter((repo) => repoFilter === "all" || repo.source === repoFilter)
-      .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+    const repos = (suggestions?.repos ?? []).filter(
+      (repo) => repoFilter === "all" || repo.source === repoFilter,
+    );
     return searchPickerOptions({
       options: repos,
       query: searchQuery,

@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
-  BROWSE_ARCHETYPES,
+  PLUGIN_EXAMPLES,
   briefPrompt,
-} from "@/components/plugin/browse-hero/browse-hero-archetypes";
+} from "@/components/plugin/plugin-create-examples";
 import { getCreateExamples } from "./create-via-prompt-examples";
 
 describe("getCreateExamples", () => {
-  it("serves the Browse archetypes as the plugin templates, one source", () => {
+  it("serves the plugin examples as the plugin templates, one source", () => {
     const { examples } = getCreateExamples("plugin");
 
     expect(examples.map((example) => example.label)).toEqual(
-      BROWSE_ARCHETYPES.map((archetype) => archetype.title),
+      PLUGIN_EXAMPLES.map((example) => example.title),
     );
     for (const [index, example] of examples.entries()) {
-      expect(example.prompt).toBe(briefPrompt(BROWSE_ARCHETYPES[index]!));
+      expect(example.prompt).toBe(briefPrompt(PLUGIN_EXAMPLES[index]!));
     }
   });
 });

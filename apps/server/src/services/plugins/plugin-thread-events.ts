@@ -83,13 +83,16 @@ export function emitPluginTurnFailed(threadId: string): void {
 export function emitPluginThreadLifecycleOutcome(
   outcome: ApplyThreadLifecycleEventOutcome,
 ): void {
-  if (!outcome.applied) return;
-  if (outcome.thread.status === "active") {
-    emitter?.emitThreadActive(outcome.thread);
-  } else if (outcome.thread.status === "idle") {
-    emitter?.emitThreadIdle(outcome.thread);
-  } else if (outcome.thread.status === "error") {
-    emitter?.emitThreadFailed(outcome.thread);
+  if (outcome.applied) emitPluginThreadStatusEntered(outcome.thread);
+}
+
+export function emitPluginThreadStatusEntered(thread: Thread): void {
+  if (thread.status === "active") {
+    emitter?.emitThreadActive(thread);
+  } else if (thread.status === "idle") {
+    emitter?.emitThreadIdle(thread);
+  } else if (thread.status === "error") {
+    emitter?.emitThreadFailed(thread);
   }
 }
 

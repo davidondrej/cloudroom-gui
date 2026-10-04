@@ -272,6 +272,7 @@ describe("thread event pruning", () => {
         usedTokens: 305,
         modelContextWindow: 200_000,
         estimated: true,
+        history: Array.from({ length: 40 }, (_, index) => 266 + index),
       });
     });
   });

@@ -133,20 +133,27 @@ describe("app keybindings", () => {
       );
       expect(config.keybindingOverrides).toEqual([]);
       expect(assignedDefaultKeybindings).toEqual(config.keybindings);
-      for (const command of ["thread.rename", "panel.close"] as const) {
-        expect(
-          config.defaultKeybindings.find(
-            (binding) => binding.command === command,
-          ),
-        ).toMatchObject({
-          desktopOnly: false,
-          shortcut: null,
-          when: { all: ["mainSurface"], none: ["modalOpen"] },
-        });
-        expect(
-          config.keybindings.some((binding) => binding.command === command),
-        ).toBe(false);
-      }
+      expect(
+        config.defaultKeybindings.find(
+          (binding) => binding.command === "panel.close",
+        ),
+      ).toMatchObject({
+        desktopOnly: false,
+        shortcut: null,
+        when: { all: ["mainSurface"], none: ["modalOpen"] },
+      });
+      expect(
+        config.keybindings.some((binding) => binding.command === "panel.close"),
+      ).toBe(false);
+      expect(
+        config.keybindings.find(
+          (binding) => binding.command === "thread.rename",
+        ),
+      ).toMatchObject({
+        desktopOnly: false,
+        shortcut: { key: "d", mod: true, shift: true },
+        when: { all: ["mainSurface"], none: ["modalOpen"] },
+      });
       expect(
         config.keybindings.find(
           (binding) => binding.command === "thread.archive",

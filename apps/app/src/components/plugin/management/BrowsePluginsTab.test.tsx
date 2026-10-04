@@ -10,12 +10,6 @@ import type {
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
 import { BrowsePluginsTab } from "./BrowsePluginsTab";
 
-vi.mock("@/components/plugin/PluginNewThreadComposer", () => ({
-  PluginNewThreadComposer: ({ initialPrompt }: { initialPrompt?: string }) => (
-    <div data-testid="inline-composer">{initialPrompt}</div>
-  ),
-}));
-
 const MEMORY_ENTRY: PluginCatalogSearchEntry = {
   entryId: "memory",
   pluginId: "memory",
@@ -112,7 +106,7 @@ function renderBrowse(
       <BrowsePluginsTab
         onInstall={onInstall}
         onOpenPlugin={onOpenPlugin}
-        onInstallFromSource={() => undefined}
+        actions={null}
       />
       <LocationProbe />
     </MemoryRouter>,
@@ -437,7 +431,7 @@ describe("BrowsePluginsTab", () => {
         <BrowsePluginsTab
           onInstall={() => undefined}
           onOpenPlugin={() => undefined}
-          onInstallFromSource={() => undefined}
+          actions={null}
         />
       </MemoryRouter>,
       { wrapper },
@@ -465,46 +459,6 @@ describe("BrowsePluginsTab", () => {
     expect(
       screen.queryByRole("button", { name: /Install Memory/u }),
     ).toBeNull();
-  });
-
-  it("swaps the browse body for examples while composing", async () => {
-    renderBrowse({ entries: [MEMORY_ENTRY], collections: [] });
-
-    expect(
-      await screen.findByRole("button", { name: "Open Memory details" }),
-    ).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Create a plugin" }));
-    expect(await screen.findByText("Start from an example")).toBeTruthy();
-    expect(screen.getByText("Explore plugin capabilities")).toBeTruthy();
-    expect(
-      screen.queryByRole("textbox", { name: "Search plugins" }),
-    ).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: "Open Memory details" }),
-    ).toBeNull();
-  });
-
-  it("routes every create affordance into the inline composer", async () => {
-    renderBrowse({ entries: [MEMORY_ENTRY], collections: [] });
-
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Create a plugin" }),
-    );
-    expect((await screen.findByTestId("inline-composer")).textContent).toBe(
-      "Create a new Cloudroom plugin that ",
-    );
-    fireEvent.click(
-      screen.getByText(
-        "Ship a board your agents move cards across while they work.",
-      ),
-    );
-    expect(
-      (await screen.findByTestId("inline-composer")).textContent,
-    ).toContain("kanban board panel");
-    fireEvent.click(screen.getByText("CLI command"));
-    expect(
-      (await screen.findByTestId("inline-composer")).textContent,
-    ).toContain("deploys the current branch to staging");
   });
 
   it("shows compact install data and reports the card trigger", async () => {
