@@ -26,10 +26,12 @@ the explicitly requested provider or Codex, then resolves the model marked
 default by that provider on the target machine (falling back to the first
 catalog model when none is marked).
 
-`room-cli provider models acp-cursor --restart` restarts Cursor's model-discovery
-process and reloads its models. It preserves conversation threads, credentials,
-and project files. Use it when model loading fails; it does not repair login
-or installation problems. Other providers must explicitly support this action.
+`room-cli provider models acp-cursor --restart` (or `codex --restart`) restarts
+that provider's model-discovery process and reloads its models. It preserves
+conversation threads, credentials, and project files. Use it when model loading
+fails, or when the model list looks stale after a CLI upgrade; it does not
+repair login or installation problems. Other providers must explicitly support
+this action.
 
 Model lists answer from the machine's last stored list while a background
 refresh runs, so a list can be hours old. A provider whose refresh keeps

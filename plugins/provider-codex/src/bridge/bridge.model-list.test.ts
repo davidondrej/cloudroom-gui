@@ -25,7 +25,7 @@ afterEach(async () => {
   );
 });
 
-it("reuses one initialized app-server across model catalog requests", async () => {
+it("starts a fresh app-server for each model catalog request, so an upgraded Codex is picked up", async () => {
   harness.sendRequest(1, "model/list", {});
   const first = await harness.waitForResponse(1);
   harness.sendRequest(2, "model/list", {});
@@ -33,10 +33,10 @@ it("reuses one initialized app-server across model catalog requests", async () =
 
   expect(first.error).toBeUndefined();
   expect(second.error).toBeUndefined();
-  expect(second.result).toEqual(first.result);
+  expect(second.result).not.toEqual(first.result);
 });
 
-it("replaces the cached app-server after a model catalog failure", async () => {
+it("recovers on the next model catalog request after a failure", async () => {
   const workDir = await mkdtemp(join(tmpdir(), "bb-codex-model-list-"));
   temporaryDirectories.push(workDir);
   const scriptPath = join(workDir, "script.json");

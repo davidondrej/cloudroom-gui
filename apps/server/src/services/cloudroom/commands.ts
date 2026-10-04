@@ -1426,7 +1426,8 @@ class CloudroomService {
       if (this.lastCapabilities) void this.ensurePreviews(this.lastCapabilities);
       for (const saved of bindings(this.deps.db)) {
         const thread = getThread(this.deps.db, saved.threadId);
-        if (!thread || thread.deletedAt) continue;
+        // Archived threads take no work, and each check of an asleep sandbox costs a website call.
+        if (!thread || thread.archivedAt || thread.deletedAt) continue;
         void this.deliver(saved.threadId).catch(() => {});
       }
     }, 1500);

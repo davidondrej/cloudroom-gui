@@ -75,6 +75,7 @@ import { useActiveComposerDraft } from "./useActiveComposerDraft";
 import { useComposerAttachmentUploads } from "./useComposerAttachmentUploads";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useComposerTypeahead } from "./useComposerTypeahead";
+import { useCopyCommand } from "@/hooks/useCopyCommand";
 import { useInlineQueuedMessageEditing } from "./useInlineQueuedMessageEditing";
 import { useQueuedMessageActions } from "./useQueuedMessageActions";
 
@@ -488,9 +489,14 @@ function EmbeddedThreadChatWithComposer({
       threadId,
     ],
   );
+  const runCopyCommand = useCopyCommand(
+    threadId,
+    promptDraft.clearIfCurrentMatches,
+  );
   const handleSubmit = useCallback(() => {
     const submittedDraft = currentPromptDraft;
     const submittedInput = currentPromptDraftInput;
+    if (runCopyCommand(submittedDraft)) return;
     if (submittedInput.length === 0 || isTurnSubmitting) {
       return;
     }
@@ -523,6 +529,7 @@ function EmbeddedThreadChatWithComposer({
     displayStatus,
     isTurnSubmitting,
     promptDraft,
+    runCopyCommand,
     setBottomAttachmentError,
   ]);
 

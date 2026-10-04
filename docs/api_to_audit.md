@@ -1454,7 +1454,7 @@ Before stabilization, audit:
 
 ## `PluginProviderDeclaration.experimental_modelDiscoveryRestart`
 
-Opt-in model-picker recovery. Cursor enables it; other providers remain unchanged. On model discovery failure, the picker offers Restart. The API restarts only that provider's maintenance process and reloads its catalog, without stopping threads or changing credentials. Experimental until recovery is proven with more providers.
+Opt-in model-picker recovery. Cursor and Codex enable it; other providers remain unchanged. On model discovery failure, the picker offers Restart. The API restarts only that provider's maintenance process and reloads its catalog, without stopping threads or changing credentials. Experimental until recovery is proven with more providers.
 
 ## `bb.providers.register` (`experimental_bridgeOptions`, `experimental_visibility`, and the `experimental_providerBridge` artifact export)
 

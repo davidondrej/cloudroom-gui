@@ -100,7 +100,7 @@ function InviteTickets({ data, finish }: { data: Invites; finish: () => void }) 
       actions: code
         ? <>
             <Primary onClick={() => void copyToClipboardWithToast(format(code), { successMessage: "Invite code copied" })}><CopyIcon />Copy code</Primary>
-            <button type="button" onClick={finish} className="h-[50px] border border-[#3a372f] px-6 text-[15px] font-semibold text-[#d8d0bd] hover:border-[#5a564b]">Done</button>
+            <button type="button" onClick={finish} className="h-[50px] border border-[#3a372f] px-6 text-[15px] font-semibold text-[#d8d0bd] transition-transform hover:scale-105 hover:border-[#5a564b]">Done</button>
           </>
         : <>
             <Primary disabled={create.isPending} onClick={() => create.mutate()}>Create my ticket</Primary>
@@ -122,27 +122,27 @@ function InviteTickets({ data, finish }: { data: Invites; finish: () => void }) 
 
   return (
     <div ref={root} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Invite friends" style={ROOT}
-      className="fixed inset-0 z-50 overflow-hidden text-[#f3ecdb] outline-none duration-300 animate-in fade-in-0">
+      className="fixed inset-0 z-50 overflow-hidden text-[#f3ecdb] max-md:h-(--bb-shell-height) max-md:overflow-y-auto outline-none duration-300 animate-in fade-in-0">
       <div className={cn("absolute inset-x-0 top-0 h-10", MACOS_WINDOW_DRAG_CLASS)} />
-      <div className="absolute top-[13px] left-1/2 flex -translate-x-1/2 gap-1.5">
+      <div className="absolute top-[13px] left-1/2 max-md:top-[calc(env(safe-area-inset-top)+10px)] flex -translate-x-1/2 gap-1.5">
         {steps.map((_, index) => <span key={index} className={cn("h-[3px] w-11", index <= step ? "bg-[#bfff00]" : "bg-[#2c2a24]")} />)}
       </div>
-      <div className="flex h-full items-center">
-        <div className="w-[44%] shrink-0 pr-8 pl-[8.5%]">
+      <div className="flex h-full items-center max-md:h-auto max-md:min-h-full max-md:flex-col max-md:justify-center max-md:pt-[calc(env(safe-area-inset-top)+32px)] max-md:pb-[calc(env(safe-area-inset-bottom)+28px)]">
+        <div className="w-[44%] shrink-0 pr-8 pl-[8.5%] max-md:w-full max-md:px-7">
           <div className="flex items-center gap-2.5 font-mono text-xs tracking-[0.2em] text-[#8d8676] uppercase">
             <BbLogo className="size-[22px]" />
             Cloudroom · invite-only
           </div>
-          <h1 className="mt-7 font-serif text-[64px] leading-[1.02] font-medium tracking-[-0.03em] [&_em]:text-[#bfff00]">{current.title}</h1>
-          <p className="mt-5 max-w-[400px] text-lg text-[#bdb5a2]">{current.lede}</p>
-          <div className="mt-10 flex items-center gap-6">
+          <h1 className="mt-7 font-serif text-[64px] max-md:mt-5 max-md:text-[42px] leading-[1.02] font-medium tracking-[-0.03em] [&_em]:text-[#bfff00]">{current.title}</h1>
+          <p className="mt-5 max-w-[400px] text-lg text-[#bdb5a2] max-md:mt-3 max-md:text-base">{current.lede}</p>
+          <div className="mt-10 flex items-center gap-6 max-md:mt-7">
             {current.actions}
             {step < steps.length - 1 && <span className="font-mono text-xs tracking-[0.16em] text-[#8d8676]">0{step + 1} / 0{steps.length}</span>}
           </div>
           {create.error && <p className="mt-4 text-sm text-[#ff8a7a]">{create.error.message}</p>}
         </div>
-        <div className="flex min-w-0 flex-1 items-center justify-center">
-          <div className="relative h-[640px] w-[620px] shrink-0 max-[1180px]:scale-[.8] max-[980px]:scale-[.65]">{current.art}</div>
+        <div className="pointer-events-none flex min-w-0 flex-1 items-center justify-center max-md:order-first max-md:h-[330px] max-md:w-full max-md:flex-none">
+          <div className="relative h-[640px] w-[620px] shrink-0 max-[1180px]:scale-[.8] max-[980px]:scale-[.65] max-md:scale-[.55]">{current.art}</div>
         </div>
       </div>
     </div>
@@ -193,7 +193,7 @@ function Highlight({ children }: { children: ReactNode }) {
 function Primary({ children, onClick, disabled }: { children: ReactNode; onClick: () => void; disabled?: boolean }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled}
-      className="inline-flex h-[50px] items-center gap-2.5 bg-[#bfff00] px-[30px] text-[15.5px] font-bold text-[#0e0d0b] hover:brightness-95 disabled:opacity-60">
+      className="inline-flex h-[50px] items-center gap-2.5 bg-[#bfff00] px-[30px] text-[15.5px] font-bold text-[#0e0d0b] transition-transform hover:brightness-95 enabled:hover:scale-105 disabled:opacity-60">
       {children}
     </button>
   );

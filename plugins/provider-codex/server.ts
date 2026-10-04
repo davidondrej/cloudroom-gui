@@ -39,6 +39,7 @@ export default function plugin(bb: BbPluginApi) {
       brandPrefix: "GPT-",
     },
     models: { scope: "host" },
+    experimental_modelDiscoveryRestart: true,
     ...CODEX_NATIVE_ROOTS_DECLARATION,
     maintenance: { health: true, usage: true, installation: true },
     capabilities: {

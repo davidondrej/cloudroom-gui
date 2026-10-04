@@ -382,6 +382,7 @@ import { useCloudroomThread, useSetCloudReasoning, useCloudroomThreadWorkspace, 
 import { reasoningLevelSchema } from "@bb/domain";
 import { reasoningLevelLabel } from "@/lib/reasoning-labels";
 import { fetchWithAppSurface } from "@/lib/app-surface";
+import { useCopyCommand } from "@/hooks/useCopyCommand";
 
 export function ThreadDetailPromptArea({
   activeBackgroundAgentCount,
@@ -1522,15 +1523,22 @@ export function ThreadDetailPromptArea({
       promptDraft.removeAttachment,
     ],
   );
+  const runCopyCommand = useCopyCommand(
+    thread.id,
+    promptDraft.clearIfCurrentMatches,
+  );
   const handleBottomComposerSubmit = useCallback(() => {
+    if (runCopyCommand(currentPromptDraft)) return;
     void handleSend();
-  }, [handleSend]);
+  }, [currentPromptDraft, handleSend, runCopyCommand]);
   const handleBottomComposerModifierSubmit = useCallback(() => {
+    if (runCopyCommand(currentPromptDraft)) return;
     void handleModifierSubmit();
-  }, [handleModifierSubmit]);
+  }, [currentPromptDraft, handleModifierSubmit, runCopyCommand]);
   const handleBottomComposerHardQueueSubmit = useCallback(() => {
+    if (runCopyCommand(currentPromptDraft)) return;
     void handleHardQueue();
-  }, [handleHardQueue]);
+  }, [currentPromptDraft, handleHardQueue, runCopyCommand]);
   const handleInlineComposerSubmit = useCallback(() => {
     void handleSaveInlineQueuedMessage();
   }, [handleSaveInlineQueuedMessage]);

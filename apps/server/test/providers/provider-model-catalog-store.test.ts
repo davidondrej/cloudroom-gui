@@ -476,16 +476,23 @@ describe("provider model catalog store", () => {
     });
   });
 
-  it("serves a persisted catalog to a new store and treats a corrupt row as missing", async () => {
+  it("serves a catalog saved before a restart at once, refreshes it in the background, and treats a corrupt row as missing", async () => {
     await withTestHarness(async (harness) => {
       const host = setupCatalogHost(harness, {
         id: "host-catalog-persistence",
       });
       await host.read("codex");
 
+      host.clock.now += SECOND;
       installCatalogStore(harness, { clock: host.clock });
+      host.setAnswer(() => catalogAnswer(modelList("codex-upgraded")));
       expect(modelIds(await host.read("codex"))).toEqual(["codex-model"]);
-      expect(host.listRequests()).toHaveLength(1);
+      await vi.waitFor(async () => {
+        expect(modelIds(await host.read("codex"))).toEqual([
+          "codex-upgraded",
+        ]);
+      });
+      expect(host.listRequests()).toHaveLength(2);
 
       harness.db.$client
         .prepare(
@@ -493,8 +500,8 @@ describe("provider model catalog store", () => {
         )
         .run("{not json", host.hostId);
       installCatalogStore(harness, { clock: host.clock });
-      expect(modelIds(await host.read("codex"))).toEqual(["codex-model"]);
-      expect(host.listRequests()).toHaveLength(2);
+      expect(modelIds(await host.read("codex"))).toEqual(["codex-upgraded"]);
+      expect(host.listRequests()).toHaveLength(3);
     });
   });
 

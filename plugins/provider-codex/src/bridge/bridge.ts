@@ -447,8 +447,6 @@ interface CodexBridgeSession {
 
 const sessionsByBbThreadId = new Map<string, CodexBridgeSession>();
 const maintenanceConnections = new Set<CodexAppServerConnection>();
-let modelListConnection: CodexAppServerConnection | null = null;
-let modelListConnectionPromise: Promise<CodexAppServerConnection> | null = null;
 let sessionSerialCounter = 0;
 let configuredSkillExtraRoots: string[] | null = null;
 
@@ -1217,60 +1215,6 @@ async function withMaintenanceChild<T>(
   }
 }
 
-async function getModelListConnection(): Promise<CodexAppServerConnection> {
-  if (modelListConnection !== null && !modelListConnection.exited) {
-    return modelListConnection;
-  }
-  if (modelListConnectionPromise !== null) {
-    return modelListConnectionPromise;
-  }
-
-  const connectionPromise = (async () => {
-    const connection = spawnChildConnection({
-      recordThreadId: null,
-      onNotification: () => {},
-      onRequest: (_method, _params, responder) => {
-        responder.error(
-          BRIDGE_JSON_RPC_ERRORS.METHOD_NOT_FOUND,
-          "model-list codex app-server does not serve requests",
-        );
-      },
-      onExit: () => {
-        maintenanceConnections.delete(connection);
-        if (modelListConnection === connection) {
-          modelListConnection = null;
-        }
-      },
-    });
-    maintenanceConnections.add(connection);
-    try {
-      await initializeChild(connection);
-      modelListConnection = connection;
-      return connection;
-    } catch (error) {
-      maintenanceConnections.delete(connection);
-      await connection.kill();
-      throw error;
-    }
-  })();
-  modelListConnectionPromise = connectionPromise;
-  try {
-    return await connectionPromise;
-  } finally {
-    if (modelListConnectionPromise === connectionPromise) {
-      modelListConnectionPromise = null;
-    }
-  }
-}
-
-function retireModelListConnection(connection: CodexAppServerConnection): void {
-  maintenanceConnections.delete(connection);
-  if (modelListConnection === connection) {
-    modelListConnection = null;
-  }
-  connection.kill();
-}
-
 async function withChildForThread<T>(
   bbThreadId: string,
   fn: (connection: CodexAppServerConnection) => Promise<T>,
@@ -1312,23 +1256,20 @@ function handleInitialize(id: string | number): void {
 }
 
 async function handleModelList(id: string | number): Promise<void> {
-  let connection: CodexAppServerConnection | null = null;
   try {
-    connection = await getModelListConnection();
-    const result = await connection.request({
-      method: "model/list",
-      params: {},
-      resultSchema: ignoredChildResultSchema,
-      timeoutMs: CHILD_REQUEST_TIMEOUT_MS,
-    });
+    const result = await withMaintenanceChild((connection) =>
+      connection.request({
+        method: "model/list",
+        params: {},
+        resultSchema: ignoredChildResultSchema,
+        timeoutMs: CHILD_REQUEST_TIMEOUT_MS,
+      }),
+    );
     sendResult(id, {
       models: parseModelsResponse(result),
       selectedOnlyModels: [],
     });
   } catch (error) {
-    if (connection !== null) {
-      retireModelListConnection(connection);
-    }
     sendError(
       id,
       BRIDGE_JSON_RPC_ERRORS.BRIDGE_ERROR,
@@ -2024,8 +1965,6 @@ function killAllChildren(): void {
     session.connection = null;
   }
   sessionsByBbThreadId.clear();
-  modelListConnection = null;
-  modelListConnectionPromise = null;
   for (const connection of maintenanceConnections) {
     connection.kill();
   }

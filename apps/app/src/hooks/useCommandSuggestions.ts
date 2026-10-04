@@ -11,6 +11,7 @@ import {
   projectCommandsQueryOptions,
   useProjectCommands,
 } from "./queries/project-queries";
+import { COPY_COMMAND_NAME } from "./useCopyCommand";
 
 interface UseCommandSuggestionsArgs {
   projectId: string | undefined;
@@ -25,6 +26,15 @@ interface UseCommandSuggestionsArgs {
 }
 
 const COMMAND_CATALOG_PREFETCH_STALE_TIME_MS = 30_000;
+
+const COPY_COMMAND_SUGGESTION: ProviderCommandSuggestion = {
+  kind: "command",
+  name: COPY_COMMAND_NAME,
+  source: "command",
+  origin: "builtin",
+  description: "Copy the last agent response",
+  argumentHint: null,
+};
 
 interface UseCommandSuggestionsResult {
   trigger: PromptMentionCommandTrigger | null;
@@ -180,8 +190,12 @@ export function useCommandSuggestions(
         ),
       trimmedQuery,
     );
+    const appSuggestions =
+      args.commandScope === "thread"
+        ? filterCommandSuggestions([COPY_COMMAND_SUGGESTION], trimmedQuery)
+        : [];
     return mergeCommandSuggestions(
-      promptActionSuggestions,
+      [...appSuggestions, ...promptActionSuggestions],
       discoveredSuggestions,
     );
   }, [

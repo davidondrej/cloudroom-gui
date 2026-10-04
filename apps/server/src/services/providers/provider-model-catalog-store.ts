@@ -71,7 +71,7 @@ export interface ProviderModelCatalogStore {
     deps: WorkSessionDeps,
     args: { hostId: string; provider: ProviderInfo },
   ): Promise<void>;
-  clearFailure(hostId: string, providerId: string): void;
+  markProviderStale(hostId: string, providerId: string): void;
   markAllStale(): void;
   forgetHost(deps: WorkSessionDeps, hostId: string): void;
 }
@@ -243,6 +243,16 @@ function evaluate(
   return { kind: "wait" };
 }
 
+function markStale(entry: CatalogEntry): void {
+  entry.failure = null;
+  if (entry.good !== null) {
+    entry.good.fetchedAt = 0;
+  }
+  if (entry.refresh !== null) {
+    entry.refresh.markedStale = true;
+  }
+}
+
 export function createProviderModelCatalogStore(options: {
   now: () => number;
   pushCoalesceMs: number;
@@ -250,6 +260,7 @@ export function createProviderModelCatalogStore(options: {
 }): ProviderModelCatalogStore {
   const entries = new Map<string, CatalogEntry>();
   const pendingPushByHost = new Map<string, ReturnType<typeof setTimeout>>();
+  const startedAt = options.now();
 
   function loadStoredGood(
     deps: WorkSessionDeps,
@@ -270,7 +281,7 @@ export function createProviderModelCatalogStore(options: {
       selectedOnlyModels,
       modelsJson: row.modelsJson,
       selectedOnlyModelsJson: row.selectedOnlyModelsJson,
-      fetchedAt: row.fetchedAt,
+      fetchedAt: row.fetchedAt < startedAt ? 0 : row.fetchedAt,
     };
   }
 
@@ -572,26 +583,20 @@ export function createProviderModelCatalogStore(options: {
       await startRefresh(deps, entry, fingerprint, bridgeLaunch);
     },
 
-    clearFailure(hostId, providerId) {
+    markProviderStale(hostId, providerId) {
       for (const entry of entries.values()) {
         if (
           entry.key.hostId === hostId &&
           entry.key.providerId === providerId
         ) {
-          entry.failure = null;
+          markStale(entry);
         }
       }
     },
 
     markAllStale() {
       for (const entry of entries.values()) {
-        entry.failure = null;
-        if (entry.good !== null) {
-          entry.good.fetchedAt = 0;
-        }
-        if (entry.refresh !== null) {
-          entry.refresh.markedStale = true;
-        }
+        markStale(entry);
       }
     },
 

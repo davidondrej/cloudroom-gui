@@ -207,7 +207,7 @@ export async function runProviderCliInstall(
       hostId: args.hostId,
       providerId: args.provider,
     });
-    deps.lifecycleDedupers.providerModelCatalogs.clearFailure(
+    deps.lifecycleDedupers.providerModelCatalogs.markProviderStale(
       args.hostId,
       args.provider,
     );
