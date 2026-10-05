@@ -875,10 +875,9 @@ describe("Cloudroom Official plugin detail routing", () => {
     const card = await screen.findByRole("button", {
       name: "Open GitHub details",
     });
-    const panels = Array.from(document.querySelectorAll("[data-panel]"));
-    expect(panels).toHaveLength(2);
-    expect(panels[0]?.getAttribute("data-panel-size")).toBe("100.0");
-    expect(panels[1]?.getAttribute("data-panel-size")).toBe("0.0");
+    expect(
+      screen.queryByRole("complementary", { name: "GitHub details" }),
+    ).toBeNull();
     const search = screen.getByRole("textbox", { name: "Search plugins" });
     card.focus();
     fireEvent.click(card);
@@ -886,12 +885,10 @@ describe("Cloudroom Official plugin detail routing", () => {
       await screen.findByRole("button", { name: "Close GitHub" }),
     ).toBeTruthy();
     expect(
-      screen.getByRole("textbox", { name: "Search plugins" }),
+      screen.getByRole("complementary", { name: "GitHub details" }),
     ).toBeTruthy();
+    expect(card.getAttribute("aria-current")).toBe("true");
     expect(screen.getAllByRole("button", { name: /^Close /u })).toHaveLength(1);
-    expect(Array.from(document.querySelectorAll("[data-panel]"))).toEqual(
-      panels,
-    );
     expect(screen.getByRole("textbox", { name: "Search plugins" })).toBe(
       search,
     );
@@ -901,11 +898,9 @@ describe("Cloudroom Official plugin detail routing", () => {
       expect(screen.getByTestId("route-path").textContent).toBe("/plugins");
       expect(document.activeElement).toBe(card);
     });
-    expect(Array.from(document.querySelectorAll("[data-panel]"))).toEqual(
-      panels,
-    );
-    expect(panels[0]?.getAttribute("data-panel-size")).toBe("100.0");
-    expect(panels[1]?.getAttribute("data-panel-size")).toBe("0.0");
+    expect(
+      screen.queryByRole("complementary", { name: "GitHub details" }),
+    ).toBeNull();
     expect(screen.getByRole("textbox", { name: "Search plugins" })).toBe(
       search,
     );
@@ -987,7 +982,12 @@ describe("Cloudroom Official plugin detail routing", () => {
       { wrapper: QueryClientWrapper },
     );
 
-    if (path === "/settings/plugins" || path === "/plugins?view=installed") {
+    if (path === "/plugins?view=installed") {
+      fireEvent.click(
+        await screen.findByRole("button", { name: "Open GitHub details" }),
+      );
+    }
+    if (path === "/settings/plugins") {
       expect(
         await screen.findByRole("textbox", {
           name: "Search installed plugins",
@@ -1023,101 +1023,8 @@ describe("Cloudroom Official plugin detail routing", () => {
       "?view=installed",
     );
     expect(
-      screen.queryByRole("button", { name: "Close Automations" }),
-    ).toBeNull();
-  });
-
-  it("opens an author from a card and returns to the prior Browse filters", async () => {
-    const author = {
-      name: "BB",
-      github: "get-bb",
-      url: "https://github.com/get-bb",
-    };
-    const catalogEntries = [
-      {
-        ...GITHUB_CATALOG_ENTRY,
-        categoryId: "code-and-reviews",
-        category: "Code & Reviews",
-        author,
-      },
-      {
-        ...GITHUB_CATALOG_ENTRY,
-        entryId: "automations",
-        pluginId: "automations",
-        displayName: "Automations",
-        categoryId: "tasks-and-workflows",
-        category: "Tasks & Workflows",
-        author,
-      },
-    ];
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = String(input);
-        if (url === "/api/v1/plugins") {
-          return new Response(JSON.stringify({ enabled: true, plugins: [] }), {
-            headers: { "content-type": "application/json" },
-          });
-        }
-        if (url.startsWith("/api/v1/plugin-catalog/search")) {
-          return new Response(
-            JSON.stringify({ results: catalogEntries, collections: [] }),
-            { headers: { "content-type": "application/json" } },
-          );
-        }
-        return new Response(JSON.stringify({ error: "not found" }), {
-          status: 404,
-          headers: { "content-type": "application/json" },
-        });
-      }),
-    );
-
-    const { wrapper: QueryClientWrapper } = createQueryClientTestHarness();
-    render(
-      <MemoryRouter
-        initialEntries={[
-          "/plugins?category=code-and-reviews&sort=recently-added",
-        ]}
-      >
-        <Routes>
-          <Route path="/plugins/*" element={<RoutedPluginsView />} />
-        </Routes>
-        <HistoryBackButton />
-      </MemoryRouter>,
-      { wrapper: QueryClientWrapper },
-    );
-
-    fireEvent.click((await screen.findAllByRole("link", { name: "BB" }))[0]!);
-    expect(await screen.findByRole("heading", { name: /^BB/u })).toBeTruthy();
-    let params = new URLSearchParams(
-      screen.getByTestId("route-search").textContent ?? "",
-    );
-    expect(params.get("author")).toBe("11:bb-official:github:get-bb");
-    expect(params.getAll("category")).toEqual(["code-and-reviews"]);
-    expect(params.get("sort")).toBe("recently-added");
-
-    fireEvent.click(screen.getByRole("button", { name: "Browser back" }));
-    await waitFor(() => {
-      expect(screen.queryByRole("heading", { name: /^BB/u })).toBeNull();
-    });
-    params = new URLSearchParams(
-      screen.getByTestId("route-search").textContent ?? "",
-    );
-    expect(params.has("author")).toBe(false);
-    expect(params.getAll("category")).toEqual(["code-and-reviews"]);
-    expect(params.get("sort")).toBe("recently-added");
-
-    fireEvent.click((await screen.findAllByRole("link", { name: "BB" }))[0]!);
-    const card = await screen.findByRole("button", {
-      name: "Open GitHub details",
-    });
-    card.focus();
-    fireEvent.click(card);
-    expect(
-      await screen.findByRole("heading", { name: "More from this author" }),
+      await screen.findByRole("button", { name: "Close Automations" }),
     ).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Close GitHub" }));
-    await waitFor(() => expect(document.activeElement).toBe(card));
   });
 
   it("routes the detail author link to the restored author page", async () => {
@@ -1256,7 +1163,9 @@ describe("plugin removal confirmation", () => {
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Remove plugin from Cloudroom?" }),
+      await screen.findByRole("heading", {
+        name: "Remove plugin from Cloudroom?",
+      }),
     ).toBeTruthy();
     const description = screen.getByText(/Remove "github" from Cloudroom/);
     expect(description.textContent).toContain(

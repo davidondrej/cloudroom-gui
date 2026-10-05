@@ -81,7 +81,7 @@
 
 ## Cloudroom guide instructions and skills
 
-Settings → Installed plugins → Cloudroom guide controls the Cloudroom introduction and the
+Settings → Instructions → Cloudroom guide controls the Cloudroom introduction and the
 three bundled skills. All settings default to true. Use
 `room-cli plugin config bb-guide set <key> true|false` with `introduction`, `skills`
 (the master skill switch), `bbCli`, `pluginAuthoring`, or `skillCreator`.

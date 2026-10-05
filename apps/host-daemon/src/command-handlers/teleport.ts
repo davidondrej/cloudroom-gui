@@ -1,3 +1,4 @@
+import { execFile } from "node:child_process";
 import { constants } from "node:fs";
 import {
   copyFile,
@@ -15,6 +16,7 @@ import {
 import { createHash, randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { homedir } from "node:os";
+import { promisify } from "node:util";
 import {
   basename,
   dirname,
@@ -59,6 +61,7 @@ type Source = {
   symlink?: boolean;
 };
 type Capture = { nativeId: string; files: Source[]; omitted: string[] };
+const execFileAsync = promisify(execFile);
 const signature = (s: Awaited<ReturnType<typeof stat>>) =>
   `${s.dev}:${s.ino}:${s.size}:${s.mtimeMs}:${s.ctimeMs}`;
 
@@ -187,6 +190,17 @@ async function runCapture(
   );
   await mkdir(root, { recursive: true, mode: 0o700 });
   const capturePath = join(root, "capture.json");
+  if (command.action === "import") {
+    const session = command.sessions?.[0];
+    if (session?.harness !== "opencode" || !command.file)
+      throw new Error("Unsupported Teleport import");
+    await runOpenCode(
+      ["import", command.file],
+      await realpath(command.workspaceContext.workspacePath),
+      options,
+    );
+    return { nativeId: session.nativeId };
+  }
   if (command.action === "read") {
     const capture = JSON.parse(await readFile(capturePath, "utf8")) as Capture;
     const index = command.index;
@@ -293,23 +307,29 @@ async function runCapture(
       .map((session) => session.nativeId),
   );
   for (const session of sessions) {
-    const source = await nativePath(
-      session.harness,
-      session.threadId,
-      session.nativeId,
-    );
+    const opencode = session.harness === "opencode";
+    const source = opencode
+      ? await exportOpenCode(session.nativeId, root, workspace, options)
+      : await nativePath(session.harness, session.threadId, session.nativeId);
     const info = await lstat(source);
     if (!info.isFile() || info.size > HOST_ARTIFACT_MAX_BYTES)
       throw new Error("Native history exceeds the bounded capture size");
     const cursor = session.harness === "cursor";
-    const lines = cursor
-      ? []
-      : (await readFile(source, "utf8")).trimEnd().split("\n");
-    const header = cursor ? {} : JSON.parse(lines[0]!);
-    const id =
-      cursor ||
-      (session.harness === "claude-code" &&
-        lines.some((line) => JSON.parse(line).sessionId === session.nativeId))
+    const exported = opencode
+      ? (JSON.parse(await readFile(source, "utf8")) as OpenCodeExport)
+      : null;
+    const lines =
+      cursor || exported
+        ? []
+        : (await readFile(source, "utf8")).trimEnd().split("\n");
+    const header = cursor || exported ? {} : JSON.parse(lines[0]!);
+    const id = exported
+      ? exported.info?.id
+      : cursor ||
+          (session.harness === "claude-code" &&
+            lines.some(
+              (line) => JSON.parse(line).sessionId === session.nativeId,
+            ))
         ? session.nativeId
         : session.harness === "pi"
           ? header.id
@@ -371,48 +391,53 @@ async function runCapture(
     }
     const images: { file: string; name: string; data: Buffer }[] = [];
     const frozen = join(root, `${session.threadId}.jsonl`);
+    for (const message of exported?.messages ?? [])
+      for (const part of message.parts ?? [])
+        if (part.type === "text") collectText(part.text, texts);
     const text = cursor
       ? await cursorSnapshot(dirname(source), session.nativeId, root)
-      : lines
-          .map((line) => {
-            const record = JSON.parse(line);
-            if (session.harness === "codex" && record.type === "event_msg") {
-              const payload = record.payload;
-              const item = payload?.item;
-              const children =
-                item?.type === "SubAgentActivity" && item.kind === "started"
-                  ? [item.agent_thread_id]
-                  : item?.type === "CollabAgentToolCall" &&
-                      item.tool === "spawn"
-                    ? (item.receiver_thread_ids ?? [])
-                    : payload?.type === "collab_agent_spawn_end"
-                      ? [payload.new_agent_id]
-                      : [];
-              for (const child of children) {
-                if (
-                  typeof child !== "string" ||
-                  !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(
-                    child,
-                  ) ||
-                  knownCodexSessions.has(child)
-                )
-                  continue;
-                knownCodexSessions.add(child);
-                sessions.push({
-                  threadId: child,
-                  nativeId: child,
-                  harness: "codex",
-                });
+      : exported
+        ? await readFile(source, "utf8")
+        : lines
+            .map((line) => {
+              const record = JSON.parse(line);
+              if (session.harness === "codex" && record.type === "event_msg") {
+                const payload = record.payload;
+                const item = payload?.item;
+                const children =
+                  item?.type === "SubAgentActivity" && item.kind === "started"
+                    ? [item.agent_thread_id]
+                    : item?.type === "CollabAgentToolCall" &&
+                        item.tool === "spawn"
+                      ? (item.receiver_thread_ids ?? [])
+                      : payload?.type === "collab_agent_spawn_end"
+                        ? [payload.new_agent_id]
+                        : [];
+                for (const child of children) {
+                  if (
+                    typeof child !== "string" ||
+                    !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(
+                      child,
+                    ) ||
+                    knownCodexSessions.has(child)
+                  )
+                    continue;
+                  knownCodexSessions.add(child);
+                  sessions.push({
+                    threadId: child,
+                    nativeId: child,
+                    harness: "codex",
+                  });
+                }
               }
-            }
-            const separated = separateImages(record);
-            collectText(
-              spoken(session.harness, separated as Record<string, any>),
-              texts,
-            );
-            return JSON.stringify(separated);
-          })
-          .join("\n") + "\n";
+              const separated = separateImages(record);
+              collectText(
+                spoken(session.harness, separated as Record<string, any>),
+                texts,
+              );
+              return JSON.stringify(separated);
+            })
+            .join("\n") + "\n";
     await writeSnapshot(frozen, text);
     await add(
       source,
@@ -586,6 +611,43 @@ function spoken(harness: string, record: Record<string, any>): unknown {
   return ["function_call", "custom_tool_call"].includes(payload?.type)
     ? payload
     : undefined;
+}
+
+type OpenCodeExport = {
+  info?: { id?: unknown };
+  messages?: { parts?: { type?: string; text?: unknown }[] }[];
+};
+
+async function runOpenCode(
+  args: string[],
+  cwd: string,
+  options: CommandDispatchOptions,
+): Promise<string> {
+  const { stdout } = await execFileAsync("opencode", args, {
+    cwd,
+    env: {
+      ...process.env,
+      ...options.runtimeManager.getShellEnv(),
+      OPENCODE_DISABLE_AUTOUPDATE: "1",
+    },
+    maxBuffer: HOST_ARTIFACT_MAX_BYTES,
+    timeout: 60_000,
+  });
+  return stdout;
+}
+
+async function exportOpenCode(
+  nativeId: string,
+  root: string,
+  workspace: string,
+  options: CommandDispatchOptions,
+): Promise<string> {
+  const exported = await runOpenCode(["export", nativeId], workspace, options);
+  JSON.parse(exported);
+  const path = join(root, `${nativeId}.json`);
+  await rm(path, { force: true });
+  await writeSnapshot(path, exported);
+  return path;
 }
 
 // Same JSONL snapshot format the core's cursor-history.py restores.

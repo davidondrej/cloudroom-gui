@@ -27,6 +27,7 @@ import { useQuickCreateProjectController } from "@/hooks/useQuickCreateProject";
 import { getRootComposeRoutePath, getThreadRoutePath } from "@/lib/route-paths";
 import { usePaneContentSplitDrag } from "./usePaneContentSplitDrag";
 import { CloudroomSignInButton } from "./CloudroomSignInButton";
+import { MacAccessChip } from "./MacAccessChip";
 import {
   EMPTY_SIDEBAR_THREAD_SHORTCUT_KEYS,
   getSidebarThreadNavigationTargets,
@@ -290,6 +291,7 @@ export function AppSidebar({
             onNavigate={closeOnMobile}
           />
           <SidebarUpdatesBadge onNavigate={closeOnMobile} />
+          <MacAccessChip />
         </SidebarMenu>
       </SidebarFooter>
       <SidebarResizeHandle

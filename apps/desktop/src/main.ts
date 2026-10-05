@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { accessSync, constants as fsConstants } from "node:fs";
+import { accessSync, constants as fsConstants, readFileSync } from "node:fs";
 import { arch, homedir, release, type as osType } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import {
@@ -167,6 +167,7 @@ import {
   BB_DESKTOP_OPEN_EXTERNAL_URL_CHANNEL,
   BB_DESKTOP_SET_THEME_CHANNEL,
   BB_DESKTOP_FOCUS_WINDOW_CHANNEL,
+  BB_DESKTOP_SET_BADGE_COUNT_CHANNEL,
 } from "./desktop-update-ipc.js";
 import {
   BB_DESKTOP_APP_COMMAND_CHANNEL,
@@ -1499,13 +1500,22 @@ async function loadWindowUrl(args: LoadWindowUrlArgs): Promise<void> {
   await desktopWindowFactory.loadUrl({ url: args.url });
 }
 
+let loadingLogoSrc: string | null = null;
+
+function getLoadingLogoSrc(): string {
+  loadingLogoSrc ??= `data:image/png;base64,${readFileSync(
+    join(app.getAppPath(), "assets", "loading-logo.png"),
+  ).toString("base64")}`;
+  return loadingLogoSrc;
+}
+
 async function loadLoadingView(): Promise<void> {
   bbAppLoaded = false;
   await loadWindowUrl({
     url: createLocalViewUrl({
       viewModel: {
         kind: "loading",
-        message: "Starting local services and opening the Cloudroom workspace.",
+        logoSrc: getLoadingLogoSrc(),
         title: "Opening Cloudroom",
       },
     }),
@@ -1681,6 +1691,10 @@ function registerDesktopUpdateIpc(): void {
       return;
     }
     nativeTheme.themeSource = parsed.data;
+  });
+  ipcMain.on(BB_DESKTOP_SET_BADGE_COUNT_CHANNEL, (_event, payload: unknown) => {
+    const parsed = z.number().int().nonnegative().safeParse(payload);
+    if (parsed.success) app.setBadgeCount(parsed.data);
   });
   ipcMain.on(BB_DESKTOP_FOCUS_WINDOW_CHANNEL, (event) => {
     const window = BrowserWindow.fromWebContents(event.sender);

@@ -803,12 +803,24 @@ export class NotificationHub implements DbNotifier {
     return { promise, cancel };
   }
 
+  private readonly threadListeners = new Set<
+    (threadId: string, changes: ThreadChangeKind[]) => void
+  >();
+  /** Server-side services hear thread changes too. Returns the unsubscribe function. */
+  onThreadChanged(
+    listener: (threadId: string, changes: ThreadChangeKind[]) => void,
+  ): () => void {
+    this.threadListeners.add(listener);
+    return () => this.threadListeners.delete(listener);
+  }
+
   notifyThread(
     threadId: string,
     changes: ThreadChangeKind[],
     metadata?: ThreadChangeMetadata,
   ): void {
     if (changes.includes("events-appended")) emitPluginThreadEvents(threadId);
+    for (const listener of this.threadListeners) listener(threadId, changes);
     const message: ThreadChangedMessage = {
       type: "changed",
       entity: "thread",

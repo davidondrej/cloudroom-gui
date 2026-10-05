@@ -72,6 +72,7 @@ import {
 import { archiveThreadAndChildren } from "../../services/threads/thread-archive.js";
 import { cloudroom, isCloudThread } from "../../services/cloudroom/commands.js";
 import { teleports } from "../../services/cloudroom/teleport.js";
+import { teleportToLocal } from "../../services/cloudroom/teleport-local.js";
 import {
   requireThreadCommandEnvironment,
   requireThreadHostCommandEnvironment,
@@ -237,7 +238,8 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
   post(routes.send, async (context, payload) => {
     const thread = requirePublicThread(deps.db, context.req.param("id"));
     if (isStandaloneBuiltinTeleportCommand(payload.input)) {
-      await teleports(deps).begin(thread.id);
+      if (isCloudThread(thread)) await teleportToLocal(deps, thread.id);
+      else await teleports(deps).begin(thread.id);
       return context.json({ ok: true, delivery: "sent" } as const);
     }
     return context.json(

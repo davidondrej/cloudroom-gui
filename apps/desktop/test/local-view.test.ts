@@ -17,7 +17,7 @@ const localViewTestCases: LocalViewTestCase[] = [
     label: "loading",
     viewModel: {
       kind: "loading",
-      message: "Starting local services.",
+      logoSrc: "data:image/png;base64,AA==",
       title: "Opening Cloudroom",
     },
   },

@@ -59,7 +59,8 @@ export class CloudroomAccountService {
 
   async status() {
     const status = await cloudroom(this.deps).status();
-    return { ...status, macAccess: await macAccess(this.deps), copyLogins: await copyLogins(this.deps), localLogins: { codex: await hasMacCodexLogin() }, signingIn: this.pending !== null, signInError: this.error };
+    const macAccessLevel = await macAccess(this.deps);
+    return { ...status, macAccess: macAccessLevel === null ? null : macAccessLevel !== "off", macAccessLevel, copyLogins: await copyLogins(this.deps), localLogins: { codex: await hasMacCodexLogin() }, signingIn: this.pending !== null, signInError: this.error };
   }
 
 

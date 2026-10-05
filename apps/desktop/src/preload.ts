@@ -47,6 +47,7 @@ import {
   BB_DESKTOP_OPEN_EXTERNAL_URL_CHANNEL,
   BB_DESKTOP_SET_THEME_CHANNEL,
   BB_DESKTOP_FOCUS_WINDOW_CHANNEL,
+  BB_DESKTOP_SET_BADGE_COUNT_CHANNEL,
 } from "./desktop-update-ipc.js";
 import {
   BB_DESKTOP_BROWSER_ATTACH_CHANNEL,
@@ -406,6 +407,9 @@ const bbDesktopApi: BbDesktopApi = {
   },
   setTheme(theme: BbDesktopTheme): void {
     ipcRenderer.send(BB_DESKTOP_SET_THEME_CHANNEL, theme);
+  },
+  setBadgeCount(count: number): void {
+    ipcRenderer.send(BB_DESKTOP_SET_BADGE_COUNT_CHANNEL, count);
   },
   focusWindow(): void {
     ipcRenderer.send(BB_DESKTOP_FOCUS_WINDOW_CHANNEL);

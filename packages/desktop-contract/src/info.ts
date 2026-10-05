@@ -64,5 +64,6 @@ export interface BbDesktopApi extends BbDesktopInfo {
   openExternalUrl(url: string): void;
   openServerDaemonLogs?(): Promise<void>;
   setTheme(theme: BbDesktopTheme): void;
+  setBadgeCount?(count: number): void;
   focusWindow?(): void;
 }

@@ -1,7 +1,7 @@
 import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { deriveProjectNameFromPath, reasoningLevelSchema, serviceTierSchema, type ReasoningLevel, type Thread } from "@bb/domain";
-import type { RepoSuggestion } from "@bb/sdk/browser";
+import type { MacAccessLevel, RepoSuggestion } from "@bb/sdk/browser";
 import type { ProjectSelectorSuggestions } from "@/components/pickers/ProjectSelector";
 import { usePathPickerHost } from "@/hooks/useLocalPathPicker";
 import { useSetRootComposeProjectId } from "@/lib/root-compose-selection";
@@ -214,11 +214,11 @@ export function useOpenCloudFile(threadId: string) {
   });
 }
 
-/** "Let cloud agents access this computer" (ADR 0113). */
+/** How much cloud agents may do on this computer (ADR 0113, 0186). `true` means Full access. */
 export function useSetMacAccess() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (enabled: boolean) => sdk.cloudroom.setMacAccess(enabled),
+    mutationFn: (access: boolean | MacAccessLevel) => sdk.cloudroom.setMacAccess(access),
     onSettled: () => client.invalidateQueries({ queryKey: ["cloudroom-account"] }),
   });
 }

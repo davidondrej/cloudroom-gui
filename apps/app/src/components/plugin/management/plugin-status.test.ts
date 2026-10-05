@@ -173,7 +173,8 @@ describe("pluginRuntimeStatusPresentation", () => {
         ),
       ),
     ).toMatchObject({
-      recovery: "Restart Cloudroom. If the files are still missing, reinstall Cloudroom.",
+      recovery:
+        "Restart Cloudroom. If the files are still missing, reinstall Cloudroom.",
     });
     expect(
       pluginRuntimeStatusPresentation(plugin({}, { status: "missing" })),

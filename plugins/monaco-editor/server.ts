@@ -205,6 +205,14 @@ export default async function plugin(bb: BbPluginApi) {
     };
   }
 
+  async function isCloudThread(
+    source: z.infer<typeof sourceSchema>,
+  ): Promise<boolean> {
+    if (source.threadId === null) return false;
+    const thread = await bb.sdk.threads.get({ threadId: source.threadId });
+    return thread.executionTarget === "cloud";
+  }
+
   function relativeTo(root: string, target: string): string {
     const api = path.win32.isAbsolute(root) ? path.win32 : path.posix;
     return api.relative(root, target) || api.basename(target);
@@ -214,6 +222,12 @@ export default async function plugin(bb: BbPluginApi) {
     assets: () => assets(),
 
     async read({ path: filePath, source }) {
+      if (await isCloudThread(source)) {
+        return {
+          kind: "unsupported" as const,
+          reason: "Cloud thread files open in the read-only preview",
+        };
+      }
       const target = await resolveTarget(source, filePath);
       const file = await bb.sdk.files.read(target);
 
@@ -259,6 +273,9 @@ export default async function plugin(bb: BbPluginApi) {
     },
 
     async write({ path: filePath, source, content, expectedSha256 }) {
+      if (await isCloudThread(source)) {
+        throw new Error("Cloud thread files cannot be edited yet");
+      }
       const target = await resolveTarget(source, filePath);
       const result = await bb.sdk.files.write({
         ...target,

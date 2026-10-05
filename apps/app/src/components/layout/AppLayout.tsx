@@ -86,7 +86,6 @@ import {
   getSettingsProjectRoutePath,
   getRootComposeRoutePath,
   getThreadRoutePath,
-  isPluginsRoutePath,
   isProjectlessProjectId,
   isSkillsRoutePath,
   PLUGIN_PANEL_ROUTE_PATH,
@@ -96,7 +95,10 @@ import { useQuickCreateProjectController } from "@/hooks/useQuickCreateProject";
 import { IframeDragGuardOverlay } from "@/lib/iframe-drag-guard";
 import { dispatchBrowserViewBoundsSync } from "@/lib/browser-view-bounds-sync";
 import { useFaviconBadge } from "@/lib/favicon-color-preference";
-import { shouldShowFaviconAttentionDot } from "./faviconAttentionDot";
+import {
+  countAttentionThreads,
+  shouldShowFaviconAttentionDot,
+} from "./faviconAttentionDot";
 import { AppLayoutSidebar } from "./AppLayoutSidebar";
 import { CloudroomVersionMark } from "./CloudroomVersionMark";
 import {
@@ -457,11 +459,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navPanelChrome = usePluginNavPanelChrome();
   const isGlobalSettingsView =
     matchPath(`${SETTINGS_ROUTE_PATH}/*`, location.pathname) !== null;
-  const isPluginsWorkspace = isPluginsRoutePath(location.pathname);
   const isSkillsWorkspace = isSkillsRoutePath(location.pathname);
   const backToAppRoutePath = isGlobalSettingsView
     ? appRoutePath
-    : isPluginsWorkspace || isSkillsWorkspace
+    : isSkillsWorkspace
       ? toolsBackRoutePath
       : null;
   const pluginPanelMatch = matchPath(
@@ -647,6 +648,10 @@ export function AppLayout({ children }: AppLayoutProps) {
     ? "unread"
     : "none";
   useFaviconBadge(faviconBadge);
+  const attentionCount = countAttentionThreads(sidebarThreads);
+  useEffect(() => {
+    desktopInfo?.setBadgeCount?.(attentionCount);
+  }, [attentionCount, desktopInfo]);
 
   const handleResizeMouseDown = useCallback(
     (event: SidebarResizeMouseEvent) => {
@@ -749,11 +754,9 @@ export function AppLayout({ children }: AppLayoutProps) {
                 mode={
                   isGlobalSettingsView
                     ? "settings"
-                    : isPluginsWorkspace
-                      ? "plugins"
-                      : isSkillsWorkspace
-                        ? "skills"
-                        : "app"
+                    : isSkillsWorkspace
+                      ? "skills"
+                      : "app"
                 }
                 onResizeMouseDown={handleResizeMouseDown}
                 isResizing={isSidebarResizing}

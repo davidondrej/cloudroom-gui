@@ -114,9 +114,13 @@ function renderPage(
           : input instanceof URL
             ? input.href
             : input.url;
-      const query = new URL(requestUrl, "http://localhost").searchParams.get(
-        "q",
-      );
+      const url = new URL(requestUrl, "http://localhost");
+      if (url.pathname === "/api/v1/plugins") {
+        return new Response(JSON.stringify({ enabled: true, plugins: [] }), {
+          headers: { "content-type": "application/json" },
+        });
+      }
+      const query = url.searchParams.get("q");
       const results =
         query === "Beta" || query === "agent-interaction"
           ? [BETA]
@@ -135,6 +139,7 @@ function renderPage(
     <MemoryRouter initialEntries={[initialEntry]}>
       <PluginAuthorPage
         authorKey="12:bb-community:github:patlee"
+        selectedPluginId={null}
         onInstall={() => undefined}
         onOpenPlugin={onOpenPlugin}
       />
@@ -152,10 +157,8 @@ afterEach(() => {
 });
 
 describe("PluginAuthorPage", () => {
-  it("aligns the author header with the toolbar and card grid", async () => {
-    renderPage(
-      "/plugins?author=12%3Abb-community%3Agithub%3Apatlee",
-    );
+  it("aligns the author header with the toolbar and plugin list", async () => {
+    renderPage("/plugins?author=12%3Abb-community%3Agithub%3Apatlee");
 
     await screen.findByRole("heading", { name: /^Pat Lee/u });
     const headerContainer = screen
@@ -202,14 +205,12 @@ describe("PluginAuthorPage", () => {
       entries,
     );
 
-    const heading = await screen.findByRole("heading");
+    const heading = await screen.findByRole("heading", { level: 1 });
     expect(heading.firstElementChild?.textContent).toBe(expected);
   });
 
   it("restores the URL and shows only the selected author's plugins", async () => {
-    renderPage(
-      "/plugins?author=12%3Abb-community%3Agithub%3Apatlee&sort=recently-added&direction=asc",
-    );
+    renderPage("/plugins?author=12%3Abb-community%3Agithub%3Apatlee");
 
     expect(
       await screen.findByRole("heading", { name: /^Pat Lee/u }),
@@ -221,9 +222,9 @@ describe("PluginAuthorPage", () => {
         .getAttribute("href"),
     ).toBe("https://github.com/patlee");
     expect(cardOrder()).toEqual([
+      "Open Gamma details",
       "Open Alpha details",
       "Open Beta details",
-      "Open Gamma details",
     ]);
     expect(screen.queryByText("Other")).toBeNull();
     expect(screen.getByTestId("location").textContent).toContain(
@@ -231,46 +232,12 @@ describe("PluginAuthorPage", () => {
     );
   });
 
-  it("applies search, multiple categories, and both optional-value sorts", async () => {
+  it("searches the author's plugins and opens one", async () => {
     const onOpenPlugin = renderPage(
-      "/plugins?author=12%3Abb-community%3Agithub%3Apatlee&sort=most-installed",
+      "/plugins?author=12%3Abb-community%3Agithub%3Apatlee",
     );
 
     await screen.findByRole("heading", { name: /^Pat Lee/u });
-    expect(cardOrder()).toEqual([
-      "Open Gamma details",
-      "Open Beta details",
-      "Open Alpha details",
-    ]);
-    const sort = screen.getByRole("button", {
-      name: "Sort: Most installed, descending",
-    });
-    fireEvent.pointerDown(sort);
-    fireEvent.click(
-      screen.getByRole("menuitemradio", { name: "Most installed" }),
-    );
-    expect(cardOrder()).toEqual([
-      "Open Beta details",
-      "Open Gamma details",
-      "Open Alpha details",
-    ]);
-    fireEvent.keyDown(document, { key: "Escape" });
-
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Filter plugins by category: All categories",
-      }),
-    );
-    fireEvent.click(screen.getByRole("option", { name: /Thread Content/u }));
-    expect(cardOrder()).toEqual(["Open Gamma details", "Open Alpha details"]);
-    fireEvent.click(screen.getByRole("option", { name: /Security/u }));
-    expect(cardOrder()).toEqual([
-      "Open Beta details",
-      "Open Gamma details",
-      "Open Alpha details",
-    ]);
-    fireEvent.click(screen.getByRole("button", { name: "Clear filter" }));
-
     fireEvent.change(screen.getByRole("textbox", { name: "Search plugins" }), {
       target: { value: "Beta" },
     });

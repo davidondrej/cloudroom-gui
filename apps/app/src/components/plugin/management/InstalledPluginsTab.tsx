@@ -79,22 +79,7 @@ export function InstalledPluginRow({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const queryClient = useQueryClient();
-  const setEnabled = useSetPluginEnabled();
-  const toggle = useMutation({
-    meta: { showErrorToast: false },
-    mutationFn: (enabled: boolean) => setEnabled(plugin.id, enabled),
-    onError: (error, enabled) => {
-      appToast.error(
-        `${enabled ? "Enabling" : "Disabling"} ${plugin.id} failed`,
-        {
-          description: error instanceof Error ? error.message : String(error),
-        },
-      );
-    },
-    onSettled: () => invalidatePluginList({ queryClient }),
-  });
-  const enabled = toggle.isPending ? toggle.variables : plugin.enabled;
+  const { toggle, enabled } = usePluginEnabledToggle(plugin);
   const signal = pluginRowSignal(plugin);
   const statusSignal = signal?.kind === "status" ? signal : null;
   const updateSignal = signal?.kind === "update" ? signal : null;
@@ -188,4 +173,26 @@ export function InstalledPluginRow({
       />
     </div>
   );
+}
+
+export function usePluginEnabledToggle(plugin: PluginListItem) {
+  const queryClient = useQueryClient();
+  const setEnabled = useSetPluginEnabled();
+  const toggle = useMutation({
+    meta: { showErrorToast: false },
+    mutationFn: (enabled: boolean) => setEnabled(plugin.id, enabled),
+    onError: (error, enabled) => {
+      appToast.error(
+        `${enabled ? "Enabling" : "Disabling"} ${plugin.id} failed`,
+        {
+          description: error instanceof Error ? error.message : String(error),
+        },
+      );
+    },
+    onSettled: () => invalidatePluginList({ queryClient }),
+  });
+  return {
+    toggle,
+    enabled: toggle.isPending ? toggle.variables : plugin.enabled,
+  };
 }

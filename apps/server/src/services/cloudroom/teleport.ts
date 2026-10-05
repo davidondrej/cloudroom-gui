@@ -74,6 +74,7 @@ const HARNESSES = {
   pi: "pi",
   "claude-code": "claude-code",
   "acp-cursor": "cursor",
+  "acp-opencode": "opencode",
 } as const;
 type Harness = (typeof HARNESSES)[keyof typeof HARNESSES];
 function harnessOf(providerId: string): Harness | undefined {
@@ -249,7 +250,7 @@ class Teleport {
       throw new ApiError(
         409,
         "teleport_unavailable",
-        "Teleport supports Codex, Pi, and Claude Code.",
+        "Teleport supports Codex, Pi, Claude Code, and opencode.",
       );
     const all = [thread];
     for (let i = 0; i < all.length; i++)

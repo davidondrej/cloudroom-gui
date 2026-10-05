@@ -1527,18 +1527,28 @@ export function ThreadDetailPromptArea({
     thread.id,
     promptDraft.clearIfCurrentMatches,
   );
+  const runTeleportCommand = useCallback(
+    (draft: PromptDraftState): boolean => {
+      const start = canTeleportLocal ? startTeleportLocal : canTeleport ? startTeleport : null;
+      if (!start || draft.text.trim() !== "/teleport" || draft.attachments.length > 0) return false;
+      promptDraft.clearIfCurrentMatches(draft);
+      start();
+      return true;
+    },
+    [canTeleport, canTeleportLocal, promptDraft.clearIfCurrentMatches, startTeleport, startTeleportLocal],
+  );
   const handleBottomComposerSubmit = useCallback(() => {
-    if (runCopyCommand(currentPromptDraft)) return;
+    if (runCopyCommand(currentPromptDraft) || runTeleportCommand(currentPromptDraft)) return;
     void handleSend();
-  }, [currentPromptDraft, handleSend, runCopyCommand]);
+  }, [currentPromptDraft, handleSend, runCopyCommand, runTeleportCommand]);
   const handleBottomComposerModifierSubmit = useCallback(() => {
-    if (runCopyCommand(currentPromptDraft)) return;
+    if (runCopyCommand(currentPromptDraft) || runTeleportCommand(currentPromptDraft)) return;
     void handleModifierSubmit();
-  }, [currentPromptDraft, handleModifierSubmit, runCopyCommand]);
+  }, [currentPromptDraft, handleModifierSubmit, runCopyCommand, runTeleportCommand]);
   const handleBottomComposerHardQueueSubmit = useCallback(() => {
-    if (runCopyCommand(currentPromptDraft)) return;
+    if (runCopyCommand(currentPromptDraft) || runTeleportCommand(currentPromptDraft)) return;
     void handleHardQueue();
-  }, [currentPromptDraft, handleHardQueue, runCopyCommand]);
+  }, [currentPromptDraft, handleHardQueue, runCopyCommand, runTeleportCommand]);
   const handleInlineComposerSubmit = useCallback(() => {
     void handleSaveInlineQueuedMessage();
   }, [handleSaveInlineQueuedMessage]);

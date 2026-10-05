@@ -24,11 +24,13 @@ export function SectionSidebarIcon({ name }: { name: IconName }) {
 export function SectionSidebarRow({
   active,
   children,
+  className,
   label,
   to,
 }: {
   active: boolean;
   children?: ReactNode;
+  className?: string;
   label: string;
   to: string;
 }) {
@@ -41,6 +43,7 @@ export function SectionSidebarRow({
       className={cn(
         PROJECT_LIST_ACTION_BUTTON_CLASS,
         "w-full",
+        className,
         active && "bg-sidebar-accent text-sidebar-foreground",
       )}
     >
@@ -102,6 +105,7 @@ export function SectionSidebar({
   backLabel,
   backTo,
   children,
+  footer,
   isResizing,
   mobileHosted = false,
   onResizeMouseDown,
@@ -110,6 +114,7 @@ export function SectionSidebar({
   backLabel: string;
   backTo: string;
   children: ReactNode;
+  footer?: ReactNode;
   isResizing: boolean;
   mobileHosted?: boolean;
   onResizeMouseDown: (event: ReactMouseEvent<HTMLDivElement>) => void;
@@ -130,6 +135,7 @@ export function SectionSidebar({
       <SidebarContent>
         <div className="min-w-0 px-2">{children}</div>
       </SidebarContent>
+      {footer ? <div className="shrink-0 px-2 pb-2">{footer}</div> : null}
       <SidebarResizeHandle
         testId={`${testIdPrefix}-sidebar-resize-handle`}
         isResizing={isResizing}

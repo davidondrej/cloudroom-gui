@@ -361,8 +361,9 @@ const teleportFileSchema = z.object({ path: z.string(), size: z.number().int().n
 const threadTeleportCommandSchema = hostDaemonThreadWorkspaceTargetSchema.extend({
   type: z.literal("thread.teleport"),
   transferId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/),
-  action: z.enum(["capture", "read"]),
-  sessions: z.array(z.object({ threadId: z.string().regex(/^[a-zA-Z0-9_-]+$/), nativeId: z.string().regex(/^[a-zA-Z0-9_-]+$/), harness: z.enum(["codex", "pi", "claude-code", "cursor"]) })).optional(),
+  action: z.enum(["capture", "read", "import"]),
+  sessions: z.array(z.object({ threadId: z.string().regex(/^[a-zA-Z0-9_-]+$/), nativeId: z.string().regex(/^[a-zA-Z0-9_-]+$/), harness: z.enum(["codex", "pi", "claude-code", "cursor", "opencode"]) })).optional(),
+  file: z.string().optional(),
   attachments: z.array(z.string()).optional(),
   extraText: z.string().max(HOST_ARTIFACT_MAX_BYTES).optional(),
   index: z.number().int().nonnegative().optional(),

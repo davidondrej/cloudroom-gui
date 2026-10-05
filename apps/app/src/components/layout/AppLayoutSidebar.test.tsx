@@ -63,21 +63,12 @@ vi.mock("@/components/tools/ResourceSidebar", async () => {
     typeof import("@/components/ui/sidebar")
   >("@/components/ui/sidebar");
   return {
-    ResourceSidebar: ({
-      mobileHosted,
-      workspace,
-    }: {
-      mobileHosted?: boolean;
-      workspace: "plugins" | "skills";
-    }) => {
-      const title =
-        workspace === "plugins" ? "Plugins sidebar" : "Skills sidebar";
-      return mobileHosted ? (
-        <div data-testid={`${workspace}-sidebar-body`}>{title}</div>
+    ResourceSidebar: ({ mobileHosted }: { mobileHosted?: boolean }) =>
+      mobileHosted ? (
+        <div data-testid="skills-sidebar-body">Skills sidebar</div>
       ) : (
-        <Sidebar>{title}</Sidebar>
-      );
-    },
+        <Sidebar>Skills sidebar</Sidebar>
+      ),
   };
 });
 
@@ -128,9 +119,6 @@ function SidebarModeHarness({
     <>
       <button type="button" onClick={() => navigate("settings")}>
         Navigate to settings
-      </button>
-      <button type="button" onClick={() => navigate("plugins")}>
-        Navigate to plugins
       </button>
       <button type="button" onClick={() => navigate("skills")}>
         Navigate to skills
@@ -202,13 +190,10 @@ describe("AppLayoutSidebar mobile mode transitions", () => {
     settleMobileToggle();
     expect(getMobilePanel().dataset.state).toBe("open");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Navigate to plugins" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Navigate to skills" }));
     settleMobileToggle();
     expect(screen.queryByTestId("settings-sidebar-body")).toBeNull();
-    expect(screen.getByTestId("plugins-sidebar-body")).toBeTruthy();
-    expect(screen.queryByTestId("skills-sidebar-body")).toBeNull();
+    expect(screen.getByTestId("skills-sidebar-body")).toBeTruthy();
     expect(getAppSidebarBody().hidden).toBe(true);
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle Sidebar" }));
@@ -217,14 +202,14 @@ describe("AppLayoutSidebar mobile mode transitions", () => {
       screen.getByRole("button", { name: "Navigate back to app" }),
     );
 
-    expect(screen.getByTestId("plugins-sidebar-body")).toBeTruthy();
+    expect(screen.getByTestId("skills-sidebar-body")).toBeTruthy();
     expect(getAppSidebarBody().hidden).toBe(true);
     expect(getShelfRevealTranslate()).toBe("0px");
 
     settleMobileToggle();
 
     expect(getMobilePanel()).toBe(panel);
-    expect(screen.queryByTestId("plugins-sidebar-body")).toBeNull();
+    expect(screen.queryByTestId("skills-sidebar-body")).toBeNull();
     expect(getAppSidebarBody().hidden).toBe(false);
     expect(mountCounts.appSidebar).toBe(1);
   });
@@ -276,14 +261,14 @@ describe("AppLayoutSidebar mobile mode transitions", () => {
     expect(screen.queryByText("App sidebar")).toBeNull();
     expect(screen.queryByTestId("settings-sidebar-body")).toBeNull();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Navigate to plugins" }),
-    );
-    expect(screen.getByText("Plugins sidebar")).toBeTruthy();
-    expect(screen.queryByText("Skills sidebar")).toBeNull();
-
     fireEvent.click(screen.getByRole("button", { name: "Navigate to skills" }));
     expect(screen.getByText("Skills sidebar")).toBeTruthy();
-    expect(screen.queryByText("Plugins sidebar")).toBeNull();
+    expect(screen.queryByText("Settings sidebar")).toBeNull();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Navigate back to app" }),
+    );
+    expect(screen.getByText("App sidebar")).toBeTruthy();
+    expect(screen.queryByText("Skills sidebar")).toBeNull();
   });
 });

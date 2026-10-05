@@ -350,6 +350,24 @@ class CloudroomService {
     this.sandboxes = new SandboxDirectory(async () => {
       const saved = await this.savedConnection();
       return saved?.sandboxToken && saved.account ? { website: saved.websiteUrl ?? "https://www.cloudroom.dev", userId: saved.account.id, token: saved.sandboxToken } : null;
+    }, () => void writeFile(join(deps.config.dataDir, "cloudroom-preview", "woke"), "").catch(() => {}));
+    // Renames, generated titles, and agent renames all reach the website. Read after the change's transaction ends.
+    deps.hub.onThreadChanged((threadId, changes) => { if (changes.includes("title-changed")) setImmediate(() => this.syncLabel(threadId)); });
+  }
+
+  private readonly labels = new Map<string, string>();
+  /** Keeps the website's copy of a sandbox thread's title, project name, and Core session current, so the web can
+   *  list it and read its history (ADR 0182). Subagents share their parent's sandbox and are found through its history. */
+  private syncLabel(threadId: string): void {
+    const saved = binding(this.deps.db, threadId), thread = getThread(this.deps.db, threadId);
+    if (!saved?.sessionId || !thread || sandboxThread(saved.coreUrl) !== threadId) return;
+    const label = { title: thread.title ?? thread.titleFallback ?? null, project_name: getProject(this.deps.db, thread.projectId)?.name ?? null, session: saved.sessionId };
+    const key = JSON.stringify(label);
+    if (this.labels.get(threadId) === key) return;
+    this.labels.set(threadId, key);
+    void this.sandboxes.label(threadId, label).catch((error: unknown) => {
+      this.labels.delete(threadId);
+      this.warn("Cloud thread label not saved", error, { threadId });
     });
   }
 
@@ -1016,6 +1034,7 @@ class CloudroomService {
   private async createChild(request: CreateThreadRequest, parentId: string): Promise<Thread> {
     const parent = binding(this.deps.db, parentId);
     const parentThread = getThread(this.deps.db, parentId);
+    if (parentThread && !isCloudThread(parentThread)) throw new ApiError(400, "cloudroom_unsupported", "A Local thread can't be the parent of a Cloud thread yet. Spawn a Local child, or start the Cloud thread without a parent.");
     if (!parent?.sessionId || !parentThread || parentThread.archivedAt || parentThread.deletedAt) throw new ApiError(409, "cloudroom_parent_unavailable", "The parent Cloud thread is archived or has not started yet.");
     if (request.projectId !== parentThread.projectId) throw new ApiError(400, "cloudroom_unsupported", "A child thread belongs to its parent's project.");
     const providerId = request.providerId ?? parentThread.providerId;
@@ -1702,6 +1721,8 @@ class CloudroomService {
 
   private follow(saved: Binding, client: CloudroomClient): void {
     if (this.streams.has(saved.threadId) || !saved.sessionId || this.stopped) return;
+    // Once per app run and thread: backfills older threads and saves a new thread's session.
+    this.syncLabel(saved.threadId);
     const controller = new AbortController();
     this.streams.set(saved.threadId, controller);
     void (async () => {

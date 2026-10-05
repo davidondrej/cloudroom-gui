@@ -1,46 +1,26 @@
-import { type MouseEvent as ReactMouseEvent, useId, useState } from "react";
-import { PluginIcon } from "@/components/plugin/PluginIcon";
+import { type MouseEvent as ReactMouseEvent, type ReactNode, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Icon } from "@bb/shared-ui/icon";
+import { Input } from "@bb/shared-ui/input";
 import {
   SectionSidebar,
   SectionSidebarIcon,
-  SectionSidebarLabel,
   SectionSidebarActionRow,
   SectionSidebarRow,
 } from "@/components/sidebar/SectionSidebar";
+import { InviteSidebarRow } from "@/components/InviteOffer";
+import { useCloseMobileSidebar } from "@/components/ui/sidebar.js";
+import { useCloudroomAccount } from "@/hooks/queries/cloudroom-queries";
 import { canOpenNativeScreen, shellOpenNative } from "@/lib/native-shell";
-import { getPluginConfigurationRoutePath } from "@/lib/route-paths";
 import { useSettingsNavState } from "./settings-nav";
 import type { SettingsNavState } from "./settings-nav";
 import {
+  findSettingsNavGroup,
+  getSettingsGroupLinks,
   getSettingsSectionRoutePath,
-  type SettingsNavSection,
-  type SettingsSectionId,
+  matchesSettingsSearch,
+  SETTINGS_NAV_GROUPS,
 } from "./settings-sections";
-import type { PluginSettingsEntry } from "./plugin-settings-entries";
-
-const VISIBLE_SECTIONS = new Set<SettingsSectionId>([
-  "general",
-  "defaults",
-  "cloud-environment",
-  "providers",
-  "import",
-  "appearance",
-  "keyboard",
-  "machines",
-  "updates",
-  "plugins",
-]);
-
-const VISIBLE_PLUGINS = new Set([
-  "bb-guide",
-  "provider-claude-code",
-  "provider-codex",
-  "custom-instructions",
-  "keep-awake",
-  "provider-retry",
-  "provider-usage",
-  "connect",
-]);
 
 interface SettingsSidebarProps {
   onResizeMouseDown: (event: ReactMouseEvent<HTMLDivElement>) => void;
@@ -55,11 +35,15 @@ type SettingsSidebarNavigation = Pick<
 >;
 
 interface SettingsSidebarContentProps extends SettingsSidebarProps {
+  account?: ReactNode;
+  invite?: ReactNode;
   navigation: SettingsSidebarNavigation;
   testIdPrefix?: string;
 }
 
 export function SettingsSidebarContent({
+  account,
+  invite,
   onResizeMouseDown,
   isResizing,
   appRoutePath,
@@ -67,120 +51,128 @@ export function SettingsSidebarContent({
   navigation,
   testIdPrefix = "settings",
 }: SettingsSidebarContentProps) {
-  const { activePluginId, activeSection, pluginEntries, sections } = navigation;
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-  const advancedId = useId();
-  const visiblePlugins = pluginEntries.filter((entry) =>
-    VISIBLE_PLUGINS.has(entry.id),
+  const navigate = useNavigate();
+  const closeOnMobile = useCloseMobileSidebar();
+  const [query, setQuery] = useState("");
+  const activeGroup = findSettingsNavGroup(
+    navigation.activeSection,
+    navigation.activePluginId,
   );
-  const advancedSections = sections.filter(
-    (section) => section.id !== "archived" && !VISIBLE_SECTIONS.has(section.id),
-  );
-  const advancedPlugins = pluginEntries.filter(
-    (entry) => !VISIBLE_PLUGINS.has(entry.id),
-  );
-  const hasNativeSettings = canOpenNativeScreen();
-  const hasAdvanced =
-    advancedSections.length > 0 ||
-    advancedPlugins.length > 0 ||
-    hasNativeSettings;
+  const rows = SETTINGS_NAV_GROUPS.flatMap((group) => {
+    const links = getSettingsGroupLinks(group, navigation);
+    return links.length > 0 && matchesSettingsSearch(group, links, query)
+      ? [{ group, to: links[0]!.to }]
+      : [];
+  });
+  const listRows = rows.filter(({ group }) => group.id !== "advanced");
+  const advancedRow = rows.find(({ group }) => group.id === "advanced");
 
-  const renderSection = (section: SettingsNavSection) => (
-    <SectionSidebarRow
-      key={section.id}
-      active={activeSection === section.id}
-      label={section.label}
-      to={getSettingsSectionRoutePath(section.id)}
-    >
-      <SectionSidebarIcon name={section.icon} />
-    </SectionSidebarRow>
-  );
-
-  const renderPlugin = (entry: PluginSettingsEntry) => (
-    <SectionSidebarRow
-      key={entry.id}
-      active={activePluginId === entry.id}
-      label={entry.label}
-      to={getPluginConfigurationRoutePath({ pluginId: entry.id })}
-    >
-      <PluginIcon
-        pluginId={entry.id}
-        icon={entry.icon}
-        className="size-4 shrink-0"
-      />
-    </SectionSidebarRow>
+  const footer = (
+    <div className="space-y-2">
+      {canOpenNativeScreen() ? (
+        <SectionSidebarActionRow
+          label="This device"
+          testId="settings-nav-native-device"
+          onClick={() => shellOpenNative("device-settings")}
+        >
+          <SectionSidebarIcon name="Smartphone" />
+        </SectionSidebarActionRow>
+      ) : null}
+      {advancedRow ? (
+        <SectionSidebarRow
+          active={activeGroup.id === "advanced"}
+          className="border border-sidebar-border"
+          label="Advanced"
+          to={advancedRow.to}
+        >
+          <SectionSidebarIcon name={advancedRow.group.icon} />
+        </SectionSidebarRow>
+      ) : null}
+      {account}
+    </div>
   );
 
   return (
     <SectionSidebar
       backLabel="Back to app"
       backTo={appRoutePath}
+      footer={footer}
       isResizing={isResizing}
       mobileHosted={mobileHosted}
       onResizeMouseDown={onResizeMouseDown}
       testIdPrefix={testIdPrefix}
     >
-      <SectionSidebarLabel>Settings</SectionSidebarLabel>
-      <div className="mt-1 space-y-0.5">
-        {sections
-          .filter((section) => VISIBLE_SECTIONS.has(section.id))
-          .map(renderSection)}
+      {invite}
+      <div className="relative mb-2">
+        <Icon
+          name="Search"
+          className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          aria-label="Search settings"
+          className="h-8 pl-8 text-sm"
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setQuery("");
+            const first = rows[0];
+            if (event.key !== "Enter" || !first) return;
+            navigate(first.to);
+            setQuery("");
+            closeOnMobile();
+          }}
+          placeholder="Search settings"
+          value={query}
+        />
       </div>
-      {visiblePlugins.length > 0 ? (
-        <>
-          <div className="mt-4">
-            <SectionSidebarLabel>Plugins</SectionSidebarLabel>
-          </div>
-          <div className="mt-1 space-y-0.5">
-            {visiblePlugins.map(renderPlugin)}
-          </div>
-        </>
-      ) : null}
-      {sections.some((section) => section.id === "archived") ? (
-        <>
-          <div className="mt-4">
-            <SectionSidebarLabel>Archived</SectionSidebarLabel>
-          </div>
-          <div className="mt-1 space-y-0.5">
-            {sections
-              .filter((section) => section.id === "archived")
-              .map(renderSection)}
-          </div>
-        </>
-      ) : null}
-      {hasAdvanced ? (
-        <div className="mt-4">
-          <SectionSidebarLabel>
-            <button
-              type="button"
-              aria-expanded={advancedOpen}
-              aria-controls={advancedId}
-              onClick={() => setAdvancedOpen((open) => !open)}
-              className="cursor-pointer rounded-sm focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              Advanced
-            </button>
-          </SectionSidebarLabel>
-          <div
-            id={advancedId}
-            hidden={!advancedOpen}
-            className="mt-1 space-y-0.5"
+      <div className="space-y-0.5">
+        {listRows.map(({ group, to }) => (
+          <SectionSidebarRow
+            key={group.id}
+            active={activeGroup.id === group.id}
+            label={group.label}
+            to={to}
           >
-            {advancedSections.map(renderSection)}
-            {advancedPlugins.map(renderPlugin)}
-            {hasNativeSettings ? (
-              <SectionSidebarActionRow
-                label="This device"
-                testId="settings-nav-native-device"
-                onClick={() => shellOpenNative("device-settings")}
-              >
-                <SectionSidebarIcon name="Smartphone" />
-              </SectionSidebarActionRow>
-            ) : null}
-          </div>
-        </div>
+            <SectionSidebarIcon name={group.icon} />
+          </SectionSidebarRow>
+        ))}
+      </div>
+      {rows.length === 0 ? (
+        <p className="px-2 py-1.5 text-sm text-muted-foreground">
+          No settings match.
+        </p>
       ) : null}
     </SectionSidebar>
+  );
+}
+
+function SettingsAccountCard() {
+  const status = useCloudroomAccount().data;
+  const email = status?.account?.email;
+  const closeOnMobile = useCloseMobileSidebar();
+  return (
+    <Link
+      to={getSettingsSectionRoutePath("machines")}
+      onClick={closeOnMobile}
+      data-testid="settings-account-card"
+      className="flex items-center gap-2.5 rounded-md border-t border-sidebar-border px-2 pt-3 pb-1 text-sidebar-foreground hover:bg-sidebar-accent"
+    >
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+        {email ? email[0]!.toUpperCase() : <Icon name="UserRound" className="size-4" />}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm">
+          {email ?? "Sign in to Cloudroom"}
+        </span>
+        <span className="block truncate text-xs text-muted-foreground">
+          {!email
+            ? "Local threads only"
+            : status?.ready
+              ? "Cloud connected"
+              : "Cloud unavailable"}
+        </span>
+      </span>
+      <Icon name="ChevronRight" className="size-3.5 shrink-0 text-muted-foreground" />
+    </Link>
   );
 }
 
@@ -194,6 +186,8 @@ export function SettingsSidebar({
 
   return (
     <SettingsSidebarContent
+      account={<SettingsAccountCard />}
+      invite={<InviteSidebarRow />}
       appRoutePath={appRoutePath}
       isResizing={isResizing}
       mobileHosted={mobileHosted}

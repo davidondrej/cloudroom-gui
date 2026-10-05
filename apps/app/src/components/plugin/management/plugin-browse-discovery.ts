@@ -1,162 +1,158 @@
 import { PLUGIN_CATALOG_CATEGORIES, pluginCatalogCategory } from "@bb/domain";
-import type { PluginCatalogCollection } from "@bb/server-contract";
-import type {
-  PluginCatalogSearchEntry,
-  PluginCatalogSearchData,
-} from "@/hooks/queries/plugin-catalog-queries";
+import type { PluginCatalogSearchEntry } from "@/hooks/queries/plugin-catalog-queries";
+import type { PluginListItem } from "@/hooks/queries/plugin-settings-queries";
 
-export const UNCATEGORIZED_PLUGIN_CATEGORY_ID = "uncategorized";
+export type PluginListFilter = "all" | "installed" | "updates";
 
-export type PluginBrowseSort = "recently-added" | "most-installed";
-export type PluginBrowseSortDirection = "asc" | "desc";
+export function pluginListFilter(value: string | null): PluginListFilter {
+  return value === "installed" || value === "updates" ? value : "all";
+}
 
-export interface PluginBrowseShelf {
+export interface PluginListRow {
   key: string;
-  categoryId?: string;
+  pluginId: string;
+  title: string;
+  description: string;
+  installed: boolean;
+  entry: PluginCatalogSearchEntry | null;
+  plugin: PluginListItem | null;
+}
+
+export interface PluginListGroup {
+  key: string;
   label: string;
-  description?: string;
-  entries: PluginCatalogSearchEntry[];
-  kind: "collection" | "category" | "uncategorized";
+  rows: PluginListRow[];
 }
 
-function isCategorized(entry: PluginCatalogSearchEntry): boolean {
-  return entry.categoryId !== undefined && entry.category !== undefined;
+const UNCATEGORIZED_GROUP = { key: "uncategorized", label: "More plugins" };
+const NOT_IN_CATALOG_GROUP = { key: "not-in-catalog", label: "Your plugins" };
+
+export function catalogEntryKey(entry: PluginCatalogSearchEntry): string {
+  return `${entry.marketplace}/${entry.entryId}`;
 }
 
-function collectionEntries(
-  entries: readonly PluginCatalogSearchEntry[],
-  collection: PluginCatalogCollection,
-): PluginCatalogSearchEntry[] {
-  const rankByEntryId = new Map(
-    collection.pluginIds.map((entryId, rank) => [entryId, rank]),
+function installedPluginForEntry(
+  entry: PluginCatalogSearchEntry,
+  plugins: readonly PluginListItem[],
+): PluginListItem | null {
+  if (!entry.installed) return null;
+  return (
+    plugins.find(
+      (plugin) =>
+        plugin.id === entry.pluginId &&
+        plugin.catalogEntryId === entry.entryId &&
+        plugin.catalogMarketplaceName === entry.marketplace,
+    ) ??
+    plugins.find((plugin) => plugin.id === entry.pluginId) ??
+    null
   );
-  return entries
-    .filter(
-      (entry) =>
-        rankByEntryId.has(entry.entryId) &&
-        entry.collections.some((membership) => membership.id === collection.id),
-    )
-    .sort(
-      (left, right) =>
-        (rankByEntryId.get(left.entryId) ?? Number.MAX_SAFE_INTEGER) -
-        (rankByEntryId.get(right.entryId) ?? Number.MAX_SAFE_INTEGER),
-    );
 }
 
-export function pluginBrowseShelves({
-  entries,
-  collections,
-}: PluginCatalogSearchData): PluginBrowseShelf[] {
-  const shelves: PluginBrowseShelf[] = collections.flatMap((collection) => {
-    const shelfEntries = collectionEntries(entries, collection);
-    return shelfEntries.length === 0
-      ? []
-      : [
-          {
-            key: `collection:${collection.id}`,
-            label: collection.displayName,
-            entries: shelfEntries,
-            kind: "collection" as const,
-          },
-        ];
-  });
-  const entriesByCategory = new Map<string, PluginCatalogSearchEntry[]>();
-  const categoryLabels = new Map<string, string>();
-  const unknownCategoryOrder: string[] = [];
+export function pluginListRows(
+  entries: readonly PluginCatalogSearchEntry[],
+  plugins: readonly PluginListItem[],
+): PluginListRow[] {
+  const matchedPluginIds = new Set<string>();
+  const rows: PluginListRow[] = [];
   for (const entry of entries) {
-    if (!isCategorized(entry)) continue;
-    const categoryId = entry.categoryId;
-    const categoryLabel = entry.category;
-    if (categoryId === undefined || categoryLabel === undefined) continue;
-    const categoryEntries = entriesByCategory.get(categoryId);
-    if (categoryEntries === undefined) {
-      entriesByCategory.set(categoryId, [entry]);
-      categoryLabels.set(categoryId, categoryLabel);
-      if (pluginCatalogCategory(categoryId) === undefined) {
-        unknownCategoryOrder.push(categoryId);
-      }
+    if (!entry.compatible) continue;
+    const plugin = installedPluginForEntry(entry, plugins);
+    if (plugin !== null) matchedPluginIds.add(plugin.id);
+    rows.push({
+      key: catalogEntryKey(entry),
+      pluginId: entry.pluginId,
+      title: entry.displayName,
+      description: entry.description,
+      installed: entry.installed,
+      entry,
+      plugin,
+    });
+  }
+  const notInCatalog = plugins
+    .filter((plugin) => !matchedPluginIds.has(plugin.id))
+    .sort((left, right) =>
+      (left.name ?? left.id).localeCompare(right.name ?? right.id),
+    );
+  for (const plugin of notInCatalog) {
+    rows.push({
+      key: `installed/${plugin.id}`,
+      pluginId: plugin.id,
+      title: plugin.name ?? plugin.id,
+      description: plugin.description ?? "",
+      installed: true,
+      entry: null,
+      plugin,
+    });
+  }
+  return rows;
+}
+
+export function pluginRowHasUpdate(row: PluginListRow): boolean {
+  return row.plugin?.updateState.availableVersion != null;
+}
+
+export function filterPluginRows(
+  rows: readonly PluginListRow[],
+  filter: PluginListFilter,
+  query: string,
+  catalogMatches: ReadonlySet<string> | null = null,
+): PluginListRow[] {
+  const needle = query.trim().toLowerCase();
+  return rows.filter((row) => {
+    if (filter === "installed" && !row.installed) return false;
+    if (filter === "updates" && !pluginRowHasUpdate(row)) return false;
+    if (needle === "") return true;
+    if (row.entry !== null && catalogMatches?.has(row.key)) return true;
+    return [
+      row.title,
+      row.description,
+      row.pluginId,
+      row.entry?.category ?? "",
+      row.entry?.author?.name ?? "",
+      row.entry?.publisherLabel ?? row.plugin?.publisherLabel ?? "",
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(needle);
+  });
+}
+
+function rowGroup(row: PluginListRow): Omit<PluginListGroup, "rows"> {
+  if (row.entry === null) return NOT_IN_CATALOG_GROUP;
+  const { categoryId, category } = row.entry;
+  if (categoryId === undefined || category === undefined) {
+    return UNCATEGORIZED_GROUP;
+  }
+  return {
+    key: categoryId,
+    label: pluginCatalogCategory(categoryId)?.displayName ?? category,
+  };
+}
+
+const KNOWN_CATEGORY_RANK = new Map<string, number>(
+  PLUGIN_CATALOG_CATEGORIES.map((category, index) => [category.id, index]),
+);
+
+function groupRank(key: string): number {
+  if (key === NOT_IN_CATALOG_GROUP.key) return Number.MAX_SAFE_INTEGER;
+  if (key === UNCATEGORIZED_GROUP.key) return Number.MAX_SAFE_INTEGER - 1;
+  return KNOWN_CATEGORY_RANK.get(key) ?? PLUGIN_CATALOG_CATEGORIES.length;
+}
+
+export function groupPluginRows(
+  rows: readonly PluginListRow[],
+): PluginListGroup[] {
+  const groups = new Map<string, PluginListGroup>();
+  for (const row of rows) {
+    const group = rowGroup(row);
+    const existing = groups.get(group.key);
+    if (existing === undefined) {
+      groups.set(group.key, { ...group, rows: [row] });
     } else {
-      categoryEntries.push(entry);
+      existing.rows.push(row);
     }
   }
-  const categoryOrder = [
-    ...PLUGIN_CATALOG_CATEGORIES.map((category) => category.id),
-    ...unknownCategoryOrder,
-  ];
-  for (const categoryId of categoryOrder) {
-    const shelfEntries = entriesByCategory.get(categoryId);
-    if (shelfEntries === undefined || shelfEntries.length === 0) continue;
-    const builtInCategory = pluginCatalogCategory(categoryId);
-    shelves.push({
-      key: `category:${categoryId}`,
-      categoryId,
-      label:
-        builtInCategory?.displayName ??
-        categoryLabels.get(categoryId) ??
-        categoryId,
-      ...(builtInCategory === undefined
-        ? {}
-        : { description: builtInCategory.description }),
-      entries: shelfEntries,
-      kind: "category",
-    });
-  }
-  const uncategorizedEntries = entries.filter((entry) => !isCategorized(entry));
-  if (uncategorizedEntries.length > 0) {
-    shelves.push({
-      key: "category:uncategorized",
-      categoryId: UNCATEGORIZED_PLUGIN_CATEGORY_ID,
-      label: "More plugins",
-      entries: uncategorizedEntries,
-      kind: "uncategorized",
-    });
-  }
-  return shelves;
-}
-
-export function pluginCategoryFilterId(
-  entry: PluginCatalogSearchEntry,
-): string {
-  return isCategorized(entry)
-    ? (entry.categoryId ?? UNCATEGORIZED_PLUGIN_CATEGORY_ID)
-    : UNCATEGORIZED_PLUGIN_CATEGORY_ID;
-}
-
-function compareOptionalNumbers(
-  left: number | undefined,
-  right: number | undefined,
-  direction: PluginBrowseSortDirection,
-): number {
-  if (left === undefined) return right === undefined ? 0 : 1;
-  if (right === undefined) return -1;
-  const result = left - right;
-  return direction === "asc" ? result : -result;
-}
-
-export function sortPluginEntries(
-  entries: readonly PluginCatalogSearchEntry[],
-  sort: PluginBrowseSort,
-  direction: PluginBrowseSortDirection = "desc",
-): PluginCatalogSearchEntry[] {
-  return [...entries].sort((left, right) => {
-    const sortResult =
-      sort === "recently-added"
-        ? compareOptionalNumbers(
-            left.publishedAt === undefined
-              ? undefined
-              : Date.parse(left.publishedAt),
-            right.publishedAt === undefined
-              ? undefined
-              : Date.parse(right.publishedAt),
-            direction,
-          )
-        : compareOptionalNumbers(
-            left.installs ?? undefined,
-            right.installs ?? undefined,
-            direction,
-          );
-    if (sortResult !== 0) return sortResult;
-    const nameResult = left.displayName.localeCompare(right.displayName);
-    return nameResult || left.entryId.localeCompare(right.entryId);
-  });
+  return [...groups.values()].sort(
+    (left, right) => groupRank(left.key) - groupRank(right.key),
+  );
 }

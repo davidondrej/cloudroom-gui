@@ -7,7 +7,7 @@ export type LocalViewModel = LoadingViewModel | StartupErrorViewModel;
 
 interface LoadingViewModel {
   kind: "loading";
-  message: string;
+  logoSrc: string;
   title: string;
 }
 
@@ -29,10 +29,11 @@ function formatPlainLogText(value: string): string {
 
 function renderLoadingView(viewModel: LoadingViewModel): string {
   return `
-    <main class="shell">
-      <div class="spinner"></div>
+    <main class="shell" role="status">
+      <img class="loading-logo" src="${escapeHtmlText(viewModel.logoSrc)}" alt="">
+      <div class="loading-floor"></div>
       <h1>${escapeHtmlText(viewModel.title)}</h1>
-      <p>${escapeHtmlText(viewModel.message)}</p>
+      <div class="loading-dots"><i></i><i></i><i></i></div>
     </main>
   `;
 }
@@ -63,13 +64,30 @@ function renderLocalView(viewModel: LocalViewModel): string {
 <html>
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cloudroom</title>
   <style>
     :root {
       color-scheme: light dark;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --loading-bg: #f4eedf;
+      --loading-fg: #0a0a0a;
+      --loading-depth: #0a0a0a;
+      --loading-floor: rgb(10 10 10 / 12%);
+      --loading-dot: #0a0a0a;
+      --loading-dot-idle: #0a0a0a;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --loading-bg: #0b0b0b;
+        --loading-fg: #ededed;
+        --loading-depth: #2e2e2e;
+        --loading-floor: rgb(255 255 255 / 7%);
+        --loading-dot: #bfff00;
+        --loading-dot-idle: #3a3a3a;
+      }
     }
 
     body {
@@ -158,24 +176,93 @@ function renderLocalView(viewModel: LocalViewModel): string {
       white-space: pre-wrap;
     }
 
-    .spinner {
-      animation: spin 0.9s linear infinite;
-      border: 2px solid color-mix(in srgb, CanvasText 16%, transparent);
-      border-top-color: CanvasText;
-      border-radius: 999px;
-      height: 24px;
-      margin: 0 auto;
-      width: 24px;
+    .loading-view {
+      background: var(--loading-bg);
+      color: var(--loading-fg);
     }
 
-    @keyframes spin {
+    .loading-view h1 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin: 30px 0 0;
+    }
+
+    .loading-logo {
+      animation: loading-bob 0.8s ease-in-out infinite alternate;
+      box-shadow: 1px 1px 0 var(--loading-depth), 2px 2px 0 var(--loading-depth), 3px 3px 0 var(--loading-depth), 4px 4px 0 var(--loading-depth), 5px 5px 0 var(--loading-depth), 6px 6px 0 var(--loading-depth), 7px 7px 0 var(--loading-depth), 8px 8px 0 var(--loading-depth), 9px 9px 0 var(--loading-depth), 10px 10px 0 var(--loading-depth);
+      display: block;
+      height: 120px;
+      margin: 0 auto;
+      width: 120px;
+    }
+
+    .loading-floor {
+      animation: loading-floor 0.8s ease-in-out infinite alternate;
+      background: var(--loading-floor);
+      height: 8px;
+      margin: 26px auto 0;
+      width: 100px;
+    }
+
+    .loading-dots {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .loading-dots i {
+      animation: loading-dot 1.2s steps(1) infinite;
+      border: 2px solid var(--loading-dot-idle);
+      box-sizing: border-box;
+      height: 10px;
+      width: 10px;
+    }
+
+    .loading-dots i:nth-child(2) {
+      animation-delay: -0.8s;
+    }
+
+    .loading-dots i:nth-child(3) {
+      animation-delay: -0.4s;
+    }
+
+    @keyframes loading-bob {
+      from {
+        transform: translate(-5px, 0);
+      }
       to {
-        transform: rotate(360deg);
+        transform: translate(-5px, -10px);
+      }
+    }
+
+    @keyframes loading-floor {
+      to {
+        opacity: 0.6;
+        transform: scaleX(0.8);
+      }
+    }
+
+    @keyframes loading-dot {
+      0% {
+        background: var(--loading-dot);
+        border-color: var(--loading-dot);
+      }
+      66% {
+        background: transparent;
+        border-color: var(--loading-dot-idle);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .loading-view * {
+        animation: none;
       }
     }
   </style>
 </head>
-<body>
+<body class="${viewModel.kind}-view">
 <div class="titlebar-drag-region" data-testid="bb-local-view-window-drag-region" aria-hidden="true"></div>
 ${body}
 </body>

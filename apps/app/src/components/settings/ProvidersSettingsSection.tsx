@@ -238,7 +238,7 @@ export function ProvidersSettingsSection({
     <>
       <SettingsSection
         title="Providers"
-        description="Set the default agent and its order in provider pickers. Configure each provider on its plugin page under Plugins."
+        description="Set the default agent and its order in provider pickers. Provider-specific settings are in the tabs above."
       >
         {providersQuery.isPending ? (
           <p className="text-sm text-muted-foreground">Loading providers…</p>

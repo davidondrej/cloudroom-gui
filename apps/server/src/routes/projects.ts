@@ -699,8 +699,12 @@ export function registerProjectRoutes(app: Hono, deps: AppDeps): void {
         includeBuiltinCompact: deps.providerRegistry.supportsManualCompaction(
           query.provider,
         ),
-        includeBuiltinTeleport:
-          query.provider === "codex" || query.provider === "pi",
+        includeBuiltinTeleport: [
+          "codex",
+          "pi",
+          "claude-code",
+          "acp-opencode",
+        ].includes(query.provider),
         skillCatalog,
       }),
     );

@@ -8,33 +8,13 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import {
-  MemoryRouter,
-  Route,
-  Routes,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { focusManager } from "@tanstack/react-query";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
 import { makeSystemConfig } from "@/test/fixtures/system-config";
 import { resetAppRouteHistoryForTest } from "@/lib/app-route-history";
 import { PluginsOverview } from "./PluginsOverview";
-
-function SwitchViewButton({ view }: { view: "browse" | "installed" }) {
-  const navigate = useNavigate();
-  return (
-    <button
-      type="button"
-      onClick={() =>
-        navigate(view === "browse" ? "/plugins" : "/plugins?view=installed")
-      }
-    >
-      {`switch-to-${view}`}
-    </button>
-  );
-}
 
 function responseJson(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -252,7 +232,7 @@ describe("PluginsOverview", () => {
     expect(screen.getByTestId("location-path").textContent).toBe("/");
   });
 
-  it("shows category filters only in Browse", async () => {
+  it("filters Browse to installed plugins without the Type filter", async () => {
     installFetch([
       AUTOMATIONS_PLUGIN,
       {
@@ -278,15 +258,8 @@ describe("PluginsOverview", () => {
     );
 
     expect(await screen.findByText("GitHub")).toBeTruthy();
-    const categoryTrigger = screen.getByRole("button", {
-      name: "Filter plugins by category: All categories",
-    });
     expect(screen.queryByRole("button", { name: "Type" })).toBeNull();
-    fireEvent.click(categoryTrigger);
-    fireEvent.click(
-      screen.getByRole("option", { name: /Context & knowledge/u }),
-    );
-    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(screen.getByRole("radio", { name: "Installed" }));
     expect(screen.getByText("Docs")).toBeTruthy();
     expect(screen.queryByText("GitHub")).toBeNull();
   });
@@ -297,7 +270,7 @@ describe("PluginsOverview", () => {
     render(
       <MemoryRouter initialEntries={["/plugins?view=installed"]}>
         <QueryClientWrapper>
-          <PluginsOverview />
+          <PluginsOverview mode="installed" />
           <LocationPath />
         </QueryClientWrapper>
       </MemoryRouter>,
@@ -315,9 +288,7 @@ describe("PluginsOverview", () => {
     render(
       <MemoryRouter initialEntries={["/plugins?view=installed"]}>
         <QueryClientWrapper>
-          <PluginsOverview />
-          <SwitchViewButton view="browse" />
-          <SwitchViewButton view="installed" />
+          <PluginsOverview mode="installed" />
         </QueryClientWrapper>
       </MemoryRouter>,
     );
@@ -328,10 +299,10 @@ describe("PluginsOverview", () => {
     expect(screen.getByRole("button", { name: "New plugin" })).toBeTruthy();
   });
 
-  it("keeps Browse filters in the toolbar rather than a separate pill band", async () => {
+  it("keeps the Browse filter and New plugin in the search toolbar", async () => {
     installFetch();
     const { wrapper: QueryClientWrapper } = createQueryClientTestHarness();
-    const { container } = render(
+    render(
       <MemoryRouter initialEntries={["/plugins?view=browse"]}>
         <QueryClientWrapper>
           <PluginsOverview />
@@ -340,24 +311,16 @@ describe("PluginsOverview", () => {
     );
 
     await screen.findByText("GitHub");
-    expect(
-      screen.queryByRole("radiogroup", {
-        name: "Filter plugins by category",
-      }),
-    ).toBeNull();
-    expect(
-      container.querySelector(
-        "[data-resource-collection-viewport] > .shrink-0",
-      ),
-    ).toBeNull();
     const search = screen.getByRole("textbox", { name: "Search plugins" });
     const toolbar = search.parentElement?.parentElement as HTMLElement;
-    const category = screen.getByRole("button", {
-      name: "Filter plugins by category: All categories",
-    });
-    const sort = screen.getByRole("button", { name: /^Sort:/ });
-    expect(toolbar.contains(category)).toBe(true);
-    expect(toolbar.contains(sort)).toBe(true);
+    expect(
+      toolbar.contains(
+        screen.getByRole("radiogroup", { name: "Filter plugins" }),
+      ),
+    ).toBe(true);
+    expect(
+      toolbar.contains(screen.getByRole("button", { name: "New plugin" })),
+    ).toBe(true);
   });
 
   it("opens installed resources on the canonical Settings detail route", async () => {
@@ -452,7 +415,7 @@ describe("PluginsOverview", () => {
     render(
       <MemoryRouter initialEntries={["/plugins?view=installed"]}>
         <QueryClientWrapper>
-          <PluginsOverview />
+          <PluginsOverview mode="installed" />
         </QueryClientWrapper>
       </MemoryRouter>,
     );
@@ -527,7 +490,7 @@ describe("PluginsOverview", () => {
       render(
         <MemoryRouter initialEntries={["/plugins?view=installed"]}>
           <QueryClientWrapper>
-            <PluginsOverview />
+            <PluginsOverview mode="installed" />
           </QueryClientWrapper>
         </MemoryRouter>,
       );
@@ -601,9 +564,7 @@ describe("PluginsOverview", () => {
     render(
       <MemoryRouter initialEntries={["/plugins?view=installed"]}>
         <QueryClientWrapper>
-          <PluginsOverview />
-          <SwitchViewButton view="browse" />
-          <SwitchViewButton view="installed" />
+          <PluginsOverview mode="installed" />
         </QueryClientWrapper>
       </MemoryRouter>,
     );
@@ -645,20 +606,6 @@ describe("PluginsOverview", () => {
       }),
       { key: "Escape" },
     );
-    fireEvent.click(screen.getByText("switch-to-browse"));
-    await screen.findByText("GitHub");
-    fireEvent.click(screen.getByText("switch-to-installed"));
-    expect(
-      [...document.querySelectorAll('[data-testid^="plugin-row-"]')].map(
-        (row) => row.getAttribute("data-testid"),
-      ),
-    ).toEqual([
-      "plugin-row-enabled-official-zulu",
-      "plugin-row-enabled-official-alpha",
-      "plugin-row-enabled-local-alpha",
-      "plugin-row-inactive-official",
-      "plugin-row-inactive-local",
-    ]);
   });
 
   it("gives each publisher its own Type facet, separate from User", async () => {
@@ -685,9 +632,7 @@ describe("PluginsOverview", () => {
     render(
       <MemoryRouter initialEntries={["/plugins?view=installed"]}>
         <QueryClientWrapper>
-          <PluginsOverview />
-          <SwitchViewButton view="browse" />
-          <SwitchViewButton view="installed" />
+          <PluginsOverview mode="installed" />
         </QueryClientWrapper>
       </MemoryRouter>,
     );
@@ -764,7 +709,7 @@ describe("PluginsOverview", () => {
     render(
       <MemoryRouter initialEntries={["/plugins?view=installed"]}>
         <QueryClientWrapper>
-          <PluginsOverview />
+          <PluginsOverview mode="installed" />
         </QueryClientWrapper>
       </MemoryRouter>,
     );
@@ -834,9 +779,7 @@ describe("PluginsOverview", () => {
     render(
       <MemoryRouter initialEntries={["/plugins?view=installed"]}>
         <QueryClientWrapper>
-          <PluginsOverview />
-          <SwitchViewButton view="browse" />
-          <SwitchViewButton view="installed" />
+          <PluginsOverview mode="installed" />
         </QueryClientWrapper>
       </MemoryRouter>,
     );
@@ -874,9 +817,7 @@ describe("PluginsOverview", () => {
     render(
       <MemoryRouter initialEntries={["/plugins?view=installed"]}>
         <QueryClientWrapper>
-          <PluginsOverview />
-          <SwitchViewButton view="browse" />
-          <SwitchViewButton view="installed" />
+          <PluginsOverview mode="installed" />
         </QueryClientWrapper>
       </MemoryRouter>,
     );

@@ -7,6 +7,9 @@ import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { CLOUDROOM_PYTHON_PATH, CLOUDROOM_PREVIEW_SCRIPT_PATH } from "../../cloudroom-workspace-asset.js";
 
+export const macAccessLevels = ["off", "read-only", "ask", "full"] as const;
+export type MacAccessLevel = typeof macAccessLevels[number];
+
 type Deps = Pick<AppDeps, "config">;
 const folder = (deps: Deps) => join(deps.config.dataDir, "cloudroom-preview");
 const statusSchema = z.object({ state: z.enum(["connected", "offline"]), count: z.number().int().nonnegative().optional(), message: z.string().max(512).optional(), checkedAt: z.number() });
@@ -19,13 +22,16 @@ export async function previewStatus(deps: Deps) {
   } catch { return { state: "offline", count: 0, message: null }; }
 }
 
-/** The user's "Let cloud agents access this computer" choice (ADR 0113), or null until first-run setup asks. The preview helper runs Mac access. */
+/** How much cloud agents may do on this computer (ADR 0113, levels in ADR 0186), or null until first-run setup asks. The preview helper runs Mac access. */
 const macAccessFile = (deps: Deps) => join(deps.config.dataDir, "cloudroom-mac-access.json");
-export async function macAccess(deps: Deps): Promise<boolean | null> {
-  return readFile(macAccessFile(deps), "utf8").then((text) => JSON.parse(text).enabled === true, () => null);
+export async function macAccess(deps: Deps): Promise<MacAccessLevel | null> {
+  return readFile(macAccessFile(deps), "utf8").then((text) => {
+    const saved = JSON.parse(text);
+    return macAccessLevels.includes(saved.level) ? saved.level as MacAccessLevel : saved.enabled === true ? "full" : "off";
+  }, () => null);
 }
-export async function setMacAccess(deps: Deps, enabled: boolean): Promise<void> {
-  await writeFile(macAccessFile(deps), JSON.stringify({ enabled }), { mode: 0o600 });
+export async function setMacAccess(deps: Deps, level: MacAccessLevel): Promise<void> {
+  await writeFile(macAccessFile(deps), JSON.stringify({ level }), { mode: 0o600 });
   if (await readFile(join(folder(deps), "config.json")).then(() => true, () => false)) await setupPreviews(deps);
 }
 
@@ -36,7 +42,7 @@ export async function setupPreviews(deps: Deps): Promise<void> {
   const launcher = process.platform === "darwin" && process.versions.electron ? ["--launcher", process.execPath] : [];
   const restart = restartedThisLaunch ? [] : ["--restart"];
   try {
-    await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", CLOUDROOM_PREVIEW_SCRIPT_PATH, "configure", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json"), "--mac-access", await macAccess(deps) ? "on" : "off", ...launcher, ...restart], { timeout: 30_000, maxBuffer: 64 * 1024 });
+    await promisify(execFile)(CLOUDROOM_PYTHON_PATH, ["-B", "-E", "-s", CLOUDROOM_PREVIEW_SCRIPT_PATH, "configure", folder(deps), "--connection", join(deps.config.dataDir, "cloudroom.json"), "--mac-access", await macAccess(deps) ?? "off", ...launcher, ...restart], { timeout: 30_000, maxBuffer: 64 * 1024 });
     restartedThisLaunch = true;
   } catch { throw new ApiError(503, "cloudroom_preview_setup", "Cloud previews could not start. Inspect the private preview helper status. Cloud sessions are unaffected."); }
 }

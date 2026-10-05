@@ -202,9 +202,16 @@ export function PluginCategoryLabel({
   );
 }
 
+const ICON_CHIP_STYLE: CSSProperties = {
+  background: neutral(5),
+  borderColor: neutral(14),
+  color: neutral(55),
+};
+
 export function CatalogEntryIconChip({
   entry,
   className,
+  iconClassName = "size-6",
 }: {
   entry: {
     displayName: string;
@@ -213,17 +220,33 @@ export function CatalogEntryIconChip({
     iconTinted: boolean;
   };
   className?: string;
+  iconClassName?: string;
 }) {
   return (
     <ResourceIconFrame
       className={cn("size-10 rounded-md border", className)}
-      style={{
-        background: neutral(5),
-        borderColor: neutral(14),
-        color: neutral(55),
-      }}
+      style={ICON_CHIP_STYLE}
     >
-      {() => <CatalogEntryIcon entry={entry} className="size-6" />}
+      {() => <CatalogEntryIcon entry={entry} className={iconClassName} />}
+    </ResourceIconFrame>
+  );
+}
+
+export function PluginLogoChip({
+  plugin,
+  className,
+  iconClassName,
+}: {
+  plugin: PluginListItem;
+  className?: string;
+  iconClassName: string;
+}) {
+  return (
+    <ResourceIconFrame
+      className={cn("size-10 rounded-md border", className)}
+      style={ICON_CHIP_STYLE}
+    >
+      {() => <PluginLogo plugin={plugin} className={iconClassName} />}
     </ResourceIconFrame>
   );
 }

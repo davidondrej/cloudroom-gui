@@ -30,7 +30,7 @@ remove and re-add it under Settings > Machines.
 
 ## Agent instructions setting
 
-Settings → Installed plugins → Connect has a "Tell agents about remote access"
+Settings → Machines → Cloudroom Connect has a "Tell agents about remote access"
 toggle, enabled by default. Use
 `room-cli plugin config connect set sendRemoteInstructions false` to suppress the
 remote-access message, or `true` to restore it. This controls only the message;

@@ -987,12 +987,20 @@ export function ResourceNavSidebarItem({
   onNavigate?: () => void;
 }) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isActive =
+    pathname === routePath || pathname.startsWith(`${routePath}/`);
   return (
     <Button
       type="button"
       size="sm"
       variant="ghost"
-      className={cn(PROJECT_LIST_ACTION_BUTTON_CLASS, "w-full")}
+      aria-current={isActive ? "page" : undefined}
+      className={cn(
+        PROJECT_LIST_ACTION_BUTTON_CLASS,
+        "w-full",
+        isActive && "bg-sidebar-accent text-sidebar-foreground",
+      )}
       onClick={() => {
         onNavigate?.();
         void navigate(routePath);

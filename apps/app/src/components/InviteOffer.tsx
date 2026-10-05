@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { useAtom } from "jotai";
+import { atom, useAtom, useSetAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { BbLogo } from "@/components/ui/bb-logo";
@@ -30,6 +30,9 @@ async function invites(method: "GET" | "POST", signal?: AbortSignal) {
   return invitesSchema.parse(value);
 }
 const format = (code: string) => `${code.slice(0, 4)}-${code.slice(4)}`;
+const INVITES_KEY = ["cloudroom-invites"];
+const manualAtom = atom(false);
+const nothingToShare = (data: Invites) => data.left === 0 && data.codes.every((item) => item.used);
 
 export function InviteOffer() {
   const [seen, setSeen] = useAtom(seenAtom);
@@ -39,7 +42,8 @@ export function InviteOffer() {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 60_000); return () => clearInterval(timer); }, []);
   const due = signedIn && !seen && startedAt !== null && now - startedAt >= DELAY;
-  const list = useQuery({ queryKey: ["cloudroom-invites"], enabled: due, retry: false, queryFn: ({ signal }) => invites("GET", signal) });
+  const [manual, setManual] = useAtom(manualAtom);
+  const list = useQuery({ queryKey: INVITES_KEY, enabled: due || manual, retry: false, queryFn: ({ signal }) => invites("GET", signal) });
   const [open, setOpen] = useState(false);
   const ready = due && Boolean(list.data) && !open;
   useEffect(() => {
@@ -50,9 +54,25 @@ export function InviteOffer() {
     const timer = setInterval(() => { if (Date.now() - lastKey >= IDLE) setOpen(true); }, 2_000);
     return () => { window.removeEventListener("keydown", onKey, true); clearInterval(timer); };
   }, [ready]);
-  const nothingLeft = list.data?.left === 0 && list.data.codes.every((item) => item.used);
-  if (!due || !open || !list.data || nothingLeft) return null;
-  return <InviteTickets data={list.data} finish={() => setSeen(true)} />;
+  if (manual && list.data) return <InviteTickets data={list.data} startStep={2} finish={() => setManual(false)} />;
+  if (!due || !open || !list.data || nothingToShare(list.data)) return null;
+  return <InviteTickets data={list.data} startStep={0} finish={() => setSeen(true)} />;
+}
+
+export function InviteSidebarRow() {
+  const signedIn = Boolean(useCloudroomAccount().data?.account);
+  const list = useQuery({ queryKey: INVITES_KEY, enabled: signedIn, retry: false, staleTime: 5 * 60_000, queryFn: ({ signal }) => invites("GET", signal) });
+  const open = useSetAtom(manualAtom);
+  if (!list.data || nothingToShare(list.data)) return null;
+  const left = list.data.left;
+  return (
+    <button type="button" onClick={() => open(true)} data-testid="settings-invite"
+      className="mb-2 flex h-9 w-full items-center gap-2.5 rounded-md bg-[#bfff00]/30 px-2 text-sm font-semibold text-sidebar-foreground hover:bg-[#bfff00]/45 dark:bg-[#bfff00]/8 dark:hover:bg-[#bfff00]/15">
+      <TicketIcon />
+      Invite friends
+      {left > 0 && left <= 3 && <span className="ml-auto rounded bg-[#bfff00] px-1.5 py-0.5 text-xs font-bold text-[#0e0d0b] ring-1 ring-black/15 dark:ring-0">{left} left</span>}
+    </button>
+  );
 }
 
 const INK = "#0e0d0b", LIME = "#bfff00";
@@ -60,10 +80,17 @@ const ROOT: CSSProperties = {
   background: `radial-gradient(900px 600px at 76% 52%, rgba(191,255,0,.12), transparent 60%), radial-gradient(700px 500px at 10% 0%, rgba(243,236,219,.06), transparent 60%), ${INK}`,
 };
 
-function InviteTickets({ data, finish }: { data: Invites; finish: () => void }) {
-  const [step, setStep] = useState(0);
+function InviteTickets({ data, startStep, finish }: { data: Invites; startStep: number; finish: () => void }) {
+  const [step, setStep] = useState(startStep);
   const [created, setCreated] = useState<string | null>(null);
-  const create = useMutation({ mutationFn: () => invites("POST"), onSuccess: (result) => setCreated(result.created ?? result.codes.find((item) => !item.used)?.code ?? null) });
+  const client = useQueryClient();
+  const create = useMutation({
+    mutationFn: () => invites("POST"),
+    onSuccess: (result) => {
+      setCreated(result.created ?? result.codes.find((item) => !item.used)?.code ?? null);
+      void client.invalidateQueries({ queryKey: INVITES_KEY });
+    },
+  });
   const code = created ?? data.codes.find((item) => !item.used)?.code ?? null;
   const usedAny = data.codes.some((item) => item.used);
   const root = useRef<HTMLDivElement>(null);
@@ -200,4 +227,5 @@ function Primary({ children, onClick, disabled }: { children: ReactNode; onClick
 }
 
 const Arrow = () => <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 8h10M9 4l4 4-4 4" /></svg>;
+const TicketIcon = () => <svg viewBox="0 0 24 24" className="size-4 shrink-0 text-[#0e0d0b] dark:text-[#bfff00]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /><path d="M13 5v2M13 11v2M13 17v2" /></svg>;
 const CopyIcon = () => <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="5" y="5" width="8.5" height="8.5" /><path d="M2.5 10.5v-8h8" /></svg>;

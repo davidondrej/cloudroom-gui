@@ -220,27 +220,10 @@ export function resolveToolsBreadcrumbs(
 }
 
 interface ResourcePageDefinition {
-  id:
-    | "plugins-browse"
-    | "plugins-installed"
-    | "skills-browse"
-    | "skills-library";
+  id: "skills-browse" | "skills-library";
   label: string;
   to: string;
 }
-
-export const PLUGIN_PAGES: readonly ResourcePageDefinition[] = [
-  {
-    id: "plugins-browse",
-    label: "Browse plugins",
-    to: TOOLS_SECTIONS.plugins.to,
-  },
-  {
-    id: "plugins-installed",
-    label: "Installed plugins",
-    to: `${TOOLS_SECTIONS.plugins.to}?view=installed`,
-  },
-];
 
 export const SKILL_PAGES: readonly ResourcePageDefinition[] = [
   {
@@ -261,21 +244,11 @@ export function resolveToolsActivePage(
 ): ResourcePageDefinition["id"] {
   const view = new URLSearchParams(search).get("view");
   for (const detail of DETAIL_ROUTES) {
+    if (detail.section !== "skills") continue;
     if (matchPath(detail.pattern, pathname) === null) continue;
-    if (detail.section === "plugins") {
-      return view === TOOLS_OWNED_COLLECTION_VIEW.plugins
-        ? "plugins-installed"
-        : "plugins-browse";
-    }
     return detail.collection.label === TOOLS_OWNED_COLLECTION_LABEL.skills
       ? "skills-library"
       : "skills-browse";
-  }
-  const section = resolveToolsSection(pathname);
-  if (section === "plugins") {
-    return view === TOOLS_OWNED_COLLECTION_VIEW.plugins
-      ? "plugins-installed"
-      : "plugins-browse";
   }
   return view === TOOLS_OWNED_COLLECTION_VIEW.skills
     ? "skills-library"

@@ -26,7 +26,7 @@ const BUILT_IN_PROVIDER_COMMANDS: ProviderCommand[] = [
     name: "teleport",
     source: "command",
     origin: "builtin",
-    description: "Move this thread to the cloud",
+    description: "Move this thread between Local and Cloud",
     argumentHint: null,
   },
 ];

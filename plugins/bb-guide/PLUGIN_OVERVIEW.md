@@ -1,8 +1,8 @@
 # Cloudroom guide
 
-Control the bundled agent skills in Settings → Installed plugins → Cloudroom
+Control the bundled agent skills in Settings → Instructions → Cloudroom
 guide. The plugin and all four settings default to enabled. The Cloudroom system
-prompt has its own switch in Settings → System prompt.
+prompt has its own switch in Settings → Instructions → System prompt.
 
 - `skills`: make the selected bundled skills available.
 - `bbCli`: include `room-cli`.

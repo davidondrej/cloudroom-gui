@@ -92,7 +92,7 @@ and can revoke.
 
 1. Pair the bb server with bb connect first (Settings → Remote access, or
    `bb connect --code … --server …`).
-2. Turn on the **Mobile app** experiment (Settings → Experiments, or
+2. Turn on the **Mobile app** experiment (Settings → Advanced → Experiments, or
    `bb settings experiment mobileApp true`). Mobile pairing stays hidden
    without it while the app is in early access.
 3. Mint a pairing code for the phone: Settings → Remote access → **Add mobile

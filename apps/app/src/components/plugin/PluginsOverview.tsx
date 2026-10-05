@@ -38,9 +38,11 @@ import {
 
 export function PluginsOverview({
   onOpenPlugin,
-  mode,
+  selectedPluginId = null,
+  mode = "browse",
 }: {
   mode?: "installed" | "browse";
+  selectedPluginId?: string | null;
   onOpenPlugin?: (pluginId: string, trigger: HTMLButtonElement) => void;
 } = {}) {
   const navigate = useNavigate();
@@ -50,8 +52,6 @@ export function PluginsOverview({
     () => listQuery.data?.plugins ?? [],
     [listQuery.data?.plugins],
   );
-  const activeMode =
-    mode ?? (searchParams.get("view") === "installed" ? "installed" : "browse");
   const authorKey = searchParams.get("author");
   const [installedQuery, setInstalledQuery] = useState("");
   const [installedViewport, setInstalledViewport] =
@@ -162,7 +162,7 @@ export function PluginsOverview({
   );
 
   let content: ReactNode;
-  if (activeMode === "browse") {
+  if (mode === "browse") {
     const openPlugin =
       onOpenPlugin ??
       ((pluginId: string) => navigate(getPluginDetailRoutePath({ pluginId })));
@@ -170,12 +170,14 @@ export function PluginsOverview({
       authorKey === null ? (
         <BrowsePluginsTab
           actions={createActions}
+          selectedPluginId={selectedPluginId}
           onInstall={(initial) => setAddDialog({ open: true, initial })}
           onOpenPlugin={openPlugin}
         />
       ) : (
         <PluginAuthorPage
           authorKey={authorKey}
+          selectedPluginId={selectedPluginId}
           onInstall={(initial) => setAddDialog({ open: true, initial })}
           onOpenPlugin={openPlugin}
         />
@@ -255,7 +257,7 @@ export function PluginsOverview({
 
   return (
     <>
-      {activeMode === "browse" ? (
+      {mode === "browse" ? (
         <div className="flex h-full min-h-0 flex-col">{content}</div>
       ) : (
         <ResourceCollectionPage

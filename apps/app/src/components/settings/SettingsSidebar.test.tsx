@@ -1,41 +1,34 @@
 // @vitest-environment jsdom
 
 import type { ComponentProps } from "react";
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  within,
-} from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import * as nativeShell from "@/lib/native-shell";
-import { SETTINGS_NAV_SECTIONS } from "./settings-sections";
+import {
+  SETTINGS_NAV_GROUPS,
+  SETTINGS_NAV_SECTIONS,
+} from "./settings-sections";
 import { SettingsSidebarContent } from "./SettingsSidebar";
 
-const visiblePlugins = [
-  { id: "bb-guide", label: "Cloudroom guide" },
-  { id: "provider-claude-code", label: "Claude Code provider" },
-  { id: "provider-codex", label: "Codex provider" },
-  { id: "custom-instructions", label: "Custom instructions" },
-  { id: "keep-awake", label: "Keep Awake" },
-  { id: "provider-retry", label: "Provider retry" },
-  { id: "provider-usage", label: "Provider usage" },
-  { id: "connect", label: "Remote access" },
-];
+const pluginEntries = [
+  "bb-guide",
+  "connect",
+  "custom-instructions",
+  "keep-awake",
+  "linear",
+  "provider-acp",
+  "provider-claude-code",
+  "provider-codex",
+  "provider-retry",
+  "provider-usage",
+  "push-notifications",
+].map((id) => ({ id, label: id, icon: null }));
 
-const advancedPlugins = [
-  { id: "provider-acp", label: "ACP providers" },
-  { id: "push-notifications", label: "Push notifications" },
-  { id: "linear", label: "Linear" },
-];
-
-const pluginEntries = [...visiblePlugins, ...advancedPlugins].map((entry) => ({
-  ...entry,
-  icon: null,
-}));
+function LocationProbe() {
+  return <output data-testid="location">{useLocation().pathname}</output>;
+}
 
 function renderSidebar(
   navigation: Partial<
@@ -58,10 +51,23 @@ function renderSidebar(
           }}
           onResizeMouseDown={() => {}}
         />
+        <LocationProbe />
       </SidebarProvider>
     </MemoryRouter>,
   );
 }
+
+const rowLabels = () =>
+  screen
+    .getAllByRole("link")
+    .map((link) => link.textContent)
+    .filter((label) => label !== "Back to app");
+
+const currentRow = () =>
+  screen
+    .getAllByRole("link")
+    .filter((link) => link.getAttribute("aria-current") === "page")
+    .map((link) => link.textContent);
 
 afterEach(() => {
   cleanup();
@@ -69,152 +75,92 @@ afterEach(() => {
 });
 
 describe("SettingsSidebarContent navigation", () => {
-  it("keeps only the requested settings, plugins, and archived threads visible", () => {
+  it("shows one flat row per group, with Advanced last", () => {
     renderSidebar();
-    expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual(
-      [
-        "Back to app",
-        "General",
-        "Defaults",
-        "Cloud environment",
-        "Providers",
-        "Import chats",
-        "Appearance",
-        "Keyboard",
-        "Machines",
-        "Updates",
-        "Installed plugins",
-        ...visiblePlugins.map((entry) => entry.label),
-        "Archived threads",
-      ],
-    );
-    expect(
-      screen
-        .getByRole("button", { name: "Advanced" })
-        .getAttribute("aria-expanded"),
-    ).toBe("false");
-  });
-
-  it("places Advanced after Archived threads and reveals every remaining destination only on click", () => {
-    renderSidebar();
-    const toggle = screen.getByRole("button", { name: "Advanced" });
-    const archived = screen.getByRole("link", { name: "Archived threads" });
-    expect(
-      archived.compareDocumentPosition(toggle) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).not.toBe(0);
-
-    fireEvent.click(toggle);
-    expect(toggle.getAttribute("aria-expanded")).toBe("true");
-    const panelId = toggle.getAttribute("aria-controls")!;
-    const panel = document.getElementById(panelId)!;
-    expect(
-      within(panel)
-        .getAllByRole("link")
-        .map((link) => link.textContent),
-    ).toEqual([
-      "Browser",
-      "Files",
+    expect(rowLabels()).toEqual([
+      "General",
+      "Agents",
+      "Instructions",
+      "Cloud",
+      "Machines",
       "Projects",
-      "Plugin marketplaces",
-      "Command Guard",
-      "System prompt",
-      "Experiments",
-      "Community",
-      ...advancedPlugins.map((entry) => entry.label),
+      "Appearance",
+      "Keyboard",
+      "Plugins",
+      "Updates",
+      "Advanced",
     ]);
-    expect(screen.getAllByRole("link")).toHaveLength(
-      1 + SETTINGS_NAV_SECTIONS.length + pluginEntries.length,
-    );
     expect(
-      screen.getByRole("link", { name: "Projects" }).getAttribute("href"),
-    ).toBe("/settings/projects");
-
-    fireEvent.click(toggle);
-    expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    expect(screen.queryByRole("link", { name: "Projects" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Linear" })).toBeNull();
-    expect(screen.getByRole("link", { name: "Archived threads" })).toBeTruthy();
+      screen.getByRole("link", { name: "Instructions" }).getAttribute("href"),
+    ).toBe("/settings/plugins/custom-instructions");
+    expect(
+      screen.getByRole("link", { name: "Advanced" }).getAttribute("href"),
+    ).toBe("/settings/command-guard");
   });
 
-  it("offers installed-plugin management and configurable plugin settings", () => {
-    renderSidebar();
-    expect(
-      screen
-        .getByRole("link", { name: "Installed plugins" })
-        .getAttribute("href"),
-    ).toBe("/settings/plugins");
-    fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
-    expect(
-      screen.getByRole("link", { name: "Linear" }).getAttribute("href"),
-    ).toBe("/settings/plugins/linear");
-    expect(
-      screen.queryByRole("button", { name: /Other installed plugins/ }),
-    ).toBeNull();
-    for (const entry of visiblePlugins) {
-      expect(
-        screen.getByRole("link", { name: entry.label }).getAttribute("href"),
-      ).toBe(`/settings/plugins/${entry.id}`);
+  it("puts every built-in settings page in exactly one group", () => {
+    for (const section of SETTINGS_NAV_SECTIONS) {
+      const owners = SETTINGS_NAV_GROUPS.filter((group) =>
+        group.members.some(
+          (member) => member.kind === "section" && member.id === section.id,
+        ),
+      );
+      expect(owners, section.id).toHaveLength(1);
     }
   });
 
-  it("keeps Advanced collapsed on direct plugin links and preserves the active page when opened", () => {
-    renderSidebar({ activePluginId: "linear", activeSection: null });
-    expect(screen.queryByRole("link", { name: "Linear" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
-    expect(
-      screen.getByRole("link", { name: "Linear" }).getAttribute("aria-current"),
-    ).toBe("page");
-  });
-
-  it("preserves the active built-in section inside Advanced", () => {
+  it("highlights the row that owns the open page", () => {
     renderSidebar({ activeSection: "browser" });
-    expect(screen.queryByRole("link", { name: "Browser" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
-    expect(
-      screen
-        .getByRole("link", { name: "Browser" })
-        .getAttribute("aria-current"),
-    ).toBe("page");
+    expect(currentRow()).toEqual(["General"]);
+    cleanup();
+    renderSidebar({ activeSection: null, activePluginId: "provider-codex" });
+    expect(currentRow()).toEqual(["Agents"]);
+    cleanup();
+    renderSidebar({ activeSection: "command-guard" });
+    expect(currentRow()).toEqual(["Advanced"]);
   });
 
-  it("does not show an empty Plugins heading or unavailable sections", () => {
+  it("files plugins without a group under Plugins", () => {
+    renderSidebar({ activeSection: null, activePluginId: "linear" });
+    expect(currentRow()).toEqual(["Plugins"]);
+  });
+
+  it("links a row to its first available page", () => {
     renderSidebar({
-      pluginEntries: [],
-      sections: SETTINGS_NAV_SECTIONS.filter(
-        (section) => section.id !== "files",
+      pluginEntries: pluginEntries.filter(
+        ({ id }) => id !== "custom-instructions",
       ),
-    });
-    expect(screen.queryByText("Plugins", { exact: true })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
-    expect(screen.queryByRole("link", { name: "Files" })).toBeNull();
-  });
-
-  it("matches plugins by ID rather than their configurable display names", () => {
-    renderSidebar({
-      pluginEntries: [
-        { id: "connect", label: "Renamed remote access", icon: null },
-        { id: "new-plugin", label: "Cloudroom guide", icon: null },
-      ],
+      sections: SETTINGS_NAV_SECTIONS.filter(({ id }) => id !== "files"),
     });
     expect(
-      screen.getByRole("link", { name: "Renamed remote access" }),
-    ).toBeTruthy();
-    expect(screen.queryByRole("link", { name: "Cloudroom guide" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
-    expect(
-      screen.getByRole("link", { name: "Cloudroom guide" }).getAttribute("href"),
-    ).toBe("/settings/plugins/new-plugin");
+      screen.getByRole("link", { name: "Instructions" }).getAttribute("href"),
+    ).toBe("/settings/system-prompt");
   });
 
-  it("keeps native device settings accessible under Advanced", () => {
+  it("filters rows by page names and keywords, and Enter opens the first match", () => {
+    renderSidebar();
+    const search = screen.getByRole("textbox", { name: "Search settings" });
+    fireEvent.change(search, { target: { value: "codex" } });
+    expect(rowLabels()).toEqual(["Agents"]);
+    fireEvent.change(search, { target: { value: "command guard" } });
+    expect(rowLabels()).toEqual(["Advanced"]);
+    fireEvent.change(search, { target: { value: "archived" } });
+    fireEvent.keyDown(search, { key: "Enter" });
+    expect(screen.getByTestId("location").textContent).toBe(
+      "/settings/projects",
+    );
+    expect((search as HTMLInputElement).value).toBe("");
+    fireEvent.change(search, { target: { value: "zzz" } });
+    expect(rowLabels()).toEqual([]);
+    expect(screen.getByText("No settings match.")).toBeTruthy();
+  });
+
+  it("keeps native device settings reachable", () => {
     vi.spyOn(nativeShell, "canOpenNativeScreen").mockReturnValue(true);
     const openNative = vi
       .spyOn(nativeShell, "shellOpenNative")
       .mockReturnValue(true);
     renderSidebar();
-    expect(screen.queryByRole("button", { name: "This device" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Advanced" }));
     fireEvent.click(screen.getByRole("button", { name: "This device" }));
     expect(openNative).toHaveBeenCalledWith("device-settings");
   });

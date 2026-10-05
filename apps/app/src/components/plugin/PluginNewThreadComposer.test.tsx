@@ -59,11 +59,22 @@ import { PluginNewThreadComposer } from "./PluginNewThreadComposer";
 
 const queryClients: QueryClient[] = [];
 function render(ui: Parameters<typeof renderComponent>[0]) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   queryClients.push(client);
-  return renderComponent(ui, { wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> });
+  return renderComponent(ui, {
+    wrapper: ({ children }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    ),
+  });
 }
-afterEach(() => { queryClients.forEach(client => client.clear()); queryClients.length = 0; mocks.cloudReady = true; mocks.cloudWorkspaceState = "ready"; });
+afterEach(() => {
+  queryClients.forEach((client) => client.clear());
+  queryClients.length = 0;
+  mocks.cloudReady = true;
+  mocks.cloudWorkspaceState = "ready";
+});
 
 const mocks = vi.hoisted(() => ({
   promptBoxProps: [] as Array<Record<string, any>>,
@@ -135,7 +146,13 @@ vi.mock("@/hooks/queries/cloudroom-queries", async (importOriginal) => ({
   ...(await importOriginal<
     typeof import("@/hooks/queries/cloudroom-queries")
   >()),
-  useCloudroomWorkspace: () => ({ data: { state: mocks.cloudWorkspaceState, error: mocks.cloudWorkspaceState === "failed" ? "Copy interrupted" : null }, isError: false }),
+  useCloudroomWorkspace: () => ({
+    data: {
+      state: mocks.cloudWorkspaceState,
+      error: mocks.cloudWorkspaceState === "failed" ? "Copy interrupted" : null,
+    },
+    isError: false,
+  }),
   useCloudroomConnection: () => ({
     data: {
       ready: mocks.cloudReady,
@@ -143,7 +160,16 @@ vi.mock("@/hooks/queries/cloudroom-queries", async (importOriginal) => ({
       projectId: "proj_1",
       repository: "repo",
       model: "gpt-5.6",
-      harnesses: [{ id: "codex", reasoning_levels: ["high"], models: [{ model: "gpt-5.6", reasoning_levels: ["high"] }, { model: "gpt-5.6-sol", reasoning_levels: ["high"] }] }],
+      harnesses: [
+        {
+          id: "codex",
+          reasoning_levels: ["high"],
+          models: [
+            { model: "gpt-5.6", reasoning_levels: ["high"] },
+            { model: "gpt-5.6-sol", reasoning_levels: ["high"] },
+          ],
+        },
+      ],
       error: null,
     },
     isError: false,
@@ -705,7 +731,10 @@ describe("PluginNewThreadComposer seeding", () => {
     vi.restoreAllMocks();
   });
 
-  function newThreadElement(projectId: string, onSubmit: (request: unknown) => void = () => undefined) {
+  function newThreadElement(
+    projectId: string,
+    onSubmit: (request: unknown) => void = () => undefined,
+  ) {
     return (
       <Provider>
         <MemoryRouter>
@@ -754,7 +783,9 @@ describe("PluginNewThreadComposer seeding", () => {
     expect(window.localStorage.getItem("cloudroom.executionTarget")).toBe(
       "cloud",
     );
-    expect(latestPromptBoxProps().execution.reasoning.options).toEqual([{ value: "high", label: "High" }]);
+    expect(latestPromptBoxProps().execution.reasoning.options).toEqual([
+      { value: "high", label: "High" },
+    ]);
     await act(async () => {
       latestPromptBoxProps().modeConfig.environment.onSelectProvider(
         MANAGED_WORKTREE_SUGAR_PROVIDER,
@@ -772,25 +803,49 @@ describe("PluginNewThreadComposer seeding", () => {
     );
   });
 
-  it.each(["preparing", "failed", "offline"])("lets the user send while the cloud folder is %s", async (state) => {
-    mocks.cloudReady = state !== "offline";
-    mocks.cloudWorkspaceState = state === "offline" ? "missing" : state;
-    const onSubmit = vi.fn();
-    getPromptDraftAccessor({ kind: "new-thread" }).setDraft({ text: "Work in my new folder", mentions: [], attachments: [] });
-    render(newThreadElement("proj_1", onSubmit));
-    await act(async () => latestPromptBoxProps().modeConfig.environment.cloud.onSelect());
-    await act(async () => latestPromptBoxProps().execution.reasoning.onChange("high"));
-    expect(latestPromptBoxProps().modeConfig.environment.cloud.unavailableReason).toBeNull();
-    expect(latestPromptBoxProps().modeConfig.banner).toBeNull();
-    expect(latestPromptBoxProps().disabledReason).toBeUndefined();
-    await submit();
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ executionTarget: "cloud", input: [{ type: "text", text: "Work in my new folder", mentions: [] }] })));
-  });
+  it.each(["preparing", "failed", "offline"])(
+    "lets the user send while the cloud folder is %s",
+    async (state) => {
+      mocks.cloudReady = state !== "offline";
+      mocks.cloudWorkspaceState = state === "offline" ? "missing" : state;
+      const onSubmit = vi.fn();
+      getPromptDraftAccessor({ kind: "new-thread" }).setDraft({
+        text: "Work in my new folder",
+        mentions: [],
+        attachments: [],
+      });
+      render(newThreadElement("proj_1", onSubmit));
+      await act(async () =>
+        latestPromptBoxProps().modeConfig.environment.cloud.onSelect(),
+      );
+      await act(async () =>
+        latestPromptBoxProps().execution.reasoning.onChange("high"),
+      );
+      expect(
+        latestPromptBoxProps().modeConfig.environment.cloud.unavailableReason,
+      ).toBeNull();
+      expect(latestPromptBoxProps().modeConfig.banner).toBeNull();
+      expect(latestPromptBoxProps().disabledReason).toBeUndefined();
+      await submit();
+      await waitFor(() =>
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({
+            executionTarget: "cloud",
+            input: [
+              { type: "text", text: "Work in my new folder", mentions: [] },
+            ],
+          }),
+        ),
+      );
+    },
+  );
 
   it("applies a remembered Cloud target to a projectless composer", () => {
     window.localStorage.setItem("cloudroom.executionTarget", "cloud");
     render(newThreadElement(PERSONAL_PROJECT_ID));
-    expect(latestPromptBoxProps().modeConfig.environment.cloud.selected).toBe(true);
+    expect(latestPromptBoxProps().modeConfig.environment.cloud.selected).toBe(
+      true,
+    );
     expect(latestPromptBoxProps().modeConfig.banner).toBeNull();
   });
 

@@ -22,6 +22,8 @@ import { PERSONAL_PROJECT_ID, type Thread } from "@bb/domain";
 import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { resolvePrimaryHostId } from "../hosts/primary-host.js";
+import { runLiveHostCommand } from "../hosts/live-command.js";
+import { workspaceContextFromPath } from "../environments/workspace-command-target.js";
 import { provisionUnmanagedEnvironmentForPath } from "../threads/thread-environment-directory.js";
 import { getLastProviderThreadId } from "../threads/thread-events.js";
 import { requestQueuedMessageDispatch } from "../threads/queued-message-dispatch.js";
@@ -31,12 +33,13 @@ import type { CloudroomClient } from "./client.js";
 import { SKIPPED } from "./project-copy.js";
 import { binding, teleportProgress } from "./store.js";
 
-type Harness = "codex" | "pi" | "claude-code" | "acp-cursor";
+type Harness = "codex" | "pi" | "claude-code" | "acp-cursor" | "acp-opencode";
 const VM_SESSIONS: Record<Harness, string> = {
   codex: "$HOME/.codex/sessions",
   pi: "$HOME/.pi/agent/sessions",
   "claude-code": "$HOME/.claude/projects",
   "acp-cursor": "$HOME/.cursor/chats",
+  "acp-opencode": "$HOME/.local/share/opencode",
 };
 const CHUNK = 8 * 1024 * 1024;
 const PREVIEW_MB = 20;
@@ -64,7 +67,7 @@ async function run(deps: AppDeps, threadId: string): Promise<{ conflicts: number
   const phase = teleportProgress(deps.db, threadId)?.phase;
   if (!thread || thread.executionTarget !== "cloud" || thread.parentThreadId || thread.archivedAt || thread.deletedAt
     || !saved?.sessionId || !harness || !(harness in VM_SESSIONS) || (phase && !["complete", "cancelled", "error"].includes(phase)))
-    throw new ApiError(409, "teleport_unavailable", "Teleport to Local needs a Codex, Pi, Claude Code, or Cursor cloud parent thread.");
+    throw new ApiError(409, "teleport_unavailable", "Teleport to Local needs a Codex, Pi, Claude Code, opencode, or Cursor cloud parent thread.");
   const nativeId = getLastProviderThreadId(deps, threadId);
   if (!nativeId || !/^[A-Za-z0-9_-]+$/.test(nativeId))
     throw new ApiError(409, "teleport_unavailable", "This cloud thread has no saved conversation yet.");
@@ -81,8 +84,9 @@ async function run(deps: AppDeps, threadId: string): Promise<{ conflicts: number
     download(client, vmPath),
     cloudChanges(client, cloud.path, await git(environment.path, ["rev-parse", "HEAD"]), thread.createdAt),
   ]);
-  if (harness === "acp-cursor") await vm(client, `rm -f ${quote(vmPath)}`).catch(() => {});
-  await installNative(harness, nativeId, vmPath, session, environment.path);
+  if (harness === "acp-cursor" || harness === "acp-opencode") await vm(client, `rm -f ${quote(vmPath)}`).catch(() => {});
+  if (harness === "acp-opencode") await importOpenCode(deps, threadId, environment, nativeId, session);
+  else await installNative(harness, nativeId, vmPath, session, environment.path);
   const conflicts = await applyChanges(environment.path, changes.archive, randomUUID(), changes.proven);
 
   const queued = cloudroom(deps).queue(threadId);
@@ -238,6 +242,8 @@ async function vm(client: CloudroomClient, command: string): Promise<Buffer> {
 }
 
 function findNative(harness: Harness, nativeId: string): string {
+  if (harness === "acp-opencode")
+    return `mkdir -p ~/.cache/cloudroom && f=~/.cache/cloudroom/opencode-${nativeId}.json && OPENCODE_DISABLE_AUTOUPDATE=1 opencode export ${nativeId} > "$f" </dev/null && echo "$f"`;
   // A Cursor chat is a folder (meta.json plus a SQLite store), so it travels as one archive.
   if (harness === "acp-cursor")
     return `d=$(ls -d "${VM_SESSIONS[harness]}"/*/${nativeId} 2>/dev/null | head -n1); [ -f "$d/meta.json" ] || exit 0
@@ -365,6 +371,31 @@ async function installNative(harness: Harness, nativeId: string, vmPath: string,
   const temporary = `${target}.${randomUUID()}.tmp`;
   await writeFile(temporary, data, { mode: 0o600 });
   await rename(temporary, target);
+}
+
+async function importOpenCode(deps: AppDeps, threadId: string, environment: { id: string; hostId: string; path: string }, nativeId: string, data: Buffer) {
+  JSON.parse(data.toString("utf8"));
+  const folder = await mkdtemp(join(tmpdir(), "cloudroom-teleport-local-"));
+  try {
+    const file = join(folder, `${nativeId}.json`);
+    await writeFile(file, data, { mode: 0o600 });
+    await runLiveHostCommand(deps, {
+      hostId: environment.hostId,
+      timeoutMs: 120_000,
+      command: {
+        type: "thread.teleport",
+        action: "import",
+        transferId: randomUUID(),
+        threadId,
+        environmentId: environment.id,
+        workspaceContext: workspaceContextFromPath({ path: environment.path }),
+        sessions: [{ threadId, nativeId, harness: "opencode" }],
+        file,
+      },
+    });
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+  }
 }
 
 // Local Cursor keeps each chat in ~/.cursor/acp-sessions/<id>/, the folder the host's Teleport capture reads.

@@ -44,6 +44,30 @@ export type AddPluginInitial = {
   source: string;
 };
 
+export function addPluginInitialFromEntry(entry: {
+  entryId: string;
+  marketplace: string;
+  pluginId: string;
+  publisherLabel: string;
+  displayName: string;
+  icon: string | null;
+  iconUrl: string | null;
+  iconTinted: boolean;
+  source: string;
+}): AddPluginInitial {
+  return {
+    entryId: entry.entryId,
+    marketplace: entry.marketplace,
+    pluginId: entry.pluginId,
+    publisherLabel: entry.publisherLabel,
+    displayName: entry.displayName,
+    icon: entry.icon,
+    iconUrl: entry.iconUrl,
+    iconTinted: entry.iconTinted,
+    source: entry.source,
+  };
+}
+
 function catalogInstallDescription(
   source: string,
   publisherLabel: string,

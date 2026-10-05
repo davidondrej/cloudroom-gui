@@ -207,7 +207,8 @@ describe("docs anatomy manifest", () => {
       settings: () => footer!.querySelector('a[aria-label^="Settings"]'),
       "plugin-footer-items": () =>
         footer!.querySelector('button[aria-label="Anatomy footer action"]'),
-      "cloudroom-account": () => footer!.querySelector('[data-footer-item="cloudroom-account"]'),
+      "cloudroom-account": () =>
+        footer!.querySelector('[data-footer-item="cloudroom-account"]'),
     };
     expect(Object.keys(footerSelectors).sort()).toEqual(
       [...manifest.sidebarFooter].sort(),

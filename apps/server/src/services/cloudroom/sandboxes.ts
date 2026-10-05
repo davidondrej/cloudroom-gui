@@ -130,7 +130,7 @@ export async function sandboxGithubLogin(token: string): Promise<string> {
 
 const environmentSchema = z.object({
   variables: z.array(z.object({ name: z.string(), hint: z.string() })), setup: z.string(),
-  repos: z.array(z.string()).default([]), available: z.array(z.string()).optional(), pushed: z.record(z.string(), z.number()).optional(),
+  repos: z.array(z.string()).default([]), available: z.array(z.string()).optional(), pushed: z.record(z.string(), z.number()).optional(), login: z.string().optional(),
 });
 export type CloudEnvironment = z.infer<typeof environmentSchema>;
 export const cloudEnvironmentRequestSchema = z.discriminatedUnion("action", [
@@ -193,7 +193,8 @@ export class SandboxDirectory {
   // then 5 s, doubling to 5 minutes. Delivery retries every tick otherwise.
   private readonly backoff = new Map<string, { until: number; delay: number; tries: number }>();
   private uploaded = new Map<string, string>();
-  constructor(readonly account: () => Promise<SandboxAccount | null>) {}
+  /** `woke` runs after each wake, so the Mac helper lists the new sandbox now instead of at its next minute check. */
+  constructor(readonly account: () => Promise<SandboxAccount | null>, private readonly woke: () => void = () => {}) {}
 
   /** `only` sends the request solely for that account, so a login started under one account never reaches another. */
   private async call(body: Record<string, unknown>, path = "sandboxes", only?: { account: SandboxAccount; signal: AbortSignal }): Promise<unknown> {
@@ -275,6 +276,7 @@ export class SandboxDirectory {
         this.wakeHarnesses.set(thread, harnesses);
         return this.call({ action: "wake", ...place, harnesses, ...(this.backoff.has(thread) ? { trigger: "retry" } : trigger ? { trigger } : {}) });
       }).then(value => this.remember(viewSchema.parse(value))).then(view => {
+        this.woke();
         this.backoff.delete(thread);
         if (this.limit?.on) this.limit = { on: false, at: Date.now() };
         return view;
@@ -351,6 +353,10 @@ export class SandboxDirectory {
   /** A broken stream or failed request may mean the sandbox went to sleep; look it up again next time. */
   forget(thread: string): void { this.views.delete(thread); }
 
+  /** Saves a thread's title, project name, and Core session ID on the website (ADR 0182). */
+  async label(thread: string, label: { title: string | null; project_name: string | null; session: string }): Promise<void> {
+    await this.call({ action: "label", thread, ...label });
+  }
   async archive(thread: string): Promise<void> { this.forget(thread); await this.call({ action: "archive", thread }); }
   async restore(thread: string): Promise<void> { this.forget(thread); await this.call({ action: "restore", thread }); }
   async remove(thread: string): Promise<void> { this.forget(thread); await this.call({ action: "remove", thread }); }

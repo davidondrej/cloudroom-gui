@@ -39,6 +39,15 @@ function isPendingDelegatedChildOfCurrentThread(
   );
 }
 
+export function countAttentionThreads(
+  sidebarThreads: readonly FaviconSidebarThread[],
+): number {
+  return sidebarThreads.filter(
+    (candidate) =>
+      isPendingSidebarThread(candidate) || isUnreadSidebarThread(candidate),
+  ).length;
+}
+
 export function shouldShowFaviconAttentionDot({
   currentThreadHasPendingInteraction,
   currentThreadId,

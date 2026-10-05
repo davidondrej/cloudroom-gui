@@ -2,13 +2,16 @@ import { useEffect, useRef, useState, type ClipboardEvent, type FormEvent, type 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CloudEnvironment, CloudEnvironmentChange, CloudSkillsChange } from "@bb/sdk/browser";
 import { Button } from "@bb/shared-ui/button";
+import { Command, CommandInput, CommandItem, CommandList } from "@bb/shared-ui/command";
 import { Icon } from "@bb/shared-ui/icon";
 import { Input } from "@bb/shared-ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@bb/shared-ui/popover";
 import { Switch } from "@bb/shared-ui/switch";
 import { Textarea } from "@bb/shared-ui/textarea";
 import { sdk } from "@/lib/sdk";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
+import { formatRelativeTime } from "@/lib/relative-time";
 
 const ENVIRONMENT_KEY = ["cloudroom-environment"];
 const SKILLS_KEY = ["cloudroom-cloud-skills"];
@@ -38,7 +41,7 @@ export function CloudEnvironmentSettingsSection() {
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-foreground">Cloud environment</h2>
           <p className="mt-1 max-w-xl text-xs leading-relaxed text-subtle-foreground">
-            Every new cloud thread starts with these skills, API keys, repos, and this setup. Change them here or on your cloudroom.dev dashboard. Both stay in sync.
+            Every new cloud thread starts with these skills, API keys, GitHub repos, and this setup. Change them here or on your cloudroom.dev dashboard. Both stay in sync.
           </p>
         </div>
         {data && !environment.isError && (
@@ -404,60 +407,107 @@ function SkillsCard() {
   );
 }
 
+const RECENT_REPOS = 8;
+/** `owner/name` from a GitHub link, or the text as typed. */
+const repoFromText = (text: string) => text.trim().replace(/^(https?:\/\/)?(www\.)?github\.com\//i, "").split(/[/?#]/).slice(0, 2).join("/").replace(/\.git$/i, "");
+
 function ReposCard({ repos, busy, onChange }: { repos: string[]; busy: boolean; onChange: (change: CloudEnvironmentChange) => Promise<unknown> }) {
-  const [repo, setRepo] = useState("");
-  // The account's GitHub repos, newest first, suggested while typing.
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  // The account's GitHub repos, most recently pushed first.
   const github = useQuery({
     queryKey: ["cloudroom-github-repos"],
-    queryFn: () => sdk.cloudroom.updateEnvironment({ action: "githubRepos" }).then((data) => data.available ?? []),
+    queryFn: () => sdk.cloudroom.updateEnvironment({ action: "githubRepos" }),
     staleTime: 5 * 60_000,
     retry: false,
   });
-  const add = (event: FormEvent) => {
-    event.preventDefault();
-    if (!repo.trim()) return;
-    void onChange({ action: "addRepo", repo }).then(() => setRepo(""), () => {});
+  const available = github.data?.available ?? [];
+  const picked = (repo: string) => repos.find((each) => each.toLowerCase() === repo.toLowerCase());
+  const toggle = (repo: string) => {
+    const saved = picked(repo);
+    void onChange(saved ? { action: "removeRepo", repo: saved } : { action: "addRepo", repo }).catch(() => {});
   };
+  // The latest repos, then picks that are older, so every pick stays visible.
+  const recent = available.slice(0, RECENT_REPOS);
+  const chips = [...recent, ...repos.filter((repo) => !recent.some((each) => each.toLowerCase() === repo.toLowerCase()))];
+  const label = (repo: string) => (repo.split("/")[0].toLowerCase() === github.data?.login?.toLowerCase() ? repo.split("/")[1] : repo);
+  const query = search.trim().toLowerCase();
+  const matches = query ? available.filter((repo) => repo.toLowerCase().includes(query)) : available;
+  const typed = repoFromText(search);
+  const addTyped = /^[\w.-]+\/[\w.-]+$/.test(typed) && !available.some((repo) => repo.toLowerCase() === typed.toLowerCase());
+  const now = Date.now();
   return (
-    <Card icon="FolderGit" title="Repos" description="Cloned into /repos in every cloud sandbox, next to the project, and kept up to date.">
-      {repos.length > 0 && (
-        <ul className="divide-y divide-border border-t border-border">
-          {repos.map((name) => (
-            <li key={name} className="flex items-center gap-3 px-4 py-2">
-              <code className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">{name}</code>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="size-7 text-subtle-foreground hover:text-destructive-text"
-                aria-label={`Remove ${name}`}
-                disabled={busy}
-                onClick={() => void onChange({ action: "removeRepo", repo: name }).catch(() => {})}
-              >
-                <Icon name="Trash2" className="size-3.5" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <form onSubmit={add} className="flex gap-2 border-t border-border bg-surface-recessed/40 px-4 py-3">
-        <Input
-          className={`h-8 min-w-0 flex-1 font-mono text-xs ${DIM_PLACEHOLDER}`}
-          list="cloudroom-github-repos"
-          placeholder="owner/name or GitHub link"
-          aria-label="GitHub repo"
-          autoComplete="off"
-          spellCheck={false}
-          value={repo}
-          onChange={(event) => setRepo(event.target.value)}
-        />
-        <datalist id="cloudroom-github-repos">
-          {(github.data ?? []).filter((name) => !repos.includes(name)).map((name) => <option key={name} value={name} />)}
-        </datalist>
-        <Button type="submit" size="sm" disabled={busy || !repo.trim()}>
-          <Icon name="Plus" />
-          Add
-        </Button>
-      </form>
+    <Card icon="Github" title="GitHub repos" description="Click a GitHub repo to clone it into every cloud sandbox, next to the project.">
+      <div className="flex flex-wrap gap-1.5 border-t border-border px-4 py-3">
+        {chips.map((repo) => {
+          const on = Boolean(picked(repo));
+          return (
+            <button
+              key={repo}
+              type="button"
+              title={repo}
+              aria-pressed={on}
+              disabled={busy}
+              onClick={() => toggle(repo)}
+              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-mono text-xs transition-colors disabled:cursor-wait ${
+                on ? "border-primary/40 bg-primary/15 text-primary-text hover:bg-primary/25" : "border-dashed border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+              }`}
+            >
+              <Icon name={on ? "Check" : "Plus"} className="size-3" />
+              {label(repo)}
+            </button>
+          );
+        })}
+        <Popover open={open} onOpenChange={(next) => { setOpen(next); if (!next) setSearch(""); }}>
+          <PopoverTrigger asChild>
+            <button type="button" className="inline-flex items-center gap-1.5 rounded-full bg-surface-recessed px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground">
+              <Icon name="Search" className="size-3" />
+              {available.length > chips.length ? `All ${available.length} repos…` : "Add a GitHub repo…"}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" aria-label="GitHub repos" className="w-96 p-0">
+            <Command shouldFilter={false} label="Search GitHub repos">
+              <CommandInput value={search} onValueChange={setSearch} placeholder="Search your GitHub repos, or paste a link" className="h-9 text-xs" />
+              <CommandList className="max-h-72">
+                {addTyped && (
+                  <CommandItem value={`add:${typed}`} onSelect={() => { toggle(typed); setSearch(""); }} className="gap-2 text-xs">
+                    <Icon name="Plus" className="size-3.5" />
+                    Add <span className="font-mono">{typed}</span>
+                  </CommandItem>
+                )}
+                {matches.map((repo) => {
+                  const on = Boolean(picked(repo));
+                  const pushed = github.data?.pushed?.[repo];
+                  return (
+                    <CommandItem key={repo} value={repo} onSelect={() => toggle(repo)} disabled={busy} className="gap-2 text-xs">
+                      <span className={`flex size-4 shrink-0 items-center justify-center rounded border ${on ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+                        {on && <Icon name="Check" className="size-3" />}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate font-mono">{repo}</span>
+                      {pushed && <span className="shrink-0 text-2xs text-subtle-foreground">{formatRelativeTime({ timestamp: pushed, now })}</span>}
+                    </CommandItem>
+                  );
+                })}
+                {!addTyped && !matches.length && (
+                  <p className="px-3 py-4 text-center text-xs text-subtle-foreground">
+                    {github.isPending ? "Loading your GitHub repos…" : query ? "No repos match. Paste a GitHub link to add any repo." : "Connect GitHub above to pick from your repos, or paste a link."}
+                  </p>
+                )}
+              </CommandList>
+              <div className="flex items-center justify-between border-t border-border px-3 py-1.5 text-2xs text-subtle-foreground">
+                <span>↑↓ move · Enter picks</span>
+                <span>{repos.length} in every sandbox</span>
+              </div>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t border-border bg-surface-recessed/40 px-4 py-2 text-xs text-subtle-foreground">
+        <span>
+          {repos.length ? <><span className="text-foreground">{repos.length} GitHub {repos.length === 1 ? "repo" : "repos"}</span> clone into <code>/repos</code> in every cloud sandbox</> : <>Picked repos clone into <code>/repos</code> in every cloud sandbox</>}
+        </span>
+        {available.length > 0 && <span>Most recently pushed first</span>}
+      </div>
     </Card>
   );
 }

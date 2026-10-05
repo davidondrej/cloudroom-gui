@@ -14,6 +14,7 @@ import {
   setOverflowWidgetsTheme,
 } from "./lib/monaco-loader.js";
 import { applyCodeTheme, editorBackground } from "./lib/monaco-theme.js";
+import { readStoredWordWrap, storeWordWrap } from "./lib/word-wrap.js";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { FileToolbar, type SaveIndicator } from "./components/FileToolbar.js";
 import { FileTreePanel } from "./components/FileTreePanel.js";
@@ -80,6 +81,9 @@ function MonacoFileOpener({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pendingDiscard, setPendingDiscard] = useState(false);
   const [isFilesOpen, setIsFilesOpen] = useState(false);
+  const [isWrapped, setIsWrapped] = useState(readStoredWordWrap);
+  const isWrappedRef = useRef(isWrapped);
+  isWrappedRef.current = isWrapped;
   const [pendingOpen, setPendingOpen] = useState<string | null>(null);
   const [tree, setTree] = useState<{
     entries: readonly FlatEntry[];
@@ -254,6 +258,7 @@ function MonacoFileOpener({
           lineNumbers: "on",
           theme: applied.name,
           minimap: { enabled: false },
+          wordWrap: isWrappedRef.current ? "on" : "off",
           scrollBeyondLastLine: false,
           fontSize: 12,
           lineHeight: 20,
@@ -321,6 +326,11 @@ function MonacoFileOpener({
     setOverflowWidgetsTheme(applied.base);
   }, [codeTheme, status]);
 
+  useEffect(() => {
+    editorRef.current?.updateOptions({ wordWrap: isWrapped ? "on" : "off" });
+    storeWordWrap(isWrapped);
+  }, [isWrapped]);
+
   if (status.kind === "delegate") return <Original />;
 
   return (
@@ -343,6 +353,8 @@ function MonacoFileOpener({
         indicator={indicatorFor(saveState, status)}
         isRefreshing={isRefreshing}
         onRefresh={requestRefresh}
+        isWrapped={isWrapped}
+        onToggleWrap={() => setIsWrapped((wrapped) => !wrapped)}
         isFilesOpen={isFilesOpen}
         onToggleFiles={() => setIsFilesOpen((open) => !open)}
       />

@@ -450,7 +450,9 @@ describe("AddPluginDialog", () => {
     ).toBe("https://github.com/acme/plugins.git");
     expect(screen.getByText("^1.0.0")).toBeTruthy();
     expect(
-      screen.getByText(/third-party marketplace that Cloudroom does not review/),
+      screen.getByText(
+        /third-party marketplace that Cloudroom does not review/,
+      ),
     ).toBeTruthy();
     expect(screen.getByText("Acme Plugins")).toBeTruthy();
     expect(

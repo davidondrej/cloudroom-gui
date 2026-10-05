@@ -6,7 +6,7 @@ import { z } from "zod";
 import { threadGoalSetRequestSchema } from "@bb/server-contract";
 import { cloudroom, isCloudThread } from "./commands.js";
 import { cloudroomAccount } from "./account.js";
-import { setMacAccess } from "./previews.js";
+import { macAccessLevels, setMacAccess } from "./previews.js";
 import { cloudSkills, setCloudSkills, setCopyLogins, skillInCloud } from "./sync.js";
 import { teleports } from "./teleport.js";
 import { binding, teleportBlocked, teleportProgress } from "./store.js";
@@ -122,8 +122,8 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     }));
   });
   app.post("/api/v1/cloudroom/account/mac-access", async (context) => {
-    const input = z.object({ enabled: z.boolean() }).strict().parse(await context.req.json());
-    await setMacAccess(deps, input.enabled);
+    const input = z.union([z.object({ level: z.enum(macAccessLevels) }).strict(), z.object({ enabled: z.boolean() }).strict()]).parse(await context.req.json());
+    await setMacAccess(deps, "level" in input ? input.level : input.enabled ? "full" : "off");
     return context.json({ ok: true });
   });
   // The website's own message (say, an invalid key) reaches the user instead of "Internal server error".

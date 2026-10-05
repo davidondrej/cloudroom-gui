@@ -1,396 +1,403 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PLUGIN_CATALOG_CATEGORIES, pluginCatalogCategory } from "@bb/domain";
 import { cn } from "@bb/shared-ui/lib/utils";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
-  ResourceBrowseCard,
-  ResourceBrowseGrid,
   ResourceCollectionViewport,
   ResourceInstallControl,
-  ResourceInstalledControl,
   ResourceListState,
-  ResourceShelfSeeAllAction,
-  ResourceSourceShelf,
+  ResourceToolbar,
 } from "@bb/shared-ui/resource-list";
-import { TOOLS_PAGE_BAND_CLASSES } from "@/components/tools/tools-navigation";
+import { Switch } from "@bb/shared-ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@bb/shared-ui/toggle-group";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { usePluginCatalogSearch } from "@/hooks/queries/plugin-catalog-queries";
 import {
-  usePluginCatalogSearch,
-  type PluginCatalogSearchEntry,
-} from "@/hooks/queries/plugin-catalog-queries";
-import type { AddPluginInitial } from "./AddPluginDialog";
-import { PluginAuthorAvatar } from "./PluginAuthorAvatar";
-import { PluginAuthorLink } from "./PluginAuthorLink";
-import { pluginAuthorGithub } from "./plugin-marketplace-author";
+  usePluginList,
+  type PluginListItem,
+} from "@/hooks/queries/plugin-settings-queries";
 import {
-  PluginBrowseToolbar,
-  pluginBrowseSort,
-  pluginBrowseSortDirection,
-  type PluginBrowseCategoryOption,
-} from "./PluginBrowseControls";
+  addPluginInitialFromEntry,
+  type AddPluginInitial,
+} from "./AddPluginDialog";
+import { usePluginEnabledToggle } from "./InstalledPluginsTab";
+import { PluginRowSignalView } from "./PluginRowSignal";
+import { UpdatePluginDialog } from "./UpdatePluginDialog";
 import {
-  UNCATEGORIZED_PLUGIN_CATEGORY_ID,
-  pluginBrowseShelves,
-  pluginCategoryFilterId,
-  sortPluginEntries,
-  type PluginBrowseShelf,
+  catalogEntryKey,
+  filterPluginRows,
+  groupPluginRows,
+  pluginListFilter,
+  pluginListRows,
+  pluginRowHasUpdate,
+  type PluginListFilter,
+  type PluginListGroup,
+  type PluginListRow,
 } from "./plugin-browse-discovery";
-import {
-  CatalogEntryIconChip,
-  PluginCategoryLabel,
-  pluginCatalogCategoryMutedAccentStyle,
-  pluginInstallCountPresentation,
-} from "./plugin-ui";
+import { pluginRowSignal } from "./plugin-status";
+import { CatalogEntryIconChip, PluginLogoChip } from "./plugin-ui";
 
-const SHELF_ENTRY_LIMIT = 6;
+export const PLUGINS_LIST_BAND_CLASSES =
+  "mx-auto w-full max-w-3xl px-4 md:px-5";
+export const PLUGINS_LIST_SCROLL_CONTENT_CLASS = "[&>div]:block!";
+
+type OpenPlugin = (pluginId: string, trigger: HTMLButtonElement) => void;
+
+const EMPTY_MESSAGES: Record<PluginListFilter, string> = {
+  all: "No plugins match this search.",
+  installed: "No installed plugins match this search.",
+  updates: "All plugins are up to date.",
+};
 
 export function BrowsePluginsTab({
   actions,
+  selectedPluginId,
   onInstall,
   onOpenPlugin,
 }: {
   actions: ReactNode;
+  selectedPluginId: string | null;
   onInstall: (initial: AddPluginInitial) => void;
-  onOpenPlugin: (pluginId: string, trigger: HTMLButtonElement) => void;
+  onOpenPlugin: OpenPlugin;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("query") ?? "";
-  const selectedCategories = searchParams.getAll("category");
-  const requestedSort = pluginBrowseSort(searchParams.get("sort"));
-  const sortDirection =
-    pluginBrowseSortDirection(searchParams.get("direction")) ?? "desc";
-  const [expandedShelves, setExpandedShelves] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const debouncedQuery = useDebouncedValue(query.trim(), 300);
-  const searchQuery = usePluginCatalogSearch(debouncedQuery, { enabled: true });
-  const catalog = searchQuery.data ?? { entries: [], collections: [] };
-  const entries = useMemo(
-    () => catalog.entries.filter((entry) => entry.compatible),
-    [catalog.entries],
-  );
-  const installsKnown = entries.some((entry) => entry.installs !== null);
-  const sort =
-    requestedSort === "most-installed" && !installsKnown ? null : requestedSort;
-  const categoryOptions = useMemo(
-    () => pluginCategoryFilterOptions(entries, selectedCategories),
-    [entries, selectedCategories],
-  );
-  const filteredEntries = useMemo(() => {
-    if (selectedCategories.length === 0) return entries;
-    const selected = new Set(selectedCategories);
-    return entries.filter((entry) =>
-      selected.has(pluginCategoryFilterId(entry)),
-    );
-  }, [entries, selectedCategories]);
-  const shelves = useMemo(
+  const filter = pluginListFilter(searchParams.get("view"));
+  const catalogQuery = usePluginCatalogSearch("", { enabled: true });
+  const listQuery = usePluginList({ enabled: true });
+  const rows = useMemo(
     () =>
-      pluginBrowseShelves({
-        entries: filteredEntries,
-        collections: catalog.collections,
-      }),
-    [catalog.collections, filteredEntries],
+      pluginListRows(
+        catalogQuery.data?.entries ?? [],
+        listQuery.data?.plugins ?? [],
+      ),
+    [catalogQuery.data?.entries, listQuery.data?.plugins],
   );
-  const flatEntries = useMemo(
+  const catalogMatches = useCatalogSearchMatches(query);
+  const updateCount = rows.filter(pluginRowHasUpdate).length;
+  const groups = useMemo(
     () =>
-      sort === null
-        ? []
-        : sortPluginEntries(filteredEntries, sort, sortDirection),
-    [filteredEntries, sort, sortDirection],
+      groupPluginRows(filterPluginRows(rows, filter, query, catalogMatches)),
+    [catalogMatches, filter, query, rows],
   );
 
-  const changeSearchParams = (
-    change: (next: URLSearchParams) => void,
-    replace = true,
-  ) => {
+  const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(searchParams);
-    change(next);
-    setSearchParams(next, { replace });
+    if (value === null || value === "") next.delete(key);
+    else next.set(key, value);
+    setSearchParams(next, { replace: true });
   };
 
+  let content: ReactNode;
+  if (catalogQuery.isPending && rows.length === 0) {
+    content = <ResourceListState state="loading" message="Loading plugins" />;
+  } else if (catalogQuery.isError && rows.length === 0) {
+    content = (
+      <ResourceListState
+        state="error"
+        message="The plugin catalog is not available."
+        onRetry={() => void catalogQuery.refetch()}
+      />
+    );
+  } else if (groups.length === 0) {
+    content = (
+      <ResourceListState state="empty" message={EMPTY_MESSAGES[filter]} />
+    );
+  } else {
+    content = (
+      <PluginRowGroups
+        groups={groups}
+        selectedPluginId={selectedPluginId}
+        onInstall={onInstall}
+        onOpenPlugin={onOpenPlugin}
+      />
+    );
+  }
+
   return (
-    <ResourceCollectionViewport scrollId="plugins-browse-results">
-      <div className={cn("space-y-7 pb-8", TOOLS_PAGE_BAND_CLASSES)}>
-        <div className="flex items-center justify-end gap-3">{actions}</div>
-
-        <section className="space-y-6">
-          <PluginBrowseToolbar
-            query={query}
-            selectedCategories={selectedCategories}
-            categoryOptions={categoryOptions}
-            sort={sort}
-            sortDirection={sortDirection}
-            installsKnown={installsKnown}
-            changeSearchParams={changeSearchParams}
-          />
-
-          {searchQuery.isError && entries.length > 0 ? (
-            <p className="text-xs text-warning-text" role="status">
-              The latest search failed. The page shows saved catalog results.
-            </p>
-          ) : null}
-          {searchQuery.isPending ? (
-            <ResourceListState state="loading" message="Loading plugins" />
-          ) : entries.length === 0 ? (
-            <ResourceListState
-              state={searchQuery.isError ? "error" : "empty"}
-              message={
-                searchQuery.isError
-                  ? "The plugin catalog is not available."
-                  : "No plugins match this search."
-              }
-              onRetry={
-                searchQuery.isError
-                  ? () => {
-                      void searchQuery.refetch();
-                    }
-                  : undefined
+    <ResourceCollectionViewport
+      scrollId="plugins-browse-results"
+      contentClassName={PLUGINS_LIST_SCROLL_CONTENT_CLASS}
+      bandClassName={PLUGINS_LIST_BAND_CLASSES}
+      toolbar={
+        <ResourceToolbar
+          searchValue={query}
+          searchPlaceholder="Search plugins"
+          onSearchChange={(value) => setParam("query", value)}
+          controls={
+            <PluginFilterToggle
+              value={filter}
+              updateCount={updateCount}
+              onChange={(next) =>
+                setParam("view", next === "all" ? null : next)
               }
             />
-          ) : filteredEntries.length === 0 ? (
-            <ResourceListState
-              state="empty"
-              message="No plugins match these category filters."
-            />
-          ) : sort === null ? (
-            <div className="space-y-8" data-testid="plugin-browse-shelves">
-              {shelves.map((shelf) => (
-                <BrowseShelf
-                  key={shelf.key}
-                  shelf={shelf}
-                  expanded={expandedShelves.has(shelf.key)}
-                  onExpand={() =>
-                    setExpandedShelves((current) =>
-                      new Set(current).add(shelf.key),
-                    )
-                  }
-                  onInstall={onInstall}
-                  onOpenPlugin={onOpenPlugin}
-                />
-              ))}
-            </div>
-          ) : (
-            <PluginCatalogGrid
-              entries={flatEntries}
-              onInstall={onInstall}
-              onOpenPlugin={onOpenPlugin}
-            />
-          )}
-        </section>
+          }
+          action={actions}
+        />
+      }
+    >
+      <div className={cn("space-y-3 pb-8", PLUGINS_LIST_BAND_CLASSES)}>
+        {catalogQuery.isError && rows.length > 0 ? (
+          <p className="px-3 text-xs text-warning-text" role="status">
+            The plugin catalog is not available. Showing installed plugins.
+          </p>
+        ) : null}
+        {content}
       </div>
     </ResourceCollectionViewport>
   );
 }
 
-export function pluginCategoryFilterOptions(
-  entries: readonly PluginCatalogSearchEntry[],
-  selected: readonly string[],
-): PluginBrowseCategoryOption[] {
-  const labels = new Map<string, string>();
-  const counts = new Map<string, number>();
-  const unknownIds: string[] = [];
-  for (const entry of entries) {
-    const id = pluginCategoryFilterId(entry);
-    if (!labels.has(id)) {
-      labels.set(
-        id,
-        id === UNCATEGORIZED_PLUGIN_CATEGORY_ID
-          ? "Uncategorized"
-          : (entry.category ?? id),
-      );
-      if (
-        id !== UNCATEGORIZED_PLUGIN_CATEGORY_ID &&
-        pluginCatalogCategory(id) === undefined
-      ) {
-        unknownIds.push(id);
-      }
-    }
-    counts.set(id, (counts.get(id) ?? 0) + 1);
-  }
-  for (const id of selected) {
-    if (labels.has(id)) continue;
-    const category = pluginCatalogCategory(id);
-    labels.set(
-      id,
-      id === UNCATEGORIZED_PLUGIN_CATEGORY_ID
-        ? "Uncategorized"
-        : (category?.displayName ?? id),
-    );
-    if (id !== UNCATEGORIZED_PLUGIN_CATEGORY_ID && category === undefined) {
-      unknownIds.push(id);
-    }
-  }
-  const orderedIds = [
-    ...PLUGIN_CATALOG_CATEGORIES.map((category) => category.id).filter((id) =>
-      labels.has(id),
-    ),
-    ...unknownIds,
-    ...(labels.has(UNCATEGORIZED_PLUGIN_CATEGORY_ID)
-      ? [UNCATEGORIZED_PLUGIN_CATEGORY_ID]
-      : []),
+export function useCatalogSearchMatches(
+  query: string,
+): ReadonlySet<string> | null {
+  const debouncedQuery = useDebouncedValue(query.trim(), 300);
+  const searchQuery = usePluginCatalogSearch(debouncedQuery, {
+    enabled: debouncedQuery !== "",
+  });
+  return useMemo(
+    () =>
+      debouncedQuery === "" || searchQuery.data === undefined
+        ? null
+        : new Set(searchQuery.data.entries.map(catalogEntryKey)),
+    [debouncedQuery, searchQuery.data],
+  );
+}
+
+function PluginFilterToggle({
+  value,
+  updateCount,
+  onChange,
+}: {
+  value: PluginListFilter;
+  updateCount: number;
+  onChange: (value: PluginListFilter) => void;
+}) {
+  const options: { value: PluginListFilter; label: string }[] = [
+    { value: "all", label: "All" },
+    { value: "installed", label: "Installed" },
+    {
+      value: "updates",
+      label: updateCount > 0 ? `Updates ${updateCount}` : "Updates",
+    },
   ];
-  return orderedIds.map((id) => ({
-    id,
-    label: labels.get(id) ?? id,
-    count: counts.get(id) ?? 0,
-  }));
-}
-
-function BrowseShelf({
-  shelf,
-  expanded,
-  onExpand,
-  onInstall,
-  onOpenPlugin,
-}: {
-  shelf: PluginBrowseShelf;
-  expanded: boolean;
-  onExpand: () => void;
-  onInstall: (initial: AddPluginInitial) => void;
-  onOpenPlugin: (pluginId: string, trigger: HTMLButtonElement) => void;
-}) {
-  const visible = expanded
-    ? shelf.entries
-    : shelf.entries.slice(0, SHELF_ENTRY_LIMIT);
   return (
-    <ResourceSourceShelf
-      label={shelf.label}
-      description={shelf.description}
-      leading={
-        <span
-          className="size-2 rounded-full"
-          style={pluginCatalogCategoryMutedAccentStyle(shelf.categoryId)}
-          aria-hidden
-        />
-      }
-      browseAction={
-        visible.length < shelf.entries.length ? (
-          <ResourceShelfSeeAllAction type="button" onClick={onExpand} />
-        ) : undefined
-      }
+    <ToggleGroup
+      type="single"
+      aria-label="Filter plugins"
+      value={value}
+      onValueChange={(next) => {
+        if (next !== "") onChange(pluginListFilter(next));
+      }}
+      className="h-8 gap-0.5 rounded-md border border-input bg-background p-0.5"
     >
-      <div data-plugin-shelf>
-        <div data-plugin-shelf-grid className="grid gap-2">
-          {visible.map((entry) => (
-            <PluginCatalogCard
-              key={`${entry.marketplace}/${entry.entryId}`}
-              entry={entry}
-              showCategory={false}
-              onInstall={onInstall}
-              onOpenPlugin={onOpenPlugin}
-            />
-          ))}
-        </div>
-      </div>
-    </ResourceSourceShelf>
-  );
-}
-
-export function PluginCatalogGrid({
-  entries,
-  onInstall,
-  onOpenPlugin,
-}: {
-  entries: readonly PluginCatalogSearchEntry[];
-  onInstall: (initial: AddPluginInitial) => void;
-  onOpenPlugin: (pluginId: string, trigger: HTMLButtonElement) => void;
-}) {
-  return (
-    <ResourceBrowseGrid className="mx-auto w-full max-w-3xl grid-cols-[repeat(auto-fill,minmax(min(100%,18rem),1fr))] gap-2">
-      {entries.map((entry) => (
-        <PluginCatalogCard
-          key={`${entry.marketplace}/${entry.entryId}`}
-          entry={entry}
-          showCategory
-          onInstall={onInstall}
-          onOpenPlugin={onOpenPlugin}
-        />
+      {options.map((option) => (
+        <ToggleGroupItem
+          key={option.value}
+          value={option.value}
+          className="h-6 rounded-sm px-2.5 text-xs font-medium text-muted-foreground shadow-none hover:bg-state-hover hover:text-foreground data-[state=on]:bg-state-active data-[state=on]:text-foreground data-[state=on]:hover:bg-state-active"
+        >
+          {option.label}
+        </ToggleGroupItem>
       ))}
-    </ResourceBrowseGrid>
+    </ToggleGroup>
   );
 }
 
-function PluginCatalogCard({
-  entry,
-  showCategory,
+export function PluginRowGroups({
+  groups,
+  selectedPluginId,
   onInstall,
   onOpenPlugin,
 }: {
-  entry: PluginCatalogSearchEntry;
-  showCategory: boolean;
+  groups: readonly PluginListGroup[];
+  selectedPluginId: string | null;
   onInstall: (initial: AddPluginInitial) => void;
-  onOpenPlugin: (pluginId: string, trigger: HTMLButtonElement) => void;
+  onOpenPlugin: OpenPlugin;
 }) {
-  const count = pluginInstallCountPresentation(entry.installs);
-  const authorName = entry.author?.name ?? entry.publisherLabel;
+  const [updateTargetId, setUpdateTargetId] = useState<string | null>(null);
+  const updateTarget =
+    updateTargetId === null
+      ? null
+      : (groups
+          .flatMap((group) => group.rows)
+          .find((row) => row.plugin?.id === updateTargetId)?.plugin ?? null);
   return (
-    <ResourceBrowseCard
-      className="min-h-28 gap-x-2 gap-y-1.5 p-3"
-      leading={<CatalogEntryIconChip entry={entry} />}
-      leadingClassName="size-10"
-      title={entry.displayName}
-      description={entry.description || undefined}
-      byline={
-        <span className="flex items-center gap-1.5">
-          <PluginAuthorAvatar
-            name={authorName}
-            github={pluginAuthorGithub(entry.author)}
-            size="detail"
+    <>
+      <div className="space-y-5" data-testid="plugin-list">
+        {groups.map((group) => (
+          <section key={group.key} aria-label={group.label}>
+            <h2 className="px-3 pb-1.5 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {group.label}
+            </h2>
+            <div className="space-y-0.5">
+              {group.rows.map((row) => (
+                <PluginRow
+                  key={row.key}
+                  row={row}
+                  selected={row.pluginId === selectedPluginId}
+                  onInstall={onInstall}
+                  onOpenPlugin={onOpenPlugin}
+                  onUpdate={setUpdateTargetId}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+      {updateTarget !== null ? (
+        <UpdatePluginDialog
+          plugin={updateTarget}
+          open
+          onOpenChange={(open) => {
+            if (!open) setUpdateTargetId(null);
+          }}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function PluginRow({
+  row,
+  selected,
+  onInstall,
+  onOpenPlugin,
+  onUpdate,
+}: {
+  row: PluginListRow;
+  selected: boolean;
+  onInstall: (initial: AddPluginInitial) => void;
+  onOpenPlugin: OpenPlugin;
+  onUpdate: (pluginId: string) => void;
+}) {
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+  const open = () => {
+    if (openButtonRef.current !== null) {
+      onOpenPlugin(row.pluginId, openButtonRef.current);
+    }
+  };
+  return (
+    <div
+      data-testid={`plugin-row-${row.pluginId}`}
+      data-selected={selected || undefined}
+      className={cn(
+        "group flex min-w-0 cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-state-hover",
+        selected &&
+          "bg-state-active shadow-[inset_2px_0_0_var(--primary)] hover:bg-state-active",
+      )}
+      onClick={(event) => {
+        if ((event.target as Element).closest("button, a, [data-row-action]")) {
+          return;
+        }
+        open();
+      }}
+    >
+      <PluginRowIcon row={row} onStatusClick={open} />
+      <div className="min-w-0 flex-1">
+        <button
+          ref={openButtonRef}
+          type="button"
+          aria-label={`Open ${row.title} details`}
+          aria-current={selected ? "true" : undefined}
+          onClick={open}
+          className="block max-w-full truncate rounded-sm text-left text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          {row.title}
+        </button>
+        {row.description === "" ? null : (
+          <p className="truncate text-xs text-muted-foreground">
+            {row.description}
+          </p>
+        )}
+      </div>
+      <div
+        data-row-action
+        className="flex shrink-0 cursor-default items-center gap-1.5"
+      >
+        {row.plugin !== null ? (
+          <InstalledPluginControls
+            plugin={row.plugin}
+            title={row.title}
+            onUpdate={() => onUpdate(row.plugin?.id ?? row.pluginId)}
           />
-          <span className="truncate">
-            By{" "}
-            {entry.author === null ? (
-              authorName
-            ) : (
-              <PluginAuthorLink
-                entry={entry}
-                className="pointer-events-auto relative z-10 rounded-sm underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                {authorName}
-              </PluginAuthorLink>
-            )}
-          </span>
-        </span>
-      }
-      footerMeta={
-        showCategory && entry.category !== undefined ? (
-          <PluginCategoryLabel
-            categoryId={entry.categoryId}
-            label={entry.category}
-          />
-        ) : undefined
-      }
-      headerAction={
-        entry.installed ? (
-          <ResourceInstalledControl accessibleLabel="Installed" count={count} />
-        ) : (
+        ) : row.entry !== null && !row.installed ? (
           <ResourceInstallControl
-            accessibleLabel={`Install ${entry.displayName}${
-              count === undefined ? "" : ` — ${count.accessibleLabel}`
-            }`}
-            disabled={!entry.compatible}
-            presentation="compact"
-            tooltip={`Install ${entry.displayName}`}
-            count={count}
-            className="border-border/80 bg-background text-foreground shadow-none hover:bg-state-hover"
+            accessibleLabel={`Install ${row.title}`}
+            className="h-7 px-2.5 text-xs"
             onAction={() =>
-              onInstall({
-                entryId: entry.entryId,
-                marketplace: entry.marketplace,
-                pluginId: entry.pluginId,
-                publisherLabel: entry.publisherLabel,
-                displayName: entry.displayName,
-                icon: entry.icon,
-                iconUrl: entry.iconUrl,
-                iconTinted: entry.iconTinted,
-                source: entry.source,
-              })
+              row.entry && onInstall(addPluginInitialFromEntry(row.entry))
             }
           />
-        )
-      }
-      openLabel={`Open ${entry.displayName} details`}
-      onOpen={(trigger) => onOpenPlugin(entry.pluginId, trigger)}
-    />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function PluginRowIcon({
+  row,
+  onStatusClick,
+}: {
+  row: PluginListRow;
+  onStatusClick: () => void;
+}) {
+  const signal = row.plugin === null ? null : pluginRowSignal(row.plugin);
+  return (
+    <span className="relative shrink-0">
+      {row.entry !== null ? (
+        <CatalogEntryIconChip
+          entry={row.entry}
+          className="size-8"
+          iconClassName="size-4"
+        />
+      ) : row.plugin !== null ? (
+        <PluginLogoChip
+          plugin={row.plugin}
+          className="size-8"
+          iconClassName="size-4"
+        />
+      ) : null}
+      {signal?.kind === "status" ? (
+        <span className="absolute -bottom-1 -right-1">
+          <PluginRowSignalView
+            signal={signal}
+            statusPresentation="badge"
+            onUpdateClick={() => {}}
+            onStatusClick={onStatusClick}
+          />
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function InstalledPluginControls({
+  plugin,
+  title,
+  onUpdate,
+}: {
+  plugin: PluginListItem;
+  title: string;
+  onUpdate: () => void;
+}) {
+  const { toggle, enabled } = usePluginEnabledToggle(plugin);
+  const signal = pluginRowSignal(plugin);
+  return (
+    <>
+      {signal?.kind === "update" ? (
+        <PluginRowSignalView
+          signal={signal}
+          onUpdateClick={onUpdate}
+          onStatusClick={() => {}}
+        />
+      ) : null}
+      <Switch
+        checked={enabled}
+        disabled={toggle.isPending}
+        onCheckedChange={(next) => toggle.mutate(next)}
+        aria-label={`${enabled ? "Disable" : "Enable"} ${title}`}
+      />
+    </>
   );
 }

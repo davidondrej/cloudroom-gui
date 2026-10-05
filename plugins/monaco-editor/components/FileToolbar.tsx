@@ -9,6 +9,8 @@ export interface FileToolbarProps {
   indicator: SaveIndicator;
   isRefreshing: boolean;
   onRefresh: () => void;
+  isWrapped: boolean;
+  onToggleWrap: () => void;
   isFilesOpen: boolean;
   onToggleFiles: () => void;
 }
@@ -18,6 +20,8 @@ export function FileToolbar({
   indicator,
   isRefreshing,
   onRefresh,
+  isWrapped,
+  onToggleWrap,
   isFilesOpen,
   onToggleFiles,
 }: FileToolbarProps) {
@@ -38,6 +42,13 @@ export function FileToolbar({
         </ToolbarButton>
       </div>
       <SaveDot indicator={indicator} />
+      <ToolbarButton
+        label={isWrapped ? "Disable line wrap" : "Wrap lines"}
+        onClick={onToggleWrap}
+        pressed={isWrapped}
+      >
+        <WrapIcon />
+      </ToolbarButton>
       <ToolbarButton
         label={isFilesOpen ? "Hide files" : "Show in files"}
         onClick={onToggleFiles}
@@ -158,6 +169,20 @@ function TreeIcon() {
     <svg viewBox="0 0 24 24" fill="none" className="size-3.5" aria-hidden>
       <path
         d="M4 3v14a2 2 0 002 2h3M4 10h5M14 5h6M14 12h6M14 19h6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function WrapIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-3.5" aria-hidden>
+      <path
+        d="M3 3h18M3 15h6M3 21h6M3 9h13.5a4.5 4.5 0 010 9H12m0 0c0-.84 2.39-2.41 3-3m-3 3c0 .84 2.39 2.41 3 3"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"

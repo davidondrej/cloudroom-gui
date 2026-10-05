@@ -90,7 +90,7 @@ export const BUILTIN_PLUGINS = [
   {
     name: "monaco-editor",
     pluginId: "monaco-editor",
-    defaultEnabled: false,
+    defaultEnabled: true,
   },
   {
     name: "pdf-preview",

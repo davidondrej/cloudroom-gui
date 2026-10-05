@@ -34,6 +34,7 @@
 - Use shared UI components, typography tokens, and theme-derived colors.
 - Use the persistent responsive drawer, not modals that disable the app root. Verify drawer changes in iOS Safari.
 - Never use CSS `@scope`; use the existing `:where()` scoping pattern.
+- Timers, polling, and calls to the website follow [db-load-budget](../.agents/skills/db-load-budget/SKILL.md).
 - Query only the data needed. Regenerate Drizzle migrations; never hand-edit snapshots.
 - Never mock the database. Use an in-memory database with real migrations.
 

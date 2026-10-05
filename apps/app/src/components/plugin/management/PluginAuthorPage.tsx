@@ -4,29 +4,27 @@ import { Icon } from "@bb/shared-ui/icon";
 import {
   ResourceCollectionViewport,
   ResourceListState,
+  ResourceToolbar,
 } from "@bb/shared-ui/resource-list";
 import { cn } from "@bb/shared-ui/lib/utils";
-import { TOOLS_PAGE_BAND_CLASSES } from "@/components/tools/tools-navigation";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
   type PluginCatalogSearchEntry,
   usePluginCatalogSearch,
 } from "@/hooks/queries/plugin-catalog-queries";
+import { usePluginList } from "@/hooks/queries/plugin-settings-queries";
 import { getPluginsRoutePath } from "@/lib/route-paths";
 import type { AddPluginInitial } from "./AddPluginDialog";
 import {
-  PluginCatalogGrid,
-  pluginCategoryFilterOptions,
+  PLUGINS_LIST_BAND_CLASSES,
+  PLUGINS_LIST_SCROLL_CONTENT_CLASS,
+  PluginRowGroups,
+  useCatalogSearchMatches,
 } from "./BrowsePluginsTab";
 import { PluginAuthorAvatar } from "./PluginAuthorAvatar";
 import {
-  PluginBrowseToolbar,
-  pluginBrowseSort,
-  pluginBrowseSortDirection,
-} from "./PluginBrowseControls";
-import {
-  pluginCategoryFilterId,
-  sortPluginEntries,
+  filterPluginRows,
+  groupPluginRows,
+  pluginListRows,
 } from "./plugin-browse-discovery";
 import {
   entriesByMarketplaceAuthor,
@@ -65,24 +63,19 @@ function authorForEntries(
 
 export function PluginAuthorPage({
   authorKey,
+  selectedPluginId,
   onInstall,
   onOpenPlugin,
 }: {
   authorKey: string;
+  selectedPluginId: string | null;
   onInstall: (initial: AddPluginInitial) => void;
   onOpenPlugin: (pluginId: string, trigger: HTMLButtonElement) => void;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("query") ?? "";
-  const debouncedQuery = useDebouncedValue(query.trim(), 300);
-  const selectedCategories = searchParams.getAll("category");
-  const requestedSort = pluginBrowseSort(searchParams.get("sort"));
-  const sortDirection =
-    pluginBrowseSortDirection(searchParams.get("direction")) ?? "desc";
   const catalogQuery = usePluginCatalogSearch("", { enabled: true });
-  const searchQuery = usePluginCatalogSearch(debouncedQuery, {
-    enabled: debouncedQuery !== "",
-  });
+  const listQuery = usePluginList({ enabled: true });
   const entries = useMemo(
     () =>
       entriesByMarketplaceAuthor(
@@ -92,53 +85,39 @@ export function PluginAuthorPage({
     [authorKey, catalogQuery.data?.entries],
   );
   const author = useMemo(() => authorForEntries(entries), [entries]);
-  const installsKnown = entries.some((entry) => entry.installs !== null);
-  const sort =
-    requestedSort === "most-installed" && !installsKnown ? null : requestedSort;
-  const categoryOptions = useMemo(
-    () => pluginCategoryFilterOptions(entries, selectedCategories),
-    [entries, selectedCategories],
+  const catalogMatches = useCatalogSearchMatches(query);
+  const groups = useMemo(
+    () =>
+      groupPluginRows(
+        filterPluginRows(
+          pluginListRows(entries, listQuery.data?.plugins ?? []).filter(
+            (row) => row.entry !== null,
+          ),
+          "all",
+          query,
+          catalogMatches,
+        ),
+      ),
+    [catalogMatches, entries, listQuery.data?.plugins, query],
   );
-  const visibleEntries = useMemo(() => {
-    const selected = new Set(selectedCategories);
-    const searchEntries =
-      debouncedQuery === ""
-        ? (catalogQuery.data?.entries ?? [])
-        : (searchQuery.data?.entries ?? []);
-    const filtered = entriesByMarketplaceAuthor(
-      searchEntries.filter((entry) => entry.compatible),
-      authorKey,
-    ).filter(
-      (entry) =>
-        selected.size === 0 || selected.has(pluginCategoryFilterId(entry)),
-    );
-    return sort === null
-      ? filtered
-      : sortPluginEntries(filtered, sort, sortDirection);
-  }, [
-    authorKey,
-    catalogQuery.data?.entries,
-    debouncedQuery,
-    searchQuery.data?.entries,
-    selectedCategories,
-    sort,
-    sortDirection,
-  ]);
-  const searchPending = debouncedQuery !== "" && searchQuery.isPending;
   const browseParams = new URLSearchParams(searchParams);
   browseParams.delete("author");
   const browseSearch = browseParams.toString();
 
-  const changeSearchParams = (change: (next: URLSearchParams) => void) => {
+  const setQuery = (value: string) => {
     const next = new URLSearchParams(searchParams);
-    change(next);
+    if (value === "") next.delete("query");
+    else next.set("query", value);
     setSearchParams(next, { replace: true });
   };
 
   return (
-    <ResourceCollectionViewport scrollId="plugin-author-results">
-      <div className={cn("space-y-6 pb-8", TOOLS_PAGE_BAND_CLASSES)}>
-        <div className="mx-auto w-full max-w-3xl space-y-2">
+    <ResourceCollectionViewport
+      scrollId="plugin-author-results"
+      contentClassName={PLUGINS_LIST_SCROLL_CONTENT_CLASS}
+    >
+      <div className={cn("space-y-6 pb-8", PLUGINS_LIST_BAND_CLASSES)}>
+        <div className="space-y-2">
           <Link
             to={{
               pathname: getPluginsRoutePath(),
@@ -193,30 +172,25 @@ export function PluginAuthorPage({
           <ResourceListState state="empty" message="Author not found." />
         ) : (
           <section className="space-y-6">
-            <PluginBrowseToolbar
-              query={query}
-              selectedCategories={selectedCategories}
-              categoryOptions={categoryOptions}
-              sort={sort}
-              sortDirection={sortDirection}
-              installsKnown={installsKnown}
-              changeSearchParams={changeSearchParams}
+            <ResourceToolbar
+              searchValue={query}
+              searchPlaceholder="Search plugins"
+              onSearchChange={setQuery}
             />
-            {catalogQuery.isError || searchQuery.isError ? (
+            {catalogQuery.isError ? (
               <p className="text-xs text-warning-text" role="status">
                 The latest search failed. The page shows saved catalog results.
               </p>
             ) : null}
-            {searchPending ? (
-              <ResourceListState state="loading" message="Loading plugins" />
-            ) : visibleEntries.length === 0 ? (
+            {groups.length === 0 ? (
               <ResourceListState
                 state="empty"
-                message="No plugins match these filters."
+                message="No plugins match this search."
               />
             ) : (
-              <PluginCatalogGrid
-                entries={visibleEntries}
+              <PluginRowGroups
+                groups={groups}
+                selectedPluginId={selectedPluginId}
                 onInstall={onInstall}
                 onOpenPlugin={onOpenPlugin}
               />

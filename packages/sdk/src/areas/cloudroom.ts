@@ -12,6 +12,9 @@ export interface CloudroomStorage {
   sampled_at: number | null;
 }
 
+/** Mac access levels (ADR 0186). */
+export type MacAccessLevel = "off" | "read-only" | "ask" | "full";
+
 export interface CloudroomStatus {
   storage?: CloudroomStorage | null;
   ready: boolean;
@@ -26,6 +29,8 @@ export interface CloudroomStatus {
   previews?: { state: "connected" | "offline"; count: number; message: string | null; issue: string | null } | null;
   /** Cloud agents may run commands on this computer (ADR 0113); null until first-run setup asks. */
   macAccess?: boolean | null;
+  /** How much cloud agents may do on this computer (ADR 0186); null until first-run setup asks. */
+  macAccessLevel?: MacAccessLevel | null;
   /** Copy this computer's logins, API keys, and model providers to the VM (ADR 0130); null until first-run setup asks. */
   copyLogins?: boolean | null;
   /** Agent logins found on this computer. Claude's is checked through its provider plugin. */
@@ -62,6 +67,8 @@ export interface CloudEnvironment {
   available?: string[];
   /** Last push time of each `available` repo, in ms. */
   pushed?: Record<string, number>;
+  /** The GitHub account the repos belong to; only answered to `githubRepos`. */
+  login?: string;
 }
 
 /** A repo that is not a Cloudroom project yet: a Git folder on this Mac, or a GitHub repo. */
@@ -119,7 +126,8 @@ export interface CloudroomArea {
   signIn(input?: { projectId?: string; websiteUrl?: string; provider?: "github" | "google" }): Promise<{ url: string }>;
   /** Connects a self-hosted core by its HTTPS URL and API token. The backend checks it before saving. */
   connect(input: { url: string; token: string }): Promise<void>;
-  setMacAccess(enabled: boolean): Promise<void>;
+  /** `true` means Full access. */
+  setMacAccess(access: boolean | MacAccessLevel): Promise<void>;
   setCopyLogins(enabled: boolean): Promise<void>;
   environment(signal?: AbortSignal): Promise<CloudEnvironment>;
   updateEnvironment(change: CloudEnvironmentChange): Promise<CloudEnvironment>;
@@ -210,7 +218,7 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     signIn: (input = {}) => transport.readJson(request("/sign-in", input)) as Promise<{ url: string }>,
     connect: (input) => transport.readVoid(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })),
     cancel: () => transport.readVoid(request("/cancel", {})),
-    setMacAccess: (enabled) => transport.readVoid(request("/mac-access", { enabled })),
+    setMacAccess: (access) => transport.readVoid(request("/mac-access", typeof access === "boolean" ? { enabled: access } : { level: access })),
     setCopyLogins: (enabled) => transport.readVoid(request("/copy-logins", { enabled })),
     environment: (signal) => transport.readJson(request("/environment", undefined, signal)) as Promise<CloudEnvironment>,
     updateEnvironment: (change) => transport.readJson(request("/environment", change)) as Promise<CloudEnvironment>,

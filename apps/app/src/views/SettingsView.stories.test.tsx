@@ -57,11 +57,11 @@ describe("settings/Settings/Full Page story chrome", () => {
         .getAttribute("aria-current"),
     ).toBe("page");
 
-    fireEvent.click(screen.getByRole("link", { name: "Providers" }));
+    fireEvent.click(screen.getByRole("link", { name: "Agents" }));
     expect(screen.getByRole("heading", { name: "providers" })).toBeDefined();
     expect(
       screen
-        .getByRole("link", { name: "Providers" })
+        .getByRole("link", { name: "Agents" })
         .getAttribute("aria-current"),
     ).toBe("page");
     expect(

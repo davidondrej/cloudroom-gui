@@ -983,7 +983,7 @@ The bb mobile app reaches a paired bb through the same connect route. It
 enrolls as a connect **machine** — its own credential on the getbb.app account,
 separate from the server's pairing secret and individually revocable — so
 pairing starts from the bb, not from the phone. Both pairing surfaces sit
-behind the `mobileApp` experiment (Settings → Experiments → **Mobile app**, or
+behind the `mobileApp` experiment (Settings → Advanced → Experiments → **Mobile app**, or
 `bb settings experiment mobileApp true`) until the app is generally available;
 the connect plugin reads the experiment from `/system/config` on every call,
 so a toggle applies without a plugin reload:
@@ -1014,7 +1014,7 @@ while keeping workspace changes.
 
 ## Experiments
 
-Experimental surfaces are changed in Settings → Experiments or with
+Experimental surfaces are changed in Settings → Advanced → Experiments or with
 `bb settings experiment <key> <true|false>`. All experiments start off.
 The default-off `changelogPreview` experiment shows the latest release notes
 as a compact, dismissible card on Settings → Updates.
@@ -1104,7 +1104,7 @@ Plugin state lives under the data dir:
 
 BB's official plugins (GitHub, Docs, Memory, and Tasks) ship bundled
 inside the app and install from the local bundled copy — no network, no remote catalog.
-Discover them with `bb plugin search` or Plugins → Browse plugins; users
+Discover them with `bb plugin search` or the Plugins page; users
 cannot add, remove, or configure the bundled official plugin set. Installed official
 plugins are pinned to the bundled copy and update with BB app releases. Local
 path installs remain available directly through `bb plugin install ./path` or
@@ -1178,7 +1178,7 @@ retries structured provider overloads with exponential backoff and jitter.
 Prior output or tool activity does not block recovery. If the provider accepted
 the failed input, core sends an agent-only continuation; if it rejected the
 input before starting, core re-sends the original message as agent-only. Disable
-the plugin under Settings → Installed plugins or with
+the plugin under Settings → Plugins or with
 `bb plugin disable provider-retry`.
 
 It never blocks a send. A remembered rate limit is a stale picture of the
@@ -1208,9 +1208,9 @@ nothing, because waiting does not fix them.
 ### Workflows plugin
 
 The builtin Workflows plugin is disabled on fresh installations. Enable it
-under Settings → Installed plugins or with `bb plugin enable workflows`. Its six
-settings are bounded integers, edited with numeric inputs under Plugins →
-Installed plugins or with `bb plugin config workflows set <key> <value>`:
+under Settings → Plugins or with `bb plugin enable workflows`. Its six
+settings are bounded integers, edited with numeric inputs in the plugin's
+details on the Plugins page or with `bb plugin config workflows set <key> <value>`:
 
 | Key                    |    Default |       Allowed range | Behavior                                               |
 | ---------------------- | ---------: | ------------------: | ------------------------------------------------------ |
@@ -1395,7 +1395,7 @@ For isolated development smoke tests only, `DEV_BROWSER_SMOKE_BINARY` selects th
 
 ## Agent guidance plugin settings
 
-BB guide is installed and enabled by default. In Settings → Installed plugins
+BB guide is installed and enabled by default. In Settings → Plugins
 → BB guide, `introduction` controls the BB introduction, `skills` controls all
 three bundled skills, and `bbCli`, `pluginAuthoring`, and `skillCreator` control
 individual skills. All default to true. Disabling BB guide removes its

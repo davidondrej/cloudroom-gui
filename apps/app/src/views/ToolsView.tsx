@@ -9,6 +9,8 @@ import {
 } from "react";
 import { matchPath, useLocation, useNavigate } from "react-router-dom";
 import "@bb/shared-ui/icon-extended";
+import { Button } from "@bb/shared-ui/button";
+import { Icon } from "@bb/shared-ui/icon";
 import { useMutation } from "@tanstack/react-query";
 import { buildPluginEditThreadPrompt } from "@bb/shared-ui/resource-edit-prompt";
 import { appToast } from "@/components/ui/app-toast";
@@ -18,7 +20,10 @@ import {
   ConfirmDeleteDialog,
   ConfirmDeleteDialogContent,
 } from "@/components/dialogs/ConfirmDeleteDialog";
-import { AddPluginDialog } from "@/components/plugin/management/AddPluginDialog";
+import {
+  AddPluginDialog,
+  addPluginInitialFromEntry,
+} from "@/components/plugin/management/AddPluginDialog";
 import {
   ResourceListState,
   useResourceRouteLabel,
@@ -51,15 +56,12 @@ import {
   getPluginDetailRoutePath,
   getPluginsRoutePath,
   getRootComposeRoutePath,
+  isPluginsRoutePath,
 } from "@/lib/route-paths";
 import { getToolsOwnedCollectionRoutePath } from "@/components/tools/tools-navigation";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { SkillsLibrary } from "@/components/tools/SkillsLibrary";
-import { PluginIcon } from "@/components/plugin/PluginIcon";
 import { pluginToast } from "@/components/plugin/PluginNotificationDescription";
-import { SecondaryPanelLayout } from "@/components/secondary-panel/SecondaryPanelLayout";
-import { ThreadSecondaryPanel } from "@/components/secondary-panel/ThreadSecondaryPanel";
-import type { SecondaryPanelRenderableTab } from "@/components/secondary-panel/secondaryPanelTab";
 
 function ResourceBodyFallback() {
   return (
@@ -125,13 +127,18 @@ function ResourceScrollPage({
 }
 
 function PluginsToolView({
+  selectedPluginId,
   onOpenPlugin,
 }: {
+  selectedPluginId: string | null;
   onOpenPlugin: (pluginId: string, trigger: HTMLButtonElement) => void;
 }) {
   return (
     <ResourceScrollPage fillViewport>
-      <PluginsOverview onOpenPlugin={onOpenPlugin} />
+      <PluginsOverview
+        selectedPluginId={selectedPluginId}
+        onOpenPlugin={onOpenPlugin}
+      />
     </ResourceScrollPage>
   );
 }
@@ -183,7 +190,11 @@ function PluginDetailToolView({ pluginId }: { pluginId: string }) {
         "catalog",
       );
       setDeleteTarget(null);
-      navigate(getToolsOwnedCollectionRoutePath("plugins"));
+      navigate(
+        isPluginsRoutePath(location.pathname)
+          ? { pathname: getPluginsRoutePath(), search: location.search }
+          : getToolsOwnedCollectionRoutePath("plugins"),
+      );
       return listQuery.refetch();
     },
     onError: (error, plugin) => {
@@ -384,17 +395,7 @@ function PluginDetailToolView({ pluginId }: { pluginId: string }) {
             initial={
               installTarget === null
                 ? null
-                : {
-                    entryId: installTarget.entryId,
-                    marketplace: installTarget.marketplace,
-                    pluginId: installTarget.pluginId,
-                    publisherLabel: installTarget.publisherLabel,
-                    displayName: installTarget.displayName,
-                    icon: installTarget.icon,
-                    iconUrl: installTarget.iconUrl,
-                    iconTinted: installTarget.iconTinted,
-                    source: installTarget.source,
-                  }
+                : addPluginInitialFromEntry(installTarget)
             }
             onOpenChange={(open) => {
               if (!open) setInstallTarget(null);
@@ -423,13 +424,10 @@ export function PluginsView({ pluginId }: { pluginId?: string } = {}) {
   const location = useLocation();
   const navigate = useNavigate();
   const focusReturnRef = useRef<HTMLButtonElement | null>(null);
-  const [isPluginDetailFullPage, setIsPluginDetailFullPage] = useState(false);
-  const isInstalledDetail =
-    pluginId !== undefined &&
-    new URLSearchParams(location.search).get("view") === "installed";
-  const isPanelOpen = pluginId !== undefined && !isInstalledDetail;
-  const catalogQuery = usePluginCatalogSearch("", { enabled: isPanelOpen });
-  const listQuery = usePluginList({ enabled: true });
+  const catalogQuery = usePluginCatalogSearch("", {
+    enabled: pluginId !== undefined,
+  });
+  const listQuery = usePluginList({ enabled: pluginId !== undefined });
 
   const openPlugin = useCallback(
     (nextPluginId: string, trigger: HTMLButtonElement) => {
@@ -441,8 +439,7 @@ export function PluginsView({ pluginId }: { pluginId?: string } = {}) {
     },
     [location.search, navigate],
   );
-  const closePanel = useCallback(() => {
-    setIsPluginDetailFullPage(false);
+  const closeCard = useCallback(() => {
     navigate({
       pathname: getPluginsRoutePath(),
       search: location.search,
@@ -452,120 +449,49 @@ export function PluginsView({ pluginId }: { pluginId?: string } = {}) {
       if (focusTarget?.isConnected) focusTarget.focus({ preventScroll: true });
     });
   }, [location.search, navigate]);
-  const catalogEntry = catalogQuery.data?.entries.find(
-    (entry) => entry.pluginId === pluginId,
-  );
-  const installedPlugin = listQuery.data?.plugins.find(
-    (entry) => entry.id === pluginId,
-  );
-  const panelLabel =
-    catalogEntry?.displayName ??
-    installedPlugin?.name ??
-    installedPlugin?.id ??
+  const label =
+    catalogQuery.data?.entries.find((entry) => entry.pluginId === pluginId)
+      ?.displayName ??
+    listQuery.data?.plugins.find((plugin) => plugin.id === pluginId)?.name ??
     pluginId ??
     "Plugin";
-  const panelTab = useMemo<SecondaryPanelRenderableTab | null>(() => {
-    if (!isPanelOpen) return null;
-    return {
-      contentFillsRegion: true,
-      label: panelLabel,
-      leadingVisual: (
-        <PluginIcon
-          pluginId={pluginId}
-          icon={catalogEntry?.icon ?? installedPlugin?.icon ?? null}
-          compactIconUrl={installedPlugin?.compactIconUrl}
-          className="size-3.5"
-        />
-      ),
-      onClose: closePanel,
-      onSelect: () => undefined,
-      renderContent: () => <PluginDetailToolView pluginId={pluginId} />,
-      statusLabel: null,
-      tab: {
-        id: `marketplace-plugin:${pluginId}`,
-        kind: "marketplace-plugin-detail",
-      },
-    };
-  }, [
-    catalogEntry?.icon,
-    closePanel,
-    installedPlugin?.compactIconUrl,
-    installedPlugin?.icon,
-    isPanelOpen,
-    panelLabel,
-    pluginId,
-  ]);
-  const panelTabs = useMemo<readonly SecondaryPanelRenderableTab[]>(
-    () => (panelTab === null ? [] : [panelTab]),
-    [panelTab],
-  );
-  const mainContent = (
-    <div className="min-h-0 flex-1 overflow-hidden">
-      <Suspense fallback={<ResourceBodyFallback />}>
-        {isInstalledDetail && pluginId !== undefined ? (
-          <PluginDetailToolView pluginId={pluginId} />
-        ) : (
-          <PluginsToolView onOpenPlugin={openPlugin} />
-        )}
-      </Suspense>
-    </div>
-  );
-  const renderPanel = useCallback(
-    ({
-      presentation,
-      isMainCollapsed,
-      onToggleMainCollapse,
-      resizablePanelId,
-    }: {
-      presentation: "inline" | "drawer";
-      isMainCollapsed: boolean;
-      onToggleMainCollapse: () => void;
-      resizablePanelId?: string;
-    }) => (
-      <ThreadSecondaryPanel
-        activeTab={panelTab?.tab ?? null}
-        canUseGitUi={false}
-        metadataContent={null}
-        tabs={panelTabs}
-        fixedTabs={[]}
-        onTabReorder={() => undefined}
-        isOpen={isPanelOpen}
-        showConversationCollapseControl
-        showNewTabButton={false}
-        onPanelFocus={() => undefined}
-        onCollapse={closePanel}
-        onClose={closePanel}
-        onOpenNewTab={() => undefined}
-        isConversationCollapsed={isMainCollapsed}
-        onToggleConversationCollapse={onToggleMainCollapse}
-        renderAsDrawer={presentation === "drawer"}
-        resizablePanelId={resizablePanelId}
-      />
-    ),
-    [closePanel, isPanelOpen, panelTab?.tab, panelTabs],
-  );
 
   return (
-    <div className="-mx-4 -mb-4 -mt-4 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden md:-mx-5 md:-mb-5 md:-mt-5">
-      <SecondaryPanelLayout
-        open={isPanelOpen}
-        onToggle={isPanelOpen ? closePanel : () => undefined}
-        onClose={closePanel}
-        panelGroupKey="extensions-plugin-details"
-        resetKey="extensions-plugin-details"
-        contentKey={pluginId ?? "extensions-plugins"}
-        drawerLabel="Plugin details"
-        drawerFallback={<ResourceBodyFallback />}
-        mainPanelId="extensions-main-panel"
-        main={mainContent}
-        collapse={{
-          active: isPluginDetailFullPage,
-          onToggle: () => setIsPluginDetailFullPage((current) => !current),
-        }}
-        renderPanel={renderPanel}
-        composerHost={null}
-        compactPresentation="full"
-      />
+    <div className="@container/plugins relative -mx-4 -mb-4 -mt-4 flex min-h-0 min-w-0 flex-1 overflow-hidden md:-mx-5 md:-mb-5 md:-mt-5">
+      <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+        <Suspense fallback={<ResourceBodyFallback />}>
+          <PluginsToolView
+            selectedPluginId={pluginId ?? null}
+            onOpenPlugin={openPlugin}
+          />
+        </Suspense>
+      </div>
+      {pluginId === undefined ? null : (
+        <aside
+          aria-label={`${label} details`}
+          className="flex w-[min(36rem,48%)] shrink-0 flex-col py-3 pr-3 @max-3xl/plugins:absolute @max-3xl/plugins:inset-0 @max-3xl/plugins:z-20 @max-3xl/plugins:w-full @max-3xl/plugins:bg-background @max-3xl/plugins:p-0"
+        >
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg @max-3xl/plugins:rounded-none @max-3xl/plugins:border-0 @max-3xl/plugins:shadow-none">
+            <div className="flex h-10 shrink-0 items-center justify-end px-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-7 text-muted-foreground hover:text-foreground"
+                aria-label={`Close ${label}`}
+                onClick={closeCard}
+              >
+                <Icon name="X" className="size-4" aria-hidden />
+              </Button>
+            </div>
+            <div className="min-h-0 flex-1">
+              <Suspense fallback={<ResourceBodyFallback />}>
+                <PluginDetailToolView pluginId={pluginId} />
+              </Suspense>
+            </div>
+          </div>
+        </aside>
+      )}
     </div>
   );
 }

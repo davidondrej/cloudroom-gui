@@ -11,7 +11,8 @@ const source = {
 const storageRootPath = "/remote-storage/thread-editor-test";
 const hostId = "remote-editor-host";
 
-async function setup() {
+async function setup(executionTarget: "local" | "cloud" = "local") {
+  const get = vi.fn(() => ({ id: source.threadId, executionTarget }));
   const storageLocation = vi.fn(() => ({ hostId, storageRootPath }));
   const read = vi.fn(() => ({
     content: "saved text",
@@ -28,7 +29,7 @@ async function setup() {
     pluginId: "monaco-editor",
     sdk: {
       system: { config: () => ({ dataDir: "/server-data" }) },
-      threads: { storageLocation },
+      threads: { get, storageLocation },
       files: { read, listPaths, write },
     },
   });
@@ -91,5 +92,30 @@ describe("thread storage host routing", () => {
       expectedSha256: "original",
     });
     expect(result).toEqual({ outcome: "written", sha256: "updated" });
+  });
+});
+
+describe("cloud threads", () => {
+  it("leaves cloud thread files to the read-only preview", async () => {
+    const { harness, read } = await setup("cloud");
+    const result = await harness.callRpc("read", {
+      source,
+      path: "notes/document.txt",
+    });
+    expect(result).toMatchObject({ kind: "unsupported" });
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it("refuses to save cloud thread files", async () => {
+    const { harness, write } = await setup("cloud");
+    await expect(
+      harness.callRpc("write", {
+        source,
+        path: "notes/document.txt",
+        content: "edited text",
+        expectedSha256: "original",
+      }),
+    ).rejects.toThrow();
+    expect(write).not.toHaveBeenCalled();
   });
 });

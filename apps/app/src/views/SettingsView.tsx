@@ -4,6 +4,7 @@ import { MachineEnvironmentSettings } from "@/components/settings/MachineEnviron
 import { MachineAccessSettings } from "@/components/settings/MachineAccessSettings";
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  Link,
   Navigate,
   useNavigate,
   useLocation,
@@ -60,6 +61,11 @@ import { SidebarFooterSettings } from "@/components/settings/SidebarFooterSettin
 import { SidebarNavigationSetting } from "@/components/settings/SidebarNavigationSetting";
 import { SplitDimmingSetting } from "@/components/settings/SplitDimmingSetting";
 import { useSettingsNavState } from "@/components/settings/settings-nav";
+import {
+  findSettingsNavGroup,
+  getSettingsGroupLinks,
+  type SettingsNavLink,
+} from "@/components/settings/settings-sections";
 import { PluginsOverview } from "@/components/plugin/PluginsOverview";
 import { PluginDetailPaneView } from "@/views/ToolsView";
 import { SETTINGS_PLUGIN_ROUTE_PATH } from "@/lib/route-paths";
@@ -1174,17 +1180,26 @@ export function SettingsView() {
   const updateAppearanceMutation = useUpdateAppearance();
   const appThemePreview = useAppThemePreview();
   const location = useLocation();
-  const { activePluginId, activeSection, hasUnknownSection } =
-    useSettingsNavState();
+  const navigation = useSettingsNavState();
+  const { activePluginId, activeSection, hasUnknownSection } = navigation;
   if (hasUnknownSection) {
     return <Navigate to={SETTINGS_ROUTE_PATH} replace />;
   }
+  const groupTabs = (
+    <SettingsGroupTabs
+      links={getSettingsGroupLinks(
+        findSettingsNavGroup(activeSection, activePluginId),
+        navigation,
+      )}
+    />
+  );
 
   if (activeSection === "plugins") {
     const pluginId = matchPath(SETTINGS_PLUGIN_ROUTE_PATH, location.pathname)
       ?.params.pluginId;
     return (
       <div className="-mx-4 -mt-4 flex min-h-0 flex-1 flex-col overflow-hidden md:-mx-5 md:-mt-5">
+        <div className="shrink-0 px-4 pt-4 md:px-5 md:pt-5">{groupTabs}</div>
         {pluginId ? (
           <PluginDetailPaneView pluginId={pluginId} />
         ) : (
@@ -1441,7 +1456,34 @@ export function SettingsView() {
 
   return (
     <PageShell contentClassName="pt-4 md:pt-5">
-      <div className="mx-auto w-full max-w-3xl space-y-10">{content}</div>
+      <div className="mx-auto w-full max-w-3xl">
+        {groupTabs}
+        <div className="space-y-10">{content}</div>
+      </div>
     </PageShell>
+  );
+}
+
+function SettingsGroupTabs({ links }: { links: readonly SettingsNavLink[] }) {
+  if (links.length < 2) return null;
+  return (
+    <nav
+      aria-label="Settings pages"
+      className="mb-6 flex flex-wrap gap-1 border-b border-border pb-2"
+    >
+      {links.map((link) => (
+        <Link
+          key={link.key}
+          to={link.to}
+          aria-current={link.active ? "page" : undefined}
+          className={cn(
+            "rounded-md px-2.5 py-1 text-sm text-muted-foreground hover:bg-accent hover:text-foreground",
+            link.active && "bg-accent text-foreground",
+          )}
+        >
+          {link.label}
+        </Link>
+      ))}
+    </nav>
   );
 }
