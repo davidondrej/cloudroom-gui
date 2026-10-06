@@ -7,6 +7,7 @@ import { DatabaseSync } from "node:sqlite";
 import { promisify } from "node:util";
 import type {
   ProviderHealthResult,
+  ProviderInstallationCommand,
   ProviderInstallationRunResult,
   ProviderInstallationStatus,
   ProviderUsage,
@@ -130,19 +131,48 @@ function readAccountEmail(): string | null {
 
 export interface AcpMaintenanceDialect {
   loginCommand: string;
-  installer(): { command: string; args: string[]; displayCommand: string };
+  installer(): ProviderInstallationCommand;
   readAccount(): Promise<{ email: string | null } | null>;
   readUsage(): Promise<ProviderUsageResult>;
 }
 
-function healthResult(args: {
+export const acpScriptInstallerSchema = z.object({
+  scriptUrl: z
+    .string()
+    .regex(/^https:\/\/[A-Za-z0-9.-]+(?:\/[A-Za-z0-9._~/-]*)?$/u),
+  args: z
+    .array(z.string().regex(/^--?[A-Za-z0-9][A-Za-z0-9-]*$/u))
+    .max(8)
+    .default([]),
+});
+export type AcpScriptInstaller = z.infer<typeof acpScriptInstallerSchema>;
+
+export function acpScriptInstallerCommand(
+  installer: AcpScriptInstaller,
+): ProviderInstallationCommand {
+  const script = [
+    'tmp=$(mktemp "${TMPDIR:-/tmp}/provider-installation.XXXXXX")',
+    "trap 'rm -f \"$tmp\"' EXIT",
+    `curl -fsSL ${installer.scriptUrl} -o "$tmp"`,
+    ['bash "$tmp"', ...installer.args, "</dev/null"].join(" "),
+  ].join(" && ");
+  return { command: "sh", args: ["-c", script], displayCommand: script };
+}
+
+export interface AcpMaintenanceTarget {
   maintenance: AcpMaintenanceDialect | undefined;
+  installer: (() => ProviderInstallationCommand) | undefined;
+  command: string | null;
+}
+
+function healthResult(args: {
+  target: AcpMaintenanceTarget;
   status: "ready" | "not_installed" | "unauthenticated" | "unknown";
   accountEmail?: string | null;
   installedVersion?: string | null;
   statusMessage?: string | null;
 }): ProviderHealthResult {
-  const maintained = args.maintenance !== undefined;
+  const { maintenance, installer } = args.target;
   return {
     supported: true,
     health: {
@@ -152,32 +182,31 @@ function healthResult(args: {
       planLabel: null,
       installedVersion: args.installedVersion ?? null,
       minimumSupportedVersion: null,
-      canInstall: maintained,
-      canUpdate: maintained && args.status !== "not_installed",
-      loginCommand: args.maintenance?.loginCommand ?? null,
+      canInstall: installer !== undefined,
+      canUpdate: maintenance !== undefined && args.status !== "not_installed",
+      loginCommand: maintenance?.loginCommand ?? null,
     },
   };
 }
 
-export async function getAcpProviderHealth(args: {
-  maintenance: AcpMaintenanceDialect | undefined;
-  command: string | null;
-}): Promise<ProviderHealthResult> {
-  const maintenance = args.maintenance;
-  if (args.command === null) {
+export async function getAcpProviderHealth(
+  target: AcpMaintenanceTarget,
+): Promise<ProviderHealthResult> {
+  const { maintenance, command } = target;
+  if (command === null) {
     return healthResult({
-      maintenance,
+      target,
       status: "unknown",
       statusMessage: "The ACP provider has no launch command.",
     });
   }
-  if ((await resolveExecutablePath(args.command)) === null) {
-    return healthResult({ maintenance, status: "not_installed" });
+  if ((await resolveExecutablePath(command)) === null) {
+    return healthResult({ target, status: "not_installed" });
   }
-  const version = await readCliVersion(args.command);
+  const version = await readCliVersion(command);
   if (maintenance === undefined) {
     return healthResult({
-      maintenance,
+      target,
       status: "ready",
       installedVersion: version,
     });
@@ -185,14 +214,14 @@ export async function getAcpProviderHealth(args: {
   try {
     const account = await maintenance.readAccount();
     return healthResult({
-      maintenance,
+      target,
       status: account === null ? "unauthenticated" : "ready",
       accountEmail: account?.email ?? null,
       installedVersion: version,
     });
   } catch (error) {
     return healthResult({
-      maintenance,
+      target,
       status: "unknown",
       installedVersion: version,
       statusMessage: error instanceof Error ? error.message : String(error),
@@ -200,10 +229,9 @@ export async function getAcpProviderHealth(args: {
   }
 }
 
-export async function getAcpProviderInstallationStatus(args: {
-  maintenance: AcpMaintenanceDialect | undefined;
-  command: string | null;
-}): Promise<ProviderInstallationStatus> {
+export async function getAcpProviderInstallationStatus(
+  args: AcpMaintenanceTarget,
+): Promise<ProviderInstallationStatus> {
   const executableName = args.command ?? "";
   const resolvedExecutable =
     args.command === null ? null : await resolveExecutablePath(args.command);
@@ -213,11 +241,11 @@ export async function getAcpProviderInstallationStatus(args: {
       ? await readCliVersion(args.command)
       : null;
   const installAction =
-    args.maintenance !== undefined && !installed
+    args.installer !== undefined && !installed
       ? {
           kind: "install" as const,
           label: "Install" as const,
-          command: args.maintenance.installer().displayCommand,
+          command: args.installer().displayCommand,
         }
       : null;
   return {
@@ -236,26 +264,22 @@ export async function getAcpProviderInstallationStatus(args: {
   };
 }
 
-export async function getAcpProviderInstallationRun(args: {
-  maintenance: AcpMaintenanceDialect | undefined;
-  command: string | null;
-  action: "install" | "update";
-}): Promise<ProviderInstallationRunResult> {
+export async function getAcpProviderInstallationRun(
+  args: AcpMaintenanceTarget & { action: "install" | "update" },
+): Promise<ProviderInstallationRunResult> {
   const status = await getAcpProviderInstallationStatus(args);
   return buildAcpProviderInstallationRun(status, args);
 }
 
 function buildAcpProviderInstallationRun(
   status: ProviderInstallationStatus,
-  args: {
-    maintenance: AcpMaintenanceDialect | undefined;
-    command: string | null;
+  args: Pick<AcpMaintenanceTarget, "command" | "installer"> & {
     action: "install" | "update";
   },
 ): ProviderInstallationRunResult {
   if (
     status.installAction?.kind !== args.action ||
-    args.maintenance === undefined
+    args.installer === undefined
   ) {
     return {
       available: false,
@@ -264,7 +288,7 @@ function buildAcpProviderInstallationRun(
   }
   return {
     available: true,
-    command: args.maintenance.installer(),
+    command: args.installer(),
     verification: { kind: "installed" },
   };
 }
@@ -372,10 +396,9 @@ function fetchDashboard(
   });
 }
 
-export async function getAcpProviderUsage(args: {
-  maintenance: AcpMaintenanceDialect | undefined;
-  command: string | null;
-}): Promise<ProviderUsageResult> {
+export async function getAcpProviderUsage(
+  args: AcpMaintenanceTarget,
+): Promise<ProviderUsageResult> {
   if (args.maintenance === undefined) return { supported: false };
   if (
     args.command === null ||

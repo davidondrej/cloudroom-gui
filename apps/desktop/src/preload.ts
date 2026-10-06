@@ -79,6 +79,7 @@ import {
   BB_DESKTOP_BROWSER_OPEN_FULL_DISK_ACCESS_SETTINGS_CHANNEL,
 } from "./desktop-browser-ipc.js";
 import {
+  BB_DESKTOP_ADD_IMAGE_TO_CHAT_CHANNEL,
   BB_DESKTOP_APP_COMMAND_CHANNEL,
   BB_DESKTOP_CLOSE_WINDOW_REQUEST_CHANNEL,
   BB_DESKTOP_CLOSE_WINDOW_RESPONSE_CHANNEL,
@@ -196,6 +197,7 @@ const browserFindResultListeners = new Set<BbDesktopBrowserFindResultHandler>();
 const closeWindowRequestListeners =
   new Set<BbDesktopCloseWindowRequestHandler>();
 const openNewTabListeners = new Set<BbDesktopOpenNewTabHandler>();
+const addImageToChatListeners = new Set<(imageUrl: string) => void>();
 
 function addListener<T>(listeners: Set<T>, listener: T): () => void {
   listeners.add(listener);
@@ -396,6 +398,9 @@ const bbDesktopApi: BbDesktopApi = {
   onAppCommand(listener): BbDesktopInfoUnsubscribe {
     return addListener(appCommandListeners, listener);
   },
+  onAddImageToChat(listener): BbDesktopInfoUnsubscribe {
+    return addListener(addImageToChatListeners, listener);
+  },
   onCloseWindowRequest(listener): BbDesktopInfoUnsubscribe {
     return addListener(closeWindowRequestListeners, listener);
   },
@@ -437,6 +442,12 @@ forwardParsed(
   BB_DESKTOP_APP_COMMAND_CHANNEL,
   appCommandIdSchema,
   appCommandListeners,
+);
+
+forwardParsed(
+  BB_DESKTOP_ADD_IMAGE_TO_CHAT_CHANNEL,
+  z.string().min(1),
+  addImageToChatListeners,
 );
 
 ipcRenderer.on(BB_DESKTOP_CLOSE_WINDOW_REQUEST_CHANNEL, () => {

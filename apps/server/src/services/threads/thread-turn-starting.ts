@@ -18,7 +18,7 @@ export type QueueInputForStartingTurnResult =
 export function queueInputForStartingTurn(
   deps: TurnStartingDeps,
   args: {
-    claimed: readonly ClaimedQueuedThreadMessageRow[] | null;
+    claimed: ClaimedQueuedThreadMessageRow | null;
     input: QueuedDispatchMessage;
     threadId: string;
   },

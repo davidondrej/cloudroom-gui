@@ -21,7 +21,6 @@ export type LifecycleErrorOperation =
   | "resolve_interaction"
   | "send_message"
   | "send_queued_message"
-  | "set_queued_message_group_boundary"
   | "stop_thread"
   | "update_queued_message"
   | "update_merge_base";
@@ -118,8 +117,6 @@ function operationTitle(operation: LifecycleErrorOperation): string {
       return "Failed to send message";
     case "send_queued_message":
       return "Failed to send queued message";
-    case "set_queued_message_group_boundary":
-      return "Failed to group queued messages";
     case "stop_thread":
       return "Failed to stop thread";
     case "update_queued_message":

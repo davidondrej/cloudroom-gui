@@ -27,6 +27,7 @@ const MAX_TOTAL = 1024 * 1024 * 1024;
 const SMALL_PROJECT = 50 * 1024 * 1024;
 export const SKIPPED = new Set(["node_modules", ".git", ".venv", "venv", ".next", ".turbo", ".cache", "__pycache__", "target", "dist", "build", ".DS_Store"]);
 const copying = new Set<string>();
+export const FAILURE_NOTE = ".cloudroom/project-copy-failed.txt";
 const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
 
 export function githubRepository(remote: string | null): string | null {
@@ -71,8 +72,9 @@ export async function planProjectCopy(deps: Deps, client: CloudroomClient, threa
   }
 }
 
-/** The copy shows as started at once, but its transfer waits for `after`, so it can't crowd out the first message on a slow connection. */
-export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCopyJob, done?: (error?: string) => void, after: Promise<void> = Promise.resolve()): void {
+/** The copy shows as started at once, but its transfer waits for `after`, so it can't crowd out the first message on a slow connection.
+ *  With `paused`, a copy cut off by a sleeping or unreachable sandbox waits instead of failing; the caller restarts it. */
+export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCopyJob, done?: (error?: string) => void, after: Promise<void> = Promise.resolve(), paused?: () => void): void {
   if (copying.has(job.key)) return;
   copying.add(job.key);
   const report = (progress: ProjectCopyProgress) => {
@@ -85,9 +87,15 @@ export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCop
   report({ phase: job.clone ? "cloning" : "uploading", completed: 0, total: 0 });
   void after.then(() => run(client, job, report))
     .then(() => { report({ phase: "complete", completed: 0, total: 0 }); done?.(); })
-    .catch((error: unknown) => {
+    .catch(async (error: unknown) => {
+      if (paused && error instanceof CloudroomError && error.retryable) {
+        report({ phase: "waiting", completed: 0, total: 0 });
+        paused();
+        return;
+      }
       const message = (error instanceof Error ? error.message : String(error)).slice(0, 500);
       report({ phase: "error", completed: 0, total: 0, error: message });
+      await writeFailureNote(client, job, message).catch(() => {});
       done?.(message);
     })
     .finally(() => copying.delete(job.key));
@@ -96,6 +104,8 @@ export function copyProject(deps: Deps, client: CloudroomClient, job: ProjectCop
 async function run(client: CloudroomClient, job: ProjectCopyJob, report: (progress: ProjectCopyProgress) => void): Promise<void> {
   const target = (await client.workspace(job.workspace))?.path;
   if (!target) throw new Error("The cloud project folder is unavailable.");
+  // A retry clears the last failure's note, so the agent doesn't stop waiting for files that are on their way.
+  await vm(client, `rm -f -- ${quote(`${target}/${FAILURE_NOTE}`)}`);
   // A failed Teleport clone falls back to uploading the files, so the agent can still work, then reports why Git is missing.
   let cloneError: string | null = null;
   if (job.clone && job.repository) {
@@ -105,12 +115,24 @@ async function run(client: CloudroomClient, job: ProjectCopyJob, report: (progre
   }
   const cloned = job.clone && !cloneError;
   if (!cloned) report({ phase: "uploading", completed: 0, total: 0 });
-  const scope = job.teleport ? (cloned ? "changed" : "all") : job.copyAll ? "all" : "env";
+  // A failed clone of a small project falls back to uploading it, like a project not on GitHub.
+  const scope = job.teleport ? (cloned ? "changed" : "all") : job.copyAll || (cloneError && job.localPath && await smallProject(job.localPath)) ? "all" : "env";
   if (job.localPath) {
     const files = await localFiles(job.localPath, scope);
     if (files.length) await upload(client, job.localPath, target, files, scope !== "changed", report);
   }
-  if (cloneError) throw new Error(job.teleport ? `The GitHub clone failed, so your files were copied without Git history: ${cloneError}` : `The GitHub clone failed: ${cloneError}`);
+  if (cloneError) throw new Error(`The GitHub clone failed${scope === "all" ? ", so your files were copied without Git history" : ""}. Check that the project's GitHub remote exists and you can access it: ${cloneError}`);
+}
+
+/** Tells the agent why its project folder is empty or incomplete, since it otherwise waits for files that never come. */
+async function writeFailureNote(client: CloudroomClient, job: ProjectCopyJob, message: string): Promise<void> {
+  const target = (await client.workspace(job.workspace))?.path;
+  if (!target) return;
+  const next = job.localPath
+    ? `The full project is on the user's Mac at \`${job.localPath}\`. Pull only what the task needs with \`cloudroom mac pull\`.`
+    : "Tell the user, since the files are not available anywhere else.";
+  const note = `Cloudroom could not copy this project into the cloud, so do not wait for more files.\n\n${message}\n\n${next}\n`;
+  await vm(client, `mkdir -p -- ${quote(`${target}/.cloudroom`)} && cat > ${quote(`${target}/${FAILURE_NOTE}`)}`, Buffer.from(note));
 }
 
 async function vm(client: CloudroomClient, command: string, bytes?: Buffer<ArrayBuffer>, raw = false): Promise<void> {

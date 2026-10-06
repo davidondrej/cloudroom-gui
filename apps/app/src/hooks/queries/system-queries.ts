@@ -47,6 +47,7 @@ import {
   systemCliSkillsQueryKey,
   systemConfigQueryKey,
   systemExecutionOptionsQueryKey,
+  systemInstallableProvidersQueryKey,
   systemProvidersQueryKey,
   systemProviderStatesQueryKey,
   systemThemeQueryKey,
@@ -461,6 +462,26 @@ export function useHostProviderCliStatus({
       }),
     enabled: (enabled ?? true) && hostId !== null,
     ...SESSION_STATIC_QUERY_POLICY,
+  });
+}
+
+export function useInstallableProviders({
+  hostId,
+  enabled,
+}: UseHostProviderCliStatusArgs) {
+  return useQuery<ProviderInfo[]>({
+    queryKey: systemInstallableProvidersQueryKey(hostId),
+    queryFn: ({ signal }) =>
+      sdk.providers.installable({
+        hostId: requireEnabledQueryArg({
+          value: hostId,
+          hookName: "useInstallableProviders",
+          argName: "hostId",
+        }),
+        signal,
+      }),
+    enabled: (enabled ?? true) && hostId !== null,
+    staleTime: 60_000,
   });
 }
 

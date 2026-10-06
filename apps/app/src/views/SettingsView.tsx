@@ -61,6 +61,7 @@ import { SidebarFooterSettings } from "@/components/settings/SidebarFooterSettin
 import { SidebarNavigationSetting } from "@/components/settings/SidebarNavigationSetting";
 import { SplitDimmingSetting } from "@/components/settings/SplitDimmingSetting";
 import { useSettingsNavState } from "@/components/settings/settings-nav";
+import { useRevealSettingsTarget } from "@/components/settings/settings-search";
 import {
   findSettingsNavGroup,
   getSettingsGroupLinks,
@@ -79,6 +80,7 @@ import { KeyboardSettingsSection } from "@/components/settings/KeyboardSettingsS
 import { BrowserSettingsSection } from "@/components/settings/BrowserSettingsSection";
 import { MachinesSettingsSection } from "@/components/settings/MachinesSettingsSection";
 import { CloudroomAccountSettings } from "@/components/settings/CloudroomAccountSettings";
+import { InviteSettingsCard } from "@/components/InviteOffer";
 import { ProjectsSettingsSection } from "@/components/settings/ProjectsSettingsSection";
 import { ArchivedThreadsSettingsSection } from "@/components/settings/ArchivedThreadsSettingsSection";
 import { ImportChatsSettingsSection } from "@/components/settings/ImportChats";
@@ -1051,7 +1053,7 @@ export function PrivacySettingsSection({
 
         <SettingsWithControl
           label="Share anonymous usage data"
-          description="Send anonymous app starts, thread and message counts, and plugin installs to help improve Cloudroom. Turning this off takes effect immediately for this server. Details: cloudroom.dev/privacy."
+          description="Send anonymous app starts, thread and message counts, plugin installs, and short letters-only settings searches that find nothing to help improve Cloudroom. Turning this off takes effect immediately for this server. Details: cloudroom.dev/privacy."
         >
           <Switch
             checked={telemetryEnabled}
@@ -1150,6 +1152,8 @@ export function ExperimentsSettingsSection({
   );
 }
 
+const SETTINGS_CONTENT_ID = "settings-content";
+
 export function SettingsView() {
   const navigate = useNavigate();
   const themePreference = useThemePreference();
@@ -1182,6 +1186,7 @@ export function SettingsView() {
   const location = useLocation();
   const navigation = useSettingsNavState();
   const { activePluginId, activeSection, hasUnknownSection } = navigation;
+  const searchTargetKey = useRevealSettingsTarget(SETTINGS_CONTENT_ID);
   if (hasUnknownSection) {
     return <Navigate to={SETTINGS_ROUTE_PATH} replace />;
   }
@@ -1198,7 +1203,11 @@ export function SettingsView() {
     const pluginId = matchPath(SETTINGS_PLUGIN_ROUTE_PATH, location.pathname)
       ?.params.pluginId;
     return (
-      <div className="-mx-4 -mt-4 flex min-h-0 flex-1 flex-col overflow-hidden md:-mx-5 md:-mt-5">
+      <div
+        key={searchTargetKey}
+        id={SETTINGS_CONTENT_ID}
+        className="-mx-4 -mt-4 flex min-h-0 flex-1 flex-col overflow-hidden md:-mx-5 md:-mt-5"
+      >
         <div className="shrink-0 px-4 pt-4 md:px-5 md:pt-5">{groupTabs}</div>
         {pluginId ? (
           <PluginDetailPaneView pluginId={pluginId} />
@@ -1384,6 +1393,7 @@ export function SettingsView() {
   } else {
     content = (
       <>
+        <InviteSettingsCard />
         <GeneralSettingsSection
           desktopBrowserAvailable={desktopBrowserAvailable}
           generalSettingsDisabled={
@@ -1458,7 +1468,9 @@ export function SettingsView() {
     <PageShell contentClassName="pt-4 md:pt-5">
       <div className="mx-auto w-full max-w-3xl">
         {groupTabs}
-        <div className="space-y-10">{content}</div>
+        <div key={searchTargetKey} id={SETTINGS_CONTENT_ID} className="space-y-10">
+          {content}
+        </div>
       </div>
     </PageShell>
   );

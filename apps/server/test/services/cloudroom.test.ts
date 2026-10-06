@@ -6,7 +6,7 @@ import { expect, it, vi } from "vitest";
 import * as sync from "../../src/services/cloudroom/sync.js";
 import { listQueuedCommands } from "../helpers/commands.js";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
-import { saveTeleportProgress } from "../../src/services/cloudroom/store.js";
+import { command, saveTeleportProgress } from "../../src/services/cloudroom/store.js";
 import { teleports } from "../../src/services/cloudroom/teleport.js";
 import { createTestAppHarness } from "../helpers/test-app.js";
 import { seedEnvironment, seedHostSession, seedPrimaryHost, seedProjectWithSource, seedThread, seedThreadRuntimeState } from "../helpers/seed.js";
@@ -963,6 +963,7 @@ it.each(["codex", "pi"])("edits and cancels queued Cloud %s prompts, then steers
   const streams = new Set<ServerResponse>();
   const commands: object[] = [];
   const sid = "cr_features";
+  let holdPrompts = false;
   const input = (text: string) => [{ type: "text", text, mentions: [] }, { type: "localImage", path: "image.png" }, { type: "localFile", path: "note.txt" }];
   const attachmentRoot = join(harness.config.dataDir, "attachments", project.id);
   await mkdir(attachmentRoot, { recursive: true });
@@ -1002,6 +1003,7 @@ it.each(["codex", "pi"])("edits and cancels queued Cloud %s prompts, then steers
       record("state", { state: "idle" });
       return json({ session_id: sid, receipt: { request_id: body.request_id, command: "start", state: "completed", input: {} }, saving: {} }, 202);
     }
+    if (holdPrompts && String(req.url).endsWith("/prompts")) return json({ error: "waking" }, 503);
     if (String(req.url).endsWith("/edit") && body.text === "rejected edit") return json({ error: "already dispatched" }, 409);
     const path = String(req.url ?? "");
     const command = path.endsWith("/prompts") ? "prompt" : path.split("/").pop() ?? "unknown";
@@ -1026,6 +1028,7 @@ it.each(["codex", "pi"])("edits and cancels queued Cloud %s prompts, then steers
     await expect.poll(() => getThread(harness.db, thread.id)?.status).toBe("active");
     expect((await request(`/threads/${thread.id}/send`, { requestId: "queued-1", mode: "auto", input: input("old") })).status).toBe(200);
     await expect.poll(() => service.queue(thread.id)).toEqual([expect.objectContaining({ id: "queued-1", content: input("old") })]);
+    await expect.poll(() => command(harness.db, "queued-1")?.state).toBe("accepted");
     const queued = service.queue(thread.id)[0]!;
     expect((await request(`/threads/${thread.id}/queued-messages/${queued.id}`, { input: input("rejected edit"), expectedUpdatedAt: queued.updatedAt }, "PATCH")).status).toBeGreaterThanOrEqual(400);
     expect(service.queue(thread.id)[0]).toMatchObject({ content: queued.content, updatedAt: queued.updatedAt });
@@ -1040,6 +1043,22 @@ it.each(["codex", "pi"])("edits and cancels queued Cloud %s prompts, then steers
     expect(service.queue(thread.id)[0]?.content).toEqual(input("new"));
     expect((await request(`/threads/${thread.id}/queued-messages/${queued.id}`, undefined, "DELETE")).status).toBe(200);
     await expect.poll(() => commands.some((item) => (item as { url?: string }).url?.endsWith("/cancel"))).toBe(true);
+    await expect.poll(() => service.queue(thread.id)).toEqual([]);
+    holdPrompts = true;
+    expect((await request(`/threads/${thread.id}/send`, { requestId: "queued-2", mode: "auto", input: input("draft") })).status).toBe(200);
+    const waiting = service.queue(thread.id).find((item) => item.id === "queued-2")!;
+    expect(command(harness.db, "queued-2")?.state).toBe("sending");
+    expect(waiting.editable).toBe(true);
+    const offline = await request(`/threads/${thread.id}/queued-messages/queued-2`, { input: input("final"), expectedUpdatedAt: waiting.updatedAt }, "PATCH");
+    expect(offline.status, await offline.clone().text()).toBe(200);
+    expect(service.queue(thread.id).find((item) => item.id === "queued-2")?.content).toEqual(input("final"));
+    holdPrompts = false;
+    const sentTo = (name: string) => commands.findIndex((item) => { const sent = item as { url?: string; request_id?: string; target_request_id?: string }; return Boolean(sent.url?.endsWith(name)) && (sent.request_id === "queued-2" || sent.target_request_id === "queued-2"); });
+    await expect.poll(() => sentTo("/edit")).toBeGreaterThan(-1);
+    expect(sentTo("/prompts")).toBeGreaterThan(-1);
+    expect(sentTo("/prompts")).toBeLessThan(sentTo("/edit"));
+    expect(service.queue(thread.id).find((item) => item.id === "queued-2")?.content).toEqual(input("final"));
+    expect((await request(`/threads/${thread.id}/queued-messages/queued-2`, undefined, "DELETE")).status).toBe(200);
     await expect.poll(() => service.queue(thread.id)).toEqual([]);
     expect((await request(`/threads/${thread.id}/send`, { requestId: "steer-1", mode: "steer", input: [{ type: "text", text: "course correct", mentions: [] }] })).status).toBe(200);
     await expect.poll(() => commands.some((item) => (item as { url?: string }).url?.endsWith("/steer"))).toBe(true);

@@ -883,6 +883,13 @@
       "when": 1791094212323,
       "tag": "0125_cloud_thread_last_workspace",
       "breakpoints": true
+    },
+    {
+      "idx": 126,
+      "version": "6",
+      "when": 1791162961024,
+      "tag": "0126_enable_file_editor",
+      "breakpoints": true
     }
   ]
 }

@@ -220,11 +220,6 @@ const OPTIONAL_SERVER_FIELD_GROUPS: readonly OptionalServerFieldGroup[] = [
   },
   {
     reason:
-      "Queued-message reorder requests may omit the grouping boundary to leave grouping unchanged.",
-    fields: ["reorderQueuedMessageRequestSchema.groupBoundaryQueuedMessageId"],
-  },
-  {
-    reason:
       "File listing queries may omit search and limit parameters to use unfiltered/default result windows.",
     fields: [
       "threadStorageFilesQuerySchema.limit",
@@ -248,6 +243,8 @@ const OPTIONAL_SERVER_FIELD_GROUPS: readonly OptionalServerFieldGroup[] = [
       "systemExecutionOptionsQuerySchema.environmentId",
       "systemExecutionOptionsQuerySchema.hostId",
       "systemExecutionOptionsQuerySchema.providerId",
+      "systemInstallableProvidersQuerySchema.environmentId",
+      "systemInstallableProvidersQuerySchema.hostId",
       "systemProvidersQuerySchema.capability",
       "systemProvidersQuerySchema.environmentId",
       "systemProvidersQuerySchema.hostId",
@@ -1906,6 +1903,8 @@ describe("server-contract clients", () => {
       sendMessageRequestSchema: contract.sendMessageRequestSchema,
       systemExecutionOptionsQuerySchema:
         contract.systemExecutionOptionsQuerySchema,
+      systemInstallableProvidersQuerySchema:
+        contract.systemInstallableProvidersQuerySchema,
       systemProvidersQuerySchema: contract.systemProvidersQuerySchema,
       threadEventsQuerySchema: contract.threadEventsQuerySchema,
       threadCountQuerySchema: contract.threadCountQuerySchema,

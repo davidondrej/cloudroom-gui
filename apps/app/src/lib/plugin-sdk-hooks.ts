@@ -18,6 +18,7 @@ import type {
   PluginRealtimeConnectionState,
   PluginRpcContract,
   PluginRpcClient,
+  PluginBrowserBbSdk,
   PluginProvidersState,
   PluginSettingsState,
   ExperimentalAppPanel,
@@ -38,6 +39,7 @@ import {
   usePluginComposerHostDraft,
 } from "@/components/plugin/plugin-composer-host";
 import { sdk } from "@/lib/sdk";
+import { getPluginBoundSdk } from "@/lib/plugin-bound-sdk";
 import { useSystemProviders } from "@/hooks/queries/system-queries";
 import { requestComposerFocus } from "@/lib/composer-focus-requests";
 import { setComposerTextEffect } from "@/lib/composer-text-effects";
@@ -258,6 +260,11 @@ export function useSettings(): PluginSettingsState {
 }
 
 const EMPTY_PROVIDERS: readonly never[] = [];
+
+export function useSdk(): PluginBrowserBbSdk {
+  const pluginId = usePluginId();
+  return getPluginBoundSdk(sdk, pluginId);
+}
 
 export function useProviders(): PluginProvidersState {
   const query = useSystemProviders();

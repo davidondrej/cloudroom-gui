@@ -20,7 +20,6 @@ interface StoredQueuedThreadMessageRow {
   createdAt: number;
   failureReason: string | null;
   id: string;
-  groupWithNext: boolean;
   hardQueue: boolean;
   model: string;
   payloadKind: QueuedMessagePayloadKind;
@@ -139,7 +138,6 @@ export function toThreadQueuedMessage(
     reasoningLevel: row.reasoningLevel,
     permissionMode: row.permissionMode,
     serviceTier: row.serviceTier,
-    groupWithNext: row.groupWithNext,
     hardQueue: row.hardQueue,
     sendAt: row.sendAt,
     waitingOn: parseStoredQueuedThreadMessageWaitingOn(row),

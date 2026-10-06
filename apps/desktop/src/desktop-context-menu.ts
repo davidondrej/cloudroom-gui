@@ -6,6 +6,7 @@ import {
   type MenuItemConstructorOptions,
   type Session,
 } from "electron";
+import { BB_DESKTOP_ADD_IMAGE_TO_CHAT_CHANNEL } from "./desktop-window-command-ipc.js";
 
 export interface DesktopContextMenuWebContents {
   on(
@@ -14,6 +15,7 @@ export interface DesktopContextMenuWebContents {
   ): void;
   copyImageAt(x: number, y: number): void;
   replaceMisspelling(text: string): void;
+  send(channel: string, payload: unknown): void;
   session: Pick<
     Session,
     "addWordToSpellCheckerDictionary" | "setSpellCheckerEnabled"
@@ -29,7 +31,7 @@ interface BuildDesktopContextMenuTemplateArgs {
   params: ContextMenuParams;
   webContents: Pick<
     DesktopContextMenuWebContents,
-    "copyImageAt" | "replaceMisspelling" | "session"
+    "copyImageAt" | "replaceMisspelling" | "send" | "session"
   >;
 }
 
@@ -113,12 +115,20 @@ export function buildDesktopContextMenuTemplate({
   }
 
   if (params.mediaType === "image" && params.hasImageContents) {
-    template.push({
-      label: "Copy Image",
-      click: () => {
-        webContents.copyImageAt(params.x, params.y);
+    template.push(
+      {
+        label: "Add to Chat",
+        click: () => {
+          webContents.send(BB_DESKTOP_ADD_IMAGE_TO_CHAT_CHANNEL, params.srcURL);
+        },
       },
-    });
+      {
+        label: "Copy Image",
+        click: () => {
+          webContents.copyImageAt(params.x, params.y);
+        },
+      },
+    );
     return template;
   }
 

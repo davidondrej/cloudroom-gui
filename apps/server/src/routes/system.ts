@@ -55,6 +55,7 @@ import {
   transcribeVoiceInput,
 } from "../services/ai/voice-transcription.js";
 import {
+  listInstallableProviderInfos,
   listSystemProviderInfos,
   resolveSystemExecutionOptions,
   restartSystemModelDiscovery,
@@ -552,6 +553,10 @@ export function registerSystemRoutes(
 
   get(routes.providers, async (context, query) =>
     context.json(await listSystemProviderInfos(deps, query)),
+  );
+
+  get(routes.installableProviders, async (context, query) =>
+    context.json(await listInstallableProviderInfos(deps, query)),
   );
 
   get(routes.providerLogo, async (context) => {

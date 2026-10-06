@@ -515,6 +515,15 @@ const hostDaemonTerminalOpenTargetSchema = z.discriminatedUnion("kind", [
       cwd: z.string().min(1).nullable(),
     })
     .strict(),
+  z
+    .object({
+      kind: z.literal("cloud"),
+      url: z.string().url(),
+      token: z.string().min(1),
+      gateToken: z.string().min(1).optional(),
+      session: z.string().min(1).nullable(),
+    })
+    .strict(),
 ]);
 
 const hostDaemonTerminalOpenMessageSchema = z

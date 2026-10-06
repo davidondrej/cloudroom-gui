@@ -1,8 +1,8 @@
 import {
-  claimQueuedThreadMessageGroup,
-  claimNextQueuedThreadMessageGroup,
+  claimQueuedThreadMessage,
+  claimNextQueuedThreadMessage,
   createQueuedThreadMessageInTransaction,
-  deleteClaimedQueuedThreadMessageBatchInTransaction,
+  deleteClaimedQueuedThreadMessageInTransaction,
   getQueuedThreadMessage,
   getEnvironment,
   getHost,
@@ -11,14 +11,12 @@ import {
   isThreadQueueAutoSendPaused,
   releaseQueuedMessageClaim,
   releaseStaleQueuedMessageClaims,
+  type ClaimedQueuedThreadMessageRow,
   type DbQueryConnection,
-  type QueuedThreadMessageGroupClaimPolicy,
-  type QueuedThreadMessageGroupEligibility,
+  type QueuedThreadMessageClaimPolicy,
+  type QueuedThreadMessageEligibility,
 } from "@bb/db";
-import {
-  flattenPromptInputGroups,
-  queuedMessageSystemNoticeSchema,
-} from "@bb/domain";
+import { queuedMessageSystemNoticeSchema } from "@bb/domain";
 import type {
   PromptInput,
   QueuedMessageWaitingOn,
@@ -100,20 +98,15 @@ import {
 } from "./thread-context-mutation-guard.js";
 
 interface SendQueuedMessageArgs {
-  claimPolicy: QueuedThreadMessageGroupClaimPolicy;
+  claimPolicy: QueuedThreadMessageClaimPolicy;
   mode: SendQueuedMessageMode;
   queuedMessageId: string;
   threadId: string;
 }
 
-type ClaimedQueuedMessage = Exclude<
-  ReturnType<typeof claimQueuedThreadMessageGroup>,
-  null
->[number];
-
 interface SendClaimedQueuedMessageArgs {
   mode: SendQueuedMessageMode;
-  queuedMessages: ClaimedQueuedMessage[];
+  queuedMessage: ClaimedQueuedThreadMessageRow;
   /** True for an explicit "send now"; false for an ordinary drain. */
   sendNow: boolean;
   threadId: string;
@@ -121,60 +114,59 @@ interface SendClaimedQueuedMessageArgs {
 
 interface SendClaimedQueuedMessageForThreadArgs {
   mode: SendQueuedMessageMode;
-  queuedMessages: ClaimedQueuedMessage[];
+  queuedMessage: ClaimedQueuedThreadMessageRow;
   sendNow: boolean;
   thread: Thread;
 }
 
-export function createAutomaticQueuedMessageGroupEligibility(
+export function createAutomaticQueuedMessageEligibility(
   deps: Pick<AppDeps, "db" | "hub">,
   args: { now: number; thread: Thread },
-): QueuedThreadMessageGroupEligibility {
+): QueuedThreadMessageEligibility {
   const activeTurnId = getActiveTurnId(deps, args.thread.id);
   let hardQueueHeld: boolean | undefined;
-  return (group) =>
-    group.every((member) => {
-      if (member.failureReason !== null) return false;
-      if (member.hardQueue) {
-        hardQueueHeld ??= isHardQueueHeld(deps.db, args.thread);
-        if (hardQueueHeld) return false;
+  return (row) => {
+    if (row.failureReason !== null) return false;
+    if (row.hardQueue) {
+      hardQueueHeld ??= isHardQueueHeld(deps.db, args.thread);
+      if (hardQueueHeld) return false;
+    }
+    const waitingOn = parseStoredQueuedThreadMessageWaitingOn(row);
+    switch (waitingOn?.kind) {
+      case undefined:
+      case "plugin":
+        return true;
+      case "time":
+        return row.sendAt !== null && row.sendAt <= args.now;
+      case "thread-busy":
+      case "stopping":
+        return (
+          args.thread.status === "idle" || args.thread.status === "pending"
+        );
+      case "turn-starting":
+        return (
+          args.thread.status === "idle" ||
+          (args.thread.status === "active" && activeTurnId !== null)
+        );
+      case "host-offline": {
+        const environment =
+          args.thread.environmentId === null
+            ? null
+            : getEnvironment(deps.db, args.thread.environmentId);
+        const host =
+          environment === null ? null : getHost(deps.db, environment.hostId);
+        return (
+          host !== null &&
+          host.destroyedAt === null &&
+          host.phase === "active" &&
+          deps.hub.hasDaemonForHost(host.id)
+        );
       }
-      const waitingOn = parseStoredQueuedThreadMessageWaitingOn(member);
-      switch (waitingOn?.kind) {
-        case undefined:
-        case "plugin":
-          return true;
-        case "time":
-          return member.sendAt !== null && member.sendAt <= args.now;
-        case "thread-busy":
-        case "stopping":
-          return (
-            args.thread.status === "idle" || args.thread.status === "pending"
-          );
-        case "turn-starting":
-          return (
-            args.thread.status === "idle" ||
-            (args.thread.status === "active" && activeTurnId !== null)
-          );
-        case "host-offline": {
-          const environment =
-            args.thread.environmentId === null
-              ? null
-              : getEnvironment(deps.db, args.thread.environmentId);
-          const host =
-            environment === null ? null : getHost(deps.db, environment.hostId);
-          return (
-            host !== null &&
-            host.destroyedAt === null &&
-            host.phase === "active" &&
-            deps.hub.hasDaemonForHost(host.id)
-          );
-        }
-        case "provisioning":
-        case "interaction":
-          return false;
-      }
-    });
+      case "provisioning":
+      case "interaction":
+        return false;
+    }
+  };
 }
 
 async function requireReadyQueuedMessageEnvironment(
@@ -323,7 +315,7 @@ function respectsManualStopPause(
   return (
     args.mode === "auto" &&
     !args.sendNow &&
-    args.queuedMessages.some(isOrdinaryTurnEndQueuedMessage)
+    isOrdinaryTurnEndQueuedMessage(args.queuedMessage)
   );
 }
 
@@ -355,38 +347,32 @@ function formatQueuedMessageInputForSender(
   });
 }
 
-function releaseQueuedMessageClaims(
+function releaseClaim(
   deps: Pick<AppDeps, "db" | "hub">,
-  queuedMessages: readonly ClaimedQueuedMessage[],
+  queuedMessage: ClaimedQueuedThreadMessageRow,
 ): void {
-  for (const queuedMessage of queuedMessages) {
-    releaseQueuedMessageClaim(deps.db, deps.hub, {
-      id: queuedMessage.id,
-      claimToken: queuedMessage.claimToken,
-    });
-  }
+  releaseQueuedMessageClaim(deps.db, deps.hub, {
+    id: queuedMessage.id,
+    claimToken: queuedMessage.claimToken,
+  });
 }
 
-async function withActiveQueuedMessageClaims<T>(
-  queuedMessages: readonly ClaimedQueuedMessage[],
+async function withActiveQueuedMessageClaim<T>(
+  queuedMessage: ClaimedQueuedThreadMessageRow,
   task: () => Promise<T>,
 ): Promise<T> {
-  for (const queuedMessage of queuedMessages) {
-    activeQueuedMessageClaimTokens.add(queuedMessage.claimToken);
-  }
+  activeQueuedMessageClaimTokens.add(queuedMessage.claimToken);
   try {
     return await task();
   } finally {
-    for (const queuedMessage of queuedMessages) {
-      activeQueuedMessageClaimTokens.delete(queuedMessage.claimToken);
-    }
+    activeQueuedMessageClaimTokens.delete(queuedMessage.claimToken);
   }
 }
 
 function claimQueuedThreadMessageForSend(
   deps: Pick<AppDeps, "db" | "hub">,
   args: SendQueuedMessageArgs,
-): ClaimedQueuedMessage[] {
+): ClaimedQueuedThreadMessageRow | null {
   const existingQueuedMessage = getQueuedThreadMessage(
     deps.db,
     args.queuedMessageId,
@@ -398,16 +384,16 @@ function claimQueuedThreadMessageForSend(
     throw new ApiError(404, "invalid_request", "Queued message not found");
   }
 
-  const claimedQueuedMessages = claimQueuedThreadMessageGroup(
+  const claimedQueuedMessage = claimQueuedThreadMessage(
     deps.db,
     deps.hub,
     args.queuedMessageId,
     args.claimPolicy,
   );
-  if (claimedQueuedMessages) {
-    return claimedQueuedMessages;
+  if (claimedQueuedMessage) {
+    return claimedQueuedMessage;
   }
-  if (args.claimPolicy.kind === "automatic") return [];
+  if (args.claimPolicy.kind === "automatic") return null;
 
   const latestQueuedMessage = getQueuedThreadMessage(
     deps.db,
@@ -447,7 +433,7 @@ async function sendClaimedQueuedMessage(
   }
   return sendClaimedQueuedMessageForThread(deps, {
     mode: args.mode,
-    queuedMessages: args.queuedMessages,
+    queuedMessage: args.queuedMessage,
     sendNow: args.sendNow,
     thread,
   });
@@ -481,17 +467,13 @@ async function sendClaimedQueuedMessageForIdleProviderThread(
   }
 
   const environment = await requireReadyQueuedMessageEnvironment(deps, thread);
-  const queuedMessages = args.queuedMessages.map(toThreadQueuedMessage);
-  const queuedMessage = queuedMessages[0]!;
-
-  const senderThreadId = args.queuedMessages[0]!.senderThreadId;
-  let inputGroups = args.queuedMessages.map((claimedQueuedMessage) =>
-    formatQueuedMessageInputForSender({
-      input: toThreadQueuedMessage(claimedQueuedMessage).content,
-      senderThreadId: claimedQueuedMessage.senderThreadId,
-    }),
-  );
-  let input = flattenPromptInputGroups(inputGroups);
+  const queuedMessage = toThreadQueuedMessage(args.queuedMessage);
+  const senderThreadId = args.queuedMessage.senderThreadId;
+  let input = formatQueuedMessageInputForSender({
+    input: queuedMessage.content,
+    senderThreadId,
+  });
+  let inputGroups = [input];
   ({ input, inputGroups } = await appendPluginMentionContext({
     input,
     inputGroups,
@@ -545,9 +527,10 @@ async function sendClaimedQueuedMessageForIdleProviderThread(
           threadId: thread.id,
         });
       }
-      const consumed = deleteClaimedQueuedThreadMessageBatchInTransaction(tx, {
-        queuedMessages: args.queuedMessages,
-      });
+      const consumed = deleteClaimedQueuedThreadMessageInTransaction(
+        tx,
+        args.queuedMessage,
+      );
       if (!consumed) {
         throw createQueuedMessageClaimLostError();
       }
@@ -609,7 +592,7 @@ async function sendClaimedQueuedMessageForIdleProviderThread(
       );
     },
   });
-  settleQueueRowDispatched({ row: args.queuedMessages[0]! });
+  settleQueueRowDispatched({ row: args.queuedMessage });
   return queuedMessage;
 }
 
@@ -626,14 +609,14 @@ async function sendClaimedSystemNotice(
   deps: LoggedPendingInteractionWorkSessionDeps,
   args: SendClaimedQueuedMessageForThreadArgs,
 ): Promise<ThreadQueuedMessage | null> {
-  const lead = args.queuedMessages[0]!;
-  if (lead.systemNotice === null) {
+  const claimed = args.queuedMessage;
+  if (claimed.systemNotice === null) {
     return null;
   }
   const notice = queuedMessageSystemNoticeSchema.parse(
-    JSON.parse(lead.systemNotice),
+    JSON.parse(claimed.systemNotice),
   );
-  const queuedMessage = toThreadQueuedMessage(lead);
+  const queuedMessage = toThreadQueuedMessage(claimed);
   const delivered = await deliverParentSystemMessage(deps, {
     input: queuedMessage.content,
     parentThread: args.thread,
@@ -646,21 +629,18 @@ async function sendClaimedSystemNotice(
     throw createQueuedMessageClaimLostError();
   }
   const consumed = deps.db.transaction(
-    (tx) =>
-      deleteClaimedQueuedThreadMessageBatchInTransaction(tx, {
-        queuedMessages: args.queuedMessages,
-      }),
+    (tx) => deleteClaimedQueuedThreadMessageInTransaction(tx, claimed),
     { behavior: "immediate" },
   );
   if (!consumed) {
     throw createQueuedMessageClaimLostError();
   }
-  settleQueueRowDispatched({ row: lead });
+  settleQueueRowDispatched({ row: claimed });
   return queuedMessage;
 }
 
 /**
- * Re-attempts a claimed group through the dispatch checkpoint.
+ * Re-attempts a claimed row through the dispatch checkpoint.
  *
  * The drain is nothing but a re-attempt: the same checkpoint runs, so a row
  * whose wait cleared but whose thread went busy in the meantime simply queues
@@ -683,26 +663,17 @@ async function sendClaimedQueuedMessageForThread(
     return sent;
   }
 
-  const queuedMessages = args.queuedMessages.map(toThreadQueuedMessage);
-  const queuedMessage = queuedMessages[0]!;
-  const inputGroups = queuedMessages.map(
-    (queuedMessage) => queuedMessage.content,
-  );
-  const input = flattenPromptInputGroups(inputGroups);
-  const lead = args.queuedMessages[0]!;
+  const queuedMessage = toThreadQueuedMessage(args.queuedMessage);
   const outcome = await attemptDispatch(deps, {
     thread: args.thread,
-    payload: {
-      ...sendQueuedMessagePayload(
-        { ...queuedMessage, content: input },
-        args.mode,
-        lead.senderThreadId,
-      ),
-      ...(inputGroups.length > 1 ? { inputGroups } : {}),
-    },
+    payload: sendQueuedMessagePayload(
+      queuedMessage,
+      args.mode,
+      args.queuedMessage.senderThreadId,
+    ),
     source: {
       kind: "drain",
-      claimed: args.queuedMessages,
+      claimed: args.queuedMessage,
       respectManualStopPause: respectsManualStopPause(args),
       sendNow: args.sendNow,
     },
@@ -772,8 +743,8 @@ export async function sendQueuedMessage(
   args: SendQueuedMessageArgs,
 ): Promise<ThreadQueuedMessage> {
   const sendNow = args.claimPolicy.kind === "explicit-send";
-  const queuedMessages = claimQueuedThreadMessageForSend(deps, args);
-  if (queuedMessages.length === 0) {
+  const queuedMessage = claimQueuedThreadMessageForSend(deps, args);
+  if (queuedMessage === null) {
     const existing = getQueuedThreadMessage(deps.db, args.queuedMessageId);
     if (!existing)
       throw new ApiError(404, "invalid_request", "Queued message not found");
@@ -785,28 +756,28 @@ export async function sendQueuedMessage(
     (isManualCompactionActive(deps, thread) ||
       (args.mode === "auto" &&
         !sendNow &&
-        queuedMessages.some(isOrdinaryTurnEndQueuedMessage) &&
+        isOrdinaryTurnEndQueuedMessage(queuedMessage) &&
         isThreadQueueAutoSendPaused(deps.db, thread.id)))
   ) {
-    releaseQueuedMessageClaims(deps, queuedMessages);
-    return toThreadQueuedMessage(queuedMessages[0]!);
+    releaseClaim(deps, queuedMessage);
+    return toThreadQueuedMessage(queuedMessage);
   }
   try {
-    return await withActiveQueuedMessageClaims(queuedMessages, () =>
+    return await withActiveQueuedMessageClaim(queuedMessage, () =>
       sendClaimedQueuedMessage(deps, {
         mode: args.mode,
-        queuedMessages,
+        queuedMessage,
         sendNow,
         threadId: args.threadId,
       }),
     );
   } catch (error) {
-    releaseQueuedMessageClaims(deps, queuedMessages);
+    releaseClaim(deps, queuedMessage);
     if (
       isQueuedMessageAutoSendPausedError(error) ||
       error instanceof ThreadContextClearInProgressError
     ) {
-      return toThreadQueuedMessage(queuedMessages[0]!);
+      return toThreadQueuedMessage(queuedMessage);
     }
     throw error;
   }
@@ -850,16 +821,16 @@ export async function sendNextQueuedMessageIfPresent(
     return false;
   }
 
-  const nextQueuedMessages = claimNextQueuedThreadMessageGroup(
+  const nextQueuedMessage = claimNextQueuedThreadMessage(
     deps.db,
     deps.hub,
     args.threadId,
-    createAutomaticQueuedMessageGroupEligibility(deps, {
+    createAutomaticQueuedMessageEligibility(deps, {
       now: Date.now(),
       thread: initialThread,
     }),
   );
-  if (!nextQueuedMessages) {
+  if (!nextQueuedMessage) {
     return false;
   }
 
@@ -868,21 +839,21 @@ export async function sendNextQueuedMessageIfPresent(
     !isQueuedMessageAutoSendCandidate(thread) ||
     isManualCompactionActive(deps, thread)
   ) {
-    releaseQueuedMessageClaims(deps, nextQueuedMessages);
+    releaseClaim(deps, nextQueuedMessage);
     return false;
   }
 
   try {
-    await withActiveQueuedMessageClaims(nextQueuedMessages, () =>
+    await withActiveQueuedMessageClaim(nextQueuedMessage, () =>
       sendClaimedQueuedMessageForThread(deps, {
         mode: "auto",
-        queuedMessages: nextQueuedMessages,
+        queuedMessage: nextQueuedMessage,
         sendNow: false,
         thread,
       }),
     );
   } catch (error) {
-    releaseQueuedMessageClaims(deps, nextQueuedMessages);
+    releaseClaim(deps, nextQueuedMessage);
     if (
       isQueuedMessageClaimLostError(error) ||
       isQueuedMessageAutoSendPausedError(error) ||
@@ -897,7 +868,7 @@ export async function sendNextQueuedMessageIfPresent(
     if (!isCommandTimeoutError(error)) {
       recordQueuedMessageDrainFailure(deps, {
         error,
-        row: nextQueuedMessages[0]!,
+        row: nextQueuedMessage,
         thread,
       });
     }

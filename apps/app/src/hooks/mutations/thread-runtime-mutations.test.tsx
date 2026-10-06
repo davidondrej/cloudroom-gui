@@ -29,7 +29,6 @@ import {
   useCreateThreadQueuedMessage,
   useDeleteThreadQueuedMessage,
   useEditThreadMessage,
-  useSetThreadQueuedMessageGroupBoundary,
   useSendThreadQueuedMessage,
   useSendThreadMessage,
 } from "./thread-runtime-mutations";
@@ -48,7 +47,6 @@ vi.mock("@/lib/sdk", async (importOriginal) => {
           delete: vi.fn(),
           list: vi.fn(),
           send: vi.fn(),
-          setGroupBoundary: vi.fn(),
         },
         send: vi.fn(),
         spawn: vi.fn(),
@@ -149,7 +147,6 @@ beforeEach(() => {
     ok: true,
     delivery: "sent",
   });
-  vi.mocked(sdk.threads.queuedMessages.setGroupBoundary).mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -483,27 +480,5 @@ describe("thread runtime mutations", () => {
         )
         ?.map((queuedMessage) => queuedMessage.id),
     ).toEqual(["qmsg-2"]);
-  });
-
-  it("sets the queued-message group boundary through the API", async () => {
-    const { wrapper } = createQueryClientTestHarness();
-    const { result } = renderHook(
-      () => useSetThreadQueuedMessageGroupBoundary(),
-      { wrapper },
-    );
-
-    await act(async () => {
-      await result.current.mutateAsync({
-        id: "thread-1",
-        expectedGroupedPrefixQueuedMessageIds: ["qmsg-1", "qmsg-2"],
-        groupBoundaryQueuedMessageId: "qmsg-2",
-      });
-    });
-
-    expect(sdk.threads.queuedMessages.setGroupBoundary).toHaveBeenCalledWith({
-      expectedGroupedPrefixQueuedMessageIds: ["qmsg-1", "qmsg-2"],
-      groupBoundaryQueuedMessageId: "qmsg-2",
-      threadId: "thread-1",
-    });
   });
 });

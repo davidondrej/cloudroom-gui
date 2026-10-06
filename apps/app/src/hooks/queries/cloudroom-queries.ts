@@ -277,6 +277,13 @@ export function useImportSessions() {
   });
 }
 
+export function useRetryProjectCopy(threadId: string) {
+  return useMutation({
+    mutationFn: () => sdk.cloudroom.retryCopy(threadId),
+    onError: (error) => showMutationErrorToast({ error, fallbackMessage: "Could not copy the project" }),
+  });
+}
+
 export function useRetryCloudStart(threadId: string) {
   const client = useQueryClient();
   return useMutation({

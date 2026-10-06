@@ -90,6 +90,14 @@ export const systemProvidersQuerySchema = z
   .superRefine(rejectMultipleWorkspaceSelectors);
 export type SystemProvidersQuery = z.infer<typeof systemProvidersQuerySchema>;
 
+export const systemInstallableProvidersQuerySchema = z
+  .object(systemProviderHostQueryFields)
+  .partial()
+  .superRefine(rejectMultipleWorkspaceSelectors);
+export type SystemInstallableProvidersQuery = z.infer<
+  typeof systemInstallableProvidersQuerySchema
+>;
+
 export const systemExecutionOptionsQuerySchema = z
   .object({
     ...systemProviderHostQueryFields,

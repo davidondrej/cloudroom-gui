@@ -1,7 +1,7 @@
 import {
   clearQueuedThreadMessageWaitingOn,
   createQueuedThreadMessageInTransaction,
-  requeueClaimedQueuedThreadMessages,
+  requeueClaimedQueuedThreadMessage,
   type ClaimedQueuedThreadMessageRow,
   type DbConnection,
   type DbNotifier,
@@ -79,11 +79,11 @@ export interface RecordQueuedMessageWaitArgs {
    */
   sendAt: number | null;
   /**
-   * Rows already claimed from the queue that this call is RETURNING rather
+   * The row already claimed from the queue that this call is RETURNING rather
    * than creating. Present on every drain re-attempt; absent when an inline
    * send is queued for the first time.
    */
-  claimed: readonly ClaimedQueuedThreadMessageRow[] | null;
+  claimed: ClaimedQueuedThreadMessageRow | null;
 }
 
 /**
@@ -93,7 +93,7 @@ export interface RecordQueuedMessageWaitArgs {
  * Creating and re-queueing are one function because they are one concept —
  * "this message is waiting, and here is why" — and because every caller reaches
  * it from the same place in {@link attemptDispatch}. The difference is only
- * whether a row already exists: a drain re-attempt hands back the rows it
+ * whether a row already exists: a drain re-attempt hands back the row it
  * claimed, an inline attempt has none yet.
  *
  * Returns the row the wait now sits on, or null when a re-queue lost its row
@@ -103,11 +103,9 @@ export function recordQueuedMessageWait(
   deps: QueueWaitDeps,
   args: RecordQueuedMessageWaitArgs,
 ): ThreadQueuedMessage | null {
-  const claimed = args.claimed ?? [];
-  const leadClaim = claimed[0];
   let row: QueuedThreadMessageRow | null;
 
-  if (leadClaim === undefined) {
+  if (args.claimed === null) {
     row = deps.db.transaction(
       (tx) =>
         createQueuedThreadMessageInTransaction(tx, {
@@ -126,11 +124,8 @@ export function recordQueuedMessageWait(
       { behavior: "immediate" },
     );
   } else {
-    row = requeueClaimedQueuedThreadMessages(deps.db, deps.hub, {
-      claims: claimed.map((claim) => ({
-        id: claim.id,
-        claimToken: claim.claimToken,
-      })),
+    row = requeueClaimedQueuedThreadMessage(deps.db, deps.hub, {
+      claim: { id: args.claimed.id, claimToken: args.claimed.claimToken },
       threadId: args.thread.id,
       waitingOn: args.waitingOn,
       sendAt: args.sendAt,

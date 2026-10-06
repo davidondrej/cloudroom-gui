@@ -76,6 +76,9 @@ export async function installTestBuiltinPlugin(
 
 export type TestAppHarnessConfigOverrides = Partial<ServerRuntimeConfig> & {
   appVersionService?: AppVersionService;
+  cloudTerminal?: ConstructorParameters<
+    typeof TerminalSessionLifecycle
+  >[0]["cloudTerminal"];
   terminalCloseTimeoutMs?: number;
   nativeRootsClock?: () => number;
   seedFirstPartyProviders?: boolean;
@@ -140,6 +143,7 @@ export async function createTestAppHarness(
 ): Promise<TestAppHarness> {
   const {
     appVersionService,
+    cloudTerminal,
     terminalCloseTimeoutMs,
     nativeRootsClock,
     seedFirstPartyProviders = true,
@@ -228,6 +232,7 @@ export async function createTestAppHarness(
   };
   const terminalSessions = new TerminalSessionLifecycle({
     attachTimeoutMs: 50,
+    ...(cloudTerminal === undefined ? {} : { cloudTerminal }),
     ...(terminalCloseTimeoutMs === undefined
       ? {}
       : { closeTimeoutMs: terminalCloseTimeoutMs }),

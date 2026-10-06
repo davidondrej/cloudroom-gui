@@ -17,6 +17,8 @@ export type TeleportManifest = {
   workspace: string; workspace_name: string; files: TeleportFile[]; handoff: string;
   service_tier?: string | null; command_guard_enabled?: boolean; system_prompt?: string;
   queued: (string | { text: string; reasoning?: string; service_tier?: string })[];
+  /** A fork starts idle with no handoff; its first message is a `rewind` with `fork`. */
+  fork?: boolean;
 };
 export type TeleportStatus = {
   request_id: string; session_id: string | null; phase: "uploading" | "running" | "complete" | "cancelled";
@@ -563,7 +565,7 @@ export class CloudroomClient {
     }
   }
 
-  start(id: string, harness: Harness = "codex", options: { model?: string; reasoning?: string; workspace?: string; workspace_name?: string; provider?: string; command_guard_enabled?: boolean; system_prompt?: string; parent_session?: string; prompt?: string; title?: string } = {}) {
+  start(id: string, harness: Harness = "codex", options: { model?: string; reasoning?: string; workspace?: string; workspace_name?: string; provider?: string; command_guard_enabled?: boolean; system_prompt?: string; parent_session?: string; prompt?: string; title?: string; fork?: { session: string; before?: string; last_turn_id?: string } } = {}) {
     if (harness !== "codex" && harness !== "pi" && harness !== "cursor" && harness !== "claude-code" && harness !== "fx" && harness !== "opencode")
       throw new CloudroomError("Unsupported Cloudroom harness");
     return this.#command("/v1/sessions", "start", { request_id: id, harness, ...options });
@@ -655,7 +657,8 @@ export class CloudroomClient {
     return this.#command(`${sessionPath(sessionId)}/goal`, "goal", { request_id: id, ...goal }, sessionId);
   }
 
-  rewind(sessionId: string, id: string, before?: string, lastTurnId?: string, replacement?: { request_id: string; text: string; content?: Json; attachments?: Json; reasoning?: string; service_tier?: string }) {
+  /** `fork` also gives a whole-conversation copy its own native identity, with no checkpoint. */
+  rewind(sessionId: string, id: string, before?: string, lastTurnId?: string, replacement?: { request_id: string; text: string; content?: Json; attachments?: Json; reasoning?: string; service_tier?: string }, fork = false) {
     return this.#command(
       `${sessionPath(sessionId)}/rewind`,
       "rewind",
@@ -664,6 +667,7 @@ export class CloudroomClient {
         ...(before ? { before } : {}),
         ...(lastTurnId ? { last_turn_id: lastTurnId } : {}),
         ...(replacement ? { replacement } : {}),
+        ...(fork ? { fork: true } : {}),
       },
       sessionId,
     );

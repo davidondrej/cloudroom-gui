@@ -22,7 +22,13 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/queries/system-queries", () => ({
+  useHostProviderCliStatus: () => ({ data: undefined }),
+  useInstallableProviders: () => ({ data: [] }),
   useSystemProviders: () => ({ data: mocks.providers, isPending: false }),
+}));
+
+vi.mock("@/hooks/useHostDaemon", () => ({
+  useHostDaemon: () => ({ localDaemonHostId: null }),
 }));
 
 function provider(id: string, displayName: string): ProviderInfo {

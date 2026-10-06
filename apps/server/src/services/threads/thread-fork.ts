@@ -7,6 +7,7 @@ import { ApiError } from "../../errors.js";
 import { resolveExistingThreadPermissionMode } from "./thread-execution-plan.js";
 import { getLastExecutionOptions } from "./thread-events.js";
 import { createThreadFromRequest } from "./thread-create.js";
+import { cloudExecution, cloudroom, isCloudThread } from "../cloudroom/commands.js";
 
 type ThreadForkDeps = LoggedPendingInteractionWorkSessionDeps;
 
@@ -59,11 +60,51 @@ function requireSourceEnvironment(
   return environment;
 }
 
+/** A Cloud thread forks into a new sandbox, and its first message makes the native fork, so it needs one. */
+function createCloudForkFromRequest(
+  deps: ThreadForkDeps,
+  sourceThread: Thread,
+  request: ForkThreadRequest,
+) {
+  if (!request.input || request.agentContextSeed) {
+    throw new ApiError(
+      400,
+      "invalid_request",
+      "A Cloud fork needs a first message and takes no agent-only context",
+    );
+  }
+  return createThreadFromRequest(deps, {
+    environment: { type: "project-default" },
+    executionTarget: "cloud",
+    input: request.input,
+    origin: request.origin,
+    originKind: "fork",
+    projectId: sourceThread.projectId,
+    providerId: sourceThread.providerId,
+    ...(request.sourceSeqEnd === undefined
+      ? {}
+      : { sourceSeqEnd: request.sourceSeqEnd }),
+    sourceThreadId: sourceThread.id,
+    startedOnBehalfOf: null,
+    ...(request.title === undefined ? {} : { title: request.title }),
+    visibility: request.visibility,
+  });
+}
+
 export async function createThreadForkFromRequest(
   deps: ThreadForkDeps,
   request: ForkThreadRequest,
 ) {
   const sourceThread = requireForkSourceThread(deps, request.sourceThreadId);
+  // A fork without a first message (a side chat) stays in its source's sandbox, like a Local one (ADR 0189).
+  if (isCloudThread(sourceThread) && !request.input) {
+    const thread = await cloudroom(deps).sideChat(sourceThread, request);
+    deps.telemetry.capture({ name: "thread_created", properties: { execution: cloudExecution(deps, thread.id), is_child_thread: false, provider: thread.providerId } });
+    return thread;
+  }
+  if (isCloudThread(sourceThread)) {
+    return createCloudForkFromRequest(deps, sourceThread, request);
+  }
   requireForkCapableProvider(deps, sourceThread);
   const sourceEnvironment = requireSourceEnvironment(deps, sourceThread);
   const sourceExecution = getLastExecutionOptions(deps, sourceThread.id);

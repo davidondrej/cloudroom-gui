@@ -117,6 +117,13 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
     runtimeConfig.launchId = serverConfig.BB_SERVER_LAUNCH_ID;
   }
   const terminalSessions = new TerminalSessionLifecycle({
+    cloudTerminal: (threadId) =>
+      cloudroom({
+        config: runtimeConfig,
+        db,
+        hub,
+        providerRegistry,
+      }).terminalConnection(threadId),
     config: runtimeConfig,
     db,
     hub,

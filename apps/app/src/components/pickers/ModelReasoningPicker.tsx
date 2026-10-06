@@ -687,6 +687,25 @@ export function ModelReasoningPicker({
       previewSelectionBlocked,
     ],
   );
+  const reasoningRowModel = isPreviewing
+    ? (previewSelection?.selectedModel ?? "")
+    : modelValue;
+  const reasoningRowValue: ReasoningLevel | "" =
+    activeReasoningValue || (previewSelection?.reasoningLevel ?? "");
+  const showInlineReasoning =
+    showReasoningSection &&
+    !isCompactViewport &&
+    reasoningRowValue !== "" &&
+    (lockModelSelection ||
+      activeModelOptions.some((option) => option.value === reasoningRowModel));
+  const reasoningRowMenu = showInlineReasoning ? (
+    <ReasoningRowMenu
+      value={reasoningRowValue}
+      options={activeReasoningOptions}
+      disabled={previewSelectionBlocked}
+      onSelect={handleReasoningSelect}
+    />
+  ) : null;
 
   const paneContext = useOptionalPaneContext();
   const isFocusedPane = paneContext?.isFocused ?? true;
@@ -1042,18 +1061,20 @@ export function ModelReasoningPicker({
         onMobileContentAnimationEnd={handleMobileContentAnimationEnd}
         autoFocusRef={showSearchInput ? searchInputRef : undefined}
         className={cn(
-          "group/model-picker flex min-h-0 flex-col p-0",
-          showProviderTabs ? "w-[23rem]" : "w-80",
+          "group/model-picker flex min-h-0 w-72 flex-col p-0",
           isCompactViewport
             ? "overflow-y-hidden"
-            : "max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-0.5rem))] max-w-[calc(100vw-1rem)] overflow-hidden data-[side=top]:h-[26rem]",
+            : "max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-0.5rem))] max-w-[calc(100vw-1rem)] overflow-hidden",
+          !isCompactViewport &&
+            !lockModelSelection &&
+            "data-[side=top]:h-80",
         )}
       >
         <ResetBrowseStateOnContentUnmount onReset={resetBrowseState} />
         {handoffMode ? <HandoffModeHeader onBack={exitHandoffMode} /> : null}
-        <div className="flex min-h-0 flex-1">
+        <div className="flex min-h-0 flex-1 flex-col">
           {showProviderTabs ? (
-            <div className="flex shrink-0 flex-col items-center gap-1 border-r border-border bg-background p-1.5">
+            <div className="flex shrink-0 items-center gap-0.5 border-b border-border bg-background px-1.5">
               {providerOptions.map((provider) => {
                 const TabIcon = provider.icon;
                 const isActive = provider.value === activeProviderId;
@@ -1078,11 +1099,11 @@ export function ModelReasoningPicker({
                       handleProviderSelect(provider.value);
                     }}
                     className={cn(
-                      "relative flex size-8 items-center justify-center rounded-md focus-visible:outline-none max-md:pointer-coarse:size-10",
+                      "relative flex h-8 w-7 items-center justify-center focus-visible:outline-none max-md:pointer-coarse:h-10 max-md:pointer-coarse:w-9",
                       LIST_HOVER_TRANSITION,
                       isActive
-                        ? "bg-state-active text-foreground before:absolute before:inset-y-2 before:-left-1.5 before:w-0.5 before:rounded-full before:bg-primary"
-                        : "text-muted-foreground hover:bg-state-hover hover:text-foreground",
+                        ? "text-foreground after:absolute after:inset-x-1 after:-bottom-px after:h-0.5 after:rounded-full after:bg-foreground"
+                        : "text-subtle-foreground hover:text-foreground",
                     )}
                   >
                     {TabIcon ? (
@@ -1121,7 +1142,28 @@ export function ModelReasoningPicker({
 
             <MenuHoverProvider>
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                {lockModelSelection ? null : (
+                {lockModelSelection ? (
+                  <div className="flex shrink-0 items-center gap-2 px-3 py-2.5 text-xs">
+                    {TriggerIcon ? (
+                      <TriggerIcon className="size-4 shrink-0" />
+                    ) : null}
+                    <span className="min-w-0 truncate font-medium">
+                      {triggerModelBase}
+                      {triggerModelTag ? (
+                        <span className="ml-1 font-normal text-subtle-foreground">
+                          {triggerModelTag}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="ml-auto flex shrink-0 items-center gap-1.5 text-subtle-foreground">
+                      {reasoningRowMenu}
+                      <span title="Fixed in this thread">
+                        <Icon name="Lock" className="size-3" aria-hidden />
+                        <span className="sr-only">Fixed in this thread</span>
+                      </span>
+                    </span>
+                  </div>
+                ) : (
                   <div
                     ref={listRef}
                     key={activeProviderId || "no-provider"}
@@ -1129,14 +1171,12 @@ export function ModelReasoningPicker({
                     id={showSearchInput ? listboxId : undefined}
                     aria-label={showSearchInput ? "Models" : undefined}
                     className={cn(
-                      "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-1 pb-1 pt-0",
+                      "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-1",
+                      showSearchInput && "pt-0.5",
                       !isCompactViewport &&
                         "max-h-64 group-data-[side=top]/model-picker:max-h-none",
                     )}
                   >
-                    {activeModelIsLoading || hasActiveModelOptions ? (
-                      <MenuSectionLabel>Model</MenuSectionLabel>
-                    ) : null}
                     {activeModelIsLoading ? (
                       <PickerLoadingRows
                         label="Loading models"
@@ -1177,6 +1217,11 @@ export function ModelReasoningPicker({
                               }
                               disabled={previewSelectionBlocked}
                               onClick={() => handleModelSelect(option.value)}
+                              trailing={
+                                option.value === reasoningRowModel
+                                  ? reasoningRowMenu
+                                  : null
+                              }
                             />
                           );
                         })}
@@ -1228,7 +1273,7 @@ export function ModelReasoningPicker({
                   </div>
                 )}
 
-                {showReasoningSection ? (
+                {showReasoningSection && !showInlineReasoning ? (
                   <>
                     <div className="shrink-0 border-t border-border" />
                     <div className="shrink-0 px-2 py-2.5">
@@ -1525,6 +1570,7 @@ function MenuRowButton({
   isActive,
   id,
   role,
+  trailing,
 }: {
   label: string;
   qualifier?: string;
@@ -1534,11 +1580,22 @@ function MenuRowButton({
   isActive?: boolean;
   id?: string;
   role?: React.AriaRole;
+  trailing?: ReactNode;
 }) {
   const { hoverProps } = useMenuItemHover();
   const isCompactViewport = useIsCompactViewport();
   const { base, tag } = splitModelLabelTag(label);
-  return (
+  const check = (
+    <Icon
+      name="Check"
+      className={cn(
+        COARSE_POINTER_ICON_SIZE_SHRINK_CLASS,
+        "text-subtle-foreground dark:text-primary",
+        selected ? "opacity-100" : "opacity-0",
+      )}
+    />
+  );
+  const button = (
     <button
       type="button"
       id={id}
@@ -1552,7 +1609,8 @@ function MenuRowButton({
         MENU_ITEM_LAST_HOVERED_CLASS,
         isActive && "bg-state-active",
         disabled && "cursor-not-allowed opacity-60",
-        isCompactViewport ? "py-2" : "py-[0.3125rem]",
+        isCompactViewport ? "py-2" : "py-1",
+        trailing && "pr-28",
       )}
       {...hoverProps}
     >
@@ -1568,17 +1626,79 @@ function MenuRowButton({
           <span className="ml-1.5 text-subtle-foreground">{qualifier}</span>
         ) : null}
       </span>
-      <span className="flex shrink-0 items-center gap-1.5">
-        <Icon
-          name="Check"
-          className={cn(
-            COARSE_POINTER_ICON_SIZE_SHRINK_CLASS,
-            "text-subtle-foreground",
-            selected ? "opacity-100" : "opacity-0",
-          )}
-        />
-      </span>
+      {trailing ? null : (
+        <span className="flex shrink-0 items-center gap-1.5">{check}</span>
+      )}
     </button>
+  );
+  if (!trailing) return button;
+  return (
+    <div className="relative">
+      {button}
+      <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center gap-1.5">
+        <span className="pointer-events-auto">{trailing}</span>
+        {check}
+      </span>
+    </div>
+  );
+}
+
+function ReasoningRowMenu({
+  value,
+  options,
+  disabled,
+  onSelect,
+}: {
+  value: ReasoningLevel;
+  options: readonly PickerOption<ReasoningLevel>[];
+  disabled: boolean;
+  onSelect: (value: ReasoningLevel) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const label = options.find((option) => option.value === value)?.label;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`Reasoning: ${label ?? value}`}
+          disabled={disabled}
+          className={cn(
+            "flex h-5 items-center gap-0.5 rounded-sm border border-border bg-foreground/5 pl-1.5 pr-1 text-xs text-foreground outline-none hover:bg-state-hover focus-visible:border-primary/60",
+            LIST_HOVER_TRANSITION,
+            open && "border-primary/60",
+            disabled && "cursor-not-allowed opacity-60",
+          )}
+        >
+          {label ?? value}
+          <Icon
+            name="ChevronDown"
+            className="size-3 text-muted-foreground"
+            aria-hidden
+          />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        side="bottom"
+        align="end"
+        sideOffset={4}
+        className="flex w-32 flex-col p-1 data-[state=closed]:animate-none"
+      >
+        <MenuHoverProvider>
+          {options.map((option) => (
+            <MenuRowButton
+              key={option.value}
+              label={option.label}
+              selected={option.value === value}
+              onClick={() => {
+                onSelect(option.value);
+                setOpen(false);
+              }}
+            />
+          ))}
+        </MenuHoverProvider>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -1628,11 +1748,11 @@ function ModelSearchInput({
   activeOptionId,
 }: ModelSearchInputProps) {
   return (
-    <div className="shrink-0 border-b border-border px-1.5 py-1">
+    <div className="shrink-0 px-1.5 pb-1 pt-1.5">
       <div className="relative">
         <Icon
           name="Search"
-          className="pointer-events-none absolute left-1.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
         />
         <Input
           ref={inputRef}
@@ -1646,7 +1766,7 @@ function ModelSearchInput({
           aria-controls={listboxId}
           aria-autocomplete="list"
           aria-activedescendant={activeOptionId}
-          className="h-7 border-0 bg-transparent pl-8 pr-2 text-xs text-foreground placeholder:text-subtle-foreground shadow-none focus-visible:ring-0"
+          className="h-7 rounded-md border border-border bg-foreground/5 pl-7 pr-2 text-xs text-foreground placeholder:text-subtle-foreground shadow-none focus-visible:border-primary/50 focus-visible:ring-0"
         />
       </div>
     </div>

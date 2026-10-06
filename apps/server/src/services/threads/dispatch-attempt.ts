@@ -4,7 +4,7 @@ import {
   isMachineWaitingForExecution,
 } from "../machines/lifecycle.js";
 import {
-  deleteClaimedQueuedThreadMessageBatchInTransaction,
+  deleteClaimedQueuedThreadMessageInTransaction,
   getEnvironment,
   getThread,
   isThreadQueueAutoSendPaused,
@@ -196,7 +196,7 @@ export function listRunningThreadsWithIntendedHosts(
 /**
  * How this attempt reached the checkpoint.
  *
- * `inline` is somebody sending right now; `drain` is a re-attempt of rows a
+ * `inline` is somebody sending right now; `drain` is a re-attempt of a row a
  * drain already claimed. The two run the SAME checkpoint — that is the whole
  * point — and differ only in what queueing does (create a row vs. hand the
  * claimed one back) and in whether a failure has a caller to report to.
@@ -205,7 +205,7 @@ export type DispatchAttemptSource =
   | { kind: "inline" }
   | {
       kind: "drain";
-      claimed: ClaimedQueuedThreadMessageRow[];
+      claimed: ClaimedQueuedThreadMessageRow;
       respectManualStopPause: boolean;
       /**
        * Send-now. Bypasses every plugin wait AND the row's own `sendAt`; core
@@ -405,7 +405,7 @@ async function runDispatchAttempt(
 
     if (
       !sendNow &&
-      claimed?.some((row) => row.hardQueue) === true &&
+      claimed?.hardQueue === true &&
       isHardQueueHeld(deps.db, thread)
     ) {
       continued.outcome = waitOn({ kind: "thread-busy" }, null);
@@ -541,7 +541,7 @@ async function runDispatchAttempt(
       startedOnBehalfOf: args.startedOnBehalfOf,
       parentThreadId: thread.parentThreadId,
       queuedMessage:
-        claimed?.[0] === undefined ? null : toThreadQueuedMessage(claimed[0]),
+        claimed === null ? null : toThreadQueuedMessage(claimed),
       pluginSubmission: args.pluginSubmission,
       continueAfterHooks: continueThroughCoreWaits,
     });
@@ -605,7 +605,7 @@ async function runDispatchAttempt(
           throw new DispatchThreadStatusChangedError();
         }
         if (claimed !== null) {
-          consumeClaimedRows(
+          consumeClaimedRow(
             claimed,
             thread.id,
             respectManualStopPause,
@@ -625,7 +625,7 @@ async function runDispatchAttempt(
     );
   }
   if (claimed !== null) {
-    settleQueueRowDispatched({ row: claimed[0]! });
+    settleQueueRowDispatched({ row: claimed });
   }
   return { kind: "dispatched" };
 }
@@ -652,13 +652,13 @@ function reattemptDispatchForThreadChange(
 }
 
 /**
- * Consumes the rows a drain claimed, inside the same transaction that appends
+ * Consumes the row a drain claimed, inside the same transaction that appends
  * the turn request. This is the exactly-once guarantee: the claim CAS picked
  * one winner, and the delete makes the dispatch and the consumption atomic, so
  * a double drain dispatches once and the loser finds nothing to claim.
  */
-function consumeClaimedRows(
-  claimed: readonly ClaimedQueuedThreadMessageRow[],
+function consumeClaimedRow(
+  claimed: ClaimedQueuedThreadMessageRow,
   threadId: string,
   respectManualStopPause: boolean,
 ): SendThreadMessageTransactionPreflight {
@@ -666,9 +666,10 @@ function consumeClaimedRows(
     if (respectManualStopPause && isThreadQueueAutoSendPaused(tx, threadId)) {
       throw createQueuedMessageAutoSendPausedError();
     }
-    const consumed = deleteClaimedQueuedThreadMessageBatchInTransaction(tx, {
-      queuedMessages: claimed,
-    });
+    const consumed = deleteClaimedQueuedThreadMessageInTransaction(
+      tx,
+      claimed,
+    );
     if (!consumed) {
       throw createQueuedMessageClaimLostError();
     }
@@ -676,7 +677,7 @@ function consumeClaimedRows(
 }
 
 interface AdmitPendingThreadArgs {
-  claimed: ClaimedQueuedThreadMessageRow[] | null;
+  claimed: ClaimedQueuedThreadMessageRow | null;
   payload: SendMessageRequest & { inputGroups?: PromptInput[][] };
   respectManualStopPause: boolean;
   /** Creation's own record; null on a re-attempt, which reads it back. */
@@ -735,7 +736,6 @@ async function admitPendingThread(
   const execution = await buildExecutionOptions(deps, args.payload, {
     threadId: args.thread.id,
   });
-  const claimedRow = args.claimed?.[0] ?? null;
   let startingThread: Thread;
   try {
     startingThread = deps.db.transaction(
@@ -744,8 +744,8 @@ async function admitPendingThread(
         // flip that loses to a concurrent attempt rolls the consumption back,
         // so the row stays claimed for the caller to hand back rather than
         // being deleted under a message that never dispatched.
-        if (args.claimed !== null && args.claimed.length > 0) {
-          consumeClaimedRows(
+        if (args.claimed !== null) {
+          consumeClaimedRow(
             args.claimed,
             args.thread.id,
             args.respectManualStopPause,
@@ -794,7 +794,7 @@ async function admitPendingThread(
     buildThreadStatusChangeMetadata(deps, startingThread),
   );
   return {
-    claimedRow,
+    claimedRow: args.claimed,
     startingThread,
   };
 }

@@ -63,7 +63,6 @@ import type {
   SendMessageRequest,
   SendMessageResponse,
   SendQueuedMessageRequest,
-  SetQueuedMessageGroupBoundaryRequest,
   ThreadEventsQuery,
   ThreadEventWaitQuery,
   ThreadGetQuery,
@@ -199,8 +198,6 @@ export type ThreadQueuedMessageUpdateResult = ThreadQueuedMessage;
 export type ThreadQueuedMessageDeleteResult = { ok: true };
 export type ThreadQueuedMessageReorderResult = ThreadQueuedMessageListResponse;
 export type ThreadQueuedMessageSendResult = SendQueuedMessageResponse;
-export type ThreadQueuedMessageGroupBoundaryResult =
-  ThreadQueuedMessageListResponse;
 export type ThreadQueueListResult = ThreadQueuedMessageListResponse;
 export type ThreadTabsResult = ThreadTabsResponse;
 export type ThreadTabsUpdateResult = ThreadTabsResponse;
@@ -333,10 +330,6 @@ export interface ThreadQueuedMessageSendArgs
 
 export interface ThreadQueuedMessageReorderArgs
   extends ThreadQueuedMessageTargetArgs, ReorderQueuedMessageRequest {}
-
-export interface ThreadQueuedMessageGroupBoundaryArgs extends SetQueuedMessageGroupBoundaryRequest {
-  threadId: string;
-}
 
 /**
  * Both filters are genuinely absent by default: no filter lists every live
@@ -523,9 +516,6 @@ export interface ThreadQueuedMessagesArea {
   send(
     args: ThreadQueuedMessageSendArgs,
   ): Promise<ThreadQueuedMessageSendResult>;
-  setGroupBoundary(
-    args: ThreadQueuedMessageGroupBoundaryArgs,
-  ): Promise<ThreadQueuedMessageGroupBoundaryResult>;
   update(
     args: ThreadQueuedMessageUpdateArgs,
   ): Promise<ThreadQueuedMessageUpdateResult>;
@@ -1005,7 +995,6 @@ export function createThreadsArea(args: CreateSdkAreaArgs): ThreadsArea {
           json: {
             previousQueuedMessageId: input.previousQueuedMessageId,
             nextQueuedMessageId: input.nextQueuedMessageId,
-            groupBoundaryQueuedMessageId: input.groupBoundaryQueuedMessageId,
           },
         }),
       );
@@ -1020,20 +1009,6 @@ export function createThreadsArea(args: CreateSdkAreaArgs): ThreadsArea {
             queuedMessageId: input.queuedMessageId,
           },
           json: { mode: input.mode },
-        }),
-      );
-    },
-    async setGroupBoundary(input) {
-      return transport.readJson(
-        transport.api.v1.threads[":id"]["queued-messages"][
-          "group-boundary"
-        ].$patch({
-          param: { id: input.threadId },
-          json: {
-            expectedGroupedPrefixQueuedMessageIds:
-              input.expectedGroupedPrefixQueuedMessageIds,
-            groupBoundaryQueuedMessageId: input.groupBoundaryQueuedMessageId,
-          },
         }),
       );
     },

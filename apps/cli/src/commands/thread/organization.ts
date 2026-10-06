@@ -64,11 +64,6 @@ interface QueueSendOptions extends JsonOptions {
 interface QueueReorderOptions extends JsonOptions {
   after?: string;
   before?: string;
-  groupBoundary?: string;
-}
-
-interface QueueGroupOptions extends JsonOptions {
-  prefix: string;
 }
 
 interface ReorderPinnedOptions extends JsonOptions {
@@ -472,7 +467,6 @@ export function registerOrganizationCommands(
     .description("Move a queued message between adjacent messages")
     .option("--after <id>", "Previous queued message, or omit for the start")
     .option("--before <id>", "Next queued message, or omit for the end")
-    .option("--group-boundary <id>", "Current group-boundary message id")
     .option("--json", "Print machine-readable JSON output")
     .action(
       action(
@@ -488,47 +482,9 @@ export function registerOrganizationCommands(
             queuedMessageId: messageId,
             previousQueuedMessageId: opts.after ?? null,
             nextQueuedMessageId: opts.before ?? null,
-            ...(opts.groupBoundary
-              ? { groupBoundaryQueuedMessageId: opts.groupBoundary }
-              : {}),
           });
           if (outputJson(opts, result)) return;
           console.log(`Queued message ${messageId} reordered`);
-        },
-      ),
-    );
-  queue
-    .command("group <threadId> <boundaryMessageId>")
-    .description("Set the grouped queued-message prefix")
-    .requiredOption(
-      "--prefix <ids>",
-      "Comma-separated expected grouped-prefix ids",
-    )
-    .option("--json", "Print machine-readable JSON output")
-    .action(
-      action(
-        async (
-          threadId: string,
-          boundaryMessageId: string,
-          opts: QueueGroupOptions,
-        ) => {
-          const prefix = opts.prefix
-            .split(",")
-            .map((id) => id.trim())
-            .filter(Boolean);
-          if (prefix.length === 0)
-            throw new Error("--prefix must contain at least one message id.");
-          const result = await createCliBbSdk(
-            getUrl(),
-          ).threads.queuedMessages.setGroupBoundary({
-            threadId,
-            groupBoundaryQueuedMessageId: boundaryMessageId,
-            expectedGroupedPrefixQueuedMessageIds: prefix,
-          });
-          if (outputJson(opts, result)) return;
-          console.log(
-            `Queued message group boundary set to ${boundaryMessageId}`,
-          );
         },
       ),
     );

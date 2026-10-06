@@ -25,7 +25,7 @@ import { isDispatchRequeuedRecently } from "./dispatch-hooks.js";
 import { recordQueuedMessageDrainFailure } from "./queue-drain-failure.js";
 import { clearQueuedMessageWait } from "./queue-waits.js";
 import {
-  createAutomaticQueuedMessageGroupEligibility,
+  createAutomaticQueuedMessageEligibility,
   releaseStaleQueuedMessageDispatchClaims,
   sendNextQueuedMessageIfPresent,
   sendQueuedMessage,
@@ -368,7 +368,7 @@ async function attemptAutomaticQueuedMessage(
     await sendQueuedMessage(deps, {
       claimPolicy: {
         kind: "automatic",
-        isGroupEligible: createAutomaticQueuedMessageGroupEligibility(deps, {
+        isEligible: createAutomaticQueuedMessageEligibility(deps, {
           now: args.now,
           thread,
         }),

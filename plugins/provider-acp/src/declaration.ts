@@ -78,6 +78,14 @@ export function acpProviderDeclaration(
               ...agent.reasoningProbePriorityModelIds,
             ],
           }),
+      ...(agent.installer === undefined
+        ? {}
+        : {
+            acpInstaller: {
+              scriptUrl: agent.installer.scriptUrl,
+              args: [...(agent.installer.args ?? [])],
+            },
+          }),
       acpLaunchSpec: { ...agent.launch },
     },
     models: { scope: "host" },
@@ -87,7 +95,8 @@ export function acpProviderDeclaration(
     maintenance: {
       health: true,
       usage: agent.providerUsage === true,
-      installation: agent.providerInstallation === true,
+      installation:
+        agent.providerInstallation === true || agent.installer !== undefined,
     },
     capabilities: {
       ...ACP_BASE_CAPABILITIES,

@@ -50,6 +50,7 @@ describe("usePromptVoice", () => {
     const insertTextAtCursor = vi.fn();
     const promptBoxRef = {
       current: {
+        attachFiles: vi.fn(),
         captureHeightForLayoutChange: vi.fn(),
         focusEnd: vi.fn(),
         getTextBeforeCursor: vi.fn(),

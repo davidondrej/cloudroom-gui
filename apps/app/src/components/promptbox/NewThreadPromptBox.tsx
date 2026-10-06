@@ -232,6 +232,9 @@ export const NewThreadPromptBoxUI = memo(function NewThreadPromptBoxUI({
     promptBoxRef.current?.focusEnd();
     return promptBoxRef.current !== null;
   }, []);
+  const attachFiles = useCallback((files: File[]) => {
+    promptBoxRef.current?.attachFiles(files);
+  }, []);
   const voice = usePromptVoice(promptBoxRef);
   const attachmentCount = attachments.items?.length ?? 0;
   const [composerLayout, setComposerLayout] =
@@ -250,6 +253,7 @@ export const NewThreadPromptBoxUI = memo(function NewThreadPromptBoxUI({
     isFocused: isFocusedPane,
     isPrimary: true,
     focusDefault,
+    attachFiles: attachments.onAttachFiles ? attachFiles : undefined,
   });
 
   return (

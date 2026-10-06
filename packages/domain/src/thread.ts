@@ -350,7 +350,6 @@ export const threadQueuedMessageSchema = z.object({
   reasoningLevel: reasoningLevelSchema,
   permissionMode: permissionModeSchema,
   serviceTier: serviceTierSchema,
-  groupWithNext: z.boolean(),
   hardQueue: z.boolean().optional(),
   /**
    * Epoch ms this row is scheduled to attempt dispatch, or null when it is
@@ -398,7 +397,8 @@ export const teleportProgressSchema = z.object({
 export type TeleportProgress = z.infer<typeof teleportProgressSchema>;
 
 export const projectCopyProgressSchema = z.object({
-  phase: z.enum(["cloning", "uploading", "complete", "error"]),
+  // `waiting`: the sandbox slept or dropped mid-copy; the copy restarts when it is back.
+  phase: z.enum(["cloning", "uploading", "waiting", "complete", "error"]),
   completed: z.number(), total: z.number(), secondsLeft: z.number().optional(), error: z.string().optional(),
 });
 export type ProjectCopyProgress = z.infer<typeof projectCopyProgressSchema>;

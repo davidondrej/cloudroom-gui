@@ -61,7 +61,7 @@ export function useForkThreadFromMessage({
               threadId: source.id,
             }),
         });
-        if (executionOptions === null || source.environmentId === null) {
+        if (executionOptions === null) {
           return;
         }
 
@@ -81,7 +81,9 @@ export function useForkThreadFromMessage({
         navigate(getRootComposeRoutePath(), {
           state: {
             focusPrompt: true,
-            reuseEnvironmentId: source.environmentId,
+            ...(source.environmentId === null
+              ? {}
+              : { reuseEnvironmentId: source.environmentId }),
             [FORK_THREAD_CREATE_SEED_LOCATION_STATE_KEY]: seed,
           },
         });

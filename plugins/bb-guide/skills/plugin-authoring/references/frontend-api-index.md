@@ -26,6 +26,7 @@ Read the installed SDK declarations for the exact current signatures.
 - `experimental_SourceCode`
 - `experimental_Diff`
 - `useRpc`
+- `useSdk`
 - `useRealtime`
 - `useRealtimeConnectionState`
 - `useSettings`

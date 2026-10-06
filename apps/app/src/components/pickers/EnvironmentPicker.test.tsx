@@ -17,6 +17,7 @@ import {
   EnvironmentPickerUI,
   PROVIDER_INPUTS_CONTROL_MISSING_REASON,
 } from "./EnvironmentPicker";
+import { resolveRootComposeEffectiveEnvironmentValue } from "@/views/root-compose-environment-selection";
 
 const checkoutProvider: SystemEnvironmentProvider = {
   machineProviderId: null,
@@ -198,6 +199,58 @@ describe("EnvironmentPickerUI Cloudroom checkout menu", () => {
     expect(trigger.textContent).toContain("Local");
     expect(trigger.querySelector('[data-icon="Laptop"]')).toBeTruthy();
   });
+
+  it.each([
+    ["a folder on this Mac", sources, null],
+    ["only a GitHub remote", [], "https://github.com/acme/app.git"],
+    ["a folder and a GitHub remote", sources, "https://github.com/acme/app.git"],
+  ])(
+    "always shows Local, Local Worktree, or Cloud for a project with %s",
+    (_, projectSources, projectGitRemoteUrl) => {
+      const providers = [checkoutProvider, worktreeProvider, sandboxProvider];
+      for (const [saved, cloudSelected, label] of [
+        ["", false, "Local"],
+        ["provider:project-checkout", false, "Local"],
+        ["provider:git-worktree", false, "Local Worktree"],
+        ["provider:removed", false, "Local"],
+        ["", true, "Cloud"],
+      ] as const) {
+        const value = resolveRootComposeEffectiveEnvironmentValue({
+          environmentSelectionValue: saved,
+          environmentProviders: providers,
+          isProjectless: false,
+          knownHostIds: new Set([host.id]),
+          primaryHostId: host.id,
+          projectGitRemoteUrl,
+          projectSources,
+          reuseThreadOptions: [],
+          reuseThreadOptionsLoading: false,
+        });
+        renderPicker(
+          <EnvironmentPickerUI
+            value={value}
+            sources={projectSources}
+            host={host}
+            isLocal
+            providers={providers}
+            selectedProviderHostId={host.id}
+            cloud={{
+              selected: cloudSelected,
+              unavailableReason: null,
+              onSelect: vi.fn(),
+            }}
+          />,
+        );
+        expect(
+          screen
+            .getByRole("button", { name: "Environment" })
+            .querySelector("[data-promptbox-full-label]")?.textContent,
+          `saved "${saved}", cloud ${cloudSelected}`,
+        ).toBe(label);
+        cleanup();
+      }
+    },
+  );
 
   it("selects Cloud without dispatching a native environment selection", () => {
     const { onSelectProvider, onSelectCloud } = mount();

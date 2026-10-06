@@ -62,7 +62,7 @@ describe("ACP provider maintenance", () => {
       __testing.buildProviderInstallationRun(
         cursorMissingInstallationStatus(),
         {
-          maintenance: CURSOR_ACP_MAINTENANCE,
+          installer: CURSOR_ACP_MAINTENANCE.installer,
           command: "cursor-agent",
           action: "install",
         },
@@ -75,7 +75,7 @@ describe("ACP provider maintenance", () => {
     expect(
       __testing.buildProviderInstallationRun(
         { ...cursorMissingInstallationStatus(), installAction: null },
-        { maintenance: undefined, command: "opencode", action: "install" },
+        { installer: undefined, command: "opencode", action: "install" },
       ),
     ).toEqual({
       available: false,
@@ -85,7 +85,7 @@ describe("ACP provider maintenance", () => {
       __testing.buildProviderInstallationRun(
         cursorMissingInstallationStatus(),
         {
-          maintenance: undefined,
+          installer: undefined,
           command: "opencode",
           action: "install",
         },

@@ -28,6 +28,38 @@ bb.cli.register({
 });
 ```
 
+Prefer declaring commands with `defineCli` over parsing `argv` by hand. It
+builds the same registration and gives every command `--help` at every level,
+"Did you mean" suggestions for unknown options, typed value errors, and with
+`--json` an `{"ok": false, "error": {"code", "message", "hint"}}` envelope.
+
+```ts
+import { PluginCliError, cliCommand, defineCli } from "@get-bb/plugin-sdk";
+
+bb.cli.register(
+  defineCli({
+    name: "weather",
+    summary: "Weather lookups",
+    commands: {
+      today: cliCommand({
+        summary: "Today's weather",
+        positionals: [{ name: "city", description: "City name", required: true }],
+        options: { json: { type: "boolean", description: "Emit JSON" } },
+        async run(input) {
+          const forecast = await lookup(input.positionals.city);
+          if (forecast === null) {
+            throw new PluginCliError(`no forecast for ${input.positionals.city}`, {
+              code: "forecast_not_found",
+            });
+          }
+          return { exitCode: 0, stdout: forecast };
+        },
+      }),
+    },
+  }),
+);
+```
+
 Agents discover plugin commands through the server-generated
 `plugin-commands` skill, which lists each command's `summary` and the
 `commands` usage lines — fill both in. Combined stdout and stderr must fit

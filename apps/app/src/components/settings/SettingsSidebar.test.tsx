@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import type { ComponentProps } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -36,24 +37,26 @@ function renderSidebar(
   > = {},
 ) {
   return render(
-    <MemoryRouter>
-      <SidebarProvider>
-        <SettingsSidebarContent
-          appRoutePath="/"
-          isResizing={false}
-          mobileHosted
-          navigation={{
-            activePluginId: null,
-            activeSection: "general",
-            pluginEntries,
-            sections: SETTINGS_NAV_SECTIONS,
-            ...navigation,
-          }}
-          onResizeMouseDown={() => {}}
-        />
-        <LocationProbe />
-      </SidebarProvider>
-    </MemoryRouter>,
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>
+        <SidebarProvider>
+          <SettingsSidebarContent
+            appRoutePath="/"
+            isResizing={false}
+            mobileHosted
+            navigation={{
+              activePluginId: null,
+              activeSection: "general",
+              pluginEntries,
+              sections: SETTINGS_NAV_SECTIONS,
+              ...navigation,
+            }}
+            onResizeMouseDown={() => {}}
+          />
+          <LocationProbe />
+        </SidebarProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -62,6 +65,9 @@ const rowLabels = () =>
     .getAllByRole("link")
     .map((link) => link.textContent)
     .filter((label) => label !== "Back to app");
+
+const resultLabels = () =>
+  screen.queryAllByRole("option").map((option) => option.textContent);
 
 const currentRow = () =>
   screen
@@ -137,22 +143,38 @@ describe("SettingsSidebarContent navigation", () => {
     ).toBe("/settings/system-prompt");
   });
 
-  it("filters rows by page names and keywords, and Enter opens the first match", () => {
+  it("finds individual settings with typos and synonyms, and Enter opens the top one", () => {
     renderSidebar();
-    const search = screen.getByRole("textbox", { name: "Search settings" });
-    fireEvent.change(search, { target: { value: "codex" } });
-    expect(rowLabels()).toEqual(["Agents"]);
-    fireEvent.change(search, { target: { value: "command guard" } });
-    expect(rowLabels()).toEqual(["Advanced"]);
+    const search = screen.getByRole("combobox", { name: "Search settings" });
+    fireEvent.change(search, { target: { value: "thme" } });
+    expect(resultLabels()[0]).toBe("ThemeAppearance");
+    fireEvent.change(search, { target: { value: "how to disable telemetry" } });
+    expect(resultLabels()).toEqual([
+      "Share anonymous usage dataGeneral › Privacy & diagnostics",
+    ]);
     fireEvent.change(search, { target: { value: "archived" } });
     fireEvent.keyDown(search, { key: "Enter" });
     expect(screen.getByTestId("location").textContent).toBe(
-      "/settings/projects",
+      "/settings/archived",
     );
     expect((search as HTMLInputElement).value).toBe("");
-    fireEvent.change(search, { target: { value: "zzz" } });
-    expect(rowLabels()).toEqual([]);
+    fireEvent.change(search, { target: { value: "font size" } });
+    expect(resultLabels()).toEqual([]);
     expect(screen.getByText("No settings match.")).toBeTruthy();
+  });
+
+  it("moves the selected result with the arrow keys", () => {
+    renderSidebar();
+    const search = screen.getByRole("combobox", { name: "Search settings" });
+    fireEvent.change(search, { target: { value: "theme" } });
+    const [first, second] = screen.getAllByRole("option");
+    expect(search.getAttribute("aria-activedescendant")).toBe(first!.id);
+    fireEvent.keyDown(search, { key: "ArrowDown" });
+    expect(search.getAttribute("aria-activedescendant")).toBe(second!.id);
+    expect(second!.getAttribute("aria-selected")).toBe("true");
+    fireEvent.keyDown(search, { key: "ArrowUp" });
+    fireEvent.keyDown(search, { key: "ArrowUp" });
+    expect(search.getAttribute("aria-activedescendant")).toBe(second!.id);
   });
 
   it("keeps native device settings reachable", () => {

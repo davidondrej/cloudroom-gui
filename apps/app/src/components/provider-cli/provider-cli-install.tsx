@@ -31,6 +31,13 @@ export interface ProviderCliActionableIssue extends ProviderCliIssue {
   action: ProviderCliInstallAction;
 }
 
+export type ProviderCliInstallTarget = Pick<
+  ProviderCliActionableIssue,
+  "action" | "fingerprint" | "provider"
+> & {
+  status: Pick<ProviderCliStatus, "displayName">;
+};
+
 export function providerCliEntries(
   status: ProviderCliStatusResponse,
 ): ProviderCliStatusEntry[] {

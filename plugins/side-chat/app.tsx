@@ -279,6 +279,7 @@ export default definePluginApp((app) => {
     id: "reply-in-side-chat",
     title: "Reply in side chat",
     icon: "SideChat",
+    experimental_requiresFork: true,
     async run(context: PluginMessageActionContext) {
       const anchorText = context.selectedText ?? context.message.text;
       await openSideChat({

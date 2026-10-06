@@ -11,6 +11,7 @@ export interface PluginCliContributionEntry {
   name: string;
   summary: string;
   commands: Array<{ name: string; summary: string; usage: string }>;
+  rendersHelp?: boolean;
 }
 
 const CONTRIBUTIONS_TIMEOUT_MS = 2000;

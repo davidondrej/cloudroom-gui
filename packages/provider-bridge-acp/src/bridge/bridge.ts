@@ -73,7 +73,10 @@ import {
   resolveAcpDialect,
   type AcpDialect,
 } from "../dialect.js";
-import type { AcpMaintenanceDialect } from "./provider-maintenance.js";
+import type {
+  AcpMaintenanceDialect,
+  AcpMaintenanceTarget,
+} from "./provider-maintenance.js";
 import {
   buildAcpPermissionInteractionPayload,
   resolveAcpPermissionDecision,
@@ -88,6 +91,8 @@ import {
 } from "../session-params.js";
 import { buildCursorParameterizedModelCatalog } from "../cursor-model-selection.js";
 import {
+  acpScriptInstallerCommand,
+  acpScriptInstallerSchema,
   getAcpProviderHealth,
   getAcpProviderInstallationRun,
   getAcpProviderInstallationStatus,
@@ -2466,10 +2471,19 @@ function maintenanceForRequest(
 
 function maintenanceTarget(
   providerOptions: Record<string, unknown> | undefined,
-): { maintenance: AcpMaintenanceDialect | undefined; command: string | null } {
+): AcpMaintenanceTarget {
   const launchSpec = decodeLaunchSpec(providerOptions);
+  const maintenance = maintenanceForRequest(providerOptions, launchSpec);
+  const scriptInstaller = acpScriptInstallerSchema.safeParse(
+    providerOptions?.["acpInstaller"],
+  );
   return {
-    maintenance: maintenanceForRequest(providerOptions, launchSpec),
+    maintenance,
+    installer:
+      maintenance?.installer ??
+      (scriptInstaller.success
+        ? () => acpScriptInstallerCommand(scriptInstaller.data)
+        : undefined),
     command: launchSpec?.command ?? null,
   };
 }
@@ -2487,6 +2501,7 @@ async function handleRequest(
           threadArchive: false,
           threadRename: false,
           threadGoalClear: false,
+          threadGoalSet: false,
           fork: "tip",
           approvalEnforcedBy: "runtime",
           grammarVersions: [THREAD_DELTA_GRAMMAR_V3, THREAD_DELTA_GRAMMAR_V3],

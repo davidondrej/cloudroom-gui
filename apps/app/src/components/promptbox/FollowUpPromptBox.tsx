@@ -278,6 +278,9 @@ function FollowUpPromptBoxWithComposer({
     promptBoxRef.current?.focusEnd();
     return promptBoxRef.current !== null;
   }, []);
+  const attachFiles = useCallback((files: File[]) => {
+    promptBoxRef.current?.attachFiles(files);
+  }, []);
   const voice = usePromptVoice(promptBoxRef);
   const isCompactViewport = useIsCompactViewport();
   const isPointerCoarse = usePointerCoarse();
@@ -574,6 +577,7 @@ function FollowUpPromptBoxWithComposer({
     isPrimary: isPrimaryComposer,
     collapseIfFocused,
     focusDefault,
+    attachFiles: attachments.onAttachFiles ? attachFiles : undefined,
   });
   useEffect(
     () => () => {

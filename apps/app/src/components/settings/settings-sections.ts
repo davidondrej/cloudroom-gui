@@ -55,7 +55,6 @@ type SettingsGroupMember =
 export interface SettingsNavGroup {
   icon: IconName;
   id: string;
-  keywords: string;
   label: string;
   members: readonly SettingsGroupMember[];
 }
@@ -83,7 +82,6 @@ export const SETTINGS_NAV_GROUPS: readonly SettingsNavGroup[] = [
   {
     icon: "Settings",
     id: "general",
-    keywords: "threads editing links localhost git branch skills naming voice privacy telemetry feedback streamer diagnostics sleep",
     label: "General",
     members: [
       section("general"),
@@ -96,7 +94,6 @@ export const SETTINGS_NAV_GROUPS: readonly SettingsNavGroup[] = [
   {
     icon: "Bot",
     id: "agents",
-    keywords: "claude code codex pi acp models limits",
     label: "Agents",
     members: [
       section("providers"),
@@ -111,7 +108,6 @@ export const SETTINGS_NAV_GROUPS: readonly SettingsNavGroup[] = [
   {
     icon: "Edit",
     id: "instructions",
-    keywords: "prompt skills agents.md",
     label: "Instructions",
     members: [
       plugin("custom-instructions", "Custom instructions"),
@@ -122,42 +118,36 @@ export const SETTINGS_NAV_GROUPS: readonly SettingsNavGroup[] = [
   {
     icon: "Cloud",
     id: "cloud",
-    keywords: "github repos api keys secrets setup script sandbox",
     label: "Cloud",
     members: [section("cloud-environment")],
   },
   {
     icon: "Laptop",
     id: "machines",
-    keywords: "account sign in mac access ssh remote phone gh_token environment",
     label: "Machines",
     members: [section("machines"), plugin("connect", "Cloudroom Connect")],
   },
   {
     icon: "FolderGit",
     id: "projects",
-    keywords: "restore",
     label: "Projects",
     members: [section("projects"), section("import"), section("archived")],
   },
   {
     icon: "Palette",
     id: "appearance",
-    keywords: "theme dark light colors sidebar corners favicon",
     label: "Appearance",
     members: [section("appearance")],
   },
   {
     icon: "SlidersHorizontal",
     id: "keyboard",
-    keywords: "shortcuts hotkeys",
     label: "Keyboard",
     members: [section("keyboard")],
   },
   {
     icon: "ElectricPlugs",
     id: "plugins",
-    keywords: "extensions",
     label: "Plugins",
     members: [
       section("plugins", "Installed"),
@@ -167,14 +157,12 @@ export const SETTINGS_NAV_GROUPS: readonly SettingsNavGroup[] = [
   {
     icon: "PackageReceive",
     id: "updates",
-    keywords: "version changelog daemon provider cli github website",
     label: "Updates",
     members: [section("updates"), section("community")],
   },
   {
     icon: "Toolbox",
     id: "advanced",
-    keywords: "safety beta",
     label: "Advanced",
     members: [section("command-guard"), section("experiments")],
   },
@@ -243,17 +231,4 @@ export function getSettingsGroupLinks(
     });
   }
   return links;
-}
-
-export function matchesSettingsSearch(
-  group: SettingsNavGroup,
-  links: readonly SettingsNavLink[],
-  query: string,
-): boolean {
-  const needle = query.trim().toLowerCase();
-  if (needle === "") return true;
-  return [group.label, group.keywords, ...links.map((link) => link.label)]
-    .join(" ")
-    .toLowerCase()
-    .includes(needle);
 }

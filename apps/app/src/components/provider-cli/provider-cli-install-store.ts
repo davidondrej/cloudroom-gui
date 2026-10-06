@@ -5,7 +5,7 @@ import type {
   ProviderCliKey,
 } from "@bb/host-daemon-contract";
 import type { ProviderCliInstallLogDialogState } from "@/components/dialogs/ProviderCliInstallLogDialog";
-import type { ProviderCliActionableIssue } from "@/components/provider-cli/provider-cli-install";
+import type { ProviderCliInstallTarget } from "@/components/provider-cli/provider-cli-install";
 import { appToast } from "@/components/ui/app-toast";
 import { invalidateHostProviderCliStatus } from "@/hooks/cache-owners/provider-cli-status-cache-owner";
 import { invalidateSystemExecutionOptions } from "@/hooks/cache-owners/system-cache-effects";
@@ -26,7 +26,7 @@ const PROVIDER_CLI_FAILURE_LOG_TRUNCATION_MARKER =
 
 interface ProviderCliInstallJob {
   hostId: string;
-  issue: ProviderCliActionableIssue;
+  issue: ProviderCliInstallTarget;
 }
 
 export interface ProviderCliInstallFailure {
@@ -136,7 +136,7 @@ function exitDescription(event: ProviderCliInstallCompletedEvent): string {
 }
 
 function getProviderCliTitle(args: {
-  issue: ProviderCliActionableIssue;
+  issue: ProviderCliInstallTarget;
   phase: ProviderCliTitlePhase;
 }): string {
   return PROVIDER_CLI_TITLE_TEMPLATES[args.phase][args.issue.action.kind](
@@ -186,7 +186,7 @@ function setProviderCliInstallFailure(args: {
 
 function showProviderCliInstallFailureToast(args: {
   jobKey: string;
-  issue: ProviderCliActionableIssue;
+  issue: ProviderCliInstallTarget;
   log: string;
   message: string;
   toastId: string;

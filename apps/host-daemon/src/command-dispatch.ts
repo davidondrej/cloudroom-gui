@@ -308,6 +308,7 @@ async function runProviderInstallationOnHost(
     );
     if (events.some((event) => event.type === "completed" && event.success)) {
       try {
+        await options.refreshShellEnv({ force: true });
         const status =
           await options.providerInstallationStatus(maintenanceArgs);
         if (!installationVerificationPassed(run.verification, status)) {

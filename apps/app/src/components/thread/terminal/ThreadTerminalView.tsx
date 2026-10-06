@@ -6,14 +6,11 @@ import {
   type PointerEvent as ReactPointerEvent,
   type TouchEvent as ReactTouchEvent,
 } from "react";
-import "@xterm/xterm/css/xterm.css";
 import type {
-  IDisposable,
-  ITerminalAddon,
+  FitAddon,
   ITheme,
-  Terminal as XTermTerminal,
-} from "@xterm/xterm";
-import type { FitAddon } from "@xterm/addon-fit";
+  Terminal as TerminalEmulator,
+} from "ghostty-web";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -45,16 +42,15 @@ import { buildTerminalWebSocketUrl } from "./terminal-websocket-url";
 import { TerminalWebSocketTransport } from "@bb/client-core";
 import { TerminalLinkOpenDialog } from "./TerminalLinkOpenDialog";
 import {
-  createTerminalOsc8LinkHandler,
+  replaceTerminalLinkProviders,
   requestTerminalLinkOpen,
+  routeTerminalLinks,
   type TerminalLinkTarget,
 } from "./terminal-links";
 
 export const TERMINAL_FONT_FAMILY =
   '"JetBrainsMono Nerd Font Mono", "MesloLGS NF", "Symbols Nerd Font Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
 const TERMINAL_FONT_CSS_VARIABLE = "--font-terminal";
-export const TERMINAL_UNICODE_VERSION = "11";
-export const TERMINAL_ALLOW_PROPOSED_API = true;
 const TERMINAL_TOUCH_FOCUS_MAX_DURATION_MS = 700;
 const TERMINAL_TOUCH_FOCUS_MOVEMENT_THRESHOLD_PX = 10;
 
@@ -80,47 +76,6 @@ export function shouldFocusTerminalAfterAsyncMount({
     return false;
   }
   return hasExplicitFocusRequest || !currentFocusIsAvailable;
-}
-
-interface WebglRendererAddon extends ITerminalAddon {
-  onContextLoss: (listener: () => void) => IDisposable;
-}
-
-type TerminalAddonLoader = Pick<XTermTerminal, "loadAddon">;
-interface TerminalWebglAddonModule {
-  WebglAddon: new () => WebglRendererAddon;
-}
-type TerminalWebglAddonImporter = () => Promise<TerminalWebglAddonModule>;
-
-export async function loadOptionalTerminalWebglAddon(
-  importAddon: TerminalWebglAddonImporter,
-): Promise<TerminalWebglAddonModule | null> {
-  try {
-    return await importAddon();
-  } catch {
-    return null;
-  }
-}
-
-export function loadTerminalWebglRenderer(
-  terminal: TerminalAddonLoader,
-  createAddon: () => WebglRendererAddon,
-): boolean {
-  let addon: WebglRendererAddon | null = null;
-  let contextLossDisposable: IDisposable | null = null;
-  try {
-    addon = createAddon();
-    contextLossDisposable = addon.onContextLoss(() => {
-      contextLossDisposable?.dispose();
-      addon?.dispose();
-    });
-    terminal.loadAddon(addon);
-    return true;
-  } catch {
-    contextLossDisposable?.dispose();
-    addon?.dispose();
-    return false;
-  }
 }
 
 interface TerminalTouchPoint extends SelectionAnchorPoint {
@@ -285,6 +240,20 @@ export function buildTerminalThemeFromCssColors(
   };
 }
 
+function rgbColor(
+  context: CanvasRenderingContext2D | null,
+  color: string | undefined,
+): string | undefined {
+  if (context === null || color === undefined) {
+    return color;
+  }
+  context.clearRect(0, 0, 1, 1);
+  context.fillStyle = color;
+  context.fillRect(0, 0, 1, 1);
+  const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
+  return `rgb(${red}, ${green}, ${blue})`;
+}
+
 function buildTerminalTheme(): ITheme {
   if (typeof document === "undefined") {
     return {};
@@ -294,7 +263,12 @@ function buildTerminalTheme(): ITheme {
   probe.style.visibility = "hidden";
   probe.style.pointerEvents = "none";
   document.body.appendChild(probe);
-  const get = (name: string) => readResolvedCssColor(probe, name);
+  const canvas = document.createElement("canvas");
+  canvas.width = 1;
+  canvas.height = 1;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  const get = (name: string) =>
+    rgbColor(context, readResolvedCssColor(probe, name));
   const theme = buildTerminalThemeFromCssColors(get);
   probe.remove();
   return theme;
@@ -310,7 +284,7 @@ function readTerminalFontFamily(): string {
 }
 
 export function applyTerminalFontFamily(
-  terminal: Pick<XTermTerminal, "options">,
+  terminal: Pick<TerminalEmulator, "options">,
   fontFamily: string,
   scheduleFit: TerminalFitScheduler,
 ): boolean {
@@ -323,16 +297,11 @@ export function applyTerminalFontFamily(
 }
 
 export function forceTerminalFontMeasurement(
-  terminal: Pick<
-    XTermTerminal,
-    "options" | "clearTextureAtlas" | "refresh" | "rows"
-  >,
+  terminal: Pick<TerminalEmulator, "options">,
 ): void {
   const fontFamily = terminal.options.fontFamily;
   terminal.options.fontFamily = `${fontFamily} `;
   terminal.options.fontFamily = fontFamily;
-  terminal.clearTextureAtlas();
-  terminal.refresh(0, terminal.rows - 1);
 }
 
 export function observeTerminalFontLoading(
@@ -371,21 +340,21 @@ interface ThreadTerminalViewProps {
 type TerminalTitleChangeHandler = (title: string) => void;
 
 interface WriteTerminalStatusArgs {
-  terminal: XTermTerminal;
+  terminal: TerminalEmulator;
   text: string;
 }
 
 interface WriteTerminalSessionStatusNoticeArgs {
   lastNotice: TerminalSessionStatusNoticeRef;
   session: TerminalSession;
-  terminal: XTermTerminal;
+  terminal: TerminalEmulator;
 }
 
 interface TerminalOutputWriteArgs {
   data: string | Uint8Array;
   isReplay: boolean;
   replayWriteState: TerminalReplayWriteState;
-  terminal: XTermTerminal;
+  terminal: TerminalEmulator;
 }
 
 interface ForwardTerminalDataArgs {
@@ -408,7 +377,7 @@ interface TerminalContextMenuState {
 
 interface CaptureTerminalContextMenuStateArgs {
   link: TerminalLinkTarget | null;
-  terminal: Pick<XTermTerminal, "getSelection"> | null;
+  terminal: Pick<TerminalEmulator, "getSelection"> | null;
 }
 
 interface TerminalReplayWriteState {
@@ -426,7 +395,7 @@ interface HandleTerminalServerMessageArgs {
   replayNextSeq: number | null;
   replayWriteState: TerminalReplayWriteState;
   setReplayNextSeq: (nextSeq: number) => void;
-  terminal: XTermTerminal;
+  terminal: TerminalEmulator;
 }
 
 function encodeBytesBase64(bytes: Uint8Array): string {
@@ -581,6 +550,9 @@ export function writeTerminalOutput({
   replayWriteState,
   terminal,
 }: TerminalOutputWriteArgs): void {
+  if (data.length === 0) {
+    return;
+  }
   if (!isReplay) {
     terminal.write(data);
     return;
@@ -660,7 +632,7 @@ export function ThreadTerminalView({
       selectionText: "",
     });
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const terminalRef = useRef<XTermTerminal | null>(null);
+  const terminalRef = useRef<TerminalEmulator | null>(null);
   const hoveredTerminalLinkRef = useRef<TerminalLinkTarget | null>(null);
   const pointerIsDownRef = useRef(false);
   const pointerStartPointRef = useRef<SelectionAnchorPoint | null>(null);
@@ -876,7 +848,7 @@ export function ThreadTerminalView({
 
     let disposed = false;
     let transport: TerminalWebSocketTransport | null = null;
-    let terminal: XTermTerminal | null = null;
+    let terminal: TerminalEmulator | null = null;
     let fitAddon: FitAddon | null = null;
     let replayNextSeq: number | null = null;
     const replayWriteState: TerminalReplayWriteState = {
@@ -891,75 +863,51 @@ export function ThreadTerminalView({
     async function mountTerminal(
       containerElement: HTMLDivElement,
     ): Promise<void> {
-      const requiredModulesPromise = Promise.all([
-        import("@xterm/xterm"),
-        import("@xterm/addon-fit"),
-        import("@xterm/addon-web-links"),
-        import("@xterm/addon-unicode11"),
-      ]);
-      const webglAddonModulePromise = loadOptionalTerminalWebglAddon(
-        () => import("@xterm/addon-webgl"),
-      );
-      const [
-        { Terminal },
-        { FitAddon: LoadedFitAddon },
-        { WebLinksAddon },
-        { Unicode11Addon },
-      ] = await requiredModulesPromise;
-      const webglAddonModule = await webglAddonModulePromise;
+      const {
+        FitAddon: LoadedFitAddon,
+        init,
+        OSC8LinkProvider,
+        Terminal,
+        UrlRegexProvider,
+      } = await import("ghostty-web");
+      await init();
       if (disposed) {
         return;
       }
 
-      const osc8LinkHandler = createTerminalOsc8LinkHandler({
-        onActivate: requestOpenTerminalLink,
-        onHover: (target) => {
-          if (!disposed) {
-            updateHoveredTerminalLink(target);
-          }
-        },
-      });
-
       terminal = new Terminal({
-        allowProposedApi: TERMINAL_ALLOW_PROPOSED_API,
         convertEol: true,
         cursorBlink: true,
         fontFamily: readTerminalFontFamily(),
         fontSize: 12,
-        linkHandler: osc8LinkHandler,
         scrollback: 10_000,
         theme: buildTerminalTheme(),
       });
       terminalRef.current = terminal;
       fitAddon = new LoadedFitAddon();
       terminal.loadAddon(fitAddon);
-      terminal.loadAddon(new Unicode11Addon());
-      terminal.unicode.activeVersion = TERMINAL_UNICODE_VERSION;
-      terminal.loadAddon(
-        new WebLinksAddon(
-          (event, uri) => {
-            if (event.button !== 0) {
-              return;
-            }
-            requestOpenTerminalLink({ source: "detected-url", uri });
-          },
-          {
-            hover: (_event, uri) => {
-              updateHoveredTerminalLink({ source: "detected-url", uri });
-            },
-            leave: () => {
-              updateHoveredTerminalLink(null);
-            },
-          },
-        ),
-      );
-      if (webglAddonModule !== null) {
-        loadTerminalWebglRenderer(
-          terminal,
-          () => new webglAddonModule.WebglAddon(),
-        );
-      }
+      const currentActiveElement = document.activeElement;
       terminal.open(containerElement);
+      const linkHandlers = {
+        onActivate: requestOpenTerminalLink,
+        onHover: (target: TerminalLinkTarget | null) => {
+          if (!disposed) {
+            updateHoveredTerminalLink(target);
+          }
+        },
+      };
+      replaceTerminalLinkProviders(terminal, [
+        routeTerminalLinks(
+          new OSC8LinkProvider(terminal),
+          "osc8",
+          linkHandlers,
+        ),
+        routeTerminalLinks(
+          new UrlRegexProvider(terminal),
+          "detected-url",
+          linkHandlers,
+        ),
+      ]);
       writeTerminalSessionStatusNotice({
         lastNotice: lastStatusNoticeRef,
         session: sessionRef.current,
@@ -996,7 +944,6 @@ export function ThreadTerminalView({
         });
       }
       scheduleFitRef.current = scheduleFit;
-      const currentActiveElement = document.activeElement;
       if (
         shouldFocusTerminalAfterAsyncMount({
           currentFocusIsAvailable:
@@ -1010,6 +957,13 @@ export function ThreadTerminalView({
       ) {
         terminal.focus();
         onAutoFocusHandledRef.current?.();
+      } else if (
+        currentActiveElement instanceof HTMLElement &&
+        currentActiveElement !== document.body
+      ) {
+        currentActiveElement.focus({ preventScroll: true });
+      } else {
+        terminal.blur();
       }
 
       const activeTerminal = terminal;
@@ -1143,6 +1097,8 @@ export function ThreadTerminalView({
       scheduleFitRef.current = null;
     };
   }, [
+    appThemeEpoch,
+    preferredTheme,
     reportTerminalSelection,
     requestOpenTerminalLink,
     session.id,
@@ -1182,7 +1138,6 @@ export function ThreadTerminalView({
     applyTerminalFontFamily(terminal, readTerminalFontFamily(), () =>
       scheduleFitRef.current?.(),
     );
-    terminal.options.theme = buildTerminalTheme();
   }, [preferredTheme, appThemeEpoch]);
 
   const contextMenuLink = contextMenuState.link;

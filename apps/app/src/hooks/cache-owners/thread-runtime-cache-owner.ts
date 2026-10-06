@@ -27,8 +27,6 @@ import { collectPromptAttachments } from "@/lib/prompt-attachments";
 import { prependPromptHistoryEntry } from "@/lib/prompt-history";
 import {
   applyQueuedMessageReorder,
-  collectLeadQueuedMessageGroupIds,
-  preserveLeadQueuedMessageGroupAfterReorder,
   type QueuedMessageReorderRequest,
 } from "@/lib/queued-message-reorder";
 import type { SendThreadMessageMutationRequest } from "../mutations/mutation-request-types";
@@ -181,19 +179,9 @@ interface ReorderQueuedMessageRequest extends QueuedMessageReorderRequest {
   id: string;
 }
 
-interface SetQueuedMessageGroupBoundaryRequest {
-  groupBoundaryQueuedMessageId: string;
-  id: string;
-}
-
 interface ReorderQueuedMessageTransactionArgs {
   queryClient: QueryClient;
   request: ReorderQueuedMessageRequest;
-}
-
-interface SetQueuedMessageGroupBoundaryTransactionArgs {
-  queryClient: QueryClient;
-  request: SetQueuedMessageGroupBoundaryRequest;
 }
 
 interface RollbackQueuedMessageTransactionArgs {
@@ -317,68 +305,13 @@ function buildQueuedPromptHistoryEntry(
   };
 }
 
-function applyQueuedMessageGroupBoundary({
-  groupBoundaryQueuedMessageId,
-  queuedMessages,
-}: {
-  groupBoundaryQueuedMessageId: string;
-  queuedMessages: readonly ThreadQueuedMessage[];
-}): ThreadQueuedMessage[] {
-  const boundaryIndex = queuedMessages.findIndex(
-    (queuedMessage) => queuedMessage.id === groupBoundaryQueuedMessageId,
-  );
-  if (boundaryIndex === -1) return [...queuedMessages];
-  return queuedMessages.map((queuedMessage, index) => ({
-    ...queuedMessage,
-    groupWithNext: index < boundaryIndex,
-  }));
-}
-
-function queuedMessageSendGroup(
-  queuedMessages: readonly ThreadQueuedMessage[] | undefined,
-  queuedMessageId: string,
-): ThreadQueuedMessage[] {
-  if (!queuedMessages) return [];
-  const queuedMessageIndex = queuedMessages.findIndex(
-    (queuedMessage) => queuedMessage.id === queuedMessageId,
-  );
-  if (queuedMessageIndex === -1) return [];
-  if (queuedMessageIndex !== 0) return [queuedMessages[queuedMessageIndex]!];
-
-  const group: ThreadQueuedMessage[] = [];
-  for (const queuedMessage of queuedMessages) {
-    group.push(queuedMessage);
-    if (!queuedMessage.groupWithNext) break;
-  }
-  return group;
-}
-
-function queuedMessageSendIds(
-  queuedMessages: readonly ThreadQueuedMessage[] | undefined,
-  queuedMessageId: string,
-): Set<string> {
-  const group = queuedMessageSendGroup(queuedMessages, queuedMessageId);
-  if (group.length === 0) return new Set([queuedMessageId]);
-  return new Set(group.map((queuedMessage) => queuedMessage.id));
-}
-
-function removeQueuedMessagesAndRepairGroupEdges(
+function removeQueuedMessage(
   queuedMessages: ThreadQueuedMessageListResponse | undefined,
-  removeIds: ReadonlySet<string>,
+  queuedMessageId: string,
 ): ThreadQueuedMessageListResponse | undefined {
-  if (!queuedMessages) return queuedMessages;
-  return queuedMessages.flatMap((queuedMessage, index) => {
-    if (removeIds.has(queuedMessage.id)) return [];
-    const nextQueuedMessage = queuedMessages[index + 1];
-    if (
-      nextQueuedMessage &&
-      removeIds.has(nextQueuedMessage.id) &&
-      queuedMessage.groupWithNext
-    ) {
-      return [{ ...queuedMessage, groupWithNext: false }];
-    }
-    return [queuedMessage];
-  });
+  return queuedMessages?.filter(
+    (queuedMessage) => queuedMessage.id !== queuedMessageId,
+  );
 }
 
 function getCachedDefaultExecutionOptions(
@@ -421,7 +354,6 @@ function buildOptimisticQueuedMessage({
       "auto",
     serviceTier:
       request.serviceTier ?? defaultExecutionOptions?.serviceTier ?? "default",
-    groupWithNext: false,
     hardQueue: request.hardQueue === true,
     sendAt: scheduledSendAt,
     waitingOn: scheduledSendAt === null ? null : { kind: "time" },
@@ -564,10 +496,7 @@ function removeCachedQueuedMessage({
   queryClient.setQueryData<ThreadQueuedMessageListResponse>(
     queryKey,
     (currentQueuedMessages) =>
-      removeQueuedMessagesAndRepairGroupEdges(
-        currentQueuedMessages,
-        new Set([request.queuedMessageId]),
-      ),
+      removeQueuedMessage(currentQueuedMessages, request.queuedMessageId),
   );
 
   return {
@@ -1274,15 +1203,10 @@ export async function beginSendQueuedMessageTransaction({
     queryClient.getQueryData<ThreadQueuedMessageListResponse>(
       threadQueuedMessagesQueryKey(request.id),
     );
-  const queuedMessageGroup = queuedMessageSendGroup(
-    previousQueuedMessages,
-    request.queuedMessageId,
-  );
-  const queuedMessage = queuedMessageGroup[0] ?? null;
-  const sendIds = queuedMessageSendIds(
-    previousQueuedMessages,
-    request.queuedMessageId,
-  );
+  const queuedMessage =
+    previousQueuedMessages?.find(
+      (candidate) => candidate.id === request.queuedMessageId,
+    ) ?? null;
   const previousThread = queryClient.getQueryData<ThreadResponse>(
     threadQueryKey(request.id),
   );
@@ -1290,7 +1214,7 @@ export async function beginSendQueuedMessageTransaction({
   queryClient.setQueryData<ThreadQueuedMessageListResponse>(
     threadQueuedMessagesQueryKey(request.id),
     (currentQueuedMessages) =>
-      removeQueuedMessagesAndRepairGroupEdges(currentQueuedMessages, sendIds),
+      removeQueuedMessage(currentQueuedMessages, request.queuedMessageId),
   );
   const optimisticQueueDataUpdateCount =
     queryClient.getQueryState(threadQueuedMessagesQueryKey(request.id))
@@ -1316,16 +1240,6 @@ export async function beginSendQueuedMessageTransaction({
   const optimisticThreadDataUpdateCount =
     queryClient.getQueryState(threadQueryKey(request.id))?.dataUpdateCount ??
     null;
-  if (queuedMessageGroup.length > 1) {
-    return {
-      optimisticCreatedAt,
-      optimisticQueueDataUpdateCount,
-      optimisticRowId: null,
-      optimisticThreadDataUpdateCount,
-      previousQueuedMessages,
-      previousThread,
-    };
-  }
   const optimisticRow = buildOptimisticUserMessageRow({
     createdAt: optimisticCreatedAt,
     input: queuedMessage.content,
@@ -1438,25 +1352,13 @@ export async function beginReorderQueuedMessageTransaction({
 
   queryClient.setQueryData<ThreadQueuedMessageListResponse>(
     queryKey,
-    (currentQueuedMessages) => {
-      if (!currentQueuedMessages) return currentQueuedMessages;
-      const originalLeadGroupIds = collectLeadQueuedMessageGroupIds(
-        currentQueuedMessages,
-      );
-      const reordered = applyQueuedMessageReorder({
-        queuedMessages: currentQueuedMessages,
-        request,
-      });
-      return request.groupBoundaryQueuedMessageId !== undefined
-        ? applyQueuedMessageGroupBoundary({
-            queuedMessages: reordered,
-            groupBoundaryQueuedMessageId: request.groupBoundaryQueuedMessageId,
+    (currentQueuedMessages) =>
+      currentQueuedMessages
+        ? applyQueuedMessageReorder({
+            queuedMessages: currentQueuedMessages,
+            request,
           })
-        : preserveLeadQueuedMessageGroupAfterReorder({
-            queuedMessages: reordered,
-            originalLeadGroupIds,
-          });
-    },
+        : currentQueuedMessages,
   );
 
   await queryClient.cancelQueries({ queryKey });
@@ -1494,30 +1396,6 @@ export function applyQueuedMessagesResult({
     queryClient,
     threadId: request.id,
   });
-}
-
-export async function beginSetQueuedMessageGroupBoundaryTransaction({
-  queryClient,
-  request,
-}: SetQueuedMessageGroupBoundaryTransactionArgs): Promise<ReorderQueuedMessageTransaction> {
-  const queryKey = threadQueuedMessagesQueryKey(request.id);
-  const previousQueuedMessages =
-    queryClient.getQueryData<ThreadQueuedMessageListResponse>(queryKey);
-
-  queryClient.setQueryData<ThreadQueuedMessageListResponse>(
-    queryKey,
-    (currentQueuedMessages) =>
-      currentQueuedMessages
-        ? applyQueuedMessageGroupBoundary({
-            queuedMessages: currentQueuedMessages,
-            groupBoundaryQueuedMessageId: request.groupBoundaryQueuedMessageId,
-          })
-        : currentQueuedMessages,
-  );
-
-  await queryClient.cancelQueries({ queryKey });
-
-  return { previousQueuedMessages };
 }
 
 export function applyQueuedMessageDeleteResult({

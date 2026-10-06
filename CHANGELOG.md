@@ -2,6 +2,18 @@
 
 Also on [cloudroom.dev/changelog](https://www.cloudroom.dev/changelog).
 
+## 93
+
+Cloud terminals and side chats (2026-10-05)
+
+### Changes
+
+- Cloud threads get a real terminal. You can also fork them or reply in a side chat.
+- A redesigned model picker with provider tabs, a clearer search box, and reasoning on the selected model.
+- Share invite links instead of codes, and install more agents in one click from Settings.
+- Voice recordings are saved as you speak, so a recording is never lost.
+- Cloud threads stay connected more reliably, and a project copy pauses and resumes when its thread sleeps.
+
 ## 92
 
 Mac access levels and new Settings (2026-10-04)

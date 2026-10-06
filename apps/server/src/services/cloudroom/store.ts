@@ -93,12 +93,12 @@ export function saveCommandState(db: DbQueryConnection, threadId: string, id: st
   if (unstarted && !["sending", "accepted", "running", "delivered"].includes(state)) saveStatus(db, threadId, ["failed", "unknown", "unknown_after_restart"].includes(state) ? "error" : "idle");
 }
 
-export function effectivePrompt(db: DbQueryConnection, threadId: string, id: string): Record<string, unknown> {
+export function effectivePrompt(db: DbQueryConnection, threadId: string, id: string, pending = false): Record<string, unknown> {
   const original = command(db, id);
   let input: Record<string, unknown> = original ? JSON.parse(original.input) : {};
   let revision = 1;
   const edits = commands(db, threadId)
-    .filter((item) => item.command === "edit" && ["accepted", "completed"].includes(item.state))
+    .filter((item) => item.command === "edit" && (["accepted", "completed"].includes(item.state) || (pending && item.state === "sending")))
     .map((item) => JSON.parse(item.input))
     .filter((item) => item.target_request_id === id)
     .sort((a, b) => a.expected_revision - b.expected_revision);

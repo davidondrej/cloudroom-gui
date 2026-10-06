@@ -80,6 +80,12 @@ type Harness = (typeof HARNESSES)[keyof typeof HARNESSES];
 function harnessOf(providerId: string): Harness | undefined {
   return HARNESSES[providerId as keyof typeof HARNESSES];
 }
+const openCloudChild = (child: { id: string; title: string | null }) =>
+  new ApiError(
+    409,
+    "teleport_unavailable",
+    `Teleport can't move a thread with an open Cloud child yet. Archive ${child.title ?? child.id} first, or keep this thread Local.`,
+  );
 const services = new WeakMap<AppDeps["db"], Teleport>();
 export function teleports(deps: AppDeps): Teleport {
   let service = services.get(deps.db);
@@ -254,11 +260,12 @@ class Teleport {
       );
     const all = [thread];
     for (let i = 0; i < all.length; i++)
-      all.push(
-        ...listNonDeletedChildThreads(this.deps.db, {
-          parentThreadId: all[i]!.id,
-        }),
-      );
+      for (const child of listNonDeletedChildThreads(this.deps.db, {
+        parentThreadId: all[i]!.id,
+      })) {
+        if (child.executionTarget !== "cloud") all.push(child);
+        else if (child.archivedAt === null) throw openCloudChild(child);
+      }
     const sessions = all.map((source) => {
       const env = source.environmentId
         ? getEnvironment(this.deps.db, source.environmentId)
@@ -337,6 +344,15 @@ class Teleport {
         `Teleport did not start; this thread stays local. ${checked.error}`,
       );
     if (checked.id !== id || checked.phase !== "checking") return checked;
+    const lateChild = all
+      .flatMap((source) =>
+        listNonDeletedChildThreads(this.deps.db, { parentThreadId: source.id }),
+      )
+      .find((child) => child.executionTarget === "cloud" && !child.archivedAt);
+    if (lateChild) {
+      this.dropChecking(threadId, id);
+      throw openCloudChild(lateChild);
+    }
     const queued = queuedRows.map((row) => {
       const content = JSON.parse(row.content) as {
         type: string;

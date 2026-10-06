@@ -70,6 +70,7 @@ export type TelemetryEvent =
         detail: (typeof SETUP_DETAILS)[number] | null;
       };
     }
+  | { name: "settings_search_no_results"; properties: { query: string } }
   | {
       name: "plugin_installed";
       properties: {

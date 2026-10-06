@@ -22,13 +22,23 @@ The complete top-level factory API is `pluginId`, `log`, `settings`, `storage`,
 `http`, `rpc`, `realtime`, `background`, `cli`, `agents`, `providers`, `ui`,
 `events`, `experimental_hooks`, `experimental_environments`,
 `experimental_machines`, `experimental_serverAccess`, `status`, `server`, `hosts`,
-`experimental_aiServices`, `sdk`, and `onDispose`.
+`experimental_aiServices`, `sdk`, `onDispose`, and `onInstall`.
 
 Keyed registrations must be unique within one factory execution: duplicate
 settings, routes, rpc methods, services, schedules, CLI registrations, tools,
 instruction providers or mention providers are rejected.
-Listeners are different: `bb.events.on`, settings `onChange`, and `onDispose`
-are additive, so registering multiple listeners is supported.
+Listeners are different: `bb.events.on`, settings `onChange`, `onDispose`, and
+`onInstall` are additive, so registering multiple listeners is supported.
+
+### bb.onInstall
+
+`bb.onInstall(handler)` runs once, right after the user installs the plugin
+and its server entry has loaded. It does not run on update, reload, enable,
+or server restart, nor for bundled plugins; reinstalling after removal runs
+it again. Use it for one-time setup the user expects from installing. A
+handler that throws is logged and the install still succeeds; the install
+waits at most 30 seconds for handlers. In tests, `harness.lifecycle.install()`
+runs them.
 
 ### bb.log
 

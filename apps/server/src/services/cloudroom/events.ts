@@ -3,7 +3,7 @@ import { commandGuardBlockReason } from "@get-bb/plugin-sdk/internal/command-gua
 import { cloudroomCommands, cloudroomThreads, deleteThreadEventSuffixInTransaction, events, threadConversationOutlines, threadSearchSegments, getThread, type DbConnection, type DbQueryConnection, type DbTransaction, type AppendStoredThreadEventArgs } from "@bb/db";
 import { and, desc, eq } from "drizzle-orm";
 import { appendThreadEventsInTransaction, appendThreadProvisioningEventInTransaction } from "../threads/thread-events.js";
-import { LEGACY_CODEX_GOAL_EXTENSION_KIND, reasoningLevelSchema, threadEventSchema, threadScope, turnScope, encodeClientTurnRequestIdNumber, type ProvisioningTranscriptEntry, type SystemThreadProvisioningStatus, type ThreadEvent } from "@bb/domain";
+import { LEGACY_CODEX_GOAL_EXTENSION_KIND, reasoningLevelSchema, threadEventSchema, threadScope, turnScope, encodeClientTurnRequestIdNumber, type ProvisioningTranscriptEntry, type SystemThreadProvisioningStatus, type ThreadEvent, type ThreadEventTurnStatus } from "@bb/domain";
 import { z } from "zod";
 import { CloudroomError, type SessionRecord } from "./client.js";
 import { codexErrorFields } from "./codex-errors.js";
@@ -17,6 +17,13 @@ export type CloudProvider = keyof typeof CLOUD_HARNESSES;
 export const isCloudProvider = (id: string | undefined): id is CloudProvider => id !== undefined && Object.hasOwn(CLOUD_HARNESSES, id);
 export const HARNESS_NAMES: Record<CloudProvider, string> = { codex: "Codex", pi: "Pi", "claude-code": "Claude Code", "acp-cursor": "Cursor", "acp-fx": "fx", "acp-opencode": "opencode" };
 const isAcpProvider = (id: string | undefined): id is "acp-cursor" | "acp-fx" | "acp-opencode" => id === "acp-cursor" || id === "acp-fx" || id === "acp-opencode";
+const FINISHED = ["completed", "failed", "interrupted", "unknown", "unknown_after_restart"];
+const turnStatus = (state: string): ThreadEventTurnStatus => state === "completed" ? "completed" : state === "interrupted" ? "interrupted" : "failed";
+export function endedTurn(record: SessionRecord): ThreadEventTurnStatus | null {
+  const receipt = record.kind === "receipt" ? z.object({ command: z.string(), state: z.string() }).safeParse(record.data) : null;
+  if (!receipt?.success || !["prompt", "auto"].includes(receipt.data.command) || !FINISHED.includes(receipt.data.state)) return null;
+  return turnStatus(receipt.data.state);
+}
 const bbRequestId = (id: string) => encodeClientTurnRequestIdNumber({ value: createHash("sha256").update(id).digest().readUIntBE(0, 6) });
 
 function messageReasoning(input: string, fallback: string): string {
@@ -150,7 +157,8 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
         if (!command(tx, prompt.request_id)) tx.insert(cloudroomCommands).values({ id: prompt.request_id, threadId, command: "prompt", input: JSON.stringify(prompt.input), state: prompt.state, createdAt: (record.timestamp_ms ?? 0) + index }).run();
       }
       if (typeof data.native_id === "string") saveBinding(tx, threadId, { nativeId: data.native_id });
-      emit({ type: "system/operation", scope: threadScope(), threadId, operation: "teleport", operationId: `teleport:${record.sequence}`, status: "completed", message: "Conversation continued in cloud; files may still be uploading." });
+      // A Cloud fork arrives the same way, but it is a new thread, not a moved one.
+      if (object.parse(object.parse(data.receipt).input).fork !== true) emit({ type: "system/operation", scope: threadScope(), threadId, operation: "teleport", operationId: `teleport:${record.sequence}`, status: "completed", message: "Conversation continued in cloud; files may still be uploading." });
     }
     if (record.kind === "receipt") {
       const receipt = z.object({ request_id: z.string(), command: z.string(), state: z.string(), error: z.string().optional() }).parse(data);
@@ -161,8 +169,8 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
       saveCommandState(tx, threadId, receipt.request_id, receipt.state);
       if (receipt.command === "start" && receipt.state === "accepted" && object.parse(data.input).workspace) saveStatus(tx, threadId, "pending");
       const turnStarted = () => Boolean(tx.select({ id: events.id }).from(events).where(and(eq(events.threadId, threadId), eq(events.turnId, receipt.request_id), eq(events.type, "turn/started"))).get());
-      if ((harness === "pi" || isAcpProvider(harness) || harness === "claude-code") && (receipt.command === "auto" || (previous && receipt.command === "prompt")) && ["completed", "failed", "interrupted", "unknown", "unknown_after_restart"].includes(receipt.state) && saved.nativeId && turnStarted()) {
-        emit({ threadId, providerThreadId: saved.nativeId, scope: turnScope(receipt.request_id), type: "turn/completed", status: receipt.state === "completed" ? "completed" : receipt.state === "interrupted" ? "interrupted" : "failed" });
+      if ((harness === "pi" || isAcpProvider(harness) || harness === "claude-code") && (receipt.command === "auto" || (previous && receipt.command === "prompt")) && FINISHED.includes(receipt.state) && saved.nativeId && turnStarted()) {
+        emit({ threadId, providerThreadId: saved.nativeId, scope: turnScope(receipt.request_id), type: "turn/completed", status: turnStatus(receipt.state) });
       }
       const lastError = () => tx.select({ data: events.data }).from(events).where(and(eq(events.threadId, threadId), eq(events.type, "system/error"))).orderBy(desc(events.sequence)).limit(1).get();
       const error = receipt.error ? codexErrorFields(receipt.error, codexOutage) : null;
@@ -205,7 +213,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
         const input = original?.request_id === replacement.request_id ? original : replacement.input;
         if (!command(tx, replacement.request_id)) tx.insert(cloudroomCommands).values({ id: replacement.request_id, threadId, command: "prompt", input: JSON.stringify(input), state: "accepted", createdAt: record.timestamp_ms ?? 0 }).run();
       }
-      emit({ type: "system/operation", scope: threadScope(), threadId, operation: "edit_message", status: "completed", message: "Message edited", operationId: String(data.request_id), metadata: { cutoffSequence: cutoff ?? null, replacementProviderThreadId: data.id } });
+      if (data.request_id !== `fork_${threadId}`) emit({ type: "system/operation", scope: threadScope(), threadId, operation: "edit_message", status: "completed", message: "Message edited", operationId: String(data.request_id), metadata: { cutoffSequence: cutoff ?? null, replacementProviderThreadId: data.id } });
       emit({ type: "thread/contextWindowUsage/updated", scope: threadScope(), threadId, providerThreadId: data.id, contextWindowUsage: { usedTokens: null, modelContextWindow: null, estimated: false } });
     }
     if (record.kind === "checkpoint" && typeof data.id === "string" && saved.nativeId) {

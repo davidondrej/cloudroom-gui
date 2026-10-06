@@ -14,6 +14,7 @@ import { ImportChats } from "@/components/settings/ImportChats";
 import { BbLogo } from "@/components/ui/bb-logo";
 import { appToast } from "@/components/ui/app-toast";
 import { useCreateProject } from "@/hooks/mutations/project-mutations";
+import { useUpdateGeneralSettings } from "@/hooks/mutations/settings-mutations";
 import { useCloudroomAccount, useCloudroomSignIn, useImportBb, useProjectSuggestions, useSetCopyLogins, useSetMacAccess } from "@/hooks/queries/cloudroom-queries";
 import { repoKey } from "@/components/pickers/ProjectSelector";
 import { formatRelativeTime } from "@/lib/relative-time";
@@ -21,11 +22,12 @@ import { useSidebarNavigation } from "@/hooks/queries/sidebar-navigation-query";
 import { useHostDaemon } from "@/hooks/useHostDaemon";
 import { usePathPickerHost } from "@/hooks/useLocalPathPicker";
 import { useQuickCreateProjectController } from "@/hooks/useQuickCreateProject";
+import { usePromptBoxProviderPreference } from "@/hooks/thread-creation-options/persisted-selection-fields";
 import { booleanLocalStorage } from "@/lib/browser-storage";
 import { MACOS_APP_REGION_NO_DRAG_CLASS, MACOS_WINDOW_DRAG_CLASS } from "@/lib/bb-desktop";
-import { copyToClipboardWithToast } from "@/lib/clipboard";
+import { copyTextToClipboard, copyToClipboardWithToast } from "@/lib/clipboard";
 import { fetchWithAppSurface } from "@/lib/app-surface";
-import { useSystemProviders } from "@/hooks/queries/system-queries";
+import { useSystemConfig, useSystemProviders } from "@/hooks/queries/system-queries";
 import { getProviderIconInfo, getProviderIconTintStyle } from "@/lib/provider-icon";
 import { getRootComposeRoutePath } from "@/lib/route-paths";
 import { useSetRootComposeProjectId } from "@/lib/root-compose-selection";
@@ -39,7 +41,7 @@ export const useOpenSetup = () => useSetAtom(openAtom);
 const STEPS = ["Create account", "Connect an agent", "Connect GitHub", "Pick a project"];
 const STEP_IDS = ["account", "agent", "github", "project"] as const;
 // The last step has the whole screen, so it shows more repos than the project menu.
-const ONBOARDING_REPOS = 8;
+const ONBOARDING_PROJECTS = 5;
 type SetupStepId = (typeof STEP_IDS)[number];
 type SetupDetail = "github" | "google" | "email" | "claude" | "codex" | "both" | "none" | "existing" | "found" | "folder" | "bb_import" | "chat_import";
 function track(step: SetupStepId, action: "viewed" | "started" | "done" | "skipped" | "closed" | "detected" | "waitlist", detail: SetupDetail | null = null) {
@@ -181,13 +183,13 @@ function Setup({ locked, close }: { locked: boolean; close: () => void }) {
               <Icon name="X" className="size-3" aria-hidden />
             </button>
           )}
-          <div key={step} className="my-auto w-full max-w-[600px] duration-300 animate-in fade-in-0 slide-in-from-bottom-1">
+          <div key={step} className={cn("my-auto w-full duration-300 animate-in fade-in-0 slide-in-from-bottom-1", step === 3 ? "max-w-[860px]" : "max-w-[600px]")}>
             <BbLogo className="mb-6 size-[72px] -rotate-[5deg]" />
             <p className="font-serif text-base text-(--ob-muted) italic">Step {step + 1} of 4</p>
             {step === 0 && <AccountStep email={account.data?.account?.email ?? null} signingIn={account.data?.signingIn === true} next={next} />}
             {step === 1 && <AgentStep progress={progress} next={next} />}
             {step === 2 && <GithubStep progress={progress} next={next} />}
-            {step === 3 && <ProjectStep close={close} />}
+            {step === 3 && <ProjectStep agents={progress.agents} close={close} />}
           </div>
         </main>
       </div>
@@ -406,24 +408,34 @@ function Choice({ checked, onChange, label, detail }: { checked: boolean; onChan
   );
 }
 
+const GITHUB_COUNTDOWN = 4;
+const openGithub = (url: string) => { if (new URL(url).origin === "https://github.com") openUrlInExternalBrowser(url); };
+
 function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupProgress>; next: () => void }) {
   const { github, account, ready, offline } = progress;
   const client = useQueryClient();
   const requestId = useRef<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [left, setLeft] = useState<number | null>(null);
   const refresh = () => client.invalidateQueries({ queryKey: ["cloudroom-github-auth"] });
   const connect = useMutation({
     mutationFn: async () => {
       track("github", "started");
       requestId.current = crypto.randomUUID();
       const result = await sdk.cloudroom.githubLogin(requestId.current);
-      if (result.state === "waiting" && result.verification_url) {
+      if (result.state === "waiting" && result.verification_url && result.user_code) {
         if (new URL(result.verification_url).origin !== "https://github.com") throw new Error("Unexpected GitHub sign-in page.");
+        setCopied(await copyTextToClipboard(result.user_code));
+        setLeft(GITHUB_COUNTDOWN);
       } else if (result.state !== "connected") throw new Error(result.message ?? "GitHub could not connect. Try again.");
+      return result;
     },
+    onSuccess: (result) => client.setQueriesData({ queryKey: ["cloudroom-github-auth"] }, result),
     onError: (error) => appToast.error(error.message),
     onSettled: refresh,
   });
   const cancel = useMutation({
+    onMutate: () => setLeft(null),
     mutationFn: () => sdk.cloudroom.cancelGithubLogin(requestId.current ?? github.data?.login_id ?? ""),
     onSettled: refresh,
   });
@@ -431,13 +443,56 @@ function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupPr
   const connected = state === "connected";
   const code = state === "waiting" ? github.data?.user_code : null;
   const url = state === "waiting" ? github.data?.verification_url : null;
-  const copyAndOpen = async (value: string) => {
-    await copyToClipboardWithToast(value, { successMessage: "Code copied. Paste it on github.com." });
-    if (url && new URL(url).origin === "https://github.com") openUrlInExternalBrowser(url);
+  const open = () => {
+    setLeft(null);
+    if (url) openGithub(url);
+  };
+  useEffect(() => {
+    if (left === null || !url) return;
+    const timer = setTimeout(() => {
+      if (left > 1) return setLeft(left - 1);
+      setLeft(null);
+      openGithub(url);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [left, url]);
+  const copyAgain = async () => {
+    if (code && await copyToClipboardWithToast(code, { successMessage: "Code copied." })) setCopied(true);
   };
   const detail = connected
     ? "Cloud agents can use your repos."
-    : !account.data?.account ? "Log in first" : offline ? "Cloud unreachable" : !ready ? "Starting your cloud…" : "Not found on this Mac. Connecting opens github.com.";
+    : !account.data?.account ? "Log in first" : offline ? "Cloud unreachable" : !ready ? "Starting your cloud…" : "Not found on this Mac. You'll copy a code, then paste it on github.com.";
+  if (code) {
+    return (
+      <>
+        <Heading lead="Your GitHub" mark="code" />
+        <div className="mt-8 flex items-center gap-2">
+          {code.split("").map((char, index) => char === "-"
+            ? <span key={index} aria-hidden className="mx-1 h-[3px] w-3.5 bg-(--ob-ink)" />
+            : <span key={index} className="grid h-16 w-[52px] place-items-center border-[1.5px] border-(--ob-ink) bg-(--ob-card) font-mono text-3xl font-semibold">{char}</span>)}
+        </div>
+        <p className="mt-4 text-[15px]">
+          {copied && <span className="font-semibold text-(--ob-ok)">✓ Copied to your clipboard · </span>}
+          <button type="button" className={LINK} onClick={() => void copyAgain()}>{copied ? "Copy again" : "Copy code"}</button>
+        </p>
+        <div className="mt-8 flex items-center gap-5">
+          <Cta onClick={open}><Icon name="Github" aria-hidden />{left === null ? "Open GitHub" : `Opening GitHub in ${left}…`}</Cta>
+          <Note>
+            {left !== null && <><button type="button" className={LINK} onClick={open}>Open now</button> · </>}
+            <button type="button" className={LINK} onClick={() => cancel.mutate()}>Cancel</button>
+          </Note>
+        </div>
+        {left !== null && (
+          <div className="mt-3.5 h-1.5 w-[360px] bg-(--ob-line)">
+            <span className="bb-hero-progress-fill block h-full bg-(--ob-ink)" style={{ "--bb-hero-slide-duration": `${GITHUB_COUNTDOWN}s` } as CSSProperties} />
+          </div>
+        )}
+        <p className="mt-6 text-sm text-(--ob-muted)">
+          On GitHub: press <b className="text-(--ob-ink)">⌘V</b> to paste, then click <b className="text-(--ob-ink)">Authorize</b>. This screen moves on by itself.
+        </p>
+      </>
+    );
+  }
   return (
     <>
       <Heading lead="Connect" mark="GitHub" />
@@ -447,24 +502,16 @@ function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupPr
         </Card>
       </div>
       {offline && <CloudOffline />}
-      {code && (
-        <div className="mt-3 flex items-center gap-4 border border-dashed border-(--ob-dash) bg-(--ob-card) px-[22px] py-4">
-          <span className="font-mono text-2xl font-semibold tracking-[0.2em]">{code}</span>
-          <Note>Copy this code, then paste it on github.com.</Note>
-          <Outline className="ml-auto" onClick={() => void copyAndOpen(code)}><Icon name="Copy" className="size-3.5" aria-hidden />Copy & open GitHub</Outline>
-        </div>
-      )}
       <div className="mt-8 flex items-center gap-5">
         {connected ? (
           <Cta onClick={() => { track("github", "done"); next(); }}>Continue <Icon name="ArrowRight" aria-hidden /></Cta>
-        ) : code ? (
-          <Cta disabled><Icon name="Loading" className="animate-spin" aria-hidden />Waiting for GitHub…</Cta>
         ) : (
-          <Cta disabled={!ready || connect.isPending} onClick={() => connect.mutate()}><Icon name="Github" aria-hidden />Connect GitHub</Cta>
+          <Cta disabled={!ready || connect.isPending} onClick={() => connect.mutate()}>
+            <Icon name={connect.isPending ? "Loading" : "Github"} className={cn(connect.isPending && "animate-spin")} aria-hidden />
+            {connect.isPending ? "Getting your code…" : "Connect GitHub"}
+          </Cta>
         )}
-        {code ? (
-          <Note><button type="button" className={LINK} onClick={() => cancel.mutate()}>Cancel</button></Note>
-        ) : !connected && (
+        {!connected && (
           <Note><button type="button" className={LINK} onClick={() => { track("github", "skipped"); next(); }}>Skip this step</button> if you only use public repos.</Note>
         )}
       </div>
@@ -472,8 +519,19 @@ function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupPr
   );
 }
 
-function ProjectStep({ close }: { close: () => void }) {
+function ProjectStep({ agents, close }: { agents: { claude: boolean; codex: boolean }; close: () => void }) {
   const navigate = useNavigate();
+  const setProvider = usePromptBoxProviderPreference().setValue;
+  const settings = useSystemConfig().data?.generalSettings;
+  const updateSettings = useUpdateGeneralSettings();
+  const startComposer = () => {
+    if (agents.claude !== agents.codex) {
+      const agent = agents.claude ? "claude-code" : "codex";
+      setProvider(agent);
+      if (settings && settings.defaultProviderId !== agent) updateSettings.mutate({ ...settings, defaultProviderId: agent });
+    }
+    selectCloudForNewThreads();
+  };
   const createProject = useCreateProject();
   const setProjectId = useSetRootComposeProjectId();
   const quickCreate = useQuickCreateProjectController();
@@ -482,11 +540,10 @@ function ProjectStep({ close }: { close: () => void }) {
   const suggestions = useProjectSuggestions();
   const { localHostId } = useHostDaemon();
   const importBb = useImportBb();
-  const [importing, setImporting] = useState(false);
   const open = (projectId: string, how: "existing" | "found" | "folder") => {
     track("project", "done", how);
     setProjectId(projectId);
-    selectCloudForNewThreads();
+    startComposer();
     void navigate(getRootComposeRoutePath());
     close();
   };
@@ -501,7 +558,7 @@ function ProjectStep({ close }: { close: () => void }) {
   });
   const addFolder = () => {
     if (canUseNativeFolderPicker) return add.mutate(null);
-    selectCloudForNewThreads();
+    startComposer();
     track("project", "started", "folder");
     close();
     quickCreate.openCreateDialog();
@@ -519,14 +576,20 @@ function ProjectStep({ close }: { close: () => void }) {
   };
   const now = Date.now();
   const busy = add.isPending || Boolean(suggestions?.addingKey);
+  const shownProjects = projects.slice(0, ONBOARDING_PROJECTS);
+  const shownRepos = suggestions?.repos.slice(0, ONBOARDING_PROJECTS - shownProjects.length) ?? [];
   return (
     <>
       <Heading lead="Pick your first" mark="project" />
-      <div className="mt-7 flex flex-col gap-2">
-        {projects.slice(0, 5).map((project) => (
+      <div className="mt-7">
+        <ImportChats onDone={() => track("project", "started", "chat_import")} />
+      </div>
+      <p className="mt-9 mb-2.5 text-xs font-semibold tracking-[0.12em] text-(--ob-muted) uppercase">Or start with a project</p>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2">
+        {shownProjects.map((project) => (
           <ProjectRow key={project.id} name={project.name} detail="Already in Cloudroom" disabled={busy} onClick={() => open(project.id, "existing")} />
         ))}
-        {suggestions?.repos.slice(0, ONBOARDING_REPOS).map((repo) => (
+        {shownRepos.map((repo) => (
           <ProjectRow
             key={repoKey(repo)}
             icon={repo.source === "github" ? "Github" : "Laptop"}
@@ -536,30 +599,20 @@ function ProjectStep({ close }: { close: () => void }) {
             onClick={() => addRepo(repo)}
           />
         ))}
-        {suggestions?.isLoading && <Note>Looking for your repos…</Note>}
         <button type="button" disabled={busy} onClick={addFolder} className="flex items-center gap-3.5 border border-(--ob-line) bg-(--ob-card) px-4 py-3 text-left text-[14.5px] font-medium hover:border-(--ob-ink) disabled:opacity-50">
           <Icon name={busy ? "Loading" : "FolderPlus"} className={cn("size-4", busy && "animate-spin")} aria-hidden />
           {busy ? "Adding your project…" : "Choose another folder"}
         </button>
       </div>
-      <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
+      {suggestions?.isLoading && <div className="mt-2"><Note>Looking for your repos…</Note></div>}
+      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2">
         <Note><button type="button" className={LINK} onClick={() => { track("project", "skipped"); close(); }}>Start without a project</button></Note>
         <Note>
-          <button type="button" className={LINK} onClick={() => { if (!importing) track("project", "started", "chat_import"); setImporting(!importing); }}>
-            Bring your Claude Code and Codex chats over
+          <button type="button" className={LINK} disabled={importBb.isPending} onClick={bringWorkOver}>
+            {importBb.isPending ? "Bringing your BB threads over…" : "Coming from BB?"}
           </button>
         </Note>
       </div>
-      {importing && (
-        <div className="mt-5 flex flex-col gap-3">
-          <ImportChats onDone={() => setImporting(false)} />
-          <Note>
-            <button type="button" className={LINK} disabled={importBb.isPending} onClick={bringWorkOver}>
-              {importBb.isPending ? "Bringing your BB threads over…" : "Coming from BB? Bring your BB threads over."}
-            </button>
-          </Note>
-        </div>
-      )}
     </>
   );
 }

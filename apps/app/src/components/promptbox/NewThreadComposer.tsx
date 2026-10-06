@@ -11,6 +11,7 @@ import {
 } from "@/hooks/queries/cloudroom-queries";
 import { CLOUD_LOCKED_REASON, showCloudSignIn, useCloudLocked } from "@/hooks/useCloudLocked";
 import { fetchWithAppSurface } from "@/lib/app-surface";
+import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
 import { ProviderRequirementBanner } from "./banner/ProviderRequirementBanner";
 import { CloudBranchPicker } from "./CloudBranchPicker";
 import { Button } from "@bb/shared-ui/button";
@@ -134,6 +135,8 @@ export interface NewThreadComposerSeed {
   serviceTier?: ServiceTier;
   permissionMode?: PermissionMode;
   environment?: NewThreadRequest["environment"];
+  /** A Cloud thread's fork starts in Cloud. */
+  executionTarget?: "cloud";
   initialPrompt?: string;
 }
 
@@ -437,10 +440,12 @@ export function NewThreadComposer({
   const cloudLocked = useCloudLocked();
   const [storedExecutionTarget, setExecutionTarget] = useState<
     "local" | "cloud"
-  >(() =>
-    startingExecutionTarget(
-      selectionScope === "new-thread" && seed?.environment === undefined,
-    ),
+  >(
+    () =>
+      seed?.executionTarget ??
+      startingExecutionTarget(
+        selectionScope === "new-thread" && seed?.environment === undefined,
+      ),
   );
   const executionTarget = cloudLocked ? "local" : storedExecutionTarget;
   const [cloudBranch, setCloudBranch] = useState<{
@@ -618,6 +623,7 @@ export function NewThreadComposer({
     seed?.serviceTier ?? null,
     seed?.permissionMode ?? null,
     seed?.environment ?? null,
+    seed?.executionTarget ?? null,
   ]);
   const environmentSeed = useMemo(
     () =>
@@ -639,6 +645,7 @@ export function NewThreadComposer({
     setBranchSeedOverridden(false);
     setPickedProviderMachine(null);
     if (seed?.environment !== undefined) setExecutionTarget("local");
+    if (seed?.executionTarget) setExecutionTarget(seed.executionTarget);
   }
 
   const resolveProviderSelection = useCallback(
@@ -715,6 +722,7 @@ export function NewThreadComposer({
         isProjectless,
         knownHostIds,
         primaryHostId,
+        projectGitRemoteUrl,
         projectSources,
         reuseThreadOptions,
         reuseThreadOptionsLoading,
@@ -735,6 +743,7 @@ export function NewThreadComposer({
       isProjectless,
       knownHostIds,
       primaryHostId,
+      projectGitRemoteUrl,
       projectSources,
       resolveProviderSelection,
       reuseThreadOptions,
@@ -757,6 +766,7 @@ export function NewThreadComposer({
     queryIsPlaceholderData: projectDefaultsQuery.isPlaceholderData,
     queryIsSuccess: projectDefaultsQuery.isSuccess,
   });
+  const isCompactViewport = useIsCompactViewport();
   const projectDefaults =
     projectDefaultsState.status === "resolved"
       ? projectDefaultsState.defaults
@@ -778,7 +788,8 @@ export function NewThreadComposer({
     initialModel: seed?.model ?? projectDefaults?.model,
     initialServiceTier: seed?.serviceTier ?? projectDefaults?.serviceTier,
     initialReasoningLevel:
-      seed?.reasoningLevel ?? projectDefaults?.reasoningLevel,
+      seed?.reasoningLevel ??
+      (isCompactViewport ? "high" : projectDefaults?.reasoningLevel),
     initialPermissionMode:
       seed?.permissionMode ?? projectDefaults?.permissionMode,
     initialEnvironmentSelectionValue: environmentSeed?.selectionValue,
@@ -900,6 +911,7 @@ export function NewThreadComposer({
         isProjectless,
         knownHostIds,
         primaryHostId,
+        projectGitRemoteUrl,
         projectSources,
         reuseThreadOptions,
         reuseThreadOptionsLoading,
@@ -910,6 +922,7 @@ export function NewThreadComposer({
       isProjectless,
       knownHostIds,
       primaryHostId,
+      projectGitRemoteUrl,
       projectSources,
       reuseThreadOptions,
       reuseThreadOptionsLoading,

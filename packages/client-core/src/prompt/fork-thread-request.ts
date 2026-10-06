@@ -11,7 +11,8 @@ export const FORK_THREAD_CREATE_SEED_LOCATION_STATE_KEY =
   "forkThreadCreateSeed";
 
 export interface ForkThreadCreateSeed {
-  environmentId: string;
+  /** Null for a Cloud thread: its fork starts in a new cloud sandbox. */
+  environmentId: string | null;
   model: string;
   permissionMode: PermissionMode;
   projectId: string;
@@ -29,20 +30,25 @@ interface BuildForkThreadRequestArgs extends ForkThreadCreateSeed {
   providerSupportsFork: boolean;
 }
 
-type ForkableThread = Pick<Thread, "archivedAt" | "environmentId" | "providerId">;
+type ForkableThread = Pick<
+  Thread,
+  "archivedAt" | "environmentId" | "executionTarget" | "providerId"
+>;
+
+/** The harnesses a Cloud thread can fork (the server's FORK_HARNESSES). */
+const CLOUD_FORK_PROVIDERS = new Set(["claude-code", "codex"]);
 
 export function isThreadForkable(
   sourceThread: ForkableThread | null,
   providerSupportsFork: boolean,
 ): boolean {
-  if (
-    sourceThread === null ||
-    sourceThread.environmentId === null ||
-    sourceThread.archivedAt !== null
-  ) {
+  if (sourceThread === null || sourceThread.archivedAt !== null) {
     return false;
   }
-  return providerSupportsFork;
+  if (sourceThread.executionTarget === "cloud") {
+    return CLOUD_FORK_PROVIDERS.has(sourceThread.providerId);
+  }
+  return sourceThread.environmentId !== null && providerSupportsFork;
 }
 
 export function buildForkThreadRequest({
@@ -59,16 +65,20 @@ export function buildForkThreadRequest({
   sourceSeqEnd,
   sourceThreadId,
 }: BuildForkThreadRequestArgs): AppCreateThreadRequest | null {
-  if (!providerSupportsFork) {
+  const cloud = environmentId === null;
+  if (!cloud && !providerSupportsFork) {
     return null;
   }
 
   return {
-    environment: { type: "reuse", environmentId },
+    environment: cloud
+      ? { type: "project-default" }
+      : { type: "reuse", environmentId },
+    ...(cloud ? { executionTarget: "cloud" as const } : {}),
     input,
     model,
     originKind: "fork",
-    permissionMode,
+    permissionMode: cloud ? "full" : permissionMode,
     ...(pluginSubmission === undefined ? {} : { pluginSubmission }),
     projectId,
     providerId,

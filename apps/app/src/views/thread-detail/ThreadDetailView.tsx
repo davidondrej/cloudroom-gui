@@ -1213,12 +1213,13 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
       ? sendSideChatMessageToMain
       : undefined;
   const canUseGitUi = gitDiffTabStatus === "eligible";
-  const canCreateTerminal =
-    thread?.environmentId !== null &&
-    thread?.environmentId !== undefined &&
-    environment?.status === "ready" &&
-    connectedHostIds.has(environment.hostId);
   const isCloudThread = thread?.executionTarget === "cloud";
+  const canCreateTerminal =
+    isCloudThread ||
+    (thread?.environmentId !== null &&
+      thread?.environmentId !== undefined &&
+      environment?.status === "ready" &&
+      connectedHostIds.has(environment.hostId));
   const hostFileLinksAvailable = isCloudThread || Boolean(thread?.environmentId);
   const { mutate: openCloudFile } = useOpenCloudFile(threadId);
   const createThreadInEnvironment = useCreateThreadInEnvironment({
@@ -2651,21 +2652,12 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
               openBrowserTabAndReveal();
             }}
             onStartTerminal={
-              canCreateTerminal || isCloudThread
+              canCreateTerminal
                 ? () => {
                     activateTab(tab.id);
                     handleStartTerminal();
                   }
                 : undefined
-            }
-            // Cloud VMs have no interactive shell yet; show why instead of hiding it.
-            startTerminalDisabled={isCloudThread}
-            startTerminalTrailing={
-              isCloudThread ? (
-                <span className="text-xs text-muted-foreground">
-                  Not on Cloud yet
-                </span>
-              ) : undefined
             }
             pluginActions={pluginPanelActions}
           />
@@ -2988,7 +2980,9 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
             }}
             timeline={{
               activeThinking,
-              canSpawnChild: thread.canSpawnChild,
+              // A Cloud fork starts in its own sandbox, so the local child limit does not apply.
+              canSpawnChild:
+                thread.canSpawnChild || thread.executionTarget === "cloud",
               contextBoundarySeq,
               threadOriginKind,
               hasOlderTimelineRows,

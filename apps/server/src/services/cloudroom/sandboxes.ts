@@ -130,7 +130,7 @@ export async function sandboxGithubLogin(token: string): Promise<string> {
 
 const environmentSchema = z.object({
   variables: z.array(z.object({ name: z.string(), hint: z.string() })), setup: z.string(),
-  repos: z.array(z.string()).default([]), available: z.array(z.string()).optional(), pushed: z.record(z.string(), z.number()).optional(), login: z.string().optional(),
+  repos: z.array(z.string()).default([]), mcp: z.array(z.string()).default([]), available: z.array(z.string()).optional(), pushed: z.record(z.string(), z.number()).optional(), login: z.string().optional(),
 });
 export type CloudEnvironment = z.infer<typeof environmentSchema>;
 export const cloudEnvironmentRequestSchema = z.discriminatedUnion("action", [
@@ -142,6 +142,9 @@ export const cloudEnvironmentRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("removeRepo"), repo: z.string().min(1) }),
   z.object({ action: z.literal("githubRepos") }),
 ]);
+/** One MCP server in Claude Code's format, as the website stores it for sandboxes. */
+type McpServer = { type: "stdio"; command: string; args: string[]; env: Record<string, string> } | { type: "http" | "sse"; url: string; headers: Record<string, string> };
+type McpChange = { action: "mcp"; servers: Record<string, McpServer>; remove: string[] };
 export type CloudEnvironmentRequest = z.infer<typeof cloudEnvironmentRequestSchema>;
 
 /** API keys, tokens, and secrets exported in this Mac's login shell (say, ~/.zshrc): what local agents get (ADR 0130). */
@@ -175,6 +178,56 @@ export async function macSkills(): Promise<MacSkill[]> {
   return [...found.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+export type MacMcpServer = { name: string; server: McpServer | null };
+const texts = (value: unknown) => Object.fromEntries(Object.entries(value && typeof value === "object" ? value : {}).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+const list = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+// Paths that exist only on this Mac, and servers running on it.
+const MAC_PATH = /(^|[\s=:'"])(~\/|\/Users\/|\/Volumes\/|\/Applications\/|\/Library\/|\/opt\/homebrew\/|\/private\/)/;
+const LOCAL_URL = /^https?:\/\/(localhost|127\.|0\.0\.0\.0|\[::1\])/i;
+const portable = (server: McpServer) => server.type === "stdio"
+  ? !server.command.includes("/") && ![...server.args, ...Object.values(server.env)].some(text => MAC_PATH.test(text))
+  : !LOCAL_URL.test(server.url);
+/** Claude Code's user-scope MCP servers; `${VAR}` stays as typed and is filled in the sandbox from the API keys. */
+function claudeServer(value: Record<string, unknown>): McpServer | null {
+  const type = value.type ?? (value.command ? "stdio" : undefined);
+  if (type === "stdio" && typeof value.command === "string") return { type, command: value.command, args: list(value.args), env: texts(value.env) };
+  if ((type === "http" || type === "sse") && typeof value.url === "string") return { type, url: value.url, headers: texts(value.headers) };
+  return null;
+}
+/** A server from `codex mcp list --json`. Variables Codex reads from the environment become `${VAR}`. */
+function codexServer(transport: Record<string, unknown>): McpServer | null {
+  const fromEnvironment = (names: string[]) => Object.fromEntries(names.map(name => [name, `\${${name}}`]));
+  if (transport.type === "stdio" && typeof transport.command === "string" && !transport.cwd) {
+    const forwarded = Array.isArray(transport.env_vars) ? transport.env_vars.map(item => typeof item === "string" ? item : (item as { name?: unknown })?.name).filter((name): name is string => typeof name === "string") : [];
+    return { type: "stdio", command: transport.command, args: list(transport.args), env: { ...fromEnvironment(forwarded), ...texts(transport.env) } };
+  }
+  if (transport.type === "streamable_http" && typeof transport.url === "string") {
+    const headers = { ...texts(transport.http_headers), ...Object.fromEntries(Object.entries(texts(transport.env_http_headers)).map(([header, name]) => [header, `\${${name}}`])) };
+    if (typeof transport.bearer_token_env_var === "string") headers.Authorization = `Bearer \${${transport.bearer_token_env_var}}`;
+    return { type: "http", url: transport.url, headers };
+  }
+  return null;
+}
+/** This Mac's MCP servers from Claude Code (user scope) and Codex; Claude's wins on a name clash. `server` is null when
+ *  it only works on this Mac. An older Codex without `mcp list --json` just adds none. */
+export async function macMcpServers(): Promise<MacMcpServer[]> {
+  const found = new Map<string, McpServer | null>();
+  const add = (name: string, server: McpServer | null) => {
+    if (/^[A-Za-z0-9_-]{1,64}$/.test(name) && name !== "cloudroom" && !found.has(name)) found.set(name, server && portable(server) ? server : null);
+  };
+  const claudeFile = join(process.env.CLAUDE_CONFIG_DIR || homedir(), ".claude.json");
+  const claude = await readFile(claudeFile, "utf8").catch((error: NodeJS.ErrnoException) => { if (error.code === "ENOENT") return "{}"; throw error; });
+  const servers: unknown = (JSON.parse(claude) as { mcpServers?: unknown }).mcpServers;
+  for (const [name, value] of Object.entries(servers && typeof servers === "object" ? servers : {})) add(name, value && typeof value === "object" ? claudeServer(value as Record<string, unknown>) : null);
+  const codex = findCliExecutable("codex");
+  if (codex) {
+    const listed = await promisify(execFile)(codex, ["mcp", "list", "--json"], { timeout: 15_000, maxBuffer: 4 * 1024 * 1024 })
+      .then(({ stdout }) => z.array(z.object({ name: z.string(), enabled: z.boolean().default(true), transport: z.record(z.string(), z.unknown()) })).parse(JSON.parse(stdout)), () => []);
+    for (const { name, enabled, transport } of listed) if (enabled) add(name, codexServer(transport));
+  }
+  return [...found].map(([name, server]) => ({ name, server })).sort((a, b) => a.name.localeCompare(b.name));
+}
+
 /** Asks the website to delete this sign-in's token. Best effort: signing out never waits for the network. */
 export function revokeDesktopToken(account: SandboxAccount): void {
   void fetch(`${account.website}/api/desktop/sign-out`, {
@@ -187,6 +240,7 @@ export function revokeDesktopToken(account: SandboxAccount): void {
 export class SandboxDirectory {
   private readonly views = new Map<string, { view: View; at: number }>();
   private readonly wakes = new Map<string, Promise<View>>();
+  private readonly lookups = new Map<string, Promise<View>>();
   private readonly wakeStarts = new Map<string, number>();
   private readonly wakeHarnesses = new Map<string, Awaited<ReturnType<typeof macHarnessVersions>>>();
   // After a failed wake, wait before asking again. Network and server errors retry every 2 s three times first;
@@ -241,13 +295,29 @@ export class SandboxDirectory {
   /** The member's friend invite codes. `create` makes one more, up to 3 for life (ADR 0169). `waiting` is the waitlist size, or null. */
   async invites(action: "list" | "create") {
     const value = await this.call({ action }, "invites");
-    return z.object({ codes: z.array(z.object({ code: z.string(), used: z.boolean() })), left: z.number(), created: z.string().nullable(), waiting: z.number().nullable().default(null) }).parse(value);
+    return z.object({ codes: z.array(z.object({ code: z.string(), used: z.boolean(), url: z.string().optional() })), left: z.number(), created: z.string().nullable(), waiting: z.number().nullable().default(null) }).parse(value);
   }
 
   /** Whether the website judges a generated thread title too vague to keep, at the user's sensitivity (2–5). */
   async titleTooVague(check: { title: string; firstMessage: string; agentReply: string; sensitivity: number }): Promise<boolean> {
     const value = await this.call({ ...check, sensitivity: String(check.sensitivity) }, "thread-title");
     return z.object({ rename: z.boolean() }).parse(value).rename;
+  }
+
+  /** Backup voice transcription on the website, or null when signed out. */
+  async transcribe(file: File): Promise<string | null> {
+    const account = await this.account();
+    if (!account) return null;
+    const body = new FormData();
+    body.set("file", file, file.name);
+    const response = await fetch(`${account.website}/api/desktop/transcribe`, {
+      method: "POST", redirect: "error", signal: AbortSignal.timeout(110_000),
+      headers: { Authorization: `Basic ${Buffer.from(`${account.userId}:${account.token}`).toString("base64")}` },
+      body,
+    });
+    const value = await response.json().catch(() => ({})) as { text?: unknown; error?: unknown };
+    if (!response.ok || typeof value.text !== "string") throw new CloudroomError(typeof value.error === "string" ? value.error : `The website returned HTTP ${response.status}.`);
+    return value.text;
   }
 
   private remember(view: View): View {
@@ -260,9 +330,14 @@ export class SandboxDirectory {
     const cached = this.views.get(thread);
     let view = cached?.view;
     const place = { thread, project: project.id, ...(project.repository ? { repository: project.repository, folder: project.folder } : {}) };
-    // A wake registers too, so only lookups need their own call.
+    // A wake registers too, so only lookups need their own call. Every thread in a sandbox shares one lookup.
     if (!wake && (!view || (view.state !== "awake" && Date.now() - cached!.at > RECHECK_MS))) {
-      view = this.remember(viewSchema.parse(await this.call({ action: "register", ...place })));
+      let lookup = this.lookups.get(thread);
+      if (!lookup) {
+        lookup = this.call({ action: "register", ...place }).then(value => this.remember(viewSchema.parse(value))).finally(() => this.lookups.delete(thread));
+        this.lookups.set(thread, lookup);
+      }
+      view = await lookup;
     }
     if (view?.state === "awake" && view.origin && view.token) return { url: view.origin, token: view.token };
     if (!wake) return null;
@@ -352,13 +427,22 @@ export class SandboxDirectory {
 
   /** A broken stream or failed request may mean the sandbox went to sleep; look it up again next time. */
   forget(thread: string): void { this.views.delete(thread); }
+  coolingDown(thread: string | null): boolean { return Boolean(thread && (this.backoff.get(thread)?.until ?? 0) > Date.now()); }
 
   /** Saves a thread's title, project name, and Core session ID on the website (ADR 0182). */
   async label(thread: string, label: { title: string | null; project_name: string | null; session: string }): Promise<void> {
     await this.call({ action: "label", thread, ...label });
   }
   async archive(thread: string): Promise<void> { this.forget(thread); await this.call({ action: "archive", thread }); }
-  async restore(thread: string): Promise<void> { this.forget(thread); await this.call({ action: "restore", thread }); }
+  /** An unarchive right after an archive finds the sandbox busy until the archive ends (up to ~60 s), so keep trying. */
+  async restore(thread: string): Promise<void> {
+    this.forget(thread);
+    for (let tries = 1; ; tries++) {
+      try { return void await this.call({ action: "restore", thread }); }
+      catch (error) { if (!(error instanceof CloudroomConnectionError) || tries >= 30) throw error; }
+      await new Promise(resolve => setTimeout(resolve, 3_000));
+    }
+  }
   async remove(thread: string): Promise<void> { this.forget(thread); await this.call({ action: "remove", thread }); }
 
   /** Saves a login for every sandbox of this account (ADR 0145), skipping values already uploaded. */
@@ -370,8 +454,35 @@ export class SandboxDirectory {
   }
 
   /** The account's Cloud environment, shared with the website: variables (names only), repos, and the setup script. */
-  async environment(request: CloudEnvironmentRequest): Promise<CloudEnvironment> {
-    return environmentSchema.parse(await this.call(request, "environment"));
+  async environment(request: CloudEnvironmentRequest | McpChange): Promise<CloudEnvironment> {
+    const environment = environmentSchema.parse(await this.call(request, "environment"));
+    this.mcpNames = environment.mcp;
+    return environment;
+  }
+
+  /** MCP servers in the cloud, as of the last Cloud environment answer. */
+  private mcpNames: string[] | null = null;
+  private mcpAt = 0;
+  private mcpDigest = "";
+  /** Adds MCP servers from this Mac to the Cloud environment, or removes them. */
+  async setMacMcp(names: string[], cloud: boolean): Promise<CloudEnvironment> {
+    if (!cloud) return this.environment({ action: "mcp", servers: {}, remove: names });
+    const servers = Object.fromEntries((await macMcpServers()).flatMap(({ name, server }) => server && names.includes(name) ? [[name, server]] : []));
+    if (!Object.keys(servers).length) throw new CloudroomError("Those MCP servers only work on this Mac.", 400);
+    return this.environment({ action: "mcp", servers, remove: [] });
+  }
+  /** Copies edits to this Mac's MCP servers, such as a new key, to the ones already in the cloud. At most once a minute;
+   *  never removes one, so a server missing for a moment stays in the cloud. */
+  async refreshMacMcp(): Promise<void> {
+    if (Date.now() - this.mcpAt < RECHECK_MS) return;
+    this.mcpAt = Date.now();
+    const names = this.mcpNames ?? (await this.environment({ action: "get" })).mcp;
+    if (!names.length) return;
+    const servers = Object.fromEntries((await macMcpServers()).flatMap(({ name, server }) => server && names.includes(name) ? [[name, server]] : []));
+    const digest = createHash("sha256").update(JSON.stringify(servers)).digest("hex");
+    if (digest === this.mcpDigest || !Object.keys(servers).length) return;
+    await this.environment({ action: "mcp", servers, remove: [] });
+    this.mcpDigest = digest;
   }
 
   /** Which logins the website holds for this account's sandboxes. */

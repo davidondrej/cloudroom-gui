@@ -27,8 +27,9 @@ What lives here:
   array, with the setting winning on a shared id.
 - `src/declaration.ts` — one agent definition becomes one
   `bb.providers.register` declaration: ids, display names, icons,
-  capabilities, and the bridge options it launches with (`acpLaunchSpec`, and
-  `acpDialect` for the agents whose vendor side channels the kit reads).
+  capabilities, and the bridge options it launches with (`acpLaunchSpec`,
+  `acpInstaller` for agents with an official install script, and `acpDialect`
+  for the agents whose vendor side channels the kit reads).
 - `src/legacy-config.ts` — reading the deprecated config array. Dies with the
   deprecation window.
 - `src/host.ts` — the `bb.host` artifact, two surfaces in one file: the kit's

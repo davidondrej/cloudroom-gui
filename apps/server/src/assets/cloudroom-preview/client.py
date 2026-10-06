@@ -60,11 +60,11 @@ class ControlError(ValueError):
 OPENER = urllib.request.build_opener(NoRedirect(), urllib.request.HTTPSHandler(context=ssl.create_default_context()))
 
 
-def control(url, body, method, headers):
+def control(url, body, method, headers, timeout=5):
     request = urllib.request.Request(url, data=json.dumps(body).encode() if body is not None else None,
                                      method=method, headers={**headers, 'Content-Type': 'application/json'})
     try:
-        with OPENER.open(request, timeout=5) as response:
+        with OPENER.open(request, timeout=timeout) as response:
             raw = response.read(256 * 1024 + 1)
             if len(raw) > 256 * 1024:
                 raise ValueError('Preview response is too large')
@@ -117,8 +117,8 @@ class Core:
     def request(self, path, body=None, method=None):
         return self.fetch(self.url + '/v1/previews' + path, body, method, self.headers)
 
-    def fetch(self, url, body, method, headers):
-        return control(url, body, method, headers)
+    def fetch(self, url, body, method, headers, timeout=5):
+        return control(url, body, method, headers, timeout)
 
 
 AWAKE = {'at': 0.0, 'checked': 0.0, 'key': None, 'list': [], 'lock': threading.Lock()}
@@ -483,8 +483,10 @@ activate
 display dialog (item 1 of argv) with title "Cloudroom" buttons {"Deny", "Allow for this thread", "Allow"} default button "Allow" cancel button "Deny" with icon caution giving up after 300
 return button returned of result
 end run'''
-# Hex characters per result request: some sandbox proxies drop requests over about 8 MB.
-MAC_PART = 4 * 1024 * 1024
+# Hex characters per result request: some sandbox proxies drop requests over about 8 MB,
+# and each part must upload within MAC_POST_SECONDS on a slow home connection.
+MAC_PART = 1024 * 1024
+MAC_POST_SECONDS = 60
 
 
 def mac_level(config):
@@ -592,7 +594,8 @@ class MacJobs:
 
     def execute(self, core, device, job):
         def post(body):
-            core.fetch(core.url + '/v1/mac/results/' + urllib.parse.quote(job['id']), {'device': device, **body}, None, core.headers)
+            core.fetch(core.url + '/v1/mac/results/' + urllib.parse.quote(job['id']), {'device': device, **body}, None, core.headers,
+                       MAC_POST_SECONDS)
         with contextlib.suppress(OSError, ValueError):
             post({'state': 'running'})
         result = {'state': 'done', 'code': 127, 'stdout': '', 'stderr': '', 'truncated': False}

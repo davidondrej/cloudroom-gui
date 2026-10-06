@@ -32,7 +32,10 @@ import type {
 } from "@bb/server-contract";
 import { ApiError } from "../../errors.js";
 import type { AppDeps, ServerLogger } from "../../types.js";
-import { assertUsableHostId } from "../hosts/primary-host.js";
+import {
+  assertUsableHostId,
+  requireConnectedPrimaryHostId,
+} from "../hosts/primary-host.js";
 import {
   requireConnectedHostSession,
   requireEnvironment,
@@ -138,7 +141,13 @@ type TerminalDaemonOpenTarget = Extract<
   HostDaemonServerWsMessage,
   { type: "terminal.open" }
 >["target"];
-type TerminalLaunchTarget = Exclude<TerminalCreateTarget, { kind: "thread" }>;
+type TerminalLaunchTarget =
+  | Exclude<TerminalCreateTarget, { kind: "thread" }>
+  | { kind: "cloud"; threadId: string };
+type CloudTerminalTarget = Omit<
+  Extract<TerminalDaemonOpenTarget, { kind: "cloud" }>,
+  "kind"
+>;
 
 interface ResolvedTerminalLaunchTarget {
   daemonTarget: TerminalDaemonOpenTarget;
@@ -226,6 +235,7 @@ interface CloseThreadTerminalsForLifecycleArgs {
 interface TerminalSessionLifecycleOptions {
   attachTimeoutMs?: number;
   closeTimeoutMs?: number;
+  cloudTerminal?: (threadId: string) => Promise<CloudTerminalTarget>;
   config: AppDeps["config"];
   db: AppDeps["db"];
   hub: AppDeps["hub"];
@@ -648,6 +658,9 @@ export class TerminalSessionLifecycle {
     threadId: string,
   ): TerminalLaunchTarget {
     const thread = requirePublicThread(this.options.db, threadId);
+    if (thread.executionTarget === "cloud") {
+      return { kind: "cloud", threadId: thread.id };
+    }
     if (!thread.environmentId) {
       throwThreadEnvironmentUnavailable(
         threadEnvironmentUnavailableDetails("never_attached", null),
@@ -659,7 +672,7 @@ export class TerminalSessionLifecycle {
   private async createTerminalForTarget(
     args: CreateTerminalForTargetArgs,
   ): Promise<TerminalSession> {
-    const launchTarget = this.resolveTerminalLaunchTarget(args.target);
+    const launchTarget = await this.resolveTerminalLaunchTarget(args.target);
     const daemonSession = requireConnectedHostSession(
       this.options,
       launchTarget.hostId,
@@ -677,19 +690,24 @@ export class TerminalSessionLifecycle {
       title: args.title,
     });
     const requestId = randomUUID();
+    const local = launchTarget.daemonTarget.kind !== "cloud";
     const openMessage: HostDaemonServerWsMessage = {
       type: "terminal.open",
-      contributedEnv: await resolveHostEnvironment(this.options, {
-        hostId: launchTarget.hostId,
-        projectId:
-          launchTarget.environmentId === null
-            ? null
-            : requireEnvironment(this.options.db, launchTarget.environmentId)
-                .projectId,
-      }),
+      contributedEnv: local
+        ? await resolveHostEnvironment(this.options, {
+            hostId: launchTarget.hostId,
+            projectId:
+              launchTarget.environmentId === null
+                ? null
+                : requireEnvironment(
+                    this.options.db,
+                    launchTarget.environmentId,
+                  ).projectId,
+          })
+        : [],
       requestId,
       terminalId: startingSession.id,
-      ...(args.threadId !== null
+      ...(args.threadId !== null && local
         ? {
             threadId: args.threadId,
             projectId: requirePublicThread(this.options.db, args.threadId)
@@ -809,10 +827,27 @@ export class TerminalSessionLifecycle {
     return toTerminalSession(runningSession);
   }
 
-  private resolveTerminalLaunchTarget(
+  private async resolveTerminalLaunchTarget(
     target: TerminalLaunchTarget,
-  ): ResolvedTerminalLaunchTarget {
+  ): Promise<ResolvedTerminalLaunchTarget> {
     switch (target.kind) {
+      case "cloud": {
+        if (!this.options.cloudTerminal) {
+          throw new ApiError(
+            503,
+            "cloud_terminal_unavailable",
+            "Cloud terminals are unavailable in this app",
+          );
+        }
+        const hostId = requireConnectedPrimaryHostId(this.options);
+        const cloud = await this.options.cloudTerminal(target.threadId);
+        return {
+          daemonTarget: { kind: "cloud", ...cloud },
+          environmentId: null,
+          hostId,
+          initialCwd: HOST_HOME_INITIAL_CWD,
+        };
+      }
       case "environment": {
         const environment = requireReadyEnvironment(
           this.options.db,

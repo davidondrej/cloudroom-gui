@@ -21,6 +21,7 @@ interface ResolveRootComposeEffectiveEnvironmentValueArgs {
   isProjectless: boolean;
   knownHostIds: ReadonlySet<string>;
   primaryHostId: string | null;
+  projectGitRemoteUrl?: string | null;
   projectSources: readonly ProjectSource[];
   reuseThreadOptions: readonly ReuseThreadOption[];
   reuseThreadOptionsLoading: boolean;
@@ -178,6 +179,7 @@ export function resolveRootComposeEffectiveEnvironmentValue({
   isProjectless,
   knownHostIds,
   primaryHostId,
+  projectGitRemoteUrl,
   projectSources,
   reuseThreadOptions,
   reuseThreadOptionsLoading,
@@ -211,8 +213,9 @@ export function resolveRootComposeEffectiveEnvironmentValue({
   const fallbackValue =
     primaryHostId !== null &&
     knownHostIds.has(primaryHostId) &&
-    findLocalPathProjectSourceForHost(projectSources, primaryHostId) !==
-      undefined &&
+    (findLocalPathProjectSourceForHost(projectSources, primaryHostId) !==
+      undefined ||
+      projectGitRemoteUrl != null) &&
     providerRegistered(PROJECT_CHECKOUT_ENVIRONMENT_PROVIDER_ID)
       ? encodeProviderValue(PROJECT_CHECKOUT_ENVIRONMENT_PROVIDER_ID)
       : "";

@@ -591,6 +591,7 @@ describe("ModelReasoningPicker", () => {
     expect(onModelChange).toHaveBeenCalledWith("gpt-5.2");
     expect(screen.getByRole("dialog")).not.toBeNull();
 
+    fireEvent.click(screen.getByRole("button", { name: "Reasoning: Medium" }));
     fireEvent.click(screen.getByText("High"));
 
     expect(onReasoningChange).toHaveBeenCalledWith("high");
@@ -632,7 +633,11 @@ describe("ModelReasoningPicker", () => {
     expect(scrollers[0]).toBe(models);
     expect(models.className).toContain("overscroll-contain");
     expect(models.className).toContain("max-h-64");
-    expect(models.contains(screen.getByText("High"))).toBe(false);
+    expect(
+      models.contains(
+        screen.getByRole("button", { name: "Reasoning: Medium" }),
+      ),
+    ).toBe(true);
   });
 
   it("leaves compact drawer height and scrolling to the responsive shell", async () => {

@@ -349,7 +349,7 @@ describe("thread runtime cache owner", () => {
     });
     const previousQueue = [
       makeQueuedMessage({ id: "qmsg-first" }),
-      makeQueuedMessage({ id: "qmsg-edit", groupWithNext: true }),
+      makeQueuedMessage({ id: "qmsg-edit", hardQueue: true }),
       makeQueuedMessage({ id: "qmsg-last" }),
     ];
     queryClient.setQueryData(
@@ -374,14 +374,14 @@ describe("thread runtime cache owner", () => {
         )
         ?.map((queuedMessage) => ({
           content: queuedMessage.content,
-          groupWithNext: queuedMessage.groupWithNext,
+          hardQueue: queuedMessage.hardQueue,
           id: queuedMessage.id,
         })),
     ).toEqual([
       expect.objectContaining({ id: "qmsg-first" }),
       {
         content: [{ type: "text", text: "Edited", mentions: [] }],
-        groupWithNext: true,
+        hardQueue: true,
         id: "qmsg-edit",
       },
       expect.objectContaining({ id: "qmsg-last" }),
@@ -392,7 +392,7 @@ describe("thread runtime cache owner", () => {
       queuedMessage: makeQueuedMessage({
         id: "qmsg-edit",
         content: [{ type: "text", text: "Edited", mentions: [] }],
-        groupWithNext: true,
+        hardQueue: true,
         updatedAt: 2,
       }),
       threadId: "thread-1",
@@ -417,7 +417,7 @@ describe("thread runtime cache owner", () => {
     const edited = makeQueuedMessage({
       id: "qmsg-edit",
       content: [{ type: "text", text: "Original", mentions: [] }],
-      groupWithNext: true,
+      hardQueue: true,
       updatedAt: 5,
     });
     const last = makeQueuedMessage({ id: "qmsg-last" });
@@ -442,7 +442,7 @@ describe("thread runtime cache owner", () => {
       {
         ...edited,
         content: request.input,
-        groupWithNext: false,
+        hardQueue: false,
         updatedAt: transaction.optimisticUpdatedAt!,
       },
       added,
@@ -458,7 +458,7 @@ describe("thread runtime cache owner", () => {
       queryClient.getQueryData<ThreadQueuedMessage[]>(
         threadQueuedMessagesQueryKey("thread-1"),
       ),
-    ).toEqual([last, { ...edited, groupWithNext: false }, added]);
+    ).toEqual([last, { ...edited, hardQueue: false }, added]);
   });
 
   it("does not roll back a newer update to the same queued message", async () => {
@@ -682,66 +682,16 @@ describe("thread runtime cache owner", () => {
     ).toEqual(previousQueue);
   });
 
-  it("clears optimistic group edges when deleting a grouped successor", async () => {
+  it("optimistically reorders queued messages", async () => {
     const queryClient = createAppQueryClient({
       defaultOptions: { queries: { gcTime: Infinity, retry: false } },
       showMutationErrorToasts: false,
     });
-    const previousQueue = [
-      makeQueuedMessage({ id: "qmsg-1", groupWithNext: true }),
+    queryClient.setQueryData(threadQueuedMessagesQueryKey("thread-1"), [
+      makeQueuedMessage({ id: "qmsg-1" }),
       makeQueuedMessage({ id: "qmsg-2" }),
       makeQueuedMessage({ id: "qmsg-3" }),
-    ];
-    queryClient.setQueryData(
-      threadQueuedMessagesQueryKey("thread-1"),
-      previousQueue,
-    );
-
-    const transaction = await beginRemoveQueuedMessageTransaction({
-      queryClient,
-      request: {
-        id: "thread-1",
-        queuedMessageId: "qmsg-2",
-      },
-    });
-
-    expect(
-      queryClient.getQueryData<ThreadQueuedMessage[]>(
-        threadQueuedMessagesQueryKey("thread-1"),
-      ),
-    ).toMatchObject([
-      { id: "qmsg-1", groupWithNext: false },
-      { id: "qmsg-3", groupWithNext: false },
     ]);
-
-    rollbackRemoveQueuedMessageTransaction({
-      queryClient,
-      request: {
-        id: "thread-1",
-        queuedMessageId: "qmsg-2",
-      },
-      transaction,
-    });
-
-    expect(
-      queryClient.getQueryData(threadQueuedMessagesQueryKey("thread-1")),
-    ).toEqual(previousQueue);
-  });
-
-  it("preserves grouping when optimistically reordering without a boundary", async () => {
-    const queryClient = createAppQueryClient({
-      defaultOptions: { queries: { gcTime: Infinity, retry: false } },
-      showMutationErrorToasts: false,
-    });
-    const previousQueue = [
-      makeQueuedMessage({ id: "qmsg-1", groupWithNext: true }),
-      makeQueuedMessage({ id: "qmsg-2" }),
-      makeQueuedMessage({ id: "qmsg-3" }),
-    ];
-    queryClient.setQueryData(
-      threadQueuedMessagesQueryKey("thread-1"),
-      previousQueue,
-    );
 
     await beginReorderQueuedMessageTransaction({
       queryClient,
@@ -754,14 +704,12 @@ describe("thread runtime cache owner", () => {
     });
 
     expect(
-      queryClient.getQueryData<ThreadQueuedMessage[]>(
-        threadQueuedMessagesQueryKey("thread-1"),
-      ),
-    ).toMatchObject([
-      { id: "qmsg-3", groupWithNext: false },
-      { id: "qmsg-1", groupWithNext: false },
-      { id: "qmsg-2", groupWithNext: false },
-    ]);
+      queryClient
+        .getQueryData<ThreadQueuedMessage[]>(
+          threadQueuedMessagesQueryKey("thread-1"),
+        )
+        ?.map((queuedMessage) => queuedMessage.id),
+    ).toEqual(["qmsg-3", "qmsg-1", "qmsg-2"]);
   });
 
   it("optimistically projects sent queued messages into the timeline", async () => {
@@ -965,121 +913,6 @@ describe("thread runtime cache owner", () => {
     ).toEqual([]);
   });
 
-  it("clears optimistic group edges when sending a grouped successor", async () => {
-    const queryClient = createAppQueryClient({
-      defaultOptions: { queries: { gcTime: Infinity, retry: false } },
-      showMutationErrorToasts: false,
-    });
-    const previousQueue = [
-      makeQueuedMessage({ id: "qmsg-1", groupWithNext: true }),
-      makeQueuedMessage({ id: "qmsg-2" }),
-      makeQueuedMessage({ id: "qmsg-3" }),
-    ];
-    queryClient.setQueryData(
-      threadQueuedMessagesQueryKey("thread-1"),
-      previousQueue,
-    );
-    queryClient.setQueryData(
-      threadTimelineQueryKey("thread-1"),
-      makeTimelineResponse(),
-    );
-
-    const transaction = await beginSendQueuedMessageTransaction({
-      queryClient,
-      request: {
-        id: "thread-1",
-        mode: "auto",
-        queuedMessageId: "qmsg-2",
-      },
-    });
-
-    expect(
-      queryClient.getQueryData<ThreadQueuedMessage[]>(
-        threadQueuedMessagesQueryKey("thread-1"),
-      ),
-    ).toMatchObject([
-      { id: "qmsg-1", groupWithNext: false },
-      { id: "qmsg-3", groupWithNext: false },
-    ]);
-
-    rollbackRemoveQueuedMessageTransaction({
-      queryClient,
-      request: {
-        id: "thread-1",
-        queuedMessageId: "qmsg-2",
-      },
-      transaction,
-    });
-
-    expect(
-      queryClient.getQueryData(threadQueuedMessagesQueryKey("thread-1")),
-    ).toEqual(previousQueue);
-  });
-
-  it("optimistically removes the lead queued-message group without merging timeline text", async () => {
-    const queryClient = createAppQueryClient({
-      defaultOptions: { queries: { gcTime: Infinity, retry: false } },
-      showMutationErrorToasts: false,
-    });
-    const previousQueue = [
-      makeQueuedMessage({ id: "qmsg-1", groupWithNext: true }),
-      makeQueuedMessage({
-        id: "qmsg-2",
-        content: [{ type: "text", text: "Second", mentions: [] }],
-      }),
-      makeQueuedMessage({
-        id: "qmsg-3",
-        content: [{ type: "text", text: "Third", mentions: [] }],
-      }),
-    ];
-    queryClient.setQueryData(
-      threadQueuedMessagesQueryKey("thread-1"),
-      previousQueue,
-    );
-    queryClient.setQueryData(
-      threadTimelineQueryKey("thread-1"),
-      makeTimelineResponse(),
-    );
-
-    const transaction = await beginSendQueuedMessageTransaction({
-      queryClient,
-      request: {
-        id: "thread-1",
-        mode: "auto",
-        queuedMessageId: "qmsg-1",
-      },
-    });
-
-    expect(
-      queryClient
-        .getQueryData<ThreadQueuedMessage[]>(
-          threadQueuedMessagesQueryKey("thread-1"),
-        )
-        ?.map((queuedMessage) => queuedMessage.id),
-    ).toEqual(["qmsg-3"]);
-    const timeline = queryClient.getQueryData<ThreadTimelineResponse>(
-      threadTimelineQueryKey("thread-1"),
-    );
-    expect(timeline?.rows).toEqual([]);
-
-    rollbackRemoveQueuedMessageTransaction({
-      queryClient,
-      request: {
-        id: "thread-1",
-        queuedMessageId: "qmsg-1",
-      },
-      transaction,
-    });
-
-    expect(
-      queryClient.getQueryData(threadQueuedMessagesQueryKey("thread-1")),
-    ).toEqual(previousQueue);
-    expect(
-      queryClient.getQueryData<ThreadTimelineResponse>(
-        threadTimelineQueryKey("thread-1"),
-      )?.rows,
-    ).toEqual([]);
-  });
   it("moves an optimistic turn into the queue when the server holds an idle send", async () => {
     const queryClient = createAppQueryClient({
       defaultOptions: { queries: { gcTime: Infinity, retry: false } },

@@ -10,6 +10,7 @@ import { resolveMachineEnvironmentRouting } from "./machine.js";
 interface ProviderListCommandOptions {
   environment?: string;
   host?: string;
+  installable?: boolean;
   json?: boolean;
   machine?: string;
 }
@@ -49,17 +50,26 @@ export function registerProviderCommands(
 
   addProviderRoutingOptions(provider.command("list"))
     .description("List available providers")
+    .option(
+      "--installable",
+      "List providers that can be installed on the machine instead",
+    )
     .option("--json", "Print machine-readable JSON output")
     .action(
       action(async (opts: ProviderListCommandOptions) => {
         const serverUrl = getUrl();
         const sdk = createCliBbSdk(serverUrl);
-        const providers = await sdk.providers.list(
-          await resolveMachineEnvironmentRouting(opts, serverUrl),
-        );
+        const routing = await resolveMachineEnvironmentRouting(opts, serverUrl);
+        const providers = opts.installable
+          ? await sdk.providers.installable(routing)
+          : await sdk.providers.list(routing);
         if (outputJson(opts, providers)) return;
         if (providers.length === 0) {
-          console.log("No providers available");
+          console.log(
+            opts.installable
+              ? "No providers to install"
+              : "No providers available",
+          );
           return;
         }
         printProviderTable(providers);

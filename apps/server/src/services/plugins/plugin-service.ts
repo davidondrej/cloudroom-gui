@@ -145,7 +145,11 @@ import {
 import type { PluginEnvironmentProviderBridge } from "./plugin-environment-provider-registry.js";
 import { createPluginRegistration } from "./plugin-registration.js";
 import { createPluginRuntime, forgetMutableRoot } from "./plugin-runtime.js";
-import { nextCronRunAt, raceTimeout } from "./plugin-time-box.js";
+import {
+  nextCronRunAt,
+  raceTimeout,
+  settledWithin,
+} from "./plugin-time-box.js";
 import { createPluginUpdates } from "./plugin-updates.js";
 
 import type {
@@ -513,6 +517,24 @@ const GENERIC_AGENT_TOOL_GLYPH = "Toolbox";
 
 export function createPluginService(deps: PluginServiceDeps): PluginService {
   const logger = deps.logger;
+  const installHandlerTimeoutMs = deps.installHandlerTimeoutMs ?? 30_000;
+
+  async function runInstallHandlers(id: string): Promise<void> {
+    const plugin = loaded.get(id);
+    if (plugin === undefined) return;
+    const handlers = [...plugin.handle.installHandlers];
+    if (handlers.length === 0) return;
+    const run = (async () => {
+      for (const handler of handlers) {
+        await invokeWrapped(id, "install handler", handler);
+      }
+    })();
+    if (!(await settledWithin(run, installHandlerTimeoutMs))) {
+      logger.warn(
+        `[plugin:${id}] install handlers were still running after ${installHandlerTimeoutMs / 1000}s; the install finished without waiting for them`,
+      );
+    }
+  }
   const bundledPlugins =
     deps.bundledPlugins ?? listBundledPluginRegistrations();
   const mentionSearchTimeoutMs =
@@ -609,6 +631,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     restoreRegistration,
     sourceFingerprint,
   } = createPluginRegistration({
+    runInstallHandlers,
     deps,
     bundledPlugins,
     withLifecycleLock,
@@ -788,6 +811,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         name: registration.name,
         summary: registration.summary,
         commands: registration.commands.map((command) => ({ ...command })),
+        rendersHelp: registration.rendersHelp,
       });
     }
     return contributions.sort((a, b) => a.pluginId.localeCompare(b.pluginId));

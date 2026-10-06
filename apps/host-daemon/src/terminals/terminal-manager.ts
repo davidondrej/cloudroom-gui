@@ -19,6 +19,7 @@ import { RuntimeManager } from "../runtime-manager.js";
 import { runtimeErrorLogFields } from "../error-utils.js";
 import { requireResolvedWorkspaceForCommand } from "../workspace-resolution.js";
 import { ExpectedCommandDispatchError } from "../command-dispatch-support.js";
+import { openCloudPty } from "./cloud-pty.js";
 
 const DEFAULT_SCROLLBACK_MAX_BYTES = 4 * 1024 * 1024;
 const DEFAULT_SCROLLBACK_MAX_CHUNKS = 10_000;
@@ -44,7 +45,7 @@ export interface TerminalPtyDisposable {
 }
 
 export interface TerminalPtyExit {
-  exitCode: number;
+  exitCode: number | null;
 }
 
 export interface TerminalPtyProcess {
@@ -551,27 +552,7 @@ export class TerminalManager {
 
     this.openingTerminalIds.add(message.terminalId);
     try {
-      const target = await this.resolveTerminalOpenTarget(message);
-      const shell = await this.resolveShell();
-      const pty = this.ptyAdapter.spawn({
-        args: terminalSpawnArgsForStart(message),
-        cols: message.cols,
-        cwd: target.cwd,
-        env: buildTerminalEnv({
-          shellEnv: operationEnvironment(
-            message.contributedEnv,
-            this.options.runtimeManager.getShellEnv(),
-          ),
-          terminalId: message.terminalId,
-          environmentId: target.environmentId,
-          threadId: message.threadId,
-          projectId: message.projectId,
-          threadStoragePath: message.threadStoragePath,
-        }),
-        file: shell,
-        logger: this.options.logger,
-        rows: message.rows,
-      });
+      const { pty, shell, target } = await this.startTerminalProcess(message);
       const session: TerminalSession = {
         closeReason: null,
         closeTimeout: null,
@@ -645,6 +626,50 @@ export class TerminalManager {
     }
   }
 
+  private async startTerminalProcess(message: TerminalOpenMessage): Promise<{
+    pty: TerminalPtyProcess;
+    shell: string;
+    target: ResolvedTerminalOpenTarget;
+  }> {
+    if (message.target.kind === "cloud") {
+      const cloud = await openCloudPty({
+        cols: message.cols,
+        command:
+          message.start.mode === "command" ? message.start.command : null,
+        rows: message.rows,
+        target: message.target,
+        terminalId: message.terminalId,
+      });
+      return {
+        pty: cloud.pty,
+        shell: cloud.shell,
+        target: { cwd: cloud.cwd, environmentId: null },
+      };
+    }
+    const target = await this.resolveTerminalOpenTarget(message);
+    const shell = await this.resolveShell();
+    const pty = this.ptyAdapter.spawn({
+      args: terminalSpawnArgsForStart(message),
+      cols: message.cols,
+      cwd: target.cwd,
+      env: buildTerminalEnv({
+        shellEnv: operationEnvironment(
+          message.contributedEnv,
+          this.options.runtimeManager.getShellEnv(),
+        ),
+        terminalId: message.terminalId,
+        environmentId: target.environmentId,
+        threadId: message.threadId,
+        projectId: message.projectId,
+        threadStoragePath: message.threadStoragePath,
+      }),
+      file: shell,
+      logger: this.options.logger,
+      rows: message.rows,
+    });
+    return { pty, shell, target };
+  }
+
   private async resolveTerminalOpenTarget(
     message: TerminalOpenMessage,
   ): Promise<ResolvedTerminalOpenTarget> {
@@ -665,6 +690,8 @@ export class TerminalManager {
           cwd: await requireTerminalCwd(message.target.cwd),
           environmentId: null,
         };
+      case "cloud":
+        throw new Error("Cloud terminals open through the cloud sandbox");
     }
   }
 

@@ -4,7 +4,6 @@ import {
   getEnvironment,
   getThread,
   listEvents,
-  setQueuedThreadMessageGroupBoundary,
 } from "@bb/db";
 import {
   PERSONAL_PROJECT_ID,
@@ -677,31 +676,18 @@ describe("public thread fork route", () => {
         seed,
         providerThreadId: "provider-queued-seeded-fork",
       });
-      const first = seedQueuedMessage(harness.deps, {
+      const queued = seedQueuedMessage(harness.deps, {
         threadId: fork.id,
-        content: textInput("First queued group"),
+        content: textInput("Queued message"),
       });
-      const second = seedQueuedMessage(harness.deps, {
-        threadId: fork.id,
-        content: textInput("Second queued group"),
-      });
-      expect(
-        setQueuedThreadMessageGroupBoundary({
-          db: harness.db,
-          notifier: harness.hub,
-          threadId: fork.id,
-          expectedGroupedPrefixQueuedMessageIds: [first.id, second.id],
-          groupBoundaryQueuedMessageId: second.id,
-        }).kind,
-      ).toBe("updated");
 
       await sendQueuedMessage(harness.deps, {
         claimPolicy: {
           kind: "automatic",
-          isGroupEligible: () => true,
+          isEligible: () => true,
         },
         threadId: fork.id,
-        queuedMessageId: first.id,
+        queuedMessageId: queued.id,
         mode: "auto",
       });
 
@@ -714,11 +700,11 @@ describe("public thread fork route", () => {
       if (turn.command.type !== "turn.submit") {
         throw new Error("Expected turn.submit");
       }
-      expect(turn.command.inputGroups?.[0]).toEqual([
+      expect(turn.command.input).toEqual([
         seed,
-        ...textInput("First queued group"),
+        ...textInput("Queued message"),
       ]);
-      expect(turn.command.input[0]).toEqual(seed);
+      expect(turn.command.inputGroups).toBeUndefined();
       const request = listEvents(harness.db, { threadId: fork.id })
         .filter((event) => event.type === "client/turn/requested")
         .at(-1);
@@ -726,7 +712,6 @@ describe("public thread fork route", () => {
         JSON.parse(request?.data ?? "null"),
       );
       expect(requestData.input).toEqual(turn.command.input);
-      expect(requestData.inputGroups).toEqual(turn.command.inputGroups);
     });
   });
 

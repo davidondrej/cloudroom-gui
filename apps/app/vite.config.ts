@@ -47,7 +47,7 @@ export const sharedViteConfig = {
     },
   },
   optimizeDeps: {
-    include: ["@xterm/addon-fit", "@xterm/addon-web-links", "@xterm/xterm"],
+    include: ["ghostty-web"],
   },
   resolve: {
     conditions: ["source"],

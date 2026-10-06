@@ -3040,12 +3040,13 @@ no provider polling. Validate concurrent resume/removal, failure reporting,
 long-running caller behavior, and the scope of supported states before
 stabilizing this API. Exposed as `bb machine reconcile`.
 
-## `PluginThreadPanelActionRegistration.experimental_requiresFork`
+## `PluginThreadPanelActionRegistration.experimental_requiresFork` and `PluginMessageActionRegistration.experimental_requiresFork`
 
 **What it does.** Hides a thread panel action from the side panel launcher
 when the thread cannot be forked: its provider does not support forks, or the
-thread is archived or has no environment. Side chat uses it so Cursor threads
-never offer a side chat that fails.
+thread is archived or has no environment. A message action hides wherever the
+timeline offers no Fork button. Side chat uses both so Cursor threads never
+offer a side chat that fails.
 
 **Audit before stabilizing.** One consumer. Decide whether a general
 availability predicate should replace this single capability flag.

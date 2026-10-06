@@ -16,16 +16,12 @@ import {
   makeThreadListEntry,
   makeThreadQueuedMessage,
 } from "@bb/test-helpers/domain-fixtures";
-import type { Active, DroppableContainer } from "@dnd-kit/core";
 import { focusWithKeyboard } from "@/test/keyboard-focus";
 import {
   QueuedMessagesList as QueuedMessagesListComponent,
   clampQueuedMessageDragTransform,
   getInlineEditorSurfaceMaxHeight,
-  queuedMessageCollisionDetection,
-  queuedMessageSortingStrategy,
   resolveQueuedMessageDrag,
-  snapGroupBoundaryDragTransform,
   type QueuedMessagesListProps,
 } from "./QueuedMessagesList";
 import {
@@ -102,17 +98,6 @@ function makeQueuedFileMessage(id: string, name: string): ThreadQueuedMessage {
   };
 }
 
-function makeGroupedQueuedMessages(): ThreadQueuedMessage[] {
-  return [
-    {
-      ...makeQueuedMessage("q_one", "First queued message"),
-      groupWithNext: true,
-    },
-    makeQueuedMessage("q_two", "Second queued message"),
-    makeQueuedMessage("q_three", "Third queued message"),
-  ];
-}
-
 function rect({ top, bottom }: { top: number; bottom: number }) {
   return new DOMRect(0, top, 100, bottom - top);
 }
@@ -131,7 +116,6 @@ function renderQueuedMessages(
       processingAction={null}
       onSend={noop}
       onReorder={noop}
-      onSetGroupBoundary={noop}
       onEdit={noop}
       onDelete={noop}
     />,
@@ -153,7 +137,6 @@ function renderQueuedMessagesWithOptions(
       processingAction={null}
       onSend={noop}
       onReorder={noop}
-      onSetGroupBoundary={noop}
       onEdit={noop}
       onDelete={noop}
     />,
@@ -194,7 +177,6 @@ describe("QueuedMessagesList", () => {
           processingAction={null}
           onSend={noop}
           onReorder={noop}
-          onSetGroupBoundary={noop}
           onEdit={noop}
           onDelete={noop}
         />
@@ -316,12 +298,6 @@ describe("QueuedMessagesList", () => {
     const plainHeight = plain.container.querySelector<HTMLElement>(
       'section[aria-label="Queued messages"]',
     )?.style.height;
-    expect(
-      plain.container.querySelector("[data-queued-message-group-boundary-row]"),
-    ).toBeNull();
-    expect(
-      plain.container.querySelector("[data-queued-message-group-divider]"),
-    ).toBeNull();
     cleanup();
 
     const waiting = renderQueuedMessages([
@@ -370,7 +346,6 @@ describe("QueuedMessagesList", () => {
       processingAction: null,
       onSend: noop,
       onReorder: noop,
-      onSetGroupBoundary: noop,
       onEdit: noop,
       onDelete: noop,
     } as const;
@@ -564,7 +539,6 @@ describe("QueuedMessagesList", () => {
           processingAction={null}
           onSend={noop}
           onReorder={noop}
-          onSetGroupBoundary={noop}
           onEdit={noop}
           onDelete={noop}
         />,
@@ -620,7 +594,6 @@ describe("QueuedMessagesList", () => {
         processingAction={null}
         onSend={noop}
         onReorder={noop}
-        onSetGroupBoundary={noop}
         onEdit={noop}
         onDelete={noop}
       />,
@@ -679,7 +652,6 @@ describe("QueuedMessagesList", () => {
         processingAction={null}
         onSend={noop}
         onReorder={noop}
-        onSetGroupBoundary={noop}
         onEdit={noop}
         onDelete={noop}
       />,
@@ -712,7 +684,6 @@ describe("QueuedMessagesList", () => {
       processingAction: null,
       onSend: noop,
       onReorder: noop,
-      onSetGroupBoundary: noop,
       onEdit: noop,
       onDelete: noop,
     } as const;
@@ -759,7 +730,6 @@ describe("QueuedMessagesList", () => {
       processingAction: null,
       onSend: noop,
       onReorder: noop,
-      onSetGroupBoundary: noop,
       onEdit: noop,
       onDelete: noop,
     } as const;
@@ -820,7 +790,6 @@ describe("QueuedMessagesList", () => {
       processingAction: null,
       onSend: noop,
       onReorder: noop,
-      onSetGroupBoundary: noop,
       onEdit: noop,
       onDelete: noop,
     } as const;
@@ -922,7 +891,6 @@ describe("QueuedMessagesList", () => {
             processingAction={null}
             onSend={noop}
             onReorder={noop}
-            onSetGroupBoundary={noop}
             onEdit={noop}
             onDelete={noop}
           />
@@ -1008,7 +976,6 @@ describe("QueuedMessagesList", () => {
             processingAction={null}
             onSend={noop}
             onReorder={noop}
-            onSetGroupBoundary={noop}
             onEdit={noop}
             onDelete={noop}
           />
@@ -1112,7 +1079,6 @@ describe("QueuedMessagesList", () => {
               processingAction={null}
               onSend={noop}
               onReorder={noop}
-              onSetGroupBoundary={noop}
               onEdit={noop}
               onDelete={noop}
             />
@@ -1269,7 +1235,6 @@ describe("QueuedMessagesList", () => {
         processingAction="send"
         onSend={noop}
         onReorder={noop}
-        onSetGroupBoundary={noop}
         onEdit={noop}
         onDelete={noop}
       />,
@@ -1400,89 +1365,7 @@ describe("QueuedMessagesList", () => {
     });
   });
 
-  it("renders the draggable group divider without filling grouped rows", () => {
-    const { container, getByLabelText } = renderQueuedMessages(
-      makeGroupedQueuedMessages(),
-    );
-
-    expect(getByLabelText("Messages above send together")).not.toBeNull();
-    expect(container.textContent).not.toContain("grouped");
-    expect(
-      container.querySelectorAll("[data-queued-message-row]"),
-    ).toHaveLength(3);
-    expect(
-      container.querySelector("[data-queued-message-group-fill]"),
-    ).toBeNull();
-    const divider = container.querySelector(
-      "[data-queued-message-group-divider]",
-    );
-    expect(divider?.tagName).toBe("LI");
-    expect(divider?.parentElement?.tagName).toBe("UL");
-  });
-
-  it("anchors a zero-height sortable handle sibling to the existing row border", () => {
-    const { container } = renderQueuedMessages([
-      makeQueuedMessage("q_one", "First queued message"),
-      makeQueuedMessage("q_two", "Second queued message"),
-      makeQueuedMessage("q_three", "Third queued message"),
-    ]);
-    const rows = container.querySelectorAll("[data-queued-message-row]");
-
-    const divider = container.querySelector(
-      "ul > [data-queued-message-group-divider]",
-    );
-    expect(divider).not.toBeNull();
-    expect(divider?.previousElementSibling).toBe(rows[0]);
-    expect(rows[0]?.querySelector("[data-queued-message-group-divider]")).toBe(
-      null,
-    );
-    expect(rows[1]?.querySelector("[data-queued-message-group-divider]")).toBe(
-      null,
-    );
-    expect(container.querySelector("[data-queued-message-group-line]")).toBe(
-      null,
-    );
-  });
-
-  it("preserves grouping when reordering a row across the divider", () => {
-    const queuedMessages = [
-      makeQueuedMessage("q_one", "First queued message"),
-      makeQueuedMessage("q_two", "Second queued message"),
-      makeQueuedMessage("q_three", "Third queued message"),
-    ];
-
-    const result = resolveQueuedMessageDrag({
-      activeId: "q_three",
-      overId: "q_one",
-      combinedIds: [
-        "q_one",
-        "__queued_message_group_divider__",
-        "q_two",
-        "q_three",
-      ],
-      orderedMessages: queuedMessages,
-    });
-
-    expect(result).toMatchObject({
-      kind: "row",
-      request: {
-        queuedMessageId: "q_three",
-        previousQueuedMessageId: null,
-        nextQueuedMessageId: "q_one",
-      },
-      orderedMessages: [
-        { id: "q_three", groupWithNext: false },
-        { id: "q_one", groupWithNext: false },
-        { id: "q_two", groupWithNext: false },
-      ],
-    });
-    if (result?.kind !== "row") {
-      throw new Error("Expected row drag result");
-    }
-    expect(result.request.groupBoundaryQueuedMessageId).toBeUndefined();
-  });
-
-  it("updates grouping when dragging the divider", () => {
+  it("resolves a row drag into a neighbor reorder request", () => {
     const queuedMessages = [
       makeQueuedMessage("q_one", "First queued message"),
       makeQueuedMessage("q_two", "Second queued message"),
@@ -1491,27 +1374,17 @@ describe("QueuedMessagesList", () => {
 
     expect(
       resolveQueuedMessageDrag({
-        activeId: "__queued_message_group_divider__",
-        overId: "q_three",
-        combinedIds: [
-          "q_one",
-          "__queued_message_group_divider__",
-          "q_two",
-          "q_three",
-        ],
+        activeId: "q_three",
+        overId: "q_one",
         orderedMessages: queuedMessages,
       }),
     ).toMatchObject({
-      kind: "divider",
       request: {
-        expectedGroupedPrefixQueuedMessageIds: ["q_one", "q_two", "q_three"],
-        groupBoundaryQueuedMessageId: "q_three",
+        queuedMessageId: "q_three",
+        previousQueuedMessageId: null,
+        nextQueuedMessageId: "q_one",
       },
-      orderedMessages: [
-        { id: "q_one", groupWithNext: true },
-        { id: "q_two", groupWithNext: true },
-        { id: "q_three", groupWithNext: false },
-      ],
+      orderedMessages: [{ id: "q_three" }, { id: "q_one" }, { id: "q_two" }],
     });
   });
 
@@ -1524,117 +1397,6 @@ describe("QueuedMessagesList", () => {
         transform: { x: 12, y: 96, scaleX: 1, scaleY: 1 },
       }),
     ).toEqual({ x: 0, y: 32, scaleX: 1, scaleY: 1 });
-  });
-
-  it("snaps the group handle center to the hovered row stroke", () => {
-    expect(
-      snapGroupBoundaryDragTransform({
-        activeId: "__queued_message_group_divider__",
-        activeNodeRect: rect({ top: 28, bottom: 52 }),
-        overId: "q_three",
-        overRect: rect({ top: 72, bottom: 112 }),
-        transform: { x: 8, y: 51, scaleX: 1, scaleY: 1 },
-      }),
-    ).toEqual({ x: 0, y: 72, scaleX: 1, scaleY: 1 });
-  });
-
-  it("keeps ordinary row drags continuous", () => {
-    const transform = { x: 8, y: 51, scaleX: 1, scaleY: 1 };
-
-    expect(
-      snapGroupBoundaryDragTransform({
-        activeId: "q_two",
-        activeNodeRect: rect({ top: 28, bottom: 52 }),
-        overId: "q_three",
-        overRect: rect({ top: 72, bottom: 112 }),
-        transform,
-      }),
-    ).toBe(transform);
-  });
-
-  it("lets the group handle leave its own collision target before snapping", () => {
-    expect(
-      snapGroupBoundaryDragTransform({
-        activeId: "__queued_message_group_divider__",
-        activeNodeRect: rect({ top: 28, bottom: 52 }),
-        overId: "__queued_message_group_divider__",
-        overRect: rect({ top: 28, bottom: 52 }),
-        transform: { x: 8, y: 18, scaleX: 1, scaleY: 1 },
-      }),
-    ).toEqual({ x: 0, y: 18, scaleX: 1, scaleY: 1 });
-  });
-
-  it("chooses group-boundary targets from pointer distance to row strokes", () => {
-    const makeContainer = (id: string): DroppableContainer => ({
-      data: { current: undefined },
-      disabled: false,
-      id,
-      key: id,
-      node: { current: null },
-      rect: { current: null },
-    });
-    const containers = [
-      makeContainer("q_one"),
-      makeContainer("__queued_message_group_divider__"),
-      makeContainer("q_two"),
-      makeContainer("q_three"),
-    ];
-    const collisions = queuedMessageCollisionDetection({
-      active: {
-        data: { current: undefined },
-        id: "__queued_message_group_divider__",
-        rect: { current: { initial: null, translated: null } },
-      } satisfies Active,
-      collisionRect: rect({ top: 28, bottom: 52 }),
-      droppableContainers: containers,
-      droppableRects: new Map([
-        ["q_one", rect({ top: 0, bottom: 40 })],
-        ["__queued_message_group_divider__", rect({ top: 28, bottom: 52 })],
-        ["q_two", rect({ top: 40, bottom: 72 })],
-        ["q_three", rect({ top: 72, bottom: 112 })],
-      ]),
-      pointerCoordinates: { x: 50, y: 75 },
-    });
-
-    expect(collisions.map((collision) => collision.id)).toEqual([
-      "q_two",
-      "q_one",
-      "q_three",
-    ]);
-  });
-
-  it("keeps message row geometry fixed while dragging the group handle", () => {
-    const rects = [
-      rect({ top: 0, bottom: 40 }),
-      rect({ top: 40, bottom: 64 }),
-      rect({ top: 64, bottom: 104 }),
-    ];
-
-    expect(
-      queuedMessageSortingStrategy(
-        ["q_one", "__queued_message_group_divider__", "q_two"],
-        {
-          activeNodeRect: rects[1]!,
-          activeIndex: 1,
-          index: 2,
-          overIndex: 2,
-          rects,
-        },
-      ),
-    ).toBeNull();
-
-    expect(
-      queuedMessageSortingStrategy(
-        ["q_one", "__queued_message_group_divider__", "q_two"],
-        {
-          activeNodeRect: rects[0]!,
-          activeIndex: 0,
-          index: 1,
-          overIndex: 1,
-          rects,
-        },
-      ),
-    ).not.toBeNull();
   });
 
   it("re-adopts queued-message order from props when the same rows are restored", () => {
@@ -1658,7 +1420,6 @@ describe("QueuedMessagesList", () => {
         processingAction={null}
         onSend={noop}
         onReorder={noop}
-        onSetGroupBoundary={noop}
         onEdit={noop}
         onDelete={noop}
       />,
@@ -1682,7 +1443,6 @@ describe("QueuedMessagesList", () => {
         processingAction={null}
         onSend={noop}
         onReorder={noop}
-        onSetGroupBoundary={noop}
         onEdit={noop}
         onDelete={noop}
       />,
@@ -1883,7 +1643,6 @@ describe("queued row affordances", () => {
         processingAction={null}
         onSend={onSend}
         onReorder={noop}
-        onSetGroupBoundary={noop}
         onEdit={noop}
         onDelete={noop}
       />,

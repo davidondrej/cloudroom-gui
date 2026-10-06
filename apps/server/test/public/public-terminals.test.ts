@@ -1,6 +1,6 @@
 import { replaceMachineEnvironment } from "../../src/services/machines/environment-settings.js";
 import * as gitCredentials from "../../src/services/machines/git-credentials.js";
-import { updateHost } from "@bb/db";
+import { createThread, updateHost } from "@bb/db";
 import {
   createTerminalSession,
   getTerminalSession,
@@ -930,6 +930,78 @@ describe("public terminal routes", () => {
       status: "running",
       title: "zsh",
     });
+  });
+
+  it("opens a cloud thread's terminal in its sandbox through the Mac's daemon", async () => {
+    const cloudTerminal = vi.fn(async () => ({
+      session: "ses_cloud",
+      token: "core-token",
+      url: "https://sandbox.example.test",
+    }));
+    const harness = await createTestAppHarness({ cloudTerminal });
+    harnesses.push(harness);
+    const seeded = seedHostSession(harness.deps, { id: "terminal-host" });
+    const { project } = seedProjectWithSource(harness.deps, {
+      hostId: seeded.host.id,
+      path: "/tmp/terminal-project",
+    });
+    const thread = createThread(harness.deps.db, harness.deps.hub, {
+      executionTarget: "cloud",
+      projectId: project.id,
+      providerId: "codex",
+      status: "idle",
+      title: "Cloud thread",
+    });
+    const socket = createFakeDaemonSocket();
+    harness.hub.registerDaemon(seeded.session.id, seeded.host.id, socket);
+
+    const responsePromise = harness.app.request("/api/v1/terminals", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        cols: 100,
+        rows: 30,
+        target: { kind: "thread", threadId: thread.id },
+      }),
+    });
+    const openMessage = await waitForDaemonMessage(socket);
+    if (openMessage.type !== "terminal.open") {
+      throw new Error(`Expected terminal.open, received ${openMessage.type}`);
+    }
+    expect(cloudTerminal).toHaveBeenCalledWith(thread.id);
+    expect(openMessage.target).toEqual({
+      kind: "cloud",
+      session: "ses_cloud",
+      token: "core-token",
+      url: "https://sandbox.example.test",
+    });
+    expect(openMessage.contributedEnv).toEqual([]);
+    expect(openMessage.threadStoragePath).toBeUndefined();
+
+    harness.deps.terminalSessions.handleDaemonTerminalMessage({
+      hostId: seeded.host.id,
+      sessionId: seeded.session.id,
+      message: {
+        type: "terminal.opened",
+        requestId: openMessage.requestId,
+        terminalId: openMessage.terminalId,
+        shell: "/bin/bash",
+        title: "bash",
+        initialCwd: "/code/terminal-project",
+        cols: 100,
+        rows: 30,
+      },
+    });
+    const response = await responsePromise;
+    expect(response.status).toBe(201);
+    expect(terminalSessionSchema.parse(await readJson(response))).toMatchObject(
+      {
+        hostId: seeded.host.id,
+        initialCwd: "/code/terminal-project",
+        status: "running",
+        threadId: thread.id,
+      },
+    );
   });
 
   it("opens a command terminal with thread context for the daemon", async () => {

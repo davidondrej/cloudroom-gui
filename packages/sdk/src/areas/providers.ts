@@ -18,6 +18,9 @@ export type ProviderListArgs = ProviderHostRoutingArgs & {
   capability?: SystemProvidersQuery["capability"];
   signal?: AbortSignal;
 };
+export type ProviderInstallableArgs = ProviderHostRoutingArgs & {
+  signal?: AbortSignal;
+};
 export type ProviderModelsArgs = ProviderHostRoutingArgs & {
   providerId?: string;
   signal?: AbortSignal;
@@ -33,6 +36,7 @@ export type ProviderModelsResult = SystemExecutionOptionsResponse;
 
 export interface ProvidersArea {
   list(args?: ProviderListArgs): Promise<ProviderListResult>;
+  installable(args?: ProviderInstallableArgs): Promise<ProviderListResult>;
   models(args?: ProviderModelsArgs): Promise<ProviderModelsResult>;
   restartModelDiscovery(
     args: ProviderRestartModelDiscoveryArgs,
@@ -48,6 +52,19 @@ export function createProvidersArea(args: CreateSdkAreaArgs): ProvidersArea {
           {
             query: {
               capability: input.capability,
+              environmentId: input.environmentId,
+              hostId: input.hostId,
+            },
+          },
+          ...signalRequestArgs(input.signal),
+        ),
+      );
+    },
+    async installable(input = {}) {
+      return transport.readJson(
+        transport.api.v1.system.providers.installable.$get(
+          {
+            query: {
               environmentId: input.environmentId,
               hostId: input.hostId,
             },

@@ -322,7 +322,7 @@ export function registerSpawnCommand(
     )
     .option(
       "--base-branch <branch>",
-      "Exact Git ref; omit for Cloudroom's project default (use origin/<branch> for a remote ref)",
+      "Exact Git ref; omit for Cloudroom's project default (use origin/<branch> for a remote ref). With --machine cloud: a pushed GitHub branch name",
     )
     .option(
       "--machine <id-or-name>",
@@ -405,7 +405,7 @@ export function registerSpawnCommand(
         }
         const machineTarget = resolveMachineTargetOption(opts);
         const cloudTarget = machineTarget === "cloud";
-        if (cloudTarget && (environmentValue || opts.newEnvironment || opts.environmentProvider || opts.newMachine || opts.baseBranch || opts.machineInputs || opts.environmentInputs)) throw new Error("Cloud uses its prepared repository; native environment and machine options cannot be combined with --machine cloud.");
+        if (cloudTarget && (environmentValue || opts.newEnvironment || opts.environmentProvider || opts.newMachine || opts.machineInputs || opts.environmentInputs)) throw new Error("Cloud uses its prepared repository; native environment and machine options cannot be combined with --machine cloud.");
         if (cloudTarget && !opts.model) throw new Error("Select a model with --model for Cloud.");
         if (!cloudTarget && opts.requestId) throw new Error("--request-id currently applies only to Cloud.");
         if (machineTarget && opts.newMachine) {
@@ -555,7 +555,7 @@ export function registerSpawnCommand(
             sdk,
           });
           thread = await sdk.threads.spawn({
-            ...(cloudTarget ? { executionTarget: "cloud" as const, ...(opts.requestId ? { requestId: opts.requestId } : {}) } : {}),
+            ...(cloudTarget ? { executionTarget: "cloud" as const, ...(opts.requestId ? { requestId: opts.requestId } : {}), ...(opts.baseBranch?.trim() ? { baseBranch: opts.baseBranch.trim() } : {}) } : {}),
             origin: "cli",
             projectId,
             ...(providerId ? { providerId } : {}),

@@ -174,7 +174,6 @@ import type {
   RetryTurnRequest,
   RetryTurnResponse,
   SendMessageResponse,
-  SetQueuedMessageGroupBoundaryRequest,
   SendQueuedMessageRequest,
   SendQueuedMessageResponse,
   SidebarBootstrapResponse,
@@ -187,6 +186,7 @@ import type {
   SystemInstallCliSkillsResponse,
   SystemExecutionOptionsQuery,
   SystemExecutionOptionsResponse,
+  SystemInstallableProvidersQuery,
   SystemRestartModelDiscoveryRequest,
   SystemEnvironmentProvidersQuery,
   SystemEnvironmentProvidersResponse,
@@ -337,11 +337,11 @@ import {
   retryTurnRequestSchema,
   sendMessageRequestSchema,
   editMessageRequestSchema,
-  setQueuedMessageGroupBoundaryRequestSchema,
   sendQueuedMessageRequestSchema,
   systemExecutionOptionsQuerySchema,
   systemRestartModelDiscoveryRequestSchema,
   systemEnvironmentProvidersQuerySchema,
+  systemInstallableProvidersQuerySchema,
   systemProvidersQuerySchema,
   systemUsageLimitsQuerySchema,
   systemVersionQuerySchema,
@@ -1306,14 +1306,6 @@ export const publicApiRoutes = {
       >(reorderQueuedMessageRequestSchema),
       response: jsonResponse<ThreadQueuedMessageListResponse>(),
     }),
-    setQueuedMessageGroupBoundary: defineRoute({
-      path: "/threads/:id/queued-messages/group-boundary",
-      method: "patch",
-      request: jsonRequest<PathId, SetQueuedMessageGroupBoundaryRequest>(
-        setQueuedMessageGroupBoundaryRequestSchema,
-      ),
-      response: jsonResponse<ThreadQueuedMessageListResponse>(),
-    }),
     promptHistory: defineRoute({
       path: "/threads/:id/prompt-history",
       method: "get",
@@ -1772,6 +1764,15 @@ export const publicApiRoutes = {
       request: optionalQueryRequest<EmptyInput, SystemProvidersQuery>(
         systemProvidersQuerySchema,
       ),
+      response: jsonResponse<SystemProviderInfo[]>(),
+    }),
+    installableProviders: defineRoute({
+      path: "/system/providers/installable",
+      method: "get",
+      request: optionalQueryRequest<
+        EmptyInput,
+        SystemInstallableProvidersQuery
+      >(systemInstallableProvidersQuerySchema),
       response: jsonResponse<SystemProviderInfo[]>(),
     }),
     providerLogo: defineRoute({

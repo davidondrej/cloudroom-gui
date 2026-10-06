@@ -186,7 +186,13 @@ describe("public provider installation routes", () => {
               ? request.command.providerId
               : null,
           ),
-      ).toEqual([]);
+      ).toEqual([
+        "acp-opencode",
+        "acp-omp",
+        "acp-grok",
+        "acp-fx",
+        "acp-hermes-agent",
+      ]);
       expect(
         responder.requests
           .filter(

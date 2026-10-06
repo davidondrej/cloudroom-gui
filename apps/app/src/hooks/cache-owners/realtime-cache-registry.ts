@@ -57,6 +57,7 @@ import {
   sidebarNavigationQueryKey,
   systemConfigQueryKey,
   uiPreferencesQueryKey,
+  allSystemInstallableProvidersQueryKeyPrefix,
   allSystemProvidersQueryKeyPrefix,
   threadDefaultExecutionOptionsQueryKey,
   threadQueryKey,
@@ -524,7 +525,11 @@ export const REALTIME_HOST_CHANGE_REGISTRY = {
     dirty: [dirtyHostSystemExecutionOptionQueries],
   },
   "provider-cli-status-changed": {
-    dirty: [dirtyHostProviderCliStatusQueries],
+    dirty: [
+      dirtyHostProviderCliStatusQueries,
+      dirtySystemProviderQueries,
+      dirtySystemInstallableProviderQueries,
+    ],
   },
 } satisfies HostChangeRegistry;
 
@@ -549,7 +554,11 @@ export const REALTIME_SYSTEM_CHANGE_REGISTRY = {
     ],
   },
   "provider-registrations-changed": {
-    dirty: [dirtySystemProviderQueries, dirtySystemExecutionOptionQueries],
+    dirty: [
+      dirtySystemProviderQueries,
+      dirtySystemInstallableProviderQueries,
+      dirtySystemExecutionOptionQueries,
+    ],
   },
   "environment-availability-changed": {
     dirty: [dirtyEnvironmentProviderQueries],
@@ -1175,6 +1184,10 @@ function dirtyAllThreadTimelineQueries(): QueryKey[] {
 
 function dirtySystemProviderQueries(): QueryKey[] {
   return [allSystemProvidersQueryKeyPrefix()];
+}
+
+function dirtySystemInstallableProviderQueries(): QueryKey[] {
+  return [allSystemInstallableProvidersQueryKeyPrefix()];
 }
 
 function dirtySystemExecutionOptionQueries(): QueryKey[] {

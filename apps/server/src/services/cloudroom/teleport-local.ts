@@ -234,14 +234,14 @@ async function waitUntilStopped(client: CloudroomClient, sessionId: string) {
   throw new ApiError(409, "teleport_stop_timeout", "The cloud agent did not stop. The thread stays in Cloud; try again.");
 }
 
-async function vm(client: CloudroomClient, command: string): Promise<Buffer> {
+export async function vm(client: CloudroomClient, command: string): Promise<Buffer> {
   const result = await client.runOnVm({ command, stdin: "" });
   if (result.code !== 0 || result.truncated)
     throw new Error(Buffer.from(result.stderr, "hex").toString().trim() || `Cloud command failed (${result.code})`);
   return Buffer.from(result.stdout, "hex");
 }
 
-function findNative(harness: Harness, nativeId: string): string {
+export function findNative(harness: Harness, nativeId: string): string {
   if (harness === "acp-opencode")
     return `mkdir -p ~/.cache/cloudroom && f=~/.cache/cloudroom/opencode-${nativeId}.json && OPENCODE_DISABLE_AUTOUPDATE=1 opencode export ${nativeId} > "$f" </dev/null && echo "$f"`;
   // A Cursor chat is a folder (meta.json plus a SQLite store), so it travels as one archive.
@@ -254,7 +254,7 @@ mkdir -p ~/.cache/cloudroom && tar -czf ~/.cache/cloudroom/cursor-${nativeId}.tg
 done; exit 0`;
 }
 
-async function download(client: CloudroomClient, path: string, maxMb = Infinity): Promise<Buffer> {
+export async function download(client: CloudroomClient, path: string, maxMb = Infinity): Promise<Buffer> {
   const size = Number((await vm(client, `[ -f ${quote(path)} ] && wc -c < ${quote(path)} || echo -1`)).toString().trim());
   if (size < 0) throw new ApiError(404, "cloud_file_missing", `${path} is not a file in the cloud.`);
   if (size > maxMb * 1024 * 1024) throw new ApiError(413, "cloud_file_too_large", `${basename(path)} is over ${maxMb} MB, too big to preview. Use Open in editor to download it.`);

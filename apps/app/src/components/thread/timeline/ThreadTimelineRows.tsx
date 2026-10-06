@@ -2164,10 +2164,19 @@ function ThreadTimelineRowsForTimelineView(props: ThreadTimelineRowsProps) {
     () => getPluginSlotSnapshot().messageDirectives,
     () => EMPTY_PLUGIN_SLOT_SNAPSHOT.messageDirectives,
   );
-  const messageActionSlots = useSyncExternalStore(
+  const allMessageActionSlots = useSyncExternalStore(
     subscribePluginSlots,
     () => getPluginSlotSnapshot().messageActions,
     () => EMPTY_PLUGIN_SLOT_SNAPSHOT.messageActions,
+  );
+  // Fork-only actions (side chat) show exactly where the Fork button does.
+  const canFork = props.onForkMessage !== undefined;
+  const messageActionSlots = useMemo(
+    () =>
+      canFork
+        ? allMessageActionSlots
+        : allMessageActionSlots.filter((slot) => !slot.experimental_requiresFork),
+    [allMessageActionSlots, canFork],
   );
   const messageDirectiveRegistry = useMemo(
     () => buildMessageDirectiveRegistry(messageDirectiveSlots),

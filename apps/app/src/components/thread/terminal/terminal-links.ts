@@ -1,11 +1,11 @@
-import type { ILinkHandler } from "@xterm/xterm";
+import type { ILink, ILinkProvider, Terminal } from "ghostty-web";
 
 export interface TerminalLinkTarget {
   source: "detected-url" | "osc8";
   uri: string;
 }
 
-interface CreateTerminalOsc8LinkHandlerArgs {
+interface TerminalLinkHandlers {
   onActivate: (target: TerminalLinkTarget) => void;
   onHover: (target: TerminalLinkTarget | null) => void;
 }
@@ -16,24 +16,50 @@ interface RequestTerminalLinkOpenArgs {
   target: TerminalLinkTarget;
 }
 
-export function createTerminalOsc8LinkHandler({
-  onActivate,
-  onHover,
-}: CreateTerminalOsc8LinkHandlerArgs): ILinkHandler {
+interface TerminalLinkDetectorHost {
+  linkDetector?: { providers: ILinkProvider[] };
+}
+
+export function routeTerminalLinks(
+  provider: ILinkProvider,
+  source: TerminalLinkTarget["source"],
+  { onActivate, onHover }: TerminalLinkHandlers,
+): ILinkProvider {
   return {
-    activate: (event, uri) => {
-      if (event.button !== 0) {
-        return;
-      }
-      onActivate({ source: "osc8", uri });
-    },
-    hover: (_event, uri) => {
-      onHover({ source: "osc8", uri });
-    },
-    leave: () => {
-      onHover(null);
-    },
+    provideLinks: (y, callback) =>
+      provider.provideLinks(y, (links) =>
+        callback(
+          links?.map(
+            (link): ILink => ({
+              ...link,
+              activate: (event) => {
+                if (event.button === 0) {
+                  onActivate({ source, uri: link.text });
+                }
+              },
+              hover: (isHovered) => {
+                onHover(isHovered ? { source, uri: link.text } : null);
+              },
+            }),
+          ),
+        ),
+      ),
   };
+}
+
+export function replaceTerminalLinkProviders(
+  terminal: Terminal,
+  providers: readonly ILinkProvider[],
+): void {
+  const detector = (terminal as unknown as TerminalLinkDetectorHost)
+    .linkDetector;
+  if (detector === undefined) {
+    throw new Error("Terminal links can be routed only after it opens");
+  }
+  detector.providers.length = 0;
+  for (const provider of providers) {
+    terminal.registerLinkProvider(provider);
+  }
 }
 
 export function requestTerminalLinkOpen({

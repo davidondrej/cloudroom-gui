@@ -63,6 +63,8 @@ export interface CloudEnvironment {
   setup: string;
   /** `owner/name` GitHub repos every sandbox clones into /repos/<name>. */
   repos: string[];
+  /** MCP servers copied from this Mac into every sandbox, by name. */
+  mcp: string[];
   /** The account's GitHub repos, newest first; only answered to `githubRepos`. */
   available?: string[];
   /** Last push time of each `available` repo, in ms. */
@@ -96,6 +98,11 @@ export interface CloudSkills {
   issue: string | null;
 }
 export type CloudSkillsChange = { names: string[]; cloud: boolean } | { auto: boolean };
+/** An MCP server on this Mac (Claude Code or Codex). `macOnly`: it runs a program or uses a path only this Mac has. */
+export interface MacMcpServer {
+  name: string;
+  macOnly: boolean;
+}
 
 export interface ClaudeAccountInput { action?: "login" | "cancel" | "complete" | "setup-token" | "install" | "key"; requestId?: string; code?: string; state?: string; apiKey?: string }
 
@@ -139,6 +146,10 @@ export interface CloudroomArea {
   cloudSkills(signal?: AbortSignal): Promise<CloudSkills>;
   /** Adds or removes skills, or sets whether new skills go to the cloud. Uploads in the background. */
   setCloudSkills(change: CloudSkillsChange): Promise<CloudSkills>;
+  /** This Mac's MCP servers. `CloudEnvironment.mcp` says which ones every new cloud thread gets. */
+  macMcpServers(signal?: AbortSignal): Promise<{ servers: MacMcpServer[] }>;
+  /** Copies MCP servers from this Mac to the Cloud environment, or removes them. */
+  setCloudMcp(change: { names: string[]; cloud: boolean }): Promise<CloudEnvironment>;
   /** Mac → cloud: runs a shell command as the agent account of the VM, or of `threadId`'s sandbox. Input and output bytes are hex. */
   runOnVm(input: { command: string; stdin?: string; cwd?: string; threadId?: string }): Promise<{ code: number | null; stdout: string; stderr: string; truncated: boolean }>;
   cancel(): Promise<void>;
@@ -147,6 +158,8 @@ export interface CloudroomArea {
   /** A Cloud thread's model and current effort, or null when it has no cloud session. */
   threadStatus(threadId: string, signal?: AbortSignal): Promise<{ model: string; reasoning: string } | null>;
   retryStart(threadId: string): Promise<void>;
+  /** Copies a Cloud thread's project into its folder again after the copy failed. */
+  retryCopy(threadId: string): Promise<void>;
   /** `choice` runs the cloud thread on another model when the cloud cannot offer the local one. */
   teleport(threadId: string, action?: "start" | "cancel", choice?: { model: string; reasoning: string }): Promise<TeleportProgress>;
   teleportStatus(threadId: string, signal?: AbortSignal): Promise<TeleportProgress | null>;
@@ -226,6 +239,8 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     importMacVariables: (names) => transport.readJson(request("/environment/mac", { names })) as Promise<CloudEnvironment>,
     cloudSkills: (signal) => transport.readJson(request("/skills", undefined, signal)) as Promise<CloudSkills>,
     setCloudSkills: (change) => transport.readJson(request("/skills", change)) as Promise<CloudSkills>,
+    macMcpServers: (signal) => transport.readJson(request("/mcp", undefined, signal)) as Promise<{ servers: MacMcpServer[] }>,
+    setCloudMcp: (change) => transport.readJson(request("/mcp", change)) as Promise<CloudEnvironment>,
     runOnVm: (input) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/vm/run`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })) as Promise<{ code: number | null; stdout: string; stderr: string; truncated: boolean }>,
     logout: () => transport.readVoid(request("/logout", {})),
     threadStatus: (threadId, signal) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}`, { signal })) as Promise<{ model: string; reasoning: string } | null>,
@@ -240,6 +255,7 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     nativeSessions: (signal) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/import/sessions`, { signal })) as Promise<{ sessions: NativeSession[] }>,
     importSessions: (hostId, sessions) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/import/sessions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hostId, sessions }) })) as Promise<SessionImportResult>,
     reportBug: (input) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/bug-reports`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })) as Promise<{ sent: boolean }>,
+    retryCopy: (threadId) => transport.readVoid(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/retry-copy`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })),
     retryStart: (threadId) => transport.readVoid(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/retry-start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })),
   };
 }

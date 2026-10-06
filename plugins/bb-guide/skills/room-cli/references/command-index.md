@@ -207,7 +207,6 @@ configures the machine with optional configured `preset` and `image` names;
 - `room-cli thread queue send`
 - `room-cli thread queue delete`
 - `room-cli thread queue reorder`
-- `room-cli thread queue group`
 - `room-cli thread tabs`
 - `room-cli thread tabs show`
 - `room-cli thread tabs set`

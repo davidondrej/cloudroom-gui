@@ -83,7 +83,6 @@ function toLifecycleErrorOperation(
     case "resolve_interaction":
     case "send_message":
     case "send_queued_message":
-    case "set_queued_message_group_boundary":
     case "stop_thread":
     case "update_queued_message":
     case "update_merge_base":

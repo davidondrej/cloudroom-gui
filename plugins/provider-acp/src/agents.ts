@@ -30,6 +30,7 @@ export interface AcpAgentDefinition {
   reasoningLevels?: readonly PluginProviderReasoningLevel[];
   providerUsage?: boolean;
   providerInstallation?: boolean;
+  installer?: { scriptUrl: string; args?: readonly string[] };
   nativeRootsResolver?: AcpNativeRootsResolver;
 }
 

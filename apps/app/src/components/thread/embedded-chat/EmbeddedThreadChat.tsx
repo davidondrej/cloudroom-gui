@@ -319,23 +319,26 @@ function EmbeddedThreadChatWithComposer({
       : permissionMode;
 
   const displayStatus = threadQuery.data?.runtime.displayStatus ?? "idle";
+  // A Cloud thread keeps its starting model and full permissions (ADR 0189).
+  const isCloud = threadQuery.data?.executionTarget === "cloud";
   const executionRequestFields = useMemo(
     () => ({
       ...(selectedExecutionModel.length > 0
         ? {
-            model: selectedExecutionModel,
+            ...(isCloud ? {} : { model: selectedExecutionModel }),
             reasoningLevel,
             ...(selectedExecutionServiceTier
               ? { serviceTier: selectedExecutionServiceTier }
               : {}),
           }
         : {}),
-      ...(effectivePermissionMode !== undefined
+      ...(effectivePermissionMode !== undefined && !isCloud
         ? { permissionMode: effectivePermissionMode }
         : {}),
     }),
     [
       effectivePermissionMode,
+      isCloud,
       reasoningLevel,
       selectedExecutionModel,
       selectedExecutionServiceTier,
@@ -428,7 +431,6 @@ function EmbeddedThreadChatWithComposer({
     handleSaveInlineQueuedMessage,
     handleDeleteQueuedMessage,
     handleReorderQueuedMessage,
-    handleSetQueuedMessageGroupBoundary,
   } = useQueuedMessageActions({
     threadId,
     queuedMessages,
@@ -910,10 +912,11 @@ function EmbeddedThreadChatWithComposer({
   const bottomExecutionConfig = useMemo<ExecutionControlsProps>(
     () => ({
       providerRouting: executionOptionsRouting,
+      lockModelSelection: isCloud,
       provider: {
         options: providerOptions,
         selectedId: selectedProviderId,
-        hasMultiple: hasMultipleProviders,
+        hasMultiple: hasMultipleProviders && !isCloud,
       },
       model: {
         active: activeModel,
@@ -942,6 +945,7 @@ function EmbeddedThreadChatWithComposer({
       activeModel,
       executionOptionsRouting,
       hasMultipleProviders,
+      isCloud,
       isLoadingModels,
       modelLoadFailed,
       modelLoadError,
@@ -1095,7 +1099,6 @@ function EmbeddedThreadChatWithComposer({
           processingAction={processingQueuedMessage?.action ?? null}
           onSend={handleSendQueuedMessage}
           onReorder={handleReorderQueuedMessage}
-          onSetGroupBoundary={handleSetQueuedMessageGroupBoundary}
           onEdit={beginEditQueuedMessage}
           onDelete={handleDeleteQueuedMessage}
         />
@@ -1105,7 +1108,6 @@ function EmbeddedThreadChatWithComposer({
       handleDeleteQueuedMessage,
       handleReorderQueuedMessage,
       handleSendQueuedMessage,
-      handleSetQueuedMessageGroupBoundary,
       inlineEditor,
       isProvisioning,
       processingQueuedMessage?.action,
@@ -1149,7 +1151,11 @@ function EmbeddedThreadChatWithComposer({
           environmentSummary={composer.environmentSummary}
           contextWindowUsage={null}
           execution={bottomExecutionConfig}
-          permission={bottomPermissionConfig}
+          permission={
+            isCloud
+              ? { ...bottomPermissionConfig, value: "full", supported: false }
+              : bottomPermissionConfig
+          }
           permissionReadOnly={composer.permissionPolicy === "snapshot"}
           typeahead={typeaheadConfig}
           promptActions={promptActions}

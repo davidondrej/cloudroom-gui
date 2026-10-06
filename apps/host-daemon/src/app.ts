@@ -756,7 +756,8 @@ export async function createHostDaemonApp(
       withMaintenanceRuntime((runtime) =>
         runtime.providerInstallationRun(args),
       ),
-    refreshShellEnv: async () => {
+    refreshShellEnv: async (refreshOptions) => {
+      if (refreshOptions?.force === true) runtimeShellEnvRefreshEntry = null;
       await refreshRuntimeShellEnv();
     },
     resolveInteractiveRequest: async (request) => {

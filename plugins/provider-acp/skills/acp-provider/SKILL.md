@@ -11,6 +11,11 @@ host: `opencode`, `omp`, `grok`, `hermes`, and `devin` appear as `acp-opencode`,
 `room-cli provider list` and `room-cli provider models <provider-id>` using its environment
 or machine selector.
 
+To install a missing agent with its official installer, list candidates with
+`room-cli provider list --installable`, then run
+`room-cli machine provider-cli install <machine> <provider-id>`. Settings → Providers
+offers the same one-click install.
+
 Cursor project skills come from `.cursor/skills`, which can link to
 `.agents/skills`. Cloudroom lists these linked skills as read-only under `cursor-project`.
 

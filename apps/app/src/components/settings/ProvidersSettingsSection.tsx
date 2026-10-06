@@ -17,7 +17,14 @@ import {
   SettingsRowList,
   SettingsSection,
 } from "@/components/ui/settings-section";
-import { useSystemProviders } from "@/hooks/queries/system-queries";
+import { useProviderCliInstallRunner } from "@/components/provider-cli/provider-cli-install";
+import { providerCliJobKey } from "@/components/provider-cli/provider-cli-install-store";
+import {
+  useHostProviderCliStatus,
+  useInstallableProviders,
+  useSystemProviders,
+} from "@/hooks/queries/system-queries";
+import { useHostDaemon } from "@/hooks/useHostDaemon";
 import { getProviderIconInfo } from "@/lib/provider-icon";
 import { ProviderIconMark } from "./ProviderIconMark";
 import {
@@ -164,6 +171,59 @@ function SortableProviderRow({
   );
 }
 
+function InstallableProvidersSection({ hostId }: { hostId: string | null }) {
+  const installable = useInstallableProviders({ hostId }).data ?? [];
+  const { queuedJobKeys, runningJobKey, startInstall } =
+    useProviderCliInstallRunner();
+  if (hostId === null || installable.length === 0) return null;
+
+  return (
+    <SettingsSection
+      title="More agents"
+      description="Install another coding agent on this computer. Cloudroom runs its official installer, then adds it to the list above."
+    >
+      <SettingsRowList>
+        {installable.map((provider) => {
+          const jobKey = providerCliJobKey(hostId, provider.id);
+          const installing =
+            runningJobKey === jobKey || queuedJobKeys.has(jobKey);
+          return (
+            <SettingsRow key={provider.id}>
+              <ProviderRowIcon provider={provider} />
+              <span className="min-w-0 flex-1 truncate font-medium">
+                {provider.displayName}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={installing}
+                aria-label={`Install ${provider.displayName}`}
+                onClick={() =>
+                  startInstall({
+                    hostId,
+                    issue: {
+                      provider: provider.id,
+                      status: { displayName: provider.displayName },
+                      action: {
+                        kind: "install",
+                        label: "Install",
+                        command: `install ${provider.displayName}`,
+                      },
+                      fingerprint: `${provider.id}:missing`,
+                    },
+                  })
+                }
+              >
+                {installing ? "Installing…" : "Install"}
+              </Button>
+            </SettingsRow>
+          );
+        })}
+      </SettingsRowList>
+    </SettingsSection>
+  );
+}
+
 interface CompletedTurnDisplayRowProps {
   disabled: boolean;
   generalSettings: AppSettings;
@@ -210,10 +270,17 @@ export function ProvidersSettingsSection({
   onGeneralSettingsChange,
 }: ProvidersSettingsSectionProps) {
   const providersQuery = useSystemProviders();
+  const { localDaemonHostId } = useHostDaemon();
+  const cliStatus = useHostProviderCliStatus({
+    hostId: localDaemonHostId,
+  }).data;
   const serverProviders: ProviderInfo[] = providersQuery.data ?? [];
   const [optimisticOrder, setOptimisticOrder] = useState<string[] | null>(null);
   const providers = applyProviderOrder(serverProviders, optimisticOrder);
   const ids = providers.map((provider) => provider.id);
+  const installedProviders = providers.filter(
+    (provider) => cliStatus?.[provider.id]?.installed !== false,
+  );
 
   const handleReorder = (activeId: string, overId: string): void => {
     const next = reorderProviderIds(ids, activeId, overId);
@@ -266,19 +333,20 @@ export function ProvidersSettingsSection({
           </SortableSettingsRowList>
         )}
       </SettingsSection>
+      <InstallableProvidersSection hostId={localDaemonHostId} />
       {providers.some(provider => provider.id === "claude-code") ? (
         <div className="space-y-3">
           <ClaudeConnectionButton target="local" presentation="settings" />
           <ClaudeConnectionButton target="cloud" presentation="settings" />
         </div>
       ) : null}
-      {providers.length === 0 ? null : (
+      {installedProviders.length === 0 ? null : (
         <SettingsSection
           title="Collapse finished turns"
           description="When a turn finishes, fold its work into one Worked for row and keep the final answer visible. Turn a provider off to keep every step of its finished turns visible."
         >
           <SettingsRowList>
-            {providers.map((provider) => (
+            {installedProviders.map((provider) => (
               <CompletedTurnDisplayRow
                 key={provider.id}
                 disabled={disabled}

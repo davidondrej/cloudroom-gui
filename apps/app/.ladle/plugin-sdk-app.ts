@@ -32,6 +32,7 @@ export const {
   experimental_useSidebarThreadActions,
   experimental_useSidebarThreadPullRequest,
   experimental_useSidebarThreadSplit,
+  useSdk,
   experimental_useProviders,
   experimental_useCodeTheme,
 } = pluginSdkAppImplementation;

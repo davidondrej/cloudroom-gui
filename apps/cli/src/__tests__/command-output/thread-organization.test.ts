@@ -21,7 +21,6 @@ function queuedMessage(
     reasoningLevel: "medium",
     permissionMode: "auto",
     serviceTier: "default",
-    groupWithNext: false,
     sendAt: null,
     waitingOn: null,
     failureReason: null,
@@ -58,7 +57,6 @@ describe("room-cli thread organization commands", () => {
       id: "queued-1",
       threadId: "thread-1",
       position: 1,
-      groupBoundary: false,
       payload: {
         input: [{ type: "text", text: "next task", mentions: [] }],
       },

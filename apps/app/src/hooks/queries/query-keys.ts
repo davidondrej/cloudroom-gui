@@ -57,6 +57,7 @@ const THREAD_TIMELINE_TURN_SUMMARY_DETAILS_QUERY_KEY =
   "threadTimelineTurnSummaryDetails";
 const SYSTEM_PROVIDERS_QUERY_KEY = "systemProviders";
 const SYSTEM_MACHINE_PROVIDERS_QUERY_KEY = "systemMachineProviders";
+const SYSTEM_INSTALLABLE_PROVIDERS_QUERY_KEY = "systemInstallableProviders";
 const MACHINE_ENVIRONMENT_QUERY_KEY = "machine-environment";
 const SYSTEM_CONFIG_QUERY_KEY = "systemConfig";
 const UI_PREFERENCES_QUERY_KEY = "uiPreferences";
@@ -449,6 +450,13 @@ type SystemProvidersQueryKey = readonly [
 ];
 type AllSystemProvidersQueryKeyPrefix = readonly [
   typeof SYSTEM_PROVIDERS_QUERY_KEY,
+];
+type SystemInstallableProvidersQueryKey = readonly [
+  typeof SYSTEM_INSTALLABLE_PROVIDERS_QUERY_KEY,
+  string | null,
+];
+type AllSystemInstallableProvidersQueryKeyPrefix = readonly [
+  typeof SYSTEM_INSTALLABLE_PROVIDERS_QUERY_KEY,
 ];
 type SystemMachineProvidersQueryKey = readonly [
   typeof SYSTEM_MACHINE_PROVIDERS_QUERY_KEY,
@@ -1086,6 +1094,16 @@ export function systemProvidersQueryKey(
 
 export function allSystemProvidersQueryKeyPrefix(): AllSystemProvidersQueryKeyPrefix {
   return [SYSTEM_PROVIDERS_QUERY_KEY];
+}
+
+export function systemInstallableProvidersQueryKey(
+  hostId: string | null,
+): SystemInstallableProvidersQueryKey {
+  return [SYSTEM_INSTALLABLE_PROVIDERS_QUERY_KEY, hostId];
+}
+
+export function allSystemInstallableProvidersQueryKeyPrefix(): AllSystemInstallableProvidersQueryKeyPrefix {
+  return [SYSTEM_INSTALLABLE_PROVIDERS_QUERY_KEY];
 }
 
 export function systemMachineProvidersQueryKey(): SystemMachineProvidersQueryKey {

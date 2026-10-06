@@ -35,8 +35,6 @@ import {
   useSensor,
   useSensors,
   type ClientRect,
-  type Collision,
-  type CollisionDetection,
   type DragEndEvent,
   type Modifier,
 } from "@dnd-kit/core";
@@ -46,7 +44,6 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
-  type SortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Transform } from "@dnd-kit/utilities";
@@ -77,11 +74,7 @@ import {
   countQueuedMessageAttachments,
   formatQueuedMessagePreview,
 } from "@bb/client-core";
-import {
-  collectLeadQueuedMessageGroupIds,
-  preserveLeadQueuedMessageGroupAfterReorder,
-  type QueuedMessageReorderRequest,
-} from "@/lib/queued-message-reorder";
+import type { QueuedMessageReorderRequest } from "@/lib/queued-message-reorder";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
 import {
   PromptMentionPill,
@@ -101,11 +94,6 @@ import {
 export type QueuedMessageProcessingAction = "send" | "edit" | "delete";
 export type QueuedMessageSendAction = "send-now" | "steer-when-ready";
 
-export interface QueuedMessageGroupBoundaryRequest {
-  expectedGroupedPrefixQueuedMessageIds: string[];
-  groupBoundaryQueuedMessageId: string;
-}
-
 export interface QueuedMessageEditRequest {
   queuedMessageId: string;
   queuedMessageIndex: number;
@@ -121,8 +109,6 @@ export interface QueuedMessageInlineEditor {
 export interface QueuedMessagesListProps {
   attachedToComposer: boolean;
   reorderable?: boolean;
-  /** Shows the "send together" divider. Cloud cores cannot group queued messages yet. */
-  groupable?: boolean;
   queuedMessages: readonly ThreadQueuedMessage[];
   resolveMentionLink?: PromptMentionLinkResolver;
   sendAction: QueuedMessageSendAction;
@@ -133,7 +119,6 @@ export interface QueuedMessagesListProps {
   inlineEditor?: QueuedMessageInlineEditor;
   onSend: (id: string) => void;
   onReorder: (request: QueuedMessageReorderRequest) => void;
-  onSetGroupBoundary: (request: QueuedMessageGroupBoundaryRequest) => void;
   onEdit: (request: QueuedMessageEditRequest) => void;
   onDelete: (id: string) => void;
 }
@@ -165,10 +150,8 @@ interface QueuedMessageRowProps {
   onEdit: (request: QueuedMessageEditRequest) => void;
   onDelete: (id: string) => void;
   compact: boolean;
-  isGroupBoundary: boolean;
 }
 
-const GROUP_DIVIDER_ID = "__queued_message_group_divider__";
 const COLLAPSED_HEIGHT = 36;
 const DRAWER_HEIGHT = 123;
 const DRAWER_MAX_VISIBLE_MESSAGES = 3;
@@ -356,86 +339,36 @@ function CompactQueuedMarkdownPreview({
 
 export function resolveQueuedMessageDrag({
   activeId,
-  combinedIds,
   orderedMessages,
   overId,
 }: {
   activeId: string;
-  combinedIds: readonly string[];
   orderedMessages: readonly ThreadQueuedMessage[];
   overId: string;
-}):
-  | {
-      kind: "divider";
-      orderedMessages: ThreadQueuedMessage[];
-      request: QueuedMessageGroupBoundaryRequest;
-    }
-  | {
-      kind: "row";
-      request: QueuedMessageReorderRequest;
-      orderedMessages: ThreadQueuedMessage[];
-    }
-  | null {
+}): {
+  request: QueuedMessageReorderRequest;
+  orderedMessages: ThreadQueuedMessage[];
+} | null {
   if (activeId === overId) {
     return null;
   }
-  const oldIndex = combinedIds.indexOf(activeId);
-  const newIndex = combinedIds.indexOf(overId);
+  const oldIndex = orderedMessages.findIndex(
+    (queuedMessage) => queuedMessage.id === activeId,
+  );
+  const newIndex = orderedMessages.findIndex(
+    (queuedMessage) => queuedMessage.id === overId,
+  );
   if (oldIndex === -1 || newIndex === -1) {
     return null;
   }
 
-  const movedIds = arrayMove([...combinedIds], oldIndex, newIndex);
-  const byId = new Map(
-    orderedMessages.map((queuedMessage) => [queuedMessage.id, queuedMessage]),
-  );
-  const dividerIndex = movedIds.indexOf(GROUP_DIVIDER_ID);
-  const nextMessages = movedIds
-    .filter((id) => id !== GROUP_DIVIDER_ID)
-    .map((id) => byId.get(id))
-    .filter(
-      (queuedMessage): queuedMessage is ThreadQueuedMessage =>
-        queuedMessage !== undefined,
-    );
-
-  if (activeId === GROUP_DIVIDER_ID) {
-    const boundaryIndex = Math.max(dividerIndex - 1, 0);
-    const groupBoundaryQueuedMessageId = nextMessages[boundaryIndex]?.id;
-    if (!groupBoundaryQueuedMessageId) {
-      return null;
-    }
-    return {
-      kind: "divider",
-      orderedMessages: nextMessages.map((queuedMessage, index) => ({
-        ...queuedMessage,
-        groupWithNext: index < boundaryIndex,
-      })),
-      request: {
-        expectedGroupedPrefixQueuedMessageIds: nextMessages
-          .slice(0, boundaryIndex + 1)
-          .map((queuedMessage) => queuedMessage.id),
-        groupBoundaryQueuedMessageId,
-      },
-    };
-  }
-
-  const messageIndex = nextMessages.findIndex(
-    (queuedMessage) => queuedMessage.id === activeId,
-  );
-  if (messageIndex === -1) {
-    return null;
-  }
-
+  const nextMessages = arrayMove([...orderedMessages], oldIndex, newIndex);
   return {
-    kind: "row",
-    orderedMessages: preserveLeadQueuedMessageGroupAfterReorder({
-      queuedMessages: nextMessages,
-      originalLeadGroupIds: collectLeadQueuedMessageGroupIds(orderedMessages),
-    }),
+    orderedMessages: nextMessages,
     request: {
       queuedMessageId: activeId,
-      previousQueuedMessageId: nextMessages[messageIndex - 1]?.id ?? null,
-      nextQueuedMessageId: nextMessages[messageIndex + 1]?.id ?? null,
+      previousQueuedMessageId: nextMessages[newIndex - 1]?.id ?? null,
+      nextQueuedMessageId: nextMessages[newIndex + 1]?.id ?? null,
     },
   };
 }
@@ -471,73 +404,6 @@ export function clampQueuedMessageDragTransform({
     x: 0,
     y: Math.min(Math.max(transform.y, minY), maxY),
   };
-}
-
-export function snapGroupBoundaryDragTransform({
-  activeId,
-  activeNodeRect,
-  overId,
-  overRect,
-  transform,
-}: {
-  activeId: string | null;
-  activeNodeRect: ClientRect | null;
-  overId: string | null;
-  overRect: ClientRect | null;
-  transform: Transform;
-}): Transform {
-  if (activeId !== GROUP_DIVIDER_ID || !activeNodeRect) {
-    return transform;
-  }
-  if (overId === GROUP_DIVIDER_ID || !overRect) {
-    return { ...transform, x: 0 };
-  }
-
-  const activeCenterY = activeNodeRect.top + activeNodeRect.height / 2;
-  return {
-    ...transform,
-    x: 0,
-    y: overRect.bottom - activeCenterY,
-  };
-}
-
-function collisionDistance(collision: Collision): number {
-  const value = collision.data?.value;
-  return typeof value === "number" ? value : Number.POSITIVE_INFINITY;
-}
-
-export const queuedMessageCollisionDetection: CollisionDetection = (args) => {
-  if (String(args.active.id) !== GROUP_DIVIDER_ID || !args.pointerCoordinates) {
-    return closestCenter(args);
-  }
-
-  const collisions: Collision[] = [];
-  for (const droppableContainer of args.droppableContainers) {
-    if (String(droppableContainer.id) === GROUP_DIVIDER_ID) continue;
-    const rect = args.droppableRects.get(droppableContainer.id);
-    if (!rect) continue;
-    collisions.push({
-      id: droppableContainer.id,
-      data: {
-        droppableContainer,
-        value: Math.abs(args.pointerCoordinates.y - rect.bottom),
-      },
-    });
-  }
-  return collisions.sort(
-    (left, right) => collisionDistance(left) - collisionDistance(right),
-  );
-};
-
-export function queuedMessageSortingStrategy(
-  sortableIds: readonly string[],
-  args: Parameters<SortingStrategy>[0],
-): ReturnType<SortingStrategy> {
-  const activeId = sortableIds[args.activeIndex];
-  if (activeId === GROUP_DIVIDER_ID && args.index !== args.activeIndex) {
-    return null;
-  }
-  return verticalListSortingStrategy(args);
 }
 
 function visibleQueuedMessageTextChunks(
@@ -770,7 +636,6 @@ const QueuedMessageRow = memo(function QueuedMessageRow({
   onEdit,
   onDelete,
   compact,
-  isGroupBoundary,
 }: QueuedMessageRowProps) {
   const actionsRef = useRef<HTMLDivElement>(null);
   const focusActionsOnExpandRef = useRef(false);
@@ -823,10 +688,8 @@ const QueuedMessageRow = memo(function QueuedMessageRow({
       style={rowStyle}
       data-queued-message-row=""
       data-queued-message-id={queuedMessage.id}
-      data-queued-message-group-boundary-row={isGroupBoundary ? "" : undefined}
       className={cn(
         "group/dispatch-row relative border-b border-transparent px-2.5",
-        isGroupBoundary && "border-muted-foreground/15",
         isDragging &&
           "z-20 rounded-lg border border-border bg-background opacity-90 shadow-lift",
       )}
@@ -1068,70 +931,6 @@ const QueuedMessageRow = memo(function QueuedMessageRow({
   );
 });
 
-function SortableGroupBoundaryHandle({ disabled }: { disabled: boolean }) {
-  const {
-    active,
-    attributes,
-    isDragging,
-    listeners,
-    setActivatorNodeRef,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: GROUP_DIVIDER_ID, disabled });
-  const anotherItemIsDragging =
-    active !== null && active.id !== GROUP_DIVIDER_ID;
-
-  return (
-    <li
-      ref={setNodeRef}
-      data-queued-message-group-divider=""
-      style={{
-        transform: isDragging ? CSS.Translate.toString(transform) : undefined,
-        transition: isDragging ? transition : undefined,
-      }}
-      className="pointer-events-none relative z-10 h-0 list-none"
-    >
-      <div className="absolute left-1/2 top-[-0.5px] -translate-x-1/2 -translate-y-1/2">
-        <div className="pointer-events-none">
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  ref={setActivatorNodeRef}
-                  type="button"
-                  className={cn(
-                    "pointer-events-auto flex size-6 shrink-0 touch-none select-none items-center justify-center rounded-full border border-transparent bg-transparent text-muted-foreground transition-[background-color,border-color,box-shadow,color] focus-visible:border-border focus-visible:bg-background focus-visible:shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring queue-boundary-row-hover:border-border queue-boundary-row-hover:bg-background queue-boundary-row-hover:shadow-sm queue-boundary-row-focus-within:border-border queue-boundary-row-focus-within:bg-background queue-boundary-row-focus-within:shadow-sm hover:border-border hover:bg-background hover:shadow-sm [@media(hover:none)]:border-border [@media(hover:none)]:bg-background [@media(hover:none)]:shadow-sm",
-                    anotherItemIsDragging
-                      ? "pointer-events-none opacity-0"
-                      : "opacity-100",
-                    !disabled && "cursor-grab active:cursor-grabbing",
-                    isDragging &&
-                      "pointer-events-auto cursor-grabbing border-border bg-background text-foreground opacity-100 shadow-sm",
-                  )}
-                  disabled={disabled}
-                  aria-label="Messages above send together"
-                  {...attributes}
-                  {...listeners}
-                >
-                  <Icon
-                    name="DragDropHorizontal"
-                    className="size-3.5 opacity-55 transition-opacity queue-boundary-row-hover:opacity-100 queue-boundary-row-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
-                    aria-hidden="true"
-                  />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="max-md:hidden">
-                Messages above send together
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
-    </li>
-  );
-}
-
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
 }
@@ -1220,7 +1019,6 @@ export function QueuedMessagesPendingCard({
 export function QueuedMessagesList({
   attachedToComposer,
   reorderable = true,
-  groupable = true,
   queuedMessages,
   resolveMentionLink,
   sendAction,
@@ -1231,7 +1029,6 @@ export function QueuedMessagesList({
   inlineEditor,
   onSend,
   onReorder,
-  onSetGroupBoundary,
   onEdit,
   onDelete,
 }: QueuedMessagesListProps) {
@@ -1423,7 +1220,7 @@ export function QueuedMessagesList({
   const orderKey = queuedMessages
     .map(
       (queuedMessage) =>
-        `${queuedMessage.id}:${queuedMessage.groupWithNext ? "1" : "0"}:${queuedMessage.updatedAt}`,
+        `${queuedMessage.id}:${queuedMessage.updatedAt}`,
     )
     .join("|");
   const [syncedOrderKey, setSyncedOrderKey] = useState(orderKey);
@@ -1432,35 +1229,14 @@ export function QueuedMessagesList({
     setOrderedMessages(queuedMessages);
   }
 
-  const groupBoundaryIndex = useMemo(() => {
-    const firstUngroupedIndex = orderedMessages.findIndex(
-      (queuedMessage) => !queuedMessage.groupWithNext,
-    );
-    return firstUngroupedIndex === -1
-      ? Math.max(0, orderedMessages.length - 1)
-      : firstUngroupedIndex;
-  }, [orderedMessages]);
-  const combinedIds = useMemo(() => {
-    const ids = orderedMessages.map((queuedMessage) => queuedMessage.id);
-    if (ids.length < 2 || !reorderable || !groupable) return ids;
-    return [
-      ...ids.slice(0, groupBoundaryIndex + 1),
-      GROUP_DIVIDER_ID,
-      ...ids.slice(groupBoundaryIndex + 1),
-    ];
-  }, [groupBoundaryIndex, groupable, orderedMessages, reorderable]);
   const sortingDisabled =
     !reorderable || actionDisabled || processingMessageId !== null || queuedMessages.length < 2;
   const sortableIds = useMemo(
     () =>
-      inlineEditor
-        ? combinedIds.filter((id) => id !== inlineEditor.queuedMessageId)
-        : combinedIds,
-    [combinedIds, inlineEditor],
-  );
-  const sortingStrategy = useCallback<SortingStrategy>(
-    (args) => queuedMessageSortingStrategy(sortableIds, args),
-    [sortableIds],
+      orderedMessages
+        .map((queuedMessage) => queuedMessage.id)
+        .filter((id) => id !== inlineEditor?.queuedMessageId),
+    [inlineEditor, orderedMessages],
   );
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -1470,22 +1246,15 @@ export function QueuedMessagesList({
 
       const dragResult = resolveQueuedMessageDrag({
         activeId: String(event.active.id),
-        combinedIds,
         orderedMessages,
         overId: String(event.over.id),
       });
       if (!dragResult) return;
 
       setOrderedMessages(dragResult.orderedMessages);
-
-      if (dragResult.kind === "divider") {
-        onSetGroupBoundary(dragResult.request);
-        return;
-      }
-
       onReorder(dragResult.request);
     },
-    [combinedIds, onReorder, onSetGroupBoundary, orderedMessages],
+    [onReorder, orderedMessages],
   );
   const restrictToListBounds = useCallback<Modifier>(
     ({ draggingNodeRect, transform }) => {
@@ -1497,17 +1266,6 @@ export function QueuedMessagesList({
       });
     },
     [scrollRef],
-  );
-  const snapGroupBoundaryToRowStroke = useCallback<Modifier>(
-    ({ active, activeNodeRect, over, transform }) =>
-      snapGroupBoundaryDragTransform({
-        activeId: active ? String(active.id) : null,
-        activeNodeRect,
-        overId: over ? String(over.id) : null,
-        overRect: over?.rect ?? null,
-        transform,
-      }),
-    [],
   );
 
   useEffect(() => {
@@ -1681,18 +1439,7 @@ export function QueuedMessagesList({
   const queueItems: ReactNode[] = [];
   let messageIndex = 0;
   let inlineEditorInserted = false;
-  for (const id of combinedIds) {
-    if (id === GROUP_DIVIDER_ID) {
-      queueItems.push(
-        <SortableGroupBoundaryHandle
-          key={GROUP_DIVIDER_ID}
-          disabled={sortingDisabled || inlineEditor !== undefined}
-        />,
-      );
-      continue;
-    }
-    const queuedMessage = orderedMessages.find((message) => message.id === id);
-    if (!queuedMessage) continue;
+  for (const queuedMessage of orderedMessages) {
     if (
       inlineEditor &&
       !inlineEditorInserted &&
@@ -1734,9 +1481,6 @@ export function QueuedMessagesList({
           mobileActionsExpanded={expandedMobileActionsId === queuedMessage.id}
           onExpandMobileActions={setExpandedMobileActionsId}
           compact={mode !== "workspace"}
-          isGroupBoundary={
-            orderedMessages.length > 1 && messageIndex === groupBoundaryIndex
-          }
           onSend={onSend}
           onEdit={handleEdit}
           onDelete={onDelete}
@@ -1865,12 +1609,15 @@ export function QueuedMessagesList({
           <div ref={topSentinelRef} aria-hidden className="h-px w-full" />
           <DndContext
             sensors={sensors}
-            collisionDetection={queuedMessageCollisionDetection}
-            modifiers={[restrictToListBounds, snapGroupBoundaryToRowStroke]}
+            collisionDetection={closestCenter}
+            modifiers={[restrictToListBounds]}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={sortableIds} strategy={sortingStrategy}>
-              <ul ref={listRef} className="group/queue pt-0.5">
+            <SortableContext
+              items={sortableIds}
+              strategy={verticalListSortingStrategy}
+            >
+              <ul ref={listRef} className="pt-0.5">
                 {queueItems}
               </ul>
             </SortableContext>

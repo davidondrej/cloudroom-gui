@@ -18,7 +18,7 @@ const startedAtom = atomWithStorage<number | null>("cloudroom.invites.startedAt"
   createJsonLocalStorage<number | null>((value): value is number => typeof value === "number"), { getOnInit: true });
 
 const invitesSchema = z.object({
-  codes: z.array(z.object({ code: z.string(), used: z.boolean() })), left: z.number(), created: z.string().nullable(), waiting: z.number().nullable().optional(),
+  codes: z.array(z.object({ code: z.string(), used: z.boolean(), url: z.string().optional() })), left: z.number(), created: z.string().nullable(), waiting: z.number().nullable().optional(),
 });
 type Invites = z.infer<typeof invitesSchema>;
 async function invites(method: "GET" | "POST", signal?: AbortSignal) {
@@ -59,9 +59,13 @@ export function InviteOffer() {
   return <InviteTickets data={list.data} startStep={0} finish={() => setSeen(true)} />;
 }
 
-export function InviteSidebarRow() {
+function useInvites() {
   const signedIn = Boolean(useCloudroomAccount().data?.account);
-  const list = useQuery({ queryKey: INVITES_KEY, enabled: signedIn, retry: false, staleTime: 5 * 60_000, queryFn: ({ signal }) => invites("GET", signal) });
+  return useQuery({ queryKey: INVITES_KEY, enabled: signedIn, retry: false, staleTime: 5 * 60_000, queryFn: ({ signal }) => invites("GET", signal) });
+}
+
+export function InviteSidebarRow() {
+  const list = useInvites();
   const open = useSetAtom(manualAtom);
   if (!list.data || nothingToShare(list.data)) return null;
   const left = list.data.left;
@@ -75,6 +79,31 @@ export function InviteSidebarRow() {
   );
 }
 
+export function InviteSettingsCard() {
+  const list = useInvites();
+  const open = useSetAtom(manualAtom);
+  if (!list.data || nothingToShare(list.data)) return null;
+  const left = list.data.left;
+  return (
+    <div data-testid="settings-invite-card" className="flex min-h-13 items-center gap-3 rounded-lg border border-border bg-card py-2 pr-2.5 pl-4">
+      <TicketIcon className="text-muted-foreground" />
+      <p className="min-w-0 flex-1 text-sm">
+        <span className="font-medium text-foreground">Enjoying Cloudroom?</span>{" "}
+        <span className="text-muted-foreground">It's invite-only. Share it with up to 3 friends.</span>
+      </p>
+      {left <= 3 && (
+        <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+          <span className="flex gap-0.5">{[0, 1, 2].map((index) => <span key={index} className={cn("size-1.5 rounded-full bg-muted-foreground", index < 3 - left && "opacity-25")} />)}</span>
+          {left} left
+        </span>
+      )}
+      <button type="button" onClick={() => open(true)} className="h-8 shrink-0 rounded-md bg-[#bfff00] px-3 text-xs font-semibold text-[#0e0d0b] hover:brightness-95">
+        Invite a friend
+      </button>
+    </div>
+  );
+}
+
 const INK = "#0e0d0b", LIME = "#bfff00";
 const ROOT: CSSProperties = {
   background: `radial-gradient(900px 600px at 76% 52%, rgba(191,255,0,.12), transparent 60%), radial-gradient(700px 500px at 10% 0%, rgba(243,236,219,.06), transparent 60%), ${INK}`,
@@ -82,16 +111,21 @@ const ROOT: CSSProperties = {
 
 function InviteTickets({ data, startStep, finish }: { data: Invites; startStep: number; finish: () => void }) {
   const [step, setStep] = useState(startStep);
-  const [created, setCreated] = useState<string | null>(null);
+  const [created, setCreated] = useState<Invites["codes"][number] | null>(null);
   const client = useQueryClient();
   const create = useMutation({
     mutationFn: () => invites("POST"),
     onSuccess: (result) => {
-      setCreated(result.created ?? result.codes.find((item) => !item.used)?.code ?? null);
+      setCreated(result.codes.find((item) => item.code === result.created) ?? result.codes.find((item) => !item.used) ?? null);
       void client.invalidateQueries({ queryKey: INVITES_KEY });
     },
   });
-  const code = created ?? data.codes.find((item) => !item.used)?.code ?? null;
+  const ticket = created ?? data.codes.find((item) => !item.used) ?? null;
+  const code = ticket?.code ?? null;
+  // The link opens the website's invite page (web/app/i/[code]). Older websites send no link, so copy the code.
+  const copy = () => {
+    if (ticket) void copyToClipboardWithToast(ticket.url ?? format(ticket.code), { successMessage: ticket.url ? "Invite link copied" : "Invite code copied" });
+  };
   const usedAny = data.codes.some((item) => item.used);
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => { root.current?.focus(); }, []);
@@ -126,7 +160,7 @@ function InviteTickets({ data, startStep, finish }: { data: Invites; startStep: 
       lede: "Send it to a friend who builds with agents.",
       actions: code
         ? <>
-            <Primary onClick={() => void copyToClipboardWithToast(format(code), { successMessage: "Invite code copied" })}><CopyIcon />Copy code</Primary>
+            <Primary onClick={copy}><CopyIcon />Copy link</Primary>
             <button type="button" onClick={finish} className="h-[50px] border border-[#3a372f] px-6 text-[15px] font-semibold text-[#d8d0bd] transition-transform hover:scale-105 hover:border-[#5a564b]">Done</button>
           </>
         : <>
@@ -140,7 +174,7 @@ function InviteTickets({ data, startStep, finish }: { data: Invites; startStep: 
           <Ticket dim style={{ left: 150, top: 110, transform: "rotate(7deg) scale(.9)" }} number="" label="" title="Invite" foot="••••-••••" />
           <Ticket dim style={{ left: 120, top: 170, transform: "rotate(3deg) scale(.95)" }} number="" label="" title="Invite" foot="••••-••••" />
           <Ticket style={{ left: 80, top: 250, transform: "rotate(-4deg) scale(1.2)" }} number={String(number).padStart(2, "0")} label={number <= 3 ? `NO. ${number} OF 3` : `NO. ${number}`}
-            title={<Highlight>Invite</Highlight>} sub="Enter at cloudroom.dev/login" foot={code ? format(code) : "••••-••••"} live={Boolean(code)} stamp={{ text: code ? "READY" : "UNUSED" }} />
+            title={<Highlight>Invite</Highlight>} sub="One click lets them in." foot={code ? format(code) : "••••-••••"} live={Boolean(code)} stamp={{ text: code ? "READY" : "UNUSED" }} />
         </>;
       })(),
     },
@@ -227,5 +261,5 @@ function Primary({ children, onClick, disabled }: { children: ReactNode; onClick
 }
 
 const Arrow = () => <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 8h10M9 4l4 4-4 4" /></svg>;
-const TicketIcon = () => <svg viewBox="0 0 24 24" className="size-4 shrink-0 text-[#0e0d0b] dark:text-[#bfff00]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /><path d="M13 5v2M13 11v2M13 17v2" /></svg>;
+const TicketIcon = ({ className = "text-[#0e0d0b] dark:text-[#bfff00]" }: { className?: string }) => <svg viewBox="0 0 24 24" className={cn("size-4 shrink-0", className)} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /><path d="M13 5v2M13 11v2M13 17v2" /></svg>;
 const CopyIcon = () => <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="5" y="5" width="8.5" height="8.5" /><path d="M2.5 10.5v-8h8" /></svg>;

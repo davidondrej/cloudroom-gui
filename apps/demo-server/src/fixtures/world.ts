@@ -212,7 +212,6 @@ export function queuedMessage(args: {
     reasoningLevel: THREAD_DEFAULT_EXECUTION_OPTIONS.reasoningLevel,
     permissionMode: THREAD_DEFAULT_EXECUTION_OPTIONS.permissionMode,
     serviceTier: THREAD_DEFAULT_EXECUTION_OPTIONS.serviceTier,
-    groupWithNext: false,
     sendAt: null,
     waitingOn: null,
     failureReason: null,

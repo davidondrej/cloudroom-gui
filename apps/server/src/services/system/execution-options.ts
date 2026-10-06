@@ -3,6 +3,7 @@ import type {
   SystemExecutionOptionsModelLoadError,
   SystemExecutionOptionsQuery,
   SystemExecutionOptionsResponse,
+  SystemInstallableProvidersQuery,
   SystemRestartModelDiscoveryRequest,
   SystemProvidersQuery,
 } from "@bb/server-contract";
@@ -278,6 +279,27 @@ export async function listSystemProviderInfos(
 ): Promise<ProviderInfo[]> {
   await deps.providerRegistry.whenRegistrationsSettled();
   return await resolveSystemProviderInfosPlan(deps, query).providersPromise;
+}
+
+export async function listInstallableProviderInfos(
+  deps: LoggedWorkSessionDeps,
+  query: SystemInstallableProvidersQuery = {},
+): Promise<ProviderInfo[]> {
+  await deps.providerRegistry.whenRegistrationsSettled();
+  const plan = resolveSystemProviderInfosPlan(deps, query);
+  if (plan.hostId === null) return [];
+  const visibleIds = new Set(
+    (await plan.providersPromise).map((provider) => provider.id),
+  );
+  return deps.providerRegistry
+    .list()
+    .filter(
+      (registration) =>
+        registration.visibility === "installed" &&
+        registration.info.maintenance.installation &&
+        !visibleIds.has(registration.info.id),
+    )
+    .map((registration) => registration.info);
 }
 
 export async function resolveSystemProviderModels(

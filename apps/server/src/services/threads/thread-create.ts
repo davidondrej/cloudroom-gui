@@ -516,15 +516,17 @@ export async function createThreadFromRequest(
   const sourceId = rawRequestInput.sourceThreadId ?? rawRequestInput.parentThreadId;
   const source = sourceId ? getThread(deps.db, sourceId) : null;
   const cloudChild = source !== null && isCloudThread(source) && !rawRequestInput.sourceThreadId && !rawRequestInput.originKind;
-  if (source && isCloudThread(source) && !cloudChild) {
-    throw new ApiError(409, "cloudroom_unsupported", "Cloud forks are not enabled; native fallback is blocked.");
+  const cloudFork = source !== null && isCloudThread(source) && rawRequestInput.originKind === "fork" && Boolean(rawRequestInput.sourceThreadId);
+  if (source && isCloudThread(source) && !cloudChild && !cloudFork) {
+    throw new ApiError(409, "cloudroom_unsupported", "Only forks and child threads can start from a Cloud thread; native fallback is blocked.");
   }
-  if (rawRequestInput.executionTarget === "cloud" || cloudChild) {
+  if (rawRequestInput.executionTarget === "cloud" || cloudChild || cloudFork) {
     const thread = await cloudroom(deps).create({ ...rawRequestInput, origin: rawRequestInput.origin ?? "sdk", originKind: rawRequestInput.originKind ?? null });
     // Cloud threads count in the same anonymous usage events as local ones, tagged with where they run.
     const execution = cloudExecution(deps, thread.id);
-    deps.telemetry.capture({ name: "thread_created", properties: { execution, is_child_thread: cloudChild, provider: thread.providerId } });
-    if (rawRequestInput.input.length > 0) captureUserMessageSentTelemetry(deps, { execution, isChildThread: cloudChild, messageSource: "thread_create", providerId: thread.providerId, threadId: thread.id });
+    const isChildThread = thread.parentThreadId !== null;
+    deps.telemetry.capture({ name: "thread_created", properties: { execution, is_child_thread: isChildThread, provider: thread.providerId } });
+    if (rawRequestInput.input.length > 0) captureUserMessageSentTelemetry(deps, { execution, isChildThread, messageSource: "thread_create", providerId: thread.providerId, threadId: thread.id });
     return thread;
   }
   if (rawRequestInput.origin === "plugin") {

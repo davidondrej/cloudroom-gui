@@ -15,6 +15,7 @@ import { formatRelativeTime } from "@/lib/relative-time";
 
 const ENVIRONMENT_KEY = ["cloudroom-environment"];
 const SKILLS_KEY = ["cloudroom-cloud-skills"];
+const MCP_KEY = ["cloudroom-mac-mcp"];
 const VARIABLE_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const PREINSTALLED = "Node.js · Git · GitHub CLI · Claude Code · Codex · Pi · Cursor";
 // Dimmer than the default placeholder, so the example never reads as saved text.
@@ -41,7 +42,7 @@ export function CloudEnvironmentSettingsSection() {
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-foreground">Cloud environment</h2>
           <p className="mt-1 max-w-xl text-xs leading-relaxed text-subtle-foreground">
-            Every new cloud thread starts with these skills, API keys, GitHub repos, and this setup. Change them here or on your cloudroom.dev dashboard. Both stay in sync.
+            Every new cloud thread starts with these skills, MCP servers, API keys, GitHub repos, and this setup. Change them here or on your cloudroom.dev dashboard. Both stay in sync.
           </p>
         </div>
         {data && !environment.isError && (
@@ -59,6 +60,7 @@ export function CloudEnvironmentSettingsSection() {
         <>
           <GithubCard />
           <SkillsCard />
+          <McpCard inCloud={data.mcp} onSaved={saved} />
           <VariablesCard environment={data} busy={update.isPending} onChange={(change) => update.mutateAsync(change)} onImported={saved} />
           <ReposCard repos={data.repos} busy={update.isPending} onChange={(change) => update.mutateAsync(change)} />
           <SetupScriptCard setup={data.setup} onSave={(setup) => update.mutateAsync({ action: "setup", setup })} />
@@ -401,6 +403,87 @@ function SkillsCard() {
       {(change.error || data?.issue) && (
         <p role="alert" className="border-t border-border px-4 py-2 text-xs text-destructive-text">
           {change.error ? errorText(change.error) : `Skills could not be copied to the cloud: ${data?.issue}`}
+        </p>
+      )}
+    </Card>
+  );
+}
+
+/** MCP servers from this Mac's Claude Code and Codex. The Cloud environment says which ones are in the cloud. */
+function McpCard({ inCloud, onSaved }: { inCloud: string[]; onSaved: (data: CloudEnvironment) => void }) {
+  const mac = useQuery({ queryKey: MCP_KEY, queryFn: ({ signal }) => sdk.cloudroom.macMcpServers(signal), refetchInterval: 15_000, retry: false });
+  const change = useMutation({ mutationFn: (change: { names: string[]; cloud: boolean }) => sdk.cloudroom.setCloudMcp(change), onSuccess: onSaved });
+  const found = mac.data?.servers ?? [];
+  // A server removed from this Mac stays listed while it is in the cloud, so it can be removed there too.
+  const servers = [...found, ...inCloud.filter((name) => !found.some((server) => server.name === name)).map((name) => ({ name, macOnly: false }))]
+    .map((server) => ({ ...server, cloud: inCloud.includes(server.name) }))
+    .sort((a, b) => Number(a.macOnly) - Number(b.macOnly) || a.name.localeCompare(b.name));
+  const usable = servers.filter((server) => !server.macOnly);
+  const set = (cloud: boolean) => {
+    const names = usable.filter((server) => server.cloud !== cloud).map((server) => server.name);
+    if (names.length) change.mutate({ names, cloud });
+  };
+  return (
+    <Card icon="Plug02" title="MCP servers" description="Your Mac's MCP servers from Claude Code and Codex. Click one to add it to every new cloud thread.">
+      {!mac.data ? (
+        <p role={mac.isError ? "alert" : "status"} className="border-t border-border px-4 py-3 text-xs text-subtle-foreground">
+          {mac.isError ? errorText(mac.error) : "Looking for MCP servers on this Mac…"}
+        </p>
+      ) : !servers.length ? (
+        <p className="border-t border-border px-4 py-3 text-xs text-subtle-foreground">
+          No MCP servers on this Mac yet. Add one with <code>claude mcp add --scope user</code>.
+        </p>
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-1.5 border-t border-border px-4 py-3">
+            {servers.map((server) =>
+              server.macOnly ? (
+                <span
+                  key={server.name}
+                  title="It runs a program or uses a folder that only this Mac has."
+                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2.5 py-1 font-mono text-xs text-subtle-foreground/60"
+                >
+                  {server.name}
+                  <span className="font-sans text-2xs">· Mac only</span>
+                </span>
+              ) : (
+                <button
+                  key={server.name}
+                  type="button"
+                  aria-pressed={server.cloud}
+                  disabled={change.isPending}
+                  onClick={() => change.mutate({ names: [server.name], cloud: !server.cloud })}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-mono text-xs transition-colors disabled:cursor-wait ${
+                    server.cloud
+                      ? "border-primary/40 bg-primary/15 text-primary-text hover:bg-primary/25"
+                      : "border-dashed border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                  }`}
+                >
+                  <Icon name={server.cloud ? "Check" : "Plus"} className="size-3" />
+                  {server.name}
+                </button>
+              ),
+            )}
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-surface-recessed/40 px-4 py-2">
+            <span className="text-xs text-subtle-foreground">Keys in these servers are stored encrypted, like API keys.</span>
+            <div className="flex items-center gap-1">
+              <span className="mr-1 text-xs text-subtle-foreground">
+                {usable.filter((server) => server.cloud).length} of {usable.length} in cloud
+              </span>
+              <Button size="sm" variant="ghost" className="text-subtle-foreground" disabled={change.isPending || usable.every((server) => server.cloud)} onClick={() => set(true)}>
+                Select all
+              </Button>
+              <Button size="sm" variant="ghost" className="text-subtle-foreground" disabled={change.isPending || usable.every((server) => !server.cloud)} onClick={() => set(false)}>
+                Clear
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+      {change.error && (
+        <p role="alert" className="border-t border-border px-4 py-2 text-xs text-destructive-text">
+          {errorText(change.error)}
         </p>
       )}
     </Card>

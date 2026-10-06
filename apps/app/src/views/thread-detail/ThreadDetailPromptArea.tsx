@@ -749,12 +749,10 @@ export function ThreadDetailPromptArea({
   });
   const cloudFollowUpReasoningOptions = useMemo(() => {
     const levels = thread.providerId === "acp-cursor" || thread.providerId === "acp-fx" || thread.providerId === "acp-opencode" ? [cloudReasoning] : cloudReasoningLevels(cloudConnection.data, thread.providerId, cloudState.data?.model);
-    const options = levels.flatMap((level) => {
+    return [...new Set([cloudReasoning, ...levels])].flatMap((level) => {
       const parsed = reasoningLevelSchema.safeParse(level);
       return parsed.success ? [{ value: parsed.data, label: reasoningLevelLabel(parsed.data, undefined) }] : [];
-    });
-    if (options.some((option) => option.value === cloudReasoning)) return options;
-    return [{ value: cloudReasoning, label: reasoningLevelLabel(cloudReasoning, undefined) }, ...options];
+    }).sort((a, b) => reasoningLevelSchema.options.indexOf(a.value) - reasoningLevelSchema.options.indexOf(b.value));
   }, [cloudConnection.data, cloudReasoning, cloudState.data?.model, thread.providerId]);
   const cloudFastSupported = isCloud && cloudServiceTierSupported(cloudConnection.data, thread.providerId);
   const cloudSteerSupported = isCloud && cloudFeatureSupported(cloudConnection.data, thread.providerId, "steer");
@@ -1001,7 +999,6 @@ export function ThreadDetailPromptArea({
     handleSaveInlineQueuedMessage,
     handleDeleteQueuedMessage,
     handleReorderQueuedMessage,
-    handleSetQueuedMessageGroupBoundary,
   } = useQueuedMessageActions({
     threadId: thread.id,
     queuedMessages,
@@ -2298,7 +2295,6 @@ export function ThreadDetailPromptArea({
             resolveMentionLink={resolveMentionLink}
             inlineEditor={queuedMessageEditor ?? undefined}
             reorderable={!isCloud || cloudConnection.data?.queue_reorder === true}
-            groupable={!isCloud}
             sendAction={shouldSteerWhenReady ? "steer-when-ready" : "send-now"}
             sendDisabled={
               submitMode.kind === "blocked" ||
@@ -2311,7 +2307,6 @@ export function ThreadDetailPromptArea({
             processingAction={displayedProcessingQueuedMessage?.action ?? null}
             onSend={handleSendQueuedMessage}
             onReorder={handleReorderQueuedMessage}
-            onSetGroupBoundary={handleSetQueuedMessageGroupBoundary}
             onEdit={beginEditQueuedMessage}
             onDelete={handleDeleteQueuedMessage}
           />
@@ -2329,7 +2324,6 @@ export function ThreadDetailPromptArea({
       onChangedFileClick,
       handleReorderQueuedMessage,
       handleSendQueuedMessage,
-      handleSetQueuedMessageGroupBoundary,
       handleToggleBannerSection,
       handleUnarchiveCurrentThread,
       environmentGoneStatus,

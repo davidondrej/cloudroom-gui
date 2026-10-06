@@ -8,6 +8,9 @@ Read the installed declarations for exact current signatures.
 
 - `PLUGIN_CLI_OUTPUT_MAX_BYTES`
 - `defineRpcContract`
+- `defineCli`
+- `cliCommand`
+- `PluginCliError`
 - `experimental_defineHostEntry`
 - `BbContext`
 - `BbNavigate`

@@ -2,6 +2,15 @@
 
 Hooks:
 
+- `useSdk()` → the public API client bound to your plugin: the same areas
+  the CLI and the backend `bb.sdk` expose (`threads`, `threadSections`,
+  `projects`, `environments`, `hosts`, `files`, …), running with the
+  signed-in user's session. The first choice for reading and mutating app
+  state from a frontend, for example `sdk.threads.spawn(request)`. `spawn` and
+  `fork` stamp your plugin as the origin, and the plugin-metadata calls
+  default `pluginId`. The client is stable, so it is safe in dependency
+  lists. Test with `renderSlot({ sdk: { threads: { … } } })` and read
+  `inspection.sdkCalls`.
 - `useRpc<typeof rpcContract>()` → `{ call(method, input?) }` — exact method,
   input, and result inference from a type-only backend contract import.
 - `useRealtime(channel, handler)` — fires for this plugin's

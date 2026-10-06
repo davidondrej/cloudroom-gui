@@ -58,7 +58,10 @@ Spawning:
   queue; sending its first queued message explicitly resumes it. Inspect
   room-cli cloud status --json for core/harness support for steering,
   attachments, compaction, message editing, queue changes, and fast service tier.
-  Native environment options, worktrees, scheduling, and forks remain unsupported.
+  --base-branch BRANCH starts it from that pushed GitHub branch. Native
+  environment options, worktrees, scheduling, and forks remain unsupported.
+  A Local parent's Cloud child gets its own sandbox and reports back like a Local
+  child. It starts from GitHub, so push work it needs first.
   An idle status does not prove a queued message completed; verify its output.
 
   Execution defaults resolve from explicit flags, live parent execution, and
@@ -359,7 +362,6 @@ Queued messages:
   room-cli thread queue update <thread-id> <message-id> <message> [--file <path>] [--image <path>]
   room-cli thread queue send <thread-id> <message-id> [--mode auto|steer]
   room-cli thread queue reorder <thread-id> <message-id> [--after <id>] [--before <id>]
-  room-cli thread queue group <thread-id> <boundary-id> --prefix <comma-separated-ids>
   room-cli thread queue delete <thread-id> <message-id>
 
   The `Sender` column identifies agent threads and system notices; user messages

@@ -76,6 +76,7 @@ async function tryPluginCommandProxy(
   const command = match.commands.find((entry) => entry.name === argv[0]);
   if (
     command !== undefined &&
+    match.rendersHelp !== true &&
     argv.slice(1).some((arg) => arg === "--help" || arg === "-h")
   ) {
     console.log(command.usage.replace(/^(bb|room|cloudroom) /, "room-cli "));

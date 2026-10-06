@@ -8,7 +8,6 @@ import {
   runInstallCommand,
 } from "../plugins/install-sources.js";
 import {
-  boundedResponseBytes,
   MARKETPLACE_FETCH_TIMEOUT_MS,
   type MarketplaceFetch,
 } from "./marketplace-http.js";
@@ -21,8 +20,6 @@ import {
 } from "./marketplace-manifest.js";
 
 const MARKETPLACE_MANIFEST_FILENAME = "marketplace.json";
-
-const MARKETPLACE_MANIFEST_MAX_BYTES = 1_048_576;
 
 type MarketplaceSource =
   | { kind: "https"; manifestUrl: string }
@@ -259,13 +256,7 @@ async function materializeHttps(
         warn,
       );
   } else {
-    const raw = new TextDecoder().decode(
-      await boundedResponseBytes(
-        response,
-        MARKETPLACE_MANIFEST_MAX_BYTES,
-        "marketplace manifest",
-      ),
-    );
+    const raw = await response.text();
     catalog = parseMarketplaceManifestJson(raw, "marketplace manifest", warn);
     manifestJson = JSON.stringify(catalog);
   }
@@ -305,12 +296,6 @@ async function materializeLocal(
       join(root, MARKETPLACE_MANIFEST_FILENAME),
       "marketplace manifest",
     );
-    const manifestSize = (await stat(manifestPath)).size;
-    if (manifestSize > MARKETPLACE_MANIFEST_MAX_BYTES) {
-      throw new Error(
-        `marketplace manifest exceeds ${MARKETPLACE_MANIFEST_MAX_BYTES} bytes`,
-      );
-    }
     const raw = await readFile(manifestPath, "utf8");
     const catalog = parseMarketplaceManifest(
       JSON.parse(raw) as unknown,

@@ -16,13 +16,16 @@ import { startClaudeVersionSync } from "./harness-versions.js";
 import { importBbThreads } from "./bb-import.js";
 import { importNativeSessions, listNativeSessions } from "./session-import.js";
 import { copyToMac, openOnMac, teleportingToLocal, teleportToLocal } from "./teleport-local.js";
-import { cloudEnvironmentRequestSchema, macSkills, macVariables, sandboxThread, type CloudEnvironmentRequest } from "./sandboxes.js";
+import { cloudEnvironmentRequestSchema, macMcpServers, macSkills, macVariables, sandboxThread, type CloudEnvironmentRequest } from "./sandboxes.js";
 import { CloudroomError } from "./client.js";
 import { archiveThreadAndChildren } from "../threads/thread-archive.js";
+import { queueChildThreadTurnNotificationBestEffort } from "../threads/child-thread-notifications.js";
 import { reportBug } from "./bug-reports.js";
 import { disconnectGithub, githubAccount, githubAuth } from "./github-login.js";
 import { addGithubRepo, repoSuggestions } from "./repo-suggestions.js";
 import { SETUP_ACTIONS, SETUP_DETAILS, SETUP_STEPS } from "../system/telemetry.js";
+
+const SAFE_SETTINGS_SEARCH = /^(?=.{2,40}$)\p{L}+(?: \p{L}+){0,3}$/u;
 
 export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   cloudroom(deps).teleportRecovery = () => teleports(deps).recover();
@@ -32,6 +35,7 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     try { archiveThreadAndChildren(deps, { parentThread: thread }); }
     catch (error) { deps.logger.warn({ error, threadId }, "Cloud self-archive failed"); }
   };
+  cloudroom(deps).childTurnEnded = (child, turnStatus) => void queueChildThreadTurnNotificationBestEffort(deps, { childThread: child, parentThreadId: child.parentThreadId, turnStatus });
   startClaudeVersionSync(deps, () => cloudroom(deps).teleportClient());
   const localOnly: MiddlewareHandler = async (context, next) => {
     const problem = browserRequestProblem(context, deps, { requireJsonForMutation: true });
@@ -106,6 +110,13 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     deps.telemetry.capture({ name: "setup_step", properties: parsed.data });
     return context.json({ ok: true });
   });
+  app.post("/api/v1/cloudroom/settings-search-miss", async (context) => {
+    const parsed = z.object({ query: z.string().max(200) }).strict().safeParse(await context.req.json().catch(() => null));
+    if (!parsed.success) throw new ApiError(400, "invalid_settings_search", "Invalid settings search.");
+    const query = parsed.data.query.trim().toLowerCase().replace(/\s+/g, " ");
+    if (SAFE_SETTINGS_SEARCH.test(query)) deps.telemetry.capture({ name: "settings_search_no_results", properties: { query } });
+    return context.json({ ok: true });
+  });
   app.post("/api/v1/cloudroom/bug-reports", async (context) => {
     const input = z.object({ message: z.string().trim().min(1).max(4000), threadId: z.string().min(1).max(200).optional() }).strict().parse(await context.req.json());
     return context.json(await reportBug(deps, input));
@@ -171,6 +182,14 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     skillChange = change.catch(() => {});
     await change;
     return context.json(await skillList());
+  });
+  // MCP servers from this Mac. The Cloud environment answer says which are in the cloud; their keys go straight to the website.
+  app.get("/api/v1/cloudroom/account/mcp", async (context) => context.json({ servers: (await macMcpServers()).map(({ name, server }) => ({ name, macOnly: !server })) }));
+  app.post("/api/v1/cloudroom/account/mcp", async (context) => {
+    const { names, cloud } = z.object({ names: z.array(z.string().min(1)).min(1).max(50), cloud: z.boolean() }).strict().parse(await context.req.json());
+    return context.json(await cloudroom(deps).sandboxes.setMacMcp(names, cloud).catch((error: unknown) => {
+      throw new ApiError(error instanceof CloudroomError && error.status ? 400 : 503, "cloud_mcp", error instanceof Error ? error.message : String(error));
+    }));
   });
   app.post("/api/v1/cloudroom/account/copy-logins", async (context) => {
     const input = z.object({ enabled: z.boolean() }).strict().parse(await context.req.json());
@@ -265,6 +284,10 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     const problem = browserRequestProblem(context, deps, { requireJsonForMutation: true });
     if (problem) return context.json({ message: "Use the local Cloudroom app or CLI." }, problem.status);
     await cloudroom(deps).retryStart(context.req.param("id"));
+    return context.json({ ok: true });
+  });
+  app.post("/api/v1/cloudroom/threads/:id/retry-copy", async (context) => {
+    await cloudroom(deps).retryCopy(context.req.param("id"));
     return context.json({ ok: true });
   });
   app.post("/api/v1/cloudroom/threads/:id/wake", async (context) => {

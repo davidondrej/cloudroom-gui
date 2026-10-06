@@ -707,7 +707,6 @@ function Row({
           )
         }
         onReorder={noop}
-        onSetGroupBoundary={noop}
         onEdit={handleEditQueuedMessage}
         onDelete={(id) =>
           setStoryQueuedMessages((current) =>

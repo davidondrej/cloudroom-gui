@@ -214,14 +214,21 @@ export function usePluginList(args: { enabled: boolean }) {
   });
 }
 
-export function usePluginSettingsView(
+export function pluginSettingsViewQueryOptions(
   pluginId: string,
   options: { enabled: boolean },
 ) {
-  return useQuery({
+  return queryOptions({
     queryKey: pluginSettingsViewQueryKey(pluginId),
     queryFn: () => fetchPluginSettingsView(fetch, pluginId),
     enabled: options.enabled,
     staleTime: 30_000,
   });
+}
+
+export function usePluginSettingsView(
+  pluginId: string,
+  options: { enabled: boolean },
+) {
+  return useQuery(pluginSettingsViewQueryOptions(pluginId, options));
 }

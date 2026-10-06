@@ -338,7 +338,11 @@ type ExpectedProjectsKey =
 type ExpectedProjectSourcesKey = "add" | "delete" | "update";
 type ExpectedProjectAttachmentsKey = "copy" | "read" | "upload";
 
-type ExpectedProvidersKey = "list" | "models" | "restartModelDiscovery";
+type ExpectedProvidersKey =
+  | "installable"
+  | "list"
+  | "models"
+  | "restartModelDiscovery";
 
 type ExpectedStatusKey = "get";
 
@@ -435,7 +439,6 @@ type ExpectedThreadQueuedMessagesKey =
   | "list"
   | "reorder"
   | "send"
-  | "setGroupBoundary"
   | "update";
 type ExpectedThreadTabsKey = "get" | "update";
 type ExpectedTerminalsKey =

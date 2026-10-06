@@ -7,6 +7,7 @@ import {
 import type { LoggedWorkSessionDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { requireConnectedPrimaryHostId } from "../hosts/primary-host.js";
+import { cloudroom } from "../cloudroom/commands.js";
 import { runtimeErrorLogFields } from "../lib/error-log-fields.js";
 import { AiServiceCallError } from "./ai-service-call.js";
 import type { AiServiceRegistration } from "./ai-service-registry.js";
@@ -26,6 +27,7 @@ type OptionalJsonValue = JsonValue | null | undefined;
 const OPENAI_TRANSCRIPTION_PROVIDER = "openai";
 const VOICE_TRANSCRIPTION_MAX_BYTES = 25 * 1024 * 1024;
 const AI_SERVICE_VOICE_MAX_BYTES = 5 * 1024 * 1024;
+const BACKUP_VOICE_MAX_BYTES = 4 * 1024 * 1024;
 const voiceTranscriptionSchema = Type.Object({ text: Type.String() });
 
 function parseTranscriptionModel(model: string): ProviderModelInfo {
@@ -272,6 +274,34 @@ export async function transcribeVoiceInput(
     throw new ApiError(400, "invalid_request", "Audio file exceeds 25MB limit");
   }
 
+  try {
+    return await transcribeWithConfiguredModel(deps, args);
+  } catch (error) {
+    const backup =
+      args.file.size <= BACKUP_VOICE_MAX_BYTES
+        ? await cloudroom(deps)
+            .sandboxes.transcribe(args.file)
+            .catch((backupError: unknown) => {
+              deps.logger.warn(
+                runtimeErrorLogFields(deps.config, backupError),
+                "Backup voice transcription failed",
+              );
+              return null;
+            })
+        : null;
+    if (backup === null) throw error;
+    deps.logger.info(
+      runtimeErrorLogFields(deps.config, error),
+      "Voice transcription used the Cloudroom backup",
+    );
+    return backup;
+  }
+}
+
+async function transcribeWithConfiguredModel(
+  deps: LoggedWorkSessionDeps,
+  args: TranscribeVoiceInputArgs,
+): Promise<string> {
   const modelInfo = parseTranscriptionModel(deps.config.transcriptionModel);
   if (modelInfo.provider === OPENAI_TRANSCRIPTION_PROVIDER) {
     return transcribeWithOpenAi(deps, modelInfo, args);

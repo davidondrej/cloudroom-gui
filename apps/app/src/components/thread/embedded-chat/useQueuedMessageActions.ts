@@ -1,15 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { PromptInput, ThreadQueuedMessage } from "@bb/domain";
 import type { SendQueuedMessageMode } from "@bb/server-contract";
-import type {
-  QueuedMessageGroupBoundaryRequest,
-  QueuedMessageProcessingAction,
-} from "@/components/promptbox/banner/QueuedMessagesList";
+import type { QueuedMessageProcessingAction } from "@/components/promptbox/banner/QueuedMessagesList";
 import {
   useDeleteThreadQueuedMessage,
   useReorderThreadQueuedMessage,
   useSendThreadQueuedMessage,
-  useSetThreadQueuedMessageGroupBoundary,
   useUpdateThreadQueuedMessage,
 } from "@/hooks/mutations/thread-runtime-mutations";
 import { showMutationErrorToast } from "@/lib/mutation-errors";
@@ -47,9 +43,6 @@ interface UseQueuedMessageActionsResult {
   handleSaveInlineQueuedMessage: () => Promise<void>;
   handleDeleteQueuedMessage: (queuedMessageId: string) => void;
   handleReorderQueuedMessage: (request: QueuedMessageReorderRequest) => void;
-  handleSetQueuedMessageGroupBoundary: (
-    request: QueuedMessageGroupBoundaryRequest,
-  ) => void;
 }
 
 export function useQueuedMessageActions({
@@ -66,8 +59,6 @@ export function useQueuedMessageActions({
   const sendQueuedMessage = useSendThreadQueuedMessage();
   const deleteQueuedMessage = useDeleteThreadQueuedMessage();
   const reorderQueuedMessage = useReorderThreadQueuedMessage();
-  const setQueuedMessageGroupBoundary =
-    useSetThreadQueuedMessageGroupBoundary();
   const [processingQueuedMessage, setProcessingQueuedMessage] = useState<{
     action: QueuedMessageProcessingAction;
     id: string;
@@ -227,28 +218,9 @@ export function useQueuedMessageActions({
     [reorderQueuedMessage, threadId],
   );
 
-  const handleSetQueuedMessageGroupBoundary = useCallback(
-    (request: QueuedMessageGroupBoundaryRequest) => {
-      void setQueuedMessageGroupBoundary
-        .mutateAsync({
-          id: threadId,
-          ...request,
-        })
-        .catch((error) => {
-          showMutationErrorToast({
-            error,
-            fallbackMessage: "Failed to group queued messages",
-            lifecycleOperation: "set_queued_message_group_boundary",
-          });
-        });
-    },
-    [setQueuedMessageGroupBoundary, threadId],
-  );
-
   const queuedMessageActionPending =
     deleteQueuedMessage.isPending ||
     reorderQueuedMessage.isPending ||
-    setQueuedMessageGroupBoundary.isPending ||
     sendQueuedMessage.isPending ||
     updateQueuedMessage.isPending;
 
@@ -260,6 +232,5 @@ export function useQueuedMessageActions({
     handleSaveInlineQueuedMessage,
     handleDeleteQueuedMessage,
     handleReorderQueuedMessage,
-    handleSetQueuedMessageGroupBoundary,
   };
 }

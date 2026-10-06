@@ -90,19 +90,10 @@ export interface QueuedMessageThreadRow {
 
 export interface ReorderQueuedThreadMessageArgs {
   db: DbConnection;
-  groupBoundaryQueuedMessageId?: string;
   nextQueuedMessageId: string | null;
   notifier: DbNotifier;
   previousQueuedMessageId: string | null;
   queuedMessageId: string;
-  threadId: string;
-}
-
-export interface SetQueuedThreadMessageGroupBoundaryArgs {
-  db: DbConnection;
-  expectedGroupedPrefixQueuedMessageIds: readonly string[];
-  groupBoundaryQueuedMessageId: string;
-  notifier: DbNotifier;
   threadId: string;
 }
 
@@ -115,10 +106,6 @@ interface ResolveQueuedThreadMessageNeighborArgs {
 export interface ClaimedQueuedThreadMessageMutationArgs {
   claimToken: string;
   id: string;
-}
-
-export interface DeleteClaimedQueuedThreadMessageBatchInTransactionArgs {
-  queuedMessages: readonly ClaimedQueuedThreadMessageMutationArgs[];
 }
 
 export interface ReleaseStaleQueuedMessageClaimsArgs {
@@ -152,50 +139,13 @@ export interface ReorderQueuedThreadMessageInvalidNeighborOrder {
   kind: "invalid_neighbor_order";
 }
 
-export interface QueuedThreadMessageGroupBoundarySuccess {
-  kind: "updated";
-  queuedMessages: QueuedThreadMessageRow[];
-}
-
-export interface QueuedThreadMessageGroupBoundaryUnchanged {
-  kind: "unchanged";
-  queuedMessages: QueuedThreadMessageRow[];
-}
-
-export interface QueuedThreadMessageGroupBoundaryNotFound {
-  kind: "not_found";
-}
-
-export interface QueuedThreadMessageGroupBoundaryInvalidSender {
-  kind: "invalid_sender";
-}
-
-export interface QueuedThreadMessageGroupBoundaryInvalidExecutionOptions {
-  kind: "invalid_execution_options";
-}
-
-export interface QueuedThreadMessageGroupBoundaryStaleOrder {
-  kind: "stale_neighbor";
-}
-
 export type ReorderQueuedThreadMessageResult =
   | ReorderQueuedThreadMessageSuccess
   | ReorderQueuedThreadMessageUnchanged
   | ReorderQueuedThreadMessageNotFound
   | ReorderQueuedThreadMessageClaimed
   | ReorderQueuedThreadMessageStaleNeighbor
-  | ReorderQueuedThreadMessageInvalidNeighborOrder
-  | QueuedThreadMessageGroupBoundaryInvalidSender
-  | QueuedThreadMessageGroupBoundaryInvalidExecutionOptions;
-
-export type SetQueuedThreadMessageGroupBoundaryResult =
-  | QueuedThreadMessageGroupBoundarySuccess
-  | QueuedThreadMessageGroupBoundaryUnchanged
-  | QueuedThreadMessageGroupBoundaryNotFound
-  | QueuedThreadMessageGroupBoundaryInvalidSender
-  | QueuedThreadMessageGroupBoundaryInvalidExecutionOptions
-  | QueuedThreadMessageGroupBoundaryStaleOrder
-  | ReorderQueuedThreadMessageClaimed;
+  | ReorderQueuedThreadMessageInvalidNeighborOrder;
 
 export type UpdateQueuedThreadMessageResult =
   | { kind: "updated"; queuedMessage: QueuedThreadMessageRow }
@@ -205,57 +155,6 @@ export type UpdateQueuedThreadMessageResult =
 
 export type ReleaseQueuedMessageClaimArgs =
   ClaimedQueuedThreadMessageMutationArgs;
-
-class ReorderQueuedThreadMessageRollback extends Error {
-  constructor(readonly result: ReorderQueuedThreadMessageResult) {
-    super("Queued message reorder rolled back");
-  }
-}
-
-function collectLeadGroupIds(
-  queuedMessages: readonly QueuedThreadMessageRow[],
-): string[] {
-  const ids: string[] = [];
-  const firstQueuedMessage = queuedMessages[0] ?? null;
-  for (const [index, queuedMessage] of queuedMessages.entries()) {
-    ids.push(queuedMessage.id);
-    if (!queuedMessage.groupWithNext) break;
-    const nextQueuedMessage = queuedMessages[index + 1];
-    if (
-      !nextQueuedMessage ||
-      !queuedMessageGroupingEnvelopeMatches(
-        firstQueuedMessage,
-        nextQueuedMessage,
-      )
-    ) {
-      break;
-    }
-  }
-  return ids;
-}
-
-/**
- * A thread's live queue split into its groups: each maximal `groupWithNext`
- * chain with a matching envelope, in queue order.
- *
- * Grouping is computed over ALL live rows, never over an eligibility-filtered
- * subset. A filtered list has holes, and walking `groupWithNext` across a hole
- * either splits a group (dispatching a tail without the head that a re-queue
- * left waiting) or staples an unrelated later row onto it. Membership is one
- * question, eligibility another; callers apply eligibility to whole groups.
- */
-function partitionQueuedMessageGroups(
-  queuedMessages: readonly QueuedThreadMessageRow[],
-): QueuedThreadMessageRow[][] {
-  const groups: QueuedThreadMessageRow[][] = [];
-  let index = 0;
-  while (index < queuedMessages.length) {
-    const size = collectLeadGroupIds(queuedMessages.slice(index)).length;
-    groups.push(queuedMessages.slice(index, index + size));
-    index += size;
-  }
-  return groups;
-}
 
 /**
  * The waits that mean "this row is only behind the turn that is running". The
@@ -297,7 +196,7 @@ export function isOrdinaryTurnEndQueuedMessage(
 
 /**
  * The JS mirror of {@link drainableQueuedThreadMessage}'s wait condition, for
- * deciding whole-group eligibility over rows already in hand. Kept next to a
+ * deciding eligibility over rows already in hand. Kept next to a
  * pointer at the SQL so the two cannot drift silently.
  */
 function isIdleDrainableQueuedMessage(row: QueuedThreadMessageRow): boolean {
@@ -311,30 +210,6 @@ function isIdleDrainableQueuedMessage(row: QueuedThreadMessageRow): boolean {
   } catch {
     return false;
   }
-}
-
-function stringArraysEqual(
-  left: readonly string[],
-  right: readonly string[],
-): boolean {
-  return (
-    left.length === right.length &&
-    left.every((value, index) => value === right[index])
-  );
-}
-
-function queuedMessageGroupingEnvelopeMatches(
-  firstQueuedMessage: QueuedThreadMessageRow | null,
-  queuedMessage: QueuedThreadMessageRow,
-): boolean {
-  return (
-    firstQueuedMessage !== null &&
-    queuedMessage.senderThreadId === firstQueuedMessage.senderThreadId &&
-    queuedMessage.model === firstQueuedMessage.model &&
-    queuedMessage.reasoningLevel === firstQueuedMessage.reasoningLevel &&
-    queuedMessage.permissionMode === firstQueuedMessage.permissionMode &&
-    queuedMessage.serviceTier === firstQueuedMessage.serviceTier
-  );
 }
 
 function isQueuedThreadMessageClaimed(row: QueuedThreadMessageRow): boolean {
@@ -390,65 +265,6 @@ function getLastQueuedThreadMessage(
   );
 }
 
-function getPreviousUnclaimedQueuedThreadMessage(
-  db: DbQueryConnection,
-  queuedMessage: QueuedThreadMessageRow,
-): QueuedThreadMessageRow | null {
-  return (
-    db
-      .select()
-      .from(queuedThreadMessages)
-      .where(
-        and(
-          eq(queuedThreadMessages.threadId, queuedMessage.threadId),
-          isNull(queuedThreadMessages.claimedAt),
-          isNull(queuedThreadMessages.claimToken),
-          or(
-            lt(queuedThreadMessages.sortKey, queuedMessage.sortKey),
-            and(
-              eq(queuedThreadMessages.sortKey, queuedMessage.sortKey),
-              lt(queuedThreadMessages.id, queuedMessage.id),
-            ),
-          ),
-        ),
-      )
-      .orderBy(
-        desc(queuedThreadMessages.sortKey),
-        desc(queuedThreadMessages.id),
-      )
-      .limit(1)
-      .get() ?? null
-  );
-}
-
-function clearPreviousQueuedMessageGroupEdgeInTransaction(
-  db: DbTransaction,
-  queuedMessage: QueuedThreadMessageRow,
-  now = Date.now(),
-): void {
-  const previousQueuedMessage = getPreviousUnclaimedQueuedThreadMessage(
-    db,
-    queuedMessage,
-  );
-  if (!previousQueuedMessage?.groupWithNext) return;
-  db.update(queuedThreadMessages)
-    .set({ groupWithNext: false, updatedAt: now })
-    .where(eq(queuedThreadMessages.id, previousQueuedMessage.id))
-    .run();
-}
-
-function clearQueuedMessageGroupEdgeInTransaction(
-  db: DbTransaction,
-  queuedMessage: QueuedThreadMessageRow,
-  now = Date.now(),
-): void {
-  if (!queuedMessage.groupWithNext) return;
-  db.update(queuedThreadMessages)
-    .set({ groupWithNext: false, updatedAt: now })
-    .where(eq(queuedThreadMessages.id, queuedMessage.id))
-    .run();
-}
-
 function resolveQueuedThreadMessageNeighbor(
   db: DbQueryConnection,
   args: ResolveQueuedThreadMessageNeighborArgs,
@@ -472,112 +288,6 @@ function resolveQueuedThreadMessageNeighbor(
     return false;
   }
   return neighbor;
-}
-
-function applyQueuedThreadMessageGroupBoundary(
-  db: DbTransaction,
-  expectedGroupedPrefixQueuedMessageIds: readonly string[] | null,
-  threadId: string,
-  groupBoundaryQueuedMessageId: string,
-): SetQueuedThreadMessageGroupBoundaryResult {
-  const queuedMessages = listQueuedThreadMessages(db, threadId);
-  const boundaryIndex = queuedMessages.findIndex(
-    (queuedMessage) => queuedMessage.id === groupBoundaryQueuedMessageId,
-  );
-  if (boundaryIndex === -1) {
-    const claimedBoundary = getQueuedThreadMessage(
-      db,
-      groupBoundaryQueuedMessageId,
-    );
-    return claimedBoundary?.threadId === threadId &&
-      isQueuedThreadMessageClaimed(claimedBoundary)
-      ? { kind: "claimed" }
-      : { kind: "not_found" };
-  }
-  if (expectedGroupedPrefixQueuedMessageIds !== null) {
-    const currentGroupedPrefixIds = queuedMessages
-      .slice(0, boundaryIndex + 1)
-      .map((queuedMessage) => queuedMessage.id);
-    if (
-      !stringArraysEqual(
-        currentGroupedPrefixIds,
-        expectedGroupedPrefixQueuedMessageIds,
-      )
-    ) {
-      return { kind: "stale_neighbor" };
-    }
-  }
-  if (boundaryIndex > 0) {
-    const firstQueuedMessage = queuedMessages[0] ?? null;
-    const groupedMessages = queuedMessages.slice(0, boundaryIndex + 1);
-    const hasMixedSender = groupedMessages.some(
-      (queuedMessage) =>
-        queuedMessage.senderThreadId !== firstQueuedMessage?.senderThreadId,
-    );
-    if (hasMixedSender) {
-      return { kind: "invalid_sender" };
-    }
-    const hasMixedExecutionOptions = groupedMessages.some(
-      (queuedMessage) =>
-        !queuedMessageGroupingEnvelopeMatches(
-          firstQueuedMessage,
-          queuedMessage,
-        ),
-    );
-    if (hasMixedExecutionOptions) {
-      return { kind: "invalid_execution_options" };
-    }
-  }
-
-  let changed = false;
-  const now = Date.now();
-  for (const [index, queuedMessage] of queuedMessages.entries()) {
-    const groupWithNext = index < boundaryIndex;
-    if (queuedMessage.groupWithNext === groupWithNext) continue;
-    changed = true;
-    db.update(queuedThreadMessages)
-      .set({ groupWithNext, updatedAt: now })
-      .where(eq(queuedThreadMessages.id, queuedMessage.id))
-      .run();
-  }
-
-  if (!changed) {
-    return { kind: "unchanged", queuedMessages };
-  }
-  return {
-    kind: "updated",
-    queuedMessages: listQueuedThreadMessages(db, threadId),
-  };
-}
-
-function applyPreservedLeadGroupAfterReorder(
-  db: DbTransaction,
-  threadId: string,
-  originalLeadGroupIds: readonly string[],
-): QueuedThreadMessageRow[] {
-  const queuedMessages = listQueuedThreadMessages(db, threadId);
-  if (originalLeadGroupIds.length <= 1) {
-    return queuedMessages;
-  }
-
-  const originalLeadGroupIdSet = new Set(originalLeadGroupIds);
-  const preservesLeadGroup = queuedMessages
-    .slice(0, originalLeadGroupIds.length)
-    .every((queuedMessage) => originalLeadGroupIdSet.has(queuedMessage.id));
-  let changed = false;
-  const now = Date.now();
-  for (const [index, queuedMessage] of queuedMessages.entries()) {
-    const groupWithNext =
-      preservesLeadGroup && index < originalLeadGroupIds.length - 1;
-    if (queuedMessage.groupWithNext === groupWithNext) continue;
-    changed = true;
-    db.update(queuedThreadMessages)
-      .set({ groupWithNext, updatedAt: now })
-      .where(eq(queuedThreadMessages.id, queuedMessage.id))
-      .run();
-  }
-
-  return changed ? listQueuedThreadMessages(db, threadId) : queuedMessages;
 }
 
 export function createQueuedThreadMessageInTransaction(
@@ -616,7 +326,6 @@ export function createQueuedThreadMessageInTransaction(
       retryAttempt:
         input.payload.kind === "retry" ? input.payload.attempt : null,
       retryReason: input.payload.kind === "retry" ? input.payload.reason : null,
-      groupWithNext: false,
       hardQueue: input.hardQueue ?? false,
       claimedAt: null,
       claimToken: null,
@@ -834,43 +543,74 @@ export function listIdleThreadsWithQueuedMessages(
     .all();
 }
 
+function claimQueuedThreadMessageInTransaction(
+  tx: DbTransaction,
+  id: string,
+): ClaimedQueuedThreadMessageRow | null {
+  const now = Date.now();
+  const updated = tx
+    .update(queuedThreadMessages)
+    .set({
+      claimedAt: now,
+      claimToken: createQueuedThreadMessageClaimToken(),
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(queuedThreadMessages.id, id),
+        isNull(queuedThreadMessages.claimedAt),
+        isNull(queuedThreadMessages.claimToken),
+      ),
+    )
+    .returning()
+    .get();
+  return requireClaimedQueuedThreadMessage(updated ?? null);
+}
+
+export type QueuedThreadMessageEligibility = (
+  row: QueuedThreadMessageRow,
+) => boolean;
+
+export type QueuedThreadMessageClaimPolicy =
+  | {
+      kind: "automatic";
+      isEligible: QueuedThreadMessageEligibility;
+    }
+  | { kind: "explicit-send" };
+
+function isAutomaticQueuedThreadMessageClaimAllowed(
+  row: QueuedThreadMessageRow,
+  pauseOrdinaryMessages: boolean,
+): boolean {
+  return (
+    row.failureReason === null &&
+    (!pauseOrdinaryMessages || !isOrdinaryTurnEndQueuedMessage(row))
+  );
+}
+
 export function claimQueuedThreadMessage(
   db: DbConnection,
   notifier: DbNotifier,
   id: string,
+  policy: QueuedThreadMessageClaimPolicy = { kind: "explicit-send" },
 ): ClaimedQueuedThreadMessageRow | null {
   const claimedQueuedMessage = db.transaction(
     (tx) => {
-      const existing = tx
-        .select()
-        .from(queuedThreadMessages)
-        .where(eq(queuedThreadMessages.id, id))
-        .get();
+      const existing = getQueuedThreadMessage(tx, id);
+      if (!existing || isQueuedThreadMessageClaimed(existing)) {
+        return null;
+      }
       if (
-        !existing ||
-        existing.claimedAt !== null ||
-        existing.claimToken !== null
+        policy.kind === "automatic" &&
+        (!isAutomaticQueuedThreadMessageClaimAllowed(
+          existing,
+          isThreadQueueAutoSendPaused(tx, existing.threadId),
+        ) ||
+          !policy.isEligible(existing))
       ) {
         return null;
       }
-
-      const now = Date.now();
-      clearPreviousQueuedMessageGroupEdgeInTransaction(tx, existing, now);
-      const claimToken = createQueuedThreadMessageClaimToken();
-      const updated = tx
-        .update(queuedThreadMessages)
-        .set({ claimedAt: now, claimToken, updatedAt: now })
-        .where(
-          and(
-            eq(queuedThreadMessages.id, id),
-            isNull(queuedThreadMessages.claimedAt),
-            isNull(queuedThreadMessages.claimToken),
-          ),
-        )
-        .returning()
-        .get();
-
-      return requireClaimedQueuedThreadMessage(updated ?? null);
+      return claimQueuedThreadMessageInTransaction(tx, id);
     },
     { behavior: "immediate" },
   );
@@ -881,337 +621,116 @@ export function claimQueuedThreadMessage(
   return claimedQueuedMessage;
 }
 
-function claimQueuedThreadMessageIdsInTransaction(
-  tx: DbTransaction,
-  ids: readonly string[],
-): ClaimedQueuedThreadMessageRow[] | null {
-  if (ids.length === 0) return null;
-
-  const now = Date.now();
-  const claimToken = createQueuedThreadMessageClaimToken();
-  const updated = tx
-    .update(queuedThreadMessages)
-    .set({ claimedAt: now, claimToken, updatedAt: now })
-    .where(
-      and(
-        inArray(queuedThreadMessages.id, [...ids]),
-        isNull(queuedThreadMessages.claimedAt),
-        isNull(queuedThreadMessages.claimToken),
-      ),
-    )
-    .returning()
-    .all();
-
-  if (updated.length !== ids.length) {
-    return null;
-  }
-
-  const byId = new Map(
-    updated.map((row) => [row.id, requireClaimedQueuedThreadMessage(row)]),
-  );
-  const claimedRows: ClaimedQueuedThreadMessageRow[] = [];
-  for (const id of ids) {
-    const row = byId.get(id);
-    if (!row) return null;
-    claimedRows.push(row);
-  }
-  return claimedRows;
-}
-
-export type QueuedThreadMessageGroupEligibility = (
-  rows: readonly QueuedThreadMessageRow[],
-) => boolean;
-
-export type QueuedThreadMessageGroupClaimPolicy =
-  | {
-      kind: "automatic";
-      isGroupEligible: QueuedThreadMessageGroupEligibility;
-    }
-  | { kind: "explicit-send" };
-
-function isAutomaticQueuedThreadMessageGroupClaimAllowed(
-  rows: readonly QueuedThreadMessageRow[],
-  pauseOrdinaryMessages: boolean,
-): boolean {
-  return (
-    rows.every((row) => row.failureReason === null) &&
-    (!pauseOrdinaryMessages ||
-      rows.every((row) => !isOrdinaryTurnEndQueuedMessage(row)))
-  );
-}
-
-export function claimQueuedThreadMessageGroup(
-  db: DbConnection,
-  notifier: DbNotifier,
-  id: string,
-  policy: QueuedThreadMessageGroupClaimPolicy,
-): ClaimedQueuedThreadMessageRow[] | null {
-  const claimedQueuedMessages = db.transaction(
-    (tx) => {
-      const existing = getQueuedThreadMessage(tx, id);
-      if (!existing || isQueuedThreadMessageClaimed(existing)) {
-        return null;
-      }
-
-      const queuedMessages = listQueuedThreadMessages(tx, existing.threadId);
-      const group =
-        partitionQueuedMessageGroups(queuedMessages).find((rows) =>
-          rows.some((row) => row.id === id),
-        ) ?? null;
-      if (group === null) {
-        return null;
-      }
-      if (
-        (policy.kind === "automatic" &&
-          !isAutomaticQueuedThreadMessageGroupClaimAllowed(
-            group,
-            isThreadQueueAutoSendPaused(tx, existing.threadId),
-          )) ||
-        (policy.kind === "automatic" && !policy.isGroupEligible(group))
-      ) {
-        return null;
-      }
-      if (policy.kind === "explicit-send" && group[0]?.id !== id) {
-        const now = Date.now();
-        clearPreviousQueuedMessageGroupEdgeInTransaction(tx, existing, now);
-        clearQueuedMessageGroupEdgeInTransaction(tx, existing, now);
-        return claimQueuedThreadMessageIdsInTransaction(tx, [existing.id]);
-      }
-      return claimQueuedThreadMessageIdsInTransaction(
-        tx,
-        group.map((row) => row.id),
-      );
-    },
-    { behavior: "immediate" },
-  );
-
-  if (claimedQueuedMessages && claimedQueuedMessages.length > 0) {
-    notifier.notifyThread(claimedQueuedMessages[0]!.threadId, [
-      "queue-changed",
-    ]);
-  }
-  return claimedQueuedMessages;
-}
-
-export function claimNextQueuedThreadMessageGroup(
+export function claimNextQueuedThreadMessage(
   db: DbConnection,
   notifier: DbNotifier,
   threadId: string,
-  isGroupEligible?: QueuedThreadMessageGroupEligibility,
-): ClaimedQueuedThreadMessageRow[] | null {
-  const claimedQueuedMessages = db.transaction(
+  isEligible?: QueuedThreadMessageEligibility,
+): ClaimedQueuedThreadMessageRow | null {
+  const claimedQueuedMessage = db.transaction(
     (tx) => {
-      // The idle drain takes the first group whose EVERY member it may act
-      // on. A group with one waiting member is skipped whole — dispatching
-      // its drainable tail alone would split a batch the sender composed as
-      // one prompt — and skipping it does not block the independent rows
-      // behind it: the queue is a queue, not a pipeline.
-      const queuedMessages = listQueuedThreadMessages(tx, threadId);
       const pauseOrdinaryMessages = isThreadQueueAutoSendPaused(tx, threadId);
-      const group =
-        partitionQueuedMessageGroups(queuedMessages).find((rows) => {
-          const eligible = isGroupEligible
-            ? rows.some(isIdleDrainableQueuedMessage) && isGroupEligible(rows)
-            : rows.every(isIdleDrainableQueuedMessage);
-          return (
-            eligible &&
-            isAutomaticQueuedThreadMessageGroupClaimAllowed(
-              rows,
-              pauseOrdinaryMessages,
-            )
-          );
-        }) ?? null;
-      if (group === null) {
-        return null;
-      }
-      return claimQueuedThreadMessageIdsInTransaction(
-        tx,
-        group.map((row) => row.id),
+      const next = listQueuedThreadMessages(tx, threadId).find(
+        (row) =>
+          isIdleDrainableQueuedMessage(row) &&
+          (isEligible?.(row) ?? true) &&
+          isAutomaticQueuedThreadMessageClaimAllowed(row, pauseOrdinaryMessages),
       );
+      return next ? claimQueuedThreadMessageInTransaction(tx, next.id) : null;
     },
     { behavior: "immediate" },
   );
 
-  if (claimedQueuedMessages && claimedQueuedMessages.length > 0) {
+  if (claimedQueuedMessage) {
     notifier.notifyThread(threadId, ["queue-changed"]);
   }
-  return claimedQueuedMessages;
+  return claimedQueuedMessage;
 }
 
 export function reorderQueuedThreadMessage({
   db,
-  groupBoundaryQueuedMessageId,
   nextQueuedMessageId,
   notifier,
   previousQueuedMessageId,
   queuedMessageId,
   threadId,
 }: ReorderQueuedThreadMessageArgs): ReorderQueuedThreadMessageResult {
-  let result: ReorderQueuedThreadMessageResult;
-  try {
-    result = db.transaction(
-      (tx): ReorderQueuedThreadMessageResult => {
-        const movedQueuedMessage = getQueuedThreadMessage(
-          tx,
-          queuedMessageId,
-        );
-        if (!movedQueuedMessage || movedQueuedMessage.threadId !== threadId) {
-          return { kind: "not_found" };
-        }
-        if (isQueuedThreadMessageClaimed(movedQueuedMessage)) {
-          return { kind: "claimed" };
-        }
+  const result = db.transaction(
+    (tx): ReorderQueuedThreadMessageResult => {
+      const movedQueuedMessage = getQueuedThreadMessage(tx, queuedMessageId);
+      if (!movedQueuedMessage || movedQueuedMessage.threadId !== threadId) {
+        return { kind: "not_found" };
+      }
+      if (isQueuedThreadMessageClaimed(movedQueuedMessage)) {
+        return { kind: "claimed" };
+      }
 
-        const previousQueuedMessage = resolveQueuedThreadMessageNeighbor(tx, {
-          movedQueuedMessageId: queuedMessageId,
-          neighborQueuedMessageId: previousQueuedMessageId,
-          threadId,
-        });
-        const nextQueuedMessage = resolveQueuedThreadMessageNeighbor(tx, {
-          movedQueuedMessageId: queuedMessageId,
-          neighborQueuedMessageId: nextQueuedMessageId,
-          threadId,
-        });
-        if (previousQueuedMessage === false || nextQueuedMessage === false) {
-          return { kind: "stale_neighbor" };
-        }
-        if (
-          previousQueuedMessage !== null &&
-          nextQueuedMessage !== null &&
-          previousQueuedMessage.sortKey >= nextQueuedMessage.sortKey
-        ) {
-          return { kind: "invalid_neighbor_order" };
-        }
+      const previousQueuedMessage = resolveQueuedThreadMessageNeighbor(tx, {
+        movedQueuedMessageId: queuedMessageId,
+        neighborQueuedMessageId: previousQueuedMessageId,
+        threadId,
+      });
+      const nextQueuedMessage = resolveQueuedThreadMessageNeighbor(tx, {
+        movedQueuedMessageId: queuedMessageId,
+        neighborQueuedMessageId: nextQueuedMessageId,
+        threadId,
+      });
+      if (previousQueuedMessage === false || nextQueuedMessage === false) {
+        return { kind: "stale_neighbor" };
+      }
+      if (
+        previousQueuedMessage !== null &&
+        nextQueuedMessage !== null &&
+        previousQueuedMessage.sortKey >= nextQueuedMessage.sortKey
+      ) {
+        return { kind: "invalid_neighbor_order" };
+      }
 
-        const currentQueuedMessages = listQueuedThreadMessages(tx, threadId);
-        const originalLeadGroupIds = collectLeadGroupIds(currentQueuedMessages);
-        const currentIndex = currentQueuedMessages.findIndex(
-          (queuedMessage) => queuedMessage.id === queuedMessageId,
-        );
-        const currentPreviousQueuedMessageId =
-          currentQueuedMessages[currentIndex - 1]?.id ?? null;
-        const currentNextQueuedMessageId =
-          currentQueuedMessages[currentIndex + 1]?.id ?? null;
-        if (
-          currentPreviousQueuedMessageId === previousQueuedMessageId &&
-          currentNextQueuedMessageId === nextQueuedMessageId
-        ) {
-          if (groupBoundaryQueuedMessageId !== undefined) {
-            const groupResult = applyQueuedThreadMessageGroupBoundary(
-              tx,
-              null,
-              threadId,
-              groupBoundaryQueuedMessageId,
-            );
-            if (groupResult.kind === "not_found") {
-              return { kind: "stale_neighbor" };
-            }
-            if (groupResult.kind === "claimed") {
-              return { kind: "claimed" };
-            }
-            if (groupResult.kind === "stale_neighbor") {
-              return { kind: "stale_neighbor" };
-            }
-            if (groupResult.kind === "invalid_sender") {
-              return { kind: "invalid_sender" };
-            }
-            if (groupResult.kind === "invalid_execution_options") {
-              return { kind: "invalid_execution_options" };
-            }
-            if (groupResult.kind === "updated") {
-              return {
-                kind: "reordered",
-                queuedMessages: groupResult.queuedMessages,
-              };
-            }
-          }
-          return {
-            kind: "unchanged",
-            queuedMessages: currentQueuedMessages,
-          };
-        }
-
-        const sortKey = createOrderKeyBetween({
-          previousKey: previousQueuedMessage?.sortKey ?? null,
-          nextKey: nextQueuedMessage?.sortKey ?? null,
-        });
-        const updated = tx
-          .update(queuedThreadMessages)
-          .set({ sortKey, updatedAt: Date.now() })
-          .where(
-            and(
-              eq(queuedThreadMessages.id, queuedMessageId),
-              isNull(queuedThreadMessages.claimedAt),
-              isNull(queuedThreadMessages.claimToken),
-            ),
-          )
-          .returning({ id: queuedThreadMessages.id })
-          .get();
-        if (!updated) {
-          return { kind: "stale_neighbor" };
-        }
-
-        if (groupBoundaryQueuedMessageId !== undefined) {
-          const groupResult = applyQueuedThreadMessageGroupBoundary(
-            tx,
-            null,
-            threadId,
-            groupBoundaryQueuedMessageId,
-          );
-          if (groupResult.kind === "not_found") {
-            throw new ReorderQueuedThreadMessageRollback({
-              kind: "stale_neighbor",
-            });
-          }
-          if (groupResult.kind === "claimed") {
-            throw new ReorderQueuedThreadMessageRollback({ kind: "claimed" });
-          }
-          if (groupResult.kind === "stale_neighbor") {
-            throw new ReorderQueuedThreadMessageRollback({
-              kind: "stale_neighbor",
-            });
-          }
-          if (groupResult.kind === "invalid_sender") {
-            throw new ReorderQueuedThreadMessageRollback({
-              kind: "invalid_sender",
-            });
-          }
-          if (groupResult.kind === "invalid_execution_options") {
-            throw new ReorderQueuedThreadMessageRollback({
-              kind: "invalid_execution_options",
-            });
-          }
-          if (groupResult.kind === "updated") {
-            return {
-              kind: "reordered",
-              queuedMessages: groupResult.queuedMessages,
-            };
-          }
-        } else {
-          return {
-            kind: "reordered",
-            queuedMessages: applyPreservedLeadGroupAfterReorder(
-              tx,
-              threadId,
-              originalLeadGroupIds,
-            ),
-          };
-        }
-
+      const currentQueuedMessages = listQueuedThreadMessages(tx, threadId);
+      const currentIndex = currentQueuedMessages.findIndex(
+        (queuedMessage) => queuedMessage.id === queuedMessageId,
+      );
+      const currentPreviousQueuedMessageId =
+        currentQueuedMessages[currentIndex - 1]?.id ?? null;
+      const currentNextQueuedMessageId =
+        currentQueuedMessages[currentIndex + 1]?.id ?? null;
+      if (
+        currentPreviousQueuedMessageId === previousQueuedMessageId &&
+        currentNextQueuedMessageId === nextQueuedMessageId
+      ) {
         return {
-          kind: "reordered",
-          queuedMessages: listQueuedThreadMessages(tx, threadId),
+          kind: "unchanged",
+          queuedMessages: currentQueuedMessages,
         };
-      },
-      { behavior: "immediate" },
-    );
-  } catch (error) {
-    if (error instanceof ReorderQueuedThreadMessageRollback) {
-      result = error.result;
-    } else {
-      throw error;
-    }
-  }
+      }
+
+      const sortKey = createOrderKeyBetween({
+        previousKey: previousQueuedMessage?.sortKey ?? null,
+        nextKey: nextQueuedMessage?.sortKey ?? null,
+      });
+      const updated = tx
+        .update(queuedThreadMessages)
+        .set({ sortKey, updatedAt: Date.now() })
+        .where(
+          and(
+            eq(queuedThreadMessages.id, queuedMessageId),
+            isNull(queuedThreadMessages.claimedAt),
+            isNull(queuedThreadMessages.claimToken),
+          ),
+        )
+        .returning({ id: queuedThreadMessages.id })
+        .get();
+      if (!updated) {
+        return { kind: "stale_neighbor" };
+      }
+
+      return {
+        kind: "reordered",
+        queuedMessages: listQueuedThreadMessages(tx, threadId),
+      };
+    },
+    { behavior: "immediate" },
+  );
 
   if (result.kind === "reordered") {
     notifier.notifyThread(threadId, ["queue-changed"]);
@@ -1219,67 +738,30 @@ export function reorderQueuedThreadMessage({
   return result;
 }
 
-export function setQueuedThreadMessageGroupBoundary({
-  db,
-  expectedGroupedPrefixQueuedMessageIds,
-  groupBoundaryQueuedMessageId,
-  notifier,
-  threadId,
-}: SetQueuedThreadMessageGroupBoundaryArgs): SetQueuedThreadMessageGroupBoundaryResult {
-  const result = db.transaction(
-    (tx) =>
-      applyQueuedThreadMessageGroupBoundary(
-        tx,
-        expectedGroupedPrefixQueuedMessageIds,
-        threadId,
-        groupBoundaryQueuedMessageId,
-      ),
-    { behavior: "immediate" },
-  );
-
-  if (result.kind === "updated") {
-    notifier.notifyThread(threadId, ["queue-changed"]);
-  }
-  return result;
-}
-
-export interface RequeueClaimedQueuedThreadMessagesArgs {
-  /** Every row the drain claimed, lead first. */
-  claims: readonly ClaimedQueuedThreadMessageMutationArgs[];
+export interface RequeueClaimedQueuedThreadMessageArgs {
+  claim: ClaimedQueuedThreadMessageMutationArgs;
   threadId: string;
   waitingOn: QueuedMessageWaitingOn;
   sendAt: number | null;
 }
 
-export function requeueClaimedQueuedThreadMessages(
+export function requeueClaimedQueuedThreadMessage(
   db: DbQueryConnection,
   notifier: DbNotifier,
-  args: RequeueClaimedQueuedThreadMessagesArgs,
+  args: RequeueClaimedQueuedThreadMessageArgs,
 ): QueuedThreadMessageRow | null {
-  const lead = args.claims[0];
-  if (lead === undefined) return null;
   const queued = db.transaction(
     (tx) => {
       const now = Date.now();
-      for (const claim of args.claims) {
-        tx.update(queuedThreadMessages)
-          .set({
-            claimedAt: null,
-            claimToken: null,
-            waitingOn: JSON.stringify(args.waitingOn),
-            waitHolder: waitHolderFor(args.waitingOn),
-            sendAt: args.sendAt,
-            failureReason: null,
-            updatedAt: now,
-          })
-          .where(
-            and(
-              eq(queuedThreadMessages.id, claim.id),
-              eq(queuedThreadMessages.claimToken, claim.claimToken),
-            ),
-          )
-          .run();
-      }
+      tx.update(queuedThreadMessages)
+        .set({ claimedAt: null, claimToken: null, updatedAt: now })
+        .where(
+          and(
+            eq(queuedThreadMessages.id, args.claim.id),
+            eq(queuedThreadMessages.claimToken, args.claim.claimToken),
+          ),
+        )
+        .run();
       return (
         tx
           .update(queuedThreadMessages)
@@ -1296,7 +778,7 @@ export function requeueClaimedQueuedThreadMessages(
           })
           .where(
             and(
-              eq(queuedThreadMessages.id, lead.id),
+              eq(queuedThreadMessages.id, args.claim.id),
               eq(queuedThreadMessages.threadId, args.threadId),
               liveQueuedThreadMessage(),
             ),
@@ -1395,68 +877,21 @@ export function releaseStaleQueuedMessageClaims(
   return result.changes;
 }
 
-export function deleteClaimedQueuedThreadMessageBatchInTransaction(
+export function deleteClaimedQueuedThreadMessageInTransaction(
   db: DbTransaction,
-  args: DeleteClaimedQueuedThreadMessageBatchInTransactionArgs,
+  claim: ClaimedQueuedThreadMessageMutationArgs,
 ): boolean {
-  if (args.queuedMessages.length === 0) return false;
-  const claimToken = args.queuedMessages[0]!.claimToken;
-  if (
-    args.queuedMessages.some(
-      (queuedMessage) => queuedMessage.claimToken !== claimToken,
-    )
-  ) {
-    return false;
-  }
-
-  const ids = args.queuedMessages.map((queuedMessage) => queuedMessage.id);
-  const existingRows = db
-    .select()
-    .from(queuedThreadMessages)
-    .where(
-      and(
-        inArray(queuedThreadMessages.id, ids),
-        eq(queuedThreadMessages.claimToken, claimToken),
-      ),
-    )
-    .all();
-  if (existingRows.length !== ids.length) {
-    return false;
-  }
-
-  const deletedRows = db
+  const deleted = db
     .delete(queuedThreadMessages)
     .where(
       and(
-        inArray(queuedThreadMessages.id, ids),
-        eq(queuedThreadMessages.claimToken, claimToken),
+        eq(queuedThreadMessages.id, claim.id),
+        eq(queuedThreadMessages.claimToken, claim.claimToken),
       ),
     )
     .returning({ id: queuedThreadMessages.id })
-    .all();
-  if (deletedRows.length !== ids.length) {
-    return false;
-  }
-
-  const removingIds = new Set(ids);
-  const now = Date.now();
-  for (const existing of existingRows) {
-    const previousQueuedMessage = getPreviousUnclaimedQueuedThreadMessage(
-      db,
-      existing,
-    );
-    if (
-      previousQueuedMessage &&
-      !removingIds.has(previousQueuedMessage.id) &&
-      previousQueuedMessage.groupWithNext
-    ) {
-      db.update(queuedThreadMessages)
-        .set({ groupWithNext: false, updatedAt: now })
-        .where(eq(queuedThreadMessages.id, previousQueuedMessage.id))
-        .run();
-    }
-  }
-  return true;
+    .get();
+  return deleted !== undefined;
 }
 
 /**
@@ -1639,7 +1074,7 @@ export function setQueuedThreadMessageWaitingOn(
         waitingOn: JSON.stringify(args.waitingOn),
         waitHolder: waitHolderFor(args.waitingOn),
         sendAt: args.sendAt,
-        // Same rule as `requeueClaimedQueuedThreadMessages`: any fresh,
+        // Same rule as `requeueClaimedQueuedThreadMessage`: any fresh,
         // successful statement of why this row is waiting supersedes whatever
         // a previous attempt failed with. Leaving a stale failure beside a
         // current wait would show the reader two contradictory explanations of
@@ -1676,7 +1111,7 @@ export interface SetQueuedThreadMessageFailureReasonArgs {
  * and reports to them instead. The row's wait is deliberately untouched — it
  * is still waiting on whatever it was waiting on, and the failure is a separate
  * fact about the last attempt rather than a new reason to wait. A later
- * successful re-queue clears it (see `requeueClaimedQueuedThreadMessages`).
+ * successful re-queue clears it (see `requeueClaimedQueuedThreadMessage`).
  */
 export function setQueuedThreadMessageFailureReason(
   db: DbConnection,
@@ -1963,7 +1398,6 @@ export function deleteQueuedThreadMessage(
     (tx) => {
       const existing = getQueuedThreadMessage(tx, id);
       if (!existing) return null;
-      clearPreviousQueuedMessageGroupEdgeInTransaction(tx, existing);
       tx.delete(queuedThreadMessages)
         .where(eq(queuedThreadMessages.id, id))
         .run();

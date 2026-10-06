@@ -25,6 +25,7 @@ type ExpectedBbPluginApiKey =
   | "http"
   | "log"
   | "onDispose"
+  | "onInstall"
   | "pluginId"
   | "providers"
   | "realtime"
@@ -129,6 +130,8 @@ const EXPECTED_BACKEND_ROOT_TYPE_EXPORTS = [
   "PluginSharedPortTunnelIdentity",
   "PluginStatusApi",
   "PluginStorage",
+  "PluginTelemetry",
+  "PluginTelemetryValue",
   "PluginThreadEventHandler",
   "PluginThreadEventName",
   "PluginThreadEventPayloads",

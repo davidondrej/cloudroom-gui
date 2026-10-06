@@ -404,12 +404,11 @@ export type { HostDaemonSessionRow } from "./sessions.js";
 
 export {
   claimQueuedThreadMessage,
-  claimQueuedThreadMessageGroup,
-  claimNextQueuedThreadMessageGroup,
+  claimNextQueuedThreadMessage,
   clearQueuedThreadMessageWaitingOn,
   createQueuedThreadMessage,
   createQueuedThreadMessageInTransaction,
-  deleteClaimedQueuedThreadMessageBatchInTransaction,
+  deleteClaimedQueuedThreadMessageInTransaction,
   deleteQueuedThreadMessage,
   getQueuedThreadMessage,
   hasQueuedRetryOfTurnRequest,
@@ -426,21 +425,19 @@ export {
   listQueuedThreadMessagesWaitingOnKind,
   listThreadIdsWithHostOfflineQueueWaits,
   releaseQueuedMessageClaim,
-  requeueClaimedQueuedThreadMessages,
+  requeueClaimedQueuedThreadMessage,
   setQueuedThreadMessageFailureReason,
   setQueuedThreadMessageWaitingOn,
   releaseStaleQueuedMessageClaims,
   reorderQueuedThreadMessage,
-  setQueuedThreadMessageGroupBoundary,
   updateQueuedThreadMessage,
 } from "./queued-thread-messages.js";
 export type {
   ClaimedQueuedThreadMessageRow,
-  QueuedThreadMessageGroupClaimPolicy,
-  QueuedThreadMessageGroupEligibility,
+  QueuedThreadMessageClaimPolicy,
+  QueuedThreadMessageEligibility,
   QueuedThreadMessageRow,
   ReorderQueuedThreadMessageResult,
-  SetQueuedThreadMessageGroupBoundaryResult,
 } from "./queued-thread-messages.js";
 
 export {

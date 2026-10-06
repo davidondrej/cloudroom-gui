@@ -338,8 +338,9 @@ function readForkThreadCreateSeedFromLocationState(
   if (!candidate || typeof candidate !== "object") return null;
   const value = candidate as Record<string, unknown>;
   if (
-    typeof value.environmentId !== "string" ||
-    value.environmentId.length === 0 ||
+    (value.environmentId !== null &&
+      (typeof value.environmentId !== "string" ||
+        value.environmentId.length === 0)) ||
     typeof value.model !== "string" ||
     value.model.length === 0 ||
     typeof value.permissionMode !== "string" ||
@@ -383,7 +384,7 @@ function readForkThreadCreateSeedFromLocationState(
     return null;
   }
   return {
-    environmentId: value.environmentId,
+    environmentId: value.environmentId as string | null,
     model: value.model,
     permissionMode: seedPermissionMode,
     projectId: value.projectId,
@@ -595,10 +596,15 @@ export function RootComposeView() {
             reasoningLevel: forkSeed.reasoningLevel,
             serviceTier: forkSeed.serviceTier,
             permissionMode: forkSeed.permissionMode,
-            environment: {
-              type: "reuse" as const,
-              environmentId: forkSeed.environmentId,
-            },
+            // A Cloud thread forks into a new cloud sandbox.
+            ...(forkSeed.environmentId === null
+              ? { executionTarget: "cloud" as const }
+              : {
+                  environment: {
+                    type: "reuse" as const,
+                    environmentId: forkSeed.environmentId,
+                  },
+                }),
           },
     [forkSeed],
   );
@@ -770,9 +776,12 @@ function RootComposeSurface({
       setRootComposeProjectId(nextForkSeed.projectId);
       setProviderModelReasoning(nextForkSeed);
       setPermissionMode(nextForkSeed.permissionMode);
-      seedEnvironmentSelectionValue(
-        encodeReuseValue(nextForkSeed.environmentId),
-      );
+      // A Cloud fork has no folder to reuse; its seed selects Cloud instead.
+      if (nextForkSeed.environmentId !== null) {
+        seedEnvironmentSelectionValue(
+          encodeReuseValue(nextForkSeed.environmentId),
+        );
+      }
     }
     navigate(getRootComposeRoutePath() + location.search, {
       replace: true,

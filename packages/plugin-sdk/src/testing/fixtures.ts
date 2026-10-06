@@ -321,7 +321,6 @@ export function makeQueueEntry(
     reasoningLevel: "medium",
     permissionMode: "auto",
     serviceTier: "default",
-    groupWithNext: false,
     sendAt: null,
     waitingOn: {
       kind: "plugin",

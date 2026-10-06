@@ -87,6 +87,8 @@ export const experimental_useSidebarThreadPullRequest =
   runtime.experimental_useSidebarThreadPullRequest;
 export const experimental_useSidebarThreadSplit =
   runtime.experimental_useSidebarThreadSplit;
+// The public API client bound to the calling plugin.
+export const useSdk = runtime.useSdk;
 // The provider directory (experimental — see docs/api_to_audit.md).
 export const experimental_useProviders = runtime.experimental_useProviders;
 // The live code theme, for plugins that render code with their own engine

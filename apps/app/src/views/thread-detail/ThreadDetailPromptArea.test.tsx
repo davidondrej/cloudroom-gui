@@ -78,7 +78,6 @@ const mocks = vi.hoisted(() => ({
   reorderQueuedMessageMutateAsync: vi.fn(),
   sendMessageMutateAsync: vi.fn(),
   sendQueuedMessageMutateAsync: vi.fn(),
-  setQueuedMessageGroupBoundaryMutateAsync: vi.fn(),
   stopThreadMutate: vi.fn(),
   serviceTier: undefined as "default" | "fast" | undefined,
   supportsServiceTier: false,
@@ -694,10 +693,6 @@ vi.mock("@/hooks/mutations/thread-runtime-mutations", () => ({
   useReorderThreadQueuedMessage: () => ({
     isPending: false,
     mutateAsync: mocks.reorderQueuedMessageMutateAsync,
-  }),
-  useSetThreadQueuedMessageGroupBoundary: () => ({
-    isPending: false,
-    mutateAsync: mocks.setQueuedMessageGroupBoundaryMutateAsync,
   }),
   useSendThreadQueuedMessage: () => ({
     isPending: false,

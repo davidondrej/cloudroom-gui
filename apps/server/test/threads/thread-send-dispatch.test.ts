@@ -5,8 +5,6 @@ import {
   listEvents,
   listQueuedThreadMessages,
   markThreadDeleted,
-  setQueuedThreadMessageFailureReason,
-  setQueuedThreadMessageGroupBoundary,
 } from "@bb/db";
 import type { EnvironmentRow } from "@bb/db";
 import {
@@ -22,7 +20,7 @@ import type { TelemetryService } from "../../src/services/system/telemetry.js";
 import * as threadEvents from "../../src/services/threads/thread-events.js";
 import { runQueuedMessageDispatch } from "../../src/services/threads/queued-message-dispatch.js";
 import {
-  createAutomaticQueuedMessageGroupEligibility,
+  createAutomaticQueuedMessageEligibility,
   createQueuedMessageForThread,
   sendQueuedMessage,
   sendQueuedMessageNow,
@@ -161,7 +159,7 @@ describe("queued message dispatch hook", () => {
         sendQueuedMessage(harness.deps, {
           claimPolicy: {
             kind: "automatic",
-            isGroupEligible: createAutomaticQueuedMessageGroupEligibility(
+            isEligible: createAutomaticQueuedMessageEligibility(
               harness.deps,
               { now: Date.now(), thread },
             ),
@@ -204,7 +202,7 @@ describe("queued message dispatch hook", () => {
         sendQueuedMessage(harness.deps, {
           claimPolicy: {
             kind: "automatic",
-            isGroupEligible: createAutomaticQueuedMessageGroupEligibility(
+            isEligible: createAutomaticQueuedMessageEligibility(
               harness.deps,
               { now: Date.now(), thread },
             ),
@@ -243,7 +241,7 @@ describe("queued message auto-send notification", () => {
       await sendQueuedMessage(harness.deps, {
         claimPolicy: {
           kind: "automatic",
-          isGroupEligible: createAutomaticQueuedMessageGroupEligibility(
+          isEligible: createAutomaticQueuedMessageEligibility(
             harness.deps,
             { now: Date.now(), thread },
           ),
@@ -599,67 +597,6 @@ describe("startup queue waits", () => {
     });
   });
 
-  it("keeps a failed grouped sibling out of the automatic turn-start send", async () => {
-    await withTestHarness(async (harness) => {
-      const { sessionId, thread } = seedProviderThreadFixture({
-        harness,
-        status: "active",
-        value: 66,
-      });
-      const lead = seedQueuedMessage(harness.deps, {
-        content: textInput("clean turn-starting lead"),
-        threadId: thread.id,
-        waitingOn: { kind: "turn-starting" },
-      });
-      const failed = seedQueuedMessage(harness.deps, {
-        content: textInput("failed scheduled sibling"),
-        threadId: thread.id,
-        waitingOn: { kind: "time" },
-        sendAt: Date.now() - 1_000,
-      });
-      setQueuedThreadMessageFailureReason(harness.db, harness.hub, {
-        id: failed.id,
-        threadId: thread.id,
-        failureReason: "Terminal failure",
-      });
-      setQueuedThreadMessageGroupBoundary({
-        db: harness.db,
-        notifier: harness.hub,
-        threadId: thread.id,
-        expectedGroupedPrefixQueuedMessageIds: [lead.id, failed.id],
-        groupBoundaryQueuedMessageId: failed.id,
-      });
-
-      const response = await harness.app.request("/internal/session/events", {
-        method: "POST",
-        headers: internalAuthHeaders(harness),
-        body: JSON.stringify({
-          sessionId,
-          eventGroups: groupHostDaemonEvents([
-            {
-              threadId: thread.id,
-              event: {
-                type: "turn/started",
-                threadId: thread.id,
-                providerThreadId: "provider-send-dispatch-66",
-                scope: turnScope("turn-failed-group"),
-              },
-            },
-          ]),
-        }),
-      });
-      await new Promise<void>((resolve) => setImmediate(resolve));
-
-      expect(response.status).toBe(200);
-      expect(
-        listQueuedThreadCommands(harness, "turn.submit", thread.id),
-      ).toHaveLength(0);
-      expect(
-        listQueuedThreadMessages(harness.db, thread.id).map((row) => row.id),
-      ).toEqual([lead.id, failed.id]);
-    });
-  });
-
   it("parks a steer until turn/started and then steers it into that turn", async () => {
     await withTestHarness(async (harness) => {
       const { sessionId, thread } = seedProviderThreadFixture({
@@ -667,18 +604,8 @@ describe("startup queue waits", () => {
         status: "active",
         value: 6,
       });
-      const pluginInput = textInput("plugin-held lead");
       const input = textInput("steer when ready");
       const secondInput = textInput("also steer when ready");
-      const pluginHeld = seedQueuedMessage(harness.deps, {
-        content: pluginInput,
-        threadId: thread.id,
-        waitingOn: {
-          kind: "plugin",
-          pluginId: "limiter",
-          reason: "At capacity",
-        },
-      });
       const queueChangedInTransactions: boolean[] = [];
       const notifyThread = harness.hub.notifyThread.bind(harness.hub);
       vi.spyOn(harness.hub, "notifyThread").mockImplementation(
@@ -723,14 +650,6 @@ describe("startup queue waits", () => {
         queuedMessage: { waitingOn: { kind: "turn-starting" } },
       });
       expect(queueChangedInTransactions).toEqual([false, false]);
-      const queued = listQueuedThreadMessages(harness.db, thread.id);
-      setQueuedThreadMessageGroupBoundary({
-        db: harness.db,
-        notifier: harness.deps.hub,
-        threadId: thread.id,
-        expectedGroupedPrefixQueuedMessageIds: [pluginHeld.id, queued[1]!.id],
-        groupBoundaryQueuedMessageId: queued[1]!.id,
-      });
       expect(
         listQueuedThreadCommands(harness, "turn.submit", thread.id),
       ).toHaveLength(0);
@@ -741,14 +660,6 @@ describe("startup queue waits", () => {
           waitingOn: JSON.parse(row.waitingOn!),
         })),
       ).toEqual([
-        {
-          content: pluginInput,
-          waitingOn: {
-            kind: "plugin",
-            pluginId: "limiter",
-            reason: "At capacity",
-          },
-        },
         { content: input, waitingOn: { kind: "turn-starting" } },
         { content: secondInput, waitingOn: { kind: "turn-starting" } },
       ]);
@@ -787,7 +698,7 @@ describe("startup queue waits", () => {
         listQueuedThreadCommands(harness, "turn.submit", thread.id),
       ).toEqual([
         expect.objectContaining({
-          inputGroups: [pluginInput, input],
+          input,
           target: { mode: "auto", expectedTurnId: "turn-ready" },
         }),
         expect.objectContaining({
@@ -1326,7 +1237,7 @@ describe("service tier execution lifecycle", () => {
       await sendQueuedMessage(harness.deps, {
         claimPolicy: {
           kind: "automatic",
-          isGroupEligible: createAutomaticQueuedMessageGroupEligibility(
+          isEligible: createAutomaticQueuedMessageEligibility(
             harness.deps,
             { now: Date.now(), thread },
           ),

@@ -451,6 +451,7 @@ export interface PromptVoiceConfig {
 }
 
 export interface PromptBoxHandle {
+  attachFiles: (files: File[]) => void;
   focusEnd: () => void;
   captureHeightForLayoutChange: () => void;
   insertTextAtCursor: (text: string) => void;
@@ -2785,9 +2786,18 @@ export function PromptBoxInternal({
     return beforeCursor.length > 0 ? beforeCursor : undefined;
   }, []);
 
+  const emitAttachmentFiles = useCallback(
+    (files: File[]) => {
+      if (!onAttachFiles || files.length === 0) return;
+      trackUpload(files, onAttachFiles(files));
+    },
+    [onAttachFiles, trackUpload],
+  );
+
   useImperativeHandle(
     promptBoxRef,
     () => ({
+      attachFiles: emitAttachmentFiles,
       captureHeightForLayoutChange: capturePromptBoxHeight,
       focusEnd,
       insertTextAtCursor,
@@ -2797,6 +2807,7 @@ export function PromptBoxInternal({
     }),
     [
       capturePromptBoxHeight,
+      emitAttachmentFiles,
       focusEnd,
       getTextBeforeCursor,
       insertTextAtCursor,
@@ -2890,14 +2901,6 @@ export function PromptBoxInternal({
     : !canSubmit && submitDisabledReason
       ? submitDisabledReason
       : submitTitle;
-
-  const emitAttachmentFiles = useCallback(
-    (files: File[]) => {
-      if (!onAttachFiles || files.length === 0) return;
-      trackUpload(files, onAttachFiles(files));
-    },
-    [onAttachFiles, trackUpload],
-  );
 
   const submitPrompt = useCallback(() => {
     const shouldBlurAfterSubmit = blurAfterPointerSubmitRef.current;
