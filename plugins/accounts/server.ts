@@ -91,6 +91,7 @@ export default async function plugin(bb: BbPluginApi) {
   const refreshing = new Map<string, Promise<Secret>>();
   const claudeLogin = new ClaudeLogin();
   const codexLogin = new CodexLogin();
+  const macSignIns = new Set<string>();
 
   const changed = async () => {
     await Promise.all([
@@ -218,7 +219,7 @@ export default async function plugin(bb: BbPluginApi) {
   bb.onDispose(() => clearInterval(timer));
   void refreshAll();
 
-  const add = async (provider: Provider, signedIn: SignedIn) => {
+  const add = async (provider: Provider, signedIn: SignedIn, use = false) => {
     const existing = accounts.find(
       (account) =>
         account.provider === provider &&
@@ -243,6 +244,7 @@ export default async function plugin(bb: BbPluginApi) {
     usage.delete(account.id);
     if (!existing) accounts = [...accounts, account];
     ids(provider);
+    if (use) move(provider, account.id, 0);
     await changed();
     if (provider === "codex") void refreshUsage(account, true);
   };
@@ -252,7 +254,7 @@ export default async function plugin(bb: BbPluginApi) {
     const localEmail = await (provider === "claude-code"
       ? localClaudeEmail()
       : localCodexEmail());
-    return ids(provider).map((id) => {
+    const rows: AccountView[] = ids(provider).map((id) => {
       const account = accounts.find((entry) => entry.id === id);
       const measured = usage.get(id);
       return {
@@ -264,8 +266,26 @@ export default async function plugin(bb: BbPluginApi) {
         limitedUntil: limitedUntil(provider, id),
         error: measured?.error ?? null,
         windows: measured?.windows ?? [],
+        needsSignIn: false,
       };
     });
+    // Keep the Mac's Claude login visible until it is added again (ADR 0197).
+    const macAdded = accounts.some(
+      (entry) => entry.provider === provider && entry.email === localEmail,
+    );
+    if (localEmail && !rows.some((row) => row.id === LOCAL) && !macAdded)
+      rows.unshift({
+        id: LOCAL,
+        name: null,
+        email: localEmail,
+        plan: null,
+        inUse: false,
+        limitedUntil: null,
+        error: null,
+        windows: [],
+        needsSignIn: true,
+      });
+    return rows;
   };
   const move = (provider: Provider, id: string, to: number) => {
     const list = ids(provider).filter((entry) => entry !== id);
@@ -310,17 +330,27 @@ export default async function plugin(bb: BbPluginApi) {
         await changed();
         return null;
       },
-      "claude.start": async () => claudeLogin.start(),
+      "claude.start": async (input) => {
+        const started = await claudeLogin.start();
+        if (input?.mac) macSignIns.add(started.sessionId);
+        return started;
+      },
       "claude.poll": async ({ sessionId }) => {
         try {
           const token = claudeLogin.poll(sessionId);
           if (!token) return { status: "pending" as const, message: null };
-          await add("claude-code", {
-            email: null,
-            plan: null,
-            accountKey: null,
-            secret: claudeSecret(token),
-          });
+          // Signing in the Mac's login again labels it with the Mac's email and selects it.
+          const mac = macSignIns.delete(sessionId);
+          await add(
+            "claude-code",
+            {
+              email: mac ? await localClaudeEmail() : null,
+              plan: null,
+              accountKey: null,
+              secret: claudeSecret(token),
+            },
+            mac,
+          );
           return { status: "complete" as const, message: null };
         } catch (error) {
           return {
@@ -396,9 +426,11 @@ export default async function plugin(bb: BbPluginApi) {
       .get({ threadId: event.threadId })
       .catch(() => null);
     const provider = providerSchema.safeParse(thread?.providerId);
-    if (!provider.success || ids(provider.data).length < 2) return;
-    const used = threadAccount.get(event.threadId);
-    if (!used) return;
+    if (!provider.success) return;
+    // Cloud threads use the selected account, so they have no entry here.
+    const used =
+      threadAccount.get(event.threadId) ?? current(provider.data);
+    if (used === LOCAL && ids(provider.data).length < 2) return;
     limits[`${provider.data}:${used}`] =
       blockedUntil(event.rateLimits) ?? Date.now() + DEFAULT_REST_MS;
     await changed();

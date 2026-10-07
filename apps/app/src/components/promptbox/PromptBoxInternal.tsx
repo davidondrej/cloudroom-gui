@@ -2790,8 +2790,9 @@ export function PromptBoxInternal({
     (files: File[]) => {
       if (!onAttachFiles || files.length === 0) return;
       trackUpload(files, onAttachFiles(files));
+      focusEnd();
     },
-    [onAttachFiles, trackUpload],
+    [focusEnd, onAttachFiles, trackUpload],
   );
 
   useImperativeHandle(

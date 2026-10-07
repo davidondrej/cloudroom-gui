@@ -32,6 +32,7 @@ import {
 } from "./services/system/provider-auto-update.js";
 import { createProviderRegistryService } from "./services/providers/provider-registry.js";
 import { installFirstResponseTelemetry } from "./services/system/first-response-telemetry.js";
+import { startSetupTelemetry } from "./services/cloudroom/setup-telemetry.js";
 import { installTitleRecheck } from "./services/threads/title-recheck.js";
 import { installAuthFailureTelemetry } from "./services/system/auth-failure-telemetry.js";
 import { createTelemetryService } from "./services/system/telemetry.js";
@@ -267,6 +268,8 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
       update_needs_password: process.env.BB_DESKTOP_UPDATE_NEEDS_PASSWORD === "1",
     },
   });
+
+  startSetupTelemetry({ telemetry, config: runtimeConfig, logger });
 
   pluginService.bindSdk({
     baseUrl: `http://127.0.0.1:${serverConfig.BB_SERVER_PORT}`,

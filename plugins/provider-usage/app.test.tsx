@@ -257,7 +257,9 @@ describe("provider usage footer disclosure", () => {
     const machinePicker = slot.getByRole("button", {
       name: "Usage machine: M5",
     });
-    expect(slot.getByRole("heading", { name: "Codex" })).toBeTruthy();
+    expect(
+      slot.getByRole("heading", { name: "Codexcodex@example.com" }),
+    ).toBeTruthy();
     expect(slot.getByText("97%")).toBeTruthy();
 
     fireEvent.pointerDown(machinePicker, { button: 0 });
@@ -273,7 +275,7 @@ describe("provider usage footer disclosure", () => {
     ).not.toBeNull();
     expect(slot.getByText("82%")).toBeTruthy();
     expect(slot.getByText("37%")).toBeTruthy();
-    expect(slot.queryByText("claude@example.com")).toBeNull();
+    expect(slot.getByText("claude@example.com")).toBeTruthy();
 
     fireEvent.pointerDown(
       slot.getByRole("button", { name: "Usage machine: M4" }),
@@ -347,8 +349,7 @@ describe("provider usage footer disclosure", () => {
       "Codex",
       "team@example.com",
       "personal@example.com",
-      "Claude Code",
-      "claude-team@example.com",
+      "Claude Codeclaude-team@example.com",
     ]);
     const windowButton = slot.getByRole("button", {
       name: "Weekly limit: 46% used. Reset time not reported",
@@ -383,7 +384,9 @@ describe("provider usage footer disclosure", () => {
           ),
         ).toBeTruthy(),
       );
-      expect(slot.getByText("claude-team@example.com")).toBeTruthy();
+      expect(
+        slot.getByText("claude-team@example.com"),
+      ).toBeTruthy();
       expect(
         slot.queryByText(/Unexpected token|bb connect|invalid JSON/i),
       ).toBeNull();

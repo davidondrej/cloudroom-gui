@@ -4,6 +4,7 @@ import { and, desc, eq, gt, inArray, isNull, ne, or } from "drizzle-orm";
 import type { NotificationHub } from "../../ws/hub.js";
 import type { TelemetryEvent, TelemetryExecution, TelemetryService } from "./telemetry.js";
 import type { SandboxDirectory } from "../cloudroom/sandboxes.js";
+import { secondsSinceFirstLaunch } from "../cloudroom/setup-telemetry.js";
 
 const OUTPUT_TYPES: ThreadEventType[] = [
   "item/started",
@@ -69,6 +70,7 @@ export function installFirstResponseTelemetry(
           reasoning_level: sent.reasoningLevel ?? null,
           service_tier: sent.serviceTier ?? null,
           harness_version: sent.provider === "codex" ? startup?.versions?.codex ?? null : sent.provider === "claude-code" ? startup?.versions?.claude ?? null : null,
+          seconds_since_first_launch: secondsSinceFirstLaunch(),
         },
       });
       return;

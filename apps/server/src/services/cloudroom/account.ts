@@ -9,6 +9,7 @@ import { cancelGithubLogin } from "./github-login.js";
 import { macAccess } from "./previews.js";
 import { hasMacCodexLogin } from "./sandboxes.js";
 import { copyLogins } from "./sync.js";
+import { reportSignInFailed } from "./setup-telemetry.js";
 
 const website = "https://www.cloudroom.dev";
 // Keep the loopback listener open while a VM is provisioned. The one-use pairing code expires separately after five minutes.
@@ -140,6 +141,7 @@ export class CloudroomAccountService {
       } catch (error) {
         if (!abort.signal.aborted) {
           this.error = error instanceof ApiError ? error.message : "Sign-in could not complete. Start again from Cloudroom.";
+          reportSignInFailed(error instanceof Error ? error.message : String(error));
           reply(400, this.error);
         }
       } finally {
@@ -160,7 +162,7 @@ export class CloudroomAccountService {
     const address = server.address();
     if (!address || typeof address === "string") { server.close(); throw new Error("Sign-in callback unavailable"); }
     callback = `http://127.0.0.1:${address.port}/cloudroom/return`;
-    const timer = setTimeout(() => { if (this.pending?.server === server) { this.cancel(); this.error = "Sign-in expired. Try again."; } }, pendingLoginTimeoutMs);
+    const timer = setTimeout(() => { if (this.pending?.server === server) { this.cancel(); this.error = "Sign-in expired. Try again."; reportSignInFailed(this.error); } }, pendingLoginTimeoutMs);
     timer.unref();
     this.pending = { server, abort, timer, claimed: false };
     return { url: `${origin.origin}/desktop?${new URLSearchParams({ callback, state, challenge, ...(input.provider ? { provider: input.provider } : {})})}` };

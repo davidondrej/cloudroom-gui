@@ -15,6 +15,7 @@ import {
 import type { PluginService } from "../services/plugins/plugin-service.js";
 import { COMMAND_TIMEOUT_MS } from "../constants.js";
 import { ApiError } from "../errors.js";
+import { reportCliInstall } from "../services/cloudroom/setup-telemetry.js";
 import {
   getGateAuthKind,
   type GateAuthHeaderReader,
@@ -351,11 +352,17 @@ export function registerHostRoutes(
   post(routes.providerCliInstall, async (context, payload) => {
     const hostId = context.req.param("id");
     assertUsableHostId(deps, { hostId });
+    const started = Date.now();
     const events = await runProviderCliInstall(deps, {
       hostId,
       provider: payload.provider,
       actionKind: payload.actionKind,
     });
+    const done = events.find((event) => event.type === "completed");
+    const failure = events.find((event) => event.type === "error");
+    if (payload.provider === "claude-code" || payload.provider === "codex") {
+      reportCliInstall(payload.provider === "codex" ? "codex" : "claude", "local_thread", done && "success" in done && done.success ? "ok" : "failed", Date.now() - started, failure && "message" in failure ? failure.message : null);
+    }
     return new Response(providerCliInstallEventsToNdjson(events), {
       headers: {
         "content-type": "application/x-ndjson; charset=utf-8",

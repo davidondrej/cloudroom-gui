@@ -32,8 +32,9 @@ The builtin Accounts plugin is always on. It lets one user connect up to 10
 Claude Code and up to 10 Codex subscriptions. Add them at the top of Settings →
 Agents → Claude Code or Codex; the machine's own CLI login is the first entry
 and is never copied. Every thread uses the top account, and **Use** picks
-another; nothing switches automatically. Claude hides the machine's own login once
-an account is added, and Cloud Claude follows the account in use.
+another; nothing switches automatically. Once a Claude account is added, the
+machine's own login needs **Add Terminal login** before it can be picked, and Cloud
+Claude follows the account in use.
 Claude Code receives the account through `CLAUDE_CODE_OAUTH_TOKEN`; Codex signs its
 app server in memory through `chatgptAuthTokens`, so `~/.codex` stays untouched.
 Tokens live in 0600 files in the server data directory and refresh before each

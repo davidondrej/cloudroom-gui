@@ -2,6 +2,18 @@
 
 Also on [cloudroom.dev/changelog](https://www.cloudroom.dev/changelog).
 
+## 95
+
+Clearer Claude accounts (2026-10-07)
+
+### Changes
+
+- The usage box is wider and shows the account in use for each provider, with a dropdown to switch.
+- Accounts settings show each account as a tile, with the one in use highlighted.
+- Stop no longer gets stuck on Cloud threads.
+- Cursor shows Claude Opus 5.5 in the model picker, and Enter sends right after you attach files.
+- Cloudroom starts faster because plugins load in parallel.
+
 ## 94
 
 Multiple Claude accounts (2026-10-06)

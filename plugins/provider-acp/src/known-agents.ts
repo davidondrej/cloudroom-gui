@@ -49,7 +49,7 @@ export const KNOWN_ACP_AGENTS: readonly AcpAgentDefinition[] = [
       "default",
       "grok-4.6",
       "gpt-5.6-sol",
-      "claude-opus-5",
+      "claude-opus-5-5",
       "claude-fable-5",
       "composer-2.5",
     ],

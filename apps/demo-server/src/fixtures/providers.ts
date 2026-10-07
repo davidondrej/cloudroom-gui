@@ -64,7 +64,7 @@ export const PROVIDERS: readonly ProviderInfo[] = [
       modelCatalogScope: "workspace",
     },
     composerActions: [SKILLS_ACTION, PLAN_ACTION],
-    completedTurnDisplay: "collapse",
+    completedTurnDisplay: "flat",
   }),
   provider({
     id: "pi",

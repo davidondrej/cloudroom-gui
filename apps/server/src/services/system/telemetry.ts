@@ -17,8 +17,12 @@ export const SETUP_STEPS = ["account", "agent", "github", "project"] as const;
 export const SETUP_ACTIONS = ["viewed", "started", "done", "skipped", "closed", "detected", "waitlist"] as const;
 export const SETUP_DETAILS = ["github", "google", "email", "claude", "codex", "both", "none", "existing", "found", "folder", "bb_import", "chat_import"] as const;
 
+export type TelemetryValue = string | number | boolean | null;
+
 export type TelemetryEvent =
   | { name: "app_started"; properties?: { update_needs_password: boolean } }
+  /** Onboarding telemetry (ADR 0198); built in services/cloudroom/setup-telemetry.ts. */
+  | { name: "setup_snapshot" | "agent_connect" | "cli_install" | "account_sign_in_failed"; properties: Record<string, TelemetryValue> }
   | {
       name: "thread_created";
       properties: {
@@ -51,6 +55,7 @@ export type TelemetryEvent =
         reasoning_level?: string | null;
         service_tier?: string | null;
         harness_version?: string | null;
+        seconds_since_first_launch?: number;
       };
     }
   | {
@@ -68,6 +73,9 @@ export type TelemetryEvent =
         step: (typeof SETUP_STEPS)[number];
         action: (typeof SETUP_ACTIONS)[number];
         detail: (typeof SETUP_DETAILS)[number] | null;
+        seconds_since_first_launch?: number;
+        copy_logins?: boolean | null;
+        mac_access?: string | null;
       };
     }
   | { name: "settings_search_no_results"; properties: { query: string } }
@@ -81,7 +89,7 @@ export type TelemetryEvent =
       };
     };
 
-export type PluginTelemetryProperties = Record<string, string | number | boolean | null>;
+export type PluginTelemetryProperties = Record<string, TelemetryValue>;
 
 export interface TelemetryService {
   capture(event: TelemetryEvent): void;

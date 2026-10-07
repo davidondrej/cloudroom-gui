@@ -6,8 +6,9 @@ import { z } from "zod";
 import { threadGoalSetRequestSchema } from "@cloudroom/server-contract";
 import { cloudroom, isCloudThread } from "./commands.js";
 import { cloudroomAccount } from "./account.js";
-import { macAccessLevels, setMacAccess } from "./previews.js";
-import { cloudSkills, setCloudSkills, setCopyLogins, skillInCloud } from "./sync.js";
+import { macAccess, macAccessLevels, setMacAccess } from "./previews.js";
+import { cloudSkills, copyLogins, setCloudSkills, setCopyLogins, skillInCloud } from "./sync.js";
+import { secondsSinceFirstLaunch } from "./setup-telemetry.js";
 import { teleports } from "./teleport.js";
 import { binding, teleportBlocked, teleportProgress } from "./store.js";
 import { browserRequestProblem } from "../../browser-request-guard.js";
@@ -130,7 +131,8 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   app.post("/api/v1/cloudroom/setup-step", async (context) => {
     const parsed = z.object({ step: z.enum(SETUP_STEPS), action: z.enum(SETUP_ACTIONS), detail: z.enum(SETUP_DETAILS).nullable().default(null) }).strict().safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) throw new ApiError(400, "invalid_setup_step", "Invalid setup step.");
-    deps.telemetry.capture({ name: "setup_step", properties: parsed.data });
+    const choices = parsed.data.step === "agent" && parsed.data.action === "done" ? { copy_logins: await copyLogins(deps), mac_access: await macAccess(deps) } : {};
+    deps.telemetry.capture({ name: "setup_step", properties: { ...parsed.data, ...choices, seconds_since_first_launch: secondsSinceFirstLaunch() } });
     return context.json({ ok: true });
   });
   app.post("/api/v1/cloudroom/settings-search-miss", async (context) => {

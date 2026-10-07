@@ -4,6 +4,7 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { findCliExecutable } from "@cloudroom/process-utils";
 import { ApiError } from "../../errors.js";
+import { cliPlace, reportAgentConnect, reportCliInstall, scrub } from "./setup-telemetry.js";
 
 const TOKEN = /(sk-ant-oat[A-Za-z0-9_-]{20,})[^A-Za-z0-9_-]/;
 export const isClaudeApiKey = (value: string) => /^sk-ant-(?!oat|ort|admin)[A-Za-z0-9_-]{1,1017}$/.test(value);
@@ -15,11 +16,13 @@ const INSTALL = "curl -fsSL https://claude.ai/install.sh | bash";
 let installing: Promise<string> | null = null;
 /** Installs Claude Code with Anthropic's official installer, which needs no terminal and puts it in ~/.local/bin. One install at a time. */
 function installClaude(): Promise<string> {
+  const started = Date.now();
   installing ??= new Promise<string>((resolve, reject) => {
     execFile("/bin/bash", ["-c", INSTALL], { timeout: 10 * 60_000, maxBuffer: 4 * 1024 * 1024 }, (error, _stdout, stderr) => {
       const binary = claudeBinary();
-      if (binary) return resolve(binary);
       const reason = stderr.trim().split("\n").at(-1) || (error?.killed ? "the download took longer than 10 minutes" : error?.message);
+      reportCliInstall("claude", "claude_connect", binary ? "ok" : "failed", Date.now() - started, binary ? null : reason);
+      if (binary) return resolve(binary);
       reject(failed(`Claude Code could not be installed${reason ? `: ${reason}` : ""}. Run \`${INSTALL}\` in Terminal, then try again.`));
     });
   }).finally(() => { installing = null; });
@@ -38,7 +41,7 @@ export async function ensureClaudeCli(onError: (error: unknown) => void): Promis
 }
 
 /** The Claude Code that the Claude desktop app keeps for itself: its newest fully downloaded version. */
-function desktopClaude(): string | undefined {
+export function desktopClaude(): string | undefined {
   if (process.platform !== "darwin") return undefined;
   const root = join(homedir(), "Library/Application Support/Claude/claude-code");
   let versions: string[];
@@ -55,7 +58,7 @@ function desktopClaude(): string | undefined {
 }
 
 /** `claude auth status` on this Mac, or null when Claude Code is missing or the check fails. */
-function claudeAuthStatus(): Promise<{ loggedIn?: unknown; subscriptionType?: unknown } | null> {
+export function claudeAuthStatus(): Promise<{ loggedIn?: unknown; subscriptionType?: unknown } | null> {
   const binary = claudeBinary();
   if (!binary) return Promise.resolve(null);
   return new Promise((resolve) => {
@@ -132,9 +135,11 @@ function runSetupToken(id: string, save: (token: string) => Promise<unknown>): T
   const run: TokenRun = { id, url: null, error: null, done: false, stop: () => finish("Claude sign-in was cancelled.") };
   let output = "";
   let saving = false;
+  const started = Date.now();
   const finish = (error: string | null) => {
     if (run.done) return;
     Object.assign(run, { done: true, error });
+    try { reportSetupToken(error, output, binary, Date.now() - started); } catch { /* telemetry never blocks sign-in */ }
     clearTimeout(timer);
     clearInterval(poll);
     stopChild();
@@ -157,6 +162,25 @@ function runSetupToken(id: string, save: (token: string) => Promise<unknown>): T
   child.on("error", () => finish("Could not start Claude Code on this computer."));
   child.on("close", () => { if (!saving) finish("Claude sign-in did not finish. Try again."); });
   return run;
+}
+
+const SETUP_TOKEN_CODES: Record<string, string> = {
+  "Claude sign-in was cancelled.": "cancelled",
+  "Claude sign-in timed out. Try again.": "timed_out",
+  "Claude sign-in did not finish. Try again.": "exited_without_token",
+  "Could not start Claude Code on this computer.": "could_not_start",
+};
+/** Telemetry for one sign-in, with Claude Code's last lines on screen: the only clue to why it quit early. */
+function reportSetupToken(error: string | null, output: string, binary: string, ms: number) {
+  const code = error === null ? null : SETUP_TOKEN_CODES[error] ?? "save_failed";
+  const lines = screenText(output).split("\n").map(line => line.replace(/[✢✳✶✻✽·]/g, "").trim()).filter(Boolean);
+  reportAgentConnect("claude", code === "cancelled" ? "cancelled" : error === null ? "ok" : "failed", {
+    code,
+    message: error === null ? null : code === "save_failed" ? error : scrub(lines.slice(-3).join(" | ")),
+    ms,
+    cliVersion: lines.join(" ").match(/Code ?v(\d+\.\d+\.\d+)/)?.[1] ?? null,
+    cliPlace: cliPlace(binary),
+  });
 }
 
 /** Starts Claude sign-in (or joins the running one) and waits briefly for its sign-in link. */

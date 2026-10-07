@@ -187,28 +187,30 @@ function UsageWindow({ window }: { window: UsageWindowValue }) {
       aria-expanded={showReset}
       onClick={() => setShowReset((shown) => !shown)}
     >
-      <span className="flex items-baseline gap-3 text-2xs">
-        <span className="min-w-0 flex-1 text-subtle-foreground">{label}</span>
-        <span className="tabular-nums text-sidebar-foreground">
+      <span className="flex items-center gap-3 text-2xs">
+        <span className="w-24 shrink-0 truncate text-subtle-foreground">
+          {label}
+        </span>
+        <span className="block h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-sidebar-border">
+          <span
+            className={
+              "block h-full rounded-full " +
+              usageBarColorClass(window.usedPercent)
+            }
+            style={{
+              width: Math.max(2, Math.min(100, window.usedPercent)) + "%",
+            }}
+          />
+        </span>
+        <span className="w-9 shrink-0 text-right tabular-nums text-sidebar-foreground">
           {Math.round(window.usedPercent)}%
         </span>
         <span
           aria-hidden="true"
-          className="tabular-nums text-subtle-foreground"
+          className="w-14 shrink-0 text-right tabular-nums text-subtle-foreground"
         >
           {countdown ?? "—"}
         </span>
-      </span>
-      <span className="mt-1 block h-1 overflow-hidden rounded-full bg-sidebar-border">
-        <span
-          className={
-            "block h-full rounded-full " +
-            usageBarColorClass(window.usedPercent)
-          }
-          style={{
-            width: Math.max(2, Math.min(100, window.usedPercent)) + "%",
-          }}
-        />
       </span>
       {showReset ? (
         <span className="mt-1 block text-2xs text-subtle-foreground">
@@ -257,32 +259,36 @@ function ProviderUsageBody({ provider }: { provider: UsageProvider }) {
   }
 }
 
-function AccountPager({
+function accountName(account: UsageProvider): string | null {
+  return (
+    account.accountLabel ??
+    (account.usage?.status === "ok" ? account.usage.accountEmail : null)
+  );
+}
+
+/** The account threads use, next to the provider name. With several accounts, it switches between them. */
+function AccountChip({
   accounts,
   refresh,
 }: {
   accounts: UsageProvider[];
   refresh: () => void;
 }) {
-  const inUse = Math.max(
-    0,
-    accounts.findIndex((account) => account.inUse === true),
-  );
-  const [picked, setPicked] = useState<string | null>(null);
-  const index = Math.max(
-    0,
-    picked === null
-      ? inUse
-      : accounts.findIndex((account) => account.id === picked),
-  );
-  const account = accounts[index]!;
-  const flip = (step: number) =>
-    setPicked(accounts[(index + step + accounts.length) % accounts.length]!.id);
-  const label =
-    account.accountLabel ??
-    (account.usage?.status === "ok" ? account.usage.accountEmail : null) ??
-    "This machine's login";
-  const use = async () => {
+  const shown =
+    accounts.find((account) => account.inUse) ??
+    (accounts.length === 1 ? accounts[0] : undefined);
+  const label = shown ? accountName(shown) : null;
+  const switchable = accounts.filter((account) => account.accountId);
+  const chip =
+    "flex min-w-0 max-w-[65%] items-center gap-1.5 rounded-full border border-sidebar-border px-2 py-0.5 text-2xs font-normal text-sidebar-foreground";
+  if (label === null) return null;
+  if (switchable.length < 2)
+    return (
+      <span title={label} className={chip}>
+        <span className="truncate">{label}</span>
+      </span>
+    );
+  const use = async (account: UsageProvider) => {
     await fetch("/api/v1/plugins/accounts/rpc/accounts.use", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -291,52 +297,46 @@ function AccountPager({
         id: account.accountId,
       }),
     }).catch(() => undefined);
-    setPicked(null);
     refresh();
   };
-  const chevron =
-    "flex size-4 shrink-0 items-center justify-center rounded-sm text-subtle-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground";
   return (
-    <div className="mt-1 pl-5.5">
-      <div className="flex min-w-0 items-center gap-1 text-2xs text-subtle-foreground">
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label="Previous account"
-          className={chevron}
-          onClick={() => flip(-1)}
+          title={label}
+          aria-label={`Account in use: ${label}`}
+          className={cn(chip, "hover:bg-sidebar-accent")}
         >
-          <Icon name="ChevronLeft" aria-hidden="true" className="size-3" />
+          <span className="size-1.5 shrink-0 rounded-full bg-primary" />
+          <span className="truncate">{label}</span>
+          <Icon name="ChevronDown" aria-hidden="true" className="size-3 shrink-0" />
         </button>
-        <span title={label} className="min-w-0 flex-1 truncate">
-          {label}
-        </span>
-        {account.inUse ? (
-          <span className="shrink-0 text-sidebar-foreground">In use</span>
-        ) : (
-          <button
-            type="button"
-            className="shrink-0 underline-offset-2 hover:text-sidebar-foreground hover:underline"
-            onClick={() => void use()}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="max-w-72">
+        {switchable.map((account) => (
+          <DropdownMenuItem
+            key={account.id}
+            role="menuitemradio"
+            aria-checked={account.inUse === true}
+            onSelect={() => void use(account)}
+            className="flex items-center gap-2"
           >
-            Use
-          </button>
-        )}
-        <span className="shrink-0 tabular-nums">
-          {index + 1}/{accounts.length}
-        </span>
-        <button
-          type="button"
-          aria-label="Next account"
-          className={chevron}
-          onClick={() => flip(1)}
-        >
-          <Icon name="ChevronRight" aria-hidden="true" className="size-3" />
-        </button>
-      </div>
-      <div className="mt-1">
-        <ProviderUsageBody provider={account} />
-      </div>
-    </div>
+            <span className="min-w-0 flex-1 truncate">
+              {accountName(account) ?? "This Mac"}
+            </span>
+            <Icon
+              name="Check"
+              aria-hidden="true"
+              className={cn(
+                "size-3.5 shrink-0",
+                account.inUse ? "opacity-100" : "opacity-0",
+              )}
+            />
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -601,10 +601,10 @@ export function ProviderUsageStatusContent({
                 fallback="Bot"
                 className="size-3.5 shrink-0"
               />
-              <span className="truncate">{provider.displayName}</span>
-            </h2>
-            {provider.accounts.some((account) => account.accountId) ? (
-              <AccountPager
+              <span className="min-w-0 flex-1 truncate">
+                {provider.displayName}
+              </span>
+              <AccountChip
                 accounts={provider.accounts}
                 refresh={() =>
                   void refreshUsage({
@@ -615,12 +615,18 @@ export function ProviderUsageStatusContent({
                   })
                 }
               />
-            ) : null}
-            {provider.accounts.some((account) => account.accountId)
-              ? null
-              : provider.accounts.map((account) => (
-                  <div key={account.id} className="mt-1 pl-5.5">
-                    {account.accountLabel === null ? null : (
+            </h2>
+            {(provider.accounts.some((account) => account.accountId)
+              ? [
+                  provider.accounts.find((account) => account.inUse) ??
+                    provider.accounts[0]!,
+                ]
+              : provider.accounts
+            ).map((account) => (
+                  <div key={account.id} className="mt-1">
+                    {account.accountLabel === null ||
+                    provider.accounts.length === 1 ||
+                    account.accountId ? null : (
                       <h3
                         title={account.accountLabel}
                         className="truncate text-2xs text-subtle-foreground"

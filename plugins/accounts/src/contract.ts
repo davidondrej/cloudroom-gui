@@ -23,6 +23,8 @@ export const accountViewSchema = z.object({
   limitedUntil: z.number().nullable(),
   error: z.string().nullable(),
   windows: z.array(usageWindowSchema),
+  // The Mac's own Claude login, shown but not selectable until it is signed in again.
+  needsSignIn: z.boolean(),
 });
 export type AccountView = z.infer<typeof accountViewSchema>;
 
@@ -50,7 +52,7 @@ export const accountsRpcContract = defineRpcContract({
     output: ok,
   },
   "claude.start": {
-    input: z.null(),
+    input: z.object({ mac: z.boolean() }).nullable(),
     output: z.object({ sessionId: z.string(), authorizeUrl: z.string() }),
   },
   "codex.start": {

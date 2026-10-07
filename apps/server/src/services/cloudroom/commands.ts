@@ -6,6 +6,7 @@ import { createThread, getAppSettings, getProject, getThread, getThreadExecution
 import { PERSONAL_PROJECT_ID, encodeClientTurnRequestIdNumber, isStandaloneBuiltinCompactCommand, promptInputSchema, reasoningLevelSchema, threadQueuedMessageSchema, type Thread, type PromptInput, type ThreadEventType, type ThreadEventTurnStatus, type ThreadChangeKind, type ReasoningLevel } from "@cloudroom/domain";
 import type { CreateThreadRequest, ForkThreadRequest, SendMessageRequest, SendMessageResponse } from "@cloudroom/server-contract";
 import { z } from "zod";
+import { findCliExecutable } from "@cloudroom/process-utils";
 import { ApiError } from "../../errors.js";
 import { CloudroomClient, CloudroomConnectionError, CloudroomError, authRequiredMessages, type CodexAuthStatus, type VmRun, type VmRunResult } from "./client.js";
 import { CLOUD_HARNESSES, HARNESS_NAMES, appendStartProgress, endedTurn, isCloudProvider, projectFollowUp, projectInitialPrompt, projectRecord, retractStillQueuedPrompts, type CloudProvider, type StartStep } from "./events.js";
@@ -23,6 +24,7 @@ import { deriveTitleFallback, shouldGenerateThreadTitle } from "../threads/title
 import { buildSuggestedBranchName } from "../threads/thread-create-helpers.js";
 import { assertValidParentThread, isParentNotifiableChildThread } from "../threads/thread-parent.js";
 import { inferThreadMetadata, queueThreadTitle } from "../threads/thread-metadata-inference.js";
+import { cliPlace, reportAgentConnect } from "./setup-telemetry.js";
 import { cloudSkills, copyLogins, copyMacGithub, importCodexLogin, importPiLogin, setupSync, skillInCloud, stopSync, syncStatus } from "./sync.js";
 import { setupPreviews, stopPreviews, previewStatus } from "./previews.js";
 import { CloudSecrets } from "./secrets.js";
@@ -899,7 +901,10 @@ class CloudroomService {
     if (await this.sandboxLogin("codex")) {
       if (action === "cancel") cancelMacCodexLogin();
       if (action === "login") {
-        if (await copyLogins(this.deps) !== true) throw new ApiError(409, "codex_auth_unsupported", "Cloud sandboxes use this Mac's Codex login. Allow copying logins in Cloudroom's setup, then try again.");
+        if (await copyLogins(this.deps) !== true) {
+          reportAgentConnect("codex", "failed", { code: "copy_logins_off" });
+          throw new ApiError(409, "codex_auth_unsupported", "Cloud sandboxes use this Mac's Codex login. Allow copying logins in Cloudroom's setup, then try again.");
+        }
         // Signed out or expired here: sign in on this Mac first, then the next status check copies the new login.
         if (await hasMacCodexLogin() && !await macCodexLoginExpired()) await this.sandboxes.copyMacLogins(true, await copyMacGithub(this.deps));
         else startMacCodexLogin();
@@ -907,8 +912,12 @@ class CloudroomService {
       const run = macCodexLogin();
       if (run?.done && !run.error) await this.sandboxes.copyMacLogins(true, await copyMacGithub(this.deps));
       const status = (await this.sandboxLogin("codex"))!;
+      if (status.state === "connected" && (action === "login" || run?.done)) reportAgentConnect("codex", "ok", { cliPlace: cliPlace(findCliExecutable("codex")) });
       if (status.state === "connected" || !run) return status;
-      if (run.error) return { ...status, state: "error" as const, message: run.error };
+      if (run.error) {
+        reportAgentConnect("codex", "failed", { code: "login_failed", message: run.error, cliPlace: cliPlace(findCliExecutable("codex")) });
+        return { ...status, state: "error" as const, message: run.error };
+      }
       return run.done ? status : { ...status, state: "waiting" as const, login_id: "mac", verification_url: run.url, message: "Finish signing in to ChatGPT in your browser." };
     }
     try {

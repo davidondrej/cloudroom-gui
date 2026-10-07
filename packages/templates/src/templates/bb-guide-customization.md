@@ -143,7 +143,7 @@ and `null` clears a preference that can be unset.
 `room-cli settings completed-turns` lists how each provider shows a finished turn:
 `collapse` folds the turn's work into one "Worked for" row and keeps the final
 answer visible, and `flat` keeps every step visible. Each provider has a
-default (every first-party provider is `collapse`).
+default (Claude Code is `flat`, the other first-party providers `collapse`).
 `room-cli settings completed-turns <provider-id> <collapse|flat>` overrides it for
 that provider, and `default` removes the override. Settings → Providers has
 the same per-provider switch.

@@ -177,8 +177,10 @@ export default function providerUsagePlugin(bb: BbPluginApi): void {
           })
           .catch(() => []);
         const parsed = accountViewsSchema.safeParse(raw);
-        const accounts = parsed.success ? parsed.data : [];
-        if (accounts.length < 2) continue;
+        const accounts = (parsed.success ? parsed.data : []).filter(
+          (account) => !account.needsSignIn,
+        );
+        if (!accounts.some((account) => account.id !== "local")) continue;
         const metadata = providers.find(
           (provider) => provider.id === providerId,
         );
@@ -192,35 +194,51 @@ export default function providerUsagePlugin(bb: BbPluginApi): void {
             local ??
             (metadata ? normalizedProvider(metadata, undefined) : null);
           if (base === null) continue;
-          const entries = accounts.flatMap((account): UsageProvider[] =>
-            account.id === "local"
-              ? local
+          const entries = accounts.flatMap((account): UsageProvider[] => {
+            if (account.id === "local")
+              return local
                 ? [{ ...local, accountId: "local", inUse: account.inUse }]
-                : []
-              : [
-                  {
-                    ...base,
-                    id: `accounts:${account.id}`,
-                    accountLabel: account.name ?? account.email,
-                    accountId: account.id,
-                    inUse: account.inUse,
-                    usage: {
-                      status: "ok",
-                      accountEmail: account.email,
-                      planLabel: account.plan,
-                      windows: account.windows.map((window) => ({
-                        label: window.label,
-                        usedPercent: window.usedPercent,
-                        resetsAt:
-                          window.resetsAt === null
-                            ? null
-                            : new Date(window.resetsAt).toISOString(),
-                        cost: null,
-                      })),
-                    },
-                  },
-                ],
-          );
+                : [];
+            // Accounts that report no usage still show when they hit a limit.
+            const windows =
+              account.windows.length > 0
+                ? account.windows
+                : account.limitedUntil
+                  ? [
+                      {
+                        label: "Limit hit",
+                        usedPercent: 100,
+                        resetsAt: account.limitedUntil,
+                      },
+                    ]
+                  : [];
+            return [
+              {
+                ...base,
+                id: `accounts:${account.id}`,
+                accountLabel: account.name ?? account.email,
+                accountId: account.id,
+                inUse: account.inUse,
+                usage:
+                  windows.length === 0
+                    ? null
+                    : {
+                        status: "ok",
+                        accountEmail: account.email,
+                        planLabel: account.plan,
+                        windows: windows.map((window) => ({
+                          label: window.label,
+                          usedPercent: window.usedPercent,
+                          resetsAt:
+                            window.resetsAt === null
+                              ? null
+                              : new Date(window.resetsAt).toISOString(),
+                          cost: null,
+                        })),
+                      },
+              },
+            ];
+          });
           if (index < 0) machine.providers.push(...entries);
           else machine.providers.splice(index, 1, ...entries);
         }

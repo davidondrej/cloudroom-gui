@@ -1782,13 +1782,12 @@ export function createPluginRuntime(context: PluginRuntimeContext) {
   }
 
   async function loadAll(): Promise<void> {
-    const rows = listInstalledPlugins(deps.db).sort((a, b) =>
-      a.id.localeCompare(b.id),
+    const rows = listInstalledPlugins(deps.db).filter(
+      (row) => !loaded.has(row.id),
     );
-    for (const row of rows) {
-      if (loaded.has(row.id)) continue;
-      await withLifecycleLock(row.id, () => loadOne(row));
-    }
+    await Promise.all(
+      rows.map((row) => withLifecycleLock(row.id, () => loadOne(row))),
+    );
   }
 
   function wireLookup<T>(

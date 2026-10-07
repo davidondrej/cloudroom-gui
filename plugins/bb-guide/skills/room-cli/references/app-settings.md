@@ -121,8 +121,8 @@ This blocks common catastrophic shell commands; it is not a sandbox.
 
 - When a turn finishes, cloudroom can collapse its work into one `Worked for` row
   and leave the final answer visible (`collapse`), or keep every step visible
-  (`flat`). Each provider declares a default; every
-  first-party provider is `collapse`.
+  (`flat`). Each provider declares a default: Claude Code is `flat`; every
+  other first-party provider is `collapse`.
 - `room-cli settings completed-turns [--json]` lists every provider with its current
   display and whether it comes from your setting or the provider default.
 - `room-cli settings completed-turns <provider-id> <collapse|flat|default>` sets the

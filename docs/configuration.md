@@ -306,8 +306,9 @@ provider, how a finished turn appears in the thread timeline. Collapsed, the
 turn's work folds into one "Worked for" row and the final answer stays
 visible. Flat, every step of the finished turn stays visible, as it was while
 the turn ran. Each provider declares its default (`completedTurnDisplay` on
-its registration): every first-party provider defaults to collapsed. Your
-choice is stored in `providerCompletedTurnDisplay`, a map of provider id to `collapse` or `flat`;
+its registration): Claude Code defaults to flat, and every other first-party
+provider defaults to collapsed. Your choice is stored in
+`providerCompletedTurnDisplay`, a map of provider id to `collapse` or `flat`;
 a provider without an entry uses its default. The display applies to existing
 threads as well as new ones, and to the conversation outline and
 `bb thread log`. Set it with
@@ -820,11 +821,13 @@ Every thread, old and new, uses the selected account from its next turn (ADR
 a subscription limit marks the account "Limit hit". Claude Code receives the
 account as `CLAUDE_CODE_OAUTH_TOKEN` and rebuilds its session silently. Codex
 signs its app server in memory with `chatgptAuthTokens`, so `~/.codex` stays
-untouched; the token never reaches agent shells. The sidebar usage box flips
-between accounts with its chevrons.
+untouched; the token never reaches agent shells. The sidebar usage box shows
+each provider's in-use account in a chip; with several accounts, the chip's
+dropdown switches between them.
 
-Claude hides the machine's own login once an account is added, because Cloud
-needs a one-year token. The selected Claude account becomes the Cloud Claude
+Once a Claude account is added, the machine's own login stays listed but can't
+be picked, because Cloud needs a one-year token. **Add Terminal login** adds it as an
+account, labeled with the Mac's email, and selects it. The selected Claude account becomes the Cloud Claude
 login through `POST /api/v1/cloudroom/account/claude/token`. That route also asks
 awake Cloud Claude sessions to sleep once idle, so their next message restarts
 Claude with the new login. Asleep sandboxes are not woken.

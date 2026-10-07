@@ -136,6 +136,8 @@ export const accountViewsSchema = z.array(
   z.object({
     id: z.string(),
     name: z.string().nullish(),
+    needsSignIn: z.boolean().optional(),
+    limitedUntil: z.number().nullish(),
     email: z.string().nullable(),
     plan: z.string().nullable(),
     inUse: z.boolean(),
