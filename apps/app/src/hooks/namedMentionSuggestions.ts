@@ -1,6 +1,6 @@
-import { fuzzyMatchText } from "@bb/fuzzy-match";
-import type { PromptMentionSuggestion } from "@bb/client-core";
-import { compareCodepoint } from "@bb/client-core";
+import { fuzzyMatchText } from "@cloudroom/fuzzy-match";
+import type { PromptMentionSuggestion } from "@cloudroom/client-core";
+import { compareCodepoint } from "@cloudroom/client-core";
 
 type ProjectMentionSuggestion = Extract<
   PromptMentionSuggestion,

@@ -1,5 +1,5 @@
-import { reasoningLevelValues } from "@bb/domain";
-import type { AvailableModel, ReasoningLevel, ServiceTier } from "@bb/domain";
+import { reasoningLevelValues } from "@cloudroom/domain";
+import type { AvailableModel, ReasoningLevel, ServiceTier } from "@cloudroom/domain";
 import type { AcpConfigOption, AcpSessionModels } from "../wire.js";
 
 interface RawAgentModel {

@@ -4,7 +4,7 @@ import type {
   ThreadPluginMetadataArgs,
   ThreadPluginMetadataUpdateArgs,
   ThreadSpawnArgs,
-} from "@bb/sdk";
+} from "@cloudroom/sdk";
 import type { PluginBrowserBbSdk } from "@get-bb/plugin-sdk";
 
 function withPluginThreadAttribution<

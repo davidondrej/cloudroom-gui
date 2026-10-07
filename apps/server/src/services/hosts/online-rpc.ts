@@ -1,7 +1,7 @@
 import { hostCommandMayWake } from "./wake-policy.js";
 import { isHostCleanupAllowed } from "./cleanup-context.js";
 import { assertMachineLifecycleAdmission } from "../machines/lifecycle.js";
-import { getHost, getThread } from "@bb/db";
+import { getHost, getThread } from "@cloudroom/db";
 import { randomUUID } from "node:crypto";
 import {
   type HostDaemonOnlineRpcResponseMessage,
@@ -10,7 +10,7 @@ import {
   parseHostDaemonRpcResultForCommand,
   type HostDaemonRpcCommand,
   type HostDaemonRpcResultForCommand,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { ApiError } from "../../errors.js";
 import type { WorkSessionDeps } from "../../types.js";
 import {

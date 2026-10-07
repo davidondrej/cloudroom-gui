@@ -3,16 +3,16 @@ import {
   hostDaemonInteractiveRequestSchema,
   typedRoutes,
   type HostDaemonInternalSchema,
-} from "@bb/host-daemon-contract";
-import { formatPendingInteractionSubjectDetailLines } from "@bb/core-ui";
-import type { PendingInteraction } from "@bb/domain";
+} from "@cloudroom/host-daemon-contract";
+import { formatPendingInteractionSubjectDetailLines } from "@cloudroom/core-ui";
+import type { PendingInteraction } from "@cloudroom/domain";
 import {
   isApprovalPendingInteractionPayload,
   isPluginExtensionInteractionRequestPayload,
   isUserQuestionPendingInteractionPayload,
   parseExtensionKind,
-} from "@bb/domain";
-import { getThread, hasStoredTurnStarted } from "@bb/db";
+} from "@cloudroom/domain";
+import { getThread, hasStoredTurnStarted } from "@cloudroom/db";
 import { isParentNotifiableChildThread } from "../services/threads/thread-parent.js";
 import type { Hono } from "hono";
 import type { AppDeps } from "../types.js";

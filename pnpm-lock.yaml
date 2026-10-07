@@ -71,43 +71,43 @@ importers:
 
   apps/app:
     dependencies:
-      '@bb/client-core':
+      '@cloudroom/client-core':
         specifier: workspace:*
         version: link:../../packages/client-core
-      '@bb/config':
+      '@cloudroom/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@bb/core-ui':
+      '@cloudroom/core-ui':
         specifier: workspace:*
         version: link:../../packages/core-ui
-      '@bb/desktop-contract':
+      '@cloudroom/desktop-contract':
         specifier: workspace:*
         version: link:../../packages/desktop-contract
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@bb/fuzzy-match':
+      '@cloudroom/fuzzy-match':
         specifier: workspace:*
         version: link:../../packages/fuzzy-match
-      '@bb/host-daemon-contract':
+      '@cloudroom/host-daemon-contract':
         specifier: workspace:*
         version: link:../../packages/host-daemon-contract
-      '@bb/mobile-bridge':
+      '@cloudroom/mobile-bridge':
         specifier: workspace:*
         version: link:../../packages/mobile-bridge
-      '@bb/sdk':
+      '@cloudroom/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
-      '@bb/server-contract':
+      '@cloudroom/server-contract':
         specifier: workspace:*
         version: link:../../packages/server-contract
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
-      '@bb/templates':
+      '@cloudroom/templates':
         specifier: workspace:*
         version: link:../../packages/templates
-      '@bb/thread-view':
+      '@cloudroom/thread-view':
         specifier: workspace:*
         version: link:../../packages/thread-view
       '@dnd-kit/core':
@@ -297,10 +297,10 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/test-helpers':
+      '@cloudroom/test-helpers':
         specifier: workspace:*
         version: link:../../packages/test-helpers
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       '@ladle/react':
@@ -369,34 +369,34 @@ importers:
 
   apps/cli:
     dependencies:
-      '@bb/client-core':
+      '@cloudroom/client-core':
         specifier: workspace:*
         version: link:../../packages/client-core
-      '@bb/config':
+      '@cloudroom/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@bb/core-ui':
+      '@cloudroom/core-ui':
         specifier: workspace:*
         version: link:../../packages/core-ui
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@bb/host-daemon-contract':
+      '@cloudroom/host-daemon-contract':
         specifier: workspace:*
         version: link:../../packages/host-daemon-contract
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
-      '@bb/sdk':
+      '@cloudroom/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
-      '@bb/server-contract':
+      '@cloudroom/server-contract':
         specifier: workspace:*
         version: link:../../packages/server-contract
-      '@bb/templates':
+      '@cloudroom/templates':
         specifier: workspace:*
         version: link:../../packages/templates
-      '@bb/thread-view':
+      '@cloudroom/thread-view':
         specifier: workspace:*
         version: link:../../packages/thread-view
       cli-table3:
@@ -415,7 +415,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       '@tailwindcss/node':
@@ -445,17 +445,17 @@ importers:
 
   apps/connect:
     dependencies:
-      '@bb/connect-db':
+      '@cloudroom/connect-db':
         specifier: workspace:*
         version: link:../../packages/connect-db
-      '@bb/tunnel-contract':
+      '@cloudroom/tunnel-contract':
         specifier: workspace:*
         version: link:../../packages/tunnel-contract
       drizzle-orm:
         specifier: ^0.38.0
         version: 0.38.4(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/react@19.2.13)(better-sqlite3@12.10.0)(kysely@0.29.3)(react@19.2.4)
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       '@better-auth/drizzle-adapter':
@@ -494,17 +494,17 @@ importers:
 
   apps/demo-server:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@bb/server-contract':
+      '@cloudroom/server-contract':
         specifier: workspace:*
         version: link:../../packages/server-contract
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       '@cloudflare/workers-types':
@@ -525,10 +525,10 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@bb/connect-client':
+      '@cloudroom/connect-client':
         specifier: workspace:*
         version: link:../../packages/connect-client
-      '@bb/host-daemon-contract':
+      '@cloudroom/host-daemon-contract':
         specifier: workspace:*
         version: link:../../packages/host-daemon-contract
       bb-app:
@@ -547,19 +547,19 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/config':
+      '@cloudroom/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@bb/desktop-contract':
+      '@cloudroom/desktop-contract':
         specifier: workspace:*
         version: link:../../packages/desktop-contract
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@bb/server-contract':
+      '@cloudroom/server-contract':
         specifier: workspace:*
         version: link:../../packages/server-contract
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       '@types/node':
@@ -604,49 +604,49 @@ importers:
 
   apps/host-daemon:
     dependencies:
-      '@bb/agent-runtime':
+      '@cloudroom/agent-runtime':
         specifier: workspace:*
         version: link:../../packages/agent-runtime
-      '@bb/cli':
+      '@cloudroom/cli':
         specifier: workspace:*
         version: link:../cli
-      '@bb/config':
+      '@cloudroom/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@bb/connect-client':
+      '@cloudroom/connect-client':
         specifier: workspace:*
         version: link:../../packages/connect-client
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@bb/fuzzy-match':
+      '@cloudroom/fuzzy-match':
         specifier: workspace:*
         version: link:../../packages/fuzzy-match
-      '@bb/host-daemon-contract':
+      '@cloudroom/host-daemon-contract':
         specifier: workspace:*
         version: link:../../packages/host-daemon-contract
-      '@bb/host-watcher':
+      '@cloudroom/host-watcher':
         specifier: workspace:*
         version: link:../../packages/host-watcher
-      '@bb/host-workspace':
+      '@cloudroom/host-workspace':
         specifier: workspace:*
         version: link:../../packages/host-workspace
-      '@bb/local-open-targets':
+      '@cloudroom/local-open-targets':
         specifier: workspace:*
         version: link:../../packages/local-open-targets
-      '@bb/logger':
+      '@cloudroom/logger':
         specifier: workspace:*
         version: link:../../packages/logger
-      '@bb/process-utils':
+      '@cloudroom/process-utils':
         specifier: workspace:*
         version: link:../../packages/process-utils
-      '@bb/provider-bridge-protocol':
+      '@cloudroom/provider-bridge-protocol':
         specifier: workspace:*
         version: link:../../packages/provider-bridge-protocol
-      '@bb/tunnel-client':
+      '@cloudroom/tunnel-client':
         specifier: workspace:*
         version: link:../../packages/tunnel-client
-      '@bb/tunnel-contract':
+      '@cloudroom/tunnel-contract':
         specifier: workspace:*
         version: link:../../packages/tunnel-contract
       '@hono/node-server':
@@ -695,16 +695,16 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
-      '@bb/scripts':
+      '@cloudroom/scripts':
         specifier: workspace:*
         version: link:../../packages/scripts
-      '@bb/test-helpers':
+      '@cloudroom/test-helpers':
         specifier: workspace:*
         version: link:../../packages/test-helpers
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       '@types/mime-types':
@@ -734,25 +734,25 @@ importers:
 
   apps/mobile:
     dependencies:
-      '@bb/client-core':
+      '@cloudroom/client-core':
         specifier: workspace:*
         version: link:../../packages/client-core
-      '@bb/connect-client':
+      '@cloudroom/connect-client':
         specifier: workspace:*
         version: link:../../packages/connect-client
-      '@bb/core-ui':
+      '@cloudroom/core-ui':
         specifier: workspace:*
         version: link:../../packages/core-ui
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@bb/mobile-bridge':
+      '@cloudroom/mobile-bridge':
         specifier: workspace:*
         version: link:../../packages/mobile-bridge
-      '@bb/sdk':
+      '@cloudroom/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
-      '@bb/server-contract':
+      '@cloudroom/server-contract':
         specifier: workspace:*
         version: link:../../packages/server-contract
       '@expo/ui':
@@ -879,7 +879,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       '@tailwindcss/postcss':
@@ -921,43 +921,43 @@ importers:
 
   apps/server:
     dependencies:
-      '@bb/config':
+      '@cloudroom/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@bb/core-ui':
+      '@cloudroom/core-ui':
         specifier: workspace:*
         version: link:../../packages/core-ui
-      '@bb/db':
+      '@cloudroom/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@bb/host-daemon-contract':
+      '@cloudroom/host-daemon-contract':
         specifier: workspace:*
         version: link:../../packages/host-daemon-contract
-      '@bb/logger':
+      '@cloudroom/logger':
         specifier: workspace:*
         version: link:../../packages/logger
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
-      '@bb/process-utils':
+      '@cloudroom/process-utils':
         specifier: workspace:*
         version: link:../../packages/process-utils
-      '@bb/sdk':
+      '@cloudroom/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
-      '@bb/secret-storage':
+      '@cloudroom/secret-storage':
         specifier: workspace:*
         version: link:../../packages/secret-storage
-      '@bb/server-contract':
+      '@cloudroom/server-contract':
         specifier: workspace:*
         version: link:../../packages/server-contract
-      '@bb/templates':
+      '@cloudroom/templates':
         specifier: workspace:*
         version: link:../../packages/templates
-      '@bb/thread-view':
+      '@cloudroom/thread-view':
         specifier: workspace:*
         version: link:../../packages/thread-view
       '@better-auth/api-key':
@@ -1027,19 +1027,19 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/agent-runtime':
+      '@cloudroom/agent-runtime':
         specifier: workspace:*
         version: link:../../packages/agent-runtime
-      '@bb/client-core':
+      '@cloudroom/client-core':
         specifier: workspace:*
         version: link:../../packages/client-core
-      '@bb/scripts':
+      '@cloudroom/scripts':
         specifier: workspace:*
         version: link:../../packages/scripts
-      '@bb/test-helpers':
+      '@cloudroom/test-helpers':
         specifier: workspace:*
         version: link:../../packages/test-helpers
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       '@types/better-sqlite3':
@@ -1075,7 +1075,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@bb/connect-db':
+      '@cloudroom/connect-db':
         specifier: workspace:*
         version: link:../../packages/connect-db
       '@better-auth/drizzle-adapter':
@@ -1133,7 +1133,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       '@cloudflare/vite-plugin':
@@ -1199,7 +1199,7 @@ importers:
 
   examples/plugins/content-script:
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../../../packages/tsconfig
       '@get-bb/plugin-sdk':
@@ -1308,26 +1308,26 @@ importers:
 
   packages/agent-runtime:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/process-utils':
+      '@cloudroom/process-utils':
         specifier: workspace:*
         version: link:../process-utils
-      '@bb/provider-bridge-protocol':
+      '@cloudroom/provider-bridge-protocol':
         specifier: workspace:*
         version: link:../provider-bridge-protocol
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../plugin-build
-      '@bb/test-helpers':
+      '@cloudroom/test-helpers':
         specifier: workspace:*
         version: link:../test-helpers
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@get-bb/plugin-sdk':
@@ -1388,13 +1388,13 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/config':
+      '@cloudroom/config':
         specifier: workspace:*
         version: link:../config
-      '@bb/sdk':
+      '@cloudroom/sdk':
         specifier: workspace:*
         version: link:../sdk
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -1421,9 +1421,9 @@ importers:
 
   packages/bundled-plugins:
     dependencies:
-      bb-plugin-account-pool:
+      bb-plugin-accounts:
         specifier: workspace:*
-        version: link:../../plugins/account-pool
+        version: link:../../plugins/accounts
       bb-plugin-ask-user-question:
         specifier: workspace:*
         version: link:../../plugins/ask-user-question
@@ -1433,9 +1433,6 @@ importers:
       bb-plugin-bb-guide:
         specifier: workspace:*
         version: link:../../plugins/bb-guide
-      bb-plugin-browser-automation:
-        specifier: workspace:*
-        version: link:../../plugins/browser-automation
       bb-plugin-computer-use:
         specifier: workspace:*
         version: link:../../plugins/computer-use
@@ -1526,38 +1523,41 @@ importers:
       bb-plugin-theme-preview:
         specifier: workspace:*
         version: link:../../plugins/theme-preview
+      bb-plugin-time-in-cloudroom:
+        specifier: workspace:*
+        version: link:../../plugins/time-in-cloudroom
       bb-plugin-workflows:
         specifier: workspace:*
         version: link:../../plugins/workflows
 
   packages/client-core:
     dependencies:
-      '@bb/core-ui':
+      '@cloudroom/core-ui':
         specifier: workspace:*
         version: link:../core-ui
-      '@bb/desktop-contract':
+      '@cloudroom/desktop-contract':
         specifier: workspace:*
         version: link:../desktop-contract
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/fuzzy-match':
+      '@cloudroom/fuzzy-match':
         specifier: workspace:*
         version: link:../fuzzy-match
-      '@bb/server-contract':
+      '@cloudroom/server-contract':
         specifier: workspace:*
         version: link:../server-contract
-      '@bb/thread-view':
+      '@cloudroom/thread-view':
         specifier: workspace:*
         version: link:../thread-view
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/test-helpers':
+      '@cloudroom/test-helpers':
         specifier: workspace:*
         version: link:../test-helpers
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -1572,7 +1572,7 @@ importers:
 
   packages/config:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
       fs-native-extensions:
@@ -1582,7 +1582,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -1601,7 +1601,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -1623,7 +1623,7 @@ importers:
         specifier: ^0.38.0
         version: 0.38.4(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/react@19.2.13)(better-sqlite3@12.10.0)(kysely@0.29.3)(react@19.2.4)
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/better-sqlite3':
@@ -1650,11 +1650,11 @@ importers:
 
   packages/core-ui:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -1669,10 +1669,10 @@ importers:
 
   packages/db:
     dependencies:
-      '@bb/config':
+      '@cloudroom/config':
         specifier: workspace:*
         version: link:../config
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
       better-sqlite3:
@@ -1685,7 +1685,7 @@ importers:
         specifier: ^5.0.9
         version: 5.1.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/better-sqlite3':
@@ -1709,17 +1709,17 @@ importers:
 
   packages/desktop-contract:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/host-daemon-contract':
+      '@cloudroom/host-daemon-contract':
         specifier: workspace:*
         version: link:../host-daemon-contract
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       typescript:
@@ -1735,7 +1735,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -1757,7 +1757,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -1776,7 +1776,7 @@ importers:
         specifier: ^0.5.2
         version: 0.5.2
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       typescript:
@@ -1798,7 +1798,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       typescript:
@@ -1810,13 +1810,13 @@ importers:
 
   packages/host-daemon-contract:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/hono-typed-routes':
+      '@cloudroom/hono-typed-routes':
         specifier: workspace:*
         version: link:../hono-typed-routes
-      '@bb/provider-bridge-protocol':
+      '@cloudroom/provider-bridge-protocol':
         specifier: workspace:*
         version: link:../provider-bridge-protocol
       hono:
@@ -1826,10 +1826,10 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/test-helpers':
+      '@cloudroom/test-helpers':
         specifier: workspace:*
         version: link:../test-helpers
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -1844,20 +1844,20 @@ importers:
 
   packages/host-watcher:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/process-utils':
+      '@cloudroom/process-utils':
         specifier: workspace:*
         version: link:../process-utils
       '@parcel/watcher':
         specifier: 2.5.6
         version: 2.5.6
     devDependencies:
-      '@bb/test-helpers':
+      '@cloudroom/test-helpers':
         specifier: workspace:*
         version: link:../test-helpers
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -1872,20 +1872,20 @@ importers:
 
   packages/host-workspace:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/process-utils':
+      '@cloudroom/process-utils':
         specifier: workspace:*
         version: link:../process-utils
       bb-environment-provider-host:
         specifier: workspace:*
         version: link:../environment-provider-host
     devDependencies:
-      '@bb/test-helpers':
+      '@cloudroom/test-helpers':
         specifier: workspace:*
         version: link:../test-helpers
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -1900,17 +1900,17 @@ importers:
 
   packages/local-open-targets:
     dependencies:
-      '@bb/host-daemon-contract':
+      '@cloudroom/host-daemon-contract':
         specifier: workspace:*
         version: link:../host-daemon-contract
-      '@bb/process-utils':
+      '@cloudroom/process-utils':
         specifier: workspace:*
         version: link:../process-utils
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -1928,7 +1928,7 @@ importers:
 
   packages/logger:
     dependencies:
-      '@bb/config':
+      '@cloudroom/config':
         specifier: workspace:*
         version: link:../config
       pino:
@@ -1941,7 +1941,7 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -1960,7 +1960,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       typescript:
@@ -1985,7 +1985,7 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -2015,10 +2015,10 @@ importers:
 
   packages/plugin-build:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/process-utils':
+      '@cloudroom/process-utils':
         specifier: workspace:*
         version: link:../process-utils
       '@get-bb/plugin-sdk':
@@ -2031,7 +2031,7 @@ importers:
         specifier: ^6.0.0
         version: 6.0.0
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@tailwindcss/node':
@@ -2065,7 +2065,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -2083,10 +2083,10 @@ importers:
 
   packages/plugin-registry:
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../plugin-build
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@hugeicons/core-free-icons':
@@ -2224,25 +2224,25 @@ importers:
 
   packages/plugin-sdk:
     devDependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/process-utils':
+      '@cloudroom/process-utils':
         specifier: workspace:*
         version: link:../process-utils
-      '@bb/provider-bridge-acp':
+      '@cloudroom/provider-bridge-acp':
         specifier: workspace:*
         version: link:../provider-bridge-acp
-      '@bb/provider-bridge-protocol':
+      '@cloudroom/provider-bridge-protocol':
         specifier: workspace:*
         version: link:../provider-bridge-protocol
-      '@bb/sdk':
+      '@cloudroom/sdk':
         specifier: workspace:*
         version: link:../sdk
-      '@bb/server-contract':
+      '@cloudroom/server-contract':
         specifier: workspace:*
         version: link:../server-contract
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@testing-library/react':
@@ -2303,7 +2303,7 @@ importers:
         specifier: ^7.0.6
         version: 7.0.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/cross-spawn':
@@ -2324,17 +2324,17 @@ importers:
 
   packages/provider-bridge-acp:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/provider-bridge-protocol':
+      '@cloudroom/provider-bridge-protocol':
         specifier: workspace:*
         version: link:../provider-bridge-protocol
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@modelcontextprotocol/sdk':
@@ -2355,10 +2355,10 @@ importers:
 
   packages/provider-bridge-protocol:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/process-utils':
+      '@cloudroom/process-utils':
         specifier: workspace:*
         version: link:../process-utils
       semver:
@@ -2368,7 +2368,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -2386,17 +2386,17 @@ importers:
 
   packages/provider-parity:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/provider-bridge-protocol':
+      '@cloudroom/provider-bridge-protocol':
         specifier: workspace:*
         version: link:../provider-bridge-protocol
-      '@bb/thread-view':
+      '@cloudroom/thread-view':
         specifier: workspace:*
         version: link:../thread-view
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -2414,26 +2414,26 @@ importers:
 
   packages/scripts:
     dependencies:
-      '@bb/config':
+      '@cloudroom/config':
         specifier: workspace:*
         version: link:../config
-      '@bb/db':
+      '@cloudroom/db':
         specifier: workspace:*
         version: link:../db
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/host-daemon-contract':
+      '@cloudroom/host-daemon-contract':
         specifier: workspace:*
         version: link:../host-daemon-contract
-      '@bb/process-utils':
+      '@cloudroom/process-utils':
         specifier: workspace:*
         version: link:../process-utils
       picocolors:
         specifier: ^1.1.1
         version: 1.1.1
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -2451,22 +2451,22 @@ importers:
 
   packages/sdk:
     dependencies:
-      '@bb/config':
+      '@cloudroom/config':
         specifier: workspace:*
         version: link:../config
-      '@bb/core-ui':
+      '@cloudroom/core-ui':
         specifier: workspace:*
         version: link:../core-ui
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/host-daemon-contract':
+      '@cloudroom/host-daemon-contract':
         specifier: workspace:*
         version: link:../host-daemon-contract
-      '@bb/server-contract':
+      '@cloudroom/server-contract':
         specifier: workspace:*
         version: link:../server-contract
-      '@bb/templates':
+      '@cloudroom/templates':
         specifier: workspace:*
         version: link:../templates
       ws:
@@ -2476,7 +2476,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -2497,7 +2497,7 @@ importers:
 
   packages/secret-storage:
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -2515,16 +2515,16 @@ importers:
 
   packages/server-contract:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/hono-typed-routes':
+      '@cloudroom/hono-typed-routes':
         specifier: workspace:*
         version: link:../hono-typed-routes
-      '@bb/host-daemon-contract':
+      '@cloudroom/host-daemon-contract':
         specifier: workspace:*
         version: link:../host-daemon-contract
-      '@bb/provider-bridge-protocol':
+      '@cloudroom/provider-bridge-protocol':
         specifier: workspace:*
         version: link:../provider-bridge-protocol
       hono:
@@ -2534,10 +2534,10 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/test-helpers':
+      '@cloudroom/test-helpers':
         specifier: workspace:*
         version: link:../test-helpers
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -2568,7 +2568,7 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@radix-ui/react-accordion':
@@ -2697,7 +2697,7 @@ importers:
 
   packages/templates:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
       gray-matter:
@@ -2710,7 +2710,7 @@ importers:
         specifier: ^7.7.4
         version: 7.8.5
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -2731,14 +2731,14 @@ importers:
 
   packages/test-helpers:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -2753,17 +2753,17 @@ importers:
 
   packages/thread-view:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../domain
-      '@bb/server-contract':
+      '@cloudroom/server-contract':
         specifier: workspace:*
         version: link:../server-contract
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -2780,14 +2780,14 @@ importers:
 
   packages/tunnel-client:
     dependencies:
-      '@bb/tunnel-contract':
+      '@cloudroom/tunnel-contract':
         specifier: workspace:*
         version: link:../tunnel-contract
       ws:
         specifier: ^8.18.0
         version: 8.21.0
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/node':
@@ -2808,7 +2808,7 @@ importers:
 
   packages/tunnel-contract:
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       typescript:
@@ -2821,80 +2821,47 @@ importers:
         specifier: ^3.0.0
         version: 3.2.6(@types/debug@4.1.13)(@types/node@24.12.4)(jiti@2.7.0)(jsdom@29.0.1(@noble/hashes@2.4.0))(lightningcss@1.32.0)(msw@2.12.14(@types/node@24.12.4)(@typescript/typescript6@6.0.2))(terser@5.50.0)(tsx@4.23.1)(yaml@2.9.0)
 
-  plugins/account-pool:
+  plugins/accounts:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
-      '@dnd-kit/core':
-        specifier: ^6.3.1
-        version: 6.3.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@dnd-kit/sortable':
-        specifier: ^10.0.0
-        version: 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)
-      '@dnd-kit/utilities':
-        specifier: ^3.2.2
-        version: 3.2.2(react@19.2.4)
-      undici:
-        specifier: ^7.28.0
-        version: 7.28.0
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      '@radix-ui/react-dialog':
-        specifier: ^1.1.19
-        version: 1.1.19(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@testing-library/react':
-        specifier: ^16.3.2
-        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@types/better-sqlite3':
-        specifier: ^7.6.12
-        version: 7.6.13
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.10
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.13
-      better-sqlite3:
-        specifier: 12.10.0
-        version: 12.10.0
-      jsdom:
-        specifier: ^29.0.1
-        version: 29.0.1(@noble/hashes@2.4.0)
       react:
         specifier: ^19.0.0
         version: 19.2.4
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.4(react@19.2.4)
       typescript:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
-      vitest:
-        specifier: ^4.1.1
-        version: 4.1.1(@opentelemetry/api@1.9.1)(@types/node@22.19.10)(jsdom@29.0.1(@noble/hashes@2.4.0))(msw@2.12.14(@types/node@22.19.10)(@typescript/typescript6@6.0.2))(vite@8.0.12(@types/node@22.19.10)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.1)(yaml@2.9.0))
 
   plugins/ask-user-question:
     dependencies:
-      '@bb/plugin-interaction-contracts':
+      '@cloudroom/plugin-interaction-contracts':
         specifier: workspace:*
         version: link:../../packages/plugin-interaction-contracts
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -2927,10 +2894,10 @@ importers:
 
   plugins/automations:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       '@radix-ui/react-slot':
@@ -2946,7 +2913,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3000,11 +2967,11 @@ importers:
 
   plugins/bb-guide:
     dependencies:
-      '@bb/templates':
+      '@cloudroom/templates':
         specifier: workspace:*
         version: link:../../packages/templates
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3023,41 +2990,16 @@ importers:
         specifier: ^4.1.1
         version: 4.1.1(@opentelemetry/api@1.9.1)(@types/node@22.19.10)(jsdom@29.0.1(@noble/hashes@2.4.0))(msw@2.12.14(@types/node@22.19.10)(@typescript/typescript6@6.0.2))(vite@8.0.12(@types/node@22.19.10)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.1)(yaml@2.9.0))
 
-  plugins/browser-automation:
-    dependencies:
-      zod:
-        specifier: 4.3.6
-        version: 4.3.6
-    devDependencies:
-      '@bb/plugin-build':
-        specifier: workspace:*
-        version: link:../../packages/plugin-build
-      '@get-bb/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.10
-      tsx:
-        specifier: ^4.21.0
-        version: 4.23.1
-      typescript:
-        specifier: npm:@typescript/typescript6@^6.0.2
-        version: '@typescript/typescript6@6.0.2'
-      vitest:
-        specifier: ^4.1.1
-        version: 4.1.1(@opentelemetry/api@1.9.1)(@types/node@22.19.10)(jsdom@29.0.1(@noble/hashes@2.4.0))(msw@2.12.14(@types/node@22.19.10)(@typescript/typescript6@6.0.2))(vite@8.0.12(@types/node@22.19.10)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.1)(yaml@2.9.0))
-
   plugins/computer-use:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3081,16 +3023,16 @@ importers:
 
   plugins/connect:
     dependencies:
-      '@bb/connect-client':
+      '@cloudroom/connect-client':
         specifier: workspace:*
         version: link:../../packages/connect-client
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
-      '@bb/tunnel-client':
+      '@cloudroom/tunnel-client':
         specifier: workspace:*
         version: link:../../packages/tunnel-client
-      '@bb/tunnel-contract':
+      '@cloudroom/tunnel-contract':
         specifier: workspace:*
         version: link:../../packages/tunnel-contract
       '@radix-ui/react-slot':
@@ -3106,7 +3048,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3164,7 +3106,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3185,7 +3127,7 @@ importers:
 
   plugins/docs:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       '@hugeicons/core-free-icons':
@@ -3249,7 +3191,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3294,11 +3236,11 @@ importers:
 
   plugins/drafts:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3341,7 +3283,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3374,7 +3316,7 @@ importers:
 
   plugins/environment-modal-sandbox:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       modal:
@@ -3384,7 +3326,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3418,7 +3360,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3436,7 +3378,7 @@ importers:
 
   plugins/environment-project-checkout:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       bb-environment-provider-host:
@@ -3446,7 +3388,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3479,7 +3421,7 @@ importers:
 
   plugins/github:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       '@radix-ui/react-slot':
@@ -3489,7 +3431,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3534,14 +3476,14 @@ importers:
 
   plugins/inline-vis:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3577,14 +3519,14 @@ importers:
 
   plugins/keep-awake:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3621,7 +3563,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3636,7 +3578,7 @@ importers:
 
   plugins/memory:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       '@radix-ui/react-slot':
@@ -3646,7 +3588,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3691,7 +3633,7 @@ importers:
 
   plugins/monaco-editor:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       monaco-editor:
@@ -3701,7 +3643,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3746,7 +3688,7 @@ importers:
 
   plugins/pdf-preview:
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3782,11 +3724,11 @@ importers:
 
   plugins/plugin-api-docs:
     dependencies:
-      '@bb/plugin-api-map':
+      '@cloudroom/plugin-api-map':
         specifier: workspace:*
         version: link:../../packages/plugin-api-map
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3807,7 +3749,7 @@ importers:
 
   plugins/plugin-api-tester:
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -3856,7 +3798,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@types/node':
@@ -3883,17 +3825,20 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@4.3.6)
+      undici:
+        specifier: ^7.28.0
+        version: 7.28.0
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
-      '@bb/provider-bridge-protocol':
+      '@cloudroom/provider-bridge-protocol':
         specifier: workspace:*
         version: link:../../packages/provider-bridge-protocol
       '@types/node':
@@ -3914,17 +3859,20 @@ importers:
       '@get-bb/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
+      undici:
+        specifier: ^7.28.0
+        version: 7.28.0
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
-      '@bb/provider-bridge-protocol':
+      '@cloudroom/provider-bridge-protocol':
         specifier: workspace:*
         version: link:../../packages/provider-bridge-protocol
       '@types/node':
@@ -3942,7 +3890,7 @@ importers:
 
   plugins/provider-pi:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       '@get-bb/plugin-sdk':
@@ -3952,13 +3900,13 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
-      '@bb/provider-bridge-protocol':
+      '@cloudroom/provider-bridge-protocol':
         specifier: workspace:*
         version: link:../../packages/provider-bridge-protocol
       '@earendil-works/pi-ai':
@@ -4004,7 +3952,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -4025,14 +3973,14 @@ importers:
 
   plugins/provider-usage:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -4075,7 +4023,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -4111,11 +4059,11 @@ importers:
 
   plugins/scheduled-send:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -4151,10 +4099,10 @@ importers:
 
   plugins/secrets:
     dependencies:
-      '@bb/plugin-interaction-contracts':
+      '@cloudroom/plugin-interaction-contracts':
         specifier: workspace:*
         version: link:../../packages/plugin-interaction-contracts
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       '@hugeicons/core-free-icons':
@@ -4167,7 +4115,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -4194,14 +4142,14 @@ importers:
 
   plugins/side-chat:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -4240,7 +4188,7 @@ importers:
 
   plugins/tasks:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       '@hugeicons/core-free-icons':
@@ -4310,7 +4258,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -4346,7 +4294,7 @@ importers:
 
   plugins/theme-preview:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       '@hugeicons/core-free-icons':
@@ -4362,7 +4310,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -4411,9 +4359,30 @@ importers:
         specifier: ^4.1.1
         version: 4.1.1(@opentelemetry/api@1.9.1)(@types/node@22.19.10)(jsdom@29.0.1(@noble/hashes@2.4.0))(msw@2.12.14(@types/node@22.19.10)(@typescript/typescript6@6.0.2))(vite@8.0.12(@types/node@22.19.10)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.1)(yaml@2.9.0))
 
+  plugins/time-in-cloudroom:
+    devDependencies:
+      '@cloudroom/plugin-build':
+        specifier: workspace:*
+        version: link:../../packages/plugin-build
+      '@get-bb/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../packages/plugin-sdk
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.10
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.13
+      react:
+        specifier: ^19.0.0
+        version: 19.2.4
+      typescript:
+        specifier: npm:@typescript/typescript6@^6.0.2
+        version: '@typescript/typescript6@6.0.2'
+
   plugins/workflows:
     dependencies:
-      '@bb/shared-ui':
+      '@cloudroom/shared-ui':
         specifier: workspace:*
         version: link:../../packages/shared-ui
       '@jitl/quickjs-singlefile-cjs-release-sync':
@@ -4435,7 +4404,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/plugin-build':
+      '@cloudroom/plugin-build':
         specifier: workspace:*
         version: link:../../packages/plugin-build
       '@get-bb/plugin-sdk':
@@ -4477,28 +4446,28 @@ importers:
 
   tests/integration:
     dependencies:
-      '@bb/config':
+      '@cloudroom/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@bb/db':
+      '@cloudroom/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@bb/host-daemon':
+      '@cloudroom/host-daemon':
         specifier: workspace:*
         version: link:../../apps/host-daemon
-      '@bb/host-daemon-contract':
+      '@cloudroom/host-daemon-contract':
         specifier: workspace:*
         version: link:../../packages/host-daemon-contract
-      '@bb/server':
+      '@cloudroom/server':
         specifier: workspace:*
         version: link:../../apps/server
-      '@bb/server-contract':
+      '@cloudroom/server-contract':
         specifier: workspace:*
         version: link:../../packages/server-contract
-      '@bb/test-helpers':
+      '@cloudroom/test-helpers':
         specifier: workspace:*
         version: link:../../packages/test-helpers
       '@hono/node-server':
@@ -4511,7 +4480,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       '@types/node':
@@ -4532,23 +4501,23 @@ importers:
 
   tests/qa:
     dependencies:
-      '@bb/domain':
+      '@cloudroom/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@bb/host-daemon-contract':
+      '@cloudroom/host-daemon-contract':
         specifier: workspace:*
         version: link:../../packages/host-daemon-contract
-      '@bb/server-contract':
+      '@cloudroom/server-contract':
         specifier: workspace:*
         version: link:../../packages/server-contract
-      '@bb/test-helpers':
+      '@cloudroom/test-helpers':
         specifier: workspace:*
         version: link:../../packages/test-helpers
       zod:
         specifier: 4.3.6
         version: 4.3.6
     devDependencies:
-      '@bb/tsconfig':
+      '@cloudroom/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       '@types/node':
@@ -20438,7 +20407,9 @@ snapshots:
       metro-runtime: 0.84.5
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.79.6': {}
 

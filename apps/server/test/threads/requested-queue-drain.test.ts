@@ -2,7 +2,7 @@ import {
   createQueuedThreadMessage,
   listEvents,
   listQueuedThreadMessages,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type { PluginHookName } from "@get-bb/plugin-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {

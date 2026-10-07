@@ -10,7 +10,7 @@ import { command, saveTeleportProgress } from "../../src/services/cloudroom/stor
 import { teleports } from "../../src/services/cloudroom/teleport.js";
 import { createTestAppHarness } from "../helpers/test-app.js";
 import { seedEnvironment, seedHostSession, seedPrimaryHost, seedProjectWithSource, seedThread, seedThreadRuntimeState } from "../helpers/seed.js";
-import { createThread, getThread, setProjectGitRemoteUrlIfMissing, events, cloudroomThreads, cloudroomCommands } from "@bb/db";
+import { createThread, getThread, setProjectGitRemoteUrlIfMissing, events, cloudroomThreads, cloudroomCommands } from "@cloudroom/db";
 
 it("forwards Cursor login and keys without creating conversation records", async () => {
   const harness = await createTestAppHarness();
@@ -77,12 +77,12 @@ it("reports storage before models and preserves transiently blocked messages thr
     level = "blocked";
     const before = discoveryCalls;
     const status = await (await request("/cloudroom")).json();
-    expect(status).toMatchObject({ ready: false, storage: { level: "blocked" }, error: expect.stringContaining("disk space") });
+    expect(status).toMatchObject({ ready: false, storage: { level: "blocked" }, error: expect.stringContaining("cloud disk is almost full") });
     expect(discoveryCalls).toBe(before);
     const input = { executionTarget: "cloud", requestId: "storage-start", projectId: project.id, providerId: "codex", origin: "app", model: "test-model", reasoningLevel: "high", environment: { type: "project-default" }, input: [{ type: "text", text: "Keep this prompt", mentions: [] }] };
     const blockedStart = await request("/threads", input);
     expect(blockedStart.status).toBe(503);
-    expect(await blockedStart.json()).toMatchObject({ code: "storage_blocked", message: expect.stringContaining("disk space") });
+    expect(await blockedStart.json()).toMatchObject({ code: "storage_blocked", message: expect.stringContaining("cloud disk is almost full") });
     expect(prompts).toHaveLength(0);
     reason = "measurement_unavailable";
     expect(await (await request("/cloudroom")).json()).toMatchObject({ error: expect.stringContaining("measured") });
@@ -102,7 +102,7 @@ it("reports storage before models and preserves transiently blocked messages thr
     expect((await request(`/threads/${thread.id}/timeline`)).status).toBe(200);
     const blockedFollow = await request(`/threads/${thread.id}/send`, { requestId: "blocked-follow", mode: "auto", input: [{ type: "text", text: "Stay in draft", mentions: [] }] });
     expect(blockedFollow.status).toBe(503);
-    expect(await blockedFollow.json()).toMatchObject({ code: "storage_blocked", message: expect.stringContaining("disk space") });
+    expect(await blockedFollow.json()).toMatchObject({ code: "storage_blocked", message: expect.stringContaining("cloud disk is almost full") });
     rejectPrompt = false; level = "normal";
     await expect.poll(() => harness.db.select().from(cloudroomCommands).all().find(c => c.id === "storage-follow")?.state, { timeout: 5000 }).toBe("accepted");
     expect(prompts.filter(id => id === "storage-follow").length).toBeGreaterThanOrEqual(2);

@@ -1,5 +1,5 @@
-import { LEGACY_CODEX_GOAL_EXTENSION_KIND } from "@bb/domain";
-import type { ThreadEvent } from "@bb/domain";
+import { LEGACY_CODEX_GOAL_EXTENSION_KIND } from "@cloudroom/domain";
+import type { ThreadEvent } from "@cloudroom/domain";
 
 interface PendingGoalClearWaiter {
   afterRevision: number;

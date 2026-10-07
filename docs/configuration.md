@@ -183,8 +183,6 @@ signal it, so a stale file left by a crash cannot stop an unrelated process.
 | `BB_SERVER_PORT`               | `bb-app env`, environment, or `--server-port`      | Startup-only            | HTTP listener port. Defaults to `38886`. A full launcher or desktop app restart is required after a persistent set or unset.                                                                                                                                                                                                                                                                                   |
 | `BB_HOST_DAEMON_PORT`          | `bb-app env`, environment, or `--host-daemon-port` | Startup-only            | Local host-daemon API port. Defaults to `38887`. A full launcher or desktop app restart is required after a persistent set or unset.                                                                                                                                                                                                                                                                           |
 | `BB_LOG_LEVEL`                 | `bb-app config`                                    | Startup-only debugging  | Log level: `trace`, `debug`, `info`, `warn`, `error`, or `fatal`. A full launcher or desktop app restart is required.                                                                                                                                                                                                                                                                                          |
-| `BB_ACCOUNT_POOL_PARENT_URL`   | Set automatically by a parent bb server            | Nested bb servers       | Account Pooler hub of the bb server whose thread launched this one. When present the Account Pooler plugin is enabled on first run and defaults to proxying to that parent; `bb pool parent isolate` opts out. Not a `bb-app config` key.                                                                                                                                                                      |
-| `BB_ACCOUNT_POOL_PARENT_TOKEN` | Set automatically by a parent bb server            | Nested bb servers       | Machine token this nested server presents to the parent Account Pooler hub. Paired with `BB_ACCOUNT_POOL_PARENT_URL`; both must be well formed or proxying stays off. Not a `bb-app config` key.                                                                                                                                                                                                               |
 | `OPENAI_API_KEY`               | `bb-app env`                                       | OpenAI opt-in routes    | Required only when selecting explicit OpenAI provider routes such as `openai/gpt-4o-mini` or `openai/gpt-transcribe`.                                                                                                                                                                                                                                                                                          |
 
 By default, helper inference and voice transcription use Codex credentials from
@@ -230,6 +228,15 @@ bb keep-awake disable [--json]
 bb keep-awake hosts all
 bb keep-awake hosts <host-id>...
 ```
+
+The **Remove AI co-authors** toggle in Settings → Defaults defaults to on. Cloudroom
+adds a Git config hook to every process it starts, so commits drop agent
+`Co-authored-by` lines (Claude, Cursor, Codex, Copilot, Gemini, and similar) and
+keep human ones. It also turns off Claude Code's own commit and PR attribution.
+The hook needs Git 2.54 or newer; older Git ignores it. Use
+`room-cli settings general stripAiCoAuthorsEnabled <true|false>`. Start a new
+session after changing it. Cloud threads need a core with `strip_ai_co_authors`
+support.
 
 The **Command Guard** toggle in Settings → Advanced → Command Guard defaults to on. It blocks a
 small set of catastrophic shell-command patterns in new Local Codex/Pi/Claude
@@ -299,9 +306,8 @@ provider, how a finished turn appears in the thread timeline. Collapsed, the
 turn's work folds into one "Worked for" row and the final answer stays
 visible. Flat, every step of the finished turn stays visible, as it was while
 the turn ran. Each provider declares its default (`completedTurnDisplay` on
-its registration): Claude Code defaults to flat, and every other first-party
-provider defaults to collapsed. Your choice is stored in
-`providerCompletedTurnDisplay`, a map of provider id to `collapse` or `flat`;
+its registration): every first-party provider defaults to collapsed. Your
+choice is stored in `providerCompletedTurnDisplay`, a map of provider id to `collapse` or `flat`;
 a provider without an entry uses its default. The display applies to existing
 threads as well as new ones, and to the conversation outline and
 `bb thread log`. Set it with
@@ -799,148 +805,30 @@ how many connected clients received the broadcast. `spotlight` focuses the
 target pane and persistently dims the others; `clear-spotlight` focuses it and
 persistently restores undimmed splits.
 
-## Account Pooler [Experimental]
+## Accounts
 
-The builtin Account Pooler plugin is disabled on fresh installations. It stores
-non-secret Claude and Codex account metadata in plugin KV, quota observations
-in the plugin SQLite database, and each account token plus per-machine hub
-tokens in 0600 files under
-`<data-dir>/plugins/account-pool/secrets/accounts/`.
-Enable it and add at least one account:
+The builtin Accounts plugin is always on (ADR 0194). Connect up to 10 Claude
+Code and 10 Codex subscriptions at the top of Settings → Agents → Claude Code
+or Codex. The machine's own CLI login is the first entry and is never copied, so
+the CLI and Cloudroom never refresh the same token. Added Claude accounts
+sign in with `claude setup-token` and keep its one-year token; Codex accounts
+use a device code and refresh before a turn could outlive them. Tokens stay in
+0600 files under `<data-dir>/plugins/accounts/secrets/`.
 
-```sh
-bb plugin enable account-pool
-bb pool account add --provider claude --login
-printf '%s\n' "$CLAUDE_AUTH_CODE" | bb pool account login-complete --session <id> --code-stdin
-bb pool account add --provider codex --login
-bb pool account login-poll --session <id>
-bb pool account add --provider claude --import
-bb pool account add --provider codex --import
-printf '%s\n' "$ANTHROPIC_API_KEY" | bb pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]
-bb pool account refresh <id>
-```
+Every thread, old and new, uses the selected account from its next turn (ADR
+0197). **Use** selects another; nothing switches automatically. A turn that hits
+a subscription limit marks the account "Limit hit". Claude Code receives the
+account as `CLAUDE_CODE_OAUTH_TOKEN` and rebuilds its session silently. Codex
+signs its app server in memory with `chatgptAuthTokens`, so `~/.codex` stays
+untouched; the token never reaches agent shells. The sidebar usage box flips
+between accounts with its chevrons.
 
-The Claude login start command creates a ten-minute in-memory PKCE session,
-prints a browser authorization URL and session ID, then exits. After sign-in,
-pipe the code shown on Anthropic's manual callback page to
-`account login-complete` with that session ID. The browser can be on a different
-machine from the bb server, and the code stays out of process arguments. The
-Codex login command prints a ChatGPT device verification URL, one-time code,
-session ID, and an `account login-poll` command that waits until authorization
-completes or expires. The Account Pooler plugin settings page exposes both flows
-with **Sign in to Claude** and **Sign in to Codex**, plus Claude import,
-API-key, enable/disable, and removal controls.
-
-The CLI import paths read the Claude Code or Codex login on the bb server host.
-`--api-key-stdin` reads exactly one non-empty key from piped standard input and
-is the default API-key path for agents. The compatibility form `--api-key
-<key>` remains available, but exposes the secret in process arguments, shell
-history, and agent transcripts. The hub starts immediately, so a newly added
-or enabled account is available without a plugin reload.
-
-When the plugin has an enabled account whose secret file is readable and
-valid, it automatically contributes the provider's hub route and a
-machine-specific secret token to Claude Code or Codex sessions on every host.
-Claude Code also receives `ENABLE_TOOL_SEARCH=true`.
-Codex receives `CODEX_OPENAI_BASE_URL` and the secret
-`CODEX_POOL_AUTH_TOKEN`; bb applies both when launching `codex app-server`
-without writing to `~/.codex/config.toml`.
-Codex image generation and editing use the same authenticated pool route.
-Claude Code disables tool search behind a custom base URL by default; the hub
-forwards `tool_reference` blocks unchanged, so the override keeps it on.
-Tokens are never printed
-by the CLI. Plugin startup and `bb pool status` remove token files for machines
-that are no longer enrolled. Status lists token mint and last-use timestamps
-plus recently routed threads whose machines do not have a usable local Claude
-login. Rotate one machine's token with
-`bb pool token rotate --machine <id-or-name>`; the prior token remains valid
-for ten minutes so in-flight requests can drain. Bypass or restore routing for
-one thread with `bb pool bypass <thread-id>` or
-`bb pool bypass <thread-id> --off`. Account listing, enable, disable, removal,
-priority changes, and usage refreshes are available through
-`bb pool account list|enable|disable|remove|priority|refresh`.
-Provider routing is independently persisted and defaults on. Use
-`bb pool routing <claude|codex> --off` to stop contributing pool environment
-and health for one provider, and omit `--off` to enable it again.
-OAuth accounts refresh quota from Anthropic's usage endpoint when added or
-enabled and every five minutes while idle. Use `bb pool account refresh <id>`
-to request an immediate refresh for one account. `account list` adds columns
-for the family buckets Anthropic reports; JSON status exposes their
-utilization, reset, status, observation time, and `header` or `usage` source
-under `familyWeekly`. Requests route around an account spent for their model family
-without disabling that account for other families. Imported and newly signed-in
-accounts retain their Anthropic account UUID, and the hub aligns a present
-`metadata.user_id` account component with the selected account.
-
-Accounts run sequentially per provider: lower priority numbers first, with ties
-following the order accounts were added. New conversations use the current
-account until it reaches the switch threshold or fails; the pool then advances
-to the next eligible account and wraps at the end. It keeps using that fallback
-even when an earlier account recovers. Existing conversations stay pinned while
-their account remains eligible. Short temporary rate limits wait on the same
-account once; longer holds return Retry-After for pinned conversations while new
-conversations can advance. A model-family limit detours only requests for that
-family without moving the session's main pin or the provider cursor. The cursor
-and session pins survive hub restarts. Session pins expire after 30 idle minutes,
-and the pool retains the 4,096 most recently used pins.
-
-Use the up/down arrows in Account Pooler settings, or
-`bb pool account reorder <claude|codex> <id>...`, to set the complete order for
-one provider. Include disabled accounts too. Reordering changes the next failover
-sequence without moving the current account. `bb pool account priority <id> <n>`
-sets an individual priority; the same operations are available through the
-`account.reorder` and `account.setPriority` plugin RPCs.
-
-Three plugin-owned configuration values control routing. `switchThreshold` is
-the shared or requested model-family quota fraction at which an account stops
-receiving matching traffic and defaults to `0.98`.
-`anthropicUpstreamBaseUrl` defaults to `https://api.anthropic.com` and
-`codexUpstreamBaseUrl` defaults to
-`https://chatgpt.com/backend-api/codex`. Codex uses the hub's HTTP Responses
-and models routes; the hub forwards each request upstream over HTTPS SSE
-without keeping session state. Both URL values exist only for tests and QA
-with a controlled fake upstream. Inspect or update the full plugin KV-backed configuration with:
-
-```sh
-bb pool config
-bb pool config set switchThreshold 0.98
-bb pool config set anthropicUpstreamBaseUrl http://127.0.0.1:9000
-bb pool config set codexUpstreamBaseUrl http://127.0.0.1:9001
-```
-
-Upgrading from an Account Pooler build that stored these values through
-`bb.settings` resets the threshold and both QA-only upstream overrides to
-their defaults. Those old values are not migrated.
-
-Two more plugin-owned values control cache miss debugging. `cacheMissDebug`
-defaults to `false`. When it is `true`, the hub pairs each successful pooled
-Claude `/v1/messages` or Codex `/v1/responses` request that carries a provider
-session id with the earlier request from that session. It records a report
-when the missed cached tokens reach `cacheMissMinTokens`, a positive integer
-that defaults to `10000`. Missed tokens are the tokens the earlier request left
-cached minus the tokens this request read from cache. Claude requests with no
-`cache_control` breakpoint are not tracked. Idle gaps run between the times the
-hub sent the two requests upstream, so rate-limit waits and failed failover
-attempts do not count, and are measured against a 5 minute Claude cache
-lifetime (1 hour with a 1h breakpoint) or a 30 minute Codex lifetime. The hub
-parses a request after the first response chunk is forwarded and analyzes it
-after the client receives the end of the response, so debugging adds no
-parsing before forwarding. Each report names the likely causes and the first
-divergent prompt segment, with short excerpts. Reports stay in server memory
-only. Turning debugging off discards prompt snapshots, and log lines carry ids,
-token counts, and cause kinds but no prompt text. A nested server in `proxy`
-mode does not analyze forwarded traffic, so enable it on the parent. The
-`cacheMiss.list` and `cacheMiss.clear` plugin RPCs expose the same reports.
-With `--json`, `bb pool cache-miss list` prints `cacheMissDebug` and
-`forwardsToParent` next to `reports`, so a script can tell an empty list from
-disabled reporting or a server that leaves analysis to its parent:
-
-```sh
-bb pool config set cacheMissDebug true
-bb pool config set cacheMissMinTokens 10000
-bb pool cache-miss list [--json]
-bb pool cache-miss clear
-```
+Claude hides the machine's own login once an account is added, because Cloud
+needs a one-year token. The selected Claude account becomes the Cloud Claude
+login through `POST /api/v1/cloudroom/account/claude/token`. That route also asks
+awake Cloud Claude sessions to sleep once idle, so their next message restarts
+Claude with the new login. Asleep sandboxes are not woken.
+Cloud Codex is not covered yet.
 
 ## bb connect
 
@@ -1365,7 +1253,7 @@ app while reading build outputs directly from `apps/app`, `apps/server`, and
 not own production ports or data-dir defaults.
 
 Source checkout commands such as `pnpm bb`, `pnpm bb:dev`, and `pnpm reset`
-are thin wrappers around `@bb/scripts`. Those wrappers force `NODE_ENV` to the
+are thin wrappers around `@cloudroom/scripts`. Those wrappers force `NODE_ENV` to the
 intended mode so ambient shell state does not silently retarget bb.
 
 Use `pnpm reset` or `pnpm reset:dev` to clear a data directory. These only

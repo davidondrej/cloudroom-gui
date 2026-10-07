@@ -57,8 +57,8 @@ import {
   Search01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@bb/shared-ui/button";
-import { DelayedLoading } from "@bb/shared-ui/delayed-loading";
+import { Button } from "@cloudroom/shared-ui/button";
+import { DelayedLoading } from "@cloudroom/shared-ui/delayed-loading";
 import {
   Dialog,
   DialogContent,
@@ -66,18 +66,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
-import { Input } from "@bb/shared-ui/input";
-import { Skeleton } from "@bb/shared-ui/skeleton";
+} from "@cloudroom/shared-ui/dialog";
+import { Input } from "@cloudroom/shared-ui/input";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@bb/shared-ui/select";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { usePortalScopeProps } from "@bb/shared-ui/lib/portal-scope";
+} from "@cloudroom/shared-ui/select";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { usePortalScopeProps } from "@cloudroom/shared-ui/lib/portal-scope";
 
 interface Vault {
   id: string;

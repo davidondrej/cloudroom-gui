@@ -1,5 +1,5 @@
-import { getProjectSourceByHost } from "@bb/db";
-import { isLocalPathProjectSource, PERSONAL_PROJECT_ID } from "@bb/domain";
+import { getProjectSourceByHost } from "@cloudroom/db";
+import { isLocalPathProjectSource, PERSONAL_PROJECT_ID } from "@cloudroom/domain";
 import { COMMAND_TIMEOUT_MS } from "../../constants.js";
 import type { WorkSessionDeps } from "../../types.js";
 import { callHostRetryableOnlineRpc } from "../hosts/online-rpc.js";

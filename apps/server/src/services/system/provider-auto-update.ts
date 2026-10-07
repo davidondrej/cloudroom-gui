@@ -1,4 +1,4 @@
-import { getAppSettings, listActiveHostThreads } from "@bb/db";
+import { getAppSettings, listActiveHostThreads } from "@cloudroom/db";
 import type { WorkSessionDeps } from "../../types.js";
 import { listPublicHostsWithStatus } from "../lib/entity-lookup.js";
 import {

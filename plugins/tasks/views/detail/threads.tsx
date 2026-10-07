@@ -16,16 +16,16 @@ import {
 import { PresetDialog, savePresetDraft } from "../manage/preset-dialog.js";
 import { ConfirmDialog } from "../../components/confirm-dialog.js";
 import { useTasksRpc } from "../../shell/data.js";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/dropdown-menu";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 function ThreadPullRequestPill({
   pullRequest,

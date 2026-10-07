@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { render, screen } from "@testing-library/react";
-import { makeHost } from "@bb/test-helpers/domain-fixtures";
+import { makeHost } from "@cloudroom/test-helpers/domain-fixtures";
 import { describe, expect, it } from "vitest";
 import { MachineLabel } from "./MachineLabel";
 

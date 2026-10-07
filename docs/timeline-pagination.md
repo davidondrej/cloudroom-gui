@@ -44,7 +44,7 @@ revision is stored or checked. Other edits do not automatically reject a cursor.
 half-open leaf interval `[start, end)` within `total` leaves. Ancestor summaries
 retain their full IDs, source bounds, counts, and status. Their child arrays
 can contain only part of the group. Prepend older pages with
-`prependOlderTimelineRows` from `@bb/client-core`: it joins turn children and
+`prependOlderTimelineRows` from `@cloudroom/client-core`: it joins turn children and
 delegation children recursively by ID while preserving order. Do not flatten
 responses by concatenation or replace an entire summary solely because its ID
 was already seen. `bb thread log --all --format verbose` uses this merge.

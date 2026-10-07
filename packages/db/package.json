@@ -1,5 +1,5 @@
 {
-  "name": "@bb/db",
+  "name": "@cloudroom/db",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -26,14 +26,14 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@bb/config": "workspace:*",
-    "@bb/domain": "workspace:*",
+    "@cloudroom/config": "workspace:*",
+    "@cloudroom/domain": "workspace:*",
     "better-sqlite3": "12.10.0",
     "drizzle-orm": "^0.38.0",
     "nanoid": "^5.0.9"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.0.0",
     "drizzle-kit": "^0.30.0",

@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
-import type { ThreadQueuedMessage } from "@bb/domain";
+import type { ThreadQueuedMessage } from "@cloudroom/domain";
 import type {
   ExistingThreadExecutionInputSources,
   ThreadResponse,
   ThreadTimelineResponse,
-} from "@bb/server-contract";
-import { createDeferredPromise } from "@bb/test-helpers";
-import { makeThreadQueuedMessage as makeThreadQueuedMessageFixture } from "@bb/test-helpers/domain-fixtures";
+} from "@cloudroom/server-contract";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
+import { makeThreadQueuedMessage as makeThreadQueuedMessageFixture } from "@cloudroom/test-helpers/domain-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BbHttpError, sdk } from "@/lib/sdk";
 import { wsManager } from "@/lib/ws";

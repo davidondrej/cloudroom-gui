@@ -6,7 +6,7 @@ import type {
   TimelineRow,
   TimelineTurnRow,
   TimelineUserConversationRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   mergeLoadedTimelineWithLatest,
   mergeLatestTimelineRows,

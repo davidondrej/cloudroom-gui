@@ -15,11 +15,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@bb/shared-ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@bb/shared-ui/tabs";
-import { Button } from "@bb/shared-ui/button";
-import { Input } from "@bb/shared-ui/input";
-import { Icon } from "@bb/shared-ui/icon";
+} from "@cloudroom/shared-ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@cloudroom/shared-ui/tabs";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Input } from "@cloudroom/shared-ui/input";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { ConfirmDialog } from "../../components/confirm-dialog.js";
 import {
   PERMISSION_LABELS,

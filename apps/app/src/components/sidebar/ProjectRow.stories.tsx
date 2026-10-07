@@ -1,6 +1,6 @@
 import { useCallback, useState, type ReactNode } from "react";
-import type { ThreadListEntry } from "@bb/domain";
-import type { ProjectResponse } from "@bb/server-contract";
+import type { ThreadListEntry } from "@cloudroom/domain";
+import type { ProjectResponse } from "@cloudroom/server-contract";
 import {
   BRANCH_NAMES,
   HOST_IDS,
@@ -14,7 +14,7 @@ import { ThreadActionsProvider } from "@/components/thread/ThreadActionsProvider
 import { ProjectListShell } from "./ProjectList";
 import { ProjectRow, type ProjectThreadListState } from "./ProjectRow";
 import type { ProjectListRowModel } from "./ProjectListProjects";
-import { compareStandardThreads } from "@bb/client-core";
+import { compareStandardThreads } from "@cloudroom/client-core";
 import { StoryCard, StoryRow } from "../../../.ladle/story-card";
 
 export default {

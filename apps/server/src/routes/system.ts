@@ -15,7 +15,7 @@ import {
   setAppKeybindingOverrides,
   setExperiments,
   setStoredAppearance,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   applyAppKeybindingOverrides,
   appSettingsSchema,
@@ -25,13 +25,13 @@ import {
   resolveCodeTheme,
   type AppKeybindingOverrides,
   type AppTheme,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   publicApiRoutes,
   typedRoutes,
   type PublicApiSchema,
   type SystemEnvironmentProvider,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { Hono } from "hono";
 import {
   hashedAssetCacheControl,
@@ -275,6 +275,7 @@ export function registerSystemRoutes(
       systemPromptEnabled: settings.systemPromptEnabled ?? current.systemPromptEnabled,
       bugReportsEnabled: settings.bugReportsEnabled ?? current.bugReportsEnabled,
       agentQuestionsEnabled: settings.agentQuestionsEnabled ?? current.agentQuestionsEnabled,
+      stripAiCoAuthorsEnabled: settings.stripAiCoAuthorsEnabled ?? current.stripAiCoAuthorsEnabled,
       providerAutoUpdate: settings.providerAutoUpdate ?? current.providerAutoUpdate,
       showDiagnosticEvents:
         diagnosticValue === undefined ||

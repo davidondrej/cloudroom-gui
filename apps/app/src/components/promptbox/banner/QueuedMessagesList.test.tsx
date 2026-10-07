@@ -11,11 +11,11 @@ import { useContext, useLayoutEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { threadsQueryKey } from "@/hooks/queries/query-keys";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ThreadQueuedMessage } from "@bb/domain";
+import type { ThreadQueuedMessage } from "@cloudroom/domain";
 import {
   makeThreadListEntry,
   makeThreadQueuedMessage,
-} from "@bb/test-helpers/domain-fixtures";
+} from "@cloudroom/test-helpers/domain-fixtures";
 import { focusWithKeyboard } from "@/test/keyboard-focus";
 import {
   QueuedMessagesList as QueuedMessagesListComponent,

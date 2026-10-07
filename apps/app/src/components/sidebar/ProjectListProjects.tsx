@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { ProjectResponse } from "@bb/server-contract";
+import type { ProjectResponse } from "@cloudroom/server-contract";
 import { ProjectRow } from "./ProjectRow";
 import type { ProjectRowProps, ProjectThreadListState } from "./ProjectRow";
 import { useSidebarSortable } from "./sortableMotion";

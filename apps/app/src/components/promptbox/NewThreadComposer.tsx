@@ -11,10 +11,10 @@ import {
 } from "@/hooks/queries/cloudroom-queries";
 import { CLOUD_LOCKED_REASON, showCloudSignIn, useCloudLocked } from "@/hooks/useCloudLocked";
 import { fetchWithAppSurface } from "@/lib/app-surface";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import { ProviderRequirementBanner } from "./banner/ProviderRequirementBanner";
 import { CloudBranchPicker } from "./CloudBranchPicker";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   getPluginConfigurationRoutePath,
   getSettingsRoutePath,
@@ -38,7 +38,7 @@ import {
   type ProjectExecutionDefaults,
   type ReasoningLevel,
   type ServiceTier,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   NewThreadRequest,
   PluginEnvironmentProviderInputsChange,
@@ -49,7 +49,7 @@ import type {
   SidebarBootstrapResponse,
   SystemEnvironmentProvider,
   SystemExecutionOptionsModelLoadError,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { ProjectSelectorCreateProjectConfig } from "@/components/pickers/ProjectSelector";
 import {
   encodeReuseValue,
@@ -64,7 +64,7 @@ import {
   type NewThreadPromptBoxProps,
 } from "@/components/promptbox/NewThreadPromptBox";
 import { withAppPromptActions } from "@/components/promptbox/PromptBoxActionsMenu";
-import { buildProviderPromptActionProps } from "@bb/client-core";
+import { buildProviderPromptActionProps } from "@cloudroom/client-core";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
 import { type PluginComposerHost } from "@/components/plugin/plugin-composer-host";
 import type { ExperimentalComposerSubmitOptions } from "@get-bb/plugin-sdk";
@@ -108,7 +108,7 @@ import {
   promptDraftToInput,
   type PromptDraftAttachment,
   type PromptDraftState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   getProjectComposeRoutePath,
   getThreadRoutePath,

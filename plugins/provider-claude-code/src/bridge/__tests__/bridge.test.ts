@@ -19,7 +19,7 @@ import {
   type JsonValue,
   type RuntimePermissionPolicy,
   type ThreadEvent,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 const { forkSessionMock, queryMock } = vi.hoisted(() => ({
   forkSessionMock: vi.fn(),
@@ -49,7 +49,7 @@ import {
 } from "@get-bb/plugin-sdk/provider-bridge/testing";
 import type { BridgeJsonRpcOutputMessage } from "@get-bb/plugin-sdk/provider-bridge/testing";
 
-import { BRIDGE_INBOUND_REQUEST_METHODS } from "@bb/provider-bridge-protocol";
+import { BRIDGE_INBOUND_REQUEST_METHODS } from "@cloudroom/provider-bridge-protocol";
 
 type BridgeSessionOptions = ReturnType<typeof buildSessionOptions>;
 type BridgeSessionHooks = NonNullable<BridgeSessionOptions["hooks"]>;

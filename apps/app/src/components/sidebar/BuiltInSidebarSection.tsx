@@ -9,7 +9,7 @@ import {
   type TopLevelSidebarSectionProps,
 } from "./TopLevelSidebarSection";
 import { useSidebarSortable } from "./sortableMotion";
-import type { CollapsedChildActivity } from "@bb/client-core";
+import type { CollapsedChildActivity } from "@cloudroom/client-core";
 import type { ThreadSplitIndicatorTarget } from "./paneContentSplitIndicator";
 
 interface SortableSidebarSectionProps extends TopLevelSidebarSectionProps {

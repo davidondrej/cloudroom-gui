@@ -2,7 +2,7 @@ import {
   reconcileReasoningLevel,
   type AvailableModel,
   type ReasoningLevel,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { ModelPickerOption } from "@/components/pickers/model-picker-option";
 import type { PickerOption } from "@/components/pickers/OptionPicker";
 import {

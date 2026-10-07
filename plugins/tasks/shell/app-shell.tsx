@@ -17,8 +17,8 @@ import { NewTaskDialog } from "../views/manage/new-task-dialog.js";
 import { NewProjectDialog } from "../views/manage/new-project-dialog.js";
 import { ManagePanel } from "../views/manage/manage-panel.js";
 import { EmptyState } from "../components/empty-state.js";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { TasksRefreshProvider } from "./refresh.js";
 
 const BOARD_MIN_WIDTH = 448;

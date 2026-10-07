@@ -1,7 +1,7 @@
-import { jsonValueSchema, type JsonValue } from "@bb/domain";
+import { jsonValueSchema, type JsonValue } from "@cloudroom/domain";
 import type { PluginEnvironmentProviderDeclaration } from "@get-bb/plugin-sdk";
 import type { PluginEnvironmentProviderCreateContext } from "@get-bb/plugin-sdk/environment-provider";
-import type { ProviderReadyEnvironmentInput } from "@bb/server-contract";
+import type { ProviderReadyEnvironmentInput } from "@cloudroom/server-contract";
 
 export type TestProviderDecision =
   | {
@@ -22,7 +22,7 @@ export type TestEnvironmentProviderContext = Pick<
   | "gitRemote"
   | "suggestedBranchName"
 > & {
-  machine: import("@bb/domain").EnvironmentMachineSelection;
+  machine: import("@cloudroom/domain").EnvironmentMachineSelection;
   inputs: JsonValue | null;
   environment:
     | NonNullable<GenericCreateContext["previous"]>["environment"]

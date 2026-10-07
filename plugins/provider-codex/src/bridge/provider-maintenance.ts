@@ -25,6 +25,7 @@ import {
   readCodexAuthFile,
   type CodexAuthCredentials,
 } from "../ai/codex-auth.js";
+import { fetchWithProxyFallback } from "./proxy-fallback.js";
 
 const CODEX_MINIMUM_SUPPORTED_VERSION = "0.136.0";
 const CODEX_REWIND_MINIMUM_SUPPORTED_VERSION = "0.143.0";
@@ -33,19 +34,22 @@ const USAGE_FETCH_TIMEOUT_MS = 15_000;
 const CODEX_NPM_PACKAGE = "@openai/codex";
 
 function fetchCodexUsage(headers: Headers): Promise<Response> {
-  return fetchChatGpt({
-    url: CODEX_USAGE_URL,
-    init: (cloudflareHeaders) => {
-      const requestHeaders = new Headers(headers);
-      for (const [key, value] of cloudflareHeaders) {
-        requestHeaders.set(key, value);
-      }
-      return {
-        headers: requestHeaders,
-        signal: AbortSignal.timeout(USAGE_FETCH_TIMEOUT_MS),
-      };
-    },
-  });
+  return fetchWithProxyFallback((init) =>
+    fetchChatGpt({
+      url: CODEX_USAGE_URL,
+      init: (cloudflareHeaders) => {
+        const requestHeaders = new Headers(headers);
+        for (const [key, value] of cloudflareHeaders) {
+          requestHeaders.set(key, value);
+        }
+        return {
+          ...init,
+          headers: requestHeaders,
+          signal: AbortSignal.timeout(USAGE_FETCH_TIMEOUT_MS),
+        };
+      },
+    }),
+  );
 }
 
 async function readCredentials(): Promise<CodexAuthCredentials | null> {

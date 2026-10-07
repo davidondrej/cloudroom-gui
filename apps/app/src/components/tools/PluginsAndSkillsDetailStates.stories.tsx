@@ -1,16 +1,16 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { SkillProvider } from "@bb/server-contract";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
+import type { SkillProvider } from "@cloudroom/server-contract";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import {
   ResourceActionButton,
   ResourceCreateButton,
   ResourceInstallControl,
   ResourceListState,
   ResourceOverflowMenu,
-} from "@bb/shared-ui/resource-list";
-import { Switch } from "@bb/shared-ui/switch";
+} from "@cloudroom/shared-ui/resource-list";
+import { Switch } from "@cloudroom/shared-ui/switch";
 import { AddPluginDialog } from "@/components/plugin/management/AddPluginDialog";
 import { PluginDetailReleaseControl } from "@/components/plugin/management/PluginUpdatesCard";
 import { AutomationLifecycleControl } from "bb-plugin-automations/detail-view";

@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import type { AvailableModel } from "@bb/domain";
-import type { SystemProviderInfo } from "@bb/server-contract";
+import type { AvailableModel } from "@cloudroom/domain";
+import type { SystemProviderInfo } from "@cloudroom/server-contract";
 import { action } from "../action.js";
 import { createCliBbSdk } from "../client.js";
 import { columnWidths, printBorderlessTable } from "../table.js";

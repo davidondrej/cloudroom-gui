@@ -3,9 +3,9 @@ import {
   isStandaloneBuiltinCompactCommand,
   isStandaloneBuiltinTeleportCommand,
   type PromptInput,
-} from "@bb/domain";
-import { getAppSettings, type DbConnection } from "@bb/db";
-import { renderTemplate } from "@bb/templates";
+} from "@cloudroom/domain";
+import { getAppSettings, type DbConnection } from "@cloudroom/db";
+import { renderTemplate } from "@cloudroom/templates";
 import { ApiError } from "../../errors.js";
 import { listPluginInstructionContributions } from "../plugins/plugin-agent-contributions.js";
 

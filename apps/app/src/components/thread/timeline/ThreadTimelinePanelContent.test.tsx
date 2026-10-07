@@ -3,8 +3,8 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ThreadRuntimeDisplayStatus } from "@bb/domain";
-import type { TimelineWorkflowWorkRow } from "@bb/server-contract";
+import type { ThreadRuntimeDisplayStatus } from "@cloudroom/domain";
+import type { TimelineWorkflowWorkRow } from "@cloudroom/server-contract";
 import { ThreadTimelinePanelContent } from "./ThreadTimelinePanelContent.js";
 import type { UseThreadTimelineControllerResult } from "./useThreadTimelineController.js";
 

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useAtom } from "jotai";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import type { DiffFileEntry, DiffPatchEntry } from "@bb/server-contract";
+import type { DiffFileEntry, DiffPatchEntry } from "@cloudroom/server-contract";
 import type { DiffPresentation } from "@/components/code/code-rendering";
-import type { WorkspaceDiffTarget } from "@bb/domain";
+import type { WorkspaceDiffTarget } from "@cloudroom/domain";
 import type { RequestDiffFileContents } from "@/components/git-diff/GitDiffCardBody";
 import {
   type DiffPatchState,
@@ -11,7 +11,7 @@ import {
   type RetryDiffPatchPath,
   useEnvironmentDiffPatches,
 } from "@/hooks/queries/use-environment-diff-patches";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { DiffFileCard } from "./DiffFileCard";
 import {
   diffFileCardStateAtomFamily,

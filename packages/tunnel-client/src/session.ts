@@ -15,7 +15,7 @@ import {
   type HeaderPair,
   type OpenHttpFrame,
   type OpenWsFrame,
-} from "@bb/tunnel-contract";
+} from "@cloudroom/tunnel-contract";
 import { headersForLoopbackRequest } from "./headers.js";
 import type { TunnelClientLogger } from "./logger.js";
 

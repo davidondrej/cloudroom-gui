@@ -1,17 +1,17 @@
 import { Buffer } from "node:buffer";
 import { Command } from "commander";
-import { TERMINAL_DATA_MAX_BYTES } from "@bb/domain";
+import { TERMINAL_DATA_MAX_BYTES } from "@cloudroom/domain";
 import {
   BbHttpError,
   type BbSdk,
   type TerminalCreateScope,
   type TerminalListScope,
-} from "@bb/sdk";
-import { createNodeWebsocketFactory } from "@bb/sdk/node-websocket";
+} from "@cloudroom/sdk";
+import { createNodeWebsocketFactory } from "@cloudroom/sdk/node-websocket";
 import {
   terminalServerMessageSchema,
   type TerminalSession,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { action, CliExitError } from "../action.js";
 import { createCliBbSdk } from "../client.js";
 import { columnWidths, printBorderlessTable } from "../table.js";

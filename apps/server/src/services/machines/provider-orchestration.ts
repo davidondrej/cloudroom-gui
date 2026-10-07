@@ -1,7 +1,7 @@
 import { withHostCleanup } from "../hosts/cleanup-context.js";
 import { requestQueuedMachineReadiness } from "../threads/queued-message-dispatch.js";
 import { and, desc, eq } from "drizzle-orm";
-import { createHostId, hostDaemonSessions, hosts } from "@bb/db";
+import { createHostId, hostDaemonSessions, hosts } from "@cloudroom/db";
 import { handleHostRemoved } from "../../internal/session-owner-side-effects.js";
 import type { WorkSessionDeps } from "../../types.js";
 import { maintainMachine } from "./lifecycle.js";
@@ -23,8 +23,8 @@ import {
   machineHasLiveThreads,
   machineHasPendingThreads,
   updateHost,
-} from "@bb/db";
-import { jsonValueSchema, type Host, type JsonValue } from "@bb/domain";
+} from "@cloudroom/db";
+import { jsonValueSchema, type Host, type JsonValue } from "@cloudroom/domain";
 import type {
   PluginMachineProviderCreateResult,
   PluginMachineProviderResource,

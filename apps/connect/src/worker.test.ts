@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { decodeFrame, encodeFrame, type Frame } from "@bb/tunnel-contract";
-import { machine, sha256Hex } from "@bb/connect-db";
+import { decodeFrame, encodeFrame, type Frame } from "@cloudroom/tunnel-contract";
+import { machine, sha256Hex } from "@cloudroom/connect-db";
 
 import { cacheKey } from "./cache";
 import { parseClientProtocolVersion } from "./tunnel-do";

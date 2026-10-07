@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { findCliExecutable } from "@bb/process-utils";
+import { findCliExecutable } from "@cloudroom/process-utils";
 import type { AppDeps } from "../../types.js";
 import { claudeBinary } from "./claude-token.js";
 import type { CloudroomClient } from "./client.js";

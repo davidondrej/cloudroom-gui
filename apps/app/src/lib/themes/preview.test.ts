@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { defaultAppTheme } from "@bb/domain";
+import { defaultAppTheme } from "@cloudroom/domain";
 import {
   APP_THEME_CSS_STORAGE_KEY,
   applyAppThemeCss,

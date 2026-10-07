@@ -8,7 +8,7 @@ import {
   session,
   user,
   verification,
-} from "@bb/connect-db";
+} from "@cloudroom/connect-db";
 import type { Env } from "./env.js";
 import { resolveDevEmailPasswordEnabled } from "./local-auth.js";
 

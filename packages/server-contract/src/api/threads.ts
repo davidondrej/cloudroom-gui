@@ -31,8 +31,8 @@ import {
   threadEventTypeValues,
   threadVisibilitySchema,
   threadWithRuntimeSchema,
-} from "@bb/domain";
-import type { CallerExecutionInputSource } from "@bb/domain";
+} from "@cloudroom/domain";
+import type { CallerExecutionInputSource } from "@cloudroom/domain";
 import { THREAD_EVENT_LIST_PAGE_SIZE } from "../common.js";
 import {
   timelineDeltaSchema,

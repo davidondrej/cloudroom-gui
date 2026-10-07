@@ -1,4 +1,4 @@
-import { PLUGIN_CATALOG_CATEGORIES, pluginCatalogCategory } from "@bb/domain";
+import { PLUGIN_CATALOG_CATEGORIES, pluginCatalogCategory } from "@cloudroom/domain";
 import type { PluginCatalogSearchEntry } from "@/hooks/queries/plugin-catalog-queries";
 import type { PluginListItem } from "@/hooks/queries/plugin-settings-queries";
 

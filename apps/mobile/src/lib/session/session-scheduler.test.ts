@@ -1,4 +1,4 @@
-import { ConnectListError, type DesktopSession } from "@bb/connect-client";
+import { ConnectListError, type DesktopSession } from "@cloudroom/connect-client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConnectServerProfile } from "../profiles/profile";
 import type { CookieStoreLike, SessionCookieSpec } from "./cookie-store";

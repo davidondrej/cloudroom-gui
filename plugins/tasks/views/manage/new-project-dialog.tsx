@@ -15,7 +15,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
+} from "@cloudroom/shared-ui/dialog";
 import {
   Select,
   SelectContent,
@@ -23,10 +23,10 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from "@bb/shared-ui/select";
-import { Button } from "@bb/shared-ui/button";
-import { Input } from "@bb/shared-ui/input";
-import { Icon } from "@bb/shared-ui/icon";
+} from "@cloudroom/shared-ui/select";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Input } from "@cloudroom/shared-ui/input";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import {
   ColorSwatchPicker,
   DEFAULT_COLOR,

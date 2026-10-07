@@ -3,7 +3,7 @@ import {
   buildAutomationEditThreadPrompt,
   buildPluginEditThreadPrompt,
   buildSkillEditThreadPrompt,
-} from "@bb/shared-ui/resource-edit-prompt";
+} from "@cloudroom/shared-ui/resource-edit-prompt";
 
 describe("resource edit thread prompts", () => {
   it("gives the thread an unambiguous writable resource locator", () => {

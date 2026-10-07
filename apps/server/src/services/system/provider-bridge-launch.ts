@@ -1,5 +1,5 @@
-import { getAppSettings } from "@bb/db";
-import { type HostDaemonBridgeLaunch } from "@bb/host-daemon-contract";
+import { getAppSettings } from "@cloudroom/db";
+import { type HostDaemonBridgeLaunch } from "@cloudroom/host-daemon-contract";
 import { ApiError } from "../../errors.js";
 import type { ProviderRegistration } from "../providers/provider-registry.js";
 import type { AppDeps } from "../../types.js";
@@ -30,6 +30,7 @@ export function resolveBridgeLaunchForProviderId(
     providerOptions: {
       ...registration.bridgeOptions,
       commandGuardEnabled: deps.db ? getAppSettings(deps.db).commandGuardEnabled : true,
+      stripAiCoAuthorsEnabled: deps.db ? getAppSettings(deps.db).stripAiCoAuthorsEnabled : true,
     },
     envPassthrough: [...registration.envPassthrough],
     capabilities: {

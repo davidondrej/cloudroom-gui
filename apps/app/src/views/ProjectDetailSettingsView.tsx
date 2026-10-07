@@ -1,16 +1,16 @@
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import "@bb/shared-ui/icon-extended";
+import "@cloudroom/shared-ui/icon-extended";
 import {
   findLocalPathProjectSourceForHost,
   type Host,
   type LocalPathProjectSource,
-} from "@bb/domain";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Pill } from "@bb/shared-ui/pill";
-import { ResourceOverflowMenu } from "@bb/shared-ui/resource-list";
+} from "@cloudroom/domain";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Pill } from "@cloudroom/shared-ui/pill";
+import { ResourceOverflowMenu } from "@cloudroom/shared-ui/resource-list";
 import { ProjectPathDialog } from "@/components/dialogs/ProjectPathDialog";
 import {
   ProjectDeleteDialog,

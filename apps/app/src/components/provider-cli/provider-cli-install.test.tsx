@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
-import type { ProviderCliInstallEvent } from "@bb/host-daemon-contract";
+import type { ProviderCliInstallEvent } from "@cloudroom/host-daemon-contract";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sdk } from "@/lib/sdk";
 import { appToast } from "@/components/ui/app-toast";

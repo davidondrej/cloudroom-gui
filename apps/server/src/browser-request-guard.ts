@@ -2,7 +2,7 @@ import { isIP } from "node:net";
 import {
   buildLocalAppOrigins,
   type BuildLocalAppOriginsArgs,
-} from "@bb/config/local-app-origins";
+} from "@cloudroom/config/local-app-origins";
 import type { ServerRuntimeConfig } from "./types.js";
 
 interface BrowserRequestGuardDeps {

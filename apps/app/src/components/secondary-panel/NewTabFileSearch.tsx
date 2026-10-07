@@ -8,18 +8,18 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { directoryFromPath } from "@bb/thread-view";
+import { directoryFromPath } from "@cloudroom/thread-view";
 import {
   COARSE_POINTER_COMPACT_ICON_SIZE_CLASS,
   COARSE_POINTER_COMPACT_ICON_SIZE_SHRINK_CLASS,
   COARSE_POINTER_ICON_SIZE_CLASS,
   COARSE_POINTER_TEXT_SM_CLASS,
-} from "@bb/shared-ui/coarse-pointer-sizing";
-import { Icon } from "@bb/shared-ui/icon";
-import { EmptyStatePanel } from "@bb/shared-ui/empty-state";
-import { LIST_HOVER_TRANSITION } from "@bb/shared-ui/motion";
-import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
-import { Input } from "@bb/shared-ui/input";
+} from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { EmptyStatePanel } from "@cloudroom/shared-ui/empty-state";
+import { LIST_HOVER_TRANSITION } from "@cloudroom/shared-ui/motion";
+import { usePointerCoarse } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
+import { Input } from "@cloudroom/shared-ui/input";
 import { TruncateStart } from "@/components/ui/truncate-start.js";
 import {
   useFileSearchSuggestions,
@@ -35,7 +35,7 @@ import {
   getFileNameFromPath,
   resolveRightPanelFileIconName,
 } from "./rightPanelFileVisuals";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { useAppCommandShortcut } from "@/components/commands/AppCommandProvider";
 import { formatRelativeTime } from "@/lib/relative-time";
 import {

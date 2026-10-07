@@ -12,7 +12,7 @@ const { compactState } = vi.hoisted(() => ({
   compactState: { value: false },
 }));
 
-vi.mock("@bb/shared-ui/hooks/use-compact-viewport", () => ({
+vi.mock("@cloudroom/shared-ui/hooks/use-compact-viewport", () => ({
   useIsCompactViewport: () => compactState.value,
 }));
 

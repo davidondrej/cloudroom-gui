@@ -3,7 +3,7 @@ kind: instruction
 title: Cloudroom Guide — Threads
 summary: Command reference for thread spawning, inspecting, messaging, and lifecycle.
 intent: Provide complete thread command documentation for agents.
-editingNotes: Keep flags accurate against the CLI implementation. Run the json-flag-enforcement and command-output tests after changes.
+editingNotes: Keep flags accurate against the CLI implementation. Run the command-output tests after changes.
 ---
 Thread commands
 
@@ -288,7 +288,7 @@ Messaging:
   the provider as literal text. Approve or deny the proposed plan with
   `room-cli thread interactions`; `room-cli thread cancel-plan` leaves Plan mode early.
   SDK callers build the same input with
-  `createBuiltinPlanCommandTextInput(text)` from `@bb/sdk` and pass it as
+  `createBuiltinPlanCommandTextInput(text)` from `@cloudroom/sdk` and pass it as
   `input` to `threads.spawn` or `threads.send`.
 
   room-cli thread stop [id]                      Stop work and release the agent runtime

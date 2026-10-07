@@ -4,7 +4,7 @@ import {
   experimentKeys,
   experimentKeySchema,
   type Experiments,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { DbConnection } from "../connection.js";
 import { systemExperiments } from "../schema.js";
 

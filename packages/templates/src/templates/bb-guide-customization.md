@@ -86,6 +86,11 @@ Turn it off to hide the delayed shortcut badges shown while holding Command or
 Control on macOS, or Control on Windows/Linux. Shortcut commands continue to
 work.
 
+Settings → Defaults includes **Remove AI co-authors**, on by default. New
+sessions drop agent `Co-authored-by` lines from commits and keep human ones.
+Use `room-cli settings general stripAiCoAuthorsEnabled <true|false>`. It needs
+Git 2.54 or newer.
+
 Settings → Advanced includes **Command Guard**, enabled by default for new Local
 and Cloud sessions. Use `room-cli settings general commandGuardEnabled <true|false>`.
 Start a new session after changing it. Personal guards remain independent. It
@@ -138,7 +143,7 @@ and `null` clears a preference that can be unset.
 `room-cli settings completed-turns` lists how each provider shows a finished turn:
 `collapse` folds the turn's work into one "Worked for" row and keeps the final
 answer visible, and `flat` keeps every step visible. Each provider has a
-default (Claude Code is `flat`, the other first-party providers `collapse`).
+default (every first-party provider is `collapse`).
 `room-cli settings completed-turns <provider-id> <collapse|flat>` overrides it for
 that provider, and `default` removes the override. Settings → Providers has
 the same per-provider switch.

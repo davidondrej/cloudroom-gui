@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Icon } from "@bb/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Icon } from "@cloudroom/shared-ui/icon";
 
 const noop = () => {};
 

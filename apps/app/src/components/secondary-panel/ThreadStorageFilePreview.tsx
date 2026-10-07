@@ -12,12 +12,12 @@ import type {
   FilePreviewLineRange,
   TextFilePreview,
   WorkspaceFilePreviewStatusLabel,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   isCsvFilePreview,
   isHtmlFilePreviewPath,
   isMarkdownFilePreview,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 const GENERIC_HTML_IFRAME_SANDBOX = "allow-scripts";
 

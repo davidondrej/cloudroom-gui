@@ -2,7 +2,7 @@ import { and, asc, eq, inArray, isNull, type SQL } from "drizzle-orm";
 import type {
   TerminalSessionCloseReason,
   TerminalSessionStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { DbConnection, DbTransaction } from "../connection.js";
 import { createTerminalSessionId } from "../ids.js";
 import { terminalSessions } from "../schema.js";

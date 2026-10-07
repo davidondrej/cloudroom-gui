@@ -4,8 +4,8 @@ import {
   LOCAL_WORKFLOW_TASK_TYPE,
   threadScope,
   turnScope,
-} from "@bb/domain";
-import type { Thread } from "@bb/domain";
+} from "@cloudroom/domain";
+import type { Thread } from "@cloudroom/domain";
 import {
   createConnection,
   createProject,
@@ -14,12 +14,12 @@ import {
   migrate,
   noopNotifier,
   upsertHost,
-} from "@bb/db";
-import type { DbConnection } from "@bb/db";
+} from "@cloudroom/db";
+import type { DbConnection } from "@cloudroom/db";
 import type {
   TimelinePaginationCursor,
   TimelineRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   buildThreadConversationOutline,
   buildThreadTimelineWithProfile,

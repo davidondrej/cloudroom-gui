@@ -1,5 +1,5 @@
-import type { ThreadRuntimeDisplayStatus } from "@bb/domain";
-import { assertNever } from "@bb/core-ui";
+import type { ThreadRuntimeDisplayStatus } from "@cloudroom/domain";
+import { assertNever } from "@cloudroom/core-ui";
 
 export function getFollowUpPromptPlaceholder(
   displayStatus: ThreadRuntimeDisplayStatus,

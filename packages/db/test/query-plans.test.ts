@@ -1,6 +1,6 @@
 import { findEnvironmentPathClaim } from "../src/data/environments.js";
 import { describe, expect, it } from "vitest";
-import { threadScope, turnScope } from "@bb/domain";
+import { threadScope, turnScope } from "@cloudroom/domain";
 import {
   createConnection,
   type DbConnection,

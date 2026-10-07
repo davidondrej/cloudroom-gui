@@ -11,7 +11,7 @@ import type {
   ExperimentalSidebarNavigationItem,
 } from "@get-bb/plugin-sdk";
 import { useLocation, useNavigate } from "react-router-dom";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   useAppCommandRunner,
   useAppCommandShortcut,

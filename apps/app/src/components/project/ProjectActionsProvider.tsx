@@ -7,11 +7,11 @@ import {
 } from "react";
 import { useSetAtom } from "jotai";
 import { useNavigate } from "react-router-dom";
-import type { ProjectResponse } from "@bb/server-contract";
+import type { ProjectResponse } from "@cloudroom/server-contract";
 import { useRouteState } from "@/hooks/useRouteState";
 import {
   useAddLocalProjectSource,
-  useDeleteProject,
+  useSetProjectHidden,
   useUpdateProject,
 } from "@/hooks/mutations/project-mutations";
 import { useDialogState } from "@/hooks/useDialogState";
@@ -21,7 +21,7 @@ import {
 } from "@/hooks/useLocalPathPicker";
 import { ProjectPathDialog } from "@/components/dialogs/ProjectPathDialog";
 import {
-  ProjectDeleteDialog,
+  ProjectHideDialog,
   type ProjectDeleteDialogTarget,
 } from "@/components/dialogs/ProjectDeleteDialog";
 import {
@@ -33,7 +33,7 @@ import { getRootComposeRoutePath } from "@/lib/route-paths";
 
 interface ProjectActionsContextValue {
   requestRename: (project: ProjectResponse) => void;
-  requestDelete: (project: ProjectResponse) => void;
+  requestHide: (project: ProjectResponse) => void;
   requestAddLocalPath: (project: ProjectResponse) => void;
 }
 
@@ -62,17 +62,17 @@ export function ProjectActionsProvider({
   const { projectId: routeProjectId } = useRouteState();
   const setCollapsedProjectIdList = useSetAtom(collapsedProjectIdsAtom);
   const updateProject = useUpdateProject();
-  const deleteProject = useDeleteProject();
+  const setProjectHidden = useSetProjectHidden();
   const addLocalSource = useAddLocalProjectSource();
   const { mutate: updateProjectMutate } = updateProject;
-  const { mutate: deleteProjectMutate } = deleteProject;
+  const { mutate: setProjectHiddenMutate } = setProjectHidden;
   const { mutate: addLocalSourceMutate } = addLocalSource;
 
   const renameDialog = useDialogState<ProjectRenameDialogTarget>();
-  const deleteDialog = useDialogState<ProjectDeleteDialogTarget>();
+  const hideDialog = useDialogState<ProjectDeleteDialogTarget>();
 
   const { onClose: closeRenameDialog, onOpen: openRenameDialog } = renameDialog;
-  const { onClose: closeDeleteDialog, onOpen: openDeleteDialog } = deleteDialog;
+  const { onClose: closeHideDialog, onOpen: openHideDialog } = hideDialog;
 
   const addLocalSourceSubmit = useCallback(
     ({ path, hostId, target, closeDialog }: LocalPathSubmitParams) => {
@@ -106,30 +106,33 @@ export function ProjectActionsProvider({
     [closeRenameDialog, updateProjectMutate],
   );
 
-  const requestDelete = useCallback(
+  const requestHide = useCallback(
     (project: ProjectResponse) => {
-      openDeleteDialog({ id: project.id, name: project.name });
+      openHideDialog({ id: project.id, name: project.name });
     },
-    [openDeleteDialog],
+    [openHideDialog],
   );
 
-  const confirmDelete = useCallback(
+  const confirmHide = useCallback(
     (projectId: string) => {
-      deleteProjectMutate(projectId, {
-        onSuccess: () => {
-          closeDeleteDialog();
-          setCollapsedProjectIdList((current) =>
-            current.filter((id) => id !== projectId),
-          );
-          if (routeProjectId === projectId) {
-            navigate(getRootComposeRoutePath(), { replace: true });
-          }
+      setProjectHiddenMutate(
+        { projectId, hidden: true },
+        {
+          onSuccess: () => {
+            closeHideDialog();
+            setCollapsedProjectIdList((current) =>
+              current.filter((id) => id !== projectId),
+            );
+            if (routeProjectId === projectId) {
+              navigate(getRootComposeRoutePath(), { replace: true });
+            }
+          },
         },
-      });
+      );
     },
     [
-      closeDeleteDialog,
-      deleteProjectMutate,
+      closeHideDialog,
+      setProjectHiddenMutate,
       navigate,
       routeProjectId,
       setCollapsedProjectIdList,
@@ -150,10 +153,10 @@ export function ProjectActionsProvider({
   const value = useMemo<ProjectActionsContextValue>(
     () => ({
       requestRename,
-      requestDelete,
+      requestHide,
       requestAddLocalPath,
     }),
-    [requestRename, requestDelete, requestAddLocalPath],
+    [requestRename, requestHide, requestAddLocalPath],
   );
 
   return (
@@ -165,11 +168,11 @@ export function ProjectActionsProvider({
         onOpenChange={renameDialog.onOpenChange}
         onRename={submitRename}
       />
-      <ProjectDeleteDialog
-        target={deleteDialog.target}
-        pending={deleteProject.isPending}
-        onOpenChange={deleteDialog.onOpenChange}
-        onDelete={confirmDelete}
+      <ProjectHideDialog
+        target={hideDialog.target}
+        pending={setProjectHidden.isPending}
+        onOpenChange={hideDialog.onOpenChange}
+        onHide={confirmHide}
       />
       <ProjectPathDialog
         target={addLocalSourcePicker.projectPathDialog.target}

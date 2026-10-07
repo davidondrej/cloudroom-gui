@@ -1,4 +1,4 @@
-import type { Host, ThreadListEntry } from "@bb/domain";
+import type { Host, ThreadListEntry } from "@cloudroom/domain";
 
 export const NO_MACHINE_GROUP_KEY = "no-machine";
 

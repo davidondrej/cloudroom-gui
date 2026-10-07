@@ -7,10 +7,10 @@ import {
   type PointerEventHandler,
   type ReactNode,
 } from "react";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Icon } from "@bb/shared-ui/icon";
-import { LIST_HOVER_TRANSITION } from "@bb/shared-ui/motion";
-import { CHROME_SECTION_LABEL_CLASS } from "@bb/shared-ui/chrome-style-tokens";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { LIST_HOVER_TRANSITION } from "@cloudroom/shared-ui/motion";
+import { CHROME_SECTION_LABEL_CLASS } from "@cloudroom/shared-ui/chrome-style-tokens";
 import {
   SidebarStickyGroup,
   SidebarStickyTier,
@@ -32,14 +32,14 @@ import type { SidebarSortableDragBindings } from "./sortableMotion";
 import {
   NO_COLLAPSED_CHILD_ACTIVITY,
   type CollapsedChildActivity,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { CollapsedThreadStatusGlyph } from "./ThreadRow";
 import {
   useThreadGroupSplitIndicator,
   type ThreadSplitIndicatorTarget,
 } from "./paneContentSplitIndicator";
 import { SplitPaneMiniMap } from "./SplitPaneMiniMap";
-import { COARSE_POINTER_ROW_ACTION_SIZE_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
+import { COARSE_POINTER_ROW_ACTION_SIZE_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import { usePluginThreadRowStatusForThreads } from "@/lib/plugin-thread-row-status";
 
 const EMPTY_SPLIT_INDICATOR_THREADS: readonly ThreadSplitIndicatorTarget[] = [];

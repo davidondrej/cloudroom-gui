@@ -1,5 +1,5 @@
-import type { AppTheme, AppThemeSelection } from "@bb/domain";
-import type { ThemeCatalogResponse } from "@bb/server-contract";
+import type { AppTheme, AppThemeSelection } from "@cloudroom/domain";
+import type { ThemeCatalogResponse } from "@cloudroom/server-contract";
 import { signalRequestArgs, type CreateSdkAreaArgs } from "./common.js";
 
 export type ThemeGetResult = AppTheme;

@@ -1,5 +1,5 @@
-import type { Environment, Host, Project } from "@bb/domain";
-import type { ThreadResponse } from "@bb/server-contract";
+import type { Environment, Host, Project } from "@cloudroom/domain";
+import type { ThreadResponse } from "@cloudroom/server-contract";
 import type {
   JsonValue,
   PluginEnvironmentProviderRequirements,

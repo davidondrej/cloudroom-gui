@@ -2,8 +2,8 @@ import {
   isStandaloneBuiltinCompactCommand,
   pendingInteractionResolutionSchema,
   reasoningEffortsForLevels,
-} from "@bb/domain";
-import type { AvailableModel, PromptInput, ReasoningLevel } from "@bb/domain";
+} from "@cloudroom/domain";
+import type { AvailableModel, PromptInput, ReasoningLevel } from "@cloudroom/domain";
 import { acpLaunchSpecSchema, type AcpLaunchSpec } from "../launch-spec.js";
 import {
   BRIDGE_INBOUND_REQUEST_METHODS,
@@ -12,11 +12,11 @@ import {
   PROVIDER_BRIDGE_PROTOCOL_VERSION,
   THREAD_DELTA_GRAMMAR_V3,
   THREAD_DELTA_NOTIFICATION_METHOD,
-} from "@bb/provider-bridge-protocol";
+} from "@cloudroom/provider-bridge-protocol";
 import type {
   InitializeResult,
   ThreadDelta,
-} from "@bb/provider-bridge-protocol";
+} from "@cloudroom/provider-bridge-protocol";
 import {
   PROVIDER_TOOL_CALL_CANCELLED_METHOD,
   BridgeRecoveryError,
@@ -29,12 +29,12 @@ import {
   mimeTypeFromExtension,
   runBridgeRequest,
   withoutBridgeRuntimeEnv,
-} from "@bb/provider-bridge-protocol/bridge-kit";
+} from "@cloudroom/provider-bridge-protocol/bridge-kit";
 import type {
   BridgeJsonRpcResponse,
   BridgeToolCallContent,
   BridgeToolCallImage,
-} from "@bb/provider-bridge-protocol/bridge-kit";
+} from "@cloudroom/provider-bridge-protocol/bridge-kit";
 import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { promises as fs, readFileSync } from "node:fs";

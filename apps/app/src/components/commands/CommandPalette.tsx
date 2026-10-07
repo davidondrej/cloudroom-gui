@@ -6,13 +6,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { pluginCommandId, pluginCommandIdSchema } from "@bb/domain";
+import { pluginCommandId, pluginCommandIdSchema } from "@cloudroom/domain";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogTitle } from "@bb/shared-ui/dialog";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { COARSE_POINTER_TEXT_SM_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
+import { Dialog, DialogContent, DialogTitle } from "@cloudroom/shared-ui/dialog";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { COARSE_POINTER_TEXT_SM_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import { LAUNCHER_ACTION_ROW_BASE_CLASS } from "@/components/secondary-panel/launcherRow";
 import {
   useAppCommandHandler,

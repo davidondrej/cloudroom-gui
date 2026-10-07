@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { getStoredThreadTabs, replaceStoredThreadTabs } from "@bb/db";
-import type { DesktopBrowserTab } from "@bb/host-daemon-contract";
+import { getStoredThreadTabs, replaceStoredThreadTabs } from "@cloudroom/db";
+import type { DesktopBrowserTab } from "@cloudroom/host-daemon-contract";
 import {
   threadTabsSchema,
   type ThreadTab,
@@ -12,7 +12,7 @@ import {
   type ExperimentalDesktopBrowserLease,
   type ExperimentalDesktopBrowserInstanceRequest,
   type ExperimentalDesktopBrowserImportCookiesRequest,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { WorkSessionDeps } from "../types.js";
 import { ApiError } from "../errors.js";
 import {

@@ -1,4 +1,4 @@
-import type { ThreadTimelineResponse, TimelineRow } from "@bb/server-contract";
+import type { ThreadTimelineResponse, TimelineRow } from "@cloudroom/server-contract";
 
 export const DEFAULT_MAX_INLINE_OUTPUT_CHARS = 32_000;
 

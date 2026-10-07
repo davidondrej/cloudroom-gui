@@ -25,7 +25,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from "@bb/shared-ui/context-menu";
+} from "@cloudroom/shared-ui/context-menu";
 import type {
   Components,
   ExtraProps,
@@ -46,7 +46,7 @@ import {
   type RehypeKatex,
 } from "./markdown-katex-loader.js";
 import { CopyButton } from "./copy-button.js";
-import { Icon } from "@bb/shared-ui/icon";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { RouteAnchor } from "./app-route-anchor.js";
 import {
   getMarkdownCodeLanguage,
@@ -99,7 +99,7 @@ import {
 } from "./markdown-incremental-pieces.js";
 import { normalizePromptBlockquoteBoundaries } from "./markdown-prompt-blockquote-boundaries.js";
 import { MarkdownMermaidDiagram } from "./markdown-mermaid-diagram.js";
-import type { PromptTextMention } from "@bb/domain";
+import type { PromptTextMention } from "@cloudroom/domain";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
 import type { TimelineTitleLinkResolver } from "@/components/thread/timeline/TimelineTitleView.js";
 import { usePreferredTheme, type Theme } from "@/hooks/useTheme";
@@ -108,7 +108,7 @@ import {
   useRewriteLocalhostLinksPreference,
 } from "@/lib/localhost-link-rewrite-preference";
 import { resolveRouteHref } from "@/lib/route-paths";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import remarkDirective from "remark-directive";
 import { PromptMentionPill } from "@/components/thread/timeline/ConversationMessageMentions.js";
 import {

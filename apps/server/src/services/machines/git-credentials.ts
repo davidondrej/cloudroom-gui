@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import type { HostDaemonContributedEnvEntry } from "@bb/host-daemon-contract";
+import type { HostDaemonContributedEnvEntry } from "@cloudroom/host-daemon-contract";
 import { z } from "zod";
 
 const exec = promisify(execFile);
@@ -13,6 +13,15 @@ const gitConfig = [
   ["credential.helper", githubCredentialHelper],
   ["url.https://github.com/.insteadOf", "git@github.com:"],
   ["url.https://github.com/.insteadOf", "ssh://git@github.com/"],
+] as const;
+
+const aiCoAuthorPattern =
+  "^co-authored-by:.*(claude|anthropic|cursor|codex|openai|chatgpt|copilot|gemini|aider\\.chat|devin-ai|windsurf|codeium)";
+const stripAiCoAuthorsHook = `cloudroom_strip_ai_co_authors() { grep -viE '${aiCoAuthorPattern}' "$1" > "$1.cloudroom"; [ $? -le 1 ] && mv "$1.cloudroom" "$1" || rm -f "$1.cloudroom"; }; cloudroom_strip_ai_co_authors`;
+const stripAiCoAuthorsConfig = [
+  ["hook.cloudroom-strip-ai-co-authors.command", stripAiCoAuthorsHook],
+  ["hook.cloudroom-strip-ai-co-authors.event", "prepare-commit-msg"],
+  ["hook.cloudroom-strip-ai-co-authors.event", "commit-msg"],
 ] as const;
 const identitySchema = z.object({
   login: z.string().regex(/^[a-zA-Z0-9-]+$/u),
@@ -28,21 +37,45 @@ async function runGh(args: string[]): Promise<string> {
   return stdout;
 }
 
-export function githubGitConfiguration(): HostDaemonContributedEnvEntry[] {
+function gitConfigEnvironment(
+  pairs: ReadonlyArray<readonly [string, string]>,
+  reason: string,
+  existing: readonly HostDaemonContributedEnvEntry[] = [],
+): HostDaemonContributedEnvEntry[] {
+  const offset = Number(
+    existing.find((entry) => entry.name === "GIT_CONFIG_COUNT")?.value ?? 0,
+  );
   const configEnv: Record<string, string> = {
-    GIT_CONFIG_COUNT: String(gitConfig.length),
+    GIT_CONFIG_COUNT: String(offset + pairs.length),
   };
-  gitConfig.forEach(([key, value], index) => {
-    configEnv[`GIT_CONFIG_KEY_${index}`] = key;
-    configEnv[`GIT_CONFIG_VALUE_${index}`] = value;
+  pairs.forEach(([key, value], index) => {
+    configEnv[`GIT_CONFIG_KEY_${offset + index}`] = key;
+    configEnv[`GIT_CONFIG_VALUE_${offset + index}`] = value;
   });
-  return Object.entries(configEnv).map<HostDaemonContributedEnvEntry>(
-    ([name, value]) => ({
-      name,
-      value,
-      source: { core: "machine-git" },
-      reason: "GitHub HTTPS authentication",
-    }),
+  return [
+    ...existing.filter((entry) => entry.name !== "GIT_CONFIG_COUNT"),
+    ...Object.entries(configEnv).map<HostDaemonContributedEnvEntry>(
+      ([name, value]) => ({
+        name,
+        value,
+        source: { core: "machine-git" },
+        reason,
+      }),
+    ),
+  ];
+}
+
+export function githubGitConfiguration(): HostDaemonContributedEnvEntry[] {
+  return gitConfigEnvironment(gitConfig, "GitHub HTTPS authentication");
+}
+
+export function withAiCoAuthorStripping(
+  entries: readonly HostDaemonContributedEnvEntry[],
+): HostDaemonContributedEnvEntry[] {
+  return gitConfigEnvironment(
+    stripAiCoAuthorsConfig,
+    "Remove AI co-author lines from commits",
+    entries,
   );
 }
 

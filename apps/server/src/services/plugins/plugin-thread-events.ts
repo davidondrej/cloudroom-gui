@@ -1,6 +1,6 @@
-import type { ApplyThreadLifecycleEventOutcome } from "@bb/db";
-import type { PendingInteraction, Thread } from "@bb/domain";
-import type { ThreadQueuedMessage } from "@bb/domain";
+import type { ApplyThreadLifecycleEventOutcome } from "@cloudroom/db";
+import type { PendingInteraction, Thread } from "@cloudroom/domain";
+import type { ThreadQueuedMessage } from "@cloudroom/domain";
 import type { PluginThreadEventEmitter } from "./plugin-service.js";
 
 const pendingThreadEvents = new Map<string, ReturnType<typeof setTimeout>>();
@@ -107,7 +107,7 @@ export function emitPluginThreadEvents(threadId: string): void {
 }
 
 export function emitPluginTerminalInput(
-  terminal: import("@bb/server-contract").TerminalSession,
+  terminal: import("@cloudroom/server-contract").TerminalSession,
 ): void {
   emitter?.emitTerminalInput(terminal);
 }

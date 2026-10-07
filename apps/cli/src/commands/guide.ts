@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { createGuideArea } from "@bb/sdk/node";
+import { createGuideArea } from "@cloudroom/sdk/node";
 import { action } from "../action.js";
 import { outputJson } from "./helpers.js";
 

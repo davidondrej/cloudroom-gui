@@ -10,21 +10,21 @@ import {
   hasRootStoredTurnStarted,
   listActiveBackgroundTaskCountsByThreadIds,
   type DbQueryConnection,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   threadScope,
   type PromptInput,
   type Thread,
   type ThreadEvent,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   EditMessageRequest,
   EditMessageResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   HostDaemonCommand,
   HostDaemonCommandResult,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type { LoggedPendingInteractionWorkSessionDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import {

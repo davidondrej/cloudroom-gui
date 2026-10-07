@@ -7,7 +7,7 @@ import {
   type SidebarNavActivationModifiers,
 } from "@/components/plugin/PluginNavSidebarItems";
 import { useAppCommandRunner } from "@/components/commands/AppCommandProvider";
-import { Icon } from "@bb/shared-ui/icon";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import {
   ProjectListNewThreadAction,
   ProjectListSearchThreadsAction,

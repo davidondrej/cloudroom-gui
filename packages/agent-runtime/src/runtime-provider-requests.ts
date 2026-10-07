@@ -8,8 +8,8 @@ import type {
   PendingInteractionPayload,
   PendingInteractionResolution,
   ToolCallRequest,
-} from "@bb/domain";
-import { isApprovalPendingInteractionPayload } from "@bb/domain";
+} from "@cloudroom/domain";
+import { isApprovalPendingInteractionPayload } from "@cloudroom/domain";
 import type { BridgeProtocolAdapter } from "./bridge-protocol-adapter.js";
 import {
   type JsonRpcMessage,
@@ -17,8 +17,8 @@ import {
   sendJsonRpcError,
   sendJsonRpcResult,
   sendProviderResponseEncodeErrorIfKnown,
-} from "@bb/provider-bridge-protocol/bridge-kit";
-import { shouldAutoDenyInteractiveRequest } from "@bb/provider-bridge-protocol/bridge-kit";
+} from "@cloudroom/provider-bridge-protocol/bridge-kit";
+import { shouldAutoDenyInteractiveRequest } from "@cloudroom/provider-bridge-protocol/bridge-kit";
 
 export class RuntimeToolCalls {
   private readonly pending = new Map<

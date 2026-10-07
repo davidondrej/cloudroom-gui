@@ -178,7 +178,7 @@ type of `presentation.label`.
   suite written against the pre-0.4.16 transport shape fails with that message
   instead of a missing export. Goes in bb 0.42.
 - Presentation-less `toolCall` rows pass through the legacy-data adapter
-  (`upgradeLegacyToolItem` in `@bb/domain`, applied when a stored row is
+  (`upgradeLegacyToolItem` in `@cloudroom/domain`, applied when a stored row is
   parsed): keyed on the absence of `presentation`, it reshapes
   Read/Grep/Glob and read/grep/find/ls by name into `fileRead`/`search`
   items and suppresses the Task*/Todo*/ToolSearch bookkeeping calls,
@@ -197,7 +197,7 @@ Unprefixed exports of `@get-bb/plugin-sdk/provider-bridge` that no longer
 have a consumer in this repository. They are kept on the facade because a
 third-party bridge compiled against an SDK before 0.4.16 may import them;
 dropping a published name is a breaking change. The first eleven are
-re-exported from `@bb/domain`, where each still has core consumers:
+re-exported from `@cloudroom/domain`, where each still has core consumers:
 
 - `acpNativeReasoningSchema`
 - `acpPermissionCliSchema`
@@ -1299,7 +1299,7 @@ before deleting the directory. Confirm the platform coverage (Linux
    may use `child_process`, filesystem, and network APIs. Decide whether later
    permissions, native artifacts, or an explicit dependency installer can be
    layered on without changing the RPC contract. Confirm rejecting all private
-   `@bb/*` imports from host bundles is the correct permanent boundary, and
+   `@cloudroom/*` imports from host bundles is the correct permanent boundary, and
    audit the builder-supplied public SDK runtime against future host exports.
 9. **Composition boundary.** Confirm host RPC methods and signals should remain
    private to the owning plugin while allowing another daemon subsystem to
@@ -1553,12 +1553,12 @@ bridge as provider-scoped static options. Core does not interpret its keys.
 
 **What it does.** The published module a provider bridge compiles against. A
 bridge ships inside its plugin's `bb.host` artifact, and a host artifact may
-not import private `@bb/*` workspace packages, so everything a bridge needs is
+not import private `@cloudroom/*` workspace packages, so everything a bridge needs is
 named here: `experimental_defineProviderBridge` (the export shape the
 daemon-side bootstrap looks for), the Provider Bridge Protocol's method
 vocabulary, the `thread/delta` grammar, and param schemas, the bridge kit's
 authoring helpers (JSON-RPC framing, tool-call and interaction codecs,
-visibility, dialect-parsing helpers), and the `@bb/domain` command-plane
+visibility, dialect-parsing helpers), and the `@cloudroom/domain` command-plane
 vocabulary those params reference.
 Curated by hand — named exports only, never `export *`. Unlike
 `@get-bb/plugin-sdk` and `@get-bb/plugin-sdk/host`, it is NOT a build-time
@@ -1571,12 +1571,12 @@ build inlines the SDK's published, self-contained bundle.
 1. **Resolved (Aug 2026, the narrow-grammar cutover): the protocol owns its
    own timeline vocabulary.** Bridges no longer construct `ThreadEvent`s —
    they emit the protocol's own `thread/delta` grammar and the runtime's
-   assembler constructs every canonical event — so the `@bb/domain` event
+   assembler constructs every canonical event — so the `@cloudroom/domain` event
    vocabulary (`ThreadEvent`, the item types, `threadScope`/`turnScope` and
    the scope helpers) left the surface with the kit's assembly machinery
    (turn-state registry, scoped-item-ids, accepted-user-messages, item
    constructors, unhandled-event builders). What still comes from
-   `@bb/domain` is deliberate and consumed by bridges today: the
+   `@cloudroom/domain` is deliberate and consumed by bridges today: the
    command-plane and interaction surface the protocol's params are made of
    (`PromptInput`, `PendingInteraction*`, `DynamicTool`,
    `RuntimePermissionPolicy`, permission/reasoning/service-tier values,
@@ -1585,7 +1585,7 @@ build inlines the SDK's published, self-contained bundle.
    `ThreadEventPlanStep`, `ThreadEventTokenUsageBreakdown`,
    `ThreadEventContextWindowUsage`, `ThreadEventUserContent`). Those are
    shared server/app/runtime contracts, so the facade re-export (bundle
-   inlining, `@bb/domain` staying private) is the permanent answer for
+   inlining, `@cloudroom/domain` staying private) is the permanent answer for
    them.
 2. **Surface size.** 184 names after the cutover (was ~190, then ~216 with
    the delta grammar added, then the assembly surface deleted: the
@@ -1596,9 +1596,9 @@ build inlines the SDK's published, self-contained bundle.
    `getMessageContentTypes` moved into the claude-code plugin,
    `normalizePendingInteractionRequestedPermissionProfile` (whole
    `pending-interaction-normalization` module plus test) into the codex
-   plugin, and the `cloneReasoningEfforts` helper out of `@bb/domain` into
+   plugin, and the `cloneReasoningEfforts` helper out of `@cloudroom/domain` into
    claude-code's model catalog. The other named candidates turned out not to
-   be movable: they are `@bb/domain`/protocol definitions with core consumers
+   be movable: they are `@cloudroom/domain`/protocol definitions with core consumers
    — the `acp*Cli`/`acpNativeReasoning` schemas are parsed by the ACP launch
    spec and config, and the workflow snapshot types are rendered by the app.
    The `claudeTaskTool*` schemas lost their last core consumer when the
@@ -1620,8 +1620,8 @@ build inlines the SDK's published, self-contained bundle.
    surface; and the shared accepted-user-message drain folded into the
    turn-state registry core.
 3. **Resolved (stabilization S2): the ACP launch spec is the ACP package's
-   own.** `acpLaunchSpecSchema` moved out of `@bb/host-daemon-contract` into
-   `@bb/provider-bridge-acp` and left this root entry; provider-scoped static
+   own.** `acpLaunchSpecSchema` moved out of `@cloudroom/host-daemon-contract` into
+   `@cloudroom/provider-bridge-acp` and left this root entry; provider-scoped static
    options are opaque to bb, and the shape is owned by the bridge that parses
    it and the plugin that stores it.
 4. **`experimental_apiVersion` 1.** The bootstrap accepts version 1 only and
@@ -1634,7 +1634,7 @@ build inlines the SDK's published, self-contained bundle.
 **Kept experimental (2026-08-22).** items 3 and 6 below change the public shape (a pluggable replay child, pinning a grammar version in the exports).
 
 **What it does.** The published kit a bridge author proves a bridge with
-before shipping it, with no private `@bb/*` package in reach: the
+before shipping it, with no private `@cloudroom/*` package in reach: the
 conformance kit (`experimental_runBridgeConformance`,
 `experimental_formatConformanceReport`) that drives a bridge through the
 canonical protocol scenarios — the transport hands it raw wire messages
@@ -1714,7 +1714,7 @@ protocol`'s `assembler`, `conformance`, and `testing` subpaths.
    `ThreadEventExtensionItem`, `ThreadEventFileReadItem`,
    `ThreadEventSearchItem`, `ThreadEventPlanStepsItem`,
    `ThreadEventWebSearchItem`, `ThreadEventWebFetchItem`,
-   `ThreadEventBackgroundTaskItem`) as types, re-exported from `@bb/domain`
+   `ThreadEventBackgroundTaskItem`) as types, re-exported from `@cloudroom/domain`
    and inlined into the bundled declarations. Before this a plugin test named
    the event type as `ReturnType<BridgeDeltaEventCollector["assembleMessage"]>[number]`.
    They are types only: a bridge never constructs an event (the assembler
@@ -1729,17 +1729,17 @@ protocol`'s `assembler`, `conformance`, and `testing` subpaths.
 **What it does.** Scans a plugin package for imports outside the public SDK:
 walks every `.ts`/`.tsx`/`.js` file below the package root (skipping
 `node_modules` and `dist`), and returns the files it read, each import
-specifier that is a private `@bb/*` package or falls outside the allowlist —
+specifier that is a private `@cloudroom/*` package or falls outside the allowlist —
 `@get-bb/plugin-sdk` and its published subpaths, `zod`, `node:` built-ins,
 relative paths that stay inside the package root, plus the public packages
 the plugin names in `allow`; test files may add the published testing
 subpaths and `vitest` — a relative path that resolves outside the package
 root (`outside-package`, unless an `allow` pattern names it), an `import()`
 or `require()` whose argument is not a string literal (`dynamic-specifier`),
-and the `@bb/*` names in the package.json dependency blocks. It returns data
+and the `@cloudroom/*` names in the package.json dependency blocks. It returns data
 and imports no test runner; the suite asserts on it. The echo-provider
 example and the first-party ACP plugin run it over themselves: inside bb's
-monorepo a `@bb/*` import still typechecks and runs, and a relative path can
+monorepo a `@cloudroom/*` import still typechecks and runs, and a relative path can
 climb into a private package's source, which is exactly why it needs a test.
 
 **Audit before stabilizing.**
@@ -2081,8 +2081,7 @@ Implementation: the shared workflow is
    `hostId`, an `unmanaged` `path`) are documented on the prop. Before
    stabilizing, confirm the mapping still inverts
    `resolveRootComposeThreadEnvironment` (the round-trip tests in
-   `new-thread-environment-seed.test.ts` and
-   `PluginNewThreadComposer.test.tsx` guard this) and re-decide whether the
+   `new-thread-environment-seed.test.ts` guard this) and re-decide whether the
    re-seed-on-change rule should instead be an explicit reset nonce.
 
 6. **Projectless contract.** The picker always offers "Don't work in a

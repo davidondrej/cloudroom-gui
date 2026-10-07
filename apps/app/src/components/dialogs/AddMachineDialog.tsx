@@ -3,18 +3,18 @@ import { useSystemConfig } from "@/hooks/queries/system-queries";
 import { machineServerAccessReady } from "@/components/machines/machine-server-access";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
-import type { Host } from "@bb/domain";
-import { Button } from "@bb/shared-ui/button";
+import type { Host } from "@cloudroom/domain";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
-import { Icon } from "@bb/shared-ui/icon";
-import { Input } from "@bb/shared-ui/input";
-import { COARSE_POINTER_INPUT_HEIGHT_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
+} from "@cloudroom/shared-ui/dialog";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Input } from "@cloudroom/shared-ui/input";
+import { COARSE_POINTER_INPUT_HEIGHT_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import { OptionPicker } from "@/components/pickers/OptionPicker";
 import { useSystemMachineProviders } from "@/hooks/queries/machine-provider-queries";
 import { MachineStatusDot } from "@/components/machines/MachineStatusDot";

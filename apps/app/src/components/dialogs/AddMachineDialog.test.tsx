@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 
-import { createDeferredPromise } from "@bb/test-helpers";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { sdk } from "@/lib/sdk";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
-import { Dialog, DialogContent } from "@bb/shared-ui/dialog";
+import { Dialog, DialogContent } from "@cloudroom/shared-ui/dialog";
 import { ManualMachineSetup } from "./AddMachineDialog";
 
 vi.mock("@/lib/sdk", () => ({

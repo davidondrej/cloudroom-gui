@@ -1,4 +1,4 @@
-import { defaultAppSettings } from "@bb/domain";
+import { defaultAppSettings } from "@cloudroom/domain";
 import {
   createConnection,
   migrate,
@@ -6,7 +6,7 @@ import {
   noopNotifier,
   getHost,
   setAppSettings,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { mkdtemp, writeFile, mkdir, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -19,6 +19,7 @@ it("gives backfilled manual machines user and gh environment without enrollment 
   const dataDir = await mkdtemp(join(tmpdir(), "bb-backfilled-env-"));
   try {
     migrate(db);
+    setAppSettings(db, { ...defaultAppSettings, stripAiCoAuthorsEnabled: false });
     upsertHost(db, noopNotifier, { id: "legacy-remote", name: "Remote" });
     upsertHost(db, noopNotifier, { id: "local-daemon", name: "Local" });
     const sql = (

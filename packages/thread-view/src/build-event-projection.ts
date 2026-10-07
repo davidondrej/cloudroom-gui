@@ -1,10 +1,10 @@
-import type { ThreadEvent } from "@bb/domain";
+import type { ThreadEvent } from "@cloudroom/domain";
 import {
   isBackgroundAgentTaskType,
   isBackgroundCommandTaskType,
   LOCAL_WORKFLOW_TASK_TYPE,
   requireThreadEventScopeTurnId,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { parseCompactionLifecycleEvent } from "./compaction-lifecycle.js";
 import {
   parseBackgroundTaskLifecycleEvent,
@@ -69,7 +69,7 @@ import {
   upsertProvisioningOperation,
   upsertThreadOperationMessage,
 } from "./operation-projection.js";
-import type { ActiveThinking } from "@bb/domain";
+import type { ActiveThinking } from "@cloudroom/domain";
 import type {
   BuildEventProjectionMessagesOptions,
   BuildEventProjectionOptions,

@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import { ClaudeSignIn, useClaudeConnection } from "@/components/ClaudeConnection";
 import { PromptStackCard } from "@/components/promptbox/banner/PromptStackCard";
 import { sdk } from "@/lib/sdk";
@@ -15,20 +15,24 @@ export function LocalSignInNotice({
   hostId,
   environmentId,
   authFailed,
+  started,
 }: {
   threadId: string;
   providerId: string;
   hostId?: string | null;
   environmentId?: string | null;
   authFailed: boolean;
+  started: boolean;
 }) {
   const claude = providerId === "claude-code";
   const target = { target: "local" as const, hostId, environmentId };
-  const auth = useClaudeConnection(target, claude);
+  // Once a thread has run, a real expiry shows up as a failed turn (authFailed).
+  // `claude auth status` can say signed out while sessions still work.
+  const auth = useClaudeConnection(target, claude && !started);
   const retry = useMutation({
     mutationFn: () => sdk.threads.retry({ threadId, reason: "Signed in again" }),
   });
-  const signedOut = claude && auth.data?.state === "missing";
+  const signedOut = claude && !started && auth.data?.state === "missing";
   if (!authFailed && !signedOut) return null;
   const command = loginCommands[providerId];
   return (

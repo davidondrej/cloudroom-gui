@@ -1,4 +1,4 @@
-import type { IconName } from "@bb/shared-ui/icon";
+import type { IconName } from "@cloudroom/shared-ui/icon";
 
 export const CLOUDROOM_LOCAL_PRIMARY = "Local";
 export const CLOUDROOM_LOCAL_WORKTREE = "Local Worktree";

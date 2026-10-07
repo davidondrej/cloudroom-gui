@@ -1,12 +1,12 @@
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadHostDaemonStartConfig } from "@bb/config/host-daemon";
-import { loadHostDaemonEntrypointConfig } from "@bb/config/host-daemon-entrypoint";
+import { loadHostDaemonStartConfig } from "@cloudroom/config/host-daemon";
+import { loadHostDaemonEntrypointConfig } from "@cloudroom/config/host-daemon-entrypoint";
 import {
   installSafeProcessDiagnostics,
   writeSafeProcessDiagnosticReport,
-} from "@bb/process-utils";
+} from "@cloudroom/process-utils";
 import { hasMachineSuspensionMarker } from "./suspension-marker.js";
 
 interface ReportStartupFailureArgs {

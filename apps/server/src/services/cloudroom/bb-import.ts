@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { findOrCreateProjectByLocalPathSource, getThread, type StoredEventRow } from "@bb/db";
+import { findOrCreateProjectByLocalPathSource, getThread, type StoredEventRow } from "@cloudroom/db";
 import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { createThreadFromRequest } from "../threads/thread-create.js";

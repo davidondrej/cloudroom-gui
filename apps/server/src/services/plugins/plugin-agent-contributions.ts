@@ -1,5 +1,5 @@
-import type { ToolCallResponse } from "@bb/domain";
-import type { HostDaemonContributedEnvEntry } from "@bb/host-daemon-contract";
+import type { ToolCallResponse } from "@cloudroom/domain";
+import type { HostDaemonContributedEnvEntry } from "@cloudroom/host-daemon-contract";
 import type { ExperimentalPluginProviderEnvContext } from "@get-bb/plugin-sdk";
 import type {
   PluginAgentConfigurationContext,

@@ -2,9 +2,9 @@ import {
   findStoredEventRow,
   getLastStoredTurnRequestEvent,
   getThread,
-} from "@bb/db";
-import type { DbQueryConnection } from "@bb/db";
-import type { PromptInput } from "@bb/domain";
+} from "@cloudroom/db";
+import type { DbQueryConnection } from "@cloudroom/db";
+import type { PromptInput } from "@cloudroom/domain";
 import { ApiError } from "../../errors.js";
 import { parseStoredTurnRequestEvent } from "./thread-events.js";
 

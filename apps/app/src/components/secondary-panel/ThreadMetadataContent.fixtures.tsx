@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import type { ThreadListEntry, ThreadPullRequest } from "@bb/domain";
-import type { EnvironmentDisplayHostContext } from "@bb/core-ui";
+import type { ThreadListEntry, ThreadPullRequest } from "@cloudroom/domain";
+import type { EnvironmentDisplayHostContext } from "@cloudroom/core-ui";
 import {
   makeEnvironment,
   makeThread,

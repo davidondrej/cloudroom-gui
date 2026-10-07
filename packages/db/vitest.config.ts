@@ -8,7 +8,7 @@ export default defineWorkspaceTestConfig({
     silent: "passed-only",
     projects: sharedWorkerProjects({
       pkgDir: __dirname,
-      name: "@bb/db",
+      name: "@cloudroom/db",
       include: ["test/**/*.test.ts"],
     }),
   },

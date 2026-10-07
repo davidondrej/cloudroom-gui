@@ -1,12 +1,12 @@
 import { definePluginApp, useBbNavigate, useRealtime, useRpc } from "@get-bb/plugin-sdk/app";
-import { Badge as BbBadge } from "@bb/shared-ui/badge";
-import { Button as BbButton } from "@bb/shared-ui/button";
-import { Checkbox as BbCheckbox } from "@bb/shared-ui/checkbox";
-import { CHROME_SECTION_LABEL_CLASS } from "@bb/shared-ui/chrome-style-tokens";
+import { Badge as BbBadge } from "@cloudroom/shared-ui/badge";
+import { Button as BbButton } from "@cloudroom/shared-ui/button";
+import { Checkbox as BbCheckbox } from "@cloudroom/shared-ui/checkbox";
+import { CHROME_SECTION_LABEL_CLASS } from "@cloudroom/shared-ui/chrome-style-tokens";
 import {
   COARSE_POINTER_ICON_SIZE_CLASS,
   COARSE_POINTER_ROW_HEIGHT_CLASS,
-} from "@bb/shared-ui/coarse-pointer-sizing";
+} from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import { Moon02Icon, Sun03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@bb/shared-ui/dialog";
+} from "@cloudroom/shared-ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,35 +26,35 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
+} from "@cloudroom/shared-ui/dropdown-menu";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "@bb/shared-ui/hover-card";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { Input as BbInput } from "@bb/shared-ui/input";
+} from "@cloudroom/shared-ui/hover-card";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { Input as BbInput } from "@cloudroom/shared-ui/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@bb/shared-ui/popover";
+} from "@cloudroom/shared-ui/popover";
 import {
   Select,
   SelectContent,
   SelectGroup,
   SelectItem,
   SelectTrigger,
-} from "@bb/shared-ui/select";
-import { Switch as BbSwitch } from "@bb/shared-ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@bb/shared-ui/tabs";
+} from "@cloudroom/shared-ui/select";
+import { Switch as BbSwitch } from "@cloudroom/shared-ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@cloudroom/shared-ui/tabs";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/tooltip";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { toast } from "sonner";
 import {
   useEffect,

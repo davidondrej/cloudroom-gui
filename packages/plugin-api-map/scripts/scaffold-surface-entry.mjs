@@ -163,7 +163,7 @@ export function renderSurfaceEntryScaffold(input) {
 
 function usage() {
   return `Usage:
-  pnpm exec turbo run scaffold:surface-entry --filter=@bb/plugin-api-map -- \\
+  pnpm exec turbo run scaffold:surface-entry --filter=@cloudroom/plugin-api-map -- \\
     --id <surface-id> --title <title> --group <group-id> \\
     --source <repo-path> --api-symbol <SDK-symbol> \\
     [--transient] [--outcome] [--replacement] [--no-spatial-owner]

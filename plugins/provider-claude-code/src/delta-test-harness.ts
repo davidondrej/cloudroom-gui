@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ClientTurnRequestId, ThreadEvent } from "@bb/domain";
+import type { ClientTurnRequestId, ThreadEvent } from "@cloudroom/domain";
 import { experimental_createDeltaAssembler as createDeltaAssembler } from "@get-bb/plugin-sdk/provider-bridge/testing";
 import {
   createClaudeDeltaTranslator,

@@ -1,5 +1,5 @@
-import { extractErrorMessage, toRecord } from "@bb/core-ui";
-import type { SystemVoiceTranscriptionResponse } from "@bb/server-contract";
+import { extractErrorMessage, toRecord } from "@cloudroom/core-ui";
+import type { SystemVoiceTranscriptionResponse } from "@cloudroom/server-contract";
 import { apiClient, toRelativeUrl } from "./api-server";
 import { appSurfaceRequestInit } from "./app-surface";
 import {
@@ -7,7 +7,7 @@ import {
   normalizeFilePreviewMimeType,
   type FilePreview,
   type FilePreviewTarget,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   buildThreadHostFileContentUrl,
   buildThreadStorageContentUrl,

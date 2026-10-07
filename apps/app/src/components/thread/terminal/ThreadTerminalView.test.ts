@@ -1,4 +1,4 @@
-import { TERMINAL_DATA_MAX_BYTES } from "@bb/domain";
+import { TERMINAL_DATA_MAX_BYTES } from "@cloudroom/domain";
 import type { ILink, ILinkProvider } from "ghostty-web";
 import { describe, expect, it, vi } from "vitest";
 import { decodeBase64Bytes } from "@/lib/base64-bytes";

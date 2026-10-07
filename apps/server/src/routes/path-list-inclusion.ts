@@ -1,4 +1,4 @@
-import type { PathListIncludeQueryValue } from "@bb/server-contract";
+import type { PathListIncludeQueryValue } from "@cloudroom/server-contract";
 import { ApiError } from "../errors.js";
 
 interface PathKindInclusion {

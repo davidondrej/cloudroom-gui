@@ -3,9 +3,9 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { InlineComposerDraftSession } from "./useActiveComposerDraft";
-import type { PromptDraftAttachment } from "@bb/client-core";
-import { BbHttpError } from "@bb/sdk/browser";
-import { createDeferredPromise } from "@bb/test-helpers";
+import type { PromptDraftAttachment } from "@cloudroom/client-core";
+import { BbHttpError } from "@cloudroom/sdk/browser";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
 import {
   useComposerAttachmentUploads,
   useDraftAttachmentUploads,

@@ -54,12 +54,18 @@ export default async function plugin(bb: BbPluginApi) {
     if (decision.kind === "decline") {
       return;
     }
-    await bb.sdk.threads.retry({
-      threadId: event.threadId,
-      turnRequestId: event.requestId,
-      sendAt: decision.sendAt,
-      reason: decision.reason,
-    });
+    try {
+      await bb.sdk.threads.retry({
+        threadId: event.threadId,
+        turnRequestId: event.requestId,
+        sendAt: decision.sendAt,
+        reason: decision.reason,
+      });
+    } catch (error) {
+      bb.log.debug(
+        `Retry not scheduled for ${event.threadId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   });
 
   registerProviderRetryCli(bb);

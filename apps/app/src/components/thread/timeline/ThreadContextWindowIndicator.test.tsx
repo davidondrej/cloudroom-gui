@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
-import type { ThreadContextWindowUsage } from "@bb/server-contract";
+import type { ThreadContextWindowUsage } from "@cloudroom/server-contract";
 import { ThreadContextWindowCard } from "./ThreadContextWindowIndicator";
 
 afterEach(cleanup);

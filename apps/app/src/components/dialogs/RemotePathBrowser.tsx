@@ -7,18 +7,18 @@ import {
 } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { normalizeProjectPathInput } from "@bb/domain";
-import type { HostDirectoryListing } from "@bb/server-contract";
-import { Button } from "@bb/shared-ui/button";
-import { EmptyState } from "@bb/shared-ui/empty-state";
-import { Icon } from "@bb/shared-ui/icon";
-import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
-import { Input } from "@bb/shared-ui/input";
+import { normalizeProjectPathInput } from "@cloudroom/domain";
+import type { HostDirectoryListing } from "@cloudroom/server-contract";
+import { Button } from "@cloudroom/shared-ui/button";
+import { EmptyState } from "@cloudroom/shared-ui/empty-state";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { usePointerCoarse } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
+import { Input } from "@cloudroom/shared-ui/input";
 import { invalidateHostDirectoryListing } from "@/hooks/cache-owners/host-directory-cache-owner";
 import { useHostDirectory } from "@/hooks/queries/host-queries";
 import { sdk } from "@/lib/sdk";
 import { getMutationErrorMessage } from "@/lib/mutation-errors";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 interface Crumb {
   label: string;

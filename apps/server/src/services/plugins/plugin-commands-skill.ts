@@ -1,6 +1,6 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { pluginCliCall } from "@bb/domain/plugin-cli";
+import { pluginCliCall } from "@cloudroom/domain/plugin-cli";
 import { PLUGIN_CLI_OUTPUT_MAX_BYTES } from "@get-bb/plugin-sdk";
 import type { PluginCliCommandInfo } from "./plugin-api.js";
 

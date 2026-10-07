@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { StartBranchPicker } from "@bb/shared-ui/branch-picker-primitives";
+import { StartBranchPicker } from "@cloudroom/shared-ui/branch-picker-primitives";
 import {
   definePluginApp,
   experimental_useBranches,

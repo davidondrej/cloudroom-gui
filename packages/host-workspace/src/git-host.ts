@@ -9,8 +9,8 @@ import {
   type GitHostPullRequestMergeable,
   type GitHostPullRequestReviewDecision,
   gitHostPullRequestSchema,
-} from "@bb/domain";
-import { sanitizeInheritedChildProcessEnv } from "@bb/process-utils";
+} from "@cloudroom/domain";
+import { sanitizeInheritedChildProcessEnv } from "@cloudroom/process-utils";
 import { runGit, type GitCommandResult, WorkspaceError } from "./git.js";
 
 const execFileAsync = promisify(execFile);

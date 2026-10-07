@@ -13,7 +13,7 @@ import {
   connectPublicProtocol,
   deriveConnectBaseUrl,
   type ConnectCredential,
-} from "@bb/connect-client";
+} from "@cloudroom/connect-client";
 import type { ShareListing } from "./types.js";
 
 export const SHARES_KV_KEY = "shares";

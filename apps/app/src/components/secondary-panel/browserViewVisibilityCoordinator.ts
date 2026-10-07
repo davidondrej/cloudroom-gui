@@ -1,4 +1,4 @@
-import type { BbDesktopBrowserApi } from "@bb/desktop-contract";
+import type { BbDesktopBrowserApi } from "@cloudroom/desktop-contract";
 
 export interface BrowserViewVisibilityCoordinator {
   show(

@@ -16,7 +16,7 @@ import {
   type DesktopBrowserCommand,
   type DesktopBrowserInstance,
   type DesktopBrowserResult,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 
 interface Peer {
   socket: WebSocket;

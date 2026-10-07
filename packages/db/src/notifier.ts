@@ -5,7 +5,7 @@ import type {
   EnvironmentChangeKind,
   HostChangeKind,
   SystemChangeKind,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 export interface DbNotifier {
   notifyThread(

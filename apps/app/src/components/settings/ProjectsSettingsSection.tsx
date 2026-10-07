@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { arrayMove } from "@dnd-kit/sortable";
-import type { Host } from "@bb/domain";
-import type { ProjectWithThreadsResponse } from "@bb/server-contract";
-import { Button } from "@bb/shared-ui/button";
-import "@bb/shared-ui/icon-extended";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+import type { Host } from "@cloudroom/domain";
+import type { ProjectWithThreadsResponse } from "@cloudroom/server-contract";
+import { Button } from "@cloudroom/shared-ui/button";
+import "@cloudroom/shared-ui/icon-extended";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   ResourceOverflowMenu,
   ResourceRowDetailChevron,
-} from "@bb/shared-ui/resource-list";
+} from "@cloudroom/shared-ui/resource-list";
 import { ProjectPathDialog } from "@/components/dialogs/ProjectPathDialog";
 import {
   ProjectDeleteDialog,
@@ -23,14 +23,17 @@ import {
 import {
   SettingsBadge,
   SettingsRow,
+  SettingsRowList,
   SettingsSection,
 } from "@/components/ui/settings-section";
 import {
   useDeleteProject,
   useReorderProject,
+  useSetProjectHidden,
   useUpdateProject,
 } from "@/hooks/mutations/project-mutations";
 import { selectHosts, useHosts } from "@/hooks/queries/host-queries";
+import { useHiddenProjects } from "@/hooks/queries/project-queries";
 import { useSidebarNavigation } from "@/hooks/queries/sidebar-navigation-query";
 import { useQuickCreateProject } from "@/hooks/useQuickCreateProject";
 import { getSettingsProjectRoutePath } from "@/lib/route-paths";
@@ -212,6 +215,46 @@ function SortableProjectRow({
   );
 }
 
+function HiddenProjectsSection() {
+  const hiddenProjects = useHiddenProjects().data ?? [];
+  const setProjectHidden = useSetProjectHidden();
+  if (hiddenProjects.length === 0) return null;
+
+  return (
+    <SettingsSection
+      title="Hidden projects"
+      description="Removed from the sidebar. Their threads are archived, not deleted."
+    >
+      <SettingsRowList>
+        {hiddenProjects.map((project) => (
+          <SettingsRow key={project.id}>
+            <Icon
+              name="FolderGit"
+              className="size-4 shrink-0 text-muted-foreground"
+            />
+            <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+              {project.name}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={setProjectHidden.isPending}
+              onClick={() =>
+                setProjectHidden.mutate({
+                  projectId: project.id,
+                  hidden: false,
+                })
+              }
+            >
+              Show in sidebar
+            </Button>
+          </SettingsRow>
+        ))}
+      </SettingsRowList>
+    </SettingsSection>
+  );
+}
+
 export function ProjectsSettingsSection() {
   const sidebarNavigationQuery = useSidebarNavigation();
   const hostsQuery = useHosts();
@@ -327,6 +370,8 @@ export function ProjectsSettingsSection() {
           </SortableSettingsRowList>
         )}
       </SettingsSection>
+
+      <HiddenProjectsSection />
 
       <ProjectPathDialog
         target={quickCreateProject.projectPathDialog.target}

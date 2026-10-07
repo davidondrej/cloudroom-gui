@@ -1,9 +1,9 @@
 import { cloudExecution, cloudroom, isCloudThread } from "../cloudroom/commands.js";
-import { isStandaloneBuiltinClearCommand, type Thread } from "@bb/domain";
+import { isStandaloneBuiltinClearCommand, type Thread } from "@cloudroom/domain";
 import type {
   SendMessageRequest,
   SendMessageResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { LoggedPendingInteractionWorkSessionDeps } from "../../types.js";
 import { attemptDispatch } from "./dispatch-attempt.js";
 import { requireThreadCommandEnvironment } from "./thread-command-environment.js";

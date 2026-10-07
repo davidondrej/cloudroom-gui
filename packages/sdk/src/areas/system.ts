@@ -1,7 +1,7 @@
 import type {
   MachineEnvironmentReplace,
   MachineEnvironmentList,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   AppKeybindingOverrides,
   AppSettings,
@@ -9,8 +9,8 @@ import type {
   Experiments,
   UiPreferenceKey,
   UiPreferenceValue,
-} from "@bb/domain";
-import type { ProviderUsageResponse } from "@bb/host-daemon-contract";
+} from "@cloudroom/domain";
+import type { ProviderUsageResponse } from "@cloudroom/host-daemon-contract";
 import type {
   SystemAttentionResponse,
   SystemConfigReloadResponse,
@@ -28,8 +28,8 @@ import type {
   SystemVoiceTranscriptionResponse,
   UiPreferenceResponse,
   UiPreferencesResponse,
-} from "@bb/server-contract";
-import { systemVoiceTranscriptionResponseSchema } from "@bb/server-contract";
+} from "@cloudroom/server-contract";
+import { systemVoiceTranscriptionResponseSchema } from "@cloudroom/server-contract";
 import {
   readExecutionOptions,
   signalRequestArgs,

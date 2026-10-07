@@ -1,7 +1,7 @@
 import { HEADER_SEAM_CLASS } from "@/components/layout/AppPageHeader";
 import { CHROME_ROW_CLASS } from "@/lib/bb-desktop";
-import { Skeleton } from "@bb/shared-ui/skeleton";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 interface RouteLoadingSkeletonProps {
   isBoundedPane: boolean;

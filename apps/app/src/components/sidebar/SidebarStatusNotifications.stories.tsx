@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import type { ThreadListEntry } from "@bb/domain";
-import type { ProjectResponse } from "@bb/server-contract";
+import type { ThreadListEntry } from "@cloudroom/domain";
+import type { ProjectResponse } from "@cloudroom/server-contract";
 import {
   BRANCH_NAMES,
   HOST_IDS,
@@ -15,7 +15,7 @@ import { SidebarMenu, SidebarMenuItem } from "@/components/ui/sidebar.js";
 import { ProjectListShell } from "./ProjectList";
 import type { ProjectListRowModel } from "./ProjectListProjects";
 import { ProjectRow, type ProjectThreadListState } from "./ProjectRow";
-import { compareStandardThreads } from "@bb/client-core";
+import { compareStandardThreads } from "@cloudroom/client-core";
 import { ThreadRow, type ThreadRowOptions } from "./ThreadRow";
 
 export default {

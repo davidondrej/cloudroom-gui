@@ -7,8 +7,8 @@ import {
   type EnvironmentMachineSelection,
   type Thread,
   type JsonValue,
-} from "@bb/domain";
-import type { CreateThreadEnvironmentArgs } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { CreateThreadEnvironmentArgs } from "@cloudroom/server-contract";
 import { action } from "../../action.js";
 import { createCliBbSdk } from "../../client.js";
 import {

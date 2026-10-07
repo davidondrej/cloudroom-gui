@@ -8,7 +8,7 @@ describe("bundled plugin SDK declarations", () => {
       "utf8",
     );
 
-    expect(declarations).not.toMatch(/from ['"]@bb\//u);
+    expect(declarations).not.toMatch(/from ['"]@cloudroom\//u);
     expect(declarations).not.toContain("PublicApiOutput");
     expect(declarations).not.toContain("PublicApiSchema");
     expect(declarations).toContain("type ThreadSpawnResult = ThreadResponse;");
@@ -47,7 +47,7 @@ describe("bundled plugin SDK declarations", () => {
       new URL("../../bundled-types/bb-plugin-sdk-app.d.ts", import.meta.url),
       "utf8",
     );
-    expect(appDeclarations).not.toMatch(/from ['"]@bb\//u);
+    expect(appDeclarations).not.toMatch(/from ['"]@cloudroom\//u);
     expect(appDeclarations).toContain("useSdk(): PluginBrowserBbSdk;");
     expect(appDeclarations).toContain("interface ThreadSectionsArea");
     expect(appDeclarations).toContain("threadSections: ThreadSectionsArea;");
@@ -89,16 +89,16 @@ describe("bundled plugin SDK declarations", () => {
       ),
     );
     for (const content of declarations.slice(0, 3)) {
-      expect(content).not.toMatch(/from ['"]@bb\//u);
-      expect(content).not.toMatch(/import\(['"]@bb\//u);
+      expect(content).not.toMatch(/from ['"]@cloudroom\//u);
+      expect(content).not.toMatch(/import\(['"]@cloudroom\//u);
     }
     for (const content of declarations.slice(3)) {
       const bbImports = [
         ...content.matchAll(/from ['"](@(?:get-)?bb\/[^'"]+)['"]/gu),
       ].map((match) => match[1]);
       expect(new Set(bbImports)).toEqual(new Set(["@get-bb/plugin-sdk"]));
-      expect(content).not.toContain("@bb/sdk");
-      expect(content).not.toContain("@bb/server-contract");
+      expect(content).not.toContain("@cloudroom/sdk");
+      expect(content).not.toContain("@cloudroom/server-contract");
     }
     expect(declarations[2]).toContain("interface ExperimentalHostEntry");
     expect(declarations[3]).toContain("interface FakePluginBehaviorDrivers");
@@ -119,8 +119,8 @@ describe("bundled plugin SDK declarations", () => {
       ),
       "utf8",
     );
-    expect(testing).not.toMatch(/from ['"]@bb\//u);
-    expect(testing).not.toMatch(/import\(['"]@bb\//u);
+    expect(testing).not.toMatch(/from ['"]@cloudroom\//u);
+    expect(testing).not.toMatch(/import\(['"]@cloudroom\//u);
     for (const name of [
       "ThreadEvent",
       "ThreadEventItem",

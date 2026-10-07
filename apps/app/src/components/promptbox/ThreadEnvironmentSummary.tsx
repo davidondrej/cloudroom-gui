@@ -1,16 +1,16 @@
 import { memo } from "react";
-import { OptionDisplay } from "@bb/shared-ui/option-display";
+import { OptionDisplay } from "@cloudroom/shared-ui/option-display";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@bb/shared-ui/tooltip";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@cloudroom/shared-ui/tooltip";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { CHROME_SUBTLE_ICON_BUTTON_FOREGROUND_CLASS } from "@bb/shared-ui/chrome-style-tokens";
+} from "@cloudroom/shared-ui/dropdown-menu";
+import { CHROME_SUBTLE_ICON_BUTTON_FOREGROUND_CLASS } from "@cloudroom/shared-ui/chrome-style-tokens";
 import type { WorkspaceCheckoutDisplay } from "@/lib/workspace-checkout-display";
 import {
   MachineLabel,

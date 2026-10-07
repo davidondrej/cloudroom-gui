@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
-import type { PendingInteractionStatus } from "@bb/domain";
+import type { PendingInteractionStatus } from "@cloudroom/domain";
 import type { DbConnection, DbTransaction } from "../connection.js";
 import { createPendingInteractionId } from "../ids.js";
 import { pendingInteractions } from "../schema.js";

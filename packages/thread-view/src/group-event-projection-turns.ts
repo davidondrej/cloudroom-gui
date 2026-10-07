@@ -1,4 +1,4 @@
-import type { ThreadEvent } from "@bb/domain";
+import type { ThreadEvent } from "@cloudroom/domain";
 import type {
   EventProjectionMessage,
   EventProjection,
@@ -6,7 +6,7 @@ import type {
   EventProjectionTurn,
   EventProjectionTurnStatus,
 } from "./event-projection-types.js";
-import { requireThreadEventScopeTurnId } from "@bb/domain";
+import { requireThreadEventScopeTurnId } from "@cloudroom/domain";
 import { assertNever } from "./assert-never.js";
 import type { EventMeta } from "./event-decode.js";
 import {

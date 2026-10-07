@@ -1,4 +1,4 @@
-import { threadEventSchema, type ThreadEvent } from "@bb/domain";
+import { threadEventSchema, type ThreadEvent } from "@cloudroom/domain";
 import { ThreadEventGrammar } from "../thread-event-grammar.js";
 import type { ConformanceCheckResult } from "./types.js";
 

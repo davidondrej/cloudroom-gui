@@ -2,7 +2,7 @@ import { Buffer } from "node:buffer";
 import type {
   HostDaemonOnlineRpcResultByType,
   HostReadFileIfNoneMatch,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { ApiError } from "../../errors.js";
 import { COMMAND_TIMEOUT_MS } from "../../constants.js";
 import type { LoggedWorkSessionDeps } from "../../types.js";

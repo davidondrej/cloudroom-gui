@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import { EditorContent, type Editor } from "@tiptap/react";
-import { COARSE_POINTER_TEXT_BASE_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { COARSE_POINTER_TEXT_BASE_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   PromptMentionLinkContext,
   type PromptMentionLinkResolver,

@@ -2,13 +2,13 @@ import {
   PERSONAL_PROJECT_ID,
   type ProjectSource,
   type ThreadListEntry,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   ProjectWithThreadsResponse,
   SidebarBootstrapResponse,
   SystemEnvironmentProvider,
   TerminalSession,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { describe, expect, it } from "vitest";
 import type { ReuseThreadOption } from "@/components/pickers/ReuseEnvironmentPicker";
 import {
@@ -18,7 +18,7 @@ import {
   restorePromptDraftAfterOptionChange,
   type ResolveNewThreadSubmitDisabledReasonArgs,
 } from "@/components/promptbox/NewThreadComposer";
-import { getProjectStoredPromptAttachmentPaths } from "@bb/client-core";
+import { getProjectStoredPromptAttachmentPaths } from "@cloudroom/client-core";
 import {
   buildRootComposeTerminalSessions,
   buildMobileRecentThreads,
@@ -32,7 +32,7 @@ import {
   shouldNavigateAfterThreadCreate,
 } from "./RootComposeView";
 import { resolveRootComposeProjectFileRouting } from "./RootComposePanelTabContent";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import {
   makeProjectWithThreadsResponse,
   makeSidebarBootstrapResponse,

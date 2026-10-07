@@ -14,17 +14,17 @@ describe("provider-acp imports only the public SDK", () => {
     expect(scan.files).toContain(join("src", "host.ts"));
   });
 
-  it("has no @bb/* import and stays inside the allowlist", () => {
+  it("has no @cloudroom/* import and stays inside the allowlist", () => {
     expect(scan.violations).toEqual([]);
   });
 
   it("allows only the bundled build tool as a private dev dependency", () => {
-    expect(scan.privateDependencies).toEqual(["@bb/plugin-build"]);
+    expect(scan.privateDependencies).toEqual(["@cloudroom/plugin-build"]);
     const manifest: unknown = JSON.parse(
       readFileSync(new URL("./package.json", import.meta.url), "utf8"),
     );
     expect(manifest).toMatchObject({
-      devDependencies: { "@bb/plugin-build": "workspace:*" },
+      devDependencies: { "@cloudroom/plugin-build": "workspace:*" },
     });
   });
 });

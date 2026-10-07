@@ -27,6 +27,7 @@ This index lists every command path that the core CLI registers. Read the task-s
 - `room-cli cloud teleport`
 - `room-cli cloud retry-start`
 - `room-cli cloud thread-workspace`
+- `room-cli cloud share THREAD [--status|--stop]`
 
 `sign-in --project ID` prints the browser link for connecting the account's existing VM. `--website-url http://127.0.0.1:PORT` is for local website development. All commands accept `--json`. Logout removes this app's VM credentials, not remote jobs or local history. Existing cloud bindings block switching to another account/core. `retry-start` retries a rejected launch with its saved prompt and original request ID; it never reruns an existing cloud session.
 
@@ -47,10 +48,13 @@ This index lists every command path that the core CLI registers. Read the task-s
 - `room-cli import bb`
 - `room-cli import claude-code [--days N] [--dry-run] [--json]`
 - `room-cli import codex [--days N] [--dry-run] [--json]`
+- `room-cli import share LINK [--json]`
 
 `import bb` copies every open BB thread into an idle Local thread with its full history, title, harness, and model. It forks each native session, so it sends no prompts and never changes BB. Re-running skips threads already imported.
 
 `import claude-code` and `import codex` copy this Mac's chats from the last N days (default 30) into idle Local threads. Each forks the native session, so the agent keeps its memory; the timeline shows user and agent messages. Cloudroom's own sessions, subagents, and already-imported chats are skipped. `--dry-run` lists them without importing. The same picker is in Settings → Import chats.
+
+`cloud share` makes a read-only `cloudroom.dev/s/...` link to a thread's messages (no tool output or files, secrets removed), or updates its copy; `--stop` deletes it. `import share` copies a shared thread into a new Local thread whose agent starts by reading it.
 
 ## feedback
 

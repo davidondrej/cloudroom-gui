@@ -4,7 +4,7 @@ import { once } from "node:events";
 import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { cloudroomThreads, threads } from "@bb/db";
+import { cloudroomThreads, threads } from "@cloudroom/db";
 import { eq } from "drizzle-orm";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
 import { cloudroomAccount, CloudroomAccountService, pendingLoginTimeoutMs } from "../../src/services/cloudroom/account.js";

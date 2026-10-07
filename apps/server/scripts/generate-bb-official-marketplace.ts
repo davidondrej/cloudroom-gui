@@ -11,7 +11,7 @@ import {
   PLUGIN_CATALOG_CATEGORIES,
   pluginCatalogCategoryIdSchema,
   pluginPackageJsonSchema,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { z } from "zod";
 import {
   BUNDLED_MARKETPLACE_FILENAME,

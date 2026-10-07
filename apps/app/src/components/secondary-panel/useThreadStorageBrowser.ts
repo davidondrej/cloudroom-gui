@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { WorkspaceFile } from "@bb/server-contract";
+import type { WorkspaceFile } from "@cloudroom/server-contract";
 import { createRetryingModuleLoader } from "@/lib/plugin-frontend-lazy";
 import type { ThreadStorageTreeModel } from "./ThreadStorageFileTree";
 

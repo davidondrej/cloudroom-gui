@@ -2,8 +2,8 @@ import {
   getEnvironment,
   getThread,
   requireThreadLifecycleEventApplied,
-} from "@bb/db";
-import type { DbConnection, DbTransaction, EnvironmentRow } from "@bb/db";
+} from "@cloudroom/db";
+import type { DbConnection, DbTransaction, EnvironmentRow } from "@cloudroom/db";
 import type {
   ClientTurnRequestId,
   PromptInput,
@@ -11,13 +11,13 @@ import type {
   Thread,
   ThreadTurnInitiator,
   TurnRequestTarget,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   flattenPromptInputGroups,
   isStandaloneBuiltinClearCommand,
-} from "@bb/domain";
-import type { SendMessageRequest } from "@bb/server-contract";
-import { renderTemplate } from "@bb/templates";
+} from "@cloudroom/domain";
+import type { SendMessageRequest } from "@cloudroom/server-contract";
+import { renderTemplate } from "@cloudroom/templates";
 import type {
   AppDeps,
   LoggedPendingInteractionWorkSessionDeps,

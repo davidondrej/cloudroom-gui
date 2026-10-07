@@ -1,8 +1,8 @@
-import type { EnvironmentMachineSelection, JsonValue } from "@bb/domain";
+import type { EnvironmentMachineSelection, JsonValue } from "@cloudroom/domain";
 import type {
   CreateThreadRequest,
   SystemEnvironmentProvider,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { parseEnvironmentValue } from "@/components/pickers/environment-picker-value";
 
 interface ResolveRootComposeThreadEnvironmentArgs {

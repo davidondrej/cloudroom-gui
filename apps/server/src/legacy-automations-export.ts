@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { z } from "zod";
-import type { DbConnection } from "@bb/db";
-import { resolveContainedPath } from "@bb/process-utils";
+import type { DbConnection } from "@cloudroom/db";
+import { resolveContainedPath } from "@cloudroom/process-utils";
 
 interface LegacyAutomationsExportLogger {
   error(fields: { err: unknown }, message: string): void;

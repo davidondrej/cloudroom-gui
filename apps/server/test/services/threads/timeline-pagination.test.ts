@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type {
   TimelineRow,
   TimelineUserConversationRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { paginateTimelineRows } from "../../../src/services/threads/timeline-pagination.js";
 
 function userRow(args: {

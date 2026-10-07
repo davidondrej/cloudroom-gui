@@ -1,5 +1,5 @@
 {
-  "name": "@bb/desktop-contract",
+  "name": "@cloudroom/desktop-contract",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -16,12 +16,12 @@
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "@bb/domain": "workspace:*",
-    "@bb/host-daemon-contract": "workspace:*",
+    "@cloudroom/domain": "workspace:*",
+    "@cloudroom/host-daemon-contract": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-7": "npm:typescript@^7.0.2"
   }

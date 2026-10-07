@@ -5,7 +5,7 @@ import {
   threadScope,
   turnScope,
   type Thread,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   createConnection,
   createProject,
@@ -16,7 +16,7 @@ import {
   noopNotifier,
   upsertHost,
   type DbConnection,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   buildThreadConversationOutline,
   buildThreadTimelineWithProfile,

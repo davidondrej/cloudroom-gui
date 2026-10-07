@@ -1,5 +1,5 @@
-import type { TimelineRow } from "@bb/server-contract";
-import { PROVIDER_AUTH_FAILED_TITLE } from "@bb/thread-view";
+import type { TimelineRow } from "@cloudroom/server-contract";
+import { PROVIDER_AUTH_FAILED_TITLE } from "@cloudroom/thread-view";
 
 export function hasThreadAuthFailure(rows: readonly TimelineRow[]): boolean {
   for (let index = rows.length - 1; index >= 0; index -= 1) {

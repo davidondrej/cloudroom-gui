@@ -4,8 +4,8 @@ import type {
   EnvironmentStatus,
   GitBranchRefClassification,
   ThreadPullRequest,
-} from "@bb/domain";
-import type { PullRequestMergeMethod } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { PullRequestMergeMethod } from "@cloudroom/server-contract";
 import {
   BranchPicker,
   getMergeBaseBranchCandidateGroups,
@@ -24,8 +24,8 @@ import {
   type WorkspaceChangedFileSelection,
   type WorkspaceChangedFilesSection,
 } from "@/components/workspace/workspace-change-summary";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
 import {
   getPullRequestAttentionDisplay,
   getPullRequestGithubCheckStatus,
@@ -45,7 +45,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
+} from "@cloudroom/shared-ui/dropdown-menu";
 import { useUrlAnchorClickHandler } from "@/lib/url-open-routing";
 
 export interface ContextBannerMergeBaseConfig {

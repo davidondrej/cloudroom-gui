@@ -1,5 +1,5 @@
-import { ConnectListError } from "@bb/connect-client";
-import { BbHttpError } from "@bb/sdk/browser";
+import { ConnectListError } from "@cloudroom/connect-client";
+import { BbHttpError } from "@cloudroom/sdk/browser";
 import { describe, expect, it } from "vitest";
 import { mapAuthError } from "./auth-error";
 

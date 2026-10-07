@@ -1,5 +1,5 @@
-import { calculateExponentialBackoffDelay } from "@bb/domain";
-import { spawnPortableProcess } from "@bb/process-utils";
+import { calculateExponentialBackoffDelay } from "@cloudroom/domain";
+import { spawnPortableProcess } from "@cloudroom/process-utils";
 import { resolveSupervisorPidPath } from "./dev-restart-utils.js";
 import {
   removePidFileSync,

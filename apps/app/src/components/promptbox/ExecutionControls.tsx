@@ -1,9 +1,9 @@
 import { memo } from "react";
-import type { PermissionMode, ReasoningLevel, ServiceTier } from "@bb/domain";
+import type { PermissionMode, ReasoningLevel, ServiceTier } from "@cloudroom/domain";
 import type {
   SystemExecutionOptionsModelLoadError,
   SystemProvidersQuery,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { formatModelLabel } from "@/hooks/useThreadCreationOptions";
 import {
   ModelReasoningPicker,

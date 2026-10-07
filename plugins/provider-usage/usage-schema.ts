@@ -45,6 +45,8 @@ export const usageProviderSchema = z.strictObject({
   signInHint: nonemptyStringSchema,
   expiredHint: nonemptyStringSchema,
   usage: z.nullable(providerUsageSchema),
+  accountId: z.optional(nonemptyStringSchema),
+  inUse: z.optional(z.boolean()),
 });
 
 export const usageMachineSchema = z.strictObject({

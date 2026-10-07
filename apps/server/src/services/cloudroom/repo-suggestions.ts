@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createRemoteProject, listProjectSourcesByProjectIds, listPublicProjects } from "@bb/db";
+import { createRemoteProject, listProjectSourcesByProjectIds, listPublicProjects, setProjectHidden } from "@cloudroom/db";
 import type { AppDeps } from "../../types.js";
 import { cloudroom } from "./commands.js";
 import { localRepos } from "./local-repos.js";
@@ -15,6 +15,30 @@ const LIMIT = 20;
 const listSchema = z.array(z.object({ full_name: z.string(), pushed_at: z.string().nullable() }));
 /** `https://github.com/owner/name` in lower case, so SSH, HTTPS, and `.git` remotes of one repo match. */
 const repoKey = (remote: string | null) => githubRepository(remote)?.replace(/\.git$/, "").toLowerCase() ?? null;
+const repoName = (key: string) => key.split("/").pop() ?? key;
+
+/** Where a remote's repo lives now. GitHub's API follows a moved or renamed repo's old URL to its current `owner/name`. */
+async function currentRepoKey(remote: string | null, token: string): Promise<string | null> {
+  const key = repoKey(remote);
+  if (!key) return null;
+  const response = await fetch(key.replace("https://github.com/", "https://api.github.com/repos/"), {
+    headers: { Accept: "application/vnd.github+json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }, signal: AbortSignal.timeout(10_000),
+  }).catch(() => null);
+  const repo = response?.ok ? z.object({ full_name: z.string() }).safeParse(await response.json().catch(() => null)) : null;
+  return repo?.success ? `https://github.com/${repo.data.full_name}`.toLowerCase() : null;
+}
+
+/** Current repo of each project named like one of `names`, mapped to its project id. A moved repo keeps working under its old URL, so a project may still save that one. */
+async function movedRepos(projects: { id: string; name: string; gitRemoteUrl: string | null }[], names: Set<string>): Promise<Map<string, string>> {
+  const clashing = projects.filter((project) => {
+    const key = repoKey(project.gitRemoteUrl);
+    return key && (names.has(project.name.toLowerCase()) || names.has(repoName(key)));
+  });
+  if (clashing.length === 0) return new Map();
+  const token = await macGithubToken();
+  const found = await Promise.all(clashing.map(async (project) => [await currentRepoKey(project.gitRemoteUrl, token), project.id] as const));
+  return new Map(found.filter((entry): entry is [string, string] => entry[0] !== null));
+}
 
 /** The account's repos, newest push first. This Mac's `gh` login answers with push times; otherwise the website's GitHub login does. */
 async function githubRepos(deps: AppDeps): Promise<{ connected: boolean; repos: { repo: string; updatedAt: number | null }[] }> {
@@ -43,20 +67,26 @@ export async function repoSuggestions(deps: AppDeps): Promise<{ githubConnected:
     const key = `https://github.com/${repo}`.toLowerCase();
     return !used.has(key) && !onMac.has(key);
   });
+  const moved = await movedRepos(projects, new Set(githubOnly.map(({ repo }) => repoName(repo.toLowerCase()))));
+  const notMoved = githubOnly.filter(({ repo }) => !moved.has(`https://github.com/${repo}`.toLowerCase()));
   return {
     githubConnected: github.connected,
     repos: [
       ...macRepos.slice(0, LIMIT).map(({ name, path, updatedAt }) => ({ source: "mac" as const, name, path, updatedAt })),
-      ...githubOnly.slice(0, LIMIT).map(({ repo, updatedAt }) => ({ source: "github" as const, name: repo.split("/")[1] ?? repo, repo, updatedAt })),
+      ...notMoved.slice(0, LIMIT).map(({ repo, updatedAt }) => ({ source: "github" as const, name: repo.split("/")[1] ?? repo, repo, updatedAt })),
     ],
   };
 }
 
 /** Makes a GitHub repo a project right away, with no clone. Each machine or sandbox clones it when a thread there first needs it.
- *  Returns the existing project if one already uses the repo. */
-export function addGithubRepo(deps: AppDeps, repo: string): { projectId: string } {
-  const url = `https://github.com/${repo}`;
-  const existing = listPublicProjects(deps.db).find((project) => repoKey(project.gitRemoteUrl) === url.toLowerCase());
-  if (existing) return { projectId: existing.id };
+ *  Returns the existing project if one already uses the repo, even under its old URL from before a move. */
+export async function addGithubRepo(deps: AppDeps, repo: string): Promise<{ projectId: string }> {
+  const url = `https://github.com/${repo}`, key = url.toLowerCase();
+  const projects = listPublicProjects(deps.db, "all");
+  const existing = projects.find((project) => repoKey(project.gitRemoteUrl) === key)?.id ?? (await movedRepos(projects, new Set([repoName(key)]))).get(key);
+  if (existing) {
+    setProjectHidden(deps.db, deps.hub, existing, false);
+    return { projectId: existing };
+  }
   return { projectId: createRemoteProject(deps.db, deps.hub, { name: repo.split("/")[1] ?? repo, gitRemoteUrl: `${url}.git` }).id };
 }

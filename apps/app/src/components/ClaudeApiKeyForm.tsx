@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import { sdk } from "@/lib/sdk";
 
 /** Cloud only: the less prominent alternative to a Claude subscription. */

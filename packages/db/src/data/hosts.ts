@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull, ne } from "drizzle-orm";
-import type { HostChangeKind, JsonValue, PermissionMode } from "@bb/domain";
+import type { HostChangeKind, JsonValue, PermissionMode } from "@cloudroom/domain";
 import type { DbConnection, DbTransaction } from "../connection.js";
 import type { DbNotifier } from "../notifier.js";
 import { hosts } from "../schema.js";

@@ -3,8 +3,8 @@ import {
   type PendingInteractionSourceThread,
 } from "@/components/thread/pending-interactions/PendingInteractionShell";
 import { useCallback, useMemo, useState } from "react";
-import { Button } from "@bb/shared-ui/button";
-import type { JsonValue, PendingInteraction } from "@bb/domain";
+import { Button } from "@cloudroom/shared-ui/button";
+import type { JsonValue, PendingInteraction } from "@cloudroom/domain";
 import { PluginSlotMount } from "./PluginSlotMount";
 import { resolvePendingInteraction } from "@/lib/plugin-slot-resolvers";
 import { usePluginSlots } from "@/lib/plugin-slots";

@@ -1,7 +1,7 @@
 import type {
   PluginRpcDiscoveryQuery,
   PublishedPluginRpcMethod,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { watch } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -22,7 +22,7 @@ import {
   type SystemChangeKind,
   type ThreadEventItemPresentation,
   type ToolCallResponse,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   type ExperimentalPluginWebSocketContext,
   type ExperimentalPluginWebSocketHandlers,
@@ -45,13 +45,13 @@ import {
   buildPluginApp,
   buildPluginHost,
   createPluginDevLoop,
-} from "@bb/plugin-build";
+} from "@cloudroom/plugin-build";
 import { getPluginBuildToolchain } from "./build-toolchain.js";
 import {
   marketplacePublisherLabel,
   pluginPublisherLabel,
 } from "../plugin-catalog/marketplace-publishers.js";
-import { deleteSecretFile, readOrCreateSecretFile } from "@bb/secret-storage";
+import { deleteSecretFile, readOrCreateSecretFile } from "@cloudroom/secret-storage";
 import {
   pluginUpdateCheckEntrySchema,
   ROOT_PLUGIN_SOURCE_SELECTION,
@@ -60,7 +60,7 @@ import {
   type PluginSourceDetail,
   type PluginSourceSelection,
   type PluginUpdateCheckEntry,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   claimPluginScheduledRun,
   deleteAllPluginSettings,
@@ -80,7 +80,7 @@ import {
   setInstalledPluginEnabled,
   type InstalledPluginRow,
   type PluginMarketplaceRow,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   catalogEntryMetadata,
   isBundledMarketplaceEntry,

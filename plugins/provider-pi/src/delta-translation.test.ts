@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import type { ThreadEvent } from "@bb/domain";
-import { threadScope, turnScope } from "@bb/domain";
+import type { ThreadEvent } from "@cloudroom/domain";
+import { threadScope, turnScope } from "@cloudroom/domain";
 import type { AgentSessionEvent } from "@earendil-works/pi-coding-agent";
 import {
   getBuiltinModels,
@@ -12,7 +12,7 @@ import {
 import {
   createDeltaAssembler,
   type DeltaAssembler,
-} from "@bb/provider-bridge-protocol/assembler";
+} from "@cloudroom/provider-bridge-protocol/assembler";
 import {
   createPiDeltaTranslator,
   createPiModelContextWindowResolverFrom,

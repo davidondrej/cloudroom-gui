@@ -5,7 +5,7 @@ import { basename, join } from "node:path";
 import { createInterface } from "node:readline";
 import { randomUUID } from "node:crypto";
 import { isNotNull } from "drizzle-orm";
-import { events, findOrCreateProjectByLocalPathSource, getThread, type StoredEventRow } from "@bb/db";
+import { events, findOrCreateProjectByLocalPathSource, getThread, type StoredEventRow } from "@cloudroom/db";
 import type { AppDeps } from "../../types.js";
 import { createThreadFromRequest } from "../threads/thread-create.js";
 import { requireNonDestroyedHostWithStatus } from "../lib/entity-lookup.js";

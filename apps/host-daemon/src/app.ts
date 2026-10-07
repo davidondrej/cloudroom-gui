@@ -16,7 +16,7 @@ import { startHostDaemonHealthMonitor } from "./host-daemon-health-monitor.js";
 import { startLocalApiServer, type LocalApiServer } from "./local-api.js";
 import type { HostDaemonLocalApiConfig } from "./local-api-config.js";
 import type { HostDaemonLogger } from "./logger.js";
-import type { HostDaemonDaemonWsMessage } from "@bb/host-daemon-contract";
+import type { HostDaemonDaemonWsMessage } from "@cloudroom/host-daemon-contract";
 import {
   RuntimeManager,
   type RuntimeManagerReapIdleProviderSessionsArgs,
@@ -43,12 +43,12 @@ import {
 } from "./server-connection.js";
 import { runtimeErrorLogFields, summarizeError } from "./error-utils.js";
 import { ensureThreadStorageRoot } from "./thread-storage-root.js";
-import type { AgentRuntime, AgentRuntimeOptions } from "@bb/agent-runtime";
+import type { AgentRuntime, AgentRuntimeOptions } from "@cloudroom/agent-runtime";
 import { createProtocolSelfUpdater } from "./protocol-self-update.js";
 import {
   disposeParcelWatcherBackend,
   type HostWatcher,
-} from "@bb/host-watcher";
+} from "@cloudroom/host-watcher";
 import { PluginHostManager } from "./plugin-host-manager.js";
 import { writeMachineSuspensionMarker } from "./suspension-marker.js";
 

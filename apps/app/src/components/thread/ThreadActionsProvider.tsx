@@ -13,7 +13,7 @@ import {
   closePanesForThreadsAtom,
   type ClosePanesForThreadsResult,
 } from "@/lib/split-layout/atoms";
-import type { Thread } from "@bb/domain";
+import type { Thread } from "@cloudroom/domain";
 import {
   useArchiveThreadAndChildren,
   useDeleteThread,
@@ -40,7 +40,7 @@ import {
 } from "@/components/dialogs/ThreadDeleteDialog";
 import { ArchivedThreadToastDescription } from "@/components/thread/ArchivedThreadToastDescription";
 import { destroyPersistedBrowserViewsForThread } from "@/components/secondary-panel/browserViewVisibilityCoordinator";
-import { getThreadReadToggleAction } from "@bb/client-core";
+import { getThreadReadToggleAction } from "@cloudroom/client-core";
 import { getRootComposeRoutePath, getThreadRoutePath } from "@/lib/route-paths";
 import { getDesktopBrowserApi } from "@/lib/bb-desktop";
 import { useRouteNavigate } from "@/components/ui/app-route-anchor";

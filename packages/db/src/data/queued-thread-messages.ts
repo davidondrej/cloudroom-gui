@@ -18,7 +18,7 @@ import {
   sql,
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import { QUEUED_MESSAGE_PLUGIN_WAIT_HOLDER_PREFIX } from "@bb/domain";
+import { QUEUED_MESSAGE_PLUGIN_WAIT_HOLDER_PREFIX } from "@cloudroom/domain";
 import type {
   PermissionMode,
   PromptInput,
@@ -27,7 +27,7 @@ import type {
   QueuedMessageWaitHolder,
   QueuedMessageWaitingOn,
   QueuedMessageWaitingOnKind,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   DbConnection,
   DbQueryConnection,

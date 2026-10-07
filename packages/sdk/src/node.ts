@@ -1,8 +1,8 @@
-import { loadCliConfig, type CliConfig } from "@bb/config/cli";
+import { loadCliConfig, type CliConfig } from "@cloudroom/config/cli";
 import {
   createHostDaemonLocalClient,
   DEFAULT_HOST_DAEMON_LOCAL_BIND_HOST,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { createGuideArea } from "./areas/guide.js";
 import { createBbSdk, type BbSdk, type BbSdkAreas } from "./core.js";
 import { createNodeWebsocketFactory } from "./node-websocket.js";

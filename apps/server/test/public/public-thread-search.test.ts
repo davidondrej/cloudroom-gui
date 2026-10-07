@@ -1,5 +1,5 @@
-import { archiveThread } from "@bb/db";
-import { threadSearchResponseSchema } from "@bb/server-contract";
+import { archiveThread } from "@cloudroom/db";
+import { threadSearchResponseSchema } from "@cloudroom/server-contract";
 import { describe, expect, it } from "vitest";
 import { readJson } from "../helpers/json.js";
 import {

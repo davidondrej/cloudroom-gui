@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ThreadEventRow } from "@bb/domain";
-import type { TimelineRow } from "@bb/server-contract";
+import type { ThreadEventRow } from "@cloudroom/domain";
+import type { TimelineRow } from "@cloudroom/server-contract";
 import {
   createTimelineEventFactory,
   renderTimelineFixture,

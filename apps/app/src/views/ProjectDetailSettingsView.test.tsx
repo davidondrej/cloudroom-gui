@@ -7,8 +7,8 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import type { Host, ProjectExecutionDefaults } from "@bb/domain";
-import { makeHost } from "@bb/test-helpers/domain-fixtures";
+import type { Host, ProjectExecutionDefaults } from "@cloudroom/domain";
+import { makeHost } from "@cloudroom/test-helpers/domain-fixtures";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sdk } from "@/lib/sdk";
@@ -329,7 +329,7 @@ describe("ProjectDetailSettingsView", () => {
       await screen.findByRole("button", { name: "Delete project" }),
     );
     fireEvent.click(
-      await screen.findByRole("button", { name: "Remove project" }),
+      await screen.findByRole("button", { name: "Delete project" }),
     );
 
     await waitFor(() =>

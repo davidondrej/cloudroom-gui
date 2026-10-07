@@ -2,7 +2,7 @@ import {
   EMPTY_PROVIDER_NATIVE_ROOTS,
   isNamespacedGlyph,
   isPluginOwnedIconPath,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { NormalizedPluginProviderDeclaration } from "@get-bb/plugin-sdk/internal/host-policy";
 import type {
   AvailableModel,
@@ -10,7 +10,7 @@ import type {
   ProviderExtensionKinds,
   ProviderInfo,
   ProviderOptionDescriptor,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   PluginProviderDeclaration,
   PluginProviderOptionDescriptor,

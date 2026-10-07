@@ -5,7 +5,7 @@ import {
   defaultAppSettings,
   type AppKeybindingOverrides,
   type AppSettings,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { DbConnection, DbQueryConnection } from "../connection.js";
 import { appSettingsValues } from "../schema.js";
 

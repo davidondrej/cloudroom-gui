@@ -8,12 +8,12 @@ import {
   listThreadEnvironmentAssignmentsOnHost,
   MissingStoredTurnStartedError,
   events as storedEvents,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type {
   AcceptedDaemonEvent,
   AppendDaemonEventInput,
   AppendDaemonEventsResult,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   hostDaemonEventBatchRequestSchema,
   ungroupHostDaemonEvents,
@@ -22,12 +22,12 @@ import {
   type HostDaemonEventEnvelope,
   type HostDaemonInternalSchema,
   type HostDaemonRejectedEvent,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   requireThreadEventScopeTurnId,
   type ThreadEventType,
   type ThreadEventTurnStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { Hono } from "hono";
 import { ApiError } from "../errors.js";
 import type {

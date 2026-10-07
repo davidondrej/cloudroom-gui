@@ -9,11 +9,11 @@ import {
   useState,
 } from "react";
 import type { FileContents } from "@pierre/diffs";
-import type { GitDiffFileChangeKind } from "@bb/server-contract";
+import type { GitDiffFileChangeKind } from "@cloudroom/server-contract";
 import type { ExperimentalDiffFullFileContents } from "@get-bb/plugin-sdk";
 import { useIntersectionObserver } from "usehooks-ts";
-import { Button } from "@bb/shared-ui/button";
-import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
+import { Button } from "@cloudroom/shared-ui/button";
+import { usePointerCoarse } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
 import { DiffHost } from "@/components/code/DiffHost";
 import type { DiffPresentation } from "@/components/code/code-rendering";
 import {

@@ -14,11 +14,11 @@ describe("echo-provider imports only the public SDK", () => {
     expect(scan.files).toContain(join("src", "provider-bridge.ts"));
   });
 
-  it("has no @bb/* import and stays inside the allowlist", () => {
+  it("has no @cloudroom/* import and stays inside the allowlist", () => {
     expect(scan.violations).toEqual([]);
   });
 
-  it("declares no @bb/* dependency in package.json", () => {
+  it("declares no @cloudroom/* dependency in package.json", () => {
     expect(scan.privateDependencies).toEqual([]);
   });
 });

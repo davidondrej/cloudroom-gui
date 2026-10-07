@@ -17,8 +17,8 @@ import {
   compactThreadTimelineSummaryEvents,
   type AcceptedClientRequestContext,
   type ThreadEventWithMeta,
-} from "@bb/thread-view";
-import { LEGACY_CODEX_GOAL_EXTENSION_KIND } from "@bb/domain";
+} from "@cloudroom/thread-view";
+import { LEGACY_CODEX_GOAL_EXTENSION_KIND } from "@cloudroom/domain";
 import type {
   ClientTurnRequestId,
   CompletedTurnDisplay,
@@ -26,7 +26,7 @@ import type {
   Thread,
   ThreadEvent,
   ThreadEventItemType,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   ThreadContextWindowUsage,
   ThreadConversationOutlineItem,
@@ -37,8 +37,8 @@ import type {
   TimelineOutputPreview,
   ThreadTimelineResponse,
   TimelineTurnSummaryDetailsResponse,
-} from "@bb/server-contract";
-import { threadConversationOutlineItemSchema } from "@bb/server-contract";
+} from "@cloudroom/server-contract";
+import { threadConversationOutlineItemSchema } from "@cloudroom/server-contract";
 import {
   findStoredTimelineWindowByteBudgetFloor,
   findTimelineWindowBudgetFloorSequence,
@@ -74,15 +74,15 @@ import {
   listTimelineSegmentAnchorsDescending,
   scopedItemRefKey,
   upsertThreadConversationOutlineRecord,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type {
   DbConnection,
   InlineOutputCharLimit,
   ScopedItemRef,
   StoredEventRow,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { ApiError } from "../../errors.js";
-import { roundDurationMs } from "@bb/process-utils";
+import { roundDurationMs } from "@cloudroom/process-utils";
 import { runEventLoopWorkSync } from "../system/event-loop-work.js";
 import { parseStoredEvent } from "./thread-data.js";
 import { decodeStoredEventRowCached } from "./stored-event-decode-cache.js";

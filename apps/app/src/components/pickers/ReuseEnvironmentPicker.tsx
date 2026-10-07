@@ -1,20 +1,20 @@
 import { useMemo } from "react";
-import { Button } from "@bb/shared-ui/button";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { Button } from "@cloudroom/shared-ui/button";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { LIST_HOVER_TRANSITION } from "@bb/shared-ui/motion";
+} from "@cloudroom/shared-ui/dropdown-menu";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { LIST_HOVER_TRANSITION } from "@cloudroom/shared-ui/motion";
 import {
   COARSE_POINTER_COMPACT_ICON_SIZE_CLASS,
   COARSE_POINTER_COMPACT_ICON_SIZE_SHRINK_CLASS,
   COARSE_POINTER_ICON_SIZE_CLASS,
-} from "@bb/shared-ui/coarse-pointer-sizing";
+} from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import {
   findEnvironmentDisplayProvider,
   getEnvironmentLabelIconName,
@@ -22,15 +22,15 @@ import {
   UNNAMED_ENVIRONMENT_LABEL,
 } from "@/lib/environment-workspace-display";
 import { useSystemEnvironmentProviders } from "@/hooks/queries/environment-provider-queries";
-import { resolveEnvironmentDisplayName } from "@bb/core-ui";
-import type { SystemEnvironmentProvider } from "@bb/server-contract";
+import { resolveEnvironmentDisplayName } from "@cloudroom/core-ui";
+import type { SystemEnvironmentProvider } from "@cloudroom/server-contract";
 import {
   OPTION_BASE_CLASS_NAME,
   OPTION_INTERACTIVE_CLASS_NAME,
   OPTION_MENU_CONTENT_CLASS_NAME,
   OPTION_MUTED_CLASS_NAME,
   OPTION_TRIGGER_CONTENT_CLASS_NAME,
-} from "@bb/shared-ui/option-display";
+} from "@cloudroom/shared-ui/option-display";
 
 const REUSE_THREAD_PREVIEW_LIMIT = 2;
 

@@ -16,8 +16,8 @@ import type {
   ProviderNativeRoot,
   ProviderNativeRootSet,
   ProviderNativeRoots,
-} from "@bb/domain";
-import type { DiscoveredSkill } from "@bb/host-daemon-contract";
+} from "@cloudroom/domain";
+import type { DiscoveredSkill } from "@cloudroom/host-daemon-contract";
 import { discoverSkills, type SkillScanRoot } from "../command-discovery.js";
 import { CommandDispatchError } from "../command-dispatch-support.js";
 import {

@@ -13,7 +13,7 @@ import type {
   TimelineTurnRow,
   TimelineUserConversationRow,
   TimelineWorkflowWorkRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   isBackgroundAgentTaskType,
   readTerminalOutputLines,
@@ -25,7 +25,7 @@ import {
   type ThreadTimelineGoal,
   type ThreadTimelineModelFallback,
   type ThreadTimelinePendingTodos,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   EventProjectionErrorMessage,
   EventProjectionFileEditChange,

@@ -6,13 +6,13 @@ import {
   createFakePluginHost,
   type FakePluginHost,
 } from "@get-bb/plugin-sdk/testing";
-import { decodeFrame, encodeFrame, type Frame } from "@bb/tunnel-contract";
+import { decodeFrame, encodeFrame, type Frame } from "@cloudroom/tunnel-contract";
 import {
   headersForLoopbackRequest,
   isBareBbRealtimeWs,
   TunnelSession,
-} from "@bb/tunnel-client";
-import { deriveConnectBaseUrl, serverUrlForHandle } from "@bb/connect-client";
+} from "@cloudroom/tunnel-client";
+import { deriveConnectBaseUrl, serverUrlForHandle } from "@cloudroom/connect-client";
 import {
   parseSharePort,
   machineSharePublicUrl,

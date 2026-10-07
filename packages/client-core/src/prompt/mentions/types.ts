@@ -1,4 +1,4 @@
-import { fuzzyMatchText } from "@bb/fuzzy-match";
+import { fuzzyMatchText } from "@cloudroom/fuzzy-match";
 import {
   providerCommandSection,
   providerCommandSectionRank,
@@ -6,8 +6,8 @@ import {
   type ProviderCommandOrigin,
   type ProviderCommandSection,
   type ProviderCommandSource,
-} from "@bb/server-contract";
-import type { PromptMentionCommandTrigger } from "@bb/domain";
+} from "@cloudroom/server-contract";
+import type { PromptMentionCommandTrigger } from "@cloudroom/domain";
 import type { ThreadListIndicatorState } from "../../thread/thread-activity.js";
 import type { PluginMentionTrigger } from "./plugin-mention-triggers.js";
 import type { OrderedMentionSuggestions } from "./mention-candidates.js";

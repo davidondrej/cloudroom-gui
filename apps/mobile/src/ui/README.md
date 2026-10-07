@@ -1,6 +1,6 @@
 # bb mobile design system (`src/ui`, `src/theme`)
 
-NativeWind v5 (Tailwind v4) primitives that mirror `@bb/shared-ui`'s variant
+NativeWind v5 (Tailwind v4) primitives that mirror `@cloudroom/shared-ui`'s variant
 names, driven by the tokens generated from the web app's `theme.css`. Import
 from `@/ui` and `@/theme`.
 
@@ -75,8 +75,8 @@ inside it.
   built-in palette last — so Nord/Dracula/… keep their own anchors and every
   override derives from `--canvas`/`--ink`. Mobile-only values go in the
   override file, never in theme.css; afterwards run
-  `pnpm --filter @bb/mobile theme:generate` and update the pinned tests
-  (`generate-native-theme.test.ts`, `theme-vars.test.ts`).
+  `pnpm --filter @cloudroom/mobile theme:generate` and update the pinned
+  `theme-vars.test.ts`.
 - Grouped lists (iOS inset style): `bg-surface-grouped` is the page behind
   the cards and `bg-surface-grouped-cell` the cards (`tokens.surfaceGrouped` /
   `tokens.surfaceGroupedCell`). Light: tinted page, white cells; dark: black

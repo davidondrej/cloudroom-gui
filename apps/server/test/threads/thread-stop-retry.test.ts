@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import { getThread, listEvents, markThreadDeleted } from "@bb/db";
-import type { EnvironmentRow } from "@bb/db";
-import type { Thread } from "@bb/domain";
+import { getThread, listEvents, markThreadDeleted } from "@cloudroom/db";
+import type { EnvironmentRow } from "@cloudroom/db";
+import type { Thread } from "@cloudroom/domain";
 import { describe, expect, it } from "vitest";
 import {
   finalizeStoppedThread,

@@ -1,13 +1,13 @@
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { PERSONAL_PROJECT_ID, type ProviderInfo } from "@bb/domain";
-import { UPDATE_ACTION_ICON } from "@bb/domain/update-state";
+import { PERSONAL_PROJECT_ID, type ProviderInfo } from "@cloudroom/domain";
+import { UPDATE_ACTION_ICON } from "@cloudroom/domain/update-state";
 import type {
   SidebarBootstrapResponse,
   SystemVersionResponse,
-} from "@bb/server-contract";
-import type { ProviderCliStatusResponse } from "@bb/host-daemon-contract";
+} from "@cloudroom/server-contract";
+import type { ProviderCliStatusResponse } from "@cloudroom/host-daemon-contract";
 import {
   hostProviderCliStatusQueryKey,
   hostsQueryKey,
@@ -29,7 +29,7 @@ import {
   MANUAL_MACHINE_PROVIDER,
   MODAL_MACHINE_PROVIDER,
 } from "./machine-story-fixtures";
-import { makeProviderInfo } from "@bb/test-helpers/domain-fixtures";
+import { makeProviderInfo } from "@cloudroom/test-helpers/domain-fixtures";
 import { getSettingsRoutePath } from "../src/lib/route-paths";
 import {
   BbAppUpdateRows,
@@ -302,6 +302,19 @@ function createSettingsStoryQueryClient() {
     MANUAL_MACHINE_PROVIDER,
     MODAL_MACHINE_PROVIDER,
   ]);
+  queryClient.setQueryData(["cloudroom-account"], {
+    ready: true,
+    account: { id: "account", email: "you@example.com" },
+    projectId: null,
+    repository: null,
+    model: null,
+    error: null,
+    sync: { state: "synced", conflicts: 0, issue: null },
+    previews: { state: "connected", count: 1, message: null, issue: null },
+    macAccessLevel: "full",
+    signingIn: false,
+    signInError: null,
+  });
   return queryClient;
 }
 

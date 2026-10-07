@@ -41,7 +41,7 @@ export {
  * SIGTERM first and SIGKILL after the grace, for a provider tearing down a
  * workspace it made. Experimental: see docs/api_to_audit.md.
  */
-export { killProcessesWithCwdUnder as experimental_killProcessesWithCwdUnder } from "@bb/process-utils";
+export { killProcessesWithCwdUnder as experimental_killProcessesWithCwdUnder } from "@cloudroom/process-utils";
 
 /**
  * Spawns output-only child processes with a sanitized inherited environment
@@ -51,5 +51,5 @@ export { killProcessesWithCwdUnder as experimental_killProcessesWithCwdUnder } f
 export {
   sanitizeInheritedChildProcessEnv as experimental_sanitizeInheritedChildProcessEnv,
   spawnPortableOutputProcess as experimental_spawnPortableOutputProcess,
-} from "@bb/process-utils";
-export type { SanitizeInheritedChildProcessEnvArgs as ExperimentalSanitizeInheritedChildProcessEnvArgs } from "@bb/process-utils";
+} from "@cloudroom/process-utils";
+export type { SanitizeInheritedChildProcessEnvArgs as ExperimentalSanitizeInheritedChildProcessEnvArgs } from "@cloudroom/process-utils";

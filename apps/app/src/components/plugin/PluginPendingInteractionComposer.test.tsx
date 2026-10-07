@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { PluginPendingInteraction } from "@bb/domain";
+import type { PluginPendingInteraction } from "@cloudroom/domain";
 import type { PluginPendingInteractionProps } from "@get-bb/plugin-sdk";
 import {
   resetPluginSlotStoreForTest,

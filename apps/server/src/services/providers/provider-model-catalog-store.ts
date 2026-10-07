@@ -5,15 +5,15 @@ import {
   getStoredProviderModelCatalog,
   replaceStoredProviderModelCatalog,
   type ProviderModelCatalogRowKey,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   availableModelSchema,
   providerModelCatalogDependsOnWorkspace,
   type AvailableModel,
   type ProviderInfo,
-} from "@bb/domain";
-import type { HostDaemonBridgeLaunch } from "@bb/host-daemon-contract";
-import type { SystemExecutionOptionsModelLoadErrorCode } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { HostDaemonBridgeLaunch } from "@cloudroom/host-daemon-contract";
+import type { SystemExecutionOptionsModelLoadErrorCode } from "@cloudroom/server-contract";
 import { z } from "zod";
 import { COMMAND_TIMEOUT_MS } from "../../constants.js";
 import { ApiError } from "../../errors.js";

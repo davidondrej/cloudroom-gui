@@ -5,6 +5,7 @@
     "setup-help",
     "decisions",
     "file-tree",
-    "self-archive"
+    "self-archive",
+    "browser-harness"
   ]
 }

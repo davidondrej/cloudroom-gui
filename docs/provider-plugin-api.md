@@ -305,7 +305,7 @@ provider-native tool). Its `presentation` — the same label, glyph, tint,
 headline, and detail its timeline row carries — is the whole description
 of the ask: the app, mobile, CLI, and the child-thread blocker summary render
 it from `presentation` alone (`describePendingInteractionToolUse` in
-`@bb/core-ui`), never from a tool-name table. `detail` is agent-authored
+`@cloudroom/core-ui`), never from a tool-name table. `detail` is agent-authored
 Markdown on every surface it reaches (the row body, the approval banner, on
 the web and on mobile): an image in it renders as its alt text, never as a
 fetch the user did not decide on.
@@ -317,7 +317,7 @@ interaction-lifecycle event type; the server fabricates no placeholder items.
 
 The one event is `system/interaction/lifecycle`. Every status change of every
 interaction — any approval subject, a user question, a plugin request —
-appends one, carrying the interaction's lifecycle record (`@bb/domain`
+appends one, carrying the interaction's lifecycle record (`@cloudroom/domain`
 `interactionLifecycleSchema`): id, status, origin, the ask, and the answer,
 with the payload and the resolution paired by kind so the event cannot hold
 an approval subject beside a user answer. The record keeps what a reader

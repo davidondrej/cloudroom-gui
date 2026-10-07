@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import { PromptStackCard } from "@/components/promptbox/banner/PromptStackCard";
 import { fetchWithAppSurface } from "@/lib/app-surface";
 

@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { expect, it, vi } from "vitest";
-import { createThread, cloudroomThreads, cloudroomCommands } from "@bb/db";
+import { createThread, cloudroomThreads, cloudroomCommands } from "@cloudroom/db";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
 import { createTestAppHarness } from "../helpers/test-app.js";
 import { seedHostSession, seedProjectWithSource } from "../helpers/seed.js";

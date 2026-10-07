@@ -237,7 +237,7 @@ describe("plugin wire surfaces (http/rpc dispatcher + realtime)", () => {
     expect(foreignOrigin.status).toBe(403);
     expect(await foreignOrigin.json()).toMatchObject({
       ok: false,
-      error: expect.stringContaining("not a local BB app origin"),
+      error: expect.stringContaining("not a local Cloudroom app origin"),
     });
 
     const copiedPort = await harness.app.request(

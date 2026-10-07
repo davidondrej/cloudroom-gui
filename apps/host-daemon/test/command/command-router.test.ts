@@ -2,14 +2,14 @@ import type {
   HostDaemonCommand,
   HostDaemonOnlineRpcRequestMessage,
   HostDaemonOnlineRpcResponseMessage,
-} from "@bb/host-daemon-contract";
-import { WorkspaceError } from "@bb/host-workspace";
+} from "@cloudroom/host-daemon-contract";
+import { WorkspaceError } from "@cloudroom/host-workspace";
 import {
   encodeClientTurnRequestIdNumber,
   type ClientTurnRequestId,
   type PromptInput,
-} from "@bb/domain";
-import { createDeferredPromise } from "@bb/test-helpers";
+} from "@cloudroom/domain";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
 import { describe, expect, it, vi } from "vitest";
 import {
   CommandRouter,

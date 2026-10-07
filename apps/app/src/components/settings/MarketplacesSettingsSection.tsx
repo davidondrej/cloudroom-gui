@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { PluginMarketplace } from "@bb/server-contract";
-import { Badge } from "@bb/shared-ui/badge";
-import { Button } from "@bb/shared-ui/button";
-import { Input } from "@bb/shared-ui/input";
+import type { PluginMarketplace } from "@cloudroom/server-contract";
+import { Badge } from "@cloudroom/shared-ui/badge";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Input } from "@cloudroom/shared-ui/input";
 import { SettingsSection } from "@/components/ui/settings-section";
 import { appToast } from "@/components/ui/app-toast";
 import {

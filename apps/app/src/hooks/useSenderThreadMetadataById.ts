@@ -9,7 +9,7 @@ import type {
   ThreadOriginKind,
   ThreadVisibility,
   ThreadWithRuntime,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   allThreadQueryKeyPrefix,
   SIDEBAR_NAVIGATION_QUERY_KEY,

@@ -2,7 +2,7 @@ import {
   fetchDesktopSession,
   type ConnectCredential,
   type DesktopSession,
-} from "@bb/connect-client";
+} from "@cloudroom/connect-client";
 import { describeError } from "../describe-error";
 import type { ConnectServerProfile } from "../profiles/profile";
 import { mapAuthError } from "./auth-error";

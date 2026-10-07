@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { createInterface } from "node:readline";
-import { experimental_recordProviderChildIo } from "@bb/provider-bridge-protocol/bridge-kit";
+import { experimental_recordProviderChildIo } from "@cloudroom/provider-bridge-protocol/bridge-kit";
 import type { z } from "zod";
 import { ACP_PROTOCOL_VERSION, acpInitializeResultSchema } from "../wire.js";
 

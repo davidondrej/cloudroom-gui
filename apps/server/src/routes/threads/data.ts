@@ -1,6 +1,6 @@
 import { cloudroom, isCloudThread } from "../../services/cloudroom/commands.js";
 import { cloudFile } from "../../services/cloudroom/teleport-local.js";
-import { extractThreadContextWindowUsage } from "@bb/thread-view";
+import { extractThreadContextWindowUsage } from "@cloudroom/thread-view";
 import mimeTypes from "mime-types";
 import { clearTimelineOrderingContextCache } from "../../services/threads/timeline-context-order.js";
 import path from "node:path";
@@ -13,7 +13,7 @@ import {
   getLatestThreadSequence,
   getLatestStoredConversationOutlineSequence,
   listQueuedThreadMessages,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type { Hono } from "hono";
 import {
   DEFAULT_COMPLETED_TURN_DISPLAY,
@@ -22,7 +22,7 @@ import {
   type AppSettings,
   type CompletedTurnDisplay,
   type ThreadEventType,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   publicApiRoutes,
   THREAD_EVENT_LIST_PAGE_SIZE,
@@ -30,7 +30,7 @@ import {
   type PublicApiSchema,
   type ThreadConversationOutlineResponse,
   type ThreadTimelineQuery,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   AppDeps,
   LoggedWorkSessionDeps,
@@ -80,7 +80,7 @@ import {
   truncateTimelineResponseOutputs,
 } from "../../services/threads/timeline-output-truncation.js";
 import { previewTimelineResponseOutputs } from "../../services/threads/timeline-output-preview.js";
-import { computeTimelineRowDelta } from "@bb/server-contract";
+import { computeTimelineRowDelta } from "@cloudroom/server-contract";
 import {
   findThreadEvent,
   getLastThreadOutput,

@@ -1,5 +1,5 @@
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
+import { and, asc, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
 import type {
   DbConnection,
   DbQueryConnection,
@@ -68,15 +68,25 @@ export type ReorderProjectResult =
   | ReorderProjectStaleNeighbor
   | ReorderProjectInvalidNeighborOrder;
 
-function publicProjectFilter() {
-  return and(eq(projects.kind, "standard"), isNull(projects.deletedAt));
+export type ProjectVisibilityFilter = "visible" | "hidden" | "all";
+
+function publicProjectFilter(visibility: ProjectVisibilityFilter = "all") {
+  return and(
+    eq(projects.kind, "standard"),
+    isNull(projects.deletedAt),
+    visibility === "visible" ? isNull(projects.hiddenAt) : undefined,
+    visibility === "hidden" ? isNotNull(projects.hiddenAt) : undefined,
+  );
 }
 
-export function listPublicProjects(db: DbQueryConnection): ProjectRow[] {
+export function listPublicProjects(
+  db: DbQueryConnection,
+  visibility: ProjectVisibilityFilter = "visible",
+): ProjectRow[] {
   return db
     .select()
     .from(projects)
-    .where(publicProjectFilter())
+    .where(publicProjectFilter(visibility))
     .orderBy(asc(projects.sortKey), asc(projects.id))
     .all();
 }
@@ -291,6 +301,30 @@ export function setProjectGitRemoteUrlIfMissing(
     .update(projects)
     .set({ gitRemoteUrl, updatedAt: Date.now() })
     .where(and(eq(projects.id, id), isNull(projects.gitRemoteUrl)))
+    .returning()
+    .get();
+  if (updated) {
+    notifier.notifyProject(id, ["project-updated"]);
+  }
+  return updated ?? null;
+}
+
+export function setProjectHidden(
+  db: DbQueryConnection,
+  notifier: DbNotifier,
+  id: string,
+  hidden: boolean,
+) {
+  const now = Date.now();
+  const updated = db
+    .update(projects)
+    .set({ hiddenAt: hidden ? now : null, updatedAt: now })
+    .where(
+      and(
+        eq(projects.id, id),
+        hidden ? isNull(projects.hiddenAt) : isNotNull(projects.hiddenAt),
+      ),
+    )
     .returning()
     .get();
   if (updated) {

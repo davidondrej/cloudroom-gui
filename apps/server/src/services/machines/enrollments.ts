@@ -8,7 +8,7 @@ import {
   getHost,
   getNonDestroyedHostByLaunchKey,
   type DbConnection,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type { ServerAccessGrant } from "@get-bb/plugin-sdk";
 import {
   DAEMON_ENROLL_CONFIG_ID,

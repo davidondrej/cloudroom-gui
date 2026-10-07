@@ -13,7 +13,7 @@ In Cloud threads, use `cloudroom computer-use` instead; that skill is `cloud-com
 
 ## When to use it
 
-- Prefer APIs, CLIs, files, and the browser-automation plugin. Use the GUI only when those don't fit, or the user asks.
+- Prefer APIs, CLIs, files, and `browser-harness` for web pages. Use the GUI only when those don't fit, or the user asks.
 - Work on one app at a time. Several agents share one screen, keyboard, and focus.
 
 ## Commands

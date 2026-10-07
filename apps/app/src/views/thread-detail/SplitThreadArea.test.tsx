@@ -13,9 +13,9 @@ import { createStore, Provider as JotaiProvider } from "jotai";
 import { useContext, useMemo, useState, type ReactNode } from "react";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
-import { TooltipProvider } from "@bb/shared-ui/tooltip";
-import type { BbDesktopInfo } from "@bb/desktop-contract";
+import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
+import { TooltipProvider } from "@cloudroom/shared-ui/tooltip";
+import type { BbDesktopInfo } from "@cloudroom/desktop-contract";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
 import {
@@ -110,7 +110,7 @@ function RootComposeFixture() {
   return <div data-testid="root-compose-view" />;
 }
 
-vi.mock("@bb/shared-ui/hooks/use-compact-viewport", () => ({
+vi.mock("@cloudroom/shared-ui/hooks/use-compact-viewport", () => ({
   useIsCompactViewport: () => viewportState.compact,
 }));
 

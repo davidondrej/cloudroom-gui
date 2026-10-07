@@ -1,5 +1,5 @@
 import { useState, type MouseEvent as ReactMouseEvent } from "react";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { useCloseMobileSidebar } from "@/components/ui/sidebar.js";
 import {
   CHROME_ROW_CLASS,

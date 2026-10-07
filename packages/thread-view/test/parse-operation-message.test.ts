@@ -5,7 +5,7 @@ import type {
   SystemThreadProvisioningStatus,
   ThreadEvent,
   ThreadEventRow,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   finalizeOperationMessage,
   interruptOperationMessage,

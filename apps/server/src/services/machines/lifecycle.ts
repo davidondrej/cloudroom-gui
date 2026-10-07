@@ -7,7 +7,7 @@ import {
   terminalSessions,
   threads,
   updateHost,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type {
   WorkSessionDeps,
   LoggedPendingInteractionWorkSessionDeps,
@@ -15,7 +15,7 @@ import type {
 import { ApiError } from "../../errors.js";
 
 import { appendSystemErrorEvent } from "../threads/thread-events.js";
-import { threadScope } from "@bb/domain";
+import { threadScope } from "@cloudroom/domain";
 import { stopThreadForCurrentState } from "../threads/thread-lifecycle.js";
 
 const RETRY_MS = 10_000;

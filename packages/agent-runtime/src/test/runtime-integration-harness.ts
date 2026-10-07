@@ -19,13 +19,13 @@ import type {
   ThreadEvent,
   ToolCallRequest,
   ToolCallResponse,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   getThreadEventScopeTurnId,
   isApprovalPendingInteractionPayload,
   isUserQuestionPendingInteractionPayload,
-} from "@bb/domain";
-import { resolvePreferredTestModel } from "@bb/test-helpers";
+} from "@cloudroom/domain";
+import { resolvePreferredTestModel } from "@cloudroom/test-helpers";
 import { createAgentRuntime } from "../runtime.js";
 import type {
   AgentRuntimeExecutionOptions,

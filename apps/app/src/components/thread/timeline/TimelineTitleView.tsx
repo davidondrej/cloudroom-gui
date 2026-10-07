@@ -11,9 +11,9 @@ import {
   type TimelineTitleSegment,
   type TimelineTitleSegmentAccent,
   type TimelineTitleTone,
-} from "@bb/thread-view";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Icon } from "@bb/shared-ui/icon";
+} from "@cloudroom/thread-view";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { DiffStatsTally } from "@/components/ui/diff-stats-tally.js";
 import { RouteAnchor } from "@/components/ui/app-route-anchor.js";
 import { LiveDurationText } from "./LiveDurationText.js";

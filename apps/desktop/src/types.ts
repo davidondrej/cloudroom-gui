@@ -1,4 +1,4 @@
-import { BB_PROD_SERVER_PORT } from "@bb/config/runtime";
+import { BB_PROD_SERVER_PORT } from "@cloudroom/config/runtime";
 
 const DEFAULT_BB_SERVER_PORT = BB_PROD_SERVER_PORT;
 export const DEFAULT_BB_SERVER_URL = `http://127.0.0.1:${DEFAULT_BB_SERVER_PORT}`;

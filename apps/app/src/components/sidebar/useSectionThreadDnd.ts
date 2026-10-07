@@ -20,21 +20,21 @@ import {
   type DragStartEvent,
   type UniqueIdentifier,
 } from "@dnd-kit/core";
-import type { ThreadListEntry } from "@bb/domain";
+import type { ThreadListEntry } from "@cloudroom/domain";
 import {
   usePinThread,
   useUnpinAndMoveThread,
   useUnpinThread,
   useUpdateThread,
 } from "@/hooks/mutations/thread-state-mutations";
-import type { NeighborReorderRequest } from "@bb/client-core";
+import type { NeighborReorderRequest } from "@cloudroom/client-core";
 import {
   buildSidebarEntitySectionId,
   getSidebarDndItemId,
   reorderSidebarSectionOrder,
   type ProjectThreadItem,
   type ProjectThreadNode,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   sidebarCollapsedThreadSectionsAtom,
   type SidebarSectionId,

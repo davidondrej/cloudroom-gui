@@ -23,10 +23,10 @@ import {
   upsertInstalledPlugin,
   upsertPluginMarketplace,
   type DbConnection,
-} from "@bb/db";
-import { PLUGIN_SDK_VERSION, type SystemChangeKind } from "@bb/domain";
-import type { Logger } from "@bb/logger";
-import { pluginListResponseSchema } from "@bb/server-contract";
+} from "@cloudroom/db";
+import { PLUGIN_SDK_VERSION, type SystemChangeKind } from "@cloudroom/domain";
+import type { Logger } from "@cloudroom/logger";
+import { pluginListResponseSchema } from "@cloudroom/server-contract";
 import { createAiServiceRegistry } from "../../../src/services/ai/ai-service-registry.js";
 import {
   createPluginService,

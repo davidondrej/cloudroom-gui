@@ -6,7 +6,7 @@ import {
   type PromptInput,
   type ThreadChangedMessage,
   type ThreadQueuedMessage,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   createQueuedMessageRequestSchema,
   pingMessageSchema,
@@ -21,7 +21,7 @@ import {
   type ThreadQueuedMessageListResponse,
   type ThreadTabsResponse,
   type ThreadTimelineResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { z } from "zod";
 import configFixture from "./fixtures/system-config.json" with { type: "json" };
 import { PROVIDERS, SYSTEM_EXECUTION_OPTIONS } from "./fixtures/providers.js";

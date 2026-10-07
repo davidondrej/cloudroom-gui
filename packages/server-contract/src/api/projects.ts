@@ -10,7 +10,7 @@ import {
   projectSourceSchema,
   promptHistoryEntrySchema,
   threadListEntrySchema,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   rejectMultipleWorkspaceSelectors,
   branchListQuerySchema,
@@ -140,6 +140,7 @@ export const projectListQuerySchema = z.object({
     )
     .optional(),
   includePersonal: z.enum(["true", "false"]).optional(),
+  hidden: z.enum(["true", "false"]).optional(),
 });
 export type ProjectListQuery = z.infer<typeof projectListQuerySchema>;
 
@@ -241,10 +242,11 @@ export type ProjectAttachmentUploadForm = Record<"file", Blob>;
 export const updateProjectRequestSchema = z
   .object({
     name: z.string().min(1),
+    hidden: z.boolean(),
   })
   .partial()
   .refine(
-    (value) => value.name !== undefined,
+    (value) => value.name !== undefined || value.hidden !== undefined,
     "At least one field must be provided",
   );
 export type UpdateProjectRequest = z.infer<typeof updateProjectRequestSchema>;

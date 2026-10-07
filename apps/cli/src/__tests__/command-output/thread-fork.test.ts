@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
+import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
 import {
   collectLogLines,
   getHelpOutput,

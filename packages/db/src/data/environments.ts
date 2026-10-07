@@ -6,8 +6,8 @@ import type {
   EnvironmentLifecycleNoopReason,
   EnvironmentProviderSelection,
   EnvironmentStatus,
-} from "@bb/domain";
-import { evaluateEnvironmentLifecycleEvent } from "@bb/domain";
+} from "@cloudroom/domain";
+import { evaluateEnvironmentLifecycleEvent } from "@cloudroom/domain";
 import type { DbConnection, DbTransaction } from "../connection.js";
 import type { DbNotifier } from "../notifier.js";
 import { environments, threads } from "../schema.js";

@@ -1,10 +1,10 @@
-import { dynamicToolSchema } from "@bb/domain";
-import type { DynamicTool } from "@bb/domain";
+import { dynamicToolSchema } from "@cloudroom/domain";
+import type { DynamicTool } from "@cloudroom/domain";
 import {
   buildBridgeToolCallContent as experimental_buildBridgeToolCallContent,
   providerToolCallCancellationSchema,
   PROVIDER_TOOL_CALL_CANCELLED_METHOD,
-} from "@bb/provider-bridge-protocol/bridge-kit";
+} from "@cloudroom/provider-bridge-protocol/bridge-kit";
 import { createConnection } from "node:net";
 import { createInterface } from "node:readline";
 import { z } from "zod";

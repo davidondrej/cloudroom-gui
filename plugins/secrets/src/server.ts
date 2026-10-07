@@ -9,7 +9,7 @@ import {
   SECRET_REQUEST_RENDERER_ID,
   secretNameSchema,
   secretRequestResponseSchema,
-} from "@bb/plugin-interaction-contracts";
+} from "@cloudroom/plugin-interaction-contracts";
 import { assertNoDuplicateAssignments, reconcileDotenv } from "./dotenv.js";
 
 interface ParsedRequest {

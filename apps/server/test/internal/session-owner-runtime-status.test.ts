@@ -1,5 +1,5 @@
-import { changedMessageSchema, type ThreadChangedMessage } from "@bb/domain";
-import { getThread, markThreadDeleted } from "@bb/db";
+import { changedMessageSchema, type ThreadChangedMessage } from "@cloudroom/domain";
+import { getThread, markThreadDeleted } from "@cloudroom/db";
 import { describe, expect, it, vi } from "vitest";
 import {
   handleDaemonSocketClosed,

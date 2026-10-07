@@ -1,4 +1,4 @@
-import { availableModelSchema } from "@bb/domain";
+import { availableModelSchema } from "@cloudroom/domain";
 import { z } from "zod";
 import { createLastKnownCache } from "@/lib/last-known-cache";
 

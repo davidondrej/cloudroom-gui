@@ -4,7 +4,7 @@ import {
   type Environment,
   type Thread,
   type WorkspaceStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { appToast } from "@/components/ui/app-toast";
 import {
   describeLifecycleError,

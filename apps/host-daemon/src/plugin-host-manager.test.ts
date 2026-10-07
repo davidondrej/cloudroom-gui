@@ -10,9 +10,9 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { HostDaemonOnlineRpcCommand } from "@bb/host-daemon-contract";
-import type { WatchPathRootArgs } from "@bb/host-watcher";
-import { sanitizeInheritedChildProcessEnv } from "@bb/process-utils";
+import type { HostDaemonOnlineRpcCommand } from "@cloudroom/host-daemon-contract";
+import type { WatchPathRootArgs } from "@cloudroom/host-watcher";
+import { sanitizeInheritedChildProcessEnv } from "@cloudroom/process-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PluginHostManager } from "./plugin-host-manager.js";
 

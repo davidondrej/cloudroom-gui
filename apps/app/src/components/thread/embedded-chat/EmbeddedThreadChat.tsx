@@ -7,15 +7,15 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { defaultAppSettings, type PromptInput } from "@bb/domain";
-import type { SendMessageDelivery } from "@bb/server-contract";
+import { defaultAppSettings, type PromptInput } from "@cloudroom/domain";
+import type { SendMessageDelivery } from "@cloudroom/server-contract";
 import type {
   AttachmentsConfig,
   HistoryConfig,
 } from "@/components/promptbox/PromptBoxInternal";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Button } from "@bb/shared-ui/button";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Button } from "@cloudroom/shared-ui/button";
 import { BottomAnchoredScrollBody } from "@/components/ui/bottom-anchored-scroll-body";
 import { PageShell } from "@/components/ui/page-shell.js";
 import {
@@ -70,7 +70,7 @@ import {
   buildSideChatSubmitMode,
   canSubmitFollowUpShortcut,
   shouldQueueFollowUpMessage,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { useActiveComposerDraft } from "./useActiveComposerDraft";
 import { useComposerAttachmentUploads } from "./useComposerAttachmentUploads";
 import { useLatestRef } from "@/hooks/useLatestRef";
@@ -1091,6 +1091,7 @@ function EmbeddedThreadChatWithComposer({
           attachedToComposer
           queuedMessages={queuedMessages}
           resolveMentionLink={resolveMentionLink}
+          attachmentProjectId={projectId}
           inlineEditor={inlineEditor}
           sendAction={isProvisioning ? "steer-when-ready" : "send-now"}
           sendDisabled={queuedMessageActionPending}
@@ -1113,6 +1114,7 @@ function EmbeddedThreadChatWithComposer({
       processingQueuedMessage?.action,
       processingQueuedMessage?.id,
       pendingInteractionOccupiesComposer,
+      projectId,
       queuedMessageActionPending,
       queuedMessages,
       resolveMentionLink,

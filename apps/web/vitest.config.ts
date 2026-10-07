@@ -9,7 +9,7 @@ export default defineWorkspaceTestConfig({
     silent: "passed-only",
     projects: sharedWorkerProjects({
       pkgDir: __dirname,
-      name: "@bb/web",
+      name: "@cloudroom/web",
       include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     }),
   },

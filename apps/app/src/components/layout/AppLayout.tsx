@@ -10,10 +10,10 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
-import type { ProjectResponse } from "@bb/server-contract";
-import { Icon } from "@bb/shared-ui/icon";
-import { TooltipProvider } from "@bb/shared-ui/tooltip";
-import { RESOURCE_ROUTE_LABEL_EVENT } from "@bb/shared-ui/resource-route-label";
+import type { ProjectResponse } from "@cloudroom/server-contract";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { TooltipProvider } from "@cloudroom/shared-ui/tooltip";
+import { RESOURCE_ROUTE_LABEL_EVENT } from "@cloudroom/shared-ui/resource-route-label";
 import {
   SidebarInset,
   SidebarProvider,
@@ -47,7 +47,7 @@ import {
 } from "@/hooks/queries/thread-queries";
 import { useRouteState } from "@/hooks/useRouteState";
 import { getThreadDisplayTitle } from "@/lib/thread-title";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { APP_OVERLAY_LAYER } from "@/components/ui/app-overlay-layers";
 import { ProjectPathDialog } from "@/components/dialogs/ProjectPathDialog";
 import { ProjectActionsMenu } from "@/components/project/ProjectActionsMenu";
@@ -105,7 +105,7 @@ import {
   useAppCommandHandler,
   useAppCommandShortcut,
 } from "@/components/commands/AppCommandProvider";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import {
   shouldRestoreIOSViewportOnKeyboardDismissal,
   useMobileVisualViewportHeight,

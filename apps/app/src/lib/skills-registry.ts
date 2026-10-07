@@ -1,12 +1,12 @@
-import { REGISTRY_ENTRY_BATCH_LIMIT } from "@bb/server-contract";
-import type { SkillSummary } from "@bb/server-contract";
+import { REGISTRY_ENTRY_BATCH_LIMIT } from "@cloudroom/server-contract";
+import type { SkillSummary } from "@cloudroom/server-contract";
 import type {
   RegistryRanking,
   RegistrySkill,
   RegistrySkillDetail,
   RegistrySkillsPage,
-} from "@bb/server-contract";
-import { RESOURCE_GRID_PAGE_SIZE } from "@bb/shared-ui/resource-pagination";
+} from "@cloudroom/server-contract";
+import { RESOURCE_GRID_PAGE_SIZE } from "@cloudroom/shared-ui/resource-pagination";
 import { sdk } from "@/lib/sdk";
 
 export type { RegistryRanking, RegistrySkill, RegistrySkillDetail };

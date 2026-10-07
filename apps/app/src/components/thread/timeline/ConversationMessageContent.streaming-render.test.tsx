@@ -16,7 +16,7 @@ import {
   MessageDirectiveRegistryProvider,
 } from "@/components/ui/markdown-message-directives";
 import { ThreadTitleMentionResourcesProvider } from "@/components/thread/ThreadTitleMentions";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import type { ThreadTimelineLocalFileLinkHandler } from "./types";
 import { ConversationMessageContent } from "./ConversationMessageContent";
 

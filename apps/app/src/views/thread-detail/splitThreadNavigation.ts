@@ -1,5 +1,5 @@
 import type { ThreadRoutePathArgs } from "@/lib/route-paths";
-import type { ThreadOpenSplit, ThreadPaneAction } from "@bb/server-contract";
+import type { ThreadOpenSplit, ThreadPaneAction } from "@cloudroom/server-contract";
 import {
   countPanes,
   findPane,

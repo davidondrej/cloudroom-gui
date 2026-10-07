@@ -1,17 +1,20 @@
-import { Button } from "@bb/shared-ui/button";
-import { COARSE_POINTER_ICON_SIZE_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
+import { Button } from "@cloudroom/shared-ui/button";
+import { COARSE_POINTER_ICON_SIZE_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/dropdown-menu";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Switch } from "@cloudroom/shared-ui/switch";
 import {
   SettingsSection,
   SettingsWithControl,
 } from "@/components/ui/settings-section";
+import { useUpdateGeneralSettings } from "@/hooks/mutations/settings-mutations";
+import { useSystemConfig } from "@/hooks/queries/system-queries";
 import {
   useStartingMachine,
   type StartingMachine,
@@ -31,6 +34,8 @@ const STARTING_MACHINE_OPTIONS: ReadonlyArray<{
 
 export function DefaultsSettingsSection() {
   const [startingMachine, setStartingMachine] = useStartingMachine();
+  const settings = useSystemConfig().data?.generalSettings;
+  const updateSettings = useUpdateGeneralSettings();
   return (
     <SettingsSection title="Defaults">
       <SettingsWithControl
@@ -74,6 +79,23 @@ export function DefaultsSettingsSection() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+      </SettingsWithControl>
+      <SettingsWithControl
+        label="Remove AI co-authors"
+        description="Strip agent Co-authored-by lines from commits. Applies to new sessions."
+      >
+        <Switch
+          checked={settings?.stripAiCoAuthorsEnabled ?? true}
+          disabled={!settings || updateSettings.isPending}
+          onCheckedChange={(enabled) => {
+            if (settings)
+              updateSettings.mutate({
+                ...settings,
+                stripAiCoAuthorsEnabled: enabled,
+              });
+          }}
+          aria-label="Remove AI co-authors"
+        />
       </SettingsWithControl>
     </SettingsSection>
   );

@@ -2,10 +2,10 @@
 
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { TooltipProvider } from "@bb/shared-ui/tooltip";
-import type { Host } from "@bb/domain";
-import { makeHost } from "@bb/test-helpers/domain-fixtures";
-import type { ProviderCliKey } from "@bb/host-daemon-contract";
+import { TooltipProvider } from "@cloudroom/shared-ui/tooltip";
+import type { Host } from "@cloudroom/domain";
+import { makeHost } from "@cloudroom/test-helpers/domain-fixtures";
+import type { ProviderCliKey } from "@cloudroom/host-daemon-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ProviderCliIssue } from "@/components/provider-cli/provider-cli-install";
 import type {
@@ -36,7 +36,7 @@ vi.mock("@/components/provider-cli/provider-cli-install", () => ({
 
 vi.mock("@/lib/sdk", async () => {
   const { makeProviderInfo: provider } =
-    await import("@bb/test-helpers/domain-fixtures");
+    await import("@cloudroom/test-helpers/domain-fixtures");
   return {
     sdk: {
       providers: {

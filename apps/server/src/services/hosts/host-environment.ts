@@ -1,10 +1,11 @@
-import { getAppSettings, getHost } from "@bb/db";
+import { getAppSettings, getHost } from "@cloudroom/db";
 import { resolveUserMachineEnvironment } from "../machines/environment-settings.js";
 import type { AppDeps } from "../../types.js";
-import type { HostDaemonContributedEnvEntry } from "@bb/host-daemon-contract";
+import type { HostDaemonContributedEnvEntry } from "@cloudroom/host-daemon-contract";
 import {
   githubGitConfiguration,
   resolveGitCredentials,
+  withAiCoAuthorStripping,
 } from "../machines/git-credentials.js";
 import { readPrimaryHostIdFromDataDir } from "./primary-host.js";
 import { cloudClaudeEnvironment } from "../cloudroom/sandboxes.js";
@@ -16,16 +17,28 @@ export async function resolveHostEnvironment(
   context: HostEnvironmentContext,
 ): Promise<HostDaemonContributedEnvEntry[]> {
   const host = getHost(deps.db, context.hostId);
-  if (!host || host.machineProviderId === null || host.destroyedAt !== null)
-    return [];
-  if (
-    readPrimaryHostIdFromDataDir({ dataDir: deps.config.dataDir }) ===
-    context.hostId
-  )
-    return [];
-  const builtIn = getAppSettings(deps.db).machineGitCredentialsEnabled
-    ? await resolveGitCredentials()
+  if (!host || host.destroyedAt !== null) return [];
+  const settings = getAppSettings(deps.db);
+  const machine =
+    host.machineProviderId !== null &&
+    readPrimaryHostIdFromDataDir({ dataDir: deps.config.dataDir }) !==
+      context.hostId;
+  const environment = machine
+    ? await resolveMachineEnvironment(
+        deps,
+        settings.machineGitCredentialsEnabled,
+      )
     : [];
+  return settings.stripAiCoAuthorsEnabled
+    ? withAiCoAuthorStripping(environment)
+    : environment;
+}
+
+async function resolveMachineEnvironment(
+  deps: { db: AppDeps["db"]; config: Pick<AppDeps["config"], "dataDir"> },
+  gitCredentialsEnabled: boolean,
+): Promise<HostDaemonContributedEnvEntry[]> {
+  const builtIn = gitCredentialsEnabled ? await resolveGitCredentials() : [];
   const user = await resolveUserMachineEnvironment(
     deps.db,
     deps.config.dataDir,

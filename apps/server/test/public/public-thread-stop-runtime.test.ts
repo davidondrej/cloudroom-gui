@@ -3,9 +3,9 @@ import {
   isThreadQueueAutoSendPaused,
   listEvents,
   listQueuedThreadMessages,
-} from "@bb/db";
-import { turnScope } from "@bb/domain";
-import { groupHostDaemonEvents } from "@bb/host-daemon-contract";
+} from "@cloudroom/db";
+import { turnScope } from "@cloudroom/domain";
+import { groupHostDaemonEvents } from "@cloudroom/host-daemon-contract";
 import { describe, expect, it, vi } from "vitest";
 import {
   listQueuedCommands,

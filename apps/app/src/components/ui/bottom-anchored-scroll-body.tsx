@@ -10,8 +10,8 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import { useStore } from "jotai";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { usePointerCoarse } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
 import { PAGE_SHELL_CONTENT_STYLE } from "./page-shell-content-style.js";
 import { supportsScrollAnchoring } from "@/lib/scroll-anchoring-support";
 import {

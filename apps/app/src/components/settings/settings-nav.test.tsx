@@ -4,7 +4,7 @@ import { cleanup, renderHook } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { InstalledPlugin } from "@bb/server-contract";
+import type { InstalledPlugin } from "@cloudroom/server-contract";
 import { resetPluginSlotStoreForTest } from "@/lib/plugin-slots";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
 import { pluginListQueryKey } from "@/hooks/queries/query-keys";

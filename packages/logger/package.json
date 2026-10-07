@@ -1,5 +1,5 @@
 {
-  "name": "@bb/logger",
+  "name": "@cloudroom/logger",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -16,13 +16,13 @@
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "@bb/config": "workspace:*",
+    "@cloudroom/config": "workspace:*",
     "pino": "^9.6.0",
     "pino-roll": "^4.0.0",
     "pino-pretty": "^13.0.0"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-7": "npm:typescript@^7.0.2"

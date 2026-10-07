@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
 import { QueryClient } from "@tanstack/react-query";
-import type { SidebarBootstrapResponse } from "@bb/server-contract";
+import type { SidebarBootstrapResponse } from "@cloudroom/server-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import { sidebarNavigationQueryKey } from "@/hooks/queries/query-keys";
 import {
   makeProjectWithThreadsResponse,

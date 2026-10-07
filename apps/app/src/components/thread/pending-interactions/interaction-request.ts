@@ -7,7 +7,7 @@ import {
   type PendingInteraction,
   type PendingInteractionApprovalSubject,
   type PendingInteractionUserQuestionQuestion,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 export type InteractionRequestView =
   | {

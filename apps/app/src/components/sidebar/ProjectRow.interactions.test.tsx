@@ -7,10 +7,10 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import type { ThreadListEntry } from "@bb/domain";
+import type { ThreadListEntry } from "@cloudroom/domain";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
-import { TooltipProvider } from "@bb/shared-ui/tooltip";
+import { TooltipProvider } from "@cloudroom/shared-ui/tooltip";
 import { Provider, createStore } from "jotai";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -20,8 +20,8 @@ import {
   SectionThreadDragOverlay,
   type ProjectThreadListState,
 } from "./ProjectRow";
-import { buildSidebarEntitySectionId } from "@bb/client-core";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { buildSidebarEntitySectionId } from "@cloudroom/client-core";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import { makeProjectResponse } from "@/test/fixtures/projects";
 
 const mockUpdateEnvironment = vi.hoisted(() => ({

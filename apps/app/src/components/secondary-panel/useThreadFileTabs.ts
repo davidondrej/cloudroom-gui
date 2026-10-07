@@ -8,7 +8,7 @@ import {
 import type {
   TerminalSession,
   ThreadStorageFileListResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   useFixedPanelTabsState,
   useUpdateFixedPanelTabsState,
@@ -43,7 +43,7 @@ import type {
   HostFileTabState,
   ThreadStorageFileTabState,
   WorkspaceFileTabState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { useRecordThreadRecentItem } from "./threadRecentItems";
 import type {
   SecondaryPanelTabReorderHandler,
@@ -65,7 +65,7 @@ import {
   reorderSecondaryPanelFileTabInState,
   setSecondaryPanelTabsInState,
   updateSecondaryPanelTabInState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { pruneTerminalTabsInFixedPanelState } from "./terminalPanelTabs";
 
 interface UseThreadFileTabsParams {

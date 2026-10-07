@@ -1,7 +1,7 @@
-import { getThread } from "@bb/db";
-import type { ExtensionKind, JsonValue, ThreadEvent } from "@bb/domain";
-import { parseExtensionKind } from "@bb/domain";
-import type { HostDaemonEventEnvelope } from "@bb/host-daemon-contract";
+import { getThread } from "@cloudroom/db";
+import type { ExtensionKind, JsonValue, ThreadEvent } from "@cloudroom/domain";
+import { parseExtensionKind } from "@cloudroom/domain";
+import type { HostDaemonEventEnvelope } from "@cloudroom/host-daemon-contract";
 import type {
   StandardSchemaV1,
   StandardSchemaV1Issue,

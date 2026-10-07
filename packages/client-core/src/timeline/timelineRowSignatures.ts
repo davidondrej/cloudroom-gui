@@ -1,12 +1,12 @@
 import type {
   TimelineActivityIntent,
   TimelineRowPresentation,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   assertNever,
   type ThreadTimelineViewRow,
   type TimelineViewWorkRow,
-} from "@bb/thread-view";
+} from "@cloudroom/thread-view";
 
 type TimelineRowSignaturePart = boolean | number | string | null | undefined;
 

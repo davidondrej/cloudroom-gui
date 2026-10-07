@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import type { WorkspaceFile } from "@bb/server-contract";
+import type { WorkspaceFile } from "@cloudroom/server-contract";
 import { DetailCard } from "@/components/ui/detail-card.js";
 import { ThreadStorageRow } from "./ThreadMetadataContent";
 import { useThreadStorageBrowser } from "./useThreadStorageBrowser";

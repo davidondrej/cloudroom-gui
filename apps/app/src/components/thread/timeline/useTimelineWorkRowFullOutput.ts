@@ -4,7 +4,7 @@ import type {
   TimelineOutputPreview,
   TimelineRow,
   TimelineToolWorkRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { useThreadTimelineTurnSummaryDetails } from "@/hooks/queries/thread-queries";
 
 export type TimelinePreviewableWorkRow =

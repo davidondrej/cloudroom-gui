@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { PLUGIN_CATALOG_CATEGORIES } from "@bb/domain";
+import { PLUGIN_CATALOG_CATEGORIES } from "@cloudroom/domain";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   generateBbOfficialMarketplace,
@@ -142,7 +142,7 @@ describe("bb-official marketplace generator", () => {
     cleanup.push(root);
 
     expect(() => loadBundledMarketplace([], root)).toThrow(
-      "pnpm exec turbo run generate:bb-official-marketplace --filter=@bb/server",
+      "pnpm exec turbo run generate:bb-official-marketplace --filter=@cloudroom/server",
     );
   });
 

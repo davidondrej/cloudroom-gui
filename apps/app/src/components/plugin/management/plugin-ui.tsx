@@ -1,7 +1,7 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { ResourceIconFrame } from "@bb/shared-ui/resource-list";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { ResourceIconFrame } from "@cloudroom/shared-ui/resource-list";
 import {
   PluginCompactIconMask,
   PluginIcon,

@@ -1,9 +1,15 @@
-import { closeSession, getThread, listEvents } from "@bb/db";
+import {
+  closeSession,
+  getAppSettings,
+  getThread,
+  listEvents,
+  setAppSettings,
+} from "@cloudroom/db";
 import {
   HOST_DAEMON_PROTOCOL_VERSION,
   hostDaemonServerWsMessageSchema,
-} from "@bb/host-daemon-contract";
-import { threadScope, turnScope } from "@bb/domain";
+} from "@cloudroom/host-daemon-contract";
+import { threadScope, turnScope } from "@cloudroom/domain";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { settleDanglingBackgroundTasks } from "../../src/services/threads/background-task-reconciliation.js";
 import { handleDaemonSocketClosed } from "../../src/internal/session-owner-side-effects.js";
@@ -361,6 +367,7 @@ describe("background-task lifecycle reconciliation triggers", () => {
 
   it("does not tell a live daemon to shut down when that same instance reconnects", async () => {
     await withTestHarness(async (harness) => {
+      setAppSettings(harness.db, { ...getAppSettings(harness.db), stripAiCoAuthorsEnabled: false });
       const { host, session, thread } = seedOpenBackgroundTaskThread(harness);
       const previousSocket = createMockHubSocket();
       harness.deps.hub.registerDaemon(session.id, host.id, previousSocket);
@@ -403,6 +410,7 @@ describe("background-task lifecycle reconciliation triggers", () => {
 
   it("still tells a superseded daemon instance to shut down", async () => {
     await withTestHarness(async (harness) => {
+      setAppSettings(harness.db, { ...getAppSettings(harness.db), stripAiCoAuthorsEnabled: false });
       const { host, session, thread } = seedOpenBackgroundTaskThread(harness);
       const previousSocket = createMockHubSocket();
       harness.deps.hub.registerDaemon(session.id, host.id, previousSocket);

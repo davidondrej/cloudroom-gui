@@ -1,5 +1,5 @@
-import { type PromptInput } from "@bb/domain";
-import { fileNameFromPath } from "@bb/thread-view";
+import { type PromptInput } from "@cloudroom/domain";
+import { fileNameFromPath } from "@cloudroom/thread-view";
 import { promptInputToDraft, type PromptDraftState } from "./prompt-draft.js";
 
 const QUEUED_MESSAGE_PREVIEW_MAX_CHARS = 140;

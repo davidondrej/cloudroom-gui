@@ -1,6 +1,6 @@
 import { Fragment, useRef, useState } from "react";
-import type { TimelineToolArgs } from "@bb/server-contract";
-import { cn } from "@bb/shared-ui/lib/utils";
+import type { TimelineToolArgs } from "@cloudroom/server-contract";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   ConversationMessageInlineOverflowToggle,
   useIsOverflowing,

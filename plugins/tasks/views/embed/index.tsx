@@ -4,9 +4,9 @@ import type {
   PluginThreadPanelProps,
 } from "@get-bb/plugin-sdk";
 import { useBbNavigate, useRealtime } from "@get-bb/plugin-sdk/app";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
-import { Skeleton } from "@bb/shared-ui/skeleton";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
 import type { Task } from "../../shared/contract.js";
 import { useTasksRpc } from "../../shell/data.js";
 import { TasksRefreshProvider } from "../../shell/refresh.js";

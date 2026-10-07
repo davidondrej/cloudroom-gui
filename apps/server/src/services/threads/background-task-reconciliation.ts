@@ -5,14 +5,14 @@ import {
   type DbNotifier,
   type DbTransaction,
   type OpenBackgroundTaskItemRow,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   backgroundTaskItemStatus,
   isSettledBackgroundTaskStatus,
   threadEventBackgroundTaskItemSchema,
   threadScope,
-} from "@bb/domain";
-import type { ThreadEventBackgroundTaskItem } from "@bb/domain";
+} from "@cloudroom/domain";
+import type { ThreadEventBackgroundTaskItem } from "@cloudroom/domain";
 import type { AppDeps } from "../../types.js";
 import { appendThreadEventsInTransaction } from "./thread-events.js";
 

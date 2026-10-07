@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ThreadEvent } from "@bb/domain";
+import type { ThreadEvent } from "@cloudroom/domain";
 import { describe, expect, it } from "vitest";
 import {
   createClaudeDeltaHarness,

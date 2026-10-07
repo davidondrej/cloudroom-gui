@@ -12,17 +12,17 @@ import type {
   ServiceTier,
   EnvironmentWorkspaceDisplayKind,
   WorkspaceGitOperation,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   CreateExecutionInputSources,
   CreateThreadEnvironmentArgs,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   BbSdkAreas,
   ThreadPluginMetadataArgs,
   ThreadPluginMetadataResult,
   ThreadPluginMetadataUpdateArgs,
-} from "@bb/sdk";
+} from "@cloudroom/sdk";
 import type { JsonValue } from "./json-value.js";
 import type {
   PluginRpcCallArgs,
@@ -711,7 +711,7 @@ export interface PluginPendingInteractionRegistration {
    * splits on the slash to find this registration under its plugin.
    * `bb.ui.requestInput` validates `rendererId` against `/^[a-zA-Z0-9_-]+$/`;
    * an extension kind must match `/^[a-z0-9-]+\/[a-z0-9-]+$/`
-   * (`EXTENSION_KIND_PATTERN` in @bb/domain), so an id addressable both ways
+   * (`EXTENSION_KIND_PATTERN` in @cloudroom/domain), so an id addressable both ways
    * uses lowercase letters, digits, and "-" only.
    */
   id: string;

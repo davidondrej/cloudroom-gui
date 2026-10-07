@@ -15,11 +15,11 @@ import {
 } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import semver from "semver";
-import { resolvePluginNpmCli } from "@bb/plugin-build";
+import { resolvePluginNpmCli } from "@cloudroom/plugin-build";
 import {
   omitNpmScriptPolicyEnv,
   spawnPortableOutputProcess,
-} from "@bb/process-utils";
+} from "@cloudroom/process-utils";
 
 type ParsedGitSelector =
   | { kind: "ref"; ref: string }

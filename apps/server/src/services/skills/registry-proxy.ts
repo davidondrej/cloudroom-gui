@@ -7,7 +7,7 @@ import type {
   RegistrySkillDetail,
   RegistrySkillFile,
   RegistrySkillsPage,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   githubRepoForSource,
   hasLoadableSkillContent,

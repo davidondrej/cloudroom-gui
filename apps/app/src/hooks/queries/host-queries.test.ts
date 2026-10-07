@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Host } from "@bb/domain";
-import { makeHost } from "@bb/test-helpers/domain-fixtures";
+import type { Host } from "@cloudroom/domain";
+import { makeHost } from "@cloudroom/test-helpers/domain-fixtures";
 import { selectHosts, selectPrimaryHost } from "./host-queries";
 
 function host(overrides: Partial<Host> & Pick<Host, "id">): Host {

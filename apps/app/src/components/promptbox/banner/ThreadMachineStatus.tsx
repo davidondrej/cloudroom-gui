@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { Icon } from "@bb/shared-ui/icon";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { AnimatedBody } from "./AnimatedBody";
 import { useHosts } from "@/hooks/queries/host-queries";
 import { useResumeHost } from "@/hooks/mutations/host-mutations";
-import type { SystemMachineProvider } from "@bb/server-contract";
+import type { SystemMachineProvider } from "@cloudroom/server-contract";
 import {
   MachineIcon,
   type MachineLabelHost,
 } from "@/components/machines/MachineLabel";
 import { useSystemMachineProviders } from "@/hooks/queries/machine-provider-queries";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   BannerActionSlot,
   PromptBannerActionButton,

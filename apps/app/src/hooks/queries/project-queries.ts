@@ -6,18 +6,19 @@ import type {
   ProjectWithThreadsResponse,
   PromptHistoryResponse,
   WorkspacePathListResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   buildFilePreview,
   normalizeFilePreviewMimeType,
   type FilePreview,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { decodeBase64Bytes } from "@/lib/base64-bytes";
 import { buildProjectFileContentUrl } from "@/lib/file-content-urls";
 import { readProjectBranchOptions } from "@/lib/project-branch-options";
 import { sdk } from "@/lib/sdk";
 import { useProjectDetailRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import {
+  hiddenProjectsQueryKey,
   projectCommandsQueryKey,
   projectFilePreviewQueryKey,
   projectPathsQueryKey,
@@ -82,6 +83,13 @@ export function stripProjectThreads(
 ): SidebarProject {
   const { threads, ...rest } = project;
   return rest;
+}
+
+export function useHiddenProjects() {
+  return useQuery({
+    queryKey: hiddenProjectsQueryKey(),
+    queryFn: () => sdk.projects.list({ hidden: true }),
+  });
 }
 
 export function useProjectSourceBranches(

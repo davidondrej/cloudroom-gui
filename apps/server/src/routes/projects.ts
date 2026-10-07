@@ -17,8 +17,9 @@ import {
   updateProject,
   updateProjectSource,
   setProjectGitRemoteUrlIfMissing,
+  setProjectHidden,
   type ReorderProjectResult,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   projectListIncludeOptionSchema,
   publicApiRoutes,
@@ -29,7 +30,7 @@ import {
   type ProjectResponse,
   type ProjectWithThreadsResponse,
   type PublicApiSchema,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { Hono } from "hono";
 import type { AppDeps } from "../types.js";
 import { COMMAND_TIMEOUT_MS } from "../constants.js";
@@ -45,8 +46,9 @@ import {
   requirePublicProject,
   requirePublicStandardProject,
 } from "../services/lib/entity-lookup.js";
-import { PROMPT_HISTORY_ENTRY_LIMIT } from "@bb/domain";
+import { PROMPT_HISTORY_ENTRY_LIMIT } from "@cloudroom/domain";
 import { toThreadListEntryResponses } from "../services/threads/thread-runtime-display.js";
+import { archiveProjectThreads } from "../services/threads/thread-archive.js";
 import { callHostRetryableOnlineRpc } from "../services/hosts/online-rpc.js";
 import {
   cloneProjectSourceOnHost,
@@ -328,6 +330,14 @@ export function registerProjectRoutes(app: Hono, deps: AppDeps): void {
   const routes = publicApiRoutes.projects;
 
   get(routes.list, (context, query) => {
+    if (query.hidden === "true") {
+      return context.json(
+        buildProjectResponsesFromRows(
+          deps,
+          listPublicProjects(deps.db, "hidden"),
+        ),
+      );
+    }
     const includes = parseProjectListIncludes(query);
     const options: ProjectListOptions = {
       includePersonal: query.includePersonal === "true",
@@ -355,6 +365,7 @@ export function registerProjectRoutes(app: Hono, deps: AppDeps): void {
     }
     const existingProject = getPublicProjectByLocalPathSource(deps.db, source);
     if (existingProject) {
+      setProjectHidden(deps.db, deps.hub, existingProject.id, false);
       return context.json(
         buildProjectResponses(deps, existingProject.id)[0],
         201,
@@ -413,17 +424,18 @@ export function registerProjectRoutes(app: Hono, deps: AppDeps): void {
   });
 
   patch(routes.update, async (context, payload) => {
-    requirePublicStandardProject(deps.db, context.req.param("id"));
-    const project = updateProject(
-      deps.db,
-      deps.hub,
-      context.req.param("id"),
-      payload,
-    );
-    if (!project) {
-      throw new ApiError(404, "project_not_found", "Project not found");
+    const projectId = context.req.param("id");
+    requirePublicStandardProject(deps.db, projectId);
+    if (payload.hidden === true) {
+      archiveProjectThreads(deps, projectId);
     }
-    return context.json(buildProjectResponses(deps, project.id)[0]);
+    if (payload.hidden !== undefined) {
+      setProjectHidden(deps.db, deps.hub, projectId, payload.hidden);
+    }
+    if (payload.name !== undefined) {
+      updateProject(deps.db, deps.hub, projectId, { name: payload.name });
+    }
+    return context.json(buildProjectResponses(deps, projectId)[0]);
   });
 
   patch(routes.reorder, async (context, payload) => {

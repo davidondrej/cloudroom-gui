@@ -99,11 +99,11 @@
           {
             "paths": [
               {
-                "name": "@bb/host-workspace",
+                "name": "@cloudroom/host-workspace",
                 "message": "Server must not access workspaces directly. Use daemon commands instead."
               },
               {
-                "name": "@bb/host-watcher",
+                "name": "@cloudroom/host-watcher",
                 "message": "Server must not access host watchers directly. Use daemon commands instead."
               },
               {
@@ -136,14 +136,14 @@
           {
             "paths": [
               {
-                "name": "@bb/sdk",
-                "message": "Import @bb/sdk/browser: the root entry resolves to the Node SDK under Metro's source condition."
+                "name": "@cloudroom/sdk",
+                "message": "Import @cloudroom/sdk/browser: the root entry resolves to the Node SDK under Metro's source condition."
               }
             ],
             "patterns": [
               {
-                "group": ["@bb/shared-ui", "@bb/shared-ui/*"],
-                "message": "@bb/shared-ui is React DOM + Radix. Use the mobile primitives instead."
+                "group": ["@cloudroom/shared-ui", "@cloudroom/shared-ui/*"],
+                "message": "@cloudroom/shared-ui is React DOM + Radix. Use the mobile primitives instead."
               }
             ]
           }

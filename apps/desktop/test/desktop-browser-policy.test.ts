@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bbDesktopBrowserAttachRequestSchema } from "@bb/desktop-contract";
+import { bbDesktopBrowserAttachRequestSchema } from "@cloudroom/desktop-contract";
 import {
   evaluatePopupRate,
   isAllowedBrowserUrl,

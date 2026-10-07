@@ -1,4 +1,4 @@
-import type { WorkspaceFileStatus } from "@bb/domain";
+import type { WorkspaceFileStatus } from "@cloudroom/domain";
 import { ThreadGitActionDialogContent } from "./ThreadGitActionDialog";
 import type { ThreadGitStatusDisplay } from "@/components/workspace/workspace-status";
 import type { WorkspaceChangedFilesSection } from "@/components/workspace/workspace-change-summary";

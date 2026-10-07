@@ -26,8 +26,8 @@ import {
   resolve,
   sep,
 } from "node:path";
-import { HOST_ARTIFACT_MAX_BYTES } from "@bb/host-daemon-contract";
-import { runGit } from "@bb/host-workspace";
+import { HOST_ARTIFACT_MAX_BYTES } from "@cloudroom/host-daemon-contract";
+import { runGit } from "@cloudroom/host-workspace";
 import { userExecutableProcessOptions } from "../user-executable-env.js";
 import { requireResolvedWorkspaceForCommand } from "../workspace-resolution.js";
 import type {

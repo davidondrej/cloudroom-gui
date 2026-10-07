@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import type { BbDesktopBrowserApi } from "@bb/desktop-contract";
+import type { BbDesktopBrowserApi } from "@cloudroom/desktop-contract";
 import {
   DESKTOP_BROWSER_IMPORT_FAILURE_COPY,
   isRetryableDesktopBrowserImportReason,
   type DesktopBrowserImportOutcome,
   type DesktopBrowserImportSource,
-} from "@bb/host-daemon-contract";
-import { Button } from "@bb/shared-ui/button";
+} from "@cloudroom/host-daemon-contract";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   Dialog,
   DialogContent,
@@ -14,8 +14,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/dialog";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { BrowserSourceIcon } from "./BrowserSourceIcon";
 import {
   canCloseDialog,

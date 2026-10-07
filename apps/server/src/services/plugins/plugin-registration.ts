@@ -1,4 +1,4 @@
-import { findProviderEnvironmentContainingPath } from "@bb/db";
+import { findProviderEnvironmentContainingPath } from "@cloudroom/db";
 import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { isBbManagedWorkspacePath } from "../threads/workspace-paths.js";
@@ -15,7 +15,7 @@ import {
   type PluginExactResolution,
   type PluginProvenance,
   type PluginSourceIntent,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   BUNDLED_PLUGINS,
   builtinPluginSource,
@@ -27,7 +27,7 @@ import {
   type InstalledPlugin,
   type PluginRuntimeStatus,
   type PluginSourceSelection,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { TelemetryEvent } from "../system/telemetry.js";
 import { resolveSelectedSubdirectory } from "./collection-manifest.js";
 import {
@@ -687,7 +687,8 @@ export function createPluginRegistration(context: PluginRegistrationContext) {
           name: bundled.name,
         }) ||
         existing.version !== manifest.version ||
-        existing.rootDir !== bundled.rootDir
+        existing.rootDir !== bundled.rootDir ||
+        (bundled.alwaysEnabled === true && !existing.enabled)
       ) {
         upsertInstalledPlugin(deps.db, {
           id: manifest.id,
@@ -699,7 +700,9 @@ export function createPluginRegistration(context: PluginRegistrationContext) {
           activeArtifactId: null,
           rootDir: bundled.rootDir,
           version: manifest.version,
-          enabled: existing?.enabled ?? bundled.defaultEnabled,
+          enabled:
+            bundled.alwaysEnabled === true ||
+            (existing?.enabled ?? bundled.defaultEnabled),
         });
       }
     }

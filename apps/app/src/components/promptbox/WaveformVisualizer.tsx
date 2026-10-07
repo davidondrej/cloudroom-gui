@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import { usePrefersReducedMotion } from "@bb/shared-ui/hooks/use-media-query";
-import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { usePrefersReducedMotion } from "@cloudroom/shared-ui/hooks/use-media-query";
+import { usePointerCoarse } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 interface WaveformVisualizerProps {
   stream: MediaStream | null;

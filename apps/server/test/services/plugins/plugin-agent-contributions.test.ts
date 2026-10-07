@@ -2,9 +2,15 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createConnection, migrate, type DbConnection } from "@bb/db";
-import { encodeClientTurnRequestIdNumber } from "@bb/domain";
-import type { Logger } from "@bb/logger";
+import {
+  createConnection,
+  getAppSettings,
+  migrate,
+  setAppSettings,
+  type DbConnection,
+} from "@cloudroom/db";
+import { encodeClientTurnRequestIdNumber } from "@cloudroom/domain";
+import type { Logger } from "@cloudroom/logger";
 import { createAiServiceRegistry } from "../../../src/services/ai/ai-service-registry.js";
 import {
   createPluginService,
@@ -384,6 +390,7 @@ describe("plugin agent contributions reach thread runtime config", () => {
       `,
     });
     await harness.pluginService.installPath(firstRoot);
+    setAppSettings(harness.db, { ...getAppSettings(harness.db), stripAiCoAuthorsEnabled: false });
     await harness.pluginService.installPath(secondRoot);
 
     const { host } = seedHostSession(harness.deps, {

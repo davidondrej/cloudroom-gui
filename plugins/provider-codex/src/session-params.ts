@@ -588,6 +588,7 @@ function buildShellEnvironmentPolicyConfig(
   }
   const config: Record<string, string> = {};
   for (const [key, value] of Object.entries(buildShellEnvOverrides(envVars))) {
+    if (key.startsWith("CLOUDROOM_CODEX_")) continue;
     config[`shell_environment_policy.set.${key}`] = value;
   }
   return Object.keys(config).length > 0 ? config : undefined;

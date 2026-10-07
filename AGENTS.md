@@ -39,7 +39,7 @@
 - Never mock the database. Use an in-memory database with real migrations.
 
 ## VERIFICATION
-- From `gui/`: `pnpm install --frozen-lockfile`; `pnpm exec turbo run build typecheck --filter=@bb/app --filter=@bb/server --filter=@bb/desktop --concurrency=2`; `pnpm exec turbo run test --filter=@bb/scripts --filter=@bb/config --concurrency=2`. Dated suite limitations are in the [cutover record](../archive/docs/development-cutover.md#step-4-verification).
+- From `gui/`: `pnpm install --frozen-lockfile`; `pnpm exec turbo run build typecheck --filter=@cloudroom/app --filter=@cloudroom/server --filter=@cloudroom/desktop --concurrency=2`; `pnpm exec turbo run test --filter=@cloudroom/scripts --filter=@cloudroom/config --concurrency=2`. Dated suite limitations are in the [cutover record](../archive/docs/development-cutover.md#step-4-verification).
 - Run builds, typechecks, and tests through Turbo: `pnpm exec turbo run <task> --filter=<package>`.
 - Test real behavior and plausible failures, not trivial wiring.
 - Use `sharedWorkerProjects` from `vitest.shared.ts`; isolate tests that mutate globals.

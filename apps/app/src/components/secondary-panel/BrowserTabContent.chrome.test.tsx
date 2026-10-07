@@ -11,7 +11,7 @@ import {
 import type {
   BbDesktopBrowserApi,
   BbDesktopBrowserState,
-} from "@bb/desktop-contract";
+} from "@cloudroom/desktop-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createBbDesktopApi,

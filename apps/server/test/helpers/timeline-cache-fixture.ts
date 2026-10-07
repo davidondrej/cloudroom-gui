@@ -7,7 +7,7 @@ import {
   type Thread,
   type ThreadEventItemType,
   type ThreadEventType,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   createConnection,
   createProject,
@@ -18,7 +18,7 @@ import {
   noopNotifier,
   upsertHost,
   type DbConnection,
-} from "@bb/db";
+} from "@cloudroom/db";
 
 export type Random = () => number;
 

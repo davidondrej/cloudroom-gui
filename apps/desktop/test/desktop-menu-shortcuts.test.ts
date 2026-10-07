@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AppKeybindings } from "@bb/domain";
+import type { AppKeybindings } from "@cloudroom/domain";
 import {
   DEFAULT_APPLICATION_MENU_ACCELERATORS,
   formatElectronAccelerator,

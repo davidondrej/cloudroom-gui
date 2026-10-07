@@ -10,7 +10,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { defaultAppSettings, type PendingInteraction } from "@bb/domain";
+import { defaultAppSettings, type PendingInteraction } from "@cloudroom/domain";
 import { AppCommandProvider } from "@/components/commands/AppCommandProvider";
 import { ThreadPendingInteractionBanner } from "./ThreadPendingInteractionBanner";
 

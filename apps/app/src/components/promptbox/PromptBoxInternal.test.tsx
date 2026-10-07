@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { PromptTextMention, ReasoningLevel } from "@bb/domain";
+import type { PromptTextMention, ReasoningLevel } from "@cloudroom/domain";
 import { TextSelection } from "@tiptap/pm/state";
 import { EditorView } from "@tiptap/pm/view";
 import {
@@ -26,7 +26,7 @@ import { ThreadTitleMentionResourcesProvider } from "@/components/thread/ThreadT
 import {
   EMPTY_ORDERED_MENTION_SUGGESTIONS,
   emptyPromptDraftState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   getComposerInputLock,
   useComposer,
@@ -80,7 +80,7 @@ import { orderPromptMentionSuggestions } from "@/hooks/promptMentionCandidates";
 import type {
   PromptMentionSuggestion,
   ProviderCommandSuggestion,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 type PromptBoxProps = ComponentProps<typeof PromptBoxInternal>;
 

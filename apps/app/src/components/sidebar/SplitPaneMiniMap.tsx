@@ -1,4 +1,4 @@
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import type { MiniMapSlot } from "./paneContentSplitIndicator";
 
 const GLYPH_SIZE = 14;

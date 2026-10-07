@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveDataDirSkillsRootPath } from "@bb/config/skill-storage-paths";
+import { resolveDataDirSkillsRootPath } from "@cloudroom/config/skill-storage-paths";
 import matter from "gray-matter";
 import { ApiError } from "../../errors.js";
 import { hasSupportedFrontmatterDelimiter } from "./injected-skills.js";

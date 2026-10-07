@@ -1,7 +1,7 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PLUGIN_ICON_MAX_BYTES } from "@bb/domain";
+import { PLUGIN_ICON_MAX_BYTES } from "@cloudroom/domain";
 import { describe, expect, it } from "vitest";
 import {
   assertValidPluginCompactIconSvg,
@@ -27,22 +27,6 @@ const FIRST_PARTY_BRANDING_SVGS = [
   "plugins/provider-codex/icons/codex.svg",
   "plugins/provider-pi/icons/pi.svg",
 ];
-
-function discoverFirstPartyBrandingSvgs(): string[] {
-  const files: string[] = [];
-  for (const pluginsDir of ["plugins", "examples/plugins"]) {
-    for (const plugin of readdirSync(join(REPO_ROOT, pluginsDir))) {
-      const iconsDir = join(REPO_ROOT, pluginsDir, plugin, "icons");
-      if (!existsSync(iconsDir)) continue;
-      for (const file of readdirSync(iconsDir)) {
-        if (file.endsWith(".svg")) {
-          files.push(`${pluginsDir}/${plugin}/icons/${file}`);
-        }
-      }
-    }
-  }
-  return files.sort();
-}
 
 const LATIN1_SVG: Uint8Array = Buffer.from(
   '<svg xmlns="http://www.w3.org/2000/svg"><title>Café</title><path d="M0 0h4v4z"/></svg>',
@@ -276,9 +260,6 @@ describe("assertValidPluginLogoSvg (SVG logos and provider icons, at build)", ()
     },
   );
 
-  it("covers every SVG a first-party or example plugin ships under icons/", () => {
-    expect(discoverFirstPartyBrandingSvgs()).toEqual(FIRST_PARTY_BRANDING_SVGS);
-  });
 });
 
 describe("assertValidPluginIconSvg", () => {

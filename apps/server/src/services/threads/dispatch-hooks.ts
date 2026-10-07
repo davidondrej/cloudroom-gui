@@ -1,4 +1,4 @@
-import { getEnvironment } from "@bb/db";
+import { getEnvironment } from "@cloudroom/db";
 import {
   QUEUED_MESSAGE_WAIT_REASON_MAX_LENGTH,
   type Environment,
@@ -7,13 +7,13 @@ import {
   type PromptInput,
   type Thread,
   type ThreadQueuedMessage,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   ExecutionInputFieldSource,
   StartedOnBehalfOf,
   ThreadCreateOrigin,
   ThreadResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   MessageDispatchHookContext,
   PluginDispatchAttemptKind,

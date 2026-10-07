@@ -4,26 +4,26 @@ import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { PluginContext } from "@/components/plugin/plugin-context";
-import { Dialog, DialogContent, DialogTitle } from "@bb/shared-ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@cloudroom/shared-ui/dialog";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
+} from "@cloudroom/shared-ui/tooltip";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@bb/shared-ui/select";
+} from "@cloudroom/shared-ui/select";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from "@bb/shared-ui/context-menu";
+} from "@cloudroom/shared-ui/context-menu";
 
 function inPluginScope(children: ReactNode) {
   return (

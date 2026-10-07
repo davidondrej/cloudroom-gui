@@ -17,8 +17,8 @@ import {
   listPluginKvKeys,
   setPluginKvValue,
   type DbConnection,
-} from "@bb/db";
-import type { JsonValue } from "@bb/domain";
+} from "@cloudroom/db";
+import type { JsonValue } from "@cloudroom/domain";
 import type {
   BbPluginApi,
   PluginAgentConfiguration,
@@ -118,7 +118,7 @@ import type {
   ThreadPluginMetadataArgs,
   ThreadPluginMetadataUpdateArgs,
   ThreadSpawnArgs,
-} from "@bb/sdk";
+} from "@cloudroom/sdk";
 import { requestEnvironmentProviderRecheck } from "./plugin-environment-provider-registry.js";
 import { requestServerAccessRecheck } from "./plugin-server-access-registry.js";
 import type { ServerLogger } from "../../types.js";

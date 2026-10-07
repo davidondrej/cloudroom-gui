@@ -5,7 +5,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@bb/shared-ui/select";
+} from "@cloudroom/shared-ui/select";
 
 const NO_LINK = "__none__";
 

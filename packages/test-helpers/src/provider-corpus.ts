@@ -10,12 +10,12 @@ import {
   threadStatusSchema,
   threadVisibilitySchema,
   turnScope,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   ThreadEventRow,
   ThreadEventScope,
   ThreadEventScopeKind,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { z } from "zod";
 
 const corpusScopeKindSchema = z.enum(["thread", "turn"]);

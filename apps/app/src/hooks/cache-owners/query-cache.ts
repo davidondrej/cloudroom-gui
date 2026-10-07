@@ -3,7 +3,7 @@ import type {
   Thread,
   ThreadListEntry,
   ThreadStatusChangeMetadata,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   applyToCachedThreadLists,
   getCachedThreadLists,
@@ -16,7 +16,7 @@ import type {
   ThreadResponse,
   ThreadTimelineResponse,
   TimelineRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   ARCHIVED_THREADS_LIST_KIND,
   ENVIRONMENT_WORK_STATUS_QUERY_KEY,

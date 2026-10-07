@@ -24,6 +24,7 @@ import type {
   PluginWebSocketRouteRecord,
 } from "../services/plugins/plugin-api.js";
 import { PluginSettingsValidationError } from "../services/plugins/plugin-settings.js";
+import { BUNDLED_PLUGINS } from "../services/plugins/builtin-registry.js";
 import {
   createAppAssetCompressionCache,
   type AppAssetCompressionCache,
@@ -40,11 +41,11 @@ import {
   pluginSettingsUpdateRequestSchema,
   pluginTokenRequestSchema,
   pluginUpdateCheckRequestSchema,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 
 interface PluginRoutesDeps {
   config: Pick<ServerRuntimeConfig, "serverPort" | "appUrl" | "devAppPort">;
-  db: import("@bb/db").DbConnection;
+  db: import("@cloudroom/db").DbConnection;
 }
 
 type WireAuthProblem = BrowserRequestProblem | { status: 401; error: string };
@@ -652,7 +653,17 @@ export function registerPluginRoutes(
   });
 
   app.post("/plugins/:id/disable", async (context) => {
-    const plugin = await plugins.setEnabled(context.req.param("id"), false);
+    const id = context.req.param("id");
+    if (
+      BUNDLED_PLUGINS.some(
+        (bundled) => bundled.pluginId === id && bundled.alwaysEnabled,
+      )
+    )
+      return context.json(
+        { ok: false, error: "This built-in plugin is always on." },
+        409,
+      );
+    const plugin = await plugins.setEnabled(id, false);
     if (!plugin)
       return context.json({ ok: false, error: "unknown plugin" }, 404);
     return context.json({ ok: true, plugin });

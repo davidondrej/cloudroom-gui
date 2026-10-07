@@ -3,16 +3,16 @@ import path from "node:path";
 import type {
   AgentRuntimeBridgeLaunch,
   AgentRuntimeOptions,
-} from "@bb/agent-runtime";
+} from "@cloudroom/agent-runtime";
 import type {
   HostDaemonBridgeLaunch,
   HostDaemonCommand,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   encodeClientTurnRequestIdNumber,
   type ClientTurnRequestId,
   type PromptInput,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   CommandDispatchError,

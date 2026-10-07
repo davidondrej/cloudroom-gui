@@ -2,9 +2,9 @@ import type {
   PromptInput,
   SystemMessageSubject,
   ThreadEventTurnStatus,
-} from "@bb/domain";
-import { listActiveBackgroundTaskCountsByThreadIds } from "@bb/db";
-import { renderTemplate } from "@bb/templates";
+} from "@cloudroom/domain";
+import { listActiveBackgroundTaskCountsByThreadIds } from "@cloudroom/db";
+import { renderTemplate } from "@cloudroom/templates";
 import type { LoggedPendingInteractionWorkSessionDeps } from "../../types.js";
 import {
   buildParentSystemInputFromTemplateSlot,

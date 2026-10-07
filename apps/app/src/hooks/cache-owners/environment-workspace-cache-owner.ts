@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import type { Environment, ThreadListEntry } from "@bb/domain";
+import type { Environment, ThreadListEntry } from "@cloudroom/domain";
 import {
   environmentQueryKey,
   threadSearchQueryKeyPrefix,

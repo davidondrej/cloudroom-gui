@@ -907,6 +907,10 @@ function createThreadAttachment(
     threadIdRef: args.threadIdRef,
   };
   attachment.residentSession = createThreadSession(attachment);
+  settingsSignatures.set(
+    attachment,
+    settingsSignature(readConfigEnvOverrides(args.sessionConstructionConfig.config)),
+  );
   return attachment;
 }
 
@@ -1206,6 +1210,12 @@ function buildTrackedSessionOptions(
     env,
   );
   sessionOptions.hooks = buildSessionTrackingHooks(threadIdRef);
+  if (params.stripAiCoAuthorsEnabled !== false) {
+    sessionOptions.settings = {
+      ...(typeof sessionOptions.settings === "object" ? sessionOptions.settings : {}),
+      attribution: { commit: "", pr: "" },
+    };
+  }
   if (params.commandGuardEnabled !== false) {
     sessionOptions.hooks.PreToolUse!.unshift({
       matcher: "Bash",
@@ -1484,7 +1494,16 @@ function buildSessionEnv(
     CLAUDE_CODE_ENTRYPOINT: "cli",
   };
   delete sessionEnv.CLAUDE_AGENT_SDK_CLIENT_APP;
+  if (sessionEnv.ANTHROPIC_API_KEY === "") delete sessionEnv.ANTHROPIC_API_KEY;
   return sessionEnv;
+}
+
+const ACCOUNT_ENV_KEYS = new Set(["CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"]);
+const settingsSignatures = new WeakMap<ThreadAttachment, string>();
+function settingsSignature(env: Readonly<Record<string, string>>): string {
+  return environmentSignature(
+    Object.fromEntries(Object.entries(env).filter(([key]) => !ACCOUNT_ENV_KEYS.has(key))),
+  );
 }
 
 const sessionConfigEnvVarsSchema = z.record(z.string(), z.string());
@@ -1515,6 +1534,9 @@ function applyTurnEnvironment(
     return;
   }
   attachment.envSignature = signature;
+  const settings = settingsSignature(envOverrides);
+  const accountOnly = settingsSignatures.get(attachment) === settings;
+  settingsSignatures.set(attachment, settings);
   attachment.sessionConstructionConfig = {
     ...attachment.sessionConstructionConfig,
     config,
@@ -1522,9 +1544,10 @@ function applyTurnEnvironment(
   attachment.sessionOptions.env = buildSessionEnv(envOverrides);
   if (attachment.residentSession) {
     attachment.residentSession.restartBeforeNextTurn = {
-      reason:
-        "Execution settings changed; the Claude session was rebuilt to apply them.",
-      showRuntimeNote: true,
+      reason: accountOnly
+        ? "Switched Claude account; the session was rebuilt to use it."
+        : "Execution settings changed; the Claude session was rebuilt to apply them.",
+      showRuntimeNote: !accountOnly,
     };
   }
 }
@@ -1982,6 +2005,7 @@ async function handleRequest(request: ClaudeCodeJsonRpcRequest): Promise<void> {
           threadArchive: false,
           threadRename: false,
           threadGoalClear: false,
+          threadGoalSet: false,
           fork: "checkpoint",
           approvalEnforcedBy: "provider",
           grammarVersions: [THREAD_DELTA_GRAMMAR_V3, THREAD_DELTA_GRAMMAR_V3],

@@ -29,8 +29,8 @@ import {
   type DbNotifier,
   type DbQueryConnection,
   type DbTransaction,
-} from "@bb/db";
-import { assertNever } from "@bb/core-ui";
+} from "@cloudroom/db";
+import { assertNever } from "@cloudroom/core-ui";
 import {
   type ProvisioningTranscriptEntry,
   type SystemThreadInterruptedReason,
@@ -41,7 +41,7 @@ import {
   type ThreadStatus,
   threadScope,
   turnScope,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   AppDeps,
   LoggedPendingInteractionWorkSessionDeps,

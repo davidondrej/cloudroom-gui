@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { threadPaneActionSchema } from "@bb/server-contract";
+import { threadPaneActionSchema } from "@cloudroom/server-contract";
 import { action } from "../../action.js";
 import { createCliBbSdk } from "../../client.js";
 import {

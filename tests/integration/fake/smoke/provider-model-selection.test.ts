@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { AvailableModel } from "@bb/domain";
-import { resolvePreferredTestModel } from "@bb/test-helpers";
+import type { AvailableModel } from "@cloudroom/domain";
+import { resolvePreferredTestModel } from "@cloudroom/test-helpers";
 
 function availableModel(model: string, isDefault: boolean): AvailableModel {
   return {

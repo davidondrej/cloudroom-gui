@@ -7,13 +7,13 @@ import {
   type PendingInteractionApprovalDecision,
   type ProviderPendingInteraction,
   type Thread,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   ThreadTimelineResponse,
   TimelineRow,
   TimelineRowBase,
   TimelineUserConversationRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 
 interface TimelineBaseArgs {
   id: string;

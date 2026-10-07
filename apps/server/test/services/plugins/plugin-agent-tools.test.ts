@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { createConnection, migrate, type DbConnection } from "@bb/db";
-import { encodeClientTurnRequestIdNumber } from "@bb/domain";
-import type { Logger } from "@bb/logger";
+import { createConnection, migrate, type DbConnection } from "@cloudroom/db";
+import { encodeClientTurnRequestIdNumber } from "@cloudroom/domain";
+import type { Logger } from "@cloudroom/logger";
 import { RESERVED_AGENT_TOOL_NAMES } from "@get-bb/plugin-sdk/internal/host-policy";
 import { createAiServiceRegistry } from "../../../src/services/ai/ai-service-registry.js";
 import {
@@ -824,7 +824,7 @@ describe("plugin tools reach thread runtime config", () => {
     ).toMatchObject({ type: "object" });
     expect(command.instructions).toContain("update_environment_directory");
     expect(command.instructions).toContain(
-      'The following instructions come from the BB plugin "tooldemo" for its tool "demo_lookup":',
+      'The following instructions come from the Cloudroom plugin "tooldemo" for its tool "demo_lookup":',
     );
     expect(command.instructions).toContain(
       "Call demo_lookup before guessing demo data.",
@@ -1080,7 +1080,7 @@ describe("plugin tools reach thread runtime config", () => {
       sideCommand.injectedSkillSources.map((skill) => skill.name),
     ).not.toContain("beta-skill");
     expect(sideCommand.instructions).toContain(
-      'The following dynamic instructions come from the BB plugin "conditional":',
+      'The following dynamic instructions come from the Cloudroom plugin "conditional":',
     );
     expect(
       harness.pluginService.list().find((plugin) => plugin.id === "conditional")

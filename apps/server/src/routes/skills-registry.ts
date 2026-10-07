@@ -3,7 +3,7 @@ import {
   registrySkillEntriesRequestSchema,
   registrySkillInstallRequestSchema,
   type RegistrySkill,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { ApiError } from "../errors.js";
 import {
   githubRepoForSource,

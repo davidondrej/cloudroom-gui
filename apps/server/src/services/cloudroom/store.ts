@@ -1,6 +1,6 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
-import { cloudroomCommands, cloudroomThreads, threads, threadPluginMetadata, type DbQueryConnection } from "@bb/db";
-import type { ProjectCopyProgress } from "@bb/domain";
+import { cloudroomCommands, cloudroomThreads, threads, threadPluginMetadata, type DbQueryConnection } from "@cloudroom/db";
+import type { ProjectCopyProgress } from "@cloudroom/domain";
 import { emitPluginThreadStatusEntered } from "../plugins/plugin-thread-events.js";
 
 export type TeleportProgress = {

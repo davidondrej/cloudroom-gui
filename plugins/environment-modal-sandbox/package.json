@@ -31,7 +31,7 @@
   "dependencies": {
     "modal": "0.10.0",
     "zod": "^4.3.6",
-    "@bb/shared-ui": "workspace:*"
+    "@cloudroom/shared-ui": "workspace:*"
   },
   "devDependencies": {
     "@get-bb/plugin-sdk": "workspace:*",
@@ -42,6 +42,6 @@
     "@types/react": "^19.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@bb/plugin-build": "workspace:*"
+    "@cloudroom/plugin-build": "workspace:*"
   }
 }

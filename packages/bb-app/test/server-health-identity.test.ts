@@ -8,7 +8,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { waitForProcessExit } from "@bb/config/child-process-exit";
+import { waitForProcessExit } from "@cloudroom/config/child-process-exit";
 import type {
   BbAppStartContext,
   ManagedFullStackProcesses,

@@ -8,7 +8,7 @@ published ACP kit, `@get-bb/plugin-sdk/provider-bridge/acp`, which its
 `bb.host` entry re-exports (`src/host.ts`). That is the whole
 point of the kit: a third-party plugin adds an ACP agent exactly the way this
 one does, with no bb-side code, and `public-sdk-only.test.ts` proves this
-plugin takes no shortcut — no file here may import a private `@bb/*` package.
+plugin takes no shortcut — no file here may import a private `@cloudroom/*` package.
 
 What lives here:
 

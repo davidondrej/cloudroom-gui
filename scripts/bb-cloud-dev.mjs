@@ -163,7 +163,7 @@ await mkdir(STATE_DIR, { recursive: true });
 console.log(`Preparing local Cloud data in ${STATE_DIR}`);
 run([
   "--filter",
-  "@bb/connect",
+  "@cloudroom/connect",
   "exec",
   "wrangler",
   "d1",
@@ -208,7 +208,7 @@ try {
 
 const worker = spawnService([
   "--filter",
-  "@bb/connect",
+  "@cloudroom/connect",
   "exec",
   "wrangler",
   "dev",
@@ -232,7 +232,7 @@ const worker = spawnService([
 const web = spawnService(
   [
     "--filter",
-    "@bb/web",
+    "@cloudroom/web",
     "exec",
     "vite",
     "dev",

@@ -15,7 +15,7 @@ export type TeleportFile = { path: string; size: number; sha256: string; kind: "
 export type TeleportManifest = {
   request_id: string; harness: Harness; native_id: string; model: string; provider: string | null; reasoning: string | null;
   workspace: string; workspace_name: string; files: TeleportFile[]; handoff: string;
-  service_tier?: string | null; command_guard_enabled?: boolean; system_prompt?: string;
+  service_tier?: string | null; command_guard_enabled?: boolean; strip_ai_co_authors?: boolean; system_prompt?: string;
   queued: (string | { text: string; reasoning?: string; service_tier?: string })[];
   /** A fork starts idle with no handoff; its first message is a `rewind` with `fork`. */
   fork?: boolean;
@@ -261,6 +261,7 @@ function sessionPath(id: string): string {
 }
 
 const MAX_RESPONSE_BYTES = 16 * 1024 * 1024;
+const STREAM_SILENCE_MS = 45_000;
 /** The most one upload request may carry: some sandbox proxies drop requests over about 8 MB. */
 export const UPLOAD_PART = 4 * 1024 * 1024;
 
@@ -565,7 +566,7 @@ export class CloudroomClient {
     }
   }
 
-  start(id: string, harness: Harness = "codex", options: { model?: string; reasoning?: string; workspace?: string; workspace_name?: string; provider?: string; command_guard_enabled?: boolean; system_prompt?: string; parent_session?: string; prompt?: string; title?: string; fork?: { session: string; before?: string; last_turn_id?: string } } = {}) {
+  start(id: string, harness: Harness = "codex", options: { model?: string; reasoning?: string; workspace?: string; workspace_name?: string; provider?: string; command_guard_enabled?: boolean; strip_ai_co_authors?: boolean; system_prompt?: string; parent_session?: string; prompt?: string; title?: string; fork?: { session: string; before?: string; last_turn_id?: string } } = {}) {
     if (harness !== "codex" && harness !== "pi" && harness !== "cursor" && harness !== "claude-code" && harness !== "fx" && harness !== "opencode")
       throw new CloudroomError("Unsupported Cloudroom harness");
     return this.#command("/v1/sessions", "start", { request_id: id, harness, ...options });
@@ -861,10 +862,14 @@ export class CloudroomClient {
       options.signal.throwIfAborted();
       await options.onConnected?.();
       while (true) {
-        const { done, value } = await reader.read().catch((error: unknown) => {
+        let silence: ReturnType<typeof setTimeout> | undefined;
+        const { done, value } = await Promise.race([
+          reader.read(),
+          new Promise<never>((_, reject) => { silence = setTimeout(() => reject(new Error("no data for 45 s")), STREAM_SILENCE_MS); }),
+        ]).catch((error: unknown) => {
           options.signal.throwIfAborted();
           throw new CloudroomConnectionError("Cloudroom event stream disconnected", error);
-        });
+        }).finally(() => clearTimeout(silence));
         if (done) return;
         buffer += decoder.decode(value, { stream: true });
         if (buffer.length + frameSize > MAX_RESPONSE_BYTES)

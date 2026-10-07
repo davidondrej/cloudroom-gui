@@ -10,11 +10,11 @@ import {
   useRef,
 } from "react";
 import { useSetAtom } from "jotai";
-import type { ThreadListEntry } from "@bb/domain";
+import type { ThreadListEntry } from "@cloudroom/domain";
 import type { PluginComposerThreadRowStatus } from "@get-bb/plugin-sdk";
 import { getThreadConversationCollapsedAtom } from "@/components/secondary-panel/threadSecondaryPanelAtoms";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@bb/shared-ui/tooltip";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@cloudroom/shared-ui/tooltip";
 import { SidebarStickyTier } from "@/components/ui/sidebar.js";
 import { NavLink } from "react-router-dom";
 import {
@@ -31,7 +31,7 @@ import {
   COARSE_POINTER_ICON_SIZE_CLASS,
   COARSE_POINTER_ROW_ACTION_SIZE_CLASS,
   COARSE_POINTER_ROW_HEIGHT_CLASS,
-} from "@bb/shared-ui/coarse-pointer-sizing";
+} from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import {
   SIDEBAR_HOVER_ACTIONS_CLASS,
   SIDEBAR_HOVER_ACTIONS_FADE_CLASS,
@@ -54,11 +54,11 @@ import {
   type CollapsedChildActivity,
   type ThreadListIndicatorKind,
   type ThreadListIndicatorState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { getThreadDisplayTitle } from "@/lib/thread-title";
 import { getThreadRoutePath } from "@/lib/route-paths";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { LIST_HOVER_TRANSITION } from "@bb/shared-ui/motion";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { LIST_HOVER_TRANSITION } from "@cloudroom/shared-ui/motion";
 import {
   SIDEBAR_ROW_BASE_CLASS,
   SIDEBAR_ROW_GLYPH_SLOT_CLASS,

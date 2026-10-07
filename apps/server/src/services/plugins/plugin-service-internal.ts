@@ -1,20 +1,20 @@
 import type { MachineEnrollmentService } from "../machines/machine-services.js";
 import type { AiServiceRegistry } from "../ai/ai-service-registry.js";
-import type { DbConnection } from "@bb/db";
+import type { DbConnection } from "@cloudroom/db";
 import type {
   DynamicTool,
   PendingInteraction,
   Thread,
   ThreadQueuedMessage,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   HostDaemonConnectTunnelIdentity,
   HostDaemonContributedEnvEntry,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type {
   PluginApplyUpdateResult,
   PluginRuntimeStatus,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { ServerLogger } from "../../types.js";
 import type { TelemetryService } from "../system/telemetry.js";
 import type { NotificationHub } from "../../ws/hub.js";
@@ -210,7 +210,7 @@ export type PluginMentionResolveResult =
 export interface PluginThreadEventEmitter {
   emitThreadEvents(threadId: string): void;
   emitTerminalInput(
-    terminal: import("@bb/server-contract").TerminalSession,
+    terminal: import("@cloudroom/server-contract").TerminalSession,
   ): void;
   emitThreadCreated(thread: Thread): void;
   emitThreadActive(thread: Thread): void;

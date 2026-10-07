@@ -7,7 +7,7 @@ import type {
   DragStartEvent,
 } from "@dnd-kit/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { COMPACT_VIEWPORT_QUERY } from "@bb/shared-ui/hooks/use-compact-viewport";
+import { COMPACT_VIEWPORT_QUERY } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import { setCompactSidebarDrawerShowing } from "@/components/ui/sidebar-mobile-drawer-visibility";
 import {
   SidebarTouchSensor,

@@ -6,8 +6,8 @@ import {
   listPublicHosts,
   hosts,
   setAppSettings,
-} from "@bb/db";
-import { defaultAppSettings } from "@bb/domain";
+} from "@cloudroom/db";
+import { defaultAppSettings } from "@cloudroom/domain";
 import type { ServerAccessGrant } from "@get-bb/plugin-sdk";
 import { describe, expect, it, vi } from "vitest";
 import { getMachineEnrollmentService } from "../../../src/services/machines/machine-services.js";

@@ -3,10 +3,10 @@ import type {
   TimelineConversationAttachments,
   TimelineRowBase,
   TimelineUserConversationRow,
-} from "@bb/server-contract";
-import type { PromptTextMention, ThreadOriginKind } from "@bb/domain";
-import { fileNameFromPath } from "@bb/thread-view";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/server-contract";
+import type { PromptTextMention, ThreadOriginKind } from "@cloudroom/domain";
+import { fileNameFromPath } from "@cloudroom/thread-view";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   MarkdownPreview,
   type MarkdownThreadMentions,
@@ -17,7 +17,7 @@ import {
   resolveRelativeLocalFileHref,
 } from "@/components/ui/markdown-local-file-link.js";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
-import { computeMutedPrefixLength } from "@bb/client-core";
+import { computeMutedPrefixLength } from "@cloudroom/client-core";
 import type {
   TimelineTitleActionResolver,
   TimelineTitleLinkResolver,
@@ -50,8 +50,8 @@ import {
   boundedMarkdownPreview,
   closeUnterminatedMarkdownCodeSpan,
   USER_MESSAGE_CHAR_CAP,
-} from "@bb/client-core";
-import { turnRequestLabel } from "@bb/client-core";
+} from "@cloudroom/client-core";
+import { turnRequestLabel } from "@cloudroom/client-core";
 import {
   repairStreamingMarkdownTail,
   splitStreamingMarkdown,
@@ -70,7 +70,7 @@ import {
   type MessageProseSelection,
 } from "./SelectableMessageProse.js";
 import type { ThreadTimelinePluginMessageAction } from "./types.js";
-import type { PromptDraftAttachment } from "@bb/client-core";
+import type { PromptDraftAttachment } from "@cloudroom/client-core";
 import { buildMarkdownMessageLinkRouting } from "@/components/ui/markdown-message-link-routing";
 
 interface ConversationMessageContentBaseProps {

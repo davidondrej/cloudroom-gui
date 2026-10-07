@@ -22,7 +22,7 @@ export default defineWorkspaceTestConfig({
     projects: sharedWorkerProjects({
       pkgDir: __dirname,
       aliases: { "@": path.resolve(__dirname, "./src") },
-      name: "@bb/app",
+      name: "@cloudroom/app",
       include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     }),
   },

@@ -1,9 +1,9 @@
-import { getNonDestroyedHost, getSessionById, type DbConnection } from "@bb/db";
+import { getNonDestroyedHost, getSessionById, type DbConnection } from "@cloudroom/db";
 import {
   hostDaemonConnectTunnelIdentitySchema,
   type HostDaemonConnectShares,
   type HostDaemonConnectTunnelIdentity,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { ApiError } from "../errors.js";
 import type { NotificationHub } from "./hub.js";
 

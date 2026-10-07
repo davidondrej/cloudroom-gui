@@ -11,8 +11,8 @@ import {
   noopNotifier,
   promptHistoryEntries,
   upsertHost,
-} from "@bb/db";
-import type { PromptHistoryScope, PromptInput } from "@bb/domain";
+} from "@cloudroom/db";
+import type { PromptHistoryScope, PromptInput } from "@cloudroom/domain";
 import {
   listProjectPromptHistory,
   listThreadPromptHistory,

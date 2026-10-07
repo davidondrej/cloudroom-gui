@@ -1,6 +1,6 @@
-import type { Environment, WorkspaceStatus } from "@bb/domain";
-import { makeWorkspaceStatus as makeSharedWorkspaceStatus } from "@bb/test-helpers";
-import { makeEnvironment } from "@bb/test-helpers/domain-fixtures";
+import type { Environment, WorkspaceStatus } from "@cloudroom/domain";
+import { makeWorkspaceStatus as makeSharedWorkspaceStatus } from "@cloudroom/test-helpers";
+import { makeEnvironment } from "@cloudroom/test-helpers/domain-fixtures";
 import { describe, expect, it } from "vitest";
 import {
   resolveEffectiveMergeBaseBranch,

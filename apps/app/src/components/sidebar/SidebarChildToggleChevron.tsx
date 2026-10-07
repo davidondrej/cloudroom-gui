@@ -1,10 +1,10 @@
-import { Icon } from "@bb/shared-ui/icon";
-import { LIST_HOVER_TRANSITION } from "@bb/shared-ui/motion";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { LIST_HOVER_TRANSITION } from "@cloudroom/shared-ui/motion";
 import {
   SIDEBAR_HOVER_ACTIONS_CLASS,
   SIDEBAR_HOVER_ACTIONS_MOBILE_ALWAYS_VALUE,
 } from "@/components/ui/sidebar-hover-actions.js";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { SIDEBAR_CONTROL_STATE_CLASS } from "./sidebarRowClasses";
 
 interface SidebarChildToggleChevronProps {

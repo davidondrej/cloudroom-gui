@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BbDesktopInfo } from "@bb/desktop-contract";
+import type { BbDesktopInfo } from "@cloudroom/desktop-contract";
 import { createBbDesktopApi } from "@/test/bb-desktop-test-utils";
 import {
   CHROME_ROW_HEIGHT_CLASS,

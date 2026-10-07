@@ -15,7 +15,7 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { HOST_DAEMON_PROTOCOL_VERSION } from "@bb/host-daemon-contract";
+import { HOST_DAEMON_PROTOCOL_VERSION } from "@cloudroom/host-daemon-contract";
 
 const execFileAsync = promisify(execFile);
 const HOST_DEPENDENCIES = [

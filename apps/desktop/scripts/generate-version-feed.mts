@@ -6,7 +6,7 @@ import {
   bbDesktopVersionFeedSchema,
   createBbDesktopVersionFeedFileName,
   type BbDesktopVersionFeed,
-} from "@bb/desktop-contract";
+} from "@cloudroom/desktop-contract";
 import {
   createDesktopReleaseConfig,
   resolveDesktopBuildPlatform,

@@ -6,7 +6,7 @@ import type {
   EnvironmentChangedMessage,
   ProjectChangedMessage,
   ThreadChangedMessage,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   destroyPersistedBrowserViewsForEnvironment,
   destroyPersistedBrowserViewsForThread,

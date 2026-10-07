@@ -1,7 +1,7 @@
 import {
   fetchDesktopSession,
   redeemMachineCredential,
-} from "@bb/connect-client";
+} from "@cloudroom/connect-client";
 import CookieManager from "@react-native-cookies/cookies";
 import { File, Directory, Paths } from "expo-file-system";
 import { useLocalSearchParams } from "expo-router";

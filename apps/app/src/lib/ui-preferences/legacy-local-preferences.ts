@@ -2,7 +2,7 @@ import {
   parseUiPreferenceValue,
   type UiPreferenceKey,
   type UiPreferenceValue,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { withLocalStorage } from "@/lib/browser-storage";
 
 const RETIRED_LOCAL_STORAGE_KEYS: Partial<

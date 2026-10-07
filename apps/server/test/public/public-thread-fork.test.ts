@@ -4,7 +4,7 @@ import {
   getEnvironment,
   getThread,
   listEvents,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   PERSONAL_PROJECT_ID,
   encodeClientTurnRequestIdNumber,
@@ -14,11 +14,11 @@ import {
   type ClientTurnRequestId,
   type EnvironmentProviderSelection,
   type PromptInput,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   threadResponseSchema,
   threadTimelineResponseSchema,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { describe, expect, it } from "vitest";
 import { appendClientTurnEventInTransaction } from "../../src/services/threads/thread-events.js";
 import { sendQueuedMessage } from "../../src/services/threads/queued-messages.js";

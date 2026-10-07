@@ -9,8 +9,8 @@ import {
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { ExperimentalSidebarFooterCommandKind } from "@get-bb/plugin-sdk/internal/plugin-app-collector";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Icon } from "@bb/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar.js";
 import { PluginIcon, pluginIconName } from "@/components/plugin/PluginIcon";
 import { PluginSlotMount } from "@/components/plugin/PluginSlotMount";
@@ -28,14 +28,14 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from "@bb/shared-ui/context-menu";
+} from "@cloudroom/shared-ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
+} from "@cloudroom/shared-ui/dropdown-menu";
 import {
   useSidebarFooterPreferences,
   SIDEBAR_FOOTER_MORE_ID,

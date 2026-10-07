@@ -10,7 +10,7 @@ import {
 } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { EMPTY_ORDERED_MENTION_SUGGESTIONS } from "@bb/client-core";
+import { EMPTY_ORDERED_MENTION_SUGGESTIONS } from "@cloudroom/client-core";
 import { AppCommandProvider } from "@/components/commands/AppCommandProvider";
 import {
   resetPluginSlotStoreForTest,
@@ -44,11 +44,11 @@ vi.mock("@/components/ui/bottom-anchored-scroll-body.js", () => ({
   }),
 }));
 
-vi.mock("@bb/shared-ui/hooks/use-compact-viewport", () => ({
+vi.mock("@cloudroom/shared-ui/hooks/use-compact-viewport", () => ({
   useIsCompactViewport: () => mocks.isCompactViewport,
 }));
 
-vi.mock("@bb/shared-ui/hooks/use-pointer-coarse", () => ({
+vi.mock("@cloudroom/shared-ui/hooks/use-pointer-coarse", () => ({
   usePointerCoarse: () => mocks.isPointerCoarse,
 }));
 

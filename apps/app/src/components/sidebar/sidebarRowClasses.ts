@@ -2,8 +2,8 @@ import {
   COARSE_POINTER_CHILD_ICON_BUTTON_CLASS,
   COARSE_POINTER_DOT_SIZE_CLASS,
   COARSE_POINTER_ROW_ACTION_SIZE_CLASS,
-} from "@bb/shared-ui/coarse-pointer-sizing";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { CONTEXT_SELECTION_SURFACE_CLASS } from "@/components/ui/context-selection";
 
 export const SIDEBAR_ROW_BASE_CLASS =

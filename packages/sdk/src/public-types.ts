@@ -11,14 +11,14 @@ export type {
   ReasoningLevel,
   ServiceTier,
   ThreadStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 export type {
   CreateExecutionInputSources,
   EnvironmentArgs,
   ExistingThreadExecutionInputSources,
   UnmanagedBranchSpec,
   WorkspaceArgs,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 
 export type * from "./realtime.js";
 export type * from "./areas/cloudroom.js";

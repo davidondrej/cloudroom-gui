@@ -8,7 +8,7 @@ import type {
   HostDaemonRpcCommand,
   HostDaemonRpcResultForCommand,
   HostDaemonCommandEnvironmentLane,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { performance } from "node:perf_hooks";
 import {
   hostDaemonEnvironmentLaneForCommand,
@@ -17,7 +17,7 @@ import {
   parseHostDaemonCommandResultForCommand,
   parseHostDaemonOnlineRpcResultForCommand,
   shouldFlushEventsBeforeReportingCommandResult,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   dispatchCommand,
   dispatchOnlineRpcCommand,
@@ -25,7 +25,7 @@ import {
   type CommandDispatchOptions,
 } from "./command-dispatch.js";
 import { isExpectedOnlineRpcFailureError } from "./command-dispatch-support.js";
-import { roundDurationMs } from "@bb/process-utils";
+import { roundDurationMs } from "@cloudroom/process-utils";
 import type { HostDaemonLogger } from "./logger.js";
 import { RuntimeManager } from "./runtime-manager.js";
 import type { PluginHostManager } from "./plugin-host-manager.js";

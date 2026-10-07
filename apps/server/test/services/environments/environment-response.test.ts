@@ -3,7 +3,7 @@ import {
   resolveEnvironmentWorkspaceDisplayKind,
   toEnvironmentResponse,
 } from "../../../src/services/environments/environment-response.js";
-import type { EnvironmentRow } from "@bb/db";
+import type { EnvironmentRow } from "@cloudroom/db";
 
 function makeRow(overrides: Partial<EnvironmentRow> = {}): EnvironmentRow {
   return {

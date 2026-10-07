@@ -7,7 +7,7 @@ import type {
   PluginCatalogSearchData,
   PluginCatalogSearchEntry,
 } from "@/hooks/queries/plugin-catalog-queries";
-import type { InstalledPlugin } from "@bb/server-contract";
+import type { InstalledPlugin } from "@cloudroom/server-contract";
 import { makeInstalledPlugin } from "@/test/fixtures/plugins";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
 import type { AddPluginInitial } from "./AddPluginDialog";

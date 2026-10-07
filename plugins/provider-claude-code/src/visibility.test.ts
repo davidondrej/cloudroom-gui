@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { claudeCodeVisibilityMetadata } from "./visibility.js";
-import type { JsonRpcMessage } from "@bb/provider-bridge-protocol/bridge-kit";
+import type { JsonRpcMessage } from "@cloudroom/provider-bridge-protocol/bridge-kit";
 
 describe("claude-code visibility raw events", () => {
   it("classifies shared handled non-sdk envelopes as normalized", () => {

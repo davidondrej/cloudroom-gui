@@ -1,7 +1,7 @@
 {
   "extends": [
-    "@bb/tsconfig/base.json",
-    "@bb/tsconfig/typecheck-overrides.json"
+    "@cloudroom/tsconfig/base.json",
+    "@cloudroom/tsconfig/typecheck-overrides.json"
   ],
   "compilerOptions": {
     "jsx": "react-jsx",

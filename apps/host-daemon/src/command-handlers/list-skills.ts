@@ -1,11 +1,11 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveDataDirSkillsRootPath } from "@bb/config/skill-storage-paths";
+import { resolveDataDirSkillsRootPath } from "@cloudroom/config/skill-storage-paths";
 import type {
   HostDaemonOnlineRpcResult,
   SkillRootKind,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   CommandDispatchError,
   type CommandOf,

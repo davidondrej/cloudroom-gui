@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render } from "@testing-library/react";
-import type { Thread } from "@bb/domain";
-import { makeThread as makeThreadFixture } from "@bb/test-helpers/domain-fixtures";
-import { defaultAppSettings } from "@bb/domain";
+import type { Thread } from "@cloudroom/domain";
+import { makeThread as makeThreadFixture } from "@cloudroom/test-helpers/domain-fixtures";
+import { defaultAppSettings } from "@cloudroom/domain";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppCommandProvider } from "@/components/commands/AppCommandProvider";
 import { PaneContext, type PaneContextValue } from "./PaneContext";

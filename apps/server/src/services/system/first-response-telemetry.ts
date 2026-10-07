@@ -1,5 +1,5 @@
-import { cloudroomCommands, cloudroomThreads, events, threads, type DbConnection } from "@bb/db";
-import type { ThreadEventType } from "@bb/domain";
+import { cloudroomCommands, cloudroomThreads, events, threads, type DbConnection } from "@cloudroom/db";
+import type { ThreadEventType } from "@cloudroom/domain";
 import { and, desc, eq, gt, inArray, isNull, ne, or } from "drizzle-orm";
 import type { NotificationHub } from "../../ws/hub.js";
 import type { TelemetryEvent, TelemetryExecution, TelemetryService } from "./telemetry.js";

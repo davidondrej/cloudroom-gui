@@ -6,7 +6,7 @@ import type {
   PromptMentionSuggestion,
   ThreadListIndicatorState,
   TypeaheadMenuState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { orderPromptMentionSuggestions } from "@/hooks/promptMentionCandidates";
 import { StoryCard, StoryRow } from "../../../../.ladle/story-card";
 

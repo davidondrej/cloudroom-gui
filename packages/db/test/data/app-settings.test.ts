@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { defaultAppSettings } from "@bb/domain";
+import { defaultAppSettings } from "@cloudroom/domain";
 import {
   getAppKeybindingOverrides,
   getAppSettings,

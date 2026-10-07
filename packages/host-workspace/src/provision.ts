@@ -1,5 +1,5 @@
-import type { ProvisioningTranscriptEntry, WorkspaceStatus } from "@bb/domain";
-import { pathExists } from "@bb/process-utils";
+import type { ProvisioningTranscriptEntry, WorkspaceStatus } from "@cloudroom/domain";
+import { pathExists } from "@cloudroom/process-utils";
 import type {
   CommitOptions,
   CommitResult,

@@ -1,11 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { fuzzyMatchPaths } from "@bb/fuzzy-match";
-import { detectGitRepo, runGit } from "@bb/host-workspace";
+import { fuzzyMatchPaths } from "@cloudroom/fuzzy-match";
+import { detectGitRepo, runGit } from "@cloudroom/host-workspace";
 import type {
   HostPathEntry,
   HostPathEntryKind,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 
 interface FinalizeListedFilesArgs {
   filePaths: string[];

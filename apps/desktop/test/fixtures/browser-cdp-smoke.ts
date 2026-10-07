@@ -9,7 +9,7 @@ import { promisify } from "node:util";
 import { app, BrowserWindow, nativeImage } from "electron";
 import { WebSocket, WebSocketServer } from "ws";
 import { z } from "zod";
-import { desktopBrowserResultSchemas } from "@bb/host-daemon-contract";
+import { desktopBrowserResultSchemas } from "@cloudroom/host-daemon-contract";
 import {
   createDesktopBrowserCdpBridge,
   desktopBrowserCdpTargetId,

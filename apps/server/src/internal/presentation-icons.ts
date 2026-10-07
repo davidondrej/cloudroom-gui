@@ -1,7 +1,7 @@
-import { getThread } from "@bb/db";
-import type { ThreadEvent, ThreadEventWithItem } from "@bb/domain";
-import { isThreadEventWithItem, parseNamespacedGlyph } from "@bb/domain";
-import type { HostDaemonEventEnvelope } from "@bb/host-daemon-contract";
+import { getThread } from "@cloudroom/db";
+import type { ThreadEvent, ThreadEventWithItem } from "@cloudroom/domain";
+import { isThreadEventWithItem, parseNamespacedGlyph } from "@cloudroom/domain";
+import type { HostDaemonEventEnvelope } from "@cloudroom/host-daemon-contract";
 import { findPluginAgentTool } from "../services/plugins/plugin-agent-contributions.js";
 import { undeclaredIconProblem } from "@get-bb/plugin-sdk/internal/host-policy";
 import type { AppDeps } from "../types.js";

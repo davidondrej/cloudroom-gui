@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { threadScope, turnScope, type Thread } from "@bb/domain";
+import { threadScope, turnScope, type Thread } from "@cloudroom/domain";
 import {
   createConnection,
   createProject,
@@ -14,7 +14,7 @@ import {
   threads,
   upsertHost,
   type SlowDbQueryLogFields,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { eq } from "drizzle-orm";
 import {
   buildThreadConversationOutline,

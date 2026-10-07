@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import type { SkillProvider, SkillSummary } from "@bb/server-contract";
+import type { SkillProvider, SkillSummary } from "@cloudroom/server-contract";
 import {
   ResourceInfiniteScrollSentinel,
   useResourceInfiniteItems,
   useResourceViewportPageSize,
-} from "@bb/shared-ui/resource-pagination";
+} from "@cloudroom/shared-ui/resource-pagination";
 import {
   ResourceCollectionPage,
   ResourceCollectionViewport,
@@ -17,7 +17,7 @@ import {
   ResourceRowDetailChevron,
   ResourceSortMenu,
   ResourceToolbar,
-} from "@bb/shared-ui/resource-list";
+} from "@cloudroom/shared-ui/resource-list";
 import { BbLogo } from "@/components/ui/bb-logo";
 import {
   ConfirmDeleteDialog,
@@ -28,7 +28,7 @@ import { ProvenancePill } from "@/components/tools/ProvenancePill";
 import { SkillDetailView } from "@/components/tools/SkillDetailView";
 import { TOOLS_PAGE_BAND_CLASSES } from "@/components/tools/tools-navigation";
 import { skillScopeLabel } from "@/components/tools/skill-taxonomy";
-import type { ProviderInfo } from "@bb/domain";
+import type { ProviderInfo } from "@cloudroom/domain";
 import { ProviderIconMark } from "@/components/settings/ProviderIconMark";
 import { getProviderIconInfo } from "@/lib/provider-icon";
 import type { MarkdownLinkRouting } from "@/components/ui/markdown-link-routing";

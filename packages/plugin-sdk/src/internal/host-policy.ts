@@ -5,24 +5,24 @@ import {
   isNamespacedGlyph,
   isPluginOwnedIconPath,
   parseNamespacedGlyph,
-} from "@bb/domain/plugin-icon";
-import { RESERVED_BB_CLI_COMMANDS } from "@bb/domain/plugin-cli";
+} from "@cloudroom/domain/plugin-icon";
+import { RESERVED_BB_CLI_COMMANDS } from "@cloudroom/domain/plugin-cli";
 import {
   PLUGIN_INTERACTION_MAX_PAYLOAD_BYTES,
   PLUGIN_INTERACTION_MAX_TITLE_LENGTH,
-} from "@bb/domain/plugin-interaction-limits";
-import { PROVIDER_FORK_VALUES } from "@bb/domain/provider-fork";
+} from "@cloudroom/domain/plugin-interaction-limits";
+import { PROVIDER_FORK_VALUES } from "@cloudroom/domain/provider-fork";
 import {
   COMPLETED_TURN_DISPLAY_VALUES,
   DEFAULT_COMPLETED_TURN_DISPLAY,
-} from "@bb/domain/completed-turn-display";
+} from "@cloudroom/domain/completed-turn-display";
 import {
   jsonValueSchema,
   normalizeProviderNativeRoots,
   providerNativeRootsInputSchema,
   providerNativeRootsSchema,
   type ProviderNativeRoots,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { PLUGIN_CLI_OUTPUT_MAX_BYTES } from "../backend-contract.js";
 import type {
   PluginAgentToolContext,

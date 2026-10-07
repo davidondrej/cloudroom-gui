@@ -1,4 +1,4 @@
-import type { WorkspaceCommitSummary, WorkspaceDiffTarget } from "@bb/domain";
+import type { WorkspaceCommitSummary, WorkspaceDiffTarget } from "@cloudroom/domain";
 import type { GitDiffSelectionOption } from "../GitDiffToolbar";
 
 interface GitDiffIdentityParams {

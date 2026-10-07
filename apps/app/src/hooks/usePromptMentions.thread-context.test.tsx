@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, renderHook } from "@testing-library/react";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { usePromptMentions } from "./usePromptMentions";
 

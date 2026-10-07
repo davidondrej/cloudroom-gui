@@ -2,8 +2,8 @@ import type {
   SystemProviderState,
   SystemProviderStatesResponse,
   SystemProvidersQuery,
-} from "@bb/server-contract";
-import type { ProviderInfo } from "@bb/domain";
+} from "@cloudroom/server-contract";
+import type { ProviderInfo } from "@cloudroom/domain";
 import type { AppDeps } from "../../types.js";
 import { COMMAND_TIMEOUT_MS } from "../../constants.js";
 import {

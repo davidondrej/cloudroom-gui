@@ -5,7 +5,7 @@ import {
   normalizeProviderNativeRoots,
   providerNativeRootInputSchema,
   providerNativeRootsSchema,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { z } from "zod";
 
 const acpNativeSkillRootsSchema = z

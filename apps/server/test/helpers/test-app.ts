@@ -11,8 +11,8 @@ import {
 } from "../../src/services/skills/builtin-skills-copy.js";
 import { serve } from "@hono/node-server";
 import type { AddressInfo } from "node:net";
-import { createConnection, getAppSettings, type DbConnection } from "@bb/db";
-import { defaultFeatureFlags } from "@bb/domain";
+import { createConnection, getAppSettings, type DbConnection } from "@cloudroom/db";
+import { defaultFeatureFlags } from "@cloudroom/domain";
 import { initDb } from "../../src/db.js";
 import { createApp } from "../../src/server.js";
 import { PendingInteractionLifecycle } from "../../src/services/interactions/pending-interactions.js";

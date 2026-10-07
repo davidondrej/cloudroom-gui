@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import type {
   BbDesktopBrowserControlState,
   BbDesktopBrowserTarget,
-} from "@bb/desktop-contract";
-import { isRawThreadId } from "@bb/domain";
+} from "@cloudroom/desktop-contract";
+import { isRawThreadId } from "@cloudroom/domain";
 import type {
   DesktopBrowserChanged,
   DesktopBrowserCommand,
@@ -11,7 +11,7 @@ import type {
   DesktopBrowserLease,
   DesktopBrowserResult,
   DesktopBrowserTab,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   createDesktopBrowserCdpBridge,
   type DesktopBrowserCdpAdapter,

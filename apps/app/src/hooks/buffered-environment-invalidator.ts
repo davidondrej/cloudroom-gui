@@ -1,7 +1,7 @@
 import {
   createDebouncedCallbackScheduler,
   type EnvironmentChangeKind,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 interface BufferedEnvironmentInvalidatorOptions {
   debounceMs: number;

@@ -1,5 +1,5 @@
 {
-  "name": "@bb/plugin-api-map",
+  "name": "@cloudroom/plugin-api-map",
   "version": "0.0.1",
   "type": "module",
   "private": true,
@@ -30,7 +30,7 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

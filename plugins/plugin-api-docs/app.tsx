@@ -2,7 +2,7 @@ import {
   copyPluginSurfaceAgentReference,
   firstPartyPluginId,
   ProductMap,
-} from "@bb/plugin-api-map";
+} from "@cloudroom/plugin-api-map";
 import { useCallback, useEffect, useState } from "react";
 import { definePluginApp, useBbNavigate } from "@get-bb/plugin-sdk/app";
 

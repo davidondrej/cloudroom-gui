@@ -17,12 +17,12 @@ import type {
   PromptInput,
   ThreadOriginKind,
   ThreadRuntimeDisplayStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   TimelineParentChange,
   TimelineRow,
   TimelineSystemOperationKind,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { ThreadChatMessageReference } from "@get-bb/plugin-sdk";
 import {
   activityIntentTitleGlyph,
@@ -42,15 +42,15 @@ import {
   type TimelineTitle,
   type TimelineViewTurnRow,
   type TimelineViewWorkRow,
-} from "@bb/thread-view";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
+} from "@cloudroom/thread-view";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import {
   collectTimelineAutoExpansionRowIds,
   isNonExpandableSummary,
   isRowExpandable,
-} from "@bb/client-core";
-import { isRunningThreadRuntimeDisplayStatus } from "@bb/client-core";
+} from "@cloudroom/client-core";
+import { isRunningThreadRuntimeDisplayStatus } from "@cloudroom/client-core";
 import type {
   ThreadTimelineAddToChatHandler,
   ThreadTimelineAddToChatSource,
@@ -77,6 +77,10 @@ import type { MessageProseSelection } from "./SelectableMessageProse.js";
 import { TimelineReasoningDetail } from "./TimelineReasoningDetail.js";
 import { ExpandableTimelineRow } from "./ExpandableTimelineRow.js";
 import {
+  MissingProviderCliRow,
+  missingProviderCli,
+} from "./MissingProviderCliRow.js";
+import {
   TimelineLeadingIcon,
   TimelineStaticRowHeader,
   timelineRowHorizontalPaddingClassName,
@@ -89,9 +93,9 @@ import {
 } from "./TimelineTitleView.js";
 import { WorkRowBody } from "./TimelineRowDetails.js";
 import { TimelineDetailScroll } from "./TimelineDetailScroll.js";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import { AutoHeightContainer } from "../../ui/height-transition.js";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
 import { presentationTintStyle } from "./presentation-display.js";
 import { usePluginIconUrl } from "@/lib/plugin-logos";
 import {
@@ -113,7 +117,7 @@ import {
   joinSignatureParts,
   timelineRowRenderSignature,
   timelineRowsSignature,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   TOP_LEVEL_TIMELINE_ROW_INTRINSIC_SIZE_CLASS_NAME,
   timelineRowContainmentStyle,
@@ -1548,6 +1552,21 @@ function TimelineRowView({
           </TimelineStaticRowHeader>
         ))}
       </>
+    );
+  }
+
+  const missingCli =
+    row.kind === "system" && row.systemKind === "error"
+      ? missingProviderCli(row.detail ?? row.title)
+      : null;
+  if (missingCli) {
+    return (
+      <MissingProviderCliRow
+        threadId={row.threadId}
+        name={missingCli.name}
+        provider={missingCli.provider}
+        className={timelineRowHorizontalPaddingClassName(horizontalPadding)}
+      />
     );
   }
 

@@ -4,11 +4,11 @@ import type {
   ExperimentalDesktopBrowserImportOutcome,
   ExperimentalDesktopBrowserImportSources,
   ExperimentalDesktopBrowserScope,
-} from "@bb/sdk";
+} from "@cloudroom/sdk";
 import {
   DESKTOP_BROWSER_IMPORT_FAILURE_COPY,
   desktopBrowserImportSourceIdSchema,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { action } from "../action.js";
 import { createCliBbSdk } from "../client.js";
 

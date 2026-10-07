@@ -1,5 +1,5 @@
 import path from "node:path";
-import { toOptionalString } from "@bb/provider-bridge-protocol/bridge-kit";
+import { toOptionalString } from "@cloudroom/provider-bridge-protocol/bridge-kit";
 import { z } from "zod";
 import type { AcpToolCallContent } from "./wire.js";
 

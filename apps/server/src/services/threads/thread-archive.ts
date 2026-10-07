@@ -7,12 +7,14 @@ import {
   sweepProviderMachine,
 } from "../machines/provider-orchestration.js";
 import {
+  getThread,
+  listLiveThreadIdsInProject,
   listLiveThreadsInEnvironment,
   listNonDeletedChildThreads,
   listUnarchivedHiddenSourceThreads,
-} from "@bb/db";
-import type { EnvironmentRow } from "@bb/db";
-import type { Thread } from "@bb/domain";
+} from "@cloudroom/db";
+import type { EnvironmentRow } from "@cloudroom/db";
+import type { Thread } from "@cloudroom/domain";
 import type { AppDeps } from "../../types.js";
 import {
   threadEnvironmentUnavailableDetails,
@@ -223,4 +225,19 @@ export function archiveThreadAndChildren(
   }
 
   return archivedThreadIds;
+}
+
+export function archiveProjectThreads(deps: AppDeps, projectId: string): void {
+  for (const threadId of listLiveThreadIdsInProject(deps.db, projectId)) {
+    const thread = getThread(deps.db, threadId);
+    if (!thread || thread.archivedAt || thread.deletedAt) continue;
+    try {
+      archiveThreadAndChildren(deps, { parentThread: thread });
+    } catch (error) {
+      deps.logger.warn(
+        { error, threadId },
+        "Could not archive a thread of a removed project",
+      );
+    }
+  }
 }

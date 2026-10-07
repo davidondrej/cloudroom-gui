@@ -2,7 +2,7 @@ import {
   derivePluginId,
   PLUGIN_SDK_MAJOR,
   PLUGIN_SDK_VERSION,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 export function createPluginArtifactMeta(args: {
   packageName: string;

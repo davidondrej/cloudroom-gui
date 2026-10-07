@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { isBusyThread } from "@bb/client-core";
-import type { ThreadListEntry } from "@bb/domain";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
+import { isBusyThread } from "@cloudroom/client-core";
+import type { ThreadListEntry } from "@cloudroom/domain";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import {
   DESKTOP_DOWNLOAD_URL,
   useDesktopUpdateInfo,

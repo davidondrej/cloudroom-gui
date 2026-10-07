@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PromptMentionResource } from "@bb/domain";
+import type { PromptMentionResource } from "@cloudroom/domain";
 import {
   appendQuoteAndAttachmentsToDraft,
   appendQuoteToDraftText,

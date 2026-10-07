@@ -1,4 +1,4 @@
-import type { WorkspaceCommitSummary } from "@bb/domain";
+import type { WorkspaceCommitSummary } from "@cloudroom/domain";
 import { describe, expect, it } from "vitest";
 import {
   buildGitDiffSelectionOptions,

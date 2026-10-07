@@ -1,4 +1,4 @@
-import { BbHttpError, createBrowserBbSdk } from "@bb/sdk/browser";
+import { BbHttpError, createBrowserBbSdk } from "@cloudroom/sdk/browser";
 import { z } from "zod";
 import {
   pushSubscriptionsAddOutputSchema,

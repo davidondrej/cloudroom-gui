@@ -1,5 +1,5 @@
-import { reasoningLevelValues } from "@bb/domain";
-import type { AvailableModel, ReasoningLevel } from "@bb/domain";
+import { reasoningLevelValues } from "@cloudroom/domain";
+import type { AvailableModel, ReasoningLevel } from "@cloudroom/domain";
 import { agentModelFamilyId } from "./bridge/model-catalog.js";
 
 interface CursorParameterizedSelection {

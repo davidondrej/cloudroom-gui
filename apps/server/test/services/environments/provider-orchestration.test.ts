@@ -4,12 +4,12 @@ import { prepareProviderEnvironment } from "../../../src/services/threads/thread
 import { withEnvironmentCleanupSlot } from "../../../src/services/environments/cleanup-concurrency.js";
 import { reportEnvironmentHookProgress } from "../../../src/services/environments/environment-hooks.js";
 import { registerTestHostRpcCapture } from "../../helpers/commands.js";
-import { recordProvisionedEnvironmentWorkspace } from "@bb/db/internal-environment-lifecycle";
+import { recordProvisionedEnvironmentWorkspace } from "@cloudroom/db/internal-environment-lifecycle";
 import { createThreadFromRequest } from "../../../src/services/threads/thread-create.js";
 import {
   encodeClientTurnRequestIdNumber,
   systemThreadProvisioningEventDataSchema,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { requireThreadCommandEnvironment } from "../../../src/services/threads/thread-command-environment.js";
 import { ensureThreadProvisionEnvironmentReady } from "../../../src/services/threads/thread-provisioning-environment.js";
 import {
@@ -36,9 +36,9 @@ import {
   updatePreparingEnvironment,
   threads,
   updateThread,
-} from "@bb/db";
-import type { JsonValue } from "@bb/domain";
-import { makeHost } from "@bb/test-helpers/domain-fixtures";
+} from "@cloudroom/db";
+import type { JsonValue } from "@cloudroom/domain";
+import { makeHost } from "@cloudroom/test-helpers/domain-fixtures";
 import type { PluginEnvironmentProviderDeclaration } from "@get-bb/plugin-sdk";
 import { validatePluginEnvironmentProviderDeclaration } from "@get-bb/plugin-sdk/internal/host-policy";
 import {

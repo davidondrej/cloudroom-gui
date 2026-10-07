@@ -3,8 +3,8 @@ import {
   FILE_LIST_EXCLUDE_NAME_MAX_LENGTH,
   FILE_LIST_EXCLUDE_NAMES_MAX,
   FILE_LIST_LIMIT_MAX,
-} from "@bb/domain";
-import type { HostDaemonOnlineRpcResultByType } from "@bb/host-daemon-contract";
+} from "@cloudroom/domain";
+import type { HostDaemonOnlineRpcResultByType } from "@cloudroom/host-daemon-contract";
 
 export const hostFileReadRequestSchema = z
   .object({

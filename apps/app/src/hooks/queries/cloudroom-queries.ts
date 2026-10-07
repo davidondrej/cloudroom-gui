@@ -1,7 +1,7 @@
 import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { deriveProjectNameFromPath, reasoningLevelSchema, serviceTierSchema, type ReasoningLevel, type Thread } from "@bb/domain";
-import type { MacAccessLevel, RepoSuggestion } from "@bb/sdk/browser";
+import { deriveProjectNameFromPath, reasoningLevelSchema, serviceTierSchema, type ReasoningLevel, type Thread } from "@cloudroom/domain";
+import type { MacAccessLevel, RepoSuggestion } from "@cloudroom/sdk/browser";
 import type { ProjectSelectorSuggestions } from "@/components/pickers/ProjectSelector";
 import { usePathPickerHost } from "@/hooks/useLocalPathPicker";
 import { useSetRootComposeProjectId } from "@/lib/root-compose-selection";

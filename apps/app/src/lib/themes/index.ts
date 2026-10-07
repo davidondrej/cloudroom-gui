@@ -2,7 +2,7 @@ import {
   isBuiltInThemeId,
   type AppTheme,
   type BuiltInThemeId,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { catppuccinThemeCss } from "./catppuccin";
 import { defaultThemeCss } from "./default";
 import { draculaThemeCss } from "./dracula";

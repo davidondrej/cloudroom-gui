@@ -1,5 +1,5 @@
-import { pendingInteractionSchema, type PendingInteraction } from "@bb/domain";
-import type { PendingInteractionRow } from "@bb/db";
+import { pendingInteractionSchema, type PendingInteraction } from "@cloudroom/domain";
+import type { PendingInteractionRow } from "@cloudroom/db";
 import { ApiError } from "../../errors.js";
 
 export class PendingInteractionSerializationError extends ApiError {

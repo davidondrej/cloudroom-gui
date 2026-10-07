@@ -389,7 +389,7 @@ describe("buildPluginProviderRegistration", () => {
     ]);
   });
 
-  it("keeps Claude Code's finished turns flat and collapses every other first-party provider", async () => {
+  it("collapses finished turns for every first-party provider", async () => {
     const declarations = await loadFirstPartyProviderDeclarations();
     const projected = [...declarations.entries()].flatMap(([pluginId, list]) =>
       list.map((declared) => {
@@ -405,7 +405,7 @@ describe("buildPluginProviderRegistration", () => {
     );
     expect(Object.fromEntries(projected)).toStrictEqual({
       codex: "collapse",
-      "claude-code": "flat",
+      "claude-code": "collapse",
       pi: "collapse",
       "acp-cursor": "collapse",
       "acp-opencode": "collapse",

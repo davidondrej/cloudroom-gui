@@ -13,9 +13,9 @@ import {
   permissionModeSchema,
   pluginThemeMetaSchema,
   providerInfoSchema,
-} from "@bb/domain";
-import { providerHealthSchema as providerHealthSchema } from "@bb/provider-bridge-protocol/provider-maintenance";
-import { hostPlatformSchema } from "@bb/host-daemon-contract/local";
+} from "@cloudroom/domain";
+import { providerHealthSchema as providerHealthSchema } from "@cloudroom/provider-bridge-protocol/provider-maintenance";
+import { hostPlatformSchema } from "@cloudroom/host-daemon-contract/local";
 import { machineEnvironmentSetSchema } from "./machine-environment.js";
 
 const machineEnvironmentReplacementVariableSchema =
@@ -133,8 +133,8 @@ export interface SystemVoiceTranscriptionForm {
   [key: string]: string | Blob;
 }
 
-export { providerInfoSchema as systemProviderInfoSchema } from "@bb/domain";
-export type { ProviderInfo as SystemProviderInfo } from "@bb/domain";
+export { providerInfoSchema as systemProviderInfoSchema } from "@cloudroom/domain";
+export type { ProviderInfo as SystemProviderInfo } from "@cloudroom/domain";
 
 export const systemVoiceTranscriptionResponseSchema = z.object({
   text: z.string(),

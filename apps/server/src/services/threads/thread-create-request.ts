@@ -3,7 +3,7 @@ import type {
   PromptInput,
   ThreadOriginKind,
   ThreadVisibility,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   CreateThreadEnvironmentArgs,
   CreateThreadRequest,
@@ -11,7 +11,7 @@ import type {
   ProviderEnvironmentArgs,
   StartedOnBehalfOf,
   ThreadCreateOrigin,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 
 export interface ThreadCreateServiceRequestInput {
   executionTarget?: "local" | "cloud";

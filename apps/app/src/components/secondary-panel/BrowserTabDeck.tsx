@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { BbDesktopBrowserTarget } from "@bb/desktop-contract";
+import type { BbDesktopBrowserTarget } from "@cloudroom/desktop-contract";
 import type { BrowserFixedPanelTab } from "@/lib/fixed-panel-tabs-state";
 import { getDesktopBrowserApi } from "@/lib/bb-desktop";
 import {

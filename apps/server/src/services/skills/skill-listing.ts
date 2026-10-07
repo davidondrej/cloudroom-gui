@@ -2,14 +2,14 @@ import { Buffer } from "node:buffer";
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveDataDirSkillsRootPath } from "@bb/config/skill-storage-paths";
-import type { DiscoveredSkill, SkillRootKind } from "@bb/host-daemon-contract";
+import { resolveDataDirSkillsRootPath } from "@cloudroom/config/skill-storage-paths";
+import type { DiscoveredSkill, SkillRootKind } from "@cloudroom/host-daemon-contract";
 import type {
   SkillProvider,
   SkillScope,
   SkillSummary,
-} from "@bb/server-contract";
-import { editableSkillScopeSchema } from "@bb/server-contract";
+} from "@cloudroom/server-contract";
+import { editableSkillScopeSchema } from "@cloudroom/server-contract";
 import { COMMAND_TIMEOUT_MS } from "../../constants.js";
 import { ApiError } from "../../errors.js";
 import type { AppDeps } from "../../types.js";

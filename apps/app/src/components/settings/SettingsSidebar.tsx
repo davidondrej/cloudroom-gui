@@ -4,10 +4,10 @@ import {
   useEffect,
   useState,
 } from "react";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
-import { Icon } from "@bb/shared-ui/icon";
-import { Input } from "@bb/shared-ui/input";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Input } from "@cloudroom/shared-ui/input";
 import {
   SectionSidebar,
   SectionSidebarIcon,

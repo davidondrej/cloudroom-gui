@@ -13,6 +13,7 @@ export interface DesktopReleaseConfig {
   applicationName: "bb" | "bb Nightly";
   artifactName: string;
   iconFileName: "icon.png" | "icon-nightly.png";
+  linuxDesktopName: "cloudroom.desktop" | "cloudroom-nightly.desktop";
   linuxExecutableName: "bb" | "bb-nightly";
   macIconPath: "assets/icon.icns" | "assets/icon-nightly.icns";
   releaseTag: "desktop-latest" | "desktop-nightly";

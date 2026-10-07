@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import type { Environment, JsonValue } from "@bb/domain";
+import type { Environment, JsonValue } from "@cloudroom/domain";
 import { createBbSdk } from "../src/core.js";
 import { createHttpTransport } from "../src/transport-http.js";
 import { ThreadWaitTimeoutError } from "../src/areas/threads.js";
@@ -105,7 +105,7 @@ function createFetchQueue(
   return { fetch: fetchMock, requests };
 }
 
-describe("@bb/sdk", () => {
+describe("@cloudroom/sdk", () => {
   it("creates a DigitalOcean machine through the SDK without a project", async () => {
     const host = {
       id: "host_do",

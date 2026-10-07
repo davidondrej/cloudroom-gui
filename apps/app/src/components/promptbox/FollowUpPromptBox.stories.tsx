@@ -7,17 +7,17 @@ import type {
   PromptTextMention,
   ThreadQueuedMessage,
   WorkspaceStatus,
-} from "@bb/domain";
-import { makeThreadQueuedMessage } from "@bb/test-helpers/domain-fixtures";
+} from "@cloudroom/domain";
+import { makeThreadQueuedMessage } from "@cloudroom/test-helpers/domain-fixtures";
 import {
   formatEnvironmentDisplay,
   type EnvironmentDisplayHostContext,
-} from "@bb/core-ui";
-import { EMPTY_ORDERED_MENTION_SUGGESTIONS } from "@bb/client-core";
+} from "@cloudroom/core-ui";
+import { EMPTY_ORDERED_MENTION_SUGGESTIONS } from "@cloudroom/client-core";
 import type {
   SystemExecutionOptionsModelLoadError,
   ThreadContextWindowUsage,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   FollowUpPromptBox,
   type FollowUpSubmitMode,
@@ -68,8 +68,8 @@ import type {
   ExecutionPermissionConfig,
 } from "@/components/promptbox/ExecutionControls";
 import { PageShell } from "@/components/ui/page-shell.js";
-import { promptDraftToInput, type PromptDraftState } from "@bb/client-core";
-import { queuedInputToDraft } from "@bb/client-core";
+import { promptDraftToInput, type PromptDraftState } from "@cloudroom/client-core";
+import { queuedInputToDraft } from "@cloudroom/client-core";
 
 export default {
   title: "promptbox/Follow Up Prompt Box",

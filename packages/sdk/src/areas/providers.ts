@@ -2,7 +2,7 @@ import type {
   SystemExecutionOptionsResponse,
   SystemProviderInfo,
   SystemProvidersQuery,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   readExecutionOptions,
   signalRequestArgs,

@@ -3,13 +3,13 @@ import {
   threadStatusSchema,
   threadStatusValues,
   type ThreadStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   threadCountGroupBySchema,
   THREAD_COUNT_ROOT_PARENT,
   type ThreadCountGroupBy,
-} from "@bb/server-contract";
-import type { ThreadCountResult } from "@bb/sdk";
+} from "@cloudroom/server-contract";
+import type { ThreadCountResult } from "@cloudroom/sdk";
 import { action } from "../../action.js";
 import { createCliBbSdk } from "../../client.js";
 import { columnWidths, printBorderlessTable } from "../../table.js";

@@ -7,11 +7,11 @@ import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const require = createRequire(import.meta.url);
-const sharedUiIconDir = dirname(require.resolve("@bb/shared-ui/icon"));
+const sharedUiIconDir = dirname(require.resolve("@cloudroom/shared-ui/icon"));
 
-type IconModule = typeof import("@bb/shared-ui/icon");
-type IconRegistryModule = typeof import("@bb/shared-ui/icon-registry");
-type IconExtendedModule = typeof import("@bb/shared-ui/icon-extended");
+type IconModule = typeof import("@cloudroom/shared-ui/icon");
+type IconRegistryModule = typeof import("@cloudroom/shared-ui/icon-registry");
+type IconExtendedModule = typeof import("@cloudroom/shared-ui/icon-extended");
 
 async function freshIconModules(): Promise<{
   icon: IconModule;
@@ -19,8 +19,8 @@ async function freshIconModules(): Promise<{
 }> {
   vi.resetModules();
   const [icon, registry] = await Promise.all([
-    import("@bb/shared-ui/icon"),
-    import("@bb/shared-ui/icon-registry"),
+    import("@cloudroom/shared-ui/icon"),
+    import("@cloudroom/shared-ui/icon-registry"),
   ]);
   return { icon, registry };
 }
@@ -74,7 +74,7 @@ describe("Icon core/extended split", () => {
   it("keeps ICON_NAMES equal to the disjoint union of the core and extended maps", async () => {
     const { icon, registry } = await freshIconModules();
     const extended: IconExtendedModule =
-      await import("@bb/shared-ui/icon-extended");
+      await import("@cloudroom/shared-ui/icon-extended");
 
     const extendedKeys = Object.keys(extended.EXTENDED_ICON_MAP).sort();
     expect(extendedKeys).toEqual([...registry.EXTENDED_ICON_NAMES].sort());

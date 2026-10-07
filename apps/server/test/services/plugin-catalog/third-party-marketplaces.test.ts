@@ -11,7 +11,7 @@ import {
   migrate,
   upsertInstalledPlugin,
   type DbConnection,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createPluginCatalogService } from "../../../src/services/plugin-catalog/plugin-catalog-service.js";
 import { refreshCuratedMarketplace } from "../../helpers/plugin-catalog.js";

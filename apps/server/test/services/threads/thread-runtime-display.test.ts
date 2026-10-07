@@ -19,18 +19,18 @@ import {
   upsertHost,
   type DbConnection,
   type ThreadWithPendingInteractionState,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   formatClientTurnRequestIdSuffix,
   threadScope,
   turnScope,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   ClientTurnRequestId,
   PromptInput,
   Thread,
   ThreadRuntimeState,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { DAEMON_ACTIVE_WORK_DISCONNECT_GRACE_MS } from "../../../src/constants.js";
 import {
   resolveThreadRuntimeState,

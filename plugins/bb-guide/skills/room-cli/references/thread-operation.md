@@ -23,7 +23,7 @@
   not recognized and reaches the provider as literal text. Review the proposed
   plan with `room-cli thread interactions`; `room-cli thread cancel-plan` leaves Plan mode
   early. The SDK equivalent is `input: [createBuiltinPlanCommandTextInput(text)]`
-  (exported by `@bb/sdk`) on `threads.spawn` / `threads.send`.
+  (exported by `@cloudroom/sdk`) on `threads.spawn` / `threads.send`.
 - Use `room-cli thread edit-message <thread-id> --message "..."` to replace and rerun
   the latest eligible user message in a supporting provider thread. Pass
   `--expected-request-sequence <sequence>` to select an earlier message. Failed

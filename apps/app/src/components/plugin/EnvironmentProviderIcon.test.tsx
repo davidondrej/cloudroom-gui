@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
-import type { SystemEnvironmentProvider } from "@bb/server-contract";
+import type { SystemEnvironmentProvider } from "@cloudroom/server-contract";
 import {
   resetPluginSlotStoreForTest,
   setPluginSlotRegistrations,

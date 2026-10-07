@@ -9,18 +9,18 @@ import {
 } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
-import type { Environment, Host, Thread } from "@bb/domain";
-import type { EnvironmentDisplayHostContext } from "@bb/core-ui";
+import type { Environment, Host, Thread } from "@cloudroom/domain";
+import type { EnvironmentDisplayHostContext } from "@cloudroom/core-ui";
 import type {
   SystemEnvironmentProvider,
   SystemMachineProvider,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { systemEnvironmentProvidersQueryKey } from "@/hooks/queries/environment-provider-queries";
 import {
   hostsQueryKey,
   systemMachineProvidersQueryKey,
 } from "@/hooks/queries/query-keys";
-import { TooltipProvider } from "@bb/shared-ui/tooltip";
+import { TooltipProvider } from "@cloudroom/shared-ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -29,7 +29,7 @@ import {
   makeEnvironment,
   makeHost,
   makeThread as makeThreadFixture,
-} from "@bb/test-helpers/domain-fixtures";
+} from "@cloudroom/test-helpers/domain-fixtures";
 import {
   EnvironmentProvisioningFailureRow,
   EnvironmentRow,

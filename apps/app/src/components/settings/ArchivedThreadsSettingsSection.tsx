@@ -1,17 +1,17 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { ThreadListEntry } from "@bb/domain";
-import { Button } from "@bb/shared-ui/button";
+import type { ThreadListEntry } from "@cloudroom/domain";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { EmptyStatePanel } from "@bb/shared-ui/empty-state";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { Input } from "@bb/shared-ui/input";
-import { Pill } from "@bb/shared-ui/pill";
+} from "@cloudroom/shared-ui/dropdown-menu";
+import { EmptyStatePanel } from "@cloudroom/shared-ui/empty-state";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { Input } from "@cloudroom/shared-ui/input";
+import { Pill } from "@cloudroom/shared-ui/pill";
 import { ThreadUnarchiveButton } from "@/components/thread/ThreadUnarchiveButton";
 import { useUnarchiveThread } from "@/hooks/mutations/thread-state-mutations";
 import {
@@ -20,6 +20,7 @@ import {
   useThreadSearch,
   type UseArchivedThreadsFilters,
 } from "@/hooks/queries/thread-queries";
+import { useHiddenProjects } from "@/hooks/queries/project-queries";
 import { useSidebarNavigation } from "@/hooks/queries/sidebar-navigation-query";
 import type { ArchivedThreadsKindFilter } from "@/hooks/queries/query-keys";
 import { getThreadRoutePath } from "@/lib/route-paths";
@@ -103,6 +104,7 @@ export function ArchivedThreadsSettingsSection() {
   const [kind, setKind] = useState<ArchivedThreadsKindFilter>("all");
   const [projectId, setProjectId] = useState(ALL_PROJECTS);
   const sidebarNavigation = useSidebarNavigation();
+  const hiddenProjects = useHiddenProjects().data;
   const searchIsActive = hasThreadSearchableQuery(search);
   const archivedThreadsQuery = useArchivedThreads(
     {
@@ -123,8 +125,9 @@ export function ArchivedThreadsSettingsSection() {
     return [
       sidebarNavigation.data.personalProject,
       ...sidebarNavigation.data.projects,
+      ...(hiddenProjects ?? []),
     ];
-  }, [sidebarNavigation.data]);
+  }, [hiddenProjects, sidebarNavigation.data]);
   const projectNames = useMemo(
     () => new Map(projects.map((project) => [project.id, project.name])),
     [projects],

@@ -1,7 +1,7 @@
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { isDeepStrictEqual } from "node:util";
-import { PLUGIN_CATALOG_CATEGORIES as BUILTIN_DISCOVERY_CATEGORIES } from "@bb/domain";
+import { PLUGIN_CATALOG_CATEGORIES as BUILTIN_DISCOVERY_CATEGORIES } from "@cloudroom/domain";
 import {
   deletePluginMarketplace,
   getInstalledPlugin,
@@ -16,7 +16,7 @@ import {
   upsertPluginMarketplace,
   type DbConnection,
   type PluginMarketplaceRow,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   CURATED_PLUGIN_MARKETPLACE_NAME,
   type InstalledPlugin,
@@ -29,7 +29,7 @@ import {
   type PluginCatalogStatus,
   type PluginMarketplace,
   type PluginMarketplaceRefreshResult,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { brandingAssetHash } from "../plugins/app-bundle.js";
 import {
   builtinPluginSource,

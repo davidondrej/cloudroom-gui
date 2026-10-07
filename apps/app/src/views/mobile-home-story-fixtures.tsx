@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import type { PromptTextMention, ThreadListEntry } from "@bb/domain";
+import type { PromptTextMention, ThreadListEntry } from "@cloudroom/domain";
 import {
   NewThreadPromptBoxUI,
   type NewThreadEnvironmentConfig,

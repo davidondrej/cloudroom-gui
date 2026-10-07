@@ -1,5 +1,5 @@
-import { loadCliConfig, type CliConfig } from "@bb/config/cli";
-import { toOptionalString } from "@bb/config/strings";
+import { loadCliConfig, type CliConfig } from "@cloudroom/config/cli";
+import { toOptionalString } from "@cloudroom/config/strings";
 
 const VALID_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 

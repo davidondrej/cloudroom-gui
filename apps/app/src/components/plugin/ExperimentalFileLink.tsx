@@ -12,7 +12,7 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from "@bb/shared-ui/context-menu";
+} from "@cloudroom/shared-ui/context-menu";
 import { RouteAnchor } from "@/components/ui/app-route-anchor";
 import { useAppNavigationHost } from "@/lib/app-navigation-host";
 import { normalizeExperimentalFileOpenOptions } from "@/lib/live-file-navigation";

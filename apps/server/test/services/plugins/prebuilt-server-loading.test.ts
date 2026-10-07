@@ -7,9 +7,9 @@ import {
   migrate,
   upsertInstalledPlugin,
   type DbConnection,
-} from "@bb/db";
-import { PLUGIN_SDK_MAJOR, PLUGIN_SDK_VERSION } from "@bb/domain";
-import type { Logger } from "@bb/logger";
+} from "@cloudroom/db";
+import { PLUGIN_SDK_MAJOR, PLUGIN_SDK_VERSION } from "@cloudroom/domain";
+import type { Logger } from "@cloudroom/logger";
 import { createAiServiceRegistry } from "../../../src/services/ai/ai-service-registry.js";
 import {
   createPluginService,

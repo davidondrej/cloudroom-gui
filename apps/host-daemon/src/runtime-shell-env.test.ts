@@ -179,7 +179,7 @@ describe("resolveLocalBbExecutablePath", () => {
         cliRuntimePath,
       }),
     ).rejects.toThrow(
-      `Missing built bb CLI runtime at ${cliRuntimePath}. Build @bb/cli before starting the host daemon.`,
+      `Missing built bb CLI runtime at ${cliRuntimePath}. Build @cloudroom/cli before starting the host daemon.`,
     );
   });
 
@@ -193,7 +193,7 @@ describe("resolveLocalBbExecutablePath", () => {
         cliExecutablePath: cliEntryPath,
       }),
     ).rejects.toThrow(
-      `Missing built bb CLI entry at ${cliEntryPath}. Build @bb/cli before starting the host daemon.`,
+      `Missing built bb CLI entry at ${cliEntryPath}. Build @cloudroom/cli before starting the host daemon.`,
     );
   });
 
@@ -207,7 +207,7 @@ describe("resolveLocalBbExecutablePath", () => {
         cliExecutablePath: cliEntryPath,
       }),
     ).rejects.toThrow(
-      `Resolved bb CLI entry is not executable: ${cliEntryPath}. Build @bb/cli before starting the host daemon.`,
+      `Resolved bb CLI entry is not executable: ${cliEntryPath}. Build @cloudroom/cli before starting the host daemon.`,
     );
   });
 

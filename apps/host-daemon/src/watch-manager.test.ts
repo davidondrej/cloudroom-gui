@@ -3,13 +3,13 @@ import type {
   WatchThreadStorageRootArgs,
   WatchWorkspaceArgs,
   WorkspaceWatchError,
-} from "@bb/host-watcher";
-import type { HostWorkspace } from "@bb/host-workspace";
+} from "@cloudroom/host-watcher";
+import type { HostWorkspace } from "@cloudroom/host-workspace";
 import {
   createDeferredPromise,
   makeWorkspaceMergeBase,
   makeWorkspaceStatus,
-} from "@bb/test-helpers";
+} from "@cloudroom/test-helpers";
 import { describe, expect, it, vi } from "vitest";
 import { WatchManager, type WatchManagerOptions } from "./watch-manager.js";
 

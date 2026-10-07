@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@bb/shared-ui/button";
-import { Input } from "@bb/shared-ui/input";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Input } from "@cloudroom/shared-ui/input";
 import { sdk } from "@/lib/sdk";
 
 /** Connects a core the user hosts, by URL and token, without a Cloudroom account (core docs/setup.md). */

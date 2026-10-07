@@ -14,9 +14,9 @@ import {
   threadEventSchema,
   toolCallRequestSchema,
   toolCallResponseSchema,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { z } from "zod";
-import type { Endpoint } from "@bb/hono-typed-routes";
+import type { Endpoint } from "@cloudroom/hono-typed-routes";
 import type {
   HostDaemonOnlineRpcCommandType,
   HostDaemonSettledCommandType,

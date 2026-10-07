@@ -1,10 +1,10 @@
-import type { Environment, WorkspaceFileStatus } from "@bb/domain";
-import type { OpenInTargetContext } from "@bb/host-daemon-contract";
+import type { Environment, WorkspaceFileStatus } from "@cloudroom/domain";
+import type { OpenInTargetContext } from "@cloudroom/host-daemon-contract";
 import type { WorkspaceChangedFilesSection } from "@/components/workspace/workspace-change-summary";
 import type {
   EnvironmentFilePreviewSource,
   WorkspaceFilePreviewStatusLabel,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { buildAbsoluteFilePath } from "@/lib/absolute-file-path";
 
 interface ResolveThreadWorkspaceOpenPathArgs {

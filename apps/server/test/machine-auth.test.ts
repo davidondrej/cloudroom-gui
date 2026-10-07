@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
-import { authApiKeys, authUsers } from "@bb/db";
+import { authApiKeys, authUsers } from "@cloudroom/db";
 import { afterEach, describe, expect, it } from "vitest";
 import { initDb } from "../src/db.js";
 import { createMachineAuthService } from "../src/services/machine-auth.js";

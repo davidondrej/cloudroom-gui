@@ -9,11 +9,11 @@ import {
   type WorkspaceOpenTarget,
   type WorkspaceOpenTargetIcon,
   type WorkspaceOpenTargetId,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   pathExists,
   sanitizeInheritedChildProcessEnv,
-} from "@bb/process-utils";
+} from "@cloudroom/process-utils";
 import {
   BASIC_FILE_OPEN_CAPABILITIES,
   FILE_MANAGER_OPEN_CAPABILITIES,

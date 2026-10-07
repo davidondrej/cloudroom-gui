@@ -5,8 +5,8 @@ import {
   listEvents,
   listQueuedThreadMessages,
   setThreadExecutionOverride,
-} from "@bb/db";
-import type { ThreadQueuedMessage } from "@bb/domain";
+} from "@cloudroom/db";
+import type { ThreadQueuedMessage } from "@cloudroom/domain";
 import type { PluginHookName } from "@get-bb/plugin-sdk";
 import { afterEach, describe, expect, it } from "vitest";
 import {

@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import type { ThreadListEntry, ThreadWithRuntime } from "@bb/domain";
+import type { ThreadListEntry, ThreadWithRuntime } from "@cloudroom/domain";
 import { threadQueryKey, threadsQueryKey } from "../queries/query-keys";
 import {
   applyToCachedSidebarNavigationThreads,

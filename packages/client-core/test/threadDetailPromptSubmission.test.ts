@@ -1,4 +1,4 @@
-import type { PromptInput, ThreadRuntimeDisplayStatus } from "@bb/domain";
+import type { PromptInput, ThreadRuntimeDisplayStatus } from "@cloudroom/domain";
 import { describe, expect, it } from "vitest";
 import {
   buildAutoFollowUpRequest,

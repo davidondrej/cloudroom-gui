@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import { deleteThread, listPendingInteractionsByThread } from "@bb/db";
-import type { HostDaemonInteractiveRequest } from "@bb/host-daemon-contract";
-import { renderTemplate } from "@bb/templates";
+import { deleteThread, listPendingInteractionsByThread } from "@cloudroom/db";
+import type { HostDaemonInteractiveRequest } from "@cloudroom/host-daemon-contract";
+import { renderTemplate } from "@cloudroom/templates";
 import { describe, expect, it } from "vitest";
 import { toPendingInteraction } from "../../src/services/interactions/pending-interaction-serialization.js";
 import {

@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { threadEventSchema, type ThreadEvent } from "@bb/domain";
+import { threadEventSchema, type ThreadEvent } from "@cloudroom/domain";
 import { replayRecording } from "./parity.js";
 
 function writeLane(

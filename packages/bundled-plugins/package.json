@@ -1,5 +1,5 @@
 {
-  "name": "@bb/bundled-plugins",
+  "name": "@cloudroom/bundled-plugins",
   "private": true,
   "version": "0.0.1",
   "type": "module",
@@ -7,11 +7,10 @@
     "build": "cd ../.. && node --conditions=source --import tsx packages/bundled-plugins/build.ts"
   },
   "dependencies": {
-    "bb-plugin-account-pool": "workspace:*",
+    "bb-plugin-accounts": "workspace:*",
     "bb-plugin-ask-user-question": "workspace:*",
     "bb-plugin-automations": "workspace:*",
     "bb-plugin-bb-guide": "workspace:*",
-    "bb-plugin-browser-automation": "workspace:*",
     "bb-plugin-computer-use": "workspace:*",
     "bb-plugin-connect": "workspace:*",
     "bb-plugin-custom-instructions": "workspace:*",
@@ -38,6 +37,7 @@
     "bb-plugin-push-notifications": "workspace:*",
     "bb-plugin-scheduled-send": "workspace:*",
     "bb-plugin-secrets": "workspace:*",
+    "bb-plugin-time-in-cloudroom": "workspace:*",
     "bb-plugin-side-chat": "workspace:*",
     "bb-plugin-simple-notes": "workspace:*",
     "bb-plugin-tasks": "workspace:*",

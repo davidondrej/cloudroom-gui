@@ -2,8 +2,8 @@ import { useMemo } from "react";
 import type {
   ThreadResponse,
   ThreadTimelineResponse,
-} from "@bb/server-contract";
-import type { ThreadTimelineGoal } from "@bb/domain";
+} from "@cloudroom/server-contract";
+import type { ThreadTimelineGoal } from "@cloudroom/domain";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createStore, Provider as JotaiProvider } from "jotai";
 import { makeThread } from "../../../.ladle/story-fixtures";

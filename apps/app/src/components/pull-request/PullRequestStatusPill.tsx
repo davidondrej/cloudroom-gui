@@ -1,6 +1,6 @@
-import type { PullRequestState, ThreadPullRequest } from "@bb/domain";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+import type { PullRequestState, ThreadPullRequest } from "@cloudroom/domain";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { getPullRequestGithubCheckStatus } from "@/lib/pull-request-display";
 import { GithubFaviconIcon } from "./GithubFaviconIcon";
 

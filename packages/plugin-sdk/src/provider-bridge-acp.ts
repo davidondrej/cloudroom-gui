@@ -42,28 +42,28 @@
  * consumes are not published: the surface grows with a consumer, not ahead
  * of one.
  */
-import type { AcpLaunchSpec } from "@bb/provider-bridge-acp";
+import type { AcpLaunchSpec } from "@cloudroom/provider-bridge-acp";
 
-export { acpProviderBridge as experimental_acpProviderBridge } from "@bb/provider-bridge-acp";
+export { acpProviderBridge as experimental_acpProviderBridge } from "@cloudroom/provider-bridge-acp";
 export type {
   AcpClassifiedToolCall,
   AcpClientRequestOutcome,
   AcpDelegationReport,
   AcpDialect,
   AcpToolIdentity,
-} from "@bb/provider-bridge-acp";
+} from "@cloudroom/provider-bridge-acp";
 
 export {
   acpAgentProbeSchema as experimental_acpAgentProbeSchema,
   probeAcpAgent as experimental_probeAcpAgent,
-} from "@bb/provider-bridge-acp";
+} from "@cloudroom/provider-bridge-acp";
 export type {
   AcpAgentProbe,
   AcpAgentProbeRequest,
-} from "@bb/provider-bridge-acp";
+} from "@cloudroom/provider-bridge-acp";
 
-export { acpLaunchSpecSchema as experimental_acpLaunchSpecSchema } from "@bb/provider-bridge-acp";
-export type { AcpLaunchSpec } from "@bb/provider-bridge-acp";
+export { acpLaunchSpecSchema as experimental_acpLaunchSpecSchema } from "@cloudroom/provider-bridge-acp";
+export type { AcpLaunchSpec } from "@cloudroom/provider-bridge-acp";
 /**
  * @deprecated The bridge reads the parsed `AcpLaunchSpec` directly; the
  * profile it used to derive from the spec carried the same fields under
@@ -78,5 +78,5 @@ export type {
   AcpToolCallStatus,
   AcpToolCallUpdateEvent,
   AcpToolKind,
-} from "@bb/provider-bridge-acp";
-export type { AgentModelCatalog as AcpAgentModelCatalog } from "@bb/provider-bridge-acp";
+} from "@cloudroom/provider-bridge-acp";
+export type { AgentModelCatalog as AcpAgentModelCatalog } from "@cloudroom/provider-bridge-acp";

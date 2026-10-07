@@ -4,7 +4,7 @@ import {
   isFixedPanelTabsStateStorageKey,
   shouldPruneStoredFixedPanelTabsState,
   type BrowserFixedPanelTab,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { getLocalStorage } from "./browser-storage";
 
 export {
@@ -28,7 +28,7 @@ export {
   parseFixedPanelTabsState,
   serializeFixedPanelTabsState,
   areFixedPanelTabsEquivalent,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 export type {
   PluginPageFixedPanelTab,
   FixedPanelViewTab,
@@ -43,7 +43,7 @@ export type {
   SecondaryFileFixedPanelTab,
   FixedPanelTab,
   FixedPanelTabsState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 interface CreateBrowserFixedPanelTabArgs {
   environmentId: string | null;

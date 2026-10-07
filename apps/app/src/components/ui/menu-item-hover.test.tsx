@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   MenuHoverProvider,
   useMenuItemHover,
-} from "@bb/shared-ui/menu-item-hover";
+} from "@cloudroom/shared-ui/menu-item-hover";
 
 function HoverItem({ label }: { label: string }) {
   const { hoverProps } = useMenuItemHover();

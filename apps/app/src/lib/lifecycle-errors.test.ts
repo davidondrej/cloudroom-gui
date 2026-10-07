@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { LifecycleApiError } from "@bb/server-contract";
+import type { LifecycleApiError } from "@cloudroom/server-contract";
 import { HttpError } from "./api";
 import {
   describeLifecycleError,

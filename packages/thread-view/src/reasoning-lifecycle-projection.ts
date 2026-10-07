@@ -1,4 +1,4 @@
-import type { ActiveThinking } from "@bb/domain";
+import type { ActiveThinking } from "@cloudroom/domain";
 import type { EventMeta } from "./event-decode.js";
 import type {
   BuildEventProjectionMessagesOptions,

@@ -18,7 +18,7 @@ const packageTargets = [
     path: "packages/bb-app/package.json",
   },
   {
-    label: "@bb/desktop",
+    label: "@cloudroom/desktop",
     path: "apps/desktop/package.json",
   },
 ];
@@ -120,7 +120,7 @@ export async function bumpVersion(options) {
       `${update.target.label.replaceAll("/", "-")}.json`,
     updates,
   });
-  log(`Bumped: bb-app + @bb/desktop → ${newVersion}`);
+  log(`Bumped: bb-app + @cloudroom/desktop → ${newVersion}`);
 }
 
 async function main() {

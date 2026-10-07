@@ -6,8 +6,8 @@ import type {
   Thread,
   ThreadEventRow,
   ThreadStatus,
-} from "@bb/domain";
-import { createPublicApiClient } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import { createPublicApiClient } from "@cloudroom/server-contract";
 import {
   previewThreadText,
   stringifyThreadEventData,

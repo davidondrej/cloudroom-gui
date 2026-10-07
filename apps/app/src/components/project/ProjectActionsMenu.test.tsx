@@ -18,7 +18,7 @@ const mockPathPickerHost = vi.hoisted(() => ({
 
 const mockProjectActions = vi.hoisted(() => ({
   requestRename: vi.fn(),
-  requestDelete: vi.fn(),
+  requestHide: vi.fn(),
   requestAddLocalPath: vi.fn(),
 }));
 

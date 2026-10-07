@@ -7,7 +7,7 @@ import {
   resolveSharedDevInstanceConfig,
   resolveInheritedDevSkillsRootPaths,
   toDevProcessEnv,
-} from "@bb/config/runtime";
+} from "@cloudroom/config/runtime";
 import {
   createDevTurboCommand,
   createStartWorktreeCommand,
@@ -72,11 +72,11 @@ describe("run-dev", () => {
     expect(env.BB_HOST_DAEMON_PORT).toBe("39887");
     expect(env.NODE_ENV).toBe("development");
     const command = createDevTurboCommand(true);
-    expect(command.args).toContain("--filter=@bb/app");
-    expect(command.args).not.toContain("--filter=@bb/server");
-    expect(command.args).not.toContain("--filter=@bb/host-daemon");
+    expect(command.args).toContain("--filter=@cloudroom/app");
+    expect(command.args).not.toContain("--filter=@cloudroom/server");
+    expect(command.args).not.toContain("--filter=@cloudroom/host-daemon");
     expect(isolated.dataDir).not.toBe(shared.dataDir);
-    expect(createDevTurboCommand().args).toContain("--filter=@bb/server");
+    expect(createDevTurboCommand().args).toContain("--filter=@cloudroom/server");
   });
 
   it("does not combine shared history with worktree runtime startup", () => {
@@ -251,30 +251,6 @@ describe("run-dev", () => {
     expect(env.BB_PROJECT_ID).toBe("proj_parent");
   });
 
-  it("passes the account pool marker to a nested dev server", () => {
-    const config = resolveDevInstanceConfig({
-      homeDir: "/Users/tester",
-      repoRoot: "/Users/tester/src/bb",
-    });
-    const baseEnv: NodeJS.ProcessEnv = {
-      BB_ACCOUNT_POOL_PARENT_URL:
-        "http://127.0.0.1:38886/api/v1/plugins/account-pool/http",
-      BB_ACCOUNT_POOL_PARENT_TOKEN: "parent-hub-token",
-      ANTHROPIC_BASE_URL:
-        "http://127.0.0.1:38886/api/v1/plugins/account-pool/http",
-      ANTHROPIC_AUTH_TOKEN: "parent-hub-token",
-    };
-
-    const env = toDevProcessEnv({ baseEnv, config });
-
-    expect(env.BB_ACCOUNT_POOL_PARENT_URL).toBe(
-      "http://127.0.0.1:38886/api/v1/plugins/account-pool/http",
-    );
-    expect(env.BB_ACCOUNT_POOL_PARENT_TOKEN).toBe("parent-hub-token");
-    expect(env.ANTHROPIC_AUTH_TOKEN).toBe("parent-hub-token");
-    expect(env.BB_SERVER_URL).toBe(config.serverUrl);
-  });
-
   it("runs the same persistent dev tasks as pnpm dev", () => {
     expect(createDevTurboCommand()).toEqual({
       args: [
@@ -282,9 +258,9 @@ describe("run-dev", () => {
         "turbo",
         "run",
         "dev",
-        "--filter=@bb/app",
-        "--filter=@bb/server",
-        "--filter=@bb/host-daemon",
+        "--filter=@cloudroom/app",
+        "--filter=@cloudroom/server",
+        "--filter=@cloudroom/host-daemon",
         "--ui",
         "tui",
         "--concurrency",

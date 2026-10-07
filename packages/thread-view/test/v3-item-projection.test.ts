@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { TimelineRow, TimelineWorkRow } from "@bb/server-contract";
+import type { TimelineRow, TimelineWorkRow } from "@cloudroom/server-contract";
 import type { ThreadTimelineViewRow } from "../src/index.js";
-import type { ThreadEventItemPresentation } from "@bb/domain";
+import type { ThreadEventItemPresentation } from "@cloudroom/domain";
 import {
   buildTimelineActivityIntentTitles,
   buildTimelineRowTitle,

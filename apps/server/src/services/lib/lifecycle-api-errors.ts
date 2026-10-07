@@ -1,4 +1,4 @@
-import type { Environment, Host, Thread, ThreadStatus } from "@bb/domain";
+import type { Environment, Host, Thread, ThreadStatus } from "@cloudroom/domain";
 import type {
   EnvironmentNotReadyErrorDetails,
   HostUnavailableErrorDetails,
@@ -9,8 +9,8 @@ import type {
   ThreadEnvironmentUnavailableErrorDetails,
   ThreadNotWritableErrorDetails,
   ThreadNotWritableReason,
-} from "@bb/server-contract";
-import { hostUnavailableErrorDetailsSchema } from "@bb/server-contract";
+} from "@cloudroom/server-contract";
+import { hostUnavailableErrorDetailsSchema } from "@cloudroom/server-contract";
 import { ApiError } from "../../errors.js";
 
 type EnvironmentReadinessFields = Pick<Environment, "path" | "status">;

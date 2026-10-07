@@ -12,8 +12,8 @@ import {
   type SecondaryPanelRenderableTab,
 } from "./ThreadSecondaryPanel";
 import type { ThreadSecondaryPanel as ThreadSecondaryPanelTab } from "@/lib/thread-secondary-panel";
-import { Icon } from "@bb/shared-ui/icon";
-import { TooltipProvider } from "@bb/shared-ui/tooltip";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { TooltipProvider } from "@cloudroom/shared-ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import {
@@ -30,7 +30,7 @@ import {
   serializeSidebarSplitState,
   sidebarSplitStorageKey,
 } from "./sidebarSplitLayout";
-import type { WorkspaceFile } from "@bb/server-contract";
+import type { WorkspaceFile } from "@cloudroom/server-contract";
 import { StoryCard, StoryRow } from "../../../.ladle/story-card";
 import {
   ThreadMetadataContent,

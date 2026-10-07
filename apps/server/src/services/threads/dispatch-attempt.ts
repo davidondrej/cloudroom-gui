@@ -11,7 +11,7 @@ import {
   listRunningThreads,
   type ClaimedQueuedThreadMessageRow,
   type RunningThreadRow,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   promptInputSchema,
   type PromptInput,
@@ -20,13 +20,13 @@ import {
   type ResolvedThreadExecutionOptions,
   type Thread,
   type ThreadQueuedMessage,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   SendMessageRequest,
   StartedOnBehalfOf,
   ThreadCreateOrigin,
-} from "@bb/server-contract";
-import { startedOnBehalfOfSchema } from "@bb/server-contract";
+} from "@cloudroom/server-contract";
+import { startedOnBehalfOfSchema } from "@cloudroom/server-contract";
 import type {
   MessageDispatchHookContext,
   PluginDispatchEnvironmentIntent,

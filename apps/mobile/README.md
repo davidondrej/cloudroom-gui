@@ -1,11 +1,11 @@
-# @bb/mobile
+# @cloudroom/mobile
 
 Native iOS/Android client for bb (Expo SDK 57, React Native 0.86, Expo
 Router, NativeWind v5). Plan and decisions: `plans/bb-mobile-expo.md`.
 
 Status: a native shell around the web interface (#2515). `app/webview.tsx`
 loads the active server's web app in `react-native-webview` and talks to it
-over `@bb/mobile-bridge` (handshake, haptics, app-icon badge, share, open
+over `@cloudroom/mobile-bridge` (handshake, haptics, app-icon badge, share, open
 external links, open native screens). Threads, projects, plugins and server
 settings run in the page. The native screens cover what the page cannot
 own: first-run pairing (Direct URL and bb connect QR / code enrollment),
@@ -66,7 +66,7 @@ src/
     query/               per-profile QueryClient, AppState focus, realtime →
                          system config invalidation, session refetch
     realtime/            WebSocketManager-shaped realtime on RN WebSocket
-    sdk/                 createMobileSdk (@bb/sdk/browser + app-surface header),
+    sdk/                 createMobileSdk (@cloudroom/sdk/browser + app-surface header),
                          per-profile client registry
     session/             bb connect desktop-session cookie scheduler
     share/               inbound share intent → shell composer seed
@@ -113,7 +113,7 @@ scripts/                 generate-native-theme.ts (theme tokens),
                          testflight-distribute.mjs (TestFlight distribution)
 ```
 
-Rules: import `@bb/sdk/browser` (never `@bb/sdk`); no `@bb/shared-ui`; no DOM
+Rules: import `@cloudroom/sdk/browser` (never `@cloudroom/sdk`); no `@cloudroom/shared-ui`; no DOM
 APIs; keep RN-dependent code out of `src/lib/**` except `src/lib/native`.
 
 ## Prerequisites (macOS)
@@ -142,8 +142,8 @@ phones need a Tailscale Serve URL, bb connect, or a temporary
 
 ```bash
 # terminal 1: deterministic backend (fake provider, fixed port 41999) serving the built web app
-pnpm exec turbo run build --filter=@bb/app
-BB_MOBILE_E2E_SERVE_APP=1 pnpm --filter @bb/integration-tests e2e:mobile-backend
+pnpm exec turbo run build --filter=@cloudroom/app
+BB_MOBILE_E2E_SERVE_APP=1 pnpm --filter @cloudroom/integration-tests e2e:mobile-backend
 # terminal 2: Metro (EXPO_PUBLIC_BB_E2E=1 wipes profiles/preferences on every launch)
 cd apps/mobile && EXPO_PUBLIC_BB_SERVER_URL=http://127.0.0.1:41999 EXPO_PUBLIC_BB_E2E=1 pnpm dev --port 8082
 # terminal 3: flows
@@ -164,7 +164,7 @@ device settings from it.
 server the phone cannot reach, so the shell never loads a dead origin; it
 does not use the harness backend.
 `shell-connect.yaml` drives bb connect end to end against the stub apex +
-gate (`pnpm --filter @bb/integration-tests e2e:mobile-connect-stub`, see
+gate (`pnpm --filter @cloudroom/integration-tests e2e:mobile-connect-stub`, see
 "bb connect" below): manual code entry with the handle and the self-hosted
 apex → enrolled screen (session signed in, account servers listed) → Done →
 the shell through the gate (cookie on fetch and on `/ws`) → the stub expires
@@ -277,9 +277,9 @@ as the first argument drives a dev client through Metro instead.
   "Remove" only forgets the profile locally: the phone stays listed under
   Machines in the getbb.app dashboard until revoked there (the copy says so).
 - Stub for e2e (`tests/integration/mobile-e2e/connect-stub.ts`,
-  `pnpm --filter @bb/integration-tests e2e:mobile-connect-stub`): plays the
+  `pnpm --filter @cloudroom/integration-tests e2e:mobile-connect-stub`): plays the
   apex and the gate on one TLS port (`https://localhost:42998` /
-  `https://stub.localhost:42998`, so `@bb/connect-client`'s "server lives
+  `https://stub.localhost:42998`, so `@cloudroom/connect-client`'s "server lives
   under the apex" rule and the `Secure` cookie hold; iOS ATS refuses plain
   http to a qualified name). It redeems `STUB-PAIR` (sentinels
   `EXPIRED-CODE` / `USED-CODE` / `LIMIT-CODE` reproduce the apex errors),
@@ -463,7 +463,7 @@ group, App Store Connect needs all of this:
   single-use and expire in ten minutes. Give them the **demo server** instead:
   `apps/demo-server` is a Cloudflare Worker that answers the launch-path API
   from fixed data, runs nothing, and isolates each client address. Deploy it
-  with `pnpm --filter @bb/demo-server deploy`, and rehearse the review notes
+  with `pnpm --filter @cloudroom/demo-server deploy`, and rehearse the review notes
   below before every submission. Disclose it in the notes: a disclosed demo
   mode is sanctioned by guideline 2.1.
 
@@ -515,14 +515,13 @@ Beta App Review and another build of the same version usually does not.
 `apps/app/src/lib/themes/*.ts`: every color token per palette × light/dark as a
 plain RN color string, with `nativeRadii` and the touch (`pointer: coarse`)
 `nativeTypography` scale. Do not edit it by hand. After changing theme.css or a
-palette, run `pnpm --filter @bb/mobile theme:generate` and commit the result;
-`src/theme/generate-native-theme.test.ts` fails when the file is stale.
+palette, run `pnpm --filter @cloudroom/mobile theme:generate` and commit the result.
 
 ## Notes
 
 - Workspace packages resolve from TypeScript source through `metro.config.js`
-  (`source` export condition for `@bb/*` only, `./x.js` → `./x.ts`).
-- Import `@bb/sdk/browser`, never `@bb/sdk` (lint-enforced).
+  (`source` export condition for `@cloudroom/*` only, `./x.js` → `./x.ts`).
+- Import `@cloudroom/sdk/browser`, never `@cloudroom/sdk` (lint-enforced).
 - Never spread a `Headers` instance into a fetch init on React Native.
 - `lightningcss` is pinned to 1.30.1 for `@expo/metro-config` (NativeWind v5).
 - Type-scale line heights in `global.css` are unitless ratios

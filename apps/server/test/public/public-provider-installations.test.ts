@@ -1,11 +1,11 @@
-import { getHost, updateHost } from "@bb/db";
+import { getHost, updateHost } from "@cloudroom/db";
 import { setPluginMachineProviderBridge } from "../../src/services/plugins/plugin-machine-provider-registry.js";
 import type {
   HostDaemonOnlineRpcRequestMessage,
   ProviderCliStatusResponse,
-} from "@bb/host-daemon-contract";
-import { systemProviderInfoSchema } from "@bb/server-contract";
-import { DEFAULT_BB_REQUEST_TIMEOUT_MS } from "@bb/sdk";
+} from "@cloudroom/host-daemon-contract";
+import { systemProviderInfoSchema } from "@cloudroom/server-contract";
+import { DEFAULT_BB_REQUEST_TIMEOUT_MS } from "@cloudroom/sdk";
 import {
   validatePluginProviderDeclaration,
   validatePluginMachineProviderDeclaration,

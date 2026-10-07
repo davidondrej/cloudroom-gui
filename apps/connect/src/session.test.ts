@@ -18,7 +18,7 @@ import {
   session,
   sha256Hex,
   user,
-} from "@bb/connect-db";
+} from "@cloudroom/connect-db";
 
 import {
   MACHINE_LAST_SEEN_WRITE_INTERVAL_MS,

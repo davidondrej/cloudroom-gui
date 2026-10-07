@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.setConfig({ testTimeout: 120_000 });
-import { buildPluginApp, resolvePluginBuildToolchain } from "@bb/plugin-build";
+import { buildPluginApp, resolvePluginBuildToolchain } from "@cloudroom/plugin-build";
 function testToolchain() {
   return resolvePluginBuildToolchain(join(tmpdir(), "bb-toolchain-unused"));
 }

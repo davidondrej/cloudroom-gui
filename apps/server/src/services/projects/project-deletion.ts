@@ -14,8 +14,8 @@ import {
   projects,
   threads,
   type DbQueryConnection,
-} from "@bb/db";
-import type { Thread, ThreadStatus } from "@bb/domain";
+} from "@cloudroom/db";
+import type { Thread, ThreadStatus } from "@cloudroom/domain";
 import type {
   AppDeps,
   LoggedPendingInteractionWorkSessionDeps,

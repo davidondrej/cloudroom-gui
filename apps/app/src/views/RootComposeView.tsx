@@ -14,11 +14,11 @@ import {
   type ReasoningLevel,
   type ServiceTier,
   type ThreadListEntry,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   SidebarBootstrapResponse,
   TerminalSession,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   NewThreadComposer,
   type NewThreadComposerState,
@@ -34,7 +34,7 @@ import {
   autoStartProviderCliInstall,
   providerCliJobKey,
 } from "@/components/provider-cli/provider-cli-install-store";
-import { PROJECT_CHECKOUT_ENVIRONMENT_PROVIDER_ID } from "@bb/client-core";
+import { PROJECT_CHECKOUT_ENVIRONMENT_PROVIDER_ID } from "@cloudroom/client-core";
 import {
   encodeProviderValue,
   encodeReuseValue,
@@ -56,14 +56,14 @@ import {
   preloadThreadSecondaryPanel,
 } from "@/components/secondary-panel/lazySecondaryPanelComponents";
 import type { BrowserAddressFocusRequest } from "@/components/secondary-panel/BrowserTabContent";
-import { EmptyStatePanel } from "@bb/shared-ui/empty-state";
-import { Icon } from "@bb/shared-ui/icon";
+import { EmptyStatePanel } from "@cloudroom/shared-ui/empty-state";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { PageShell } from "@/components/ui/page-shell.js";
 import { RouteLoadingSkeleton } from "@/components/ui/route-loading-skeleton";
-import { Button } from "@bb/shared-ui/button";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
-import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
-import { COARSE_POINTER_COMPACT_ICON_SIZE_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
+import { Button } from "@cloudroom/shared-ui/button";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
+import { usePointerCoarse } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
+import { COARSE_POINTER_COMPACT_ICON_SIZE_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import { PluginIcon } from "@/components/plugin/PluginIcon";
 import type { FileOpenerOverride } from "@/lib/plugin-slot-resolvers";
 import { usePluginNewThreadPanelActions } from "@/components/plugin/PluginPanelActions";
@@ -86,12 +86,12 @@ import {
 import { PluginComposerHostProvider } from "@/components/plugin/plugin-composer-host";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
 import { useQuickCreateProjectController } from "@/hooks/useQuickCreateProject";
-import type { PromptDraftAttachment } from "@bb/client-core";
+import type { PromptDraftAttachment } from "@cloudroom/client-core";
 import {
   buildForkThreadRequest,
   FORK_THREAD_CREATE_SEED_LOCATION_STATE_KEY,
   type ForkThreadCreateSeed,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { useNavigateToThreadAfterCreatePreference } from "@/lib/root-compose-create-preference";
 import {
   readInitialPromptFromSearch,
@@ -121,7 +121,7 @@ import type {
   HostFileTabState,
   ThreadStorageFileTabState,
   WorkspaceFileTabState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   resolveUrlOpenTarget,
   useOpenLinksInAppBrowserPreference,
@@ -155,7 +155,7 @@ import {
   useThreadFileTabs,
   type FileSearchSelection,
 } from "@/components/secondary-panel/useThreadFileTabs";
-import { isSecondaryFileTab } from "@bb/client-core";
+import { isSecondaryFileTab } from "@cloudroom/client-core";
 import { RightPanelFileTabIcon } from "@/components/secondary-panel/RightPanelFileTabIcon";
 import {
   DEFAULT_TERMINAL_COLS,

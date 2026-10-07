@@ -1,4 +1,4 @@
-import * as questionFormHost from "@bb/shared-ui/question-form-host";
+import * as questionFormHost from "@cloudroom/shared-ui/question-form-host";
 import * as react from "react";
 import * as reactDom from "react-dom";
 import * as reactDomClient from "react-dom/client";
@@ -20,9 +20,9 @@ import * as pierreDiffs from "@pierre/diffs";
 import * as clsx from "clsx";
 import * as tailwindMerge from "tailwind-merge";
 import * as classVarianceAuthority from "class-variance-authority";
-import * as sharedUiIcon from "@bb/shared-ui/icon";
-import { createDebouncedCallbackScheduler } from "@bb/domain";
-import { BbHttpError } from "@bb/sdk/browser";
+import * as sharedUiIcon from "@cloudroom/shared-ui/icon";
+import { createDebouncedCallbackScheduler } from "@cloudroom/domain";
+import { BbHttpError } from "@cloudroom/sdk/browser";
 import type { QueryClient } from "@tanstack/react-query";
 import { markEnabledPluginListStale } from "@/hooks/cache-owners/plugin-cache-owner";
 import { pluginListQueryOptions } from "@/hooks/queries/plugin-settings-queries";

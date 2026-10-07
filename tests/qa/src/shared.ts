@@ -7,23 +7,23 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { hostSchema } from "@bb/domain";
-import type { Host } from "@bb/domain";
+import { hostSchema } from "@cloudroom/domain";
+import type { Host } from "@cloudroom/domain";
 import {
   type CreateProjectRequest,
   type ProjectResponse,
   projectResponseSchema,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   hostDaemonEnrollKeyResponseSchema,
   type HostDaemonEnrollKeyResponse,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   listOpenFilePids,
   readPositivePidFile,
   resolveProjectEnvCandidates,
   shellSingleQuote,
-} from "@bb/test-helpers";
+} from "@cloudroom/test-helpers";
 import { z } from "zod";
 
 const execFile = promisify(execFileCallback);

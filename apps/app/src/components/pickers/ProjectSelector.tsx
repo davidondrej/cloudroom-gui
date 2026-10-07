@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
-import type { RepoSuggestion } from "@bb/sdk/browser";
-import { Button } from "@bb/shared-ui/button";
+import type { RepoSuggestion } from "@cloudroom/sdk/browser";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   Command,
   CommandGroup,
@@ -8,16 +8,16 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@bb/shared-ui/command";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/command";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   OPTION_BASE_CLASS_NAME,
   OPTION_INTERACTIVE_CLASS_NAME,
   OPTION_MUTED_CLASS_NAME,
   OPTION_TRIGGER_CONTENT_CLASS_NAME,
-} from "@bb/shared-ui/option-display";
-import { Popover, PopoverContent, PopoverTrigger } from "@bb/shared-ui/popover";
+} from "@cloudroom/shared-ui/option-display";
+import { Popover, PopoverContent, PopoverTrigger } from "@cloudroom/shared-ui/popover";
 import { formatRelativeTime } from "@/lib/relative-time";
 import { searchPickerOptions } from "./picker-search";
 import { useResetPickerScroll } from "./useResetPickerScroll";

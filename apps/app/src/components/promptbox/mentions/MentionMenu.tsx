@@ -10,9 +10,9 @@ import {
 import {
   providerCommandSection,
   type ProviderCommandSection,
-} from "@bb/server-contract";
-import type { ReasoningLevel } from "@bb/domain";
-import { directoryFromPath } from "@bb/thread-view";
+} from "@cloudroom/server-contract";
+import type { ReasoningLevel } from "@cloudroom/domain";
+import { directoryFromPath } from "@cloudroom/thread-view";
 import { promptMentionResourceFromSuggestion } from "@/components/promptbox/editor/prompt-editor-serialization";
 import { promptCommandIconName } from "@/components/promptbox/mentions/prompt-mention-display";
 import {
@@ -23,9 +23,9 @@ import { ThreadStatusGlyph } from "@/components/sidebar/ThreadRow";
 import { formatRelativeTime } from "@/lib/relative-time";
 import { shouldLoadMoreCommandResults } from "@/components/promptbox/mentions/mention-menu-scroll";
 import { PluginIcon } from "@/components/plugin/PluginIcon";
-import { Icon } from "@bb/shared-ui/icon";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { TruncateStart } from "@/components/ui/truncate-start.js";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   EMPTY_ORDERED_MENTION_SUGGESTIONS,
   resolveThreadListIndicator,
@@ -34,7 +34,7 @@ import {
   type ProviderCommandSuggestion,
   type CommandMenuState,
   type TypeaheadMenuState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 export interface ReasoningCommandSuggestion {
   kind: "reasoning";

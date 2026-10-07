@@ -1,8 +1,8 @@
-import type { Host, ThreadListEntry } from "@bb/domain";
+import type { Host, ThreadListEntry } from "@cloudroom/domain";
 import {
   makeHost,
   makeThreadListEntry,
-} from "@bb/test-helpers/domain-fixtures";
+} from "@cloudroom/test-helpers/domain-fixtures";
 import { describe, expect, it } from "vitest";
 import {
   buildMachineThreadGroups,

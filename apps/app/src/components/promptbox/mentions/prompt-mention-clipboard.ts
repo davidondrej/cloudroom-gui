@@ -2,8 +2,8 @@ import { z } from "zod";
 import {
   promptMentionResourceSchema,
   type PromptMentionResource,
-} from "@bb/domain";
-import { PLUGIN_MENTION_TRIGGER_VALUES } from "@bb/client-core";
+} from "@cloudroom/domain";
+import { PLUGIN_MENTION_TRIGGER_VALUES } from "@cloudroom/client-core";
 
 const PROMPT_MENTION_CLIPBOARD_RESOURCE_ATTR = "data-prompt-mention-resource";
 const PROMPT_MENTION_CLIPBOARD_SERIALIZED_TEXT_ATTR =

@@ -1,12 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
-import type { PromptMentionCommandTrigger } from "@bb/domain";
-import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
+import type { PromptMentionCommandTrigger } from "@cloudroom/domain";
+import { usePointerCoarse } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
 import {
   filterCommandSuggestions,
   toProviderCommandSuggestion,
   type ProviderCommandSuggestion,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   projectCommandsQueryOptions,
   useProjectCommands,

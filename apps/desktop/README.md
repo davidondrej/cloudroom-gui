@@ -1,4 +1,4 @@
-# @bb/desktop
+# @cloudroom/desktop
 
 macOS and Linux Electron shell for bb. The desktop app loads the existing bb
 web UI and uses the packaged `bb-app` launcher for server and host-daemon
@@ -10,7 +10,7 @@ From the repo root, run `pnpm dev` in one terminal for the source server and
 live UI updates. In a second terminal, start the Electron shell:
 
 ```bash
-pnpm exec turbo run dev --filter=@bb/desktop
+pnpm exec turbo run dev --filter=@cloudroom/desktop
 ```
 
 The dev script builds `bb-app`, compiles the Electron main/preload files, and
@@ -26,7 +26,7 @@ directory.
 The launcher probes the checkout's Vite app port at startup and adapts:
 
 - **`pnpm dev` is already running** (Vite reachable): the shell loads the Vite
-  dev URL, so you get live source and HMR for `@bb/app` changes — no rebuild
+  dev URL, so you get live source and HMR for `@cloudroom/app` changes — no rebuild
   needed. It still attaches to the same running server/daemon for all API/WS
   traffic. The launcher prints `app <url> (Vite dev server — live reload)`. This
   is the fast loop for iterating on the desktop UI.
@@ -43,7 +43,7 @@ packaged runtime and keeps native dependencies rebuilt for Electron's bundled
 Node runtime:
 
 ```bash
-pnpm exec turbo run start --filter=@bb/desktop
+pnpm exec turbo run start --filter=@cloudroom/desktop
 ```
 
 Electron is pinned to `44.3.0`. macOS builds require macOS 13 (Ventura) or
@@ -55,17 +55,17 @@ SQLite module; older ABI-specific modules still use the prebuild fallback.
 ## Validation
 
 ```bash
-pnpm exec turbo run typecheck --filter=@bb/desktop --filter=bb-app
-pnpm exec turbo run build --filter=@bb/desktop
-pnpm exec turbo run test --filter=@bb/desktop --filter=bb-app --force
-pnpm exec turbo run dev --filter=@bb/desktop
+pnpm exec turbo run typecheck --filter=@cloudroom/desktop --filter=bb-app
+pnpm exec turbo run build --filter=@cloudroom/desktop
+pnpm exec turbo run test --filter=@cloudroom/desktop --filter=bb-app --force
+pnpm exec turbo run dev --filter=@cloudroom/desktop
 ```
 
 ## Packaging
 
 ```bash
-pnpm exec turbo run desktop:build --filter=@bb/desktop
-pnpm exec turbo run smoke:packaged --filter=@bb/desktop
+pnpm exec turbo run desktop:build --filter=@cloudroom/desktop
+pnpm exec turbo run smoke:packaged --filter=@cloudroom/desktop
 ```
 
 Artifacts are written under `apps/desktop/release.noindex/`. The macOS build is Apple
@@ -79,8 +79,8 @@ as CI sets for workflow-artifact-only builds), artifacts remain unsigned and
 macOS shows the normal Gatekeeper warning on first launch.
 
 For local verification without publishing, use
-`pnpm exec turbo run package --filter=@bb/desktop` on macOS, or
-`pnpm exec turbo run package:linux --filter=@bb/desktop` on Linux.
+`pnpm exec turbo run package --filter=@cloudroom/desktop` on macOS, or
+`pnpm exec turbo run package:linux --filter=@cloudroom/desktop` on Linux.
 
 npm's bundled dependencies are copied through an explicit `files` entry into
 `node_modules/npm/node_modules`, including nested dependency versions. pnpm's
@@ -95,8 +95,8 @@ publishing. This requires a native target host (macOS arm64 or Linux x64).
 verification without opening a desktop window:
 
 ```bash
-pnpm exec turbo run smoke:packaged-npm --filter=@bb/desktop
-pnpm exec turbo run smoke:packaged-npm --filter=@bb/desktop -- /absolute/path/to/bb.app/Contents/MacOS/bb
+pnpm exec turbo run smoke:packaged-npm --filter=@cloudroom/desktop
+pnpm exec turbo run smoke:packaged-npm --filter=@cloudroom/desktop -- /absolute/path/to/bb.app/Contents/MacOS/bb
 ```
 
 On Linux, the optional argument is the executable inside `linux-unpacked/` or
@@ -124,9 +124,9 @@ From the repo root, build an unpacked app, an AppImage distribution, or smoke
 test the current packaged output with:
 
 ```bash
-pnpm exec turbo run package:linux --filter=@bb/desktop
-pnpm exec turbo run desktop:build:linux --filter=@bb/desktop
-pnpm exec turbo run smoke:packaged --filter=@bb/desktop
+pnpm exec turbo run package:linux --filter=@cloudroom/desktop
+pnpm exec turbo run desktop:build:linux --filter=@cloudroom/desktop
+pnpm exec turbo run smoke:packaged --filter=@cloudroom/desktop
 ```
 
 Running an AppImage normally requires FUSE and, on some distributions, the
@@ -183,7 +183,7 @@ push code to Linux clients. Treat the release token accordingly.
 
 ## Releasing
 
-`bb-app` and `@bb/desktop` versions are LOCKED in lockstep. The desktop package
+`bb-app` and `@cloudroom/desktop` versions are LOCKED in lockstep. The desktop package
 depends on `bb-app: workspace:*`, and the displayed release version string must
 match `packages/bb-app/package.json`.
 
@@ -337,7 +337,7 @@ desktop app:
 
 ```bash
 npx bb-app@latest
-pnpm exec turbo run dev --filter=@bb/desktop
+pnpm exec turbo run dev --filter=@cloudroom/desktop
 ```
 
 The desktop supervisor handles normal quits plus `SIGINT` and `SIGTERM`, and it

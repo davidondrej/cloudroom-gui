@@ -1,14 +1,26 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type {
   TimelineNonOperationSystemRow,
   TimelineRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   ThreadTimelineRows,
   type ThreadTimelineRowsProps,
 } from "@/components/thread/timeline";
+import {
+  environmentQueryKey,
+  hostProviderCliStatusQueryKey,
+  threadQueryKey,
+} from "@/hooks/queries/query-keys";
+import { makeThreadResponse } from "@/test/fixtures/thread-responses";
 import { systemRow } from "@/test/fixtures/thread-timeline-rows";
 import { StoryCard, StoryRow } from "../../../../../.ladle/story-card";
+import {
+  HOST_IDS,
+  makeEnvironment,
+  makeProviderCliStatus,
+} from "../../../../../.ladle/story-fixtures";
 
 export default {
   title: "thread/timeline/rows/System",
@@ -176,6 +188,49 @@ const systemThreadStartModuleMissing: TimelineNonOperationSystemRow = systemRow(
   },
 );
 
+const systemThreadStartClaudeMissing: TimelineNonOperationSystemRow = systemRow(
+  {
+    id: "thr_cli_missing:error:4",
+    threadId: "thr_cli_missing",
+    turnId: null,
+    sourceSeqStart: 4,
+    sourceSeqEnd: 4,
+    startedAt: 1778565234271,
+    createdAt: 1778565234271,
+    systemKind: "error",
+    title: "Command thread.start failed",
+    detail:
+      "Cloudroom could not find the Claude Code CLI on this machine. Install Claude Code (https://claude.com/claude-code), or set BB_CLAUDE_CODE_EXECUTABLE to the full path of the claude binary, then restart Cloudroom.",
+    status: "error",
+  },
+);
+
+function MissingCliPreview() {
+  const queryClient = useQueryClient();
+  useState(() => {
+    const environment = makeEnvironment();
+    queryClient.setQueryData(
+      threadQueryKey(systemThreadStartClaudeMissing.threadId),
+      makeThreadResponse({ status: "error", environmentId: environment.id }),
+    );
+    queryClient.setQueryData(environmentQueryKey(environment.id), environment);
+    queryClient.setQueryData(hostProviderCliStatusQueryKey(HOST_IDS.local), {
+      "claude-code": makeProviderCliStatus("claude-code", {
+        installed: false,
+        installSource: "notInstalled",
+        executablePath: null,
+        currentVersion: null,
+        installAction: {
+          kind: "install",
+          label: "Install",
+          command: "curl -fsSL https://claude.ai/install.sh | bash",
+        },
+      }),
+    });
+  });
+  return <ErrorRowsPreview rows={[systemThreadStartClaudeMissing]} />;
+}
+
 const providerStreamDisconnectRows: TimelineRow[] = [
   providerStreamReconnect,
   providerStreamFinalFailure,
@@ -256,6 +311,12 @@ export function Errors() {
           initialExpanded={systemThreadStartModuleMissingExpanded}
           rows={[systemThreadStartModuleMissing]}
         />
+      </StoryRow>
+      <StoryRow
+        label="system/error — provider CLI missing"
+        hint="replaced by an install prompt with Install and Retry buttons"
+      >
+        <MissingCliPreview />
       </StoryRow>
     </StoryCard>
   );

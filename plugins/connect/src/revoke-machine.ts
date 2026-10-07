@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   deriveConnectBaseUrl,
   type ConnectCredential,
-} from "@bb/connect-client";
+} from "@cloudroom/connect-client";
 
 const revokeMachineResponseSchema = z.object({ ok: z.literal(true) });
 

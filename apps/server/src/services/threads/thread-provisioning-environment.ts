@@ -6,12 +6,12 @@ import {
   type EnvironmentRow,
   type DbTransaction,
   type DbNotifier,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   threadScope,
   type ProvisioningTranscriptEntry,
   type Thread,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { AppDeps } from "../../types.js";
 import type { CommandResultSideEffectsDeps } from "../../internal/command-result-side-effects.js";
 import { ApiError } from "../../errors.js";

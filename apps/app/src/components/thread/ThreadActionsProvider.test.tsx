@@ -3,8 +3,8 @@
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Thread } from "@bb/domain";
-import { makeThread as makeThreadFixture } from "@bb/test-helpers/domain-fixtures";
+import type { Thread } from "@cloudroom/domain";
+import { makeThread as makeThreadFixture } from "@cloudroom/test-helpers/domain-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appToast } from "@/components/ui/app-toast";
 import { sdk } from "@/lib/sdk";

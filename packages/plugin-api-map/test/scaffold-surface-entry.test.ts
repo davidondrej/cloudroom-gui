@@ -97,8 +97,6 @@ describe("surface-entry scaffold", () => {
       "--source",
       "apps/app/src/lib/command-palette/palette-plugin-actions.ts",
       "--source",
-      "apps/app/src/components/commands/CommandPalette.test.tsx",
-      "--source",
       "apps/app/src/components/commands/CommandPalette.tsx",
       "--api-symbol",
       "PluginCommandRegistration",
@@ -114,8 +112,6 @@ describe("surface-entry scaffold", () => {
       "PluginCommandContext",
       "--source",
       "apps/app/src/components/commands/CommandPalette.tsx",
-      "--source",
-      "apps/app/src/components/commands/CommandPalette.test.tsx",
       "--group",
       "command-palette",
       "--title",
@@ -146,10 +142,6 @@ describe("surface-entry scaffold", () => {
         responsiveStrategy: "scale-together",
         requiredStates: ["anchor", "triggered", "outcome"],
         sources: [
-          {
-            path: "apps/app/src/components/commands/CommandPalette.test.tsx",
-            anchors: ["TODO: Add a stable source anchor"],
-          },
           {
             path: "apps/app/src/components/commands/CommandPalette.tsx",
             anchors: ["TODO: Add a stable source anchor"],

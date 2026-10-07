@@ -7,7 +7,7 @@ import {
   type HostDaemonServerWsMessage,
   type HostDaemonSessionOpenResponse,
   type HostDaemonWatchSetReplaceMessage,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type { HostDaemonLogger } from "./logger.js";
 import type { ServerClient } from "./server-client.js";
 import type { ProtocolSelfUpdater } from "./protocol-self-update.js";

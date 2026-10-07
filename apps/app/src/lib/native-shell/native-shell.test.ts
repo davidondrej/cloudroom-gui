@@ -4,7 +4,7 @@ import {
   buildBridgeInjectionScript,
   parsePageToShellMessage,
   type NativeShellHandshake,
-} from "@bb/mobile-bridge";
+} from "@cloudroom/mobile-bridge";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getNativeShell,

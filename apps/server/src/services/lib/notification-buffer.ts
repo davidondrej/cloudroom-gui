@@ -5,8 +5,8 @@ import type {
   SystemChangeKind,
   ThreadChangeKind,
   ThreadChangeMetadata,
-} from "@bb/domain";
-import type { DbNotifier } from "@bb/db";
+} from "@cloudroom/domain";
+import type { DbNotifier } from "@cloudroom/db";
 
 interface BufferedNotification {
   flush(notifier: DbNotifier): void;

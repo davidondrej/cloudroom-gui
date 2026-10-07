@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { TimelineRow } from "@bb/server-contract";
+import type { TimelineRow } from "@cloudroom/server-contract";
 import { IMAGE_FILE_EXTENSIONS } from "@/components/secondary-panel/ImageTabLightboxContext";
 import {
   parseLocalFileHref,

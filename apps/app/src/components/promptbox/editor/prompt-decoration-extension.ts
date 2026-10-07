@@ -12,7 +12,7 @@ import {
   type Transaction,
 } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
-import type { PromptTextMention } from "@bb/domain";
+import type { PromptTextMention } from "@cloudroom/domain";
 import {
   promptEditorSerializationFromDoc,
   type PromptEditorOffsetSegment,

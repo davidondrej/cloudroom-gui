@@ -8,7 +8,7 @@ import {
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { MachineEnvironmentList } from "@bb/server-contract";
+import type { MachineEnvironmentList } from "@cloudroom/server-contract";
 import { MachineEnvironmentSettings } from "./MachineEnvironmentSettings";
 
 const mocks = vi.hoisted(() => ({

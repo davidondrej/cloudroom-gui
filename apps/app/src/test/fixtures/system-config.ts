@@ -1,11 +1,11 @@
-import { DEFAULTS } from "@bb/config/defaults";
+import { DEFAULTS } from "@cloudroom/config/defaults";
 import {
   defaultAppSettings,
   defaultAppTheme,
   defaultExperiments,
   defaultFeatureFlags,
-} from "@bb/domain";
-import type { SystemConfigResponse } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { SystemConfigResponse } from "@cloudroom/server-contract";
 
 export function makeSystemConfig(
   overrides: Partial<SystemConfigResponse> = {},

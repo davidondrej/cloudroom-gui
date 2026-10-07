@@ -1,12 +1,12 @@
 import { serverAccess } from "../services/machines/server-access.js";
-import { getNonDestroyedHost, updateHost } from "@bb/db";
+import { getNonDestroyedHost, updateHost } from "@cloudroom/db";
 import {
   publicApiRoutes,
   typedRoutes,
   type PublicApiSchema,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { Hono } from "hono";
-import { HOST_DAEMON_PROTOCOL_VERSION } from "@bb/host-daemon-contract";
+import { HOST_DAEMON_PROTOCOL_VERSION } from "@cloudroom/host-daemon-contract";
 import type { AppDeps } from "../types.js";
 import {
   getProviderInstallations,

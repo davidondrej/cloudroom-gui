@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   orderCommandSuggestions,
   type ProviderCommandSuggestion,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 function skill(
   name: string,

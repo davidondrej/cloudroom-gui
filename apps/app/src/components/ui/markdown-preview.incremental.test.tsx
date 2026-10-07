@@ -13,7 +13,7 @@ import {
   vi,
 } from "vitest";
 import type { PluginMessageDirectiveProps } from "@get-bb/plugin-sdk";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import { ThreadTitleMentionResourcesProvider } from "@/components/thread/ThreadTitleMentions";
 import { threadQueryKey } from "@/hooks/queries/query-keys";
 import { makeThreadResponse } from "@/test/fixtures/thread-responses";

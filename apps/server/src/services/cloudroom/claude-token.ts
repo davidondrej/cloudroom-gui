@@ -2,7 +2,7 @@ import { execFile, spawn } from "node:child_process";
 import { accessSync, constants, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import { findCliExecutable } from "@bb/process-utils";
+import { findCliExecutable } from "@cloudroom/process-utils";
 import { ApiError } from "../../errors.js";
 
 const TOKEN = /(sk-ant-oat[A-Za-z0-9_-]{20,})[^A-Za-z0-9_-]/;
@@ -14,7 +14,7 @@ const failed = (message: string) => new ApiError(409, "claude_token_failed", mes
 const INSTALL = "curl -fsSL https://claude.ai/install.sh | bash";
 let installing: Promise<string> | null = null;
 /** Installs Claude Code with Anthropic's official installer, which needs no terminal and puts it in ~/.local/bin. One install at a time. */
-export function installClaude(): Promise<string> {
+function installClaude(): Promise<string> {
   installing ??= new Promise<string>((resolve, reject) => {
     execFile("/bin/bash", ["-c", INSTALL], { timeout: 10 * 60_000, maxBuffer: 4 * 1024 * 1024 }, (error, _stdout, stderr) => {
       const binary = claudeBinary();
@@ -24,6 +24,17 @@ export function installClaude(): Promise<string> {
     });
   }).finally(() => { installing = null; });
   return installing;
+}
+
+/**
+ * Connecting Claude means the user wants Claude Code in Cloudroom, so a missing CLI is installed silently (ADR 0193).
+ * With the Claude desktop app's copy, sign-in goes ahead and the install runs in the background.
+ */
+export async function ensureClaudeCli(onError: (error: unknown) => void): Promise<void> {
+  if (claudeBinary()) return;
+  const install = installClaude();
+  if (!desktopClaude()) await install;
+  else void install.catch(onError);
 }
 
 /** The Claude Code that the Claude desktop app keeps for itself: its newest fully downloaded version. */
@@ -75,6 +86,29 @@ const isSignInUrl = (value: string) => {
   } catch { return false; }
 };
 
+// Claude Code 2.1.292+ skips characters already on screen, so its token is only whole on the rebuilt screen.
+const skipsShownText = (text: string) => {
+  const [major = 0, minor = 0, patch = 0] = text.match(/Code ?v(\d+)\.(\d+)\.(\d+)/)?.slice(1).map(Number) ?? [];
+  return major * 1e12 + minor * 1e6 + patch >= 2e12 + 1e6 + 292;
+};
+function screenText(output: string): string {
+  const rows: string[][] = [];
+  let row = 0, col = 0;
+  for (const [, params = "", command, char] of output.matchAll(/\x1b\[([0-9;?<>=]*)([A-Za-z@`])|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[()*+]?[^\[\]]|([^])/gu)) {
+    const n = Number(params) || 1;
+    if (command === "G") col = n - 1;
+    else if (command === "C") col += n;
+    else if (command === "D") col = Math.max(0, col - n);
+    else if (command === "A") row = Math.max(0, row - n);
+    else if (command === "B") row += n;
+    else if (command === "K") rows[row] = params === "2" ? [] : (rows[row] ?? []).slice(0, col);
+    else if (char === "\r") col = 0;
+    else if (char === "\n") row++;
+    else if (char && char >= " ") (rows[row] ??= [])[col++] = char;
+  }
+  return Array.from(rows, line => Array.from(line ?? [], cell => cell ?? " ").join("")).join("\n");
+}
+
 interface TokenRun { id: string; url: string | null; error: string | null; done: boolean; stop: () => void }
 let tokenRun: TokenRun | null = null;
 
@@ -113,7 +147,8 @@ function runSetupToken(id: string, save: (token: string) => Promise<unknown>): T
   }, 250);
   child.stdout.on("data", (chunk: Buffer) => {
     output = (output + chunk.toString()).slice(-65536);
-    const token = output.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "").match(TOKEN)?.[1];
+    const text = output.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "");
+    const token = (skipsShownText(text) ? screenText(output) : text).match(TOKEN)?.[1];
     if (!token || saving) return;
     saving = true;
     stopChild();

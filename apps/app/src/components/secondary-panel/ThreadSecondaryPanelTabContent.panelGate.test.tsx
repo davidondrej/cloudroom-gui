@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, render, waitFor } from "@testing-library/react";
-import type { WorkspaceDiffTarget } from "@bb/domain";
+import type { WorkspaceDiffTarget } from "@cloudroom/domain";
 import type {
   EnvironmentDiffFileResponse,
   EnvironmentDiffFilesResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   environmentDiffFilesQueryKeyPrefix,

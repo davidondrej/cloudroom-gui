@@ -75,6 +75,7 @@ export type ClaudeSessionExecutionOptions = RuntimePermissionPolicy & {
   claudeCodePermissionMode?: "plan" | undefined;
   workflowsEnabled: boolean;
   commandGuardEnabled?: boolean;
+  stripAiCoAuthorsEnabled?: boolean | undefined;
   chromeEnabled: boolean;
   claudeAiConnectorsEnabled?: boolean | undefined;
   memoryEnabled?: boolean | undefined;
@@ -119,6 +120,7 @@ function buildInternalSessionParams(
   return {
     baseInstructions,
     ...(args.options.commandGuardEnabled === false ? { commandGuardEnabled: false } : {}),
+    ...(args.options.stripAiCoAuthorsEnabled === false ? { stripAiCoAuthorsEnabled: false } : {}),
     threadId: args.threadId,
     cwd: args.cwd,
     instructionMode: args.instructionMode,
@@ -151,6 +153,7 @@ const claudeProviderOptionsSchema = z
   .object({
     claudeCodePermissionMode: z.literal("plan").optional(),
     commandGuardEnabled: z.boolean().optional(),
+    stripAiCoAuthorsEnabled: z.boolean().optional(),
     workflowsEnabled: z.boolean().optional(),
     chromeEnabled: z.boolean().optional(),
     claudeAiConnectorsEnabled: z.boolean().optional(),
@@ -199,6 +202,7 @@ export function buildClaudeSessionParams(
       claudeCodePermissionMode: providerOptions.claudeCodePermissionMode,
       workflowsEnabled: providerOptions.workflowsEnabled ?? false,
       commandGuardEnabled: providerOptions.commandGuardEnabled,
+      stripAiCoAuthorsEnabled: providerOptions.stripAiCoAuthorsEnabled,
       chromeEnabled: providerOptions.chromeEnabled ?? false,
       claudeAiConnectorsEnabled: providerOptions.claudeAiConnectorsEnabled,
       memoryEnabled: providerOptions.memoryEnabled,

@@ -3,14 +3,14 @@ import type {
   ActiveThinking,
   ThreadOriginKind,
   ThreadRuntimeDisplayStatus,
-} from "@bb/domain";
-import type { TimelineRow } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { TimelineRow } from "@cloudroom/server-contract";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import { ConversationTimeline } from "@/components/ui/conversation.js";
 import { HeightTransition } from "@/components/ui/height-transition.js";
-import { Icon } from "@bb/shared-ui/icon";
-import { Skeleton } from "@bb/shared-ui/skeleton";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
 import { useSystemConfig } from "@/hooks/queries/system-queries";
 import { toUserAttachmentImageSrc } from "@/lib/user-attachment-images";
 import { ThreadTimelineRows } from "./ThreadTimelineRows.js";

@@ -15,7 +15,7 @@ import {
   type PendingInteractionApprovalDecision,
   type PendingInteractionApprovalSubject,
   type PendingInteractionCreate,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   cleanup,
   createApprovalResolution,

@@ -10,7 +10,7 @@ import {
   type NativeShellHandshake,
   type SafeAreaInsets,
   type ShellToPageEvent,
-} from "@bb/mobile-bridge";
+} from "@cloudroom/mobile-bridge";
 
 interface NativeBridgeGlobal {
   post(message: unknown): void;

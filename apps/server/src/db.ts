@@ -1,10 +1,10 @@
-import { createConnection, ensurePersonalProject, migrate } from "@bb/db";
+import { createConnection, ensurePersonalProject, migrate } from "@cloudroom/db";
 import type {
   DbConnection,
   MigrationWarningLogger,
   SlowDbQueryLogger,
-} from "@bb/db";
-import type { Logger } from "@bb/logger";
+} from "@cloudroom/db";
+import type { Logger } from "@cloudroom/logger";
 import {
   exportLegacyAutomationsForPluginImport,
   hasLegacyAutomationsToExport,

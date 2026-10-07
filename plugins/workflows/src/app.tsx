@@ -14,11 +14,11 @@ import {
   activityRowClass,
   activityTextClass,
   type ActivityRowState,
-} from "@bb/shared-ui/activity-row-styles";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Skeleton } from "@bb/shared-ui/skeleton";
+} from "@cloudroom/shared-ui/activity-row-styles";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
 import {
   WorkflowPhaseStrip,
   WorkflowProgress,
@@ -27,7 +27,7 @@ import {
   type WorkflowProgressAgentState,
   type WorkflowProgressSnapshot,
   type WorkflowStatusPillState,
-} from "@bb/shared-ui/workflow-progress";
+} from "@cloudroom/shared-ui/workflow-progress";
 import {
   definePluginApp,
   useBbNavigate,

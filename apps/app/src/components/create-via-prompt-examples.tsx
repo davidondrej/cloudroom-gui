@@ -2,14 +2,14 @@ import {
   ResourceCreateButton,
   type ResourceCreateMenuAction,
   type ResourceCreateTemplateGroup,
-} from "@bb/shared-ui/resource-list";
-import type { IconName } from "@bb/shared-ui/icon";
+} from "@cloudroom/shared-ui/resource-list";
+import type { IconName } from "@cloudroom/shared-ui/icon";
 import {
   PLUGIN_EXAMPLES,
   UTILITY_EXAMPLES,
   briefPrompt,
 } from "@/components/plugin/plugin-create-examples";
-import { CREATE_PLUGIN_PROMPT, CREATE_SKILL_PROMPT } from "@bb/client-core";
+import { CREATE_PLUGIN_PROMPT, CREATE_SKILL_PROMPT } from "@cloudroom/client-core";
 
 type CreateViaPromptKind = "skill" | "plugin";
 

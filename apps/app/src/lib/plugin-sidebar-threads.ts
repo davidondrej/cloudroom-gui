@@ -1,4 +1,4 @@
-import type { ThreadListEntry } from "@bb/domain";
+import type { ThreadListEntry } from "@cloudroom/domain";
 import type {
   PluginSidebarThread,
   PluginSidebarThreadIndicator,
@@ -7,8 +7,8 @@ import {
   getThreadListIndicatorLabel,
   resolveThreadListIndicator,
   threadListIndicatorStateForThread,
-} from "@bb/client-core";
-import { isThreadRead } from "@bb/client-core";
+} from "@cloudroom/client-core";
+import { isThreadRead } from "@cloudroom/client-core";
 
 export function toPluginSidebarThread(
   entry: ThreadListEntry,

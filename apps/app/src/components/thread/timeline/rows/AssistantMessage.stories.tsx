@@ -1,4 +1,4 @@
-import type { TimelineRow } from "@bb/server-contract";
+import type { TimelineRow } from "@cloudroom/server-contract";
 import { ConversationMessageContent } from "@/components/thread/timeline/ConversationMessageContent";
 import { ThreadTimelineRows } from "@/components/thread/timeline/ThreadTimelineRows";
 import { PAGE_SHELL_CONTENT_STYLE } from "@/components/ui/page-shell-content-style";
@@ -109,7 +109,7 @@ export function FilePathLink({
 | \`WorkspaceChangesList\` migration | ✅ Preserved. Single \`onFileClick\` API. |
 | Info tab \`onChangedFileClick\` → opens diff panel | ✅ Preserved, gated on \`canUseGitUi\`. |
 | **DelegationRow "Working…" empty-state** | ✅ **Reimplemented** in \`WorkRowBody\`'s \`delegation\` case. Same trigger, same shimmer. |
-| **Click filename → open diff** | ❌ Dropped — needs a \`TimelineTitle\` contract change in \`@bb/thread-view\`. Outside scope. |
+| **Click filename → open diff** | ❌ Dropped — needs a \`TimelineTitle\` contract change in \`@cloudroom/thread-view\`. Outside scope. |
 
 ## Validation
 

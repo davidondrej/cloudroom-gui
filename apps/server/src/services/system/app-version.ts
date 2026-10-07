@@ -1,4 +1,4 @@
-import type { SystemVersionResponse } from "@bb/server-contract";
+import type { SystemVersionResponse } from "@cloudroom/server-contract";
 import type { ServerRuntimeConfig } from "../../types.js";
 
 export interface AppVersionService {

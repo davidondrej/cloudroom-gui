@@ -6,9 +6,9 @@ import {
   type ReactNode,
 } from "react";
 import { toast as sonnerToast, type Action, type ExternalToast } from "sonner";
-import { Button } from "@bb/shared-ui/button";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   openNotificationCenter,
   recordNotification,

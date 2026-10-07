@@ -33,26 +33,26 @@ export {
   CONFORMANCE_ASSEMBLED_EVENT_METHOD,
   formatConformanceReport as experimental_formatConformanceReport,
   runBridgeConformance as experimental_runBridgeConformance,
-} from "@bb/provider-bridge-protocol/conformance";
+} from "@cloudroom/provider-bridge-protocol/conformance";
 export type {
   BridgeConformanceTransport,
   ConformanceCheckResult,
   ConformanceReport,
   ConformanceSessionFixture,
   RunBridgeConformanceOptions,
-} from "@bb/provider-bridge-protocol/conformance";
+} from "@cloudroom/provider-bridge-protocol/conformance";
 
 export {
   ASSEMBLER_GRAMMAR_VERSIONS,
   createDeltaAssembler as experimental_createDeltaAssembler,
-} from "@bb/provider-bridge-protocol/assembler";
+} from "@cloudroom/provider-bridge-protocol/assembler";
 export type {
   AssembleDeltasArgs,
   CreateDeltaAssemblerOptions,
   DeltaAssembler,
   DiffCumulativeTextArgs,
   DiffCumulativeTextResult,
-} from "@bb/provider-bridge-protocol/assembler";
+} from "@cloudroom/provider-bridge-protocol/assembler";
 
 export {
   assembleCapturedThreadEvents as experimental_assembleCapturedThreadEvents,
@@ -62,7 +62,7 @@ export {
   describeCalibrationEvents as experimental_describeCalibrationEvents,
   normalizeCalibrationEvents as experimental_normalizeCalibrationEvents,
   toConformanceMessages as experimental_toConformanceMessages,
-} from "@bb/provider-bridge-protocol/testing";
+} from "@cloudroom/provider-bridge-protocol/testing";
 export type {
   BridgeDeltaEventCollector,
   BridgeJsonRpcId,
@@ -73,16 +73,16 @@ export type {
   CapturedBridgeJsonRpcOutput,
   CapturedBridgeNotification,
   NormalizeCalibrationEventsOptions,
-} from "@bb/provider-bridge-protocol/testing";
+} from "@cloudroom/provider-bridge-protocol/testing";
 
 export {
   checkRecordedCellReplay as experimental_checkRecordedCellReplay,
   RECORDED_CONFORMANCE_CELLS,
-} from "@bb/provider-bridge-protocol/conformance";
+} from "@cloudroom/provider-bridge-protocol/conformance";
 export type {
   RecordedCellReplay,
   RecordedConformanceCell,
-} from "@bb/provider-bridge-protocol/conformance";
+} from "@cloudroom/provider-bridge-protocol/conformance";
 
 export {
   assembleRecordedEvents as experimental_assembleRecordedEvents,
@@ -96,7 +96,7 @@ export {
   rerecordCurrentBridgeLane as experimental_rerecordCurrentBridgeLane,
   resolveProviderBridgeLaunch as experimental_resolveProviderBridgeLaunch,
   withCurrentBridgeLane as experimental_withCurrentBridgeLane,
-} from "@bb/provider-bridge-protocol/testing";
+} from "@cloudroom/provider-bridge-protocol/testing";
 export type {
   BridgeRecording,
   BridgeRecordingManifest,
@@ -118,11 +118,11 @@ export type {
   RerecordCurrentBridgeLaneOptions,
   RerecordCurrentBridgeLaneResult,
   ResolveProviderBridgeLaunchOptions,
-} from "@bb/provider-bridge-protocol/testing";
+} from "@cloudroom/provider-bridge-protocol/testing";
 export type {
   BridgeRecordingDirection,
   BridgeRecordingEntry,
-} from "@bb/provider-bridge-protocol/bridge-kit";
+} from "@cloudroom/provider-bridge-protocol/bridge-kit";
 
 // The canonical event vocabulary, by name. A bridge never constructs these
 // (the assembler does), but a bridge's tests assert on what the assembler
@@ -145,4 +145,4 @@ export type {
   ThreadEventSearchItem,
   ThreadEventWebFetchItem,
   ThreadEventWebSearchItem,
-} from "@bb/domain";
+} from "@cloudroom/domain";

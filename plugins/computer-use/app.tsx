@@ -5,7 +5,7 @@ import {
   type PluginPendingInteractionProps,
   type StandardSchemaV1InferOutput,
 } from "@get-bb/plugin-sdk/app";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import { approvalPayloadSchema, type rpcContract } from "./contract.js";
 
 type Settings = StandardSchemaV1InferOutput<(typeof rpcContract)["getSettings"]["output"]>;

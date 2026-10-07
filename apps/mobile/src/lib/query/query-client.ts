@@ -1,5 +1,5 @@
-import { toRecord } from "@bb/core-ui";
-import { BbHttpError } from "@bb/sdk/browser";
+import { toRecord } from "@cloudroom/core-ui";
+import { BbHttpError } from "@cloudroom/sdk/browser";
 import { QueryClient } from "@tanstack/react-query";
 
 const TRANSIENT_READ_RETRY_COUNT = 2;

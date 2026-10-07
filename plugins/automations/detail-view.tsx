@@ -15,11 +15,11 @@ import {
   type ExperimentalProviderModelPickerRouting,
   type ExperimentalProviderModelPickerValue,
 } from "@get-bb/plugin-sdk/app";
-import { RUN_STATE_PRESENTATION } from "@bb/domain/update-state";
-import { Button } from "@bb/shared-ui/button";
-import { COARSE_POINTER_HOVER_REVEAL_VISIBLE_CLASS } from "@bb/shared-ui/coarse-pointer-visibility";
-import { DelayedLoading } from "@bb/shared-ui/delayed-loading";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
+import { RUN_STATE_PRESENTATION } from "@cloudroom/domain/update-state";
+import { Button } from "@cloudroom/shared-ui/button";
+import { COARSE_POINTER_HOVER_REVEAL_VISIBLE_CLASS } from "@cloudroom/shared-ui/coarse-pointer-visibility";
+import { DelayedLoading } from "@cloudroom/shared-ui/delayed-loading";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
 import {
   ResourceActionButton,
   ResourceActivitySection,
@@ -32,18 +32,18 @@ import {
   ResourceMeta,
   ResourceOverflowMenu,
   useResourceRouteLabel,
-} from "@bb/shared-ui/resource-list";
-import { Switch } from "@bb/shared-ui/switch";
-import { Textarea } from "@bb/shared-ui/textarea";
-import { Skeleton } from "@bb/shared-ui/skeleton";
-import { OptionDisplay } from "@bb/shared-ui/option-display";
+} from "@cloudroom/shared-ui/resource-list";
+import { Switch } from "@cloudroom/shared-ui/switch";
+import { Textarea } from "@cloudroom/shared-ui/textarea";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
+import { OptionDisplay } from "@cloudroom/shared-ui/option-display";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
-import { cn, formatHomePathForDisplay } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/tooltip";
+import { cn, formatHomePathForDisplay } from "@cloudroom/shared-ui/lib/utils";
 import {
   formatAutomationTrigger,
   formatDetailScheduleStatusLabel,

@@ -1,5 +1,5 @@
 import { useDeferredValue, useState } from "react";
-import { StartBranchPicker } from "@bb/shared-ui/branch-picker-primitives";
+import { StartBranchPicker } from "@cloudroom/shared-ui/branch-picker-primitives";
 import { useProjectSourceBranches } from "@/hooks/queries/project-queries";
 
 interface CloudBranchPickerProps {

@@ -3,7 +3,7 @@ import {
   usePluginSlots,
   type PluginMachineProviderInputsSlot,
 } from "@/lib/plugin-slots";
-import type { JsonValue } from "@bb/domain";
+import type { JsonValue } from "@cloudroom/domain";
 import type { PluginMachineProviderInputsChange } from "@get-bb/plugin-sdk";
 import { useCallback, useState, type ReactNode } from "react";
 

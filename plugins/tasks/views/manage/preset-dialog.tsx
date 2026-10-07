@@ -16,17 +16,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
+} from "@cloudroom/shared-ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@bb/shared-ui/select";
-import { Button } from "@bb/shared-ui/button";
-import { Input } from "@bb/shared-ui/input";
-import { Textarea } from "@bb/shared-ui/textarea";
+} from "@cloudroom/shared-ui/select";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Input } from "@cloudroom/shared-ui/input";
+import { Textarea } from "@cloudroom/shared-ui/textarea";
 import { Field } from "./shared.js";
 
 type ReasoningLevel = ExperimentalProviderModelPickerValue["reasoningLevel"];

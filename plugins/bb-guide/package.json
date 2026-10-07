@@ -24,10 +24,10 @@
     "prepare:bundled": "bb-plugin-build prepare-bundled"
   },
   "dependencies": {
-    "@bb/templates": "workspace:*"
+    "@cloudroom/templates": "workspace:*"
   },
   "devDependencies": {
-    "@bb/plugin-build": "workspace:*",
+    "@cloudroom/plugin-build": "workspace:*",
     "@get-bb/plugin-sdk": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",

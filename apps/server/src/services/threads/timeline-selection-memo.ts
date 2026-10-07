@@ -1,5 +1,5 @@
-import { THREAD_TIMELINE_EXCLUDED_EVENT_TYPES } from "@bb/thread-view";
-import type { ThreadEventType } from "@bb/domain";
+import { THREAD_TIMELINE_EXCLUDED_EVENT_TYPES } from "@cloudroom/thread-view";
+import type { ThreadEventType } from "@cloudroom/domain";
 import {
   findTimelineWindowBudgetFloorSequence,
   getDatabaseDataVersion,
@@ -9,7 +9,7 @@ import {
   type DbConnection,
   type StandardTimelineSegmentAnchorRow,
   type StoredEventRow,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type {
   ThreadTimelinePageKind,
   ThreadTimelinePageRequest,

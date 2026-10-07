@@ -5,7 +5,7 @@ import {
 import {
   createFilePreviewLineRange,
   type FilePreviewLineRange,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 export interface MarkdownPreviewLocalFileLink {
   lineRange: FilePreviewLineRange | null;

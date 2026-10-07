@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { getAppSettings } from "@bb/db";
-import { appSettingsSchema, defaultAppSettings } from "@bb/domain";
-import { systemConfigResponseSchema } from "@bb/server-contract";
+import { getAppSettings } from "@cloudroom/db";
+import { appSettingsSchema, defaultAppSettings } from "@cloudroom/domain";
+import { systemConfigResponseSchema } from "@cloudroom/server-contract";
 import { readJson } from "../helpers/json.js";
 import { withTestHarness } from "../helpers/test-app.js";
 

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import type { BbDesktopBrowserApi } from "@bb/desktop-contract";
+import type { BbDesktopBrowserApi } from "@cloudroom/desktop-contract";
 import {
   DESKTOP_BROWSER_IMPORT_FAILURE_COPY,
   type DesktopBrowserImportOutcome,
   type DesktopBrowserImportSource,
-} from "@bb/host-daemon-contract";
-import { Button } from "@bb/shared-ui/button";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/host-daemon-contract";
+import { Button } from "@cloudroom/shared-ui/button";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { appToast } from "@/components/ui/app-toast";
 import {
   SettingsBadge,

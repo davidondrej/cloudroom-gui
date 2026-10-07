@@ -4,7 +4,7 @@ import {
   MAX_OPTION_PREVIEW_LENGTH,
   MAX_OPTIONS,
   MAX_QUESTIONS,
-} from "@bb/plugin-interaction-contracts";
+} from "@cloudroom/plugin-interaction-contracts";
 
 export {
   ASK_USER_QUESTION_RENDERER_ID,
@@ -15,7 +15,7 @@ export {
   type InteractionPayload,
   type InteractionQuestion,
   type InteractionResponse,
-} from "@bb/plugin-interaction-contracts";
+} from "@cloudroom/plugin-interaction-contracts";
 
 const nonBlank = (value: string) => value.trim().length > 0;
 

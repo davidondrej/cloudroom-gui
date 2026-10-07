@@ -1,6 +1,6 @@
-import type { DiscoveredSkill, SkillRootKind } from "@bb/host-daemon-contract";
+import type { DiscoveredSkill, SkillRootKind } from "@cloudroom/host-daemon-contract";
 import { createHash } from "node:crypto";
-import type { SkillProvider } from "@bb/server-contract";
+import type { SkillProvider } from "@cloudroom/server-contract";
 import { describe, expect, it } from "vitest";
 import {
   assembleSkillList,

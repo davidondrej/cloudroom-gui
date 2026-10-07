@@ -2,8 +2,8 @@ import type {
   ThreadTimelinePendingTodos,
   ThreadTimelinePendingTodoItem,
   ThreadTimelinePendingTodoItemStatus,
-} from "@bb/domain";
-import type { BbSdk } from "@bb/sdk";
+} from "@cloudroom/domain";
+import type { BbSdk } from "@cloudroom/sdk";
 
 interface FetchThreadPendingTodosArgs {
   sdk: Pick<BbSdk, "threads">;

@@ -13,12 +13,12 @@ import {
   RAW_THREAD_ID_PATTERN_SOURCE,
   type PromptMentionResource,
   type ThreadListEntry,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { QueryClientContext } from "@tanstack/react-query";
 import {
   THREAD_MENTION_RESOLVE_MAX_IDS,
   type ThreadResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { PromptMentionPill } from "@/components/thread/timeline/ConversationMessageMentions";
 import { useThread } from "@/hooks/queries/thread-queries";
 import { threadQueryKey } from "@/hooks/queries/query-keys";

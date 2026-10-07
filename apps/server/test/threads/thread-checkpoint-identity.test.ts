@@ -1,8 +1,8 @@
 import { fileURLToPath } from "node:url";
-import { createScriptedEchoRuntime } from "@bb/agent-runtime/test";
-import { getThread, listEvents } from "@bb/db";
-import type { PromptInput, ThreadEvent } from "@bb/domain";
-import { groupHostDaemonEvents } from "@bb/host-daemon-contract";
+import { createScriptedEchoRuntime } from "@cloudroom/agent-runtime/test";
+import { getThread, listEvents } from "@cloudroom/db";
+import type { PromptInput, ThreadEvent } from "@cloudroom/domain";
+import { groupHostDaemonEvents } from "@cloudroom/host-daemon-contract";
 import { describe, expect, it, vi } from "vitest";
 import { appendClientTurnEvent } from "../../src/services/threads/thread-events.js";
 import { editThreadMessage } from "../../src/services/threads/thread-edit-message.js";

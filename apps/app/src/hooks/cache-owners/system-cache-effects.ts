@@ -1,6 +1,6 @@
 import type { QueryKey } from "@tanstack/react-query";
-import type { Environment } from "@bb/domain";
-import type { SystemConfigResponse } from "@bb/server-contract";
+import type { Environment } from "@cloudroom/domain";
+import type { SystemConfigResponse } from "@cloudroom/server-contract";
 import {
   allEnvironmentDiffFilesQueryKeyPrefix,
   allEnvironmentDiffPatchQueryKeyPrefix,

@@ -6,7 +6,7 @@ import {
   listCorpusThreads,
   loadCorpusThread,
   resolveProviderCorpusDir,
-} from "@bb/test-helpers";
+} from "@cloudroom/test-helpers";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import type { ProviderRegistryService } from "../../src/services/providers/provider-registry.js";

@@ -1,4 +1,4 @@
-import { findEnvironmentPathClaim, getPreparingEnvironment } from "@bb/db";
+import { findEnvironmentPathClaim, getPreparingEnvironment } from "@cloudroom/db";
 import type { WorkSessionDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 

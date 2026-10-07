@@ -1,9 +1,9 @@
-import { prependOlderTimelineRows } from "@bb/client-core";
+import { prependOlderTimelineRows } from "@cloudroom/client-core";
 import { Command } from "commander";
 import {
   formatThreadTimelineText,
   type ThreadTimelineTextFormat,
-} from "@bb/thread-view";
+} from "@cloudroom/thread-view";
 import {
   resolveEnvironmentMergeBaseBranch,
   type Environment,
@@ -13,13 +13,13 @@ import {
   type ThreadPullRequest,
   type ThreadTimelinePendingTodos,
   type WorkspaceStatus,
-} from "@bb/domain";
-import { BbHttpError, type BbSdk } from "@bb/sdk";
+} from "@cloudroom/domain";
+import { BbHttpError, type BbSdk } from "@cloudroom/sdk";
 import type {
   EnvironmentDiffQuery,
   ThreadTimelineResponse,
-} from "@bb/server-contract";
-import { THREAD_EVENT_LIST_PAGE_SIZE } from "@bb/server-contract";
+} from "@cloudroom/server-contract";
+import { THREAD_EVENT_LIST_PAGE_SIZE } from "@cloudroom/server-contract";
 import { action } from "../../action.js";
 import { createCliBbSdk } from "../../client.js";
 import {

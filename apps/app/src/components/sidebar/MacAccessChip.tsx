@@ -1,53 +1,57 @@
-import type { MacAccessLevel } from "@bb/sdk/browser";
-import { Button } from "@bb/shared-ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@bb/shared-ui/dropdown-menu";
-import { Icon } from "@bb/shared-ui/icon";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@bb/shared-ui/tooltip";
-import { cn } from "@bb/shared-ui/lib/utils";
+import type { MacAccessLevel } from "@cloudroom/sdk/browser";
+import { Button } from "@cloudroom/shared-ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@cloudroom/shared-ui/dropdown-menu";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@cloudroom/shared-ui/tooltip";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { SidebarMenuItem } from "@/components/ui/sidebar";
 import { appToast } from "@/components/ui/app-toast";
 import { useCloudroomAccount, useSetMacAccess } from "@/hooks/queries/cloudroom-queries";
 
-const LEVELS: { id: MacAccessLevel; label: string; description: string; icon: string; text: string; chip: string }[] = [
-  { id: "off", label: "Off", description: "Cloud agents can't touch this Mac.", icon: "Unavailable", text: "text-muted-foreground", chip: "bg-muted-foreground/10" },
-  { id: "read-only", label: "Read-only", description: "Read files and logs. No changes.", icon: "Eye", text: "text-sky-400", chip: "bg-sky-400/15" },
-  { id: "ask", label: "Ask first", description: "Changes need your one-tap OK.", icon: "SecurityCheck", text: "text-warning", chip: "bg-warning/15" },
-  { id: "full", label: "Full", description: "Run anything, like you would.", icon: "Zap", text: "text-success dark:text-primary", chip: "bg-success/15 dark:bg-primary/15" },
+export const MAC_ACCESS_LEVELS: { id: MacAccessLevel; label: string; description: string; icon: string }[] = [
+  { id: "off", label: "Off", description: "Cloud agents can't touch this Mac.", icon: "Unavailable" },
+  { id: "read-only", label: "Read", description: "Read files and logs. No changes.", icon: "Eye" },
+  { id: "ask", label: "Ask", description: "Changes need your one-tap OK.", icon: "SecurityCheck" },
+  { id: "full", label: "Full", description: "Run anything, like you would.", icon: "Zap" },
 ];
 
-export function MacAccessMenu({ withLabel = false }: { withLabel?: boolean }) {
+export function useMacAccessLevel() {
   const status = useCloudroomAccount();
   const macAccess = useSetMacAccess();
   const pending = macAccess.isPending ? macAccess.variables : undefined;
   const saved = status.data?.macAccessLevel ?? (status.data?.macAccess ? "full" : "off");
   const id = pending === undefined ? saved : pending === true ? "full" : pending === false ? "off" : pending;
-  const current = LEVELS.find((level) => level.id === id) ?? LEVELS[0]!;
-  const select = (level: (typeof LEVELS)[number]) => {
+  const current = MAC_ACCESS_LEVELS.find((level) => level.id === id) ?? MAC_ACCESS_LEVELS[0]!;
+  const select = (level: (typeof MAC_ACCESS_LEVELS)[number]) => {
     if (level === current) return;
     macAccess.mutate(level.id, {
       onSuccess: () => appToast.success(`Mac access: ${level.label}`),
       onError: (error) => appToast.error(error.message),
     });
   };
+  return { current, select, saving: macAccess.isPending };
+}
+
+export function MacAccessMenu() {
+  const { current, select, saving } = useMacAccessLevel();
   return <DropdownMenu>
     <Tooltip>
       <TooltipTrigger asChild>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className={cn("h-8 gap-1 rounded-lg px-2 hover:opacity-90 [&_[data-icon-root]]:size-4", current.text, current.chip)} aria-label={`Mac access: ${current.label}`} disabled={macAccess.isPending}>
-            <Icon name={current.icon} aria-hidden />
-            {withLabel && <span className="text-sm">{current.label}</span>}
-            <Icon name="ChevronUp" className="!size-3 opacity-60" aria-hidden />
+          <Button variant="ghost" className="h-[26px] gap-1.5 rounded-md border border-border px-2 text-xs font-normal text-muted-foreground hover:text-foreground data-[state=open]:bg-state-hover data-[state=open]:text-foreground [&_[data-icon-root]]:size-3.5 [&_[data-icon-root]]:opacity-80" aria-label={`Mac access: ${current.label}`} disabled={saving}>
+            <Icon name="Laptop" aria-hidden />
+            {current.label}
           </Button>
         </DropdownMenuTrigger>
       </TooltipTrigger>
       <TooltipContent side="top">Mac access: {current.label}</TooltipContent>
     </Tooltip>
     <DropdownMenuContent side="top" align="end" sideOffset={6} mobileTitle="Mac access" className="w-72 p-1.5">
-      <DropdownMenuLabel className="text-[11px] font-normal uppercase tracking-wide text-muted-foreground">Mac access</DropdownMenuLabel>
-      {LEVELS.map((level) => {
+      <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Mac access</DropdownMenuLabel>
+      {MAC_ACCESS_LEVELS.map((level) => {
         const selected = level === current;
         return <DropdownMenuItem key={level.id} role="menuitemradio" aria-checked={selected} className={cn("items-start gap-2.5 py-2", selected && "bg-state-hover")} onSelect={() => select(level)}>
-          <Icon name={level.icon} className={cn("mt-0.5", level.text)} aria-hidden />
+          <Icon name={level.icon} className="mt-0.5 text-muted-foreground" aria-hidden />
           <span className="min-w-0 flex-1">
             <span className="block text-sm text-foreground">{level.label}</span>
             <span className="block text-xs text-muted-foreground">{level.description}</span>

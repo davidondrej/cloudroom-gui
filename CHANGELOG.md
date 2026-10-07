@@ -2,6 +2,18 @@
 
 Also on [cloudroom.dev/changelog](https://www.cloudroom.dev/changelog).
 
+## 94
+
+Multiple Claude accounts (2026-10-06)
+
+### Changes
+
+- Add several Claude Code accounts and switch between them in one click. Local and Cloud threads follow the selected account.
+- Share read-only links to your threads, with a "Continue in Cloudroom" button.
+- On Linux, Cloudroom now shows its proper name and icon.
+- "Remove" in the sidebar now hides a project instead of deleting it.
+- Fixes for stuck Cloud threads, Cloud Claude sign-in, and expired Codex logins.
+
 ## 93
 
 Cloud terminals and side chats (2026-10-05)

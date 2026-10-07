@@ -15,7 +15,7 @@ import {
   session,
   sha256Hex,
   user,
-} from "@bb/connect-db";
+} from "@cloudroom/connect-db";
 
 import {
   createDesktopSessionCookie,

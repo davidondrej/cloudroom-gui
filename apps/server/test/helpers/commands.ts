@@ -4,15 +4,15 @@ import { isUtf8 } from "node:buffer";
 import { lstatSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { eq } from "drizzle-orm";
-import { hostDaemonSessions } from "@bb/db";
+import { hostDaemonSessions } from "@cloudroom/db";
 import {
   hostDaemonCommandSchema,
   hostDaemonOnlineRpcResponseMessageSchema,
   hostDaemonRpcCommandSchema,
   hostDaemonServerWsMessageSchema,
   parseHostDaemonRpcResultForCommand,
-} from "@bb/host-daemon-contract";
-import { type ThreadEvent } from "@bb/domain";
+} from "@cloudroom/host-daemon-contract";
+import { type ThreadEvent } from "@cloudroom/domain";
 import type {
   HostDaemonCommand,
   HostDaemonEventEnvelope,
@@ -20,7 +20,7 @@ import type {
   HostDaemonOnlineRpcRequestMessage,
   HostDaemonRpcCommand,
   HostDaemonRpcResultForCommand,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type { TestAppHarness } from "./test-app.js";
 import { availableModelFixture } from "./available-models.js";
 import { createTestDaemonHostKey } from "./test-app.js";

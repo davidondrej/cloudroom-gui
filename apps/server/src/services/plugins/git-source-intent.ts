@@ -1,4 +1,4 @@
-import type { InstalledPluginRow, PluginGitSelector } from "@bb/db";
+import type { InstalledPluginRow, PluginGitSelector } from "@cloudroom/db";
 
 export function gitSelectorForRow(
   row: InstalledPluginRow,

@@ -8,11 +8,11 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import type { Host, ProjectSource, PromptTextMention } from "@bb/domain";
+import type { Host, ProjectSource, PromptTextMention } from "@cloudroom/domain";
 import type {
   SystemEnvironmentProvider,
   SystemMachineProvider,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { ComposerView } from "@get-bb/plugin-sdk";
 import type { ComposerTextEffectSource } from "@/lib/composer-text-effects";
 import { ComposerBannersSlot } from "@/components/plugin/PluginComposerBanners";

@@ -9,9 +9,9 @@ import {
   listThreadsWithPendingInteractionState,
   setExperiments,
   upsertProjectExecutionDefaults,
-} from "@bb/db";
-import { defaultExperiments, threadSchema } from "@bb/domain";
-import { sidebarBootstrapResponseSchema } from "@bb/server-contract";
+} from "@cloudroom/db";
+import { defaultExperiments, threadSchema } from "@cloudroom/domain";
+import { sidebarBootstrapResponseSchema } from "@cloudroom/server-contract";
 import { waitForQueuedCommand } from "../helpers/commands.js";
 import { availableModelFixture } from "../helpers/available-models.js";
 import { registerProviderHostRpcResponder } from "../helpers/host-rpc.js";
@@ -524,7 +524,7 @@ describe("public thread default routes", () => {
       await expect(readJson(response)).resolves.toEqual({
         code: "model_catalog_unavailable",
         message: expect.stringContaining("Unable to load codex models"),
-        details: { providerId: "codex", code: "failed" },
+        details: { providerId: "codex", code: "failed", canRestart: true },
         retryable: true,
       });
       expect(

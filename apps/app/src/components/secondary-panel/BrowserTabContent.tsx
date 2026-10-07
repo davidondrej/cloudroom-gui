@@ -16,18 +16,18 @@ import type {
   BbDesktopBrowserState,
   BbDesktopBrowserViewportBounds,
   BbDesktopBrowserViewBounds,
-} from "@bb/desktop-contract";
+} from "@cloudroom/desktop-contract";
 import {
   BB_DESKTOP_BROWSER_MAX_FIND_TEXT_LENGTH,
   clampBbDesktopBrowserViewBounds,
-} from "@bb/desktop-contract";
+} from "@cloudroom/desktop-contract";
 import {
   COARSE_POINTER_COMPACT_ICON_SIZE_SHRINK_CLASS,
   COARSE_POINTER_TEXT_SM_CLASS,
-} from "@bb/shared-ui/coarse-pointer-sizing";
-import { Icon } from "@bb/shared-ui/icon";
+} from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { getBbDesktopInfo, getDesktopBrowserApi } from "@/lib/bb-desktop";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   getBrowserUrlSecurity,
   getBrowserUrlHost,
@@ -36,8 +36,8 @@ import {
 import { useBrowserHistory } from "@/lib/browser-history";
 import { BROWSER_VIEW_BOUNDS_SYNC_EVENT } from "@/lib/browser-view-bounds-sync";
 import { useIsBrowserDimmingModalOpen } from "@/hooks/useBrowserDimmingModal";
-import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
+import { usePointerCoarse } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import {
   BrowserChromeIconButton,
   BrowserFindBar,

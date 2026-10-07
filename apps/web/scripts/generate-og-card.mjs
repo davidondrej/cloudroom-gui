@@ -1,7 +1,7 @@
 // Renders scripts/og-card.html to public/og.png, the card platforms show when
 // a bb link is shared. Run it after editing the template:
 //
-//   pnpm --filter @bb/web og:card
+//   pnpm --filter @cloudroom/web og:card
 //
 // Every path is resolved from this file, so the working directory doesn't
 // matter, and the font comes from the same @fontsource-variable/inter this app

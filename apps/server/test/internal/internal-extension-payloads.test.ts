@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
-import { events } from "@bb/db";
-import { threadScope, turnScope, type ExtensionKind } from "@bb/domain";
+import { events } from "@cloudroom/db";
+import { threadScope, turnScope, type ExtensionKind } from "@cloudroom/domain";
 import {
   groupHostDaemonEvents,
   type HostDaemonEventEnvelope,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { EXTENSION_PAYLOAD_MAX_BYTES } from "../../src/internal/extension-payloads.js";

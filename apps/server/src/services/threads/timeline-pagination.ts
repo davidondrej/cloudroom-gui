@@ -3,7 +3,7 @@ import type { TimelineContentCursor } from "./timeline-snapshot.js";
 import type {
   TimelinePaginationCursor,
   TimelineRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 
 export type ThreadTimelinePageKind = "latest" | "older";
 

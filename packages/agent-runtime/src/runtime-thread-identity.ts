@@ -1,4 +1,4 @@
-import type { ThreadEvent } from "@bb/domain";
+import type { ThreadEvent } from "@cloudroom/domain";
 import type { AgentRuntimeProviderSession } from "./types.js";
 
 export interface RuntimeProviderIdentityState {

@@ -1,5 +1,5 @@
-import { assertNever } from "@bb/core-ui";
-import type { ThreadRuntimeDisplayStatus } from "@bb/domain";
+import { assertNever } from "@cloudroom/core-ui";
+import type { ThreadRuntimeDisplayStatus } from "@cloudroom/domain";
 
 export function isRunningThreadRuntimeDisplayStatus(
   status: ThreadRuntimeDisplayStatus,

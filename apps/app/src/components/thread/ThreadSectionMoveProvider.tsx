@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import type { Thread } from "@bb/domain";
+import type { Thread } from "@cloudroom/domain";
 import { useMoveThreadToSection } from "@/hooks/mutations/thread-state-mutations";
 
 export interface ThreadSectionMoveDestination {

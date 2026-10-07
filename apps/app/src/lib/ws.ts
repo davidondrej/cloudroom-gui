@@ -6,7 +6,7 @@ import {
   realtimeSubscriptionTargetKey,
   threadOpenSignalLenientSchema,
   threadPaneActionSignalLenientSchema,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   ClientMessage,
   ChangedMessage,
@@ -15,7 +15,7 @@ import type {
   ThreadOpenFile,
   ThreadOpenSignal,
   ThreadPaneActionSignal,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { buildBrowserWebSocketUrl } from "./dev-websocket-url";
 import {
   isDocumentVisible,

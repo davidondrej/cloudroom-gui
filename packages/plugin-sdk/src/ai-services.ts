@@ -18,7 +18,7 @@
  * the configured fallback model; auth failures do not).
  */
 import { z } from "zod";
-import { jsonObjectSchema } from "@bb/domain";
+import { jsonObjectSchema } from "@cloudroom/domain";
 import { defineRpcContract } from "./rpc-contract.js";
 
 /** Why a call did not produce a result; core's retry policy keys on it. */

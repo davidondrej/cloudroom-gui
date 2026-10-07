@@ -2,19 +2,19 @@ import { useSetPluginEnabled } from "@/components/plugin/useSetPluginEnabled";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
-import { EmptyState } from "@bb/shared-ui/empty-state";
-import { Switch } from "@bb/shared-ui/switch";
+import { EmptyState } from "@cloudroom/shared-ui/empty-state";
+import { Switch } from "@cloudroom/shared-ui/switch";
 import {
   ResourceListPanel,
   ResourceRow,
   ResourceRowDetailChevron,
-} from "@bb/shared-ui/resource-list";
+} from "@cloudroom/shared-ui/resource-list";
 import { ProvenancePill } from "@/components/tools/ProvenancePill";
 import { appToast } from "@/components/ui/app-toast.js";
 import { invalidatePluginList } from "@/hooks/cache-owners/plugin-cache-owner";
 import type { PluginListItem } from "@/hooks/queries/plugin-settings-queries";
 import { pluginNeedsAttention } from "@/hooks/usePluginAttention";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   getPluginDetailRoutePath,
   isPluginsRoutePath,

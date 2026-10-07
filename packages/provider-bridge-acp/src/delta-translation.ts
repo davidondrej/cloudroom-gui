@@ -1,26 +1,26 @@
-import { providerRawEventSchema } from "@bb/domain";
-import type { ProviderRawEvent } from "@bb/domain";
+import { providerRawEventSchema } from "@cloudroom/domain";
+import type { ProviderRawEvent } from "@cloudroom/domain";
 import {
   COMPACTION_PRESENTATION,
   errorEnvelopeSchema,
   jsonRpcEnvelopeSchema,
   planStepsPresentation,
   presentationTitle,
-} from "@bb/provider-bridge-protocol/bridge-kit";
+} from "@cloudroom/provider-bridge-protocol/bridge-kit";
 import type {
   JsonRpcMessage,
   ProviderRuntimeEvent,
-} from "@bb/provider-bridge-protocol/bridge-kit";
+} from "@cloudroom/provider-bridge-protocol/bridge-kit";
 import type {
   ThreadEventItemStatus,
   ThreadEventPlanStep,
   ThreadEventTurnStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   DeltaItemShape,
   DeltaNoTurnFallback,
   ThreadDelta,
-} from "@bb/provider-bridge-protocol";
+} from "@cloudroom/provider-bridge-protocol";
 import {
   ACP_COMPACTION_COMPLETED_METHOD,
   ACP_COMPACTION_STARTED_METHOD,

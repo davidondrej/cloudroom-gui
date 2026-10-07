@@ -7,7 +7,7 @@ const FRONTEND_ENTRY = join(PLUGIN_ROOT, "app.tsx");
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs"]);
 
 const BUNDLED_WORKSPACE_SPECIFIER =
-  /^(@bb\/(?!plugin-sdk(?:\/|$))[^/]+)((?:\/.*)?)$/;
+  /^(@cloudroom\/[^/]+)((?:\/.*)?)$/;
 
 const HOST_PROVIDED_ICON_MODULE =
   /\/shared-ui\/src\/components\/ui\/icon\.tsx$/;
@@ -152,7 +152,7 @@ describe("automations frontend bundle", () => {
 
   it("never treats an unfollowed @bb package as a third-party specifier", () => {
     expect(() =>
-      resolveLocalModule(FRONTEND_ENTRY, "@bb/plugin-interaction-contracts"),
+      resolveLocalModule(FRONTEND_ENTRY, "@cloudroom/plugin-interaction-contracts"),
     ).toThrow(/plugin-interaction-contracts/);
   });
 

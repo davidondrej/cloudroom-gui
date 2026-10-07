@@ -3,7 +3,7 @@ import type {
   JsonValue,
   ThreadEvent,
   ThreadTimelineModelFallback,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { ThreadEventWithMeta } from "./group-event-projection-turns.js";
 
 interface ProviderModelFallbackData {

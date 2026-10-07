@@ -1,9 +1,9 @@
-import type { DbNotifier, DbTransaction } from "@bb/db";
+import type { DbNotifier, DbTransaction } from "@cloudroom/db";
 import type {
   HostDaemonCommand,
   HostDaemonCommandResult,
   HostDaemonSettledCommandType,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type { LoggedPendingInteractionWorkSessionDeps } from "../types.js";
 
 export type CommandResultSideEffectsDeps =

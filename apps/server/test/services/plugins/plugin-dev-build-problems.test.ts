@@ -3,8 +3,8 @@ import { createAiServiceRegistry } from "../../../src/services/ai/ai-service-reg
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { createConnection, migrate } from "@bb/db";
-import type { Logger } from "@bb/logger";
+import { createConnection, migrate } from "@cloudroom/db";
+import type { Logger } from "@cloudroom/logger";
 import { createPluginRuntime } from "../../../src/services/plugins/plugin-runtime.js";
 import { testLogger } from "../../helpers/test-app.js";
 import { createNoopTelemetryService } from "../../../src/services/system/telemetry.js";

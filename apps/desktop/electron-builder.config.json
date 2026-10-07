@@ -71,6 +71,7 @@
     "category": "Development",
     "executableName": "gui-cloudroom",
     "icon": "assets/icon.png",
+    "syncDesktopName": true,
     "target": [{ "target": "AppImage", "arch": ["x64"] }]
   },
   "dmg": {

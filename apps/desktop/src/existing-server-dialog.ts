@@ -1,5 +1,5 @@
 import { ipcMain, type BrowserWindow } from "electron";
-import { escapeHtmlText } from "@bb/domain";
+import { escapeHtmlText } from "@cloudroom/domain";
 import {
   createDesktopDialogWindow,
   DESKTOP_DIALOG_BASE_CSS,

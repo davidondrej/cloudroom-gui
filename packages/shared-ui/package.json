@@ -1,5 +1,5 @@
 {
-  "name": "@bb/shared-ui",
+  "name": "@cloudroom/shared-ui",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -295,7 +295,7 @@
     "vaul": "^1.1.2"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@radix-ui/react-accordion": "^1.2.16",
     "@radix-ui/react-alert-dialog": "^1.1.19",
     "@radix-ui/react-aspect-ratio": "^1.1.11",

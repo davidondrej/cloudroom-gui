@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@bb/shared-ui/button";
-import { PersistentResponsiveDrawerShell } from "@bb/shared-ui/responsive-overlay";
+import { Button } from "@cloudroom/shared-ui/button";
+import { PersistentResponsiveDrawerShell } from "@cloudroom/shared-ui/responsive-overlay";
 import { useCloudroomAccount } from "@/hooks/queries/cloudroom-queries";
 import { BbHttpError, sdk } from "@/lib/sdk";
 import { copyToClipboardWithToast } from "@/lib/clipboard";

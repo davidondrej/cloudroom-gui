@@ -1,5 +1,5 @@
-import type { Host, MachineLifecycle } from "@bb/domain";
-import { makeHost } from "@bb/test-helpers/domain-fixtures";
+import type { Host, MachineLifecycle } from "@cloudroom/domain";
+import { makeHost } from "@cloudroom/test-helpers/domain-fixtures";
 import { MachineRowContent } from "./MachinesSettingsSection";
 import { SettingsRowList } from "@/components/ui/settings-section";
 import {

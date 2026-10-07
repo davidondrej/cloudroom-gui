@@ -1,5 +1,5 @@
 {
-  "name": "@bb/test-helpers",
+  "name": "@cloudroom/test-helpers",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -20,11 +20,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@bb/domain": "workspace:*",
+    "@cloudroom/domain": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-7": "npm:typescript@^7.0.2"

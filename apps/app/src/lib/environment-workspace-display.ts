@@ -1,11 +1,11 @@
-import type { Host } from "@bb/domain";
+import type { Host } from "@cloudroom/domain";
 import type {
   EnvironmentDisplayInfo,
   EnvironmentDisplayProviderLookup,
-} from "@bb/core-ui";
-import { resolveEnvironmentDisplayProvider } from "@bb/core-ui";
-import type { SystemEnvironmentProvider } from "@bb/server-contract";
-import type { IconName } from "@bb/shared-ui/icon";
+} from "@cloudroom/core-ui";
+import { resolveEnvironmentDisplayProvider } from "@cloudroom/core-ui";
+import type { SystemEnvironmentProvider } from "@cloudroom/server-contract";
+import type { IconName } from "@cloudroom/shared-ui/icon";
 import { cloudroomEnvironmentPresentation } from "@/lib/cloudroom-environment-label";
 import { pluginIconName } from "@/components/plugin/PluginIcon";
 import { PersistentHostIconName } from "@/lib/host-display";

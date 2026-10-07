@@ -4,13 +4,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { defaultUiPreferences } from "@bb/domain";
+import { defaultUiPreferences } from "@cloudroom/domain";
 import { useUiPreferencesReady } from "./UiPreferencesSync";
 
 const mocks = vi.hoisted(() => ({ list: vi.fn() }));
 
 vi.mock("@/lib/sdk", async () => {
-  const actual = await import("@bb/sdk/browser");
+  const actual = await import("@cloudroom/sdk/browser");
   return {
     BbHttpError: actual.BbHttpError,
     sdk: { system: { uiPreferences: { list: mocks.list } } },

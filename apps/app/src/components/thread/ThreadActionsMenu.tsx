@@ -2,7 +2,7 @@ import {
   ActionMenuItem,
   ActionMenuSeparator,
 } from "@/components/ui/action-menu-items";
-import type { Thread } from "@bb/domain";
+import type { Thread } from "@cloudroom/domain";
 import { useCallback, useState, type ReactNode } from "react";
 import {
   ContextMenu,
@@ -12,7 +12,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from "@bb/shared-ui/context-menu";
+} from "@cloudroom/shared-ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,15 +23,15 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { Button } from "@bb/shared-ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@bb/shared-ui/tooltip";
-import { COARSE_POINTER_ICON_SIZE_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/dropdown-menu";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@cloudroom/shared-ui/tooltip";
+import { COARSE_POINTER_ICON_SIZE_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { CompactLongPressMenu } from "@/components/ui/compact-long-press-menu";
-import { isThreadRead } from "@bb/client-core";
+import { isThreadRead } from "@cloudroom/client-core";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
 import { getThreadDisplayTitle } from "@/lib/thread-title";
 import { useThreadActions } from "./ThreadActionsProvider";

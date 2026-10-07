@@ -1,4 +1,4 @@
-import type { DesktopSession } from "@bb/connect-client";
+import type { DesktopSession } from "@cloudroom/connect-client";
 
 export interface SessionCookieSpec {
   name: string;

@@ -1,9 +1,9 @@
 // Generates the self-contained `.d.ts` bundles that `bb plugin new` ships into
 // a scaffolded plugin's `types/` directory, so authors get real BbPluginApi /
-// @get-bb/plugin-sdk/app types WITHOUT the (unpublished) @bb/* workspace packages
+// @get-bb/plugin-sdk/app types WITHOUT the (unpublished) @cloudroom/* workspace packages
 // on disk.
 //
-// rollup-plugin-dts flattens @get-bb/plugin-sdk's own contracts plus every @bb/*
+// rollup-plugin-dts flattens @get-bb/plugin-sdk's own contracts plus every @cloudroom/*
 // type it references (BbSdk, PromptInput, ThreadResponse, …) into the root
 // file. Testing subpaths reuse that already-portable root declaration through
 // the package's own public name instead of flattening the same contracts a
@@ -12,7 +12,7 @@
 //
 // The output, bundled-types/*.d.ts, is NOT committed. It is the package's
 // published `types` surface and a build output of the turbo task
-// `@get-bb/plugin-sdk#build:types`; @bb/templates reads it at scaffold-embed
+// `@get-bb/plugin-sdk#build:types`; @cloudroom/templates reads it at scaffold-embed
 // time by file path (no package edge, to avoid a dependency cycle), and the
 // in-repo plugins typecheck against it. Unchanged files are not rewritten so
 // mtimes stay stable for watchers.
@@ -74,9 +74,9 @@ const EXTERNAL = [
   /^zod($|\/)/,
 ];
 
-/** Resolve any `@bb/<pkg>[/<sub>]` to its `source` export target on disk. */
+/** Resolve any `@cloudroom/<pkg>[/<sub>]` to its `source` export target on disk. */
 function resolveBbSource(id) {
-  const match = /^@bb\/([^/]+)(\/.*)?$/.exec(id);
+  const match = /^@cloudroom\/([^/]+)(\/.*)?$/.exec(id);
   if (!match) return null;
   const pkgDir = path.join(pkgsDir, match[1]);
   const manifestPath = path.join(pkgDir, "package.json");
@@ -139,7 +139,7 @@ async function bundle(input) {
 const HEADER = [
   "// Portable type declarations for `@get-bb/plugin-sdk`. Unpublished BB",
   "// workspace contracts are flattened; public subpaths may reuse the",
-  "// package root without requiring any other @bb/* package.",
+  "// package root without requiring any other @cloudroom/* package.",
   "//",
   "// Confused by the API, or need a symbol that isn't here? Clone the BB repo",
   "// and read the real source: https://github.com/get-bb/bb",

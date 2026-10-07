@@ -53,7 +53,7 @@ Run the committed fixed endpoint/client corpus check from the repository root:
 ```sh
 BB_PROVIDER_CORPUS_DIR=/path/to/copied-corpus \
 BB_TIMELINE_PAGINATION_REPORT=/tmp/timeline-pagination.json \
-pnpm exec turbo run test --env-mode=loose --force --filter=@bb/server -- \
+pnpm exec turbo run test --env-mode=loose --force --filter=@cloudroom/server -- \
   test/provider-corpus/timeline-pagination-correctness.test.ts
 ```
 

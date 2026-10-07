@@ -12,7 +12,7 @@ import {
   openSession,
   upsertHost,
   type DbConnection,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   changedMessageSchema,
   formatClientTurnRequestIdSuffix,
@@ -21,7 +21,7 @@ import {
   type PromptInput,
   type ThreadChangedMessage,
   type ThreadStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { applyLoggedThreadLifecycleEvent } from "../../../src/services/threads/lifecycle-outcome.js";
 import { NotificationHub } from "../../../src/ws/hub.js";
 import { createMockHubSocket } from "../../helpers/mock-hub-socket.js";

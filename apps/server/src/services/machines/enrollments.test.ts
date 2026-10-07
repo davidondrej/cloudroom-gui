@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createConnection, migrate, hosts } from "@bb/db";
+import { createConnection, migrate, hosts } from "@cloudroom/db";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMachineAuthService } from "../machine-auth.js";
 import { createMachineEnrollmentService } from "./enrollments.js";

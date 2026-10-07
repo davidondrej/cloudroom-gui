@@ -11,13 +11,13 @@ import {
   listEnvironments,
   listQueuedThreadMessages,
   threads,
-} from "@bb/db";
-import { threadScope, turnScope, type ToolCallResponse } from "@bb/domain";
+} from "@cloudroom/db";
+import { threadScope, turnScope, type ToolCallResponse } from "@cloudroom/domain";
 import {
   groupHostDaemonEvents,
   hostDaemonEventBatchResponseSchema,
   type HostDaemonEventEnvelope,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { describe, expect, it, vi } from "vitest";
 import { serve } from "@hono/node-server";
 import {

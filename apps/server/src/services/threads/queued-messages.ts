@@ -15,20 +15,20 @@ import {
   type DbQueryConnection,
   type QueuedThreadMessageClaimPolicy,
   type QueuedThreadMessageEligibility,
-} from "@bb/db";
-import { queuedMessageSystemNoticeSchema } from "@bb/domain";
+} from "@cloudroom/db";
+import { queuedMessageSystemNoticeSchema } from "@cloudroom/domain";
 import type {
   PromptInput,
   QueuedMessageWaitingOn,
   Thread,
   ThreadQueuedMessage,
   ThreadTurnInitiator,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   CreateQueuedMessageRequest,
   SendMessageRequest,
   SendQueuedMessageMode,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   AppDeps,
   LoggedPendingInteractionWorkSessionDeps,

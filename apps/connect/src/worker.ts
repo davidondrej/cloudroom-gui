@@ -5,7 +5,7 @@ import {
   parseVisitorHost,
   schema,
   sha256Hex,
-} from "@bb/connect-db";
+} from "@cloudroom/connect-db";
 import { refreshAccountSessionCookies } from "./account-session.js";
 import { TUNNEL_OFFLINE_HEADER, TunnelDO, type Env } from "./tunnel-do.js";
 import {

@@ -1,4 +1,4 @@
-import type { TimelineConversationTurnRequest } from "@bb/server-contract";
+import type { TimelineConversationTurnRequest } from "@cloudroom/server-contract";
 
 export function turnRequestLabel(
   turnRequest: TimelineConversationTurnRequest,

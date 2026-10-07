@@ -1,6 +1,6 @@
 import { arch, release } from "node:os";
-import { readOrCreateSecretFile } from "@bb/secret-storage";
-import { getAppSettings, getThread } from "@bb/db";
+import { readOrCreateSecretFile } from "@cloudroom/secret-storage";
+import { getAppSettings, getThread } from "@cloudroom/db";
 import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { cloudroom } from "./commands.js";

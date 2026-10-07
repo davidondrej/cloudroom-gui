@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@get-bb/plugin-sdk": "workspace:*",
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "typescript": "npm:@typescript/typescript6@^6.0.2"
   }
 }

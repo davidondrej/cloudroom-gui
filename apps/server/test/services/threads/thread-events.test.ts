@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
-import { events, getThread, threads } from "@bb/db";
+import { events, getThread, threads } from "@cloudroom/db";
 import {
   createStandaloneBuiltinCompactCommandInput,
   threadScope,
   turnScope,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   appendClientTurnEvent,

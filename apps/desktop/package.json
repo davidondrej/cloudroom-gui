@@ -1,9 +1,10 @@
 {
-  "name": "@bb/desktop",
+  "name": "@cloudroom/desktop",
   "version": "0.43.1",
   "private": true,
   "description": "macOS and Linux Electron shell for Cloudroom",
   "main": "dist/main.js",
+  "desktopName": "cloudroom-dev.desktop",
   "packageManager": "pnpm@9.15.0",
   "os": [
     "darwin",
@@ -33,8 +34,8 @@
     "smoke:browser-broker": "node scripts/smoke-browser-broker.mjs"
   },
   "dependencies": {
-    "@bb/connect-client": "workspace:*",
-    "@bb/host-daemon-contract": "workspace:*",
+    "@cloudroom/connect-client": "workspace:*",
+    "@cloudroom/host-daemon-contract": "workspace:*",
     "bb-app": "workspace:*",
     "electron-updater": "^6.8.3",
     "semver": "^7.7.0",
@@ -42,11 +43,11 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@bb/config": "workspace:*",
-    "@bb/desktop-contract": "workspace:*",
-    "@bb/domain": "workspace:*",
-    "@bb/server-contract": "workspace:*",
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/config": "workspace:*",
+    "@cloudroom/desktop-contract": "workspace:*",
+    "@cloudroom/domain": "workspace:*",
+    "@cloudroom/server-contract": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/node": "^24.9.0",
     "@types/semver": "^7.7.0",
     "@types/ws": "^8.18.1",

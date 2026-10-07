@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Environment, Thread } from "@bb/domain";
+import type { Environment, Thread } from "@cloudroom/domain";
 import {
   setupCommandOutputTestEnvironment,
   collectLogLines,

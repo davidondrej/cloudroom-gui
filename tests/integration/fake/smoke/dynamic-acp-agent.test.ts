@@ -1,7 +1,7 @@
 import path from "node:path";
 import { chmodSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { systemExecutionOptionsResponseSchema } from "@bb/server-contract";
+import { systemExecutionOptionsResponseSchema } from "@cloudroom/server-contract";
 import { describe, expect, it } from "vitest";
 import { getThreadOutput, sendTextMessage } from "../../helpers/api.js";
 import {

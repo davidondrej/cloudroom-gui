@@ -1,4 +1,4 @@
-import type { Environment } from "@bb/domain";
+import type { Environment } from "@cloudroom/domain";
 
 type EnvironmentDisplayHostLocality = "local" | "remote";
 

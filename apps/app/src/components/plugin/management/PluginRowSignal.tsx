@@ -1,14 +1,14 @@
 import type { ReactNode } from "react";
-import { UPDATE_ACTION_ICON } from "@bb/domain/update-state";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { UPDATE_ACTION_ICON } from "@cloudroom/domain/update-state";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
+} from "@cloudroom/shared-ui/tooltip";
 import type { PluginRowSignal } from "./plugin-status";
 import { isReadablePluginVersion, UPDATE_ICON_STYLE } from "./plugin-ui";
 

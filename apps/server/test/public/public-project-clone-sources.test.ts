@@ -1,8 +1,8 @@
 import { replaceMachineEnvironment } from "../../src/services/machines/environment-settings.js";
 import * as gitCredentials from "../../src/services/machines/git-credentials.js";
-import { updateHost } from "@bb/db";
-import { countProjectSources, getProject, setExperiments } from "@bb/db";
-import { defaultExperiments } from "@bb/domain";
+import { getAppSettings, setAppSettings, updateHost } from "@cloudroom/db";
+import { countProjectSources, getProject, setExperiments } from "@cloudroom/db";
+import { defaultExperiments } from "@cloudroom/domain";
 import { describe, expect, it, vi } from "vitest";
 import {
   listQueuedCommands,
@@ -55,6 +55,7 @@ describe("project clone sources", () => {
       ]);
     try {
       await withTestHarness(async (harness) => {
+        setAppSettings(harness.db, { ...getAppSettings(harness.db), stripAiCoAuthorsEnabled: false });
         const first = seedHostSession(harness.deps, { id: "host-source" });
         const machine = seedHostSession(harness.deps, { id: "host-machine" });
         seedPrimaryHost(harness.deps, first.host.id);
@@ -131,6 +132,7 @@ describe("project clone sources", () => {
 
   it("creates resolved sources, anchors origin, and defaults later clones to it", async () => {
     await withTestHarness(async (harness) => {
+      setAppSettings(harness.db, { ...getAppSettings(harness.db), stripAiCoAuthorsEnabled: false });
       const first = seedHostSession(harness.deps, { id: "host-clone-first" });
       const second = seedHostSession(harness.deps, { id: "host-clone-second" });
       seedPrimaryHost(harness.deps, first.host.id);

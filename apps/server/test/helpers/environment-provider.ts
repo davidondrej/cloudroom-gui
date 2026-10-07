@@ -3,7 +3,7 @@ import {
   type TestEnvironmentProviderContext,
   type TestProviderDecision,
 } from "./provider-decisions.js";
-import { gitBranchSelectionSchema } from "@bb/domain";
+import { gitBranchSelectionSchema } from "@cloudroom/domain";
 import type { PluginEnvironmentValidateDecision } from "@get-bb/plugin-sdk";
 import type {
   PluginEnvironmentProviderAvailability,

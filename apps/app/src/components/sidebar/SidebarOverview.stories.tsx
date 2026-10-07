@@ -12,8 +12,8 @@ import {
 } from "@tanstack/react-query";
 import { createStore, Provider } from "jotai";
 import { useNavigate } from "react-router-dom";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
-import type { SidebarBootstrapResponse } from "@bb/server-contract";
+import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
+import type { SidebarBootstrapResponse } from "@cloudroom/server-contract";
 import {
   BRANCH_NAMES,
   HOST_IDS,
@@ -24,7 +24,7 @@ import {
 } from "../../../.ladle/story-fixtures";
 import { ProjectActionsProvider } from "@/components/project/ProjectActionsProvider";
 import { ThreadActionsProvider } from "@/components/thread/ThreadActionsProvider";
-import { Icon } from "@bb/shared-ui/icon";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import {
   ProjectList,
   ProjectListNavigationLoadingState,

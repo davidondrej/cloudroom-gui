@@ -100,6 +100,12 @@ export function registerImportCommands(program: Command, getUrl: () => string): 
         for (const thread of result.skipped) console.log(`Skipped   ${thread.title}: ${thread.reason}`);
       }));
   }
+  group.command("share <link>").description("Copy a thread someone shared with you (a cloudroom.dev/s/... link) into a new Local thread. Its agent starts by reading it and summing up.")
+    .option("--json", "Print JSON")
+    .action(action(async (link: string, options: JsonOutputOptions) => {
+      const result = await createCliBbSdk(getUrl()).cloudroom.continueShare(link);
+      if (!outputJson(options, result)) console.log(`Copied into ${result.threadId}.`);
+    }));
 }
 
 /** Agents send Cloudroom feedback straight to David (ADR 0158). `report` is the old hidden name. Prints {"sent":false} while it is off in Settings. */
@@ -199,6 +205,20 @@ export function registerCloudCommands(program: Command, getUrl: () => string): v
       const choice = options.model && options.reasoning ? { model: options.model, reasoning: options.reasoning } : undefined;
       const result = options.status ? await sdk.cloudroom.teleportStatus(threadId) : await sdk.cloudroom.teleport(threadId, options.cancel ? "cancel" : "start", choice);
       if (!outputJson(options, result)) console.log(result ? `${result.phase}: ${result.completed}/${result.total} files${result.error ? `\n${result.error}` : ""}${result.phase === "complete" ? "\nRunning in cloud. You can close your laptop." : ""}` : "No Teleport transfer.");
+    }));
+  group.command("share <thread-id>").description("Make a read-only link to a thread's messages, or update its shared copy. Tool output and files stay private; secrets are removed.")
+    .option("--status", "Show the link without changing it")
+    .option("--stop", "Turn the link off and delete the shared copy")
+    .option("--json", "Print JSON")
+    .action(action(async (threadId: string, options: JsonOutputOptions & { status?: boolean; stop?: boolean }) => {
+      const sdk = createCliBbSdk(getUrl()).cloudroom;
+      if (options.stop) {
+        await sdk.stopSharingThread(threadId);
+        if (!outputJson(options, null)) console.log("Sharing stopped. The link no longer works.");
+        return;
+      }
+      const share = options.status ? await sdk.threadShare(threadId) : await sdk.shareThread(threadId);
+      if (!outputJson(options, share)) console.log(share ? share.url : "Not shared.");
     }));
   group.command("retry-start <thread-id>").description("Explicitly retry a rejected cloud start with its saved prompt").option("--json", "Print JSON").action(action(async (threadId: string, options: JsonOutputOptions) => {
     await createCliBbSdk(getUrl()).cloudroom.retryStart(threadId);

@@ -209,7 +209,7 @@ multi-plugin arbitration; use a live BB test for those boundaries.
 
 The complete root declaration flattens the unpublished BB workspace contracts.
 The testing declarations reuse that public `@get-bb/plugin-sdk` root instead of
-embedding a second copy, and no declaration depends on unpublished `@bb/*`
+embedding a second copy, and no declaration depends on unpublished `@cloudroom/*`
 packages. Genuine npm types (`hono`, `better-sqlite3`, `zod`, React, and Testing
 Library) remain peer imports. Scaffolded plugins depend on this package —
 `bb plugin new` pins it exactly in `devDependencies` — and read the root/app

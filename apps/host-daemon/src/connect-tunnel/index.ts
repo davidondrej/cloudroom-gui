@@ -2,20 +2,20 @@ import { WebSocket as NodeWebSocket } from "ws";
 import {
   PROTOCOL_VERSION,
   TUNNEL_PROTOCOL_QUERY_PARAM,
-} from "@bb/tunnel-contract";
+} from "@cloudroom/tunnel-contract";
 import {
   humanizeTransportError,
   ReconnectBackoff,
   TunnelSession,
   type ReconnectBackoffOptions,
   type StreamOriginResult,
-} from "@bb/tunnel-client";
+} from "@cloudroom/tunnel-client";
 import {
   hostDaemonConnectTunnelIdentitySchema,
   type HostDaemonConnectShares,
   type HostDaemonConnectTunnelIdentity,
-} from "@bb/host-daemon-contract";
-import { connectPublicProtocol } from "@bb/connect-client";
+} from "@cloudroom/host-daemon-contract";
+import { connectPublicProtocol } from "@cloudroom/connect-client";
 import type { HostDaemonLogger } from "../logger.js";
 
 type ConnectTunnelState = "connected" | "reconnecting" | "offline";

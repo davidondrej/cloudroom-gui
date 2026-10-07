@@ -13,13 +13,13 @@ import type {
   ProviderUsage,
   ProviderUsageResult,
   ProviderUsageWindow,
-} from "@bb/provider-bridge-protocol";
+} from "@cloudroom/provider-bridge-protocol";
 import {
   clampPercent,
   downloadedInstallerCommand,
   readCliVersion,
   resolveExecutablePath,
-} from "@bb/provider-bridge-protocol/bridge-kit";
+} from "@cloudroom/provider-bridge-protocol/bridge-kit";
 import { z } from "zod";
 
 const execFileAsync = promisify(execFile);

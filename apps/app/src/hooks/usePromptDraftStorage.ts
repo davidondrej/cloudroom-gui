@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import type { PromptTextMention } from "@bb/domain";
-import type { PromptDraftAttachment, PromptDraftState } from "@bb/client-core";
+import type { PromptTextMention } from "@cloudroom/domain";
+import type { PromptDraftAttachment, PromptDraftState } from "@cloudroom/client-core";
 import type {
   ThreadTimelineAddToChatHandler,
   ThreadTimelineAddToChatSource,
@@ -13,7 +13,7 @@ import {
   isPromptDraftEmpty,
   parsePromptDraftStorage,
   serializePromptDraftStorage,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 const PROMPT_DRAFT_STORAGE_PREFIX = "bb.promptbox.contents";
 const PROMPT_DRAFT_STORAGE_VERSION = "3";

@@ -10,11 +10,11 @@ import {
   listQueuedThreadMessagesByWaitHolder,
   listQueuedThreadMessagesWaitingOnKind,
   listThreadIdsWithHostOfflineQueueWaits,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   QUEUED_MESSAGE_PLUGIN_WAIT_HOLDER_PREFIX,
   type QueuedMessageWaitingOnKind,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { LoggedPendingInteractionWorkSessionDeps } from "../../types.js";
 import { deferAfterResponse } from "../lib/response-deferral.js";
 import {

@@ -3,7 +3,7 @@ import { pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import * as domain from "@bb/domain";
+import * as domain from "@cloudroom/domain";
 import {
   setupCommandOutputTestEnvironment,
   collectLogLines,

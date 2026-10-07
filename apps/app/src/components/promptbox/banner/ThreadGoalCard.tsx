@@ -1,6 +1,6 @@
-import type { ThreadTimelineGoal } from "@bb/domain";
+import type { ThreadTimelineGoal } from "@cloudroom/domain";
 import { CollapsibleActiveStackCard } from "@/components/promptbox/banner/CollapsibleActiveStackCard";
-import { Icon } from "@bb/shared-ui/icon";
+import { Icon } from "@cloudroom/shared-ui/icon";
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) {

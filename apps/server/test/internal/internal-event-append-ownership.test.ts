@@ -4,13 +4,13 @@ import {
   getThread,
   listEvents,
   listQueuedThreadMessages,
-} from "@bb/db";
-import { threadScope, turnScope } from "@bb/domain";
+} from "@cloudroom/db";
+import { threadScope, turnScope } from "@cloudroom/domain";
 import {
   groupHostDaemonEvents,
   hostDaemonEventBatchResponseSchema,
   type HostDaemonEventEnvelope,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { describe, expect, it } from "vitest";
 import { buildThreadTimelineWithProfile } from "../../src/services/threads/timeline.js";
 import {

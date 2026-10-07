@@ -35,13 +35,13 @@ import {
   resolveEnvironmentMergeBaseBranch,
   type ThreadListEntry,
   type ThreadWithRuntime,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   PullRequestMergeMethod,
   TerminalSession,
   TimelineRow,
-} from "@bb/server-contract";
-import type { WorkspaceOpenTarget } from "@bb/host-daemon-contract";
+} from "@cloudroom/server-contract";
+import type { WorkspaceOpenTarget } from "@cloudroom/host-daemon-contract";
 import { appToast } from "@/components/ui/app-toast";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
 import { useThreadOpenTiming } from "@/lib/perf";
@@ -51,7 +51,7 @@ import {
   usePluginDetailPanelState,
 } from "@/components/plugin/plugin-detail-navigation";
 import { useForkThreadFromMessage } from "@/hooks/useForkThreadFromMessage";
-import { isThreadForkable } from "@bb/client-core";
+import { isThreadForkable } from "@cloudroom/client-core";
 import { useRequestEnvironmentAction } from "../../hooks/mutations/environment-mutations";
 import {
   useMarkThreadRead,
@@ -96,12 +96,13 @@ import {
   ThreadActionsMenu,
   type ThreadActionsMenuResponsiveAction,
 } from "@/components/thread/ThreadActionsMenu";
+import { ThreadShareButton } from "@/components/thread/ThreadShareButton";
 import { PluginThreadHeaderActions } from "@/components/plugin/PluginThreadHeaderActions";
 import {
   formatEnvironmentDisplay,
   type EnvironmentDisplayHostContext,
-} from "@bb/core-ui";
-import { assertNever } from "@bb/thread-view";
+} from "@cloudroom/core-ui";
+import { assertNever } from "@cloudroom/thread-view";
 import { useCreateThreadInEnvironment } from "@/hooks/useCreateThreadInEnvironment";
 import { useHostDaemon } from "@/hooks/useHostDaemon";
 import { useLocalOpenTargets } from "@/hooks/useLocalOpenTargets";
@@ -141,7 +142,7 @@ import {
 import {
   promptInputToDraft,
   type PromptDraftState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   createLocalStorageEnumStorage,
   withLocalStorage,
@@ -200,7 +201,7 @@ import {
   SIDE_CHAT_PLUGIN_PANEL_ACTION_ID,
 } from "@/lib/side-chat-plugin";
 import { RightPanelFileTabIcon } from "@/components/secondary-panel/RightPanelFileTabIcon";
-import { COARSE_POINTER_COMPACT_ICON_SIZE_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
+import { COARSE_POINTER_COMPACT_ICON_SIZE_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import { PluginIcon } from "@/components/plugin/PluginIcon";
 import {
   PluginPanelTabContent,
@@ -214,7 +215,7 @@ import {
 import { ThreadTimelineNavigationProvider } from "@/components/thread/timeline/ThreadTimelineNavigationContext";
 import { usePluginSlots } from "@/lib/plugin-slots";
 import { getFileExtension } from "@/lib/plugin-slot-resolvers";
-import { Icon } from "@bb/shared-ui/icon";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import {
   getBbDesktopInfo,
   getDesktopBrowserApi,
@@ -239,7 +240,7 @@ import {
   normalizeExperimentalFileOpenOptions,
   toFilePreviewLineRange,
 } from "@/lib/live-file-navigation";
-import { getFilePreviewLineRangeStart } from "@bb/client-core";
+import { getFilePreviewLineRangeStart } from "@cloudroom/client-core";
 import { getBrowserUrlHost } from "@/lib/browser-url";
 import {
   useThreadStorageBrowser,
@@ -249,7 +250,7 @@ import {
   useThreadFileTabs,
   type FileSearchSelection,
 } from "@/components/secondary-panel/useThreadFileTabs";
-import { isSecondaryFileTab } from "@bb/client-core";
+import { isSecondaryFileTab } from "@cloudroom/client-core";
 import { useThreadOpenFileSignal } from "@/components/secondary-panel/useThreadOpenFileSignal";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
 import type {
@@ -299,7 +300,7 @@ import {
 } from "@/lib/fixed-panel-tabs-state";
 import { resolveGitDiffTabStatus } from "@/components/secondary-panel/gitDiffTabEligibility";
 import { isRootThread } from "./threadParentSelectorOptions";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import {
   DEFAULT_TERMINAL_COLS,
   DEFAULT_TERMINAL_ROWS,
@@ -2543,6 +2544,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
           projectId={thread.projectId}
         />
       }
+      shareButton={<ThreadShareButton threadId={thread.id} />}
       threadId={thread.id}
       threadTitle={threadTitle}
     />

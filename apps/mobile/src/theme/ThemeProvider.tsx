@@ -1,4 +1,4 @@
-import type { BuiltInThemeId } from "@bb/domain";
+import type { BuiltInThemeId } from "@cloudroom/domain";
 import { VariableContextProvider } from "nativewind";
 import {
   createContext,

@@ -6,7 +6,7 @@ import {
   type AppCommandContext,
   type AppKeybinding,
   type AppShortcut,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   formatAppShortcut,
   formatAppShortcutAria,

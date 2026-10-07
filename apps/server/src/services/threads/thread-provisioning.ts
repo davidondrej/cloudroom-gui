@@ -1,8 +1,8 @@
-import { getNonDestroyedHostByLaunchKey } from "@bb/db";
+import { getNonDestroyedHostByLaunchKey } from "@cloudroom/db";
 import { sweepProviderMachine } from "../machines/provider-orchestration.js";
 import { cancelProviderEnvironmentCreation } from "../environments/environment-engine.js";
-import { getPreparingEnvironment } from "@bb/db";
-import { getThread, type DbTransaction, type EnvironmentRow } from "@bb/db";
+import { getPreparingEnvironment } from "@cloudroom/db";
+import { getThread, type DbTransaction, type EnvironmentRow } from "@cloudroom/db";
 import {
   type EnvironmentProviderSelection,
   type PromptInput,
@@ -12,8 +12,8 @@ import {
   type Thread,
   type ThreadTurnInitiator,
   type TurnRequestTarget,
-} from "@bb/domain";
-import type { StartedOnBehalfOf } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { StartedOnBehalfOf } from "@cloudroom/server-contract";
 import type { AppDeps } from "../../types.js";
 import { requestQueuedMessageDispatch } from "./queued-message-dispatch.js";
 import {

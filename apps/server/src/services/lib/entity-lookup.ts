@@ -7,10 +7,10 @@ import {
   getThread,
   listPublicHosts,
   type HostDaemonSessionRow,
-} from "@bb/db";
-import type { EnvironmentRow } from "@bb/db";
-import type { Host } from "@bb/domain";
-import type { DbConnection } from "@bb/db";
+} from "@cloudroom/db";
+import type { EnvironmentRow } from "@cloudroom/db";
+import type { Host } from "@cloudroom/domain";
+import type { DbConnection } from "@cloudroom/db";
 import type { NotificationHub } from "../../ws/hub.js";
 import { ApiError } from "../../errors.js";
 import {

@@ -1,21 +1,21 @@
-import type { DiscoveredWorkspaceProperties } from "@bb/domain";
+import type { DiscoveredWorkspaceProperties } from "@cloudroom/domain";
 import {
   provisionWorkspace,
   type HostWorkspace,
   type ProvisionWorkspaceArgs,
-} from "@bb/host-workspace";
+} from "@cloudroom/host-workspace";
 import type {
   HostDaemonEnvironmentChange,
   HostDaemonWatchSet,
   HostDaemonWatchSetThreadStorageTarget,
   HostDaemonWatchSetWorkspaceTarget,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type {
   HostWatcher,
   ThreadStorageWatchError,
   WorkspaceStatusWatchChangeKind,
   WorkspaceWatchError,
-} from "@bb/host-watcher";
+} from "@cloudroom/host-watcher";
 import { userExecutableProcessOptions } from "./user-executable-env.js";
 
 type StopWatching = () => void | Promise<void>;

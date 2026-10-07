@@ -8,8 +8,8 @@ import {
   threadPullRequestSchema,
   workspaceDiffTargetSchema,
   workspaceStatusSchema,
-} from "@bb/domain";
-import { workspaceResolutionFailureSchema } from "@bb/host-daemon-contract/workspace";
+} from "@cloudroom/domain";
+import { workspaceResolutionFailureSchema } from "@cloudroom/host-daemon-contract/workspace";
 import { apiErrorSchema } from "../errors.js";
 import {
   branchListQuerySchema,

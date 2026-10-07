@@ -187,7 +187,7 @@ unpaired provider reports setup required. `room-cli settings show --json` includ
 fresh provider availability and the effective selection; failed or timed-out
 checks report unavailable without acquiring a grant. Settings and creation
 banners refresh this status when the access provider signals a change. Machines use this
-access for ongoing runtime requests, including account-pool endpoints.
+access for ongoing runtime requests.
 
 The Tailscale plugin can supply private machine access without a Direct URL.
 Use `room-cli tailscale devices`, `room-cli tailscale status`, and `room-cli tailscale configure

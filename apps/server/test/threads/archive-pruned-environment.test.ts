@@ -5,9 +5,9 @@ import {
   environments,
   getThread,
   pruneDestroyedEnvironments,
-} from "@bb/db";
-import type { ThreadStatus } from "@bb/domain";
-import { apiErrorSchema } from "@bb/server-contract";
+} from "@cloudroom/db";
+import type { ThreadStatus } from "@cloudroom/domain";
+import { apiErrorSchema } from "@cloudroom/server-contract";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { readJson } from "../helpers/json.js";

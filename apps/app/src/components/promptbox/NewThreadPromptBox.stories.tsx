@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { PermissionMode, PromptTextMention } from "@bb/domain";
-import type { SystemExecutionOptionsModelLoadError } from "@bb/server-contract";
+import type { PermissionMode, PromptTextMention } from "@cloudroom/domain";
+import type { SystemExecutionOptionsModelLoadError } from "@cloudroom/server-contract";
 import {
   NewThreadPromptBoxUI,
   type NewThreadEnvironmentConfig,

@@ -99,7 +99,7 @@ def fib(n: int) -> int:
 Long lines scroll horizontally until you toggle wrap (no language tag):
 
 \`\`\`
-$ pnpm exec turbo run typecheck --filter=@bb/app --filter=@bb/server --filter=@bb/host-daemon --filter=@bb/cli && echo "all packages clean"
+$ pnpm exec turbo run typecheck --filter=@cloudroom/app --filter=@cloudroom/server --filter=@cloudroom/host-daemon --filter=@cloudroom/cli && echo "all packages clean"
 \`\`\``;
 
 const MATH_MARKDOWN = `Inline math sits in the prose, like the mass–energy

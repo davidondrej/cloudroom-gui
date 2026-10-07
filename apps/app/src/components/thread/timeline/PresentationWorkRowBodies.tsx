@@ -1,14 +1,14 @@
-import type { ThreadEventPlanStep } from "@bb/domain";
-import type { TimelineRowPresentation } from "@bb/server-contract";
-import type { TimelineViewWorkRow } from "@bb/thread-view";
+import type { ThreadEventPlanStep } from "@cloudroom/domain";
+import type { TimelineRowPresentation } from "@cloudroom/server-contract";
+import type { TimelineViewWorkRow } from "@cloudroom/thread-view";
 import {
   activityIconClass,
   activityRowClass,
   activityTextClass,
   type ActivityRowState,
-} from "@bb/shared-ui/activity-row-styles";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/activity-row-styles";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { MarkdownPreview } from "../../ui/markdown-preview.js";
 
 export function PresentationDetail({

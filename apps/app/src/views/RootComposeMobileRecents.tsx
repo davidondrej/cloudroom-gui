@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useAtom } from "jotai";
-import type { ProviderInfo, ThreadListEntry } from "@bb/domain";
+import type { ProviderInfo, ThreadListEntry } from "@cloudroom/domain";
 import { RouteAnchor } from "@/components/ui/app-route-anchor";
 import { ThreadStatusGlyph } from "@/components/sidebar/ThreadRow";
 import { SidebarChildToggleChevron } from "@/components/sidebar/SidebarChildToggleChevron";
 import { getSidebarThreadRowPaddingLeft } from "@/components/sidebar/sidebarRowClasses";
 import { SIDEBAR_WORKING_STATUS_COLOR_CLASS } from "@/components/sidebar/sidebarRowClasses";
-import { CHROME_SECTION_LABEL_CLASS } from "@bb/shared-ui/chrome-style-tokens";
+import { CHROME_SECTION_LABEL_CLASS } from "@cloudroom/shared-ui/chrome-style-tokens";
 import {
   COARSE_POINTER_ICON_SIZE_CLASS,
   COARSE_POINTER_TEXT_BASE_CLASS,
   COARSE_POINTER_TEXT_SM_CLASS,
-} from "@bb/shared-ui/coarse-pointer-sizing";
-import { Icon } from "@bb/shared-ui/icon";
+} from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { OverflowFade } from "@/components/ui/overflow-fade";
 import { getThreadRoutePath, isProjectlessProjectId } from "@/lib/route-paths";
 import {
@@ -23,7 +23,7 @@ import {
   type CollapsedChildActivity,
   type ProjectThreadItem,
   type ThreadListIndicatorState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { getThreadDisplayTitle } from "@/lib/thread-title";
 import { formatRelativeTime } from "@/lib/relative-time";
 import {
@@ -34,10 +34,10 @@ import { useSystemEnvironmentProviders } from "@/hooks/queries/environment-provi
 import {
   resolveEnvironmentDisplayName,
   type EnvironmentDisplayProviderLookup,
-} from "@bb/core-ui";
+} from "@cloudroom/core-ui";
 import { getProviderIconInfo } from "@/lib/provider-icon";
 import { ProviderIconMark } from "@/components/settings/ProviderIconMark";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { usePromptDraftInputThreadIds } from "@/hooks/usePromptDraftStorage";
 import { collapsedThreadIdsAtom } from "@/components/sidebar/sidebarCollapsedAtoms";
 

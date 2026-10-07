@@ -1,13 +1,13 @@
 import { useCallback, useRef } from "react";
-import { Button } from "@bb/shared-ui/button";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { Button } from "@cloudroom/shared-ui/button";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
+} from "@cloudroom/shared-ui/dropdown-menu";
 import {
   PluginComposerPlusMenuEntry,
   type PluginComposerPlusMenuContribution,
@@ -15,11 +15,11 @@ import {
 } from "@/components/plugin/PluginComposerActions";
 import { useResolvedComposerPlusMenuItems } from "@/components/plugin/composer-slot-hooks";
 import { useOptionalPluginComposerView } from "@/components/plugin/plugin-composer-host";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { COARSE_POINTER_PROMPT_ICON_ACTION_BUTTON_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
-import { CHROME_SUBTLE_ICON_BUTTON_FOREGROUND_CLASS } from "@bb/shared-ui/chrome-style-tokens";
-import { CREATE_PLUGIN_PROMPT } from "@bb/client-core";
-import type { ProviderPromptActionCommand } from "@bb/client-core";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { COARSE_POINTER_PROMPT_ICON_ACTION_BUTTON_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { CHROME_SUBTLE_ICON_BUTTON_FOREGROUND_CLASS } from "@cloudroom/shared-ui/chrome-style-tokens";
+import { CREATE_PLUGIN_PROMPT } from "@cloudroom/client-core";
+import type { ProviderPromptActionCommand } from "@cloudroom/client-core";
 
 type PromptBoxActionKind = "skills" | "plan" | "goal" | "automation" | "plugin";
 

@@ -2,8 +2,8 @@ import {
   providerCommandSectionRank,
   type CommandListResponse,
   type ProviderCommand,
-} from "@bb/server-contract";
-import type { HostProviderCommand } from "@bb/host-daemon-contract";
+} from "@cloudroom/server-contract";
+import type { HostProviderCommand } from "@cloudroom/host-daemon-contract";
 import type { ProviderRegistration } from "../providers/provider-registry.js";
 import type { ResolvedSkillCatalogEntry } from "../skills/injected-skills.js";
 

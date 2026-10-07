@@ -25,10 +25,10 @@
     "prepare:bundled": "bb-plugin-build prepare-bundled"
   },
   "dependencies": {
-    "@bb/shared-ui": "workspace:*"
+    "@cloudroom/shared-ui": "workspace:*"
   },
   "devDependencies": {
-    "@bb/plugin-build": "workspace:*",
+    "@cloudroom/plugin-build": "workspace:*",
     "@get-bb/plugin-sdk": "workspace:*",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^22.0.0",

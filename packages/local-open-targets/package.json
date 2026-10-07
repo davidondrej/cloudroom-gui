@@ -1,5 +1,5 @@
 {
-  "name": "@bb/local-open-targets",
+  "name": "@cloudroom/local-open-targets",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -16,12 +16,12 @@
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "@bb/host-daemon-contract": "workspace:*",
-    "@bb/process-utils": "workspace:*",
+    "@cloudroom/host-daemon-contract": "workspace:*",
+    "@cloudroom/process-utils": "workspace:*",
     "zod": "4.3.6"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-7": "npm:typescript@^7.0.2",

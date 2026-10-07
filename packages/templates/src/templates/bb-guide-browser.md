@@ -1,6 +1,6 @@
 # Built-in browser automation
 
-`room-cli browser` is the experimental core API for automation integrations controlling Cloudroom desktop tabs. The Browser Automation plugin adds its own script/session commands; another plugin can use the same core connection independently.
+`room-cli browser` is the experimental core API for automation integrations controlling Cloudroom desktop tabs. A plugin can use its core connection. For agent web tasks, use `browser-harness` instead (see the `browser-harness` skill).
 
 Start with `room-cli browser instances --host <host-id> --json`. For every tab/control operation provide `--host <host-id> --instance <instance-id> --generation <generation> --thread <thread-id>`. The browser host can differ from the agent host. Never infer an active desktop window.
 
@@ -21,4 +21,4 @@ Cookie import copies signed-in sessions from a browser installed on the desktop 
 
 All commands support JSON output. In plugin code use `bb.sdk.experimental_desktopBrowsers`; the Plugin Guide documents the typed surface. Stop/Take over revokes native control; stopping the owning thread also releases its server control leases. Old connection generations cannot control replacement windows.
 
-Cloud browsers are not supported. Headless Chrome on an enrolled host belongs to the Browser Automation plugin.
+Cloud threads have no Cloudroom desktop tabs; agents there use `browser-harness` with the sandbox's Chromium.

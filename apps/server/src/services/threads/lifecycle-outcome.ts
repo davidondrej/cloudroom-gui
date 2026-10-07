@@ -5,7 +5,7 @@ import {
   type ApplyThreadLifecycleEventOutcome,
   type DbConnection,
   type DbTransaction,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type { ServerLogger } from "../../types.js";
 import type { NotificationHub } from "../../ws/hub.js";
 import {

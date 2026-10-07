@@ -20,7 +20,7 @@ vi.mock("react-router-dom", async (importOriginal) => ({
   useNavigate: () => navigateSpy,
 }));
 
-vi.mock("@bb/shared-ui/hooks/use-compact-viewport", () => ({
+vi.mock("@cloudroom/shared-ui/hooks/use-compact-viewport", () => ({
   useIsCompactViewport: () => compactState.value,
 }));
 

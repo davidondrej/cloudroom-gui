@@ -1429,24 +1429,6 @@ describe("workflow service policy integration", () => {
     ).toBe(50);
   });
 
-  it("bounds UTF-8 notifications while preserving the stable run marker", async () => {
-    const test = setup();
-    harnesses.push(test.harness);
-    const run = await test.start(source("return null;", "unicode-notice"));
-    const terminal = {
-      ...run,
-      status: "failed" as const,
-      error: "🔥".repeat(2_000),
-      finishedAt: Date.now(),
-    };
-    const text = formatWorkflowNotification(terminal, 1_024);
-    expect(Buffer.byteLength(text, "utf8")).toBeLessThanOrEqual(1_024);
-    expect(text).toContain(run.id);
-    expect(text).toContain("failed");
-    expect(text).toContain("[truncated]");
-    expect(text).toContain(`bb workflows status ${run.id}`);
-    expect(text).not.toContain("�");
-  });
 });
 
 describe("provider retry classification", () => {

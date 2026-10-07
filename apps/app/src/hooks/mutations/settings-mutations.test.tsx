@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 
 import { useQuery } from "@tanstack/react-query";
-import { createDeferredPromise } from "@bb/test-helpers";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
-import type { SystemConfigResponse } from "@bb/server-contract";
+import type { SystemConfigResponse } from "@cloudroom/server-contract";
 import {
   defaultAppSettings,
   type AppKeybindingOverrides,
   type AppKeybindings,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   modelCatalogCacheKey,

@@ -241,7 +241,7 @@ subpath from the plugin's own SDK install, and managed Git installs run
 `npm install --omit=dev`, so a devDependency-only SDK is absent when the
 artifact is built. This is the exception to the devDependency rule under
 "bb.hosts"; the echo example's `package.json` shows the shape. A `bb.host`
-artifact cannot import Cloudroom's private `@bb/*` workspace packages; an installed
+artifact cannot import Cloudroom's private `@cloudroom/*` workspace packages; an installed
 plugin could not resolve them.
 
 The bridge speaks the canonical Provider Bridge Protocol — line-delimited
@@ -296,7 +296,7 @@ assert every scenario passes (see
 same kit assembles your deltas into canonical events, so a second test can
 assert what each row becomes
 (`examples/plugins/echo-provider/provider-bridge.stream.test.ts`). Never
-import a private `@bb/*` package from a plugin: an installed plugin cannot
+import a private `@cloudroom/*` package from a plugin: an installed plugin cannot
 resolve it.
 
 The test package also provides the production delta assembler, JSON-RPC

@@ -1,5 +1,5 @@
 import type { CreateSdkAreaArgs } from "./common.js";
-import type { TeleportProgress } from "@bb/domain";
+import type { TeleportProgress } from "@cloudroom/domain";
 
 export interface CloudroomStorage {
   enabled: boolean;
@@ -104,7 +104,7 @@ export interface MacMcpServer {
   macOnly: boolean;
 }
 
-export interface ClaudeAccountInput { action?: "login" | "cancel" | "complete" | "setup-token" | "install" | "key"; requestId?: string; code?: string; state?: string; apiKey?: string }
+export interface ClaudeAccountInput { action?: "login" | "cancel" | "complete" | "setup-token" | "key" | "token"; requestId?: string; code?: string; state?: string; apiKey?: string; token?: string; plan?: string }
 
 export interface CloudroomArea {
   claudeAuth(input?: ClaudeAccountInput, signal?: AbortSignal): Promise<CloudroomCodexAuth>;
@@ -179,6 +179,19 @@ export interface CloudroomArea {
   importSessions(hostId: string, sessions: { harness: NativeSession["harness"]; id: string }[]): Promise<SessionImportResult>;
   /** Sends a Local agent's Cloudroom bug report. `sent` is false while bug reports are off in Settings. */
   reportBug(input: { message: string; threadId?: string }): Promise<{ sent: boolean }>;
+  /** The thread's read-only share link, or null when it is not shared. */
+  threadShare(threadId: string, signal?: AbortSignal): Promise<ThreadShare | null>;
+  /** Shares the thread's messages (no tool output or files, secrets removed), or updates its shared copy. */
+  shareThread(threadId: string): Promise<ThreadShare>;
+  /** Turns the thread's share link off and deletes its shared copy. */
+  stopSharingThread(threadId: string): Promise<void>;
+  /** Copies a shared thread into a new Local thread that starts by reading it. */
+  continueShare(link: string): Promise<{ threadId: string; projectId: string }>;
+}
+
+export interface ThreadShare {
+  url: string;
+  updatedAt: string;
 }
 
 export interface BbImportResult {
@@ -211,7 +224,7 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     ...(body === undefined ? {} : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
   });
   return {
-    claudeAuth: (input, signal) => transport.readJson(request(`/claude${input?.action ? `/${input.action}` : ""}`, input?.action ? { requestId: input.requestId, ...(input.action === "complete" ? { code: input.code, state: input.state } : {}), ...(input.action === "key" ? { apiKey: input.apiKey } : {}) } : undefined, signal)) as Promise<CloudroomCodexAuth>,
+    claudeAuth: (input, signal) => transport.readJson(request(`/claude${input?.action ? `/${input.action}` : ""}`, input?.action ? { requestId: input.requestId, ...(input.action === "complete" ? { code: input.code, state: input.state } : {}), ...(input.action === "key" ? { apiKey: input.apiKey } : {}), ...(input.action === "token" ? { token: input.token, plan: input.plan } : {}) } : undefined, signal)) as Promise<CloudroomCodexAuth>,
     cursorAuth: (signal) => transport.readJson(request("/cursor", undefined, signal)) as Promise<CloudroomCodexAuth>,
     cursorLogin: (requestId) => transport.readJson(request("/cursor/login", { requestId })) as Promise<CloudroomCodexAuth>,
     cancelCursorLogin: (requestId) => transport.readJson(request("/cursor/cancel", { requestId })) as Promise<CloudroomCodexAuth>,
@@ -256,6 +269,10 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     importSessions: (hostId, sessions) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/import/sessions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hostId, sessions }) })) as Promise<SessionImportResult>,
     reportBug: (input) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/bug-reports`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })) as Promise<{ sent: boolean }>,
     retryCopy: (threadId) => transport.readVoid(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/retry-copy`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })),
+    threadShare: (threadId, signal) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/share`, { signal })) as Promise<ThreadShare | null>,
+    shareThread: (threadId) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/share`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "save" }) })) as Promise<ThreadShare>,
+    stopSharingThread: (threadId) => transport.readVoid(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/share`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "stop" }) })),
+    continueShare: (link) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/shares/continue`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ link }) })) as Promise<{ threadId: string; projectId: string }>,
     retryStart: (threadId) => transport.readVoid(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/retry-start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })),
   };
 }

@@ -10,7 +10,7 @@ import { CodexConnectionPanel, CursorConnectionPanel, openCodexConnection, openC
 vi.mock("@/lib/sdk", () => ({ sdk: { cloudroom: { codexAuth: vi.fn(), codexLogin: vi.fn(), cancelCodexLogin: vi.fn(), cursorAuth: vi.fn(), cursorLogin: vi.fn(), cancelCursorLogin: vi.fn(), cursorApiKey: vi.fn(), retryStart: vi.fn() } } }));
 vi.mock("@/hooks/queries/cloudroom-queries", () => ({ useCloudroomAccount: () => ({ data: { ready: true, account: { id: "member" } } }) }));
 vi.mock("@/lib/url-open-routing", () => ({ openUrlInExternalBrowser: vi.fn() }));
-vi.mock("@bb/shared-ui/responsive-overlay", () => ({ PersistentResponsiveDrawerShell: ({ open, children }: { open: boolean; children: ReactNode }) => open ? <div role="dialog">{children}</div> : null }));
+vi.mock("@cloudroom/shared-ui/responsive-overlay", () => ({ PersistentResponsiveDrawerShell: ({ open, children }: { open: boolean; children: ReactNode }) => open ? <div role="dialog">{children}</div> : null }));
 type Status = Awaited<ReturnType<typeof sdk.cloudroom.codexAuth>>;
 const missing: Status = { state: "missing", email: null, plan: null, message: null, login_id: null, verification_url: null, user_code: null };
 const waiting: Status = { ...missing, state: "waiting", login_id: "attempt", verification_url: "https://auth.openai.com/codex/device", user_code: "TEST-1234" };

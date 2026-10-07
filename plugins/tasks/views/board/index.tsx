@@ -29,11 +29,11 @@ import {
 import { PriorityIcon, StatusIcon } from "./icons.js";
 import { isActiveThread } from "../detail/meta.js";
 import { STATUS_LABELS } from "../list/lib.js";
-import { Button } from "@bb/shared-ui/button";
-import { DelayedLoading } from "@bb/shared-ui/delayed-loading";
-import { Icon } from "@bb/shared-ui/icon";
-import { Skeleton } from "@bb/shared-ui/skeleton";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { Button } from "@cloudroom/shared-ui/button";
+import { DelayedLoading } from "@cloudroom/shared-ui/delayed-loading";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 const DRAG_THRESHOLD_PX = 5;
 
@@ -42,6 +42,7 @@ interface BoardCardMeta {
   attachmentCount: number;
   subDone: number;
   subTotal: number;
+  parentTitle: string | null;
 }
 
 interface BoardData {
@@ -55,6 +56,7 @@ const EMPTY_META: BoardCardMeta = {
   attachmentCount: 0,
   subDone: 0,
   subTotal: 0,
+  parentTitle: null,
 };
 
 async function fetchBoard(
@@ -62,7 +64,10 @@ async function fetchBoard(
   projectId: string,
 ): Promise<BoardData> {
   const tasks = await listAllTasks(rpc, { projectId });
-  const topLevel = tasks.filter((task) => task.parentTaskId === null);
+  const boardTasks = tasks.filter(
+    (task) => task.parentTaskId === null || task.status === "done",
+  );
+  const titlesById = new Map(tasks.map((task) => [task.id, task.title]));
 
   const labels = await rpc.call("listLabels", { projectId }).then(
     (result) => result.labels,
@@ -85,7 +90,7 @@ async function fetchBoard(
   );
   const workingByTaskId = new Map<string, TaskThread[]>();
   await Promise.all(
-    topLevel
+    boardTasks
       .filter((task) => activeTaskIds.has(task.id))
       .map(async (task) => {
         const threads = await rpc
@@ -99,7 +104,7 @@ async function fetchBoard(
   );
   const attachmentCounts = new Map<string, number>();
   await Promise.all(
-    topLevel.map(async (task) => {
+    boardTasks.map(async (task) => {
       const count = await rpc.call("listAttachments", { taskId: task.id }).then(
         (result) => result.attachments.length,
         () => 0,
@@ -109,16 +114,20 @@ async function fetchBoard(
   );
 
   return {
-    tasks: topLevel,
+    tasks: boardTasks,
     labelsById: new Map(labels.map((label) => [label.id, label])),
     metaByTaskId: new Map(
-      topLevel.map((task) => [
+      boardTasks.map((task) => [
         task.id,
         {
           workingThreads: workingByTaskId.get(task.id) ?? [],
           attachmentCount: attachmentCounts.get(task.id) ?? 0,
           subDone: subProgress.get(task.id)?.done ?? 0,
           subTotal: subProgress.get(task.id)?.total ?? 0,
+          parentTitle:
+            task.parentTaskId === null
+              ? null
+              : (titlesById.get(task.parentTaskId) ?? null),
         },
       ]),
     ),
@@ -210,6 +219,12 @@ function TaskCard({
         <span className="tabular-nums">{task.key}</span>
         <WorkingAgentsChip threads={meta.workingThreads} />
       </div>
+      {meta.parentTitle !== null ? (
+        <div className="mt-1 flex min-w-0 items-center gap-1 text-2xs text-muted-foreground">
+          <Icon name="CornerDownRight" className="size-3 shrink-0" />
+          <span className="truncate">{meta.parentTitle}</span>
+        </div>
+      ) : null}
       <div className="mt-1 line-clamp-2 text-sm leading-snug font-medium">
         {task.title}
       </div>

@@ -45,14 +45,14 @@ import type {
   ResolvedThreadExecutionOptions,
   ThreadEventRow,
   ThreadQueuedMessage,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   appSettingsUpdateSchema,
   appKeybindingOverridesSchema,
   appThemeSelectionSchema,
   experimentsSchema,
-} from "@bb/domain";
-import type { ProviderUsageResponse } from "@bb/host-daemon-contract";
+} from "@cloudroom/domain";
+import type { ProviderUsageResponse } from "@cloudroom/host-daemon-contract";
 import {
   binaryResponse,
   defineRoute,
@@ -65,7 +65,7 @@ import {
   textResponse,
   type ApiSchemaFromRouteDescriptors,
   type EmptyInput,
-} from "@bb/hono-typed-routes";
+} from "@cloudroom/hono-typed-routes";
 import type {
   PathId,
   PathProjectId,

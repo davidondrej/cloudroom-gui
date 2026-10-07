@@ -1,7 +1,7 @@
 # The bb Provider Bridge Protocol
 
 The one JSON-RPC contract between the agent runtime and every provider
-bridge process. Message schemas live in `@bb/provider-bridge-protocol` and
+bridge process. Message schemas live in `@cloudroom/provider-bridge-protocol` and
 are the source of truth for both sides; this document adds what schemas
 cannot express — the division of labor and the grammar: **the bridge knows
 the dialect, the runtime knows the timeline.** A bridge parses its
@@ -36,7 +36,7 @@ host RPC entry. First-party bridges use exactly this path —
 and `examples/plugins/echo-provider` the smallest.
 
 The bundle is self-contained (only node builtins stay external) and may not
-import bb's private `@bb/*` workspace packages at all — an installed plugin
+import bb's private `@cloudroom/*` workspace packages at all — an installed plugin
 cannot resolve them. Everything a bridge compiles against is published at
 **`@get-bb/plugin-sdk/provider-bridge`**: the protocol schemas (including
 the `thread/delta` grammar), the bridge kit (JSON-RPC plumbing, tool-call
@@ -45,8 +45,8 @@ vocabulary the params reference, and the testing kit a bridge proves itself
 with — the conformance scenarios, the real delta assembler, the JSON-RPC
 harness and the calibration normalizer — is published beside it as
 **`@get-bb/plugin-sdk/provider-bridge/testing`**. In-repo, those are
-implemented by `@bb/provider-bridge-protocol` (the grammar, the
-`assembler`, `conformance` and `testing` subpaths) and `@bb/domain`.
+implemented by `@cloudroom/provider-bridge-protocol` (the grammar, the
+`assembler`, `conformance` and `testing` subpaths) and `@cloudroom/domain`.
 
 ## Transport
 
@@ -151,10 +151,10 @@ shape, streamed text (`item.textDelta`/`item.textClose`), `usage`,
 `contextWindow`, errors/warnings, `unhandled` diagnostics, session lifecycle
 (`session.reset`, `session.ended`) — never a raw provider event and never a
 finished `ThreadEvent`. The schemas in
-`@bb/provider-bridge-protocol/src/thread-delta.ts` are the source of truth
+`@cloudroom/provider-bridge-protocol/src/thread-delta.ts` are the source of truth
 for the grammar.
 
-The runtime's **delta assembler** (`@bb/agent-runtime`, one per bridge
+The runtime's **delta assembler** (`@cloudroom/agent-runtime`, one per bridge
 adapter) consumes the deltas and owns every timeline invariant:
 
 - **Id minting.** Turn and item ids are assembler-minted
@@ -603,7 +603,7 @@ Recordings are the input of the parity harness
 lanes replay into a fake child (`replay-provider-child.mjs`, for which the
 recording is the script), the runtime lanes replay into a bridge, and two
 checkouts are diffed on the assembled events and projected rows with
-`pnpm parity --old <checkout> --new .` (`@bb/provider-parity`). Each leg
+`pnpm parity --old <checkout> --new .` (`@cloudroom/provider-parity`). Each leg
 assembles and projects with its own checkout's code. Differences a migration
 PR intends go in `recordings/parity-allowlist.json` with the PR and reason;
 an entry that masks nothing is reported stale and fails the run.
@@ -619,7 +619,7 @@ and `UPDATE_PARITY_ROW_COUNTS=1` rewrites the pins deliberately. Raw
 recordings stay out of git.
 
 A recording is never rewritten. When a bridge change alters what the bridge
-emits for a recording, `pnpm --filter @bb/provider-parity rerecord
+emits for a recording, `pnpm --filter @cloudroom/provider-parity rerecord
 [--plan-with <recording-time checkout>]` writes the bridge's current output
 to `bridge→runtime.current.ndjson` beside the recorded lane; the self-suite
 pins and compares against that file when it exists, while `pnpm parity`

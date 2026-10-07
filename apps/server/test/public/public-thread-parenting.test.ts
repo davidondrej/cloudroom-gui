@@ -3,15 +3,15 @@ import {
   createThread,
   createThreadSection,
   getThread,
-} from "@bb/db";
-import { threadSchema } from "@bb/domain";
+} from "@cloudroom/db";
+import { threadSchema } from "@cloudroom/domain";
 import {
   apiErrorSchema,
   sidebarBootstrapResponseSchema,
   threadArchiveAllResponseSchema,
   threadChildSummaryResponseSchema,
   threadListResponseSchema,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { describe, expect, it } from "vitest";
 import { waitForQueuedCommand } from "../helpers/commands.js";
 import { readJson } from "../helpers/json.js";

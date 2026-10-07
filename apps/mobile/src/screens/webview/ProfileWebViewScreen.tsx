@@ -2,7 +2,7 @@ import {
   MOBILE_BRIDGE_VERSION,
   buildBridgeInjectionScript,
   type NativeShellHandshake,
-} from "@bb/mobile-bridge";
+} from "@cloudroom/mobile-bridge";
 import Constants from "expo-constants";
 import CookieManager from "@react-native-cookies/cookies";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";

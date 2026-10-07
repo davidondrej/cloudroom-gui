@@ -3,7 +3,7 @@ import type {
   OpenInTargetContext,
   WorkspaceOpenTarget,
   WorkspaceOpenTargetId,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { appToast } from "@/components/ui/app-toast";
 import {
   resolvePreferredWorkspaceOpenFileTarget,

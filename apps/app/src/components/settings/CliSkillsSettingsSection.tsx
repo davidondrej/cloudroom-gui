@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import type { Host } from "@bb/domain";
+import type { Host } from "@cloudroom/domain";
 import type {
   CliSkillMachineStatus,
   SystemCliSkillsStatusResponse,
   SystemInstallCliSkillsResponse,
-} from "@bb/server-contract";
-import { Button } from "@bb/shared-ui/button";
+} from "@cloudroom/server-contract";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   SettingsSection,
   SettingsWithControl,

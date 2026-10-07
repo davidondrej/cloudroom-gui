@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ThreadEvent } from "@bb/domain";
-import { threadScope, turnScope } from "@bb/domain";
+import type { ThreadEvent } from "@cloudroom/domain";
+import { threadScope, turnScope } from "@cloudroom/domain";
 import {
   ITEM_ID_PATTERN,
   TURN_1,

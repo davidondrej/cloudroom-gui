@@ -1,8 +1,8 @@
 import { useReducer } from "react";
-import type { Thread } from "@bb/domain";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+import type { Thread } from "@cloudroom/domain";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { PromptStackCard } from "@/components/promptbox/banner/PromptStackCard";
 import { useRetryProjectCopy } from "@/hooks/queries/cloudroom-queries";
 import { useClipboardCopy } from "@/lib/clipboard";

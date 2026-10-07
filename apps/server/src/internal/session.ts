@@ -5,14 +5,14 @@ import {
   openSession,
   upsertHost,
   updateHost,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   HOST_DAEMON_PROTOCOL_VERSION,
   hostDaemonProjectAttachmentContentQuerySchema,
   hostDaemonSessionOpenRequestSchema,
   typedRoutes,
   type HostDaemonInternalSchema,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type { Hono } from "hono";
 import { z } from "zod";
 import type { AppDeps } from "../types.js";

@@ -1,5 +1,5 @@
 {
-  "name": "@bb/connect-db",
+  "name": "@cloudroom/connect-db",
   "version": "0.0.1",
   "type": "module",
   "private": true,
@@ -22,7 +22,7 @@
     "drizzle-orm": "^0.38.0"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.0.0",
     "better-sqlite3": "12.10.0",

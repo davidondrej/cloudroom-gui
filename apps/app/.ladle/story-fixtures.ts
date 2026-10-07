@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { reconcileReasoningLevel } from "@bb/domain";
+import { reconcileReasoningLevel } from "@cloudroom/domain";
 import type {
   Host,
   ProjectSource,
@@ -7,23 +7,23 @@ import type {
   ReasoningLevel,
   Thread,
   WorkspaceStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   ProviderCliKey,
   ProviderCliStatus,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type {
   ProjectResponse,
   SystemEnvironmentProvider,
-} from "@bb/server-contract";
-import { EMPTY_ORDERED_MENTION_SUGGESTIONS } from "@bb/client-core";
+} from "@cloudroom/server-contract";
+import { EMPTY_ORDERED_MENTION_SUGGESTIONS } from "@cloudroom/client-core";
 import {
   makeEnvironment as makeEnvironmentFixture,
   makeHost as makeHostFixture,
   makeProviderInfo,
   makeThread as makeThreadFixture,
   makeThreadListEntry as makeThreadListEntryFixture,
-} from "@bb/test-helpers/domain-fixtures";
+} from "@cloudroom/test-helpers/domain-fixtures";
 import { makeProjectResponse } from "../src/test/fixtures/projects";
 import { getProviderIconInfo } from "../src/lib/provider-icon";
 import type { PickerOption } from "../src/components/pickers/OptionPicker";

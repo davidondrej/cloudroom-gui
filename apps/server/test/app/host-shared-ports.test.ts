@@ -6,12 +6,12 @@ import {
   openSession,
   updateHost,
   upsertHost,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   HOST_DAEMON_PROTOCOL_VERSION,
   hostDaemonServerWsMessageSchema,
   hostDaemonSessionOpenResponseSchema,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { describe, expect, it } from "vitest";
 import { ApiError } from "../../src/errors.js";
 import { HostSharedPortCoordinator } from "../../src/ws/host-shared-ports.js";

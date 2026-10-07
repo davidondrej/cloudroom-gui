@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { ProjectSource } from "@bb/domain";
-import type { SystemEnvironmentProvider } from "@bb/server-contract";
+import type { ProjectSource } from "@cloudroom/domain";
+import type { SystemEnvironmentProvider } from "@cloudroom/server-contract";
 import modalLogoUrl from "../../../../../plugins/environment-modal-sandbox/modal-logo.svg?url";
 import { EnvironmentPickerUI } from "./EnvironmentPicker";
 import { ProjectSelector } from "./ProjectSelector";

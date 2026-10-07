@@ -5,7 +5,7 @@ import {
 import { cancelProviderEnvironmentCreation } from "../../src/services/environments/environment-engine.js";
 import { sweepProviderMachine } from "../../src/services/machines/provider-orchestration.js";
 import { stopThreadForCurrentState } from "../../src/services/threads/thread-lifecycle.js";
-import { createDeferredPromise } from "@bb/test-helpers";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
 import { resolveGitCheckoutAvailability } from "../../src/services/environments/provider-availability.js";
 import { invalidateEnvironmentProviderMachineAvailability } from "../../src/services/environments/provider-machine-availability.js";
 import {
@@ -28,8 +28,8 @@ import {
   listProjectSourcesByProjectIds,
   setProjectGitRemoteUrlIfMissing,
   updateHost,
-} from "@bb/db";
-import { PERSONAL_PROJECT_ID, type JsonValue } from "@bb/domain";
+} from "@cloudroom/db";
+import { PERSONAL_PROJECT_ID, type JsonValue } from "@cloudroom/domain";
 import type {
   PluginDispatchEnvironmentIntent,
   PluginEnvironmentProviderDeclaration,

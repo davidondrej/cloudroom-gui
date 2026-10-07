@@ -1,4 +1,4 @@
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import roomLogoUrl from "../../../../../assets/room-logo.png";
 
 export function BbLogo({ className = "size-4" }: { className?: string }) {

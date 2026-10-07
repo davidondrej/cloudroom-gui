@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useAtomValue } from "jotai";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { beginSplitDrag, type SplitDropTarget } from "@/lib/split-drag";
 import {
   computePaneRects,

@@ -3,9 +3,9 @@ import {
   clearOwnBbAppRuntimeFile,
   readBbAppRuntimeFile,
   type BbAppRuntimeFile,
-} from "@bb/config/app-runtime-file";
-import { stopVerifiedProcess } from "@bb/config/verified-process-stop";
-import type { VerifiedProcessOps } from "@bb/config/verified-process-stop";
+} from "@cloudroom/config/app-runtime-file";
+import { stopVerifiedProcess } from "@cloudroom/config/verified-process-stop";
+import type { VerifiedProcessOps } from "@cloudroom/config/verified-process-stop";
 
 export interface ForeignRuntimeDetails {
   dataDir: string;

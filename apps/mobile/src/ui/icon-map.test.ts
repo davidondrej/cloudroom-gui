@@ -59,7 +59,7 @@ function webIconMapEntries(): Map<string, string> {
 }
 
 describe("ICON_MAP", () => {
-  it("binds every name to the same glyph as @bb/shared-ui", () => {
+  it("binds every name to the same glyph as @cloudroom/shared-ui", () => {
     const web = webIconMapEntries();
     const mobile = iconMapEntries(readFileSync(MOBILE_ICON_MAP_PATH, "utf8"), {
       start: "const ICON_MAP = {",

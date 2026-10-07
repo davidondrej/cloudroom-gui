@@ -24,9 +24,9 @@ import {
 } from "./app-logic.js";
 import type { githubRpcContract } from "./server.js";
 import { toast } from "sonner";
-import { Badge } from "@bb/shared-ui/badge";
-import { Button } from "@bb/shared-ui/button";
-import { DelayedLoading } from "@bb/shared-ui/delayed-loading";
+import { Badge } from "@cloudroom/shared-ui/badge";
+import { Button } from "@cloudroom/shared-ui/button";
+import { DelayedLoading } from "@cloudroom/shared-ui/delayed-loading";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,18 +35,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { Input } from "@bb/shared-ui/input";
+} from "@cloudroom/shared-ui/dropdown-menu";
+import { Input } from "@cloudroom/shared-ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@bb/shared-ui/select";
-import { Skeleton } from "@bb/shared-ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@bb/shared-ui/tabs";
-import { Textarea } from "@bb/shared-ui/textarea";
+} from "@cloudroom/shared-ui/select";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@cloudroom/shared-ui/tabs";
+import { Textarea } from "@cloudroom/shared-ui/textarea";
 import { EmptyState } from "@/components/empty-state";
 import { Markdown } from "@/components/markdown-lite";
 

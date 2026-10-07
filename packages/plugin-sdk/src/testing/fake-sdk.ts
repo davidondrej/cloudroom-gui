@@ -1,4 +1,4 @@
-import { validatePluginMetadata } from "@bb/domain";
+import { validatePluginMetadata } from "@cloudroom/domain";
 import type { BbPluginApi } from "@get-bb/plugin-sdk";
 
 type BbSdk = BbPluginApi["sdk"];

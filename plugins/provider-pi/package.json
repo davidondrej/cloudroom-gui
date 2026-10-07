@@ -26,14 +26,14 @@
     "prepare:bundled": "bb-plugin-build prepare-bundled"
   },
   "dependencies": {
-    "@bb/shared-ui": "workspace:*",
+    "@cloudroom/shared-ui": "workspace:*",
     "@get-bb/plugin-sdk": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@bb/domain": "workspace:*",
-    "@bb/plugin-build": "workspace:*",
-    "@bb/provider-bridge-protocol": "workspace:*",
+    "@cloudroom/domain": "workspace:*",
+    "@cloudroom/plugin-build": "workspace:*",
+    "@cloudroom/provider-bridge-protocol": "workspace:*",
     "@earendil-works/pi-ai": "0.84.0",
     "@earendil-works/pi-coding-agent": "0.84.0",
     "@testing-library/react": "^16.3.2",

@@ -10,6 +10,7 @@ export {
   markProjectDeleted,
   reorderProject,
   setProjectGitRemoteUrlIfMissing,
+  setProjectHidden,
   updateProject,
   deleteProject,
 } from "./projects.js";
@@ -73,6 +74,7 @@ export {
   listHostThreadIds,
   listActiveHostThreads,
   listActiveVisiblePinnedThreadRootsWithPendingInteractionState,
+  listLiveThreadIdsInProject,
   listLiveThreadsInEnvironment,
   listThreadMentionRowsByIds,
   listNonDeletedChildThreads,

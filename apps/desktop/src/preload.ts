@@ -1,9 +1,9 @@
 import { contextBridge, ipcRenderer, webFrame } from "electron";
-import { appCommandIdSchema } from "@bb/domain";
+import { appCommandIdSchema } from "@cloudroom/domain";
 import {
   desktopBrowserImportOutcomeSchema,
   desktopBrowserImportSourceSchema,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { z } from "zod";
 import {
   bbDesktopBrowserFindResultSchema,
@@ -34,11 +34,12 @@ import {
   type BbDesktopInfo,
   type BbDesktopInfoChangeHandler,
   type BbDesktopInfoUnsubscribe,
+  type BbDesktopOpenLinkHandler,
   type BbDesktopOpenNewTabHandler,
   type BbDesktopTheme,
   type BbDesktopWindowState,
   type BbDesktopWindowStateChangeHandler,
-} from "@bb/desktop-contract";
+} from "@cloudroom/desktop-contract";
 import {
   BB_DESKTOP_CHECK_FOR_UPDATES_CHANNEL,
   BB_DESKTOP_GET_INFO_CHANNEL,
@@ -84,6 +85,7 @@ import {
   BB_DESKTOP_CLOSE_WINDOW_REQUEST_CHANNEL,
   BB_DESKTOP_CLOSE_WINDOW_RESPONSE_CHANNEL,
   BB_DESKTOP_GET_WINDOW_STATE_CHANNEL,
+  BB_DESKTOP_OPEN_LINK_CHANNEL,
   BB_DESKTOP_OPEN_NEW_TAB_CHANNEL,
   BB_DESKTOP_OPEN_SERVER_DAEMON_LOGS_CHANNEL,
   BB_DESKTOP_WINDOW_STATE_CHANGED_CHANNEL,
@@ -198,6 +200,8 @@ const closeWindowRequestListeners =
   new Set<BbDesktopCloseWindowRequestHandler>();
 const openNewTabListeners = new Set<BbDesktopOpenNewTabHandler>();
 const addImageToChatListeners = new Set<(imageUrl: string) => void>();
+const openLinkListeners = new Set<BbDesktopOpenLinkHandler>();
+const pendingOpenLinks: string[] = [];
 
 function addListener<T>(listeners: Set<T>, listener: T): () => void {
   listeners.add(listener);
@@ -395,6 +399,11 @@ const bbDesktopApi: BbDesktopApi = {
   onOpenNewTab(listener): BbDesktopInfoUnsubscribe {
     return addListener(openNewTabListeners, listener);
   },
+  onOpenLink(listener): BbDesktopInfoUnsubscribe {
+    const unsubscribe = addListener(openLinkListeners, listener);
+    for (const url of pendingOpenLinks.splice(0)) listener(url);
+    return unsubscribe;
+  },
   onAppCommand(listener): BbDesktopInfoUnsubscribe {
     return addListener(appCommandListeners, listener);
   },
@@ -431,6 +440,12 @@ ipcRenderer.on(
     applyDesktopWindowStatePayload(payload);
   },
 );
+
+ipcRenderer.on(BB_DESKTOP_OPEN_LINK_CHANNEL, (_event, payload: unknown) => {
+  if (typeof payload !== "string") return;
+  if (openLinkListeners.size === 0) pendingOpenLinks.push(payload);
+  for (const listener of openLinkListeners) listener(payload);
+});
 
 ipcRenderer.on(BB_DESKTOP_OPEN_NEW_TAB_CHANNEL, () => {
   for (const listener of openNewTabListeners) {

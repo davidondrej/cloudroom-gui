@@ -1,10 +1,10 @@
-import { createThread, getThread } from "@bb/db";
+import { createThread, getThread } from "@cloudroom/db";
 import {
   type ResolvedThreadExecutionOptions,
   threadSchema,
   turnScope,
-} from "@bb/domain";
-import { groupHostDaemonEvents } from "@bb/host-daemon-contract";
+} from "@cloudroom/domain";
+import { groupHostDaemonEvents } from "@cloudroom/host-daemon-contract";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   internalAuthHeaders,

@@ -10,7 +10,7 @@ import {
   useLocation,
   matchPath,
 } from "react-router-dom";
-import "@bb/shared-ui/icon-extended";
+import "@cloudroom/shared-ui/icon-extended";
 import {
   builtInThemes,
   defaultAppSettings,
@@ -23,23 +23,23 @@ import {
   type Experiments,
   type FaviconColorPreference,
   type PluginThemeMeta,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   WorkspaceOpenTarget,
   WorkspaceOpenTargetId,
-} from "@bb/host-daemon-contract";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
-import { Input } from "@bb/shared-ui/input";
-import { Switch } from "@bb/shared-ui/switch";
-import { COARSE_POINTER_ICON_SIZE_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
+} from "@cloudroom/host-daemon-contract";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Input } from "@cloudroom/shared-ui/input";
+import { Switch } from "@cloudroom/shared-ui/switch";
+import { COARSE_POINTER_ICON_SIZE_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
+} from "@cloudroom/shared-ui/dropdown-menu";
 import { PageShell } from "@/components/ui/page-shell.js";
 import {
   SettingsSection,
@@ -54,7 +54,10 @@ import {
 import { useHostDaemon, useLocalHostDaemonAccess } from "@/hooks/useHostDaemon";
 import { useAppThemePreview } from "@/hooks/useAppThemePreview";
 import { useCorners, type Corners } from "@/hooks/useCorners";
-import { ProvidersSettingsSection } from "@/components/settings/ProvidersSettingsSection";
+import {
+  ProviderTurnDisplaySection,
+  ProvidersSettingsSection,
+} from "@/components/settings/ProvidersSettingsSection";
 import { CodeRendererSettings } from "@/components/settings/CodeRendererSettings";
 import { SidebarThreadListSetting } from "@/components/settings/SidebarThreadListSetting";
 import { SidebarFooterSettings } from "@/components/settings/SidebarFooterSettings";
@@ -71,6 +74,7 @@ import { PluginsOverview } from "@/components/plugin/PluginsOverview";
 import { PluginDetailPaneView } from "@/views/ToolsView";
 import { SETTINGS_PLUGIN_ROUTE_PATH } from "@/lib/route-paths";
 import { PluginSettingsPage } from "@/components/plugin/PluginSettings";
+import { PluginSettingsSections } from "@/components/plugin/PluginSettingsSections";
 import { FileOpenersSettingsSection } from "@/components/settings/FileOpenersSettingsSection";
 import { VoiceInputSettingsSection } from "@/components/settings/VoiceInputSettingsSection";
 import { ThreadNamingSettingsSection } from "@/components/settings/ThreadNamingSettingsSection";
@@ -106,7 +110,7 @@ import {
   getRootComposeRoutePath,
 } from "@/lib/route-paths";
 import { useNavigateToThreadAfterCreatePreference } from "@/lib/root-compose-create-preference";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   resolvePreferredWorkspaceOpenTarget,
   supportsWorkspaceOpenTargetCapability,
@@ -911,6 +915,7 @@ export function GeneralSettingsSection({
 }: GeneralSettingsSectionProps) {
   return (
     <>
+      <PluginSettingsSections pluginId="time-in-cloudroom" />
       <SettingsSection title="Threads & editing">
         <div className="space-y-5">
           <SettingsWithControl
@@ -1222,7 +1227,21 @@ export function SettingsView() {
 
   let content: ReactNode = null;
   if (activePluginId !== null) {
-    content = <PluginSettingsPage pluginId={activePluginId} />;
+    content = (
+      <PluginSettingsPage pluginId={activePluginId}>
+        <ProviderTurnDisplaySection
+          disabled={
+            systemConfigQuery.data === undefined ||
+            updateGeneralSettingsMutation.isPending
+          }
+          generalSettings={generalSettings}
+          onGeneralSettingsChange={(next) =>
+            updateGeneralSettingsMutation.mutateAsync(next)
+          }
+          pluginId={activePluginId}
+        />
+      </PluginSettingsPage>
+    );
   } else if (activeSection === "defaults") {
     content = <DefaultsSettingsSection />;
   } else if (activeSection === "cloud-environment") {

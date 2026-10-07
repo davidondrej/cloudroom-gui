@@ -1,6 +1,6 @@
 import { useCallback } from "react";
-import { normalizeProjectPathInput } from "@bb/domain";
-import type { HostPlatform } from "@bb/host-daemon-contract";
+import { normalizeProjectPathInput } from "@cloudroom/domain";
+import type { HostPlatform } from "@cloudroom/host-daemon-contract";
 import { useDialogState } from "@/hooks/useDialogState";
 import { useHostDaemon } from "@/hooks/useHostDaemon";
 import {

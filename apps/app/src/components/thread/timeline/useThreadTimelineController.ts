@@ -3,7 +3,7 @@ import {
   useQueryClient,
   type QueryObserverResult,
 } from "@tanstack/react-query";
-import type { ThreadTimelineResponse, TimelineRow } from "@bb/server-contract";
+import type { ThreadTimelineResponse, TimelineRow } from "@cloudroom/server-contract";
 import {
   areTimelinePaginationCursorsEqual,
   buildLoadedTimelineState,
@@ -12,7 +12,7 @@ import {
   recoverLoadedTimelineAfterStaleCursor,
   resolveLoadedTimelineSurfaceKey,
   type LoadedTimelineState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { useConnectionAwareQueryState } from "@/hooks/queries/connection-aware-query-state";
 import { threadTimelineQueryKey } from "@/hooks/queries/query-keys";
 import { isTransientReadError } from "@/hooks/queries/query-helpers";

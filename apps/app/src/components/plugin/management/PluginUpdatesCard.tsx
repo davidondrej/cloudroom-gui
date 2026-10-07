@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { UPDATE_ACTION_ICON } from "@bb/domain/update-state";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
+import { UPDATE_ACTION_ICON } from "@cloudroom/domain/update-state";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { pluginToast } from "@/components/plugin/PluginNotificationDescription";
 import { invalidatePluginList } from "@/hooks/cache-owners/plugin-cache-owner";
 import { applyPluginUpdate } from "@/hooks/queries/plugin-catalog-queries";

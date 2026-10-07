@@ -1,5 +1,5 @@
-import type { AvailableModel, ProviderInfo } from "@bb/domain";
-import type { SystemExecutionOptionsResponse } from "@bb/server-contract";
+import type { AvailableModel, ProviderInfo } from "@cloudroom/domain";
+import type { SystemExecutionOptionsResponse } from "@cloudroom/server-contract";
 
 function provider(
   info: Pick<
@@ -64,7 +64,7 @@ export const PROVIDERS: readonly ProviderInfo[] = [
       modelCatalogScope: "workspace",
     },
     composerActions: [SKILLS_ACTION, PLAN_ACTION],
-    completedTurnDisplay: "flat",
+    completedTurnDisplay: "collapse",
   }),
   provider({
     id: "pi",

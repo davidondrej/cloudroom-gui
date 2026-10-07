@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { createDeferredPromise } from "@bb/test-helpers";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
 import {
   ProcessLocalQueuedLockTimeoutError,
   withGitRefMutationLock,

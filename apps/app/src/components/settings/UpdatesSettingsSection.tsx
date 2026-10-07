@@ -8,29 +8,29 @@ import {
 import ReactMarkdown, { type Components } from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { BbDesktopInfo } from "@bb/desktop-contract";
-import type { SystemVersionResponse } from "@bb/server-contract";
+import type { BbDesktopInfo } from "@cloudroom/desktop-contract";
+import type { SystemVersionResponse } from "@cloudroom/server-contract";
 import {
   RETRY_ACTION_ICON,
   UPDATE_ACTION_ICON,
   UPDATE_STATE_PRESENTATION,
   type UpdateState,
-} from "@bb/domain/update-state";
-import { Button, type ButtonProps } from "@bb/shared-ui/button";
-import { usePrefersReducedMotion } from "@bb/shared-ui/hooks/use-media-query";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/domain/update-state";
+import { Button, type ButtonProps } from "@cloudroom/shared-ui/button";
+import { usePrefersReducedMotion } from "@cloudroom/shared-ui/hooks/use-media-query";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
+} from "@cloudroom/shared-ui/tooltip";
 import {
   ResourceActionButton,
   ResourceListState,
   ResourceRow,
-} from "@bb/shared-ui/resource-list";
+} from "@cloudroom/shared-ui/resource-list";
 import {
   hasProviderCliAction,
   isProviderCliUpdateIssue,
@@ -93,7 +93,7 @@ import {
   getSettingsRoutePath,
 } from "@/lib/route-paths";
 import { getProviderIconInfo } from "@/lib/provider-icon";
-import { Switch } from "@bb/shared-ui/switch";
+import { Switch } from "@cloudroom/shared-ui/switch";
 import { useUpdateGeneralSettings } from "@/hooks/mutations/settings-mutations";
 import {
   useSystemConfig,

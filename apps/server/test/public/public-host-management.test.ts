@@ -6,15 +6,15 @@ import {
   getThread,
   replaceStoredProviderModelCatalog,
   updateHost,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   createHostJoinCodeResponseSchema,
   type CreateHostJoinCodeResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   HOST_DAEMON_PROTOCOL_VERSION,
   hostDaemonSessionOpenResponseSchema,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { setPluginMachineProviderBridge } from "../../src/services/plugins/plugin-machine-provider-registry.js";

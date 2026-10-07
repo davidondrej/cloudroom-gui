@@ -1,4 +1,4 @@
-import type { BridgeSharePayload } from "@bb/mobile-bridge";
+import type { BridgeSharePayload } from "@cloudroom/mobile-bridge";
 
 export interface NativeSharePayload {
   content:

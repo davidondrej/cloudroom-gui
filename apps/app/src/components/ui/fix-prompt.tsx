@@ -1,5 +1,5 @@
 import { CopyButton } from "@/components/ui/copy-button";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 export function FixPrompt({ prompt, className }: { prompt: string; className?: string }) {
   return (

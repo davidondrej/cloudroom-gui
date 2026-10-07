@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { buildAutomationEditThreadPrompt } from "@bb/shared-ui/resource-edit-prompt";
+import { buildAutomationEditThreadPrompt } from "@cloudroom/shared-ui/resource-edit-prompt";
 import {
   definePluginApp,
   useBbNavigate,
@@ -26,8 +26,8 @@ import {
   type AutomationCollectionMode,
 } from "./overview-view";
 import { PERSONAL_PROJECT_ID } from "./lib/format-schedule";
-import { Button } from "@bb/shared-ui/button";
-import { DelayedLoading } from "@bb/shared-ui/delayed-loading";
+import { Button } from "@cloudroom/shared-ui/button";
+import { DelayedLoading } from "@cloudroom/shared-ui/delayed-loading";
 import {
   Dialog,
   DialogContent,
@@ -35,9 +35,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
-import { ResourceListState } from "@bb/shared-ui/resource-list";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/dialog";
+import { ResourceListState } from "@cloudroom/shared-ui/resource-list";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 const PANEL_PATH = "automations";
 type OverviewEntry = AutomationsOverviewResponse["automations"][number];

@@ -16,8 +16,8 @@ import type {
   ProviderNativeRoots,
   ProviderResolvedNativeRoot,
   ProviderResolvedNativeRoots,
-} from "@bb/domain";
-import type { HostProviderCommand } from "@bb/host-daemon-contract";
+} from "@cloudroom/domain";
+import type { HostProviderCommand } from "@cloudroom/host-daemon-contract";
 import {
   type CommandScanRoot,
   discoverProviderCommands,

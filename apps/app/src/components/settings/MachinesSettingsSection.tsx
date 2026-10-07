@@ -1,28 +1,25 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import type { Host, PermissionMode } from "@bb/domain";
-import type { SystemMachineProvider } from "@bb/server-contract";
-import { RETRY_ACTION_ICON } from "@bb/domain/update-state";
-import type { HostPlatform } from "@bb/host-daemon-contract";
-import { Button } from "@bb/shared-ui/button";
+import type { Host, PermissionMode } from "@cloudroom/domain";
+import type { SystemMachineProvider } from "@cloudroom/server-contract";
+import { RETRY_ACTION_ICON } from "@cloudroom/domain/update-state";
+import type { HostPlatform } from "@cloudroom/host-daemon-contract";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
-import {
-  ResourceRowDetailChevron,
-  targetsResourceAction,
-} from "@bb/shared-ui/resource-list";
+} from "@cloudroom/shared-ui/dropdown-menu";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { targetsResourceAction } from "@cloudroom/shared-ui/resource-list";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
+} from "@cloudroom/shared-ui/tooltip";
 import { AddMachineDialog } from "@/components/dialogs/AddMachineDialog";
 import { appToast } from "@/components/ui/app-toast";
 import { MachineLifecycleActions } from "@/components/machines/MachineLifecycleActions";
@@ -33,11 +30,9 @@ import {
   machineStatusTone,
 } from "@/components/machines/machine-status";
 import { MachineRenameDialog } from "@/components/settings/MachineRenameDialog";
-import { MachineLabel } from "@/components/machines/MachineLabel";
+import { MachineIcon } from "@/components/machines/MachineLabel";
 import {
   SettingsBadge,
-  SettingsRow,
-  SettingsRowList,
   SettingsSection,
 } from "@/components/ui/settings-section";
 import {
@@ -67,10 +62,8 @@ const PERMISSION_MODE_PRESENTATION: Record<
   PERMISSION_MODE_OPTIONS.map((option) => [option.value, option]),
 ) as Record<PermissionMode, (typeof PERMISSION_MODE_OPTIONS)[number]>;
 
-const MACHINES_SECTION_DESCRIPTION =
-  "Computers that can run your tasks. Pair a machine to run projects and threads on it.";
-
-const PRIMARY_REMOVE_DISABLED_REASON = "Cloudroom's primary machine can't be removed.";
+const PRIMARY_REMOVE_DISABLED_REASON =
+  "Cloudroom's primary machine can't be removed.";
 
 const MACHINE_MENU_ITEM_CLASS = "min-h-9 px-2.5 py-2";
 
@@ -146,122 +139,114 @@ export function MachineRowContent({
   );
 
   return (
-    <SettingsRow>
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div
-          data-machine-row
-          className="group group/machine -mx-2 flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-2 py-2 transition-colors hover:bg-state-hover focus-within:bg-state-hover"
-          onClick={(event) => {
-            if (targetsResourceAction(event.target)) return;
-            navigate(detailPath);
-          }}
-        >
-          <Link
-            to={getSettingsMachineRoutePath(host.id)}
-            aria-label={`Open ${host.name}`}
-            className="flex min-w-0 flex-1 items-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <div className="min-w-0 flex-1 space-y-1">
-              <div className="flex min-w-0 items-center gap-1.5">
-                <MachineLabel
-                  host={host}
-                  machineProvider={machineProvider}
-                  nameClassName="text-sm font-medium text-foreground"
-                />
-                {isThisMachine ? (
-                  <SettingsBadge>this machine</SettingsBadge>
-                ) : null}
-                {showPrimaryBadge ? (
-                  <SettingsBadge>primary</SettingsBadge>
-                ) : null}
-              </div>
-              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-subtle-foreground/75">
-                <span className="inline-flex min-w-0 items-center gap-1.5">
-                  <MachineStatusDot tone={machineStatusTone(host)} />
-                  <span className="min-w-0 truncate">{connectionLabel}</span>
-                </span>
-                {platformLabel === null ? null : (
-                  <span className="truncate">{platformLabel}</span>
-                )}
-                <span className="shrink-0">{projectLabel}</span>
-                <span
-                  className={cn(
-                    "shrink-0",
-                    permission.tone === "warning" && "text-warning-text",
-                  )}
-                >
-                  {permission.label}
-                </span>
-                {updateStatus === null ? null : (
-                  <span className="min-w-0 text-warning-text">
-                    {updateStatus}
-                  </span>
-                )}
-              </div>
-            </div>
-          </Link>
-          <div className="flex shrink-0 items-center gap-1">
-            <TooltipProvider delayDuration={250}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0 data-[state=open]:bg-state-active data-[state=open]:text-foreground"
-                    aria-label={`${host.name} actions`}
-                  >
-                    <Icon name="MoreHorizontal" className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-max min-w-0">
-                  <DropdownMenuItem
-                    className={MACHINE_MENU_ITEM_CLASS}
-                    onSelect={onRename}
-                  >
-                    <Icon name="Edit" aria-hidden />
-                    <span className="min-w-0 truncate">Rename</span>
-                  </DropdownMenuItem>
-                  {hostCanRetryUpdate(host) ? (
-                    <DropdownMenuItem
-                      className={MACHINE_MENU_ITEM_CLASS}
-                      disabled={retryUpdatePending}
-                      onSelect={onRetryUpdate}
-                    >
-                      <Icon name={RETRY_ACTION_ICON} aria-hidden />
-                      <span className="min-w-0 truncate">
-                        {retryUpdatePending
-                          ? "Retrying update…"
-                          : "Retry update"}
-                      </span>
-                    </DropdownMenuItem>
-                  ) : null}
-                  <MachineLifecycleActions
-                    host={host}
-                    machineProvider={machineProvider}
-                    pending={lifecycleActionPending}
-                    presentation="menu"
-                    onSuspend={onSuspend}
-                    onResume={onResume}
-                    onRetryCleanup={onRetryCleanup}
-                  />
-                  {isPrimary ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>{removeItem}</TooltipTrigger>
-                      <TooltipContent side="left">
-                        {PRIMARY_REMOVE_DISABLED_REASON}
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    removeItem
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TooltipProvider>
-            <ResourceRowDetailChevron />
+    <div
+      data-machine-row
+      className="relative flex min-w-0 cursor-pointer rounded-xl border border-border bg-card p-4 transition-colors hover:bg-state-hover focus-within:bg-state-hover"
+      onClick={(event) => {
+        if (targetsResourceAction(event.target)) return;
+        navigate(detailPath);
+      }}
+    >
+      <Link
+        to={detailPath}
+        aria-label={`Open ${host.name}`}
+        className="flex min-w-0 flex-1 flex-col gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <span className="grid size-9 place-items-center rounded-lg bg-muted text-foreground">
+          <MachineIcon
+            host={host}
+            machineProvider={machineProvider}
+            className="size-[18px]"
+          />
+        </span>
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="min-w-0 truncate text-sm font-semibold text-foreground">
+              {host.name}
+            </span>
+            {isThisMachine ? <SettingsBadge>this machine</SettingsBadge> : null}
+            {showPrimaryBadge ? <SettingsBadge>primary</SettingsBadge> : null}
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-subtle-foreground/75">
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <MachineStatusDot tone={machineStatusTone(host)} />
+              <span className="min-w-0 truncate">{connectionLabel}</span>
+            </span>
+            {platformLabel === null ? null : (
+              <span className="truncate">{platformLabel}</span>
+            )}
+            <span className="shrink-0">{projectLabel}</span>
+            <span
+              className={cn(
+                "shrink-0",
+                permission.tone === "warning" && "text-warning-text",
+              )}
+            >
+              {permission.label}
+            </span>
+            {updateStatus === null ? null : (
+              <span className="min-w-0 text-warning-text">{updateStatus}</span>
+            )}
           </div>
         </div>
+      </Link>
+      <div className="absolute right-3 top-3">
+        <TooltipProvider delayDuration={250}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0 data-[state=open]:bg-state-active data-[state=open]:text-foreground"
+                aria-label={`${host.name} actions`}
+              >
+                <Icon name="MoreHorizontal" className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-max min-w-0">
+              <DropdownMenuItem
+                className={MACHINE_MENU_ITEM_CLASS}
+                onSelect={onRename}
+              >
+                <Icon name="Edit" aria-hidden />
+                <span className="min-w-0 truncate">Rename</span>
+              </DropdownMenuItem>
+              {hostCanRetryUpdate(host) ? (
+                <DropdownMenuItem
+                  className={MACHINE_MENU_ITEM_CLASS}
+                  disabled={retryUpdatePending}
+                  onSelect={onRetryUpdate}
+                >
+                  <Icon name={RETRY_ACTION_ICON} aria-hidden />
+                  <span className="min-w-0 truncate">
+                    {retryUpdatePending ? "Retrying update…" : "Retry update"}
+                  </span>
+                </DropdownMenuItem>
+              ) : null}
+              <MachineLifecycleActions
+                host={host}
+                machineProvider={machineProvider}
+                pending={lifecycleActionPending}
+                presentation="menu"
+                onSuspend={onSuspend}
+                onResume={onResume}
+                onRetryCleanup={onRetryCleanup}
+              />
+              {isPrimary ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>{removeItem}</TooltipTrigger>
+                  <TooltipContent side="left">
+                    {PRIMARY_REMOVE_DISABLED_REASON}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                removeItem
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TooltipProvider>
       </div>
-    </SettingsRow>
+    </div>
   );
 }
 
@@ -304,8 +289,6 @@ export function MachinesSettingsSection() {
       ? [...(persistentHosts ?? []), ...sandboxHosts]
       : (persistentHosts ?? []);
   const showMachineIdentityBadges = (persistentHosts?.length ?? 0) > 1;
-  const hasMachineRows =
-    persistentHosts !== undefined && persistentHosts.length > 0;
   const machineProviderById = useMemo(
     () =>
       new Map(
@@ -313,8 +296,8 @@ export function MachinesSettingsSection() {
       ),
     [machineProviders],
   );
-  const renderMachineRows = (rows: readonly Host[]) => (
-    <SettingsRowList>
+  const renderMachineCards = (rows: readonly Host[]) => (
+    <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
       {rows.map((host) => (
         <MachineRowContent
           key={host.id}
@@ -381,32 +364,28 @@ export function MachinesSettingsSection() {
           }
         />
       ))}
-    </SettingsRowList>
+      <button
+        type="button"
+        onClick={() => setAddDialogOpen(true)}
+        className="flex min-h-28 items-center justify-center gap-2 rounded-xl border border-dashed border-border text-sm text-muted-foreground transition-colors hover:bg-state-hover hover:text-foreground"
+      >
+        <Icon name="Plus" className="size-4" />
+        Add a machine
+      </button>
+    </div>
   );
 
   return (
     <>
       <SettingsSection
+        plain
         title="Machines"
-        description={MACHINES_SECTION_DESCRIPTION}
-        bodyClassName={hasMachineRows ? "py-2" : undefined}
-        action={
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setAddDialogOpen(true)}
-          >
-            <Icon name="Plus" className="size-3.5" />
-            Add a machine
-          </Button>
-        }
+        bodyClassName="flex flex-col gap-3"
       >
         {hosts === undefined ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : visibleHosts.length === 0 ? (
-          <p className="text-sm text-subtle-foreground">No machines yet.</p>
         ) : (
-          renderMachineRows(visibleHosts)
+          renderMachineCards(visibleHosts)
         )}
         {sandboxHosts !== undefined && sandboxHosts.length > 0 ? (
           <button

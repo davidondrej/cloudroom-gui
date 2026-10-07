@@ -7,9 +7,9 @@ import {
   pruneResolvedItemDeltas,
   pruneTokenUsageEventsBeforeSequence,
   pruneThreadEventsBeforeSequence,
-} from "@bb/db";
-import type { ThreadEventType } from "@bb/domain";
-import { roundDurationMs } from "@bb/process-utils";
+} from "@cloudroom/db";
+import type { ThreadEventType } from "@cloudroom/domain";
+import { roundDurationMs } from "@cloudroom/process-utils";
 import type { AppDeps } from "../../types.js";
 
 type ThreadEventPruningMode = "active" | "archived" | "idle";

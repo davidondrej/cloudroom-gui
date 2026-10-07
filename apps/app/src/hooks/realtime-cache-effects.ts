@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { assertNever } from "@bb/core-ui";
+import { assertNever } from "@cloudroom/core-ui";
 import {
   createDebouncedCallbackScheduler,
   type ChangedMessage,
@@ -10,7 +10,7 @@ import {
   type ThreadEventType,
   type ThreadChangeMetadata,
   type ThreadChangeKind,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   invalidateRealtimeQueriesAfterServerReconnect,
   invalidateRealtimeQueriesFetchedBeforeInitialConnect,

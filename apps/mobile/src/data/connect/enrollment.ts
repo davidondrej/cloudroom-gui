@@ -3,7 +3,7 @@ import {
   ConnectMachineRedeemError,
   redeemMachineCredential,
   type ConnectCredential,
-} from "@bb/connect-client";
+} from "@cloudroom/connect-client";
 import {
   PROFILE_LABEL_MAX_LENGTH,
   type NewServerProfile,

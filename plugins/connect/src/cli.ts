@@ -2,7 +2,7 @@ import type { BbPluginApi, PluginCliResult } from "@get-bb/plugin-sdk";
 import {
   mobilePairingPayload,
   type MobilePairingPayload,
-} from "@bb/connect-client";
+} from "@cloudroom/connect-client";
 import type { ShareHostResolver } from "./hosts.js";
 import { MachineCodeError } from "./machine-code.js";
 import type { MobilePairingGate } from "./rpc.js";

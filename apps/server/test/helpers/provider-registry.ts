@@ -5,8 +5,8 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { HostDaemonBridgeLaunch } from "@bb/host-daemon-contract";
-import { buildPluginHost, resolvePluginBuildToolchain } from "@bb/plugin-build";
+import type { HostDaemonBridgeLaunch } from "@cloudroom/host-daemon-contract";
+import { buildPluginHost, resolvePluginBuildToolchain } from "@cloudroom/plugin-build";
 import {
   validatePluginProviderDeclaration,
   type NormalizedPluginProviderDeclaration,
@@ -19,12 +19,12 @@ import {
   pluginPackageJsonSchema,
   type ProviderInfo,
   type ProviderNativeRootSet,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { PluginProviderDeclaration } from "@get-bb/plugin-sdk";
 import {
   captureFirstPartyProviderDeclarations,
   firstPartyPluginRootDir,
-} from "@bb/agent-runtime/test";
+} from "@cloudroom/agent-runtime/test";
 import { buildPluginProviderRegistration } from "../../src/services/providers/plugin-provider-registration.js";
 import { readPluginProviderIcon } from "../../src/services/plugins/plugin-runtime.js";
 import {

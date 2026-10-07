@@ -1,17 +1,17 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { threadEventRowSchema, turnScope } from "@bb/domain";
+import { threadEventRowSchema, turnScope } from "@cloudroom/domain";
 import {
   COMPLETED_EVENT_OUTPUT_RETENTION_MS,
   events,
   migrateNextLegacyImageGenerationOutput,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   threadTimelineResponseSchema,
   timelineTurnSummaryDetailsResponseSchema,
   type ThreadTimelineResponse,
   type TimelineRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   TIMELINE_INLINE_OUTPUT_PREVIEW_HEAD_CHARS,
   TIMELINE_INLINE_OUTPUT_PREVIEW_TAIL_CHARS,

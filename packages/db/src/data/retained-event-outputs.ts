@@ -3,8 +3,8 @@ import {
   parseLegacyImageGenerationCompletion,
   type ThreadEventItemType,
   type ThreadEventType,
-} from "@bb/domain";
-import { sliceUtf16HeadAndTail } from "@bb/domain/utf16";
+} from "@cloudroom/domain";
+import { sliceUtf16HeadAndTail } from "@cloudroom/domain/utf16";
 import type { DbQueryConnection } from "../connection.js";
 import {
   COMPLETED_EVENT_OUTPUT_RETAINED_HEAD_CHARS,

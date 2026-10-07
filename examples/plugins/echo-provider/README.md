@@ -17,7 +17,7 @@ Everything under this directory imports only:
 
 Tests may add the published test harnesses (`@get-bb/plugin-sdk/testing`,
 `@get-bb/plugin-sdk/provider-bridge/testing`) and the test runner. **No
-`@bb/*` workspace package is imported anywhere**, and
+`@cloudroom/*` workspace package is imported anywhere**, and
 `public-sdk-only.test.ts` fails the suite if one ever is. A marketplace
 plugin cannot resolve bb's private packages; if this example needed one, the
 public API would have a hole.
@@ -99,11 +99,6 @@ off and answer method-not-found, so declaration and bridge cannot disagree.
    - `server.test.ts` loads the plugin into the public fake host
      (`@get-bb/plugin-sdk/testing`) and asserts the registered declaration
      carries the native skill root, normalized the way the server stores it.
-2. **The server**: `apps/server/test/providers/echo-provider-canary.test.ts`
-   installs this plugin from its path, builds the real thread command, runs
-   it on the real agent runtime, ingests every event through the real
-   routes, and asserts the persisted rows — including the `provider/unhandled`
-   a malformed receipt becomes.
 
 ## How the bridge reaches a host
 

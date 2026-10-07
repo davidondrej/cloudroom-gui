@@ -2,8 +2,8 @@ import type {
   ProviderCliInstallActionKind,
   ProviderCliStatus,
   ProviderCliStatusResponse,
-} from "@bb/host-daemon-contract";
-import type { ProviderInfo } from "@bb/domain";
+} from "@cloudroom/host-daemon-contract";
+import type { ProviderInfo } from "@cloudroom/domain";
 import { ZodError } from "zod";
 import type { WorkSessionDeps } from "../../types.js";
 import { COMMAND_TIMEOUT_MS } from "../../constants.js";

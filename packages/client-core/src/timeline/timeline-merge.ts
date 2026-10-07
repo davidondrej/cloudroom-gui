@@ -2,7 +2,7 @@ import type {
   ThreadTimelineResponse,
   TimelinePaginationCursor,
   TimelineRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { isOptimisticTimelineRowId } from "./optimistic-timeline-row.js";
 
 type NullableTimelinePaginationCursor = TimelinePaginationCursor | null;

@@ -25,7 +25,7 @@ import {
   type PluginListItem,
 } from "@/hooks/queries/plugin-settings-queries";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
-import { TooltipProvider } from "@bb/shared-ui/tooltip";
+import { TooltipProvider } from "@cloudroom/shared-ui/tooltip";
 import {
   resetPluginSlotStoreForTest,
   setPluginSlotRegistrations,

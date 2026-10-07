@@ -210,6 +210,10 @@ function resolveElectronBuilderConfig(
   config.appId = releaseConfig.appId;
   config.artifactName = releaseConfig.artifactName;
   config.productName = releaseConfig.applicationName;
+  config.extraMetadata = {
+    ...config.extraMetadata,
+    desktopName: releaseConfig.linuxDesktopName,
+  };
   config.publish =
     releaseChannel === "latest" && cloudroomVersion !== undefined && signingPlan.mode !== "ad-hoc"
       ? { provider: "generic", url: CLOUDROOM_UPDATE_BASE_URL, channel: "latest" }

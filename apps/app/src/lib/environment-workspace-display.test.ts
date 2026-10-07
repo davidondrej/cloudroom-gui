@@ -1,7 +1,7 @@
-import type { Host } from "@bb/domain";
+import type { Host } from "@cloudroom/domain";
 import { describe, expect, it } from "vitest";
-import type { EnvironmentDisplayInfo } from "@bb/core-ui";
-import type { SystemEnvironmentProvider } from "@bb/server-contract";
+import type { EnvironmentDisplayInfo } from "@cloudroom/core-ui";
+import type { SystemEnvironmentProvider } from "@cloudroom/server-contract";
 import {
   findEnvironmentDisplayProvider,
   getEnvironmentDisplayIconName,

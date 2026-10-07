@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { accessSync, constants as fsConstants, readFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { arch, homedir, release, type as osType } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import {
@@ -23,20 +24,20 @@ import { autoUpdater } from "electron-updater";
 import {
   APP_SURFACE_DESKTOP,
   APP_SURFACE_ENV_NAME,
-} from "@bb/config/app-surface";
-import { applyPackagedDesktopRuntimeEnv } from "@bb/config/runtime";
-import type { ConnectCredential } from "@bb/connect-client";
-import type { AppKeybindings } from "@bb/domain";
+} from "@cloudroom/config/app-surface";
+import { applyPackagedDesktopRuntimeEnv } from "@cloudroom/config/runtime";
+import type { ConnectCredential } from "@cloudroom/connect-client";
+import type { AppKeybindings } from "@cloudroom/domain";
 import {
   bbDesktopBrowserImportCookiesRequestSchema,
   bbDesktopThemeSchema,
   type BbDesktopInfo,
   type BbDesktopWindowState,
-} from "@bb/desktop-contract";
+} from "@cloudroom/desktop-contract";
 import {
   serverMessageLenientSchema,
   type ClientMessage,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { z } from "zod";
 import {
   assertPathExists,
@@ -48,6 +49,7 @@ import {
   ensureRoomCliShim,
   resolveBundledRoomCliPath,
 } from "./room-cli-shim.js";
+import { ensureLinuxDesktopEntry } from "./linux-desktop-entry.js";
 import {
   resolveBbAppProcessRuntime,
   type BbAppProcess,
@@ -174,6 +176,7 @@ import {
   BB_DESKTOP_CLOSE_WINDOW_REQUEST_CHANNEL,
   BB_DESKTOP_CLOSE_WINDOW_RESPONSE_CHANNEL,
   BB_DESKTOP_GET_WINDOW_STATE_CHANNEL,
+  BB_DESKTOP_OPEN_LINK_CHANNEL,
   BB_DESKTOP_OPEN_NEW_TAB_CHANNEL,
   BB_DESKTOP_OPEN_SERVER_DAEMON_LOGS_CHANNEL,
   BB_DESKTOP_WINDOW_STATE_CHANGED_CHANNEL,
@@ -192,7 +195,7 @@ import {
   type DesktopBrowserBroker,
 } from "./desktop-browser-broker.js";
 import { createDesktopBrowserBrokerClient } from "./desktop-browser-broker-client.js";
-import { bbDesktopBrowserTabRefSchema } from "@bb/desktop-contract";
+import { bbDesktopBrowserTabRefSchema } from "@cloudroom/desktop-contract";
 import {
   BB_DESKTOP_BROWSER_TARGET_CHANNEL,
   BB_DESKTOP_BROWSER_GET_CONTROL_CHANNEL,
@@ -1026,8 +1029,24 @@ function startRemoteSystemConfigSync(serverUrl: string): void {
   systemConfigSync = createRemoteSystemConfigSync(serverUrl);
 }
 
+const pendingOpenLinks: string[] = [];
+
+function deliverOpenLink(url: string): void {
+  const browserWindow = getFocusedApplicationWindow();
+  if (browserWindow === null || browserWindow.webContents.isLoading()) {
+    pendingOpenLinks.push(url);
+    return;
+  }
+  sendToApplicationRenderer(browserWindow, BB_DESKTOP_OPEN_LINK_CHANNEL, url);
+}
+
 function registerApplicationWindow(browserWindow: DesktopBrowserWindow): void {
   const webContentsId = browserWindow.webContents.id;
+  (browserWindow as BrowserWindow).webContents.on("did-finish-load", () => {
+    for (const url of pendingOpenLinks.splice(0)) {
+      sendToApplicationRenderer(browserWindow as BrowserWindow, BB_DESKTOP_OPEN_LINK_CHANNEL, url);
+    }
+  });
   applicationWindowWebContentsIds.add(webContentsId);
   const nativeWindow = BrowserWindow.fromId(browserWindow.id);
   if (nativeWindow !== null) desktopBrowserBroker?.registerWindow(nativeWindow);
@@ -2115,9 +2134,10 @@ async function runDesktopApp(): Promise<void> {
       stateKey: null,
     });
   });
-  // cloudroom:// links (like the sign-in page's Open Cloudroom button) only bring the app forward.
-  app.on("open-url", (event) => {
+  // cloudroom:// links bring the app forward. Share links also go to the app, which copies the shared thread.
+  app.on("open-url", (event, url) => {
     event.preventDefault();
+    if (url.startsWith("cloudroom://share/")) deliverOpenLink(url);
     desktopWindowFactory?.focusFirstWindow();
   });
   app.on("before-quit", handleBeforeQuit);
@@ -2236,6 +2256,35 @@ async function runDesktopApp(): Promise<void> {
     path: resolvedServerUrlDialogPreloadPath,
   });
   assertPathExists({ label: "app icon", path: iconPath });
+  if (paths.isPackaged) {
+    const cacheRoot =
+      process.platform === "darwin"
+        ? join(homedir(), "Library", "Caches")
+        : process.env.XDG_CACHE_HOME?.trim() || join(homedir(), ".cache");
+    void rm(join(cacheRoot, "@bbdesktop-updater"), { force: true, recursive: true }).catch(
+      () => undefined,
+    );
+  }
+  const appImagePath = process.env.APPIMAGE?.trim() ?? "";
+  if (paths.isPackaged && process.platform === "linux" && appImagePath.length > 0) {
+    void ensureLinuxDesktopEntry({
+      appImagePath,
+      applicationName: DESKTOP_RELEASE_INFO.applicationName,
+      dataHome: process.env.XDG_DATA_HOME?.trim() || join(homedir(), ".local", "share"),
+      desktopName: process.env.CHROME_DESKTOP ?? "",
+      iconPath,
+    })
+      .then((result) => {
+        if (result.kind !== "unchanged") {
+          desktopLogger.info(`[desktop] Linux launcher entry: ${JSON.stringify(result)}`);
+        }
+      })
+      .catch((error: unknown) => {
+        desktopLogger.warn(
+          `[desktop] Could not install the Linux launcher entry: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      });
+  }
 
   if (hideWindowsForTests) {
     app.dock?.hide();

@@ -1,6 +1,6 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@bb/shared-ui/dropdown-menu";
-import { Icon } from "@bb/shared-ui/icon";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@cloudroom/shared-ui/dropdown-menu";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { appToast } from "@/components/ui/app-toast";
 import { SettingsSection } from "@/components/ui/settings-section.js";
 import { useImportSessions, useNativeSessions } from "@/hooks/queries/cloudroom-queries";

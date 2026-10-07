@@ -1,4 +1,4 @@
-import type { FeatureFlags } from "@bb/domain";
+import type { FeatureFlags } from "@cloudroom/domain";
 import {
   readEnvVarWithDefault,
   resolveEnvLoader,

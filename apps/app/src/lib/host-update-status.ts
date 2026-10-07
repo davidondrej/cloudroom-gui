@@ -1,5 +1,5 @@
-import type { Host } from "@bb/domain";
-import { HOST_DAEMON_PROTOCOL_VERSION } from "@bb/host-daemon-contract/protocol";
+import type { Host } from "@cloudroom/domain";
+import { HOST_DAEMON_PROTOCOL_VERSION } from "@cloudroom/host-daemon-contract/protocol";
 
 const HOST_UPDATE_STALL_THRESHOLD_MS = 2 * 60 * 1000;
 

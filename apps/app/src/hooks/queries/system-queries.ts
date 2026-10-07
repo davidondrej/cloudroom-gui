@@ -9,21 +9,21 @@ import type {
   PermissionMode,
   ProviderInfo,
   ProviderModelCatalogScope,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { SYSTEM_EXECUTION_OPTIONS_QUERY_KEY } from "@/hooks/queries/query-keys";
-import { permissionModeValues } from "@bb/domain";
+import { permissionModeValues } from "@cloudroom/domain";
 import type {
   SystemCliSkillsStatusResponse,
   SystemExecutionOptionsResponse,
   SystemProvidersQuery,
   SystemProviderStatesResponse,
   SystemVersionResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   ProviderCliStatusResponse,
   ProviderUsage,
   ProviderUsageResponse,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { BbHttpError, sdk } from "@/lib/sdk";
 import { isAbortLikeError } from "@/lib/mutation-errors";
 import {

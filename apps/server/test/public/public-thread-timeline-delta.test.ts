@@ -4,14 +4,14 @@ import {
   threadScope,
   turnScope,
   type Thread,
-} from "@bb/domain";
-import { createConnection, getAppSettings } from "@bb/db";
+} from "@cloudroom/domain";
+import { createConnection, getAppSettings } from "@cloudroom/db";
 import {
   applyTimelineDelta,
   threadTimelineResponseSchema,
   type ThreadTimelineResponse,
   type TimelineRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { countTimelineSelectionMemoEntries } from "../../src/services/threads/timeline-selection-memo.js";
 import { readJson } from "../helpers/json.js";
 import {

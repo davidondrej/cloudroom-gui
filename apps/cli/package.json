@@ -1,5 +1,5 @@
 {
-  "name": "@bb/cli",
+  "name": "@cloudroom/cli",
   "version": "0.0.1",
   "type": "module",
   "bin": {
@@ -14,16 +14,16 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@bb/client-core": "workspace:*",
-    "@bb/config": "workspace:*",
-    "@bb/core-ui": "workspace:*",
-    "@bb/domain": "workspace:*",
-    "@bb/host-daemon-contract": "workspace:*",
-    "@bb/plugin-build": "workspace:*",
-    "@bb/sdk": "workspace:*",
-    "@bb/server-contract": "workspace:*",
-    "@bb/templates": "workspace:*",
-    "@bb/thread-view": "workspace:*",
+    "@cloudroom/client-core": "workspace:*",
+    "@cloudroom/config": "workspace:*",
+    "@cloudroom/core-ui": "workspace:*",
+    "@cloudroom/domain": "workspace:*",
+    "@cloudroom/host-daemon-contract": "workspace:*",
+    "@cloudroom/plugin-build": "workspace:*",
+    "@cloudroom/sdk": "workspace:*",
+    "@cloudroom/server-contract": "workspace:*",
+    "@cloudroom/templates": "workspace:*",
+    "@cloudroom/thread-view": "workspace:*",
     "cli-table3": "^0.6.5",
     "commander": "^13.0.0",
     "mime-types": "^3.0.2",
@@ -31,7 +31,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@tailwindcss/node": "^4.3.0",
     "@tailwindcss/oxide": "^4.3.0",
     "@types/mime-types": "^3.0.1",

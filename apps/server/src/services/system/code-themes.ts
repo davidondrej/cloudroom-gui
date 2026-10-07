@@ -9,7 +9,7 @@ import {
   type DeclaredCodeTheme,
   type DeclaredCodeThemeSlot,
   type UiCodeThemeDeclaration,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 const THEME_MANIFEST_FILE_NAME = "theme.json";
 const CONVENTION_CODE_THEME_FILES = {

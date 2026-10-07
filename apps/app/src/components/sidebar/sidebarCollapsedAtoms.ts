@@ -1,13 +1,13 @@
 import type {
   SidebarChronologicalSort,
   SidebarOrganizationMode,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { createSyncedPreferenceAtom } from "@/lib/ui-preferences/synced-preference-atom";
 
 export type {
   CollapsibleSidebarSectionId,
   SidebarSectionId,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 export type { SidebarChronologicalSort, SidebarOrganizationMode };
 

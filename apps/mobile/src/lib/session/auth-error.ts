@@ -1,6 +1,6 @@
-import { ConnectListError } from "@bb/connect-client";
-import { toRecord } from "@bb/core-ui";
-import { BbHttpError } from "@bb/sdk/browser";
+import { ConnectListError } from "@cloudroom/connect-client";
+import { toRecord } from "@cloudroom/core-ui";
+import { BbHttpError } from "@cloudroom/sdk/browser";
 
 export type AuthErrorKind = "auth-required" | "network" | "http" | "unknown";
 

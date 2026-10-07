@@ -2,7 +2,7 @@ import type {
   PromptMentionCommandTrigger,
   PromptMentionResource,
   PromptTextMention,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { ComposerView } from "@get-bb/plugin-sdk";
 import type { Node as ProseMirrorNode, Slice } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
@@ -33,7 +33,7 @@ import {
   type ProviderCommandSuggestion,
   type PromptMentionSuggestion,
   type TypeaheadTrigger,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { AppCommandShortcutHint } from "@/components/commands/AppCommandShortcutHint";
 import {
   useAppCommandKeyDispatch,
@@ -44,14 +44,14 @@ import {
   voiceUnsupportedMessage,
   type VoiceUnsupportedReason,
 } from "@/hooks/voice-input-support";
-import { Button } from "@bb/shared-ui/button";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
+} from "@cloudroom/shared-ui/tooltip";
 import { ComposerActionsSlot } from "@/components/plugin/PluginComposerActions";
 import { useResolvedComposerEditor } from "@/components/plugin/composer-slot-hooks";
 import {
@@ -65,26 +65,26 @@ import { useComposerInputLock } from "@/lib/plugin-sdk-hooks";
 import {
   COARSE_POINTER_PROMPT_ACTION_BUTTON_CLASS,
   COARSE_POINTER_PROMPT_ICON_ACTION_BUTTON_CLASS,
-} from "@bb/shared-ui/coarse-pointer-sizing";
-import { CHROME_SUBTLE_ICON_BUTTON_FOREGROUND_CLASS } from "@bb/shared-ui/chrome-style-tokens";
-import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
+} from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { CHROME_SUBTLE_ICON_BUTTON_FOREGROUND_CLASS } from "@cloudroom/shared-ui/chrome-style-tokens";
+import { usePointerCoarse } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
 import {
   getMediaQuerySnapshot,
   REDUCED_MOTION_QUERY,
-} from "@bb/shared-ui/hooks/use-media-query";
-import { blurActiveKeyboardInputWithin } from "@bb/shared-ui/overlay-trigger";
+} from "@cloudroom/shared-ui/hooks/use-media-query";
+import { blurActiveKeyboardInputWithin } from "@cloudroom/shared-ui/overlay-trigger";
 import {
   DEFAULT_PLUGIN_MENTION_TRIGGER,
   type PluginMentionTrigger,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { useRichTextEditingPreference } from "@/lib/rich-text-editing-preference";
 import {
   arePromptDraftStatesEqual,
   isPromptDraftEmpty,
   type PromptDraftAttachment,
   type PromptDraftState,
-} from "@bb/client-core";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/client-core";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { PROMPT_STACK_EDGE_CARET_BUTTON_WIDTH_CLASS } from "./banner/PromptStackCard";
 import { AttachmentPreview, useUploadingImageCount } from "./AttachmentPreview";
 import type { ExecutionControlsProps } from "./ExecutionControls";

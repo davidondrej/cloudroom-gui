@@ -8,16 +8,17 @@ import {
   type Experiments,
   defaultAppSettings,
   type AppSettings,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   WorkspaceOpenTarget,
   WorkspaceOpenTargetId,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { VoiceInputSettingsSectionContent } from "@/components/settings/VoiceInputSettingsSection";
 import { ArchivedThreadsSettingsSection } from "@/components/settings/ArchivedThreadsSettingsSection";
 import { CommunitySettingsSection } from "@/components/settings/CommunitySettingsSection";
 import { KeyboardSettingsSection } from "@/components/settings/KeyboardSettingsSection";
 import { MarketplacesSettingsSection } from "@/components/settings/MarketplacesSettingsSection";
+import { CloudroomAccountSettings } from "@/components/settings/CloudroomAccountSettings";
 import { MachinesSettingsSection } from "@/components/settings/MachinesSettingsSection";
 import { ProjectsSettingsSection } from "@/components/settings/ProjectsSettingsSection";
 import {
@@ -347,7 +348,12 @@ function SettingsStoryContent({ route }: { route: SettingsStoryRoute }) {
     case "projects":
       return <ProjectsSettingsSection />;
     case "machines":
-      return <MachinesSettingsSection />;
+      return (
+        <>
+          <CloudroomAccountSettings />
+          <MachinesSettingsSection />
+        </>
+      );
     case "updates":
       return <SettingsUpdatesStory />;
     case "experiments":

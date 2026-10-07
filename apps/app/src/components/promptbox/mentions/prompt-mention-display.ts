@@ -1,6 +1,6 @@
-import type { PromptMentionResource } from "@bb/domain";
-import type { IconName } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+import type { PromptMentionResource } from "@cloudroom/domain";
+import type { IconName } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 type PromptCommandLike = Pick<
   Extract<PromptMentionResource, { kind: "command" }>,

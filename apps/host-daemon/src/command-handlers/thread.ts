@@ -3,12 +3,12 @@ import path from "node:path";
 import {
   AgentRuntimeTurnBusyError,
   type AgentRuntimeBridgeLaunch,
-} from "@bb/agent-runtime";
+} from "@cloudroom/agent-runtime";
 import {
   flattenPromptInputGroups,
   isStandaloneBuiltinCompactCommand,
-} from "@bb/domain";
-import type { HostDaemonCommandResult } from "@bb/host-daemon-contract";
+} from "@cloudroom/domain";
+import type { HostDaemonCommandResult } from "@cloudroom/host-daemon-contract";
 import type { RuntimeEntry } from "../runtime-manager.js";
 import {
   CommandDispatchError,

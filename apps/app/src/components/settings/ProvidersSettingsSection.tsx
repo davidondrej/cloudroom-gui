@@ -5,19 +5,28 @@ import type {
   AppSettings,
   CompletedTurnDisplay,
   ProviderInfo,
-} from "@bb/domain";
-import { Button } from "@bb/shared-ui/button";
-import { COARSE_POINTER_ICON_SIZE_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Switch } from "@bb/shared-ui/switch";
+} from "@cloudroom/domain";
+import { Button } from "@cloudroom/shared-ui/button";
+import { COARSE_POINTER_ICON_SIZE_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import {
+  ResourceDetailConfigurationSection,
+  ResourceDetailPanel,
+} from "@cloudroom/shared-ui/resource-list";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Switch } from "@cloudroom/shared-ui/switch";
 import {
   SettingsBadge,
   SettingsRow,
   SettingsRowList,
   SettingsSection,
 } from "@/components/ui/settings-section";
-import { useProviderCliInstallRunner } from "@/components/provider-cli/provider-cli-install";
+import {
+  buildProviderCliIssue,
+  hasProviderCliAction,
+  useProviderCliInstallRunner,
+  type ProviderCliInstallTarget,
+} from "@/components/provider-cli/provider-cli-install";
 import { providerCliJobKey } from "@/components/provider-cli/provider-cli-install-store";
 import {
   useHostProviderCliStatus,
@@ -114,7 +123,7 @@ function ProviderRowIcon({ provider }: { provider: ProviderInfo }) {
 interface SortableProviderRowProps {
   disabled: boolean;
   generalSettings: AppSettings;
-  index: number;
+  isDefault: boolean;
   onGeneralSettingsChange: ProvidersSettingsSectionProps["onGeneralSettingsChange"];
   provider: ProviderInfo;
 }
@@ -122,7 +131,7 @@ interface SortableProviderRowProps {
 function SortableProviderRow({
   disabled,
   generalSettings,
-  index,
+  isDefault,
   onGeneralSettingsChange,
   provider,
 }: SortableProviderRowProps) {
@@ -131,9 +140,6 @@ function SortableProviderRow({
     disabled,
     label: provider.displayName,
   });
-  const isDefault =
-    generalSettings.defaultProviderId === provider.id ||
-    (generalSettings.defaultProviderId === null && index === 0);
 
   return (
     <SettingsRow
@@ -171,8 +177,33 @@ function SortableProviderRow({
   );
 }
 
-function InstallableProvidersSection({ hostId }: { hostId: string | null }) {
-  const installable = useInstallableProviders({ hostId }).data ?? [];
+interface InstallableProvider {
+  provider: ProviderInfo;
+  target: ProviderCliInstallTarget;
+}
+
+function hiddenProviderTarget(
+  provider: ProviderInfo,
+): ProviderCliInstallTarget {
+  return {
+    provider: provider.id,
+    status: { displayName: provider.displayName },
+    action: {
+      kind: "install",
+      label: "Install",
+      command: `install ${provider.displayName}`,
+    },
+    fingerprint: `${provider.id}:missing`,
+  };
+}
+
+function InstallableProvidersSection({
+  hostId,
+  installable,
+}: {
+  hostId: string | null;
+  installable: readonly InstallableProvider[];
+}) {
   const { queuedJobKeys, runningJobKey, startInstall } =
     useProviderCliInstallRunner();
   if (hostId === null || installable.length === 0) return null;
@@ -183,7 +214,7 @@ function InstallableProvidersSection({ hostId }: { hostId: string | null }) {
       description="Install another coding agent on this computer. Cloudroom runs its official installer, then adds it to the list above."
     >
       <SettingsRowList>
-        {installable.map((provider) => {
+        {installable.map(({ provider, target }) => {
           const jobKey = providerCliJobKey(hostId, provider.id);
           const installing =
             runningJobKey === jobKey || queuedJobKeys.has(jobKey);
@@ -198,21 +229,7 @@ function InstallableProvidersSection({ hostId }: { hostId: string | null }) {
                 size="sm"
                 disabled={installing}
                 aria-label={`Install ${provider.displayName}`}
-                onClick={() =>
-                  startInstall({
-                    hostId,
-                    issue: {
-                      provider: provider.id,
-                      status: { displayName: provider.displayName },
-                      action: {
-                        kind: "install",
-                        label: "Install",
-                        command: `install ${provider.displayName}`,
-                      },
-                      fingerprint: `${provider.id}:missing`,
-                    },
-                  })
-                }
+                onClick={() => startInstall({ hostId, issue: target })}
               >
                 {installing ? "Installing…" : "Install"}
               </Button>
@@ -222,6 +239,19 @@ function InstallableProvidersSection({ hostId }: { hostId: string | null }) {
       </SettingsRowList>
     </SettingsSection>
   );
+}
+
+function useInstalledProviderCheck() {
+  const { localDaemonHostId } = useHostDaemon();
+  const cliStatus = useHostProviderCliStatus({
+    hostId: localDaemonHostId,
+  }).data;
+  return {
+    cliStatus,
+    hostId: localDaemonHostId,
+    isInstalled: (provider: ProviderInfo) =>
+      cliStatus?.[provider.id]?.installed !== false,
+  };
 }
 
 interface CompletedTurnDisplayRowProps {
@@ -270,21 +300,38 @@ export function ProvidersSettingsSection({
   onGeneralSettingsChange,
 }: ProvidersSettingsSectionProps) {
   const providersQuery = useSystemProviders();
-  const { localDaemonHostId } = useHostDaemon();
-  const cliStatus = useHostProviderCliStatus({
-    hostId: localDaemonHostId,
-  }).data;
+  const { cliStatus, hostId, isInstalled } = useInstalledProviderCheck();
+  const hiddenInstallable = useInstallableProviders({ hostId }).data ?? [];
   const serverProviders: ProviderInfo[] = providersQuery.data ?? [];
   const [optimisticOrder, setOptimisticOrder] = useState<string[] | null>(null);
-  const providers = applyProviderOrder(serverProviders, optimisticOrder);
+  const allProviders = applyProviderOrder(serverProviders, optimisticOrder);
+  const allIds = allProviders.map((provider) => provider.id);
+  const providers = allProviders.filter(isInstalled);
   const ids = providers.map((provider) => provider.id);
-  const installedProviders = providers.filter(
-    (provider) => cliStatus?.[provider.id]?.installed !== false,
-  );
+  const defaultProviderId =
+    generalSettings.defaultProviderId ?? allProviders[0]?.id ?? null;
+  const installable: InstallableProvider[] = [
+    ...allProviders.flatMap((provider) => {
+      const status = cliStatus?.[provider.id];
+      if (status === undefined || status.installed) return [];
+      const issue = buildProviderCliIssue({ provider: provider.id, status });
+      return issue !== null && hasProviderCliAction(issue)
+        ? [{ provider, target: issue }]
+        : [];
+    }),
+    ...hiddenInstallable.map((provider) => ({
+      provider,
+      target: hiddenProviderTarget(provider),
+    })),
+  ];
 
   const handleReorder = (activeId: string, overId: string): void => {
-    const next = reorderProviderIds(ids, activeId, overId);
-    if (next === null) return;
+    const reordered = reorderProviderIds(ids, activeId, overId);
+    if (reordered === null) return;
+    const next = [
+      ...reordered,
+      ...allIds.filter((id) => !reordered.includes(id)),
+    ];
     setOptimisticOrder(next);
     let write: Promise<unknown> | void;
     try {
@@ -311,8 +358,7 @@ export function ProvidersSettingsSection({
           <p className="text-sm text-muted-foreground">Loading providers…</p>
         ) : providers.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No agent provider is enabled. Enable a provider plugin under
-            Plugins.
+            No agent is installed yet. Install one below.
           </p>
         ) : (
           <SortableSettingsRowList
@@ -320,12 +366,12 @@ export function ProvidersSettingsSection({
             disabled={disabled}
             onReorder={handleReorder}
           >
-            {providers.map((provider, index) => (
+            {providers.map((provider) => (
               <SortableProviderRow
                 key={provider.id}
                 disabled={disabled}
                 generalSettings={generalSettings}
-                index={index}
+                isDefault={provider.id === defaultProviderId}
                 onGeneralSettingsChange={onGeneralSettingsChange}
                 provider={provider}
               />
@@ -333,31 +379,47 @@ export function ProvidersSettingsSection({
           </SortableSettingsRowList>
         )}
       </SettingsSection>
-      <InstallableProvidersSection hostId={localDaemonHostId} />
-      {providers.some(provider => provider.id === "claude-code") ? (
+      <InstallableProvidersSection hostId={hostId} installable={installable} />
+      {providers.some((provider) => provider.id === "claude-code") ? (
         <div className="space-y-3">
           <ClaudeConnectionButton target="local" presentation="settings" />
           <ClaudeConnectionButton target="cloud" presentation="settings" />
         </div>
       ) : null}
-      {installedProviders.length === 0 ? null : (
-        <SettingsSection
-          title="Collapse finished turns"
-          description="When a turn finishes, fold its work into one Worked for row and keep the final answer visible. Turn a provider off to keep every step of its finished turns visible."
-        >
-          <SettingsRowList>
-            {installedProviders.map((provider) => (
-              <CompletedTurnDisplayRow
-                key={provider.id}
-                disabled={disabled}
-                generalSettings={generalSettings}
-                onGeneralSettingsChange={onGeneralSettingsChange}
-                provider={provider}
-              />
-            ))}
-          </SettingsRowList>
-        </SettingsSection>
-      )}
     </>
+  );
+}
+
+export function ProviderTurnDisplaySection({
+  disabled,
+  generalSettings,
+  onGeneralSettingsChange,
+  pluginId,
+}: ProvidersSettingsSectionProps & { pluginId: string }) {
+  const { isInstalled } = useInstalledProviderCheck();
+  const providers = (useSystemProviders().data ?? []).filter(
+    (provider) => provider.pluginId === pluginId && isInstalled(provider),
+  );
+  if (providers.length === 0) return null;
+  return (
+    <ResourceDetailConfigurationSection label="Collapse finished turns">
+      <p className="text-xs text-muted-foreground">
+        When a turn finishes, fold its work into one Worked for row and keep the
+        final answer visible.
+      </p>
+      <ResourceDetailPanel surface="recessed" className="px-3 py-1">
+        <SettingsRowList>
+          {providers.map((provider) => (
+            <CompletedTurnDisplayRow
+              key={provider.id}
+              disabled={disabled}
+              generalSettings={generalSettings}
+              onGeneralSettingsChange={onGeneralSettingsChange}
+              provider={provider}
+            />
+          ))}
+        </SettingsRowList>
+      </ResourceDetailPanel>
+    </ResourceDetailConfigurationSection>
   );
 }

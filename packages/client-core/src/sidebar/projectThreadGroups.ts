@@ -1,4 +1,4 @@
-import type { ThreadListEntry } from "@bb/domain";
+import type { ThreadListEntry } from "@cloudroom/domain";
 import { compareCodepoint } from "../codepoint-compare.js";
 import {
   getCollapsedChildActivity,

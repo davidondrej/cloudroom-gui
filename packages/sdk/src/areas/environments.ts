@@ -3,14 +3,14 @@ import {
   environmentSchema,
   type Environment,
   type EnvironmentStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   commitActionResponseSchema,
   pullRequestDraftActionResponseSchema,
   pullRequestMergeActionResponseSchema,
   pullRequestReadyActionResponseSchema,
   updateEnvironmentRequestSchema,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   CommitActionResponse,
   EnvironmentArchiveThreadsResponse,
@@ -34,7 +34,7 @@ import type {
   UpdateEnvironmentRequest,
   WorkspacePathListResponse,
   SystemEnvironmentProvider,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { signalRequestArgs, type CreateSdkAreaArgs } from "./common.js";
 
 export interface EnvironmentActionArgs {

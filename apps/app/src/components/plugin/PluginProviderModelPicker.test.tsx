@@ -8,9 +8,9 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import type { AvailableModel, ProviderInfo, ReasoningLevel } from "@bb/domain";
-import { makeProviderInfo } from "@bb/test-helpers/domain-fixtures";
-import type { SystemExecutionOptionsResponse } from "@bb/server-contract";
+import type { AvailableModel, ProviderInfo, ReasoningLevel } from "@cloudroom/domain";
+import { makeProviderInfo } from "@cloudroom/test-helpers/domain-fixtures";
+import type { SystemExecutionOptionsResponse } from "@cloudroom/server-contract";
 import type { ExperimentalProviderModelPickerValue } from "@get-bb/plugin-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { systemExecutionOptionsQueryKey } from "@/hooks/queries/query-keys";

@@ -5,7 +5,7 @@ import type {
   ThreadTimelinePendingTodoItem,
   ThreadTimelinePendingTodoItemStatus,
   ThreadTimelinePendingTodos,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { ThreadEventWithMeta } from "./build-event-projection.js";
 import { getOrderedThreadEvents } from "./group-event-projection-turns.js";
 

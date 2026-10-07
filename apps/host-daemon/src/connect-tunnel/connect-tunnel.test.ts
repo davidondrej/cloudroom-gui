@@ -5,10 +5,10 @@ import {
   encodeFrame,
   type Frame,
   type OpenHttpFrame,
-} from "@bb/tunnel-contract";
+} from "@cloudroom/tunnel-contract";
 import { afterEach, describe, expect, it } from "vitest";
 import { WebSocket, WebSocketServer, type RawData } from "ws";
-import type { HostDaemonConnectTunnelIdentity } from "@bb/host-daemon-contract";
+import type { HostDaemonConnectTunnelIdentity } from "@cloudroom/host-daemon-contract";
 import type { HostDaemonLogger } from "../logger.js";
 import {
   buildMachineSharePublicOrigin,

@@ -19,6 +19,8 @@ import {
   type UsageMeasurement,
   usageSourceRpcContract,
   type UsageResource as Resource,
+  ACCOUNTS_LIST_METHOD,
+  accountViewsSchema,
 } from "./usage-source-contract.js";
 
 interface SourceResult {
@@ -154,6 +156,76 @@ function resourceProvider(
 }
 
 export default function providerUsagePlugin(bb: BbPluginApi): void {
+  const mergeAccounts = async (
+    machines: UsageMachine[],
+    providers: Provider[],
+  ): Promise<void> => {
+    const sources = (
+      await bb.sdk.plugins
+        .experimental_discoverRpc({ method: ACCOUNTS_LIST_METHOD })
+        .catch(() => [])
+    ).filter((source) => source.method === ACCOUNTS_LIST_METHOD);
+    for (const source of sources)
+      for (const providerId of ["claude-code", "codex"]) {
+        const raw: unknown = await bb.sdk.plugins
+          .callRpc({
+            pluginId: source.pluginId,
+            method: ACCOUNTS_LIST_METHOD,
+            input: { provider: providerId },
+            outputSchema: accountViewsSchema,
+            signal: AbortSignal.timeout(10_000),
+          })
+          .catch(() => []);
+        const parsed = accountViewsSchema.safeParse(raw);
+        const accounts = parsed.success ? parsed.data : [];
+        if (accounts.length < 2) continue;
+        const metadata = providers.find(
+          (provider) => provider.id === providerId,
+        );
+        for (const machine of machines) {
+          if (machine.id.startsWith("source:")) continue;
+          const index = machine.providers.findIndex(
+            (provider) => provider.providerId === providerId,
+          );
+          const local = index < 0 ? undefined : machine.providers[index];
+          const base =
+            local ??
+            (metadata ? normalizedProvider(metadata, undefined) : null);
+          if (base === null) continue;
+          const entries = accounts.flatMap((account): UsageProvider[] =>
+            account.id === "local"
+              ? local
+                ? [{ ...local, accountId: "local", inUse: account.inUse }]
+                : []
+              : [
+                  {
+                    ...base,
+                    id: `accounts:${account.id}`,
+                    accountLabel: account.name ?? account.email,
+                    accountId: account.id,
+                    inUse: account.inUse,
+                    usage: {
+                      status: "ok",
+                      accountEmail: account.email,
+                      planLabel: account.plan,
+                      windows: account.windows.map((window) => ({
+                        label: window.label,
+                        usedPercent: window.usedPercent,
+                        resetsAt:
+                          window.resetsAt === null
+                            ? null
+                            : new Date(window.resetsAt).toISOString(),
+                        cost: null,
+                      })),
+                    },
+                  },
+                ],
+          );
+          if (index < 0) machine.providers.push(...entries);
+          else machine.providers.splice(index, 1, ...entries);
+        }
+      }
+  };
   const inventories = new Map<string, SourceResult>();
   const measurements = new Map<
     string,
@@ -363,6 +435,7 @@ export default function providerUsagePlugin(bb: BbPluginApi): void {
           machine.error = "Some usage could not be refreshed.";
       }
     }
+    await mergeAccounts(machines, providers);
     const providerOrder = new Map(
       providers.map((provider, index) => [provider.id, index]),
     );

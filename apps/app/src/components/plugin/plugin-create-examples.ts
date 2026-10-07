@@ -1,5 +1,5 @@
-import type { IconName } from "@bb/shared-ui/icon";
-import { CREATE_PLUGIN_PROMPT } from "@bb/client-core";
+import type { IconName } from "@cloudroom/shared-ui/icon";
+import { CREATE_PLUGIN_PROMPT } from "@cloudroom/client-core";
 
 interface PluginExample {
   title: string;

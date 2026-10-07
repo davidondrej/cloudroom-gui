@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import type { PluginPanelActionOpenOptions } from "@get-bb/plugin-sdk";
-import { EmptyStatePanel } from "@bb/shared-ui/empty-state";
+import { EmptyStatePanel } from "@cloudroom/shared-ui/empty-state";
 import {
   usePluginSlots,
   type PluginNewThreadPanelActionSlot,

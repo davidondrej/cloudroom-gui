@@ -7,17 +7,17 @@ import {
   render,
   screen,
 } from "@testing-library/react";
-import type { AvailableModel, ReasoningLevel } from "@bb/domain";
+import type { AvailableModel, ReasoningLevel } from "@cloudroom/domain";
 import type {
   SystemExecutionOptionsModelLoadError,
   SystemExecutionOptionsResponse,
   SystemProvidersQuery,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { systemExecutionOptionsQueryKey } from "@/hooks/queries/query-keys";
 import { sdk } from "@/lib/sdk";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
-import { CompactViewportOverrideProvider } from "@bb/shared-ui/hooks/use-compact-viewport";
+import { CompactViewportOverrideProvider } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import {
   PaneContext,
   type PaneContextValue,

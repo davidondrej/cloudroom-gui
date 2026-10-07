@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { providerInteractionOutcomeSchema } from "@bb/domain";
+import { providerInteractionOutcomeSchema } from "@cloudroom/domain";
 import type {
   PendingInteractionResolution,
   UserQuestionPendingInteractionPayload,
   UserQuestionPendingInteractionResolution,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   buildClaudeApprovalInteractionPayload,
   buildClaudeInteractiveResponse,

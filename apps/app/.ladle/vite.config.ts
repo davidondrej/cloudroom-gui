@@ -1,7 +1,7 @@
 import path from "path";
 import { defineConfig } from "vite";
 import tailwindcss from "@tailwindcss/vite";
-import { resolveCurrentDevInstanceConfig } from "@bb/config/runtime";
+import { resolveCurrentDevInstanceConfig } from "@cloudroom/config/runtime";
 import { sharedUiEnvSeam } from "../vite-shared-ui-seam.js";
 
 const repoRoot = path.resolve(__dirname, "../../..");

@@ -1,5 +1,5 @@
 {
-  "name": "@bb/sdk",
+  "name": "@cloudroom/sdk",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -44,17 +44,17 @@
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "@bb/config": "workspace:*",
-    "@bb/core-ui": "workspace:*",
-    "@bb/domain": "workspace:*",
-    "@bb/host-daemon-contract": "workspace:*",
-    "@bb/server-contract": "workspace:*",
-    "@bb/templates": "workspace:*",
+    "@cloudroom/config": "workspace:*",
+    "@cloudroom/core-ui": "workspace:*",
+    "@cloudroom/domain": "workspace:*",
+    "@cloudroom/host-daemon-contract": "workspace:*",
+    "@cloudroom/server-contract": "workspace:*",
+    "@cloudroom/templates": "workspace:*",
     "ws": "^8.19.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/node": "^22.0.0",
     "@types/ws": "^8.18.1",
     "typescript": "npm:@typescript/typescript6@^6.0.2",

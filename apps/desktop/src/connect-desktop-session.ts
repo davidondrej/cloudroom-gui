@@ -3,7 +3,7 @@ import {
   ConnectListError,
   fetchDesktopSession,
   type ConnectCredential,
-} from "@bb/connect-client";
+} from "@cloudroom/connect-client";
 
 const rpcSuccessSchema = z.object({
   ok: z.literal(true),

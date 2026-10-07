@@ -1,4 +1,4 @@
-import { createApiClient } from "@bb/server-contract";
+import { createApiClient } from "@cloudroom/server-contract";
 import {
   readJsonResponse,
   readVoidResponse,

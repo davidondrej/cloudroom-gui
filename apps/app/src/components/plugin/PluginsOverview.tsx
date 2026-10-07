@@ -4,7 +4,7 @@ import {
   ResourceInfiniteScrollSentinel,
   useResourceInfiniteItems,
   useResourceViewportPageSize,
-} from "@bb/shared-ui/resource-pagination";
+} from "@cloudroom/shared-ui/resource-pagination";
 import {
   ResourceCollectionPage,
   ResourceCollectionViewport,
@@ -12,10 +12,10 @@ import {
   ResourceMultiSelectMenu,
   ResourceSortMenu,
   ResourceToolbar,
-} from "@bb/shared-ui/resource-list";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/resource-list";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { CreateWithTemplatesButton } from "@/components/create-via-prompt-examples";
-import { CREATE_PLUGIN_PROMPT } from "@bb/client-core";
+import { CREATE_PLUGIN_PROMPT } from "@cloudroom/client-core";
 import { TOOLS_PAGE_BAND_CLASSES } from "@/components/tools/tools-navigation";
 import {
   AddPluginDialog,

@@ -1,18 +1,18 @@
 import { useRef, useState } from "react";
-import { isBackgroundAgentTaskType } from "@bb/domain";
-import type { TimelineWorkflowWorkRow } from "@bb/server-contract";
+import { isBackgroundAgentTaskType } from "@cloudroom/domain";
+import type { TimelineWorkflowWorkRow } from "@cloudroom/server-contract";
 import { useResizeObserver } from "usehooks-ts";
 import { AnimatedBody } from "@/components/promptbox/banner/AnimatedBody";
 import { PromptStackCardChevron } from "@/components/promptbox/banner/PromptStackCard";
 import { LiveDurationText } from "@/components/thread/timeline/LiveDurationText";
-import { Icon } from "@bb/shared-ui/icon";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import {
   activityIconClass,
   activityMetaClass,
   activityTextClass,
-} from "@bb/shared-ui/activity-row-styles";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/activity-row-styles";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 const BODY_ID = "thread-background-commands-card-body";
 const TOGGLE_ID = "thread-background-commands-card-toggle";

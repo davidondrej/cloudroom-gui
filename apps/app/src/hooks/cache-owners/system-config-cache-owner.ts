@@ -2,8 +2,8 @@ import type { QueryClient } from "@tanstack/react-query";
 import {
   applyAppKeybindingOverrides,
   type AppKeybindingOverrides,
-} from "@bb/domain";
-import type { SystemConfigResponse } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { SystemConfigResponse } from "@cloudroom/server-contract";
 import { systemConfigQueryKey } from "../queries/query-keys";
 
 interface KeyboardSettingsCacheTransaction {

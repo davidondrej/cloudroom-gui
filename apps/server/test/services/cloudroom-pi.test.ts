@@ -1,7 +1,7 @@
 import { createServer, type ServerResponse } from "node:http";
 import { once } from "node:events";
 import { expect, it } from "vitest";
-import { cloudroomThreads, events, getThread } from "@bb/db";
+import { cloudroomThreads, events, getThread } from "@cloudroom/db";
 import { command } from "../../src/services/cloudroom/store.js";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
 import { runThreadLifecycleSweep } from "../../src/services/system/periodic-sweeps.js";

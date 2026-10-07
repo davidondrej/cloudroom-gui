@@ -7,7 +7,7 @@ import {
   migrate,
   noopNotifier,
   upsertHost,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { getThreadProvisionContext } from "../../src/services/threads/thread-startup-store.js";
 import { requestThreadProvision } from "../../src/services/threads/thread-provisioning.js";
 import { NotificationHub } from "../../src/ws/hub.js";

@@ -1,18 +1,18 @@
 import { operationEnvironment } from "../operation-environment.js";
-import { buildThreadShellEnvironment } from "@bb/agent-runtime";
-import { stripThreadContextEnv } from "@bb/config/runtime";
+import { buildThreadShellEnvironment } from "@cloudroom/agent-runtime";
+import { stripThreadContextEnv } from "@cloudroom/config/runtime";
 import { accessSync, chmodSync, constants, existsSync } from "node:fs";
 import { access, stat } from "node:fs/promises";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { spawn as spawnPty } from "node-pty";
-import type { TerminalSessionCloseReason } from "@bb/domain";
-import type { HostDaemonDaemonWsMessage } from "@bb/host-daemon-contract";
+import type { TerminalSessionCloseReason } from "@cloudroom/domain";
+import type { HostDaemonDaemonWsMessage } from "@cloudroom/host-daemon-contract";
 import {
   killProcessGroup,
   sanitizeInheritedChildProcessEnv,
-} from "@bb/process-utils";
+} from "@cloudroom/process-utils";
 import type { HostDaemonServerTerminalMessage } from "../server-connection-support.js";
 import type { HostDaemonLogger } from "../logger.js";
 import { RuntimeManager } from "../runtime-manager.js";

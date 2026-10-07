@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { WaveformVisualizer } from "./WaveformVisualizer.js";
 
 interface VoiceRecordingBarProps {

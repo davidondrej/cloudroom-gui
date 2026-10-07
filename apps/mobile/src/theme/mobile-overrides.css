@@ -25,7 +25,7 @@
  *   (`…, transparent`) sets sRGB ALPHA. Near black the two diverge: white at
  *   22.7% lightness over black is #1c1c1c (systemGray6), the same surface as
  *   white at 11% alpha. Comments below quote the resulting default hex.
- * - Keep the invariants generate-native-theme.test.ts guards:
+ * - Keep these invariants:
  *   card == popover == background == canvas; sidebar < secondary/accent/muted
  *   < border <= input (lightness distance from the canvas); stateActive alpha
  *   > stateHover alpha.

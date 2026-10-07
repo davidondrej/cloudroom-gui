@@ -2,7 +2,7 @@ import type {
   JsonObject,
   ThreadEventItemPresentation,
   ThreadEventScope,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   EventProjectionApprovalLifecycleStatus,
   EventProjectionMessage,

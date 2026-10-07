@@ -5,8 +5,8 @@ import {
   setAppSettings,
   updateHost,
   upsertHost,
-} from "@bb/db";
-import { defaultAppSettings } from "@bb/domain";
+} from "@cloudroom/db";
+import { defaultAppSettings } from "@cloudroom/domain";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -24,6 +24,7 @@ it("synchronizes configured variables on connection, changes and reconnect while
     setAppSettings(db, {
       ...defaultAppSettings,
       machineGitCredentialsEnabled: false,
+      stripAiCoAuthorsEnabled: false,
     });
     for (const id of ["remote", "local"]) {
       upsertHost(db, noopNotifier, { id, name: id });

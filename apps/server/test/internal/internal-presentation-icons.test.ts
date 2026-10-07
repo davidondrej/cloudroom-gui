@@ -1,12 +1,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
-import { events } from "@bb/db";
-import { threadScope, turnScope } from "@bb/domain";
+import { events } from "@cloudroom/db";
+import { threadScope, turnScope } from "@cloudroom/domain";
 import {
   groupHostDaemonEvents,
   type HostDaemonEventEnvelope,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { describe, expect, it } from "vitest";
 import { buildPluginProviderRegistration } from "../../src/services/providers/plugin-provider-registration.js";
 import { validatePluginProviderDeclaration } from "@get-bb/plugin-sdk/internal/host-policy";

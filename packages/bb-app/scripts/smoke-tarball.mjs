@@ -1172,9 +1172,9 @@ async function smokeDaemonJoinAttempt(binDir, attempt) {
       }
     }
     const cliEnv = {
-      BB_DATA_DIR: serverDataDir,
-      BB_HOST_DAEMON_PORT: String(firstDaemonReservation.port),
-      BB_SERVER_URL: serverUrl,
+      ROOM_DATA_DIR: serverDataDir,
+      ROOM_HOST_DAEMON_PORT: String(firstDaemonReservation.port),
+      ROOM_SERVER_URL: serverUrl,
     };
     await smokeBuiltinPluginsRunning({ binDir, cliEnv });
     // Both daemons joined a server in a different process and data directory.

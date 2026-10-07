@@ -8,17 +8,17 @@ import {
 import type { connectRpcContract } from "./src/rpc.js";
 import type { ConnectPairErrorCode } from "./src/redeem.js";
 import QRCode from "qrcode";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
-import { Icon } from "@bb/shared-ui/icon";
-import { Input } from "@bb/shared-ui/input";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/dialog";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Input } from "@cloudroom/shared-ui/input";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { CONNECT_REALTIME_CHANNEL, type ConnectStatus } from "@/src/types";
 
 function errorText(error: unknown): string {

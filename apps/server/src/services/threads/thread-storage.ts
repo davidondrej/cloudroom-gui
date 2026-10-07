@@ -1,5 +1,5 @@
 import path from "node:path";
-import { getLatestSessionForHost } from "@bb/db";
+import { getLatestSessionForHost } from "@cloudroom/db";
 import { ApiError } from "../../errors.js";
 import type { WorkSessionDeps } from "../../types.js";
 import { requireConnectedHostSession } from "../lib/entity-lookup.js";

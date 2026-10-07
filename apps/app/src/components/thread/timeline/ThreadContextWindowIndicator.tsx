@@ -1,8 +1,8 @@
 import { useId, useState } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@bb/shared-ui/popover";
-import type { ThreadContextWindowUsage } from "@bb/server-contract";
+import { Popover, PopoverContent, PopoverTrigger } from "@cloudroom/shared-ui/popover";
+import type { ThreadContextWindowUsage } from "@cloudroom/server-contract";
 import { useHoverPopover } from "../../ui/hooks/use-hover-popover.js";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   calculateContextWindowUsagePercent,
   formatCompactTokenCount,

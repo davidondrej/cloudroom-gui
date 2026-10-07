@@ -1,4 +1,4 @@
-import type { ProviderInfo, ReasoningLevel } from "@bb/domain";
+import type { ProviderInfo, ReasoningLevel } from "@cloudroom/domain";
 
 const FALLBACK_REASONING_LABELS: Record<ReasoningLevel, string> = {
   none: "None",

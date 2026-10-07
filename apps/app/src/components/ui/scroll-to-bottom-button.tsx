@@ -1,5 +1,5 @@
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Icon } from "@bb/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Icon } from "@cloudroom/shared-ui/icon";
 
 interface ScrollToBottomButtonProps {
   visible: boolean;

@@ -25,23 +25,23 @@ import {
   useSyncExternalStore,
 } from "react";
 import { toast } from "sonner";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
-import { Input } from "@bb/shared-ui/input";
-import { Label } from "@bb/shared-ui/label";
+} from "@cloudroom/shared-ui/dialog";
+import { Input } from "@cloudroom/shared-ui/input";
+import { Label } from "@cloudroom/shared-ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@bb/shared-ui/select";
+} from "@cloudroom/shared-ui/select";
 import {
   definePluginApp,
   useComposer,

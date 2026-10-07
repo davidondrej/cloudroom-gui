@@ -1,19 +1,24 @@
 import { replaceMachineEnvironment } from "../../src/services/machines/environment-settings.js";
 import * as gitCredentials from "../../src/services/machines/git-credentials.js";
-import { createThread, updateHost } from "@bb/db";
+import {
+  createThread,
+  getAppSettings,
+  setAppSettings,
+  updateHost,
+} from "@cloudroom/db";
 import {
   createTerminalSession,
   getTerminalSession,
   listTerminalSessions,
   updateTerminalSession,
   updateTerminalSessions,
-} from "@bb/db";
-import type { EnvironmentStatus, TerminalSessionCloseReason } from "@bb/domain";
+} from "@cloudroom/db";
+import type { EnvironmentStatus, TerminalSessionCloseReason } from "@cloudroom/domain";
 import {
   hostDaemonOnlineRpcResponseMessageSchema,
   hostDaemonServerWsMessageSchema,
   type HostDaemonServerWsMessage,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   apiErrorSchema,
   terminalListResponseSchema,
@@ -21,7 +26,7 @@ import {
   terminalOutputResponseSchema,
   type TerminalServerMessage,
   terminalSessionSchema,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readJson } from "../helpers/json.js";
 import {
@@ -406,6 +411,7 @@ describe("public terminal routes", () => {
       for (const enrolled of [false, true]) {
         const fixture = await createTerminalRouteFixture();
         harnesses.push(fixture.harness);
+        setAppSettings(fixture.harness.db, { ...getAppSettings(fixture.harness.db), stripAiCoAuthorsEnabled: false });
         if (enrolled)
           updateHost(fixture.harness.db, fixture.harness.hub, fixture.host.id, {
             machineProviderId: "manual",

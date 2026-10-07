@@ -1,7 +1,7 @@
 import { mkdir, rm, rmdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { ClientTurnRequestId, PromptInput } from "@bb/domain";
-import { resolveContainedPath } from "@bb/process-utils";
+import type { ClientTurnRequestId, PromptInput } from "@cloudroom/domain";
+import { resolveContainedPath } from "@cloudroom/process-utils";
 import {
   CommandDispatchError,
   type CommandDispatchOptions,

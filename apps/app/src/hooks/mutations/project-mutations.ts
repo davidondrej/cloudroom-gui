@@ -5,7 +5,7 @@ import type {
   ReorderProjectRequest,
   UpdateProjectRequest,
   UploadedPromptAttachment,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { sdk } from "@/lib/sdk";
 import { registerLocalAttachmentPreview } from "@/lib/attachment-local-previews";
 import {
@@ -93,12 +93,36 @@ export function useReorderProject() {
   });
 }
 
+interface SetProjectHiddenRequest {
+  projectId: string;
+  hidden: boolean;
+}
+
+export function useSetProjectHidden() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    meta: {
+      errorMessage: "Failed to update project.",
+    },
+    mutationFn: ({ projectId, hidden }: SetProjectHiddenRequest) =>
+      sdk.projects.update({ projectId, hidden }),
+    onSuccess: (_data, { projectId, hidden }) => {
+      if (hidden) {
+        applyProjectDeleteResult({ projectId, queryClient });
+      } else {
+        invalidateProjectUpdateQueries({ projectId, queryClient });
+      }
+    },
+  });
+}
+
 export function useDeleteProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
     meta: {
-      errorMessage: "Failed to remove project.",
+      errorMessage: "Failed to delete project.",
     },
     mutationFn: async (projectId: string): Promise<void> => {
       await sdk.projects.delete({ projectId });

@@ -1,9 +1,9 @@
 import { Buffer } from "node:buffer";
-import { jsonValueSchema, type JsonObject, type JsonValue } from "@bb/domain";
+import { jsonValueSchema, type JsonObject, type JsonValue } from "@cloudroom/domain";
 import {
   parseProviderModelConfig,
   type ProviderModelInfo,
-} from "@bb/config/inference-model";
+} from "@cloudroom/config/inference-model";
 import type { LoggedWorkSessionDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { requireConnectedPrimaryHostId } from "../hosts/primary-host.js";

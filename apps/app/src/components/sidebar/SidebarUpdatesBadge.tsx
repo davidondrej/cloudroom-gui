@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import type { ProviderInfo } from "@bb/domain";
-import type { ProviderCliKey } from "@bb/host-daemon-contract";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
-import { Popover, PopoverContent, PopoverTrigger } from "@bb/shared-ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@bb/shared-ui/tooltip";
-import { cn } from "@bb/shared-ui/lib/utils";
+import type { ProviderInfo } from "@cloudroom/domain";
+import type { ProviderCliKey } from "@cloudroom/host-daemon-contract";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Popover, PopoverContent, PopoverTrigger } from "@cloudroom/shared-ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@cloudroom/shared-ui/tooltip";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   hasProviderCliAction,
   useProviderCliInstallRunner,

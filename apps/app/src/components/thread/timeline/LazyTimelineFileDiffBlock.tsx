@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Skeleton } from "@bb/shared-ui/skeleton";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
 import type { TimelineFileDiffBlockProps } from "./TimelineFileDiffBlock.js";
 
 const TimelineFileDiffBlockChunk = lazy(() =>

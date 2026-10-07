@@ -6,8 +6,8 @@ import { createInterface } from "node:readline/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 import { Command } from "commander";
 import { z } from "zod";
-import { derivePluginId, jsonValueSchema } from "@bb/domain";
-import { pluginCliCall, RESERVED_BB_CLI_COMMANDS } from "@bb/domain/plugin-cli";
+import { derivePluginId, jsonValueSchema } from "@cloudroom/domain";
+import { pluginCliCall, RESERVED_BB_CLI_COMMANDS } from "@cloudroom/domain/plugin-cli";
 import type {
   InstalledPlugin as PluginEntry,
   PluginApplyUpdateResult,
@@ -15,10 +15,10 @@ import type {
   PluginCatalogResolvedSource,
   PluginCatalogSearchResult,
   PluginUpdateCheckEntry as PluginUpdateResult,
-} from "@bb/server-contract";
-import { PLUGIN_SDK_NPM_VERSION, PLUGIN_SDK_VERSION } from "@bb/domain";
-import { BbHttpError, pluginMutationResponseSchema } from "@bb/sdk";
-import { parseDataDirEnvValue, resolveProdDataDir } from "@bb/config/runtime";
+} from "@cloudroom/server-contract";
+import { PLUGIN_SDK_NPM_VERSION, PLUGIN_SDK_VERSION } from "@cloudroom/domain";
+import { BbHttpError, pluginMutationResponseSchema } from "@cloudroom/sdk";
+import { parseDataDirEnvValue, resolveProdDataDir } from "@cloudroom/config/runtime";
 import {
   migratePluginToPackageLayout,
   resolvePluginSdkLayout,
@@ -26,7 +26,7 @@ import {
   setPluginSdkPin,
   syncPluginTypes,
   type PluginPackageLayoutMigration,
-} from "@bb/templates/plugin-scaffold";
+} from "@cloudroom/templates/plugin-scaffold";
 import { action } from "../action.js";
 import { cliFetch, createCliBbSdk } from "../client.js";
 import {
@@ -37,7 +37,7 @@ import {
   PLUGIN_TOOLCHAIN_PINS,
   resolvePluginBuildToolchain,
   type PluginBuildToolchain,
-} from "@bb/plugin-build";
+} from "@cloudroom/plugin-build";
 import { runPluginCliCommand } from "../plugin-cli-proxy.js";
 import { resolveBbCliVersion } from "../version.js";
 

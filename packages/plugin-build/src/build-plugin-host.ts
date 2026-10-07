@@ -233,7 +233,7 @@ function describeImportedNames(names: readonly string[]): string {
 }
 
 function privateBbImportError(specifier: string): string {
-  return `host entries cannot import private BB workspace package "${specifier}"; use @get-bb/plugin-sdk, Node APIs, or a regular plugin dependency`;
+  return `host entries cannot import private Cloudroom workspace package "${specifier}"; use @get-bb/plugin-sdk, Node APIs, or a regular plugin dependency`;
 }
 
 async function owningPackageName(
@@ -429,7 +429,7 @@ export async function buildPluginHost(
         {
           name: "reject-private-bb-host-imports",
           setup(build) {
-            build.onResolve({ filter: /^@bb(?:\/|$)/ }, (args) => ({
+            build.onResolve({ filter: /^@cloudroom(?:\/|$)/ }, (args) => ({
               errors: [{ text: privateBbImportError(args.path) }],
             }));
             build.onLoad({ filter: /\.[cm]?[jt]sx?$/ }, async (args) => {
@@ -437,14 +437,14 @@ export async function buildPluginHost(
                 args.path,
                 packageNameByDirectory,
               );
-              if (owner === "@bb" || owner?.startsWith("@bb/")) {
+              if (owner === "@cloudroom" || owner?.startsWith("@cloudroom/")) {
                 return {
                   errors: [{ text: privateBbImportError(owner) }],
                 };
               }
               const source = await readFile(args.path, "utf8");
               for (const specifier of sourceImportSpecifiers(source)) {
-                if (specifier === "@bb" || specifier.startsWith("@bb/")) {
+                if (specifier === "@cloudroom" || specifier.startsWith("@cloudroom/")) {
                   return {
                     errors: [{ text: privateBbImportError(specifier) }],
                   };
@@ -465,8 +465,8 @@ export async function buildPluginHost(
                   packageNameByDirectory,
                 );
                 if (
-                  importedOwner === "@bb" ||
-                  importedOwner?.startsWith("@bb/")
+                  importedOwner === "@cloudroom" ||
+                  importedOwner?.startsWith("@cloudroom/")
                 ) {
                   return {
                     errors: [{ text: privateBbImportError(importedOwner) }],

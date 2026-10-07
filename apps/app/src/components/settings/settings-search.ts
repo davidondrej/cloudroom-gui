@@ -127,6 +127,7 @@ const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
   ]),
   ...entries("defaults", "Defaults", [
     ["Starting machine", "cloud local last used new thread"],
+    ["Remove AI co-authors", "git commit co-authored-by attribution claude cursor"],
   ]),
   ...entries("cloud-environment", "Cloud environment", [
     ["GitHub", "account token gh push pr"],
@@ -139,7 +140,9 @@ const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
   ...entries("import", undefined, [["Import chats", "history migrate"]]),
   ...entries("archived", undefined, [["Archived threads", "restore unarchive"]]),
   ...entries("machines", undefined, [
-    ["Cloudroom account", "sign in login email account"],
+    ["Cloudroom account", "sign in login email account sign out"],
+    ["Mac access", "cloud agents permission full read-only ask off"],
+    ["Agent logins", "codex cursor cloud login connection"],
     ["Machines", "mac computer devices rename"],
     ["Machine access", "remote mac access"],
     ["Connection method", "ssh remote"],

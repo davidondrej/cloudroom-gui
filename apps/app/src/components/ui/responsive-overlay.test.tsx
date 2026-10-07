@@ -9,21 +9,21 @@ import {
 } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { POINTER_COARSE_QUERY } from "@bb/shared-ui/hooks/use-pointer-coarse";
-import { CompactViewportOverrideProvider } from "@bb/shared-ui/hooks/use-compact-viewport";
+import { POINTER_COARSE_QUERY } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
+import { CompactViewportOverrideProvider } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
-import { Popover, PopoverContent } from "@bb/shared-ui/popover";
-import { DropdownMenu, DropdownMenuContent } from "@bb/shared-ui/dropdown-menu";
+} from "@cloudroom/shared-ui/dialog";
+import { Popover, PopoverContent } from "@cloudroom/shared-ui/popover";
+import { DropdownMenu, DropdownMenuContent } from "@cloudroom/shared-ui/dropdown-menu";
 import {
   measureDrawerKeyboardOverlap,
   PersistentResponsiveDrawerShell,
   ResponsiveDrawerShell,
-} from "@bb/shared-ui/responsive-overlay";
+} from "@cloudroom/shared-ui/responsive-overlay";
 
 afterEach(() => {
   cleanup();

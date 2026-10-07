@@ -1,4 +1,4 @@
-import type { ConnectCredential } from "@bb/connect-client";
+import type { ConnectCredential } from "@cloudroom/connect-client";
 import {
   Stack,
   useLocalSearchParams,

@@ -1,4 +1,4 @@
-import type { HostDaemonContributedEnvEntry } from "@bb/host-daemon-contract";
+import type { HostDaemonContributedEnvEntry } from "@cloudroom/host-daemon-contract";
 import { operationEnvironment } from "./operation-environment.js";
 
 export class MachineEnvironment {

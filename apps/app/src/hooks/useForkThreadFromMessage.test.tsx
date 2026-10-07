@@ -2,13 +2,13 @@
 
 import { act, cleanup, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
-import type { Thread } from "@bb/domain";
-import { makeThread as makeThreadFixture } from "@bb/test-helpers/domain-fixtures";
+import type { Thread } from "@cloudroom/domain";
+import { makeThread as makeThreadFixture } from "@cloudroom/test-helpers/domain-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   FORK_THREAD_CREATE_SEED_LOCATION_STATE_KEY,
   type ForkThreadCreateSeed,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { getRootComposeRoutePath } from "@/lib/route-paths";
 import { RouteNavigationProvider } from "@/components/ui/app-route-anchor";
 import { useForkThreadFromMessage } from "./useForkThreadFromMessage";

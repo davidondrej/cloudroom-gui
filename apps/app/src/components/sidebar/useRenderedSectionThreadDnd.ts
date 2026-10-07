@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { ThreadListEntry } from "@bb/domain";
+import type { ThreadListEntry } from "@cloudroom/domain";
 import {
   buildSidebarEntitySectionId,
   CHRONOLOGICAL_CONTAINER_ID,
@@ -7,7 +7,7 @@ import {
   type ProjectThreadNode,
   type SidebarSectionDefinition,
   type SidebarSectionId,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import type { SidebarSectionComparator } from "./sidebarSectionSort";
 import {
   resolveSidebarDropPreviewPlacement,

@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from "react";
-import type { ProviderCliInstallAction } from "@bb/host-daemon-contract";
+import type { ProviderCliInstallAction } from "@cloudroom/host-daemon-contract";
 import { SettingsStoryFixtures } from "../../../.ladle/settings-story-fixtures";
 import {
   HOST_IDS,

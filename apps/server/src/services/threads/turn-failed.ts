@@ -7,7 +7,7 @@ import {
   listStoredTurnRejectedRowsByClientRequestIds,
   type DbConnection,
   type StoredThreadEventDataRow,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   providerErrorInfoSchema,
   providerRateLimitStateSchema,
@@ -17,7 +17,7 @@ import {
   type ProviderRateLimitState,
   type Thread,
   type TurnRequestEventData,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { PluginTurnFailedEvent } from "@get-bb/plugin-sdk";
 import { z } from "zod";
 import { parseStoredTurnRequestEvent } from "./thread-events.js";

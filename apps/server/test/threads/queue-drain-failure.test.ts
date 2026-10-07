@@ -3,7 +3,7 @@ import {
   getQueuedThreadMessage,
   listEvents,
   setQueuedThreadMessageFailureReason,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type { PluginHookName } from "@get-bb/plugin-sdk";
 import { describe, expect, it } from "vitest";
 import { ApiError } from "../../src/errors.js";

@@ -1,14 +1,14 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   ResourceCollectionViewport,
   ResourceInstallControl,
   ResourceListState,
   ResourceToolbar,
-} from "@bb/shared-ui/resource-list";
-import { Switch } from "@bb/shared-ui/switch";
-import { ToggleGroup, ToggleGroupItem } from "@bb/shared-ui/toggle-group";
+} from "@cloudroom/shared-ui/resource-list";
+import { Switch } from "@cloudroom/shared-ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@cloudroom/shared-ui/toggle-group";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { usePluginCatalogSearch } from "@/hooks/queries/plugin-catalog-queries";
 import {

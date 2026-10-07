@@ -1,11 +1,11 @@
 import { useCallback, useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { threadsQueryKey } from "@/hooks/queries/query-keys";
-import type { ThreadQueuedMessage } from "@bb/domain";
+import type { ThreadQueuedMessage } from "@cloudroom/domain";
 import {
   makeThreadListEntry,
   makeThreadQueuedMessage,
-} from "@bb/test-helpers/domain-fixtures";
+} from "@cloudroom/test-helpers/domain-fixtures";
 import {
   applyQueuedMessageReorder,
   type QueuedMessageReorderRequest,
@@ -105,7 +105,7 @@ const multipleMessages: readonly ThreadQueuedMessage[] = [
   }),
   makeQueuedMessage({
     id: "q_c",
-    text: "And run the tests for @bb/thread-view.",
+    text: "And run the tests for @cloudroom/thread-view.",
     waitingOn: threadBusy,
   }),
 ];
@@ -194,7 +194,7 @@ const mixedMessages: readonly ThreadQueuedMessage[] = [
   }),
   makeQueuedMessage({
     id: "mix_plain_2",
-    text: "And run the tests for @bb/thread-view.",
+    text: "And run the tests for @cloudroom/thread-view.",
   }),
   makeQueuedMessage({
     id: "mix_quote_2",
@@ -407,7 +407,7 @@ export function Overview() {
       </StoryRow>
       <StoryRow
         label="with attachments"
-        hint="attachment count stays flush right, then crossfades into actions over a short edge fade"
+        hint="first image shows as a thumbnail before the text, with a +N badge for more attachments"
       >
         <ResponsivePromptStage>
           <StaticQueuedMessagesList queuedMessages={withAttachments} />
@@ -483,7 +483,7 @@ export function Blockquotes() {
       </StoryRow>
       <StoryRow
         label="quote + attachment"
-        hint="the attachment icon remains visible beside the quoted preview"
+        hint="the image thumbnail stays visible beside the quoted preview"
       >
         <ResponsivePromptStage>
           <StaticQueuedMessagesList queuedMessages={quoteWithAttachment} />

@@ -5,7 +5,7 @@ import type {
   DirectoryEntry,
   HostDaemonOnlineRpcResult,
   HostPathEntryKind,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   CommandDispatchError,
   type CommandDispatchOptions,

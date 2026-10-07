@@ -1,4 +1,4 @@
-import { applyNeighborReorder } from "@bb/client-core";
+import { applyNeighborReorder } from "@cloudroom/client-core";
 
 interface QueuedMessageReorderItem {
   id: string;

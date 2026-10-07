@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { deriveConnectBaseUrl } from "@bb/connect-client";
+import { deriveConnectBaseUrl } from "@cloudroom/connect-client";
 export const DEFAULT_CONNECT_BASE_URL = "https://getbb.app";
 
 export function resolveDefaultConnectBaseUrl(env: NodeJS.ProcessEnv): string {

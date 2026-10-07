@@ -3,10 +3,9 @@ import { atom, useAtom, useSetAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { deriveProjectNameFromPath } from "@bb/domain";
-import type { RepoSuggestion } from "@bb/sdk/browser";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { deriveProjectNameFromPath } from "@cloudroom/domain";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { ClaudeConnectionButton, useClaudeConnection } from "@/components/ClaudeConnection";
 import { openCodexConnection } from "@/components/CodexConnectionPanel";
 import { selectCloudForNewThreads } from "@/components/promptbox/NewThreadComposer";
@@ -15,9 +14,7 @@ import { BbLogo } from "@/components/ui/bb-logo";
 import { appToast } from "@/components/ui/app-toast";
 import { useCreateProject } from "@/hooks/mutations/project-mutations";
 import { useUpdateGeneralSettings } from "@/hooks/mutations/settings-mutations";
-import { useCloudroomAccount, useCloudroomSignIn, useImportBb, useProjectSuggestions, useSetCopyLogins, useSetMacAccess } from "@/hooks/queries/cloudroom-queries";
-import { repoKey } from "@/components/pickers/ProjectSelector";
-import { formatRelativeTime } from "@/lib/relative-time";
+import { useCloudroomAccount, useCloudroomSignIn, useImportBb, useSetCopyLogins, useSetMacAccess } from "@/hooks/queries/cloudroom-queries";
 import { useSidebarNavigation } from "@/hooks/queries/sidebar-navigation-query";
 import { useHostDaemon } from "@/hooks/useHostDaemon";
 import { usePathPickerHost } from "@/hooks/useLocalPathPicker";
@@ -38,10 +35,8 @@ const dismissedAtom = atomWithStorage("cloudroom.setup.dismissed", false, boolea
 const openAtom = atom(false);
 export const useOpenSetup = () => useSetAtom(openAtom);
 
-const STEPS = ["Create account", "Connect an agent", "Connect GitHub", "Pick a project"];
+const STEPS = ["Create account", "Connect an agent", "Connect GitHub", "Import your work"];
 const STEP_IDS = ["account", "agent", "github", "project"] as const;
-// The last step has the whole screen, so it shows more repos than the project menu.
-const ONBOARDING_PROJECTS = 5;
 type SetupStepId = (typeof STEP_IDS)[number];
 type SetupDetail = "github" | "google" | "email" | "claude" | "codex" | "both" | "none" | "existing" | "found" | "folder" | "bb_import" | "chat_import";
 function track(step: SetupStepId, action: "viewed" | "started" | "done" | "skipped" | "closed" | "detected" | "waitlist", detail: SetupDetail | null = null) {
@@ -94,6 +89,7 @@ export function Onboarding() {
 function Setup({ locked, close }: { locked: boolean; close: () => void }) {
   const progress = useSetupProgress();
   const { done, account } = progress;
+  useFirstAgentDefault(progress.agents);
   const first = done.findIndex((isDone) => !isDone);
   const [picked, setPicked] = useState<number | null>(null);
   const step = picked ?? (first === -1 ? 3 : first);
@@ -189,12 +185,26 @@ function Setup({ locked, close }: { locked: boolean; close: () => void }) {
             {step === 0 && <AccountStep email={account.data?.account?.email ?? null} signingIn={account.data?.signingIn === true} next={next} />}
             {step === 1 && <AgentStep progress={progress} next={next} />}
             {step === 2 && <GithubStep progress={progress} next={next} />}
-            {step === 3 && <ProjectStep agents={progress.agents} close={close} />}
+            {step === 3 && <ProjectStep close={close} />}
           </div>
         </main>
       </div>
     </div>
   );
+}
+
+function useFirstAgentDefault({ claude, codex }: { claude: boolean; codex: boolean }) {
+  const settings = useSystemConfig().data?.generalSettings;
+  const update = useUpdateGeneralSettings();
+  const setProvider = usePromptBoxProviderPreference().setValue;
+  const assigned = useRef(false);
+  const agent = claude ? "claude-code" : codex ? "codex" : null;
+  useEffect(() => {
+    if (assigned.current || !agent || !settings || settings.defaultProviderId !== null) return;
+    assigned.current = true;
+    setProvider(agent);
+    update.mutate({ ...settings, defaultProviderId: agent });
+  }, [agent, settings, setProvider, update]);
 }
 
 function nextStep(done: boolean[], from: number) {
@@ -220,6 +230,7 @@ function Heading({ lead, mark }: { lead: string; mark: string }) {
 const Note = ({ children }: { children: ReactNode }) => <p className="text-[13px] text-(--ob-muted)">{children}</p>;
 const WAITLIST_URL = "https://www.cloudroom.dev/#waitlist";
 const LINK = "text-(--ob-ink) underline underline-offset-[3px] disabled:opacity-50";
+const QUIET_LINK = "underline decoration-(--ob-dash) underline-offset-[3px] hover:text-(--ob-ink) disabled:opacity-50";
 
 function Cta({ children, className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
@@ -234,6 +245,7 @@ function Cta({ children, className, ...props }: React.ButtonHTMLAttributes<HTMLB
 }
 
 const OUTLINE = "inline-flex h-9 shrink-0 items-center gap-2 rounded-none border border-(--ob-ink) bg-(--ob-card) px-4 text-[13.5px] font-medium text-(--ob-ink) hover:bg-(--ob-bg) hover:text-(--ob-ink) disabled:opacity-50";
+const CONNECT = cn(OUTLINE, "h-11 gap-2.5 border-2 px-6 text-[15px] font-semibold shadow-[4px_4px_0_var(--ob-ink)] after:content-['→'] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0_var(--ob-ink)]");
 
 function Outline({ children, className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
@@ -247,12 +259,15 @@ function Outline({ children, className, ...props }: React.ButtonHTMLAttributes<H
   );
 }
 
-function Card({ on, logo, name, detail, children }: { on?: boolean; logo: ReactNode; name: string; detail: ReactNode; children: ReactNode }) {
+function Card({ on, isDefault, logo, name, detail, children }: { on?: boolean; isDefault?: boolean; logo: ReactNode; name: string; detail: ReactNode; children: ReactNode }) {
   return (
     <div className={cn("flex items-center gap-4 border bg-(--ob-card) px-[22px] py-[18px]", on ? "border-(--ob-ink)" : "border-(--ob-line)")}>
       <span className="grid size-11 shrink-0 place-items-center">{logo}</span>
       <span className="min-w-0 flex-1">
-        <b className="block text-base font-semibold">{name}</b>
+        <b className="block text-base font-semibold">
+          {name}
+          {isDefault && <span className="ml-2 border border-(--ob-line) px-1.5 py-px align-[2px] text-[11px] font-medium text-(--ob-muted)">Default</span>}
+        </b>
         <span className="text-[13px] text-(--ob-muted)">{detail}</span>
       </span>
       {children}
@@ -298,6 +313,7 @@ function AccountStep({ email, signingIn, next }: { email: string | null; signing
 
 function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupProgress>; next: () => void }) {
   const { account, agents, codex, ready, offline } = progress;
+  const defaultAgent = useSystemConfig().data?.generalSettings.defaultProviderId;
   const { localHostId } = useHostDaemon();
   const claudeLocal = useClaudeConnection({ target: "local", hostId: localHostId });
   const detected = useRef(false);
@@ -345,17 +361,17 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
     <>
       <Heading lead="Connect an" mark="agent" />
       <div className="mt-8 flex flex-col gap-3">
-        <Card on={agents.claude} logo={<AgentLogo id="claude-code" className="bg-[#f4e4d6]" />} name="Claude Code" detail={claudeLocal.data?.state === "connected" ? "Found on this Mac" : "Uses your Claude plan"}>
-          {action(agents.claude, <span onClickCapture={() => started("claude")}><ClaudeConnectionButton target="cloud" presentation="inline" className={OUTLINE} /></span>)}
+        <Card on={agents.claude} isDefault={agents.claude && defaultAgent === "claude-code"} logo={<AgentLogo id="claude-code" className="bg-[#f4e4d6]" />} name="Claude Code" detail={claudeLocal.data?.state === "connected" ? "Found on this Mac" : "Uses your Claude plan"}>
+          {action(agents.claude, <span onClickCapture={() => started("claude")}><ClaudeConnectionButton target="cloud" presentation="inline" className={CONNECT} /></span>)}
         </Card>
-        <Card on={agents.codex} logo={<AgentLogo id="codex" className="bg-black text-white" />} name="Codex" detail={account.data?.localLogins?.codex ? "Found on this Mac" : "Uses your ChatGPT plan"}>
+        <Card on={agents.codex} isDefault={agents.codex && defaultAgent === "codex"} logo={<AgentLogo id="codex" className="bg-black text-white" />} name="Codex" detail={account.data?.localLogins?.codex ? "Found on this Mac" : "Uses your ChatGPT plan"}>
           {action(agents.codex, codexBrowser ? (
             <Note>
               Finish in your browser.{" "}
               {codexBrowser.verification_url && <button type="button" className={LINK} onClick={() => openUrlInExternalBrowser(codexBrowser.verification_url!)}>Reopen</button>}
             </Note>
           ) : (
-            <Outline disabled={connectCodex.isPending} onClick={() => { started("codex"); connectCodex.mutate(); }}>{connectCodex.isPending ? "Connecting…" : "Connect"}</Outline>
+            <Outline className={CONNECT} disabled={connectCodex.isPending} onClick={() => { started("codex"); connectCodex.mutate(); }}>{connectCodex.isPending ? "Connecting…" : "Connect"}</Outline>
           ))}
         </Card>
       </div>
@@ -519,46 +535,33 @@ function GithubStep({ progress, next }: { progress: ReturnType<typeof useSetupPr
   );
 }
 
-function ProjectStep({ agents, close }: { agents: { claude: boolean; codex: boolean }; close: () => void }) {
+function ProjectStep({ close }: { close: () => void }) {
   const navigate = useNavigate();
-  const setProvider = usePromptBoxProviderPreference().setValue;
-  const settings = useSystemConfig().data?.generalSettings;
-  const updateSettings = useUpdateGeneralSettings();
-  const startComposer = () => {
-    if (agents.claude !== agents.codex) {
-      const agent = agents.claude ? "claude-code" : "codex";
-      setProvider(agent);
-      if (settings && settings.defaultProviderId !== agent) updateSettings.mutate({ ...settings, defaultProviderId: agent });
-    }
-    selectCloudForNewThreads();
-  };
   const createProject = useCreateProject();
   const setProjectId = useSetRootComposeProjectId();
   const quickCreate = useQuickCreateProjectController();
   const { canUseNativeFolderPicker, clientHostId, hostId } = usePathPickerHost();
-  const projects = useSidebarNavigation().data?.projects ?? [];
-  const suggestions = useProjectSuggestions();
   const { localHostId } = useHostDaemon();
   const importBb = useImportBb();
-  const open = (projectId: string, how: "existing" | "found" | "folder") => {
-    track("project", "done", how);
-    setProjectId(projectId);
-    startComposer();
-    void navigate(getRootComposeRoutePath());
-    close();
-  };
   const add = useMutation({
-    mutationFn: async (path: string | null) => {
-      const folder = path ?? (hostId && clientHostId ? (await sdk.hosts.pickFolder({ hostId, clientHostId })).path : null);
+    mutationFn: async () => {
+      const folder = hostId && clientHostId ? (await sdk.hosts.pickFolder({ hostId, clientHostId })).path : null;
       if (!folder || !hostId) return null;
       return createProject.mutateAsync({ name: deriveProjectNameFromPath(folder), source: { type: "local_path", hostId, path: folder } });
     },
-    onSuccess: (project, path) => { if (project) open(project.id, path ? "found" : "folder"); },
+    onSuccess: (project) => {
+      if (!project) return;
+      track("project", "done", "folder");
+      setProjectId(project.id);
+      selectCloudForNewThreads();
+      void navigate(getRootComposeRoutePath());
+      close();
+    },
     onError: (error) => appToast.error(error.message),
   });
   const addFolder = () => {
-    if (canUseNativeFolderPicker) return add.mutate(null);
-    startComposer();
+    if (canUseNativeFolderPicker) return add.mutate();
+    selectCloudForNewThreads();
     track("project", "started", "folder");
     close();
     quickCreate.openCreateDialog();
@@ -571,62 +574,24 @@ function ProjectStep({ agents, close }: { agents: { claude: boolean; codex: bool
       onError: (error) => appToast.error(error.message),
     });
   };
-  const addRepo = (repo: RepoSuggestion) => {
-    void suggestions?.onAdd(repo).then((projectId) => open(projectId, "found"), () => {});
-  };
-  const now = Date.now();
-  const busy = add.isPending || Boolean(suggestions?.addingKey);
-  const shownProjects = projects.slice(0, ONBOARDING_PROJECTS);
-  const shownRepos = suggestions?.repos.slice(0, ONBOARDING_PROJECTS - shownProjects.length) ?? [];
   return (
     <>
-      <Heading lead="Pick your first" mark="project" />
+      <Heading lead="Import your" mark="work" />
+      <p className="mt-3 max-w-[560px] text-base text-(--ob-muted)">Your Claude Code and Codex chats move over with full memory. Originals stay untouched.</p>
       <div className="mt-7">
         <ImportChats onDone={() => track("project", "started", "chat_import")} />
       </div>
-      <p className="mt-9 mb-2.5 text-xs font-semibold tracking-[0.12em] text-(--ob-muted) uppercase">Or start with a project</p>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2">
-        {shownProjects.map((project) => (
-          <ProjectRow key={project.id} name={project.name} detail="Already in Cloudroom" disabled={busy} onClick={() => open(project.id, "existing")} />
-        ))}
-        {shownRepos.map((repo) => (
-          <ProjectRow
-            key={repoKey(repo)}
-            icon={repo.source === "github" ? "Github" : "Laptop"}
-            name={repo.name}
-            detail={[repo.source === "github" ? `${repo.repo} on GitHub` : repo.path.replace(/^\/Users\/[^/]+/, "~"), repo.updatedAt === null ? null : formatRelativeTime({ timestamp: repo.updatedAt, now })].filter(Boolean).join(" · ")}
-            disabled={busy}
-            onClick={() => addRepo(repo)}
-          />
-        ))}
-        <button type="button" disabled={busy} onClick={addFolder} className="flex items-center gap-3.5 border border-(--ob-line) bg-(--ob-card) px-4 py-3 text-left text-[14.5px] font-medium hover:border-(--ob-ink) disabled:opacity-50">
-          <Icon name={busy ? "Loading" : "FolderPlus"} className={cn("size-4", busy && "animate-spin")} aria-hidden />
-          {busy ? "Adding your project…" : "Choose another folder"}
+      <p className="mt-9 text-[13.5px] text-(--ob-muted)">
+        Don’t use Claude Code or Codex yet?{" "}
+        <button type="button" className={QUIET_LINK} onClick={() => { track("project", "skipped"); close(); }}>Start empty</button>
+        {" or "}
+        <button type="button" className={QUIET_LINK} disabled={add.isPending} onClick={addFolder}>{add.isPending ? "opening a folder…" : "open a folder"}</button>.
+        <span aria-hidden className="mx-2 text-(--ob-dash)">·</span>
+        <button type="button" className={QUIET_LINK} disabled={importBb.isPending} onClick={bringWorkOver}>
+          {importBb.isPending ? "Bringing your BB threads over…" : "Coming from BB?"}
         </button>
-      </div>
-      {suggestions?.isLoading && <div className="mt-2"><Note>Looking for your repos…</Note></div>}
-      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2">
-        <Note><button type="button" className={LINK} onClick={() => { track("project", "skipped"); close(); }}>Start without a project</button></Note>
-        <Note>
-          <button type="button" className={LINK} disabled={importBb.isPending} onClick={bringWorkOver}>
-            {importBb.isPending ? "Bringing your BB threads over…" : "Coming from BB?"}
-          </button>
-        </Note>
-      </div>
+      </p>
     </>
-  );
-}
-
-function ProjectRow({ icon = "Folder", name, detail, disabled, onClick }: { icon?: "Folder" | "Github" | "Laptop"; name: string; detail: string; disabled: boolean; onClick: () => void }) {
-  return (
-    <button type="button" disabled={disabled} onClick={onClick} className="group flex items-center gap-3.5 border border-(--ob-line) bg-(--ob-card) px-4 py-3 text-left hover:border-(--ob-ink) hover:shadow-[inset_3px_0_0_var(--ob-lime)] disabled:opacity-50">
-      <Icon name={icon} className="size-4 shrink-0 text-(--ob-muted)" aria-hidden />
-      <span className="min-w-0 flex-1">
-        <b className="block truncate text-[14.5px] font-semibold">{name}</b>
-        <span className="block truncate font-mono text-xs text-(--ob-muted)">{detail}</span>
-      </span>
-      <Icon name="ArrowRight" className="size-4 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
-    </button>
   );
 }
 

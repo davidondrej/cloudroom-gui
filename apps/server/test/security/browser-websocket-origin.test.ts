@@ -1,5 +1,5 @@
-import { createNodeBbSdk } from "@bb/sdk/node";
-import { createNodeWebsocketFactory } from "@bb/sdk/node-websocket";
+import { createNodeBbSdk } from "@cloudroom/sdk/node";
+import { createNodeWebsocketFactory } from "@cloudroom/sdk/node-websocket";
 import { afterEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import {

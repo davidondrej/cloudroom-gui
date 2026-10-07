@@ -1,4 +1,4 @@
-import type { GitHostPullRequest } from "@bb/domain";
+import type { GitHostPullRequest } from "@cloudroom/domain";
 import { describe, expect, it } from "vitest";
 import { assembleThreadPullRequest } from "./pull-request.js";
 

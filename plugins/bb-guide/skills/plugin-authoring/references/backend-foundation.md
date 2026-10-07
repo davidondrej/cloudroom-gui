@@ -293,8 +293,8 @@ lifecycle.
 
 Host production code may import public `@get-bb/plugin-sdk` entrypoints, Node
 APIs, and ordinary third-party dependencies. It must not import private
-monorepo packages such as `@bb/domain`, `@bb/host-workspace`, or any other
-`@bb/*` package; the host artifact build rejects those imports anywhere in its
+monorepo packages such as `@cloudroom/domain`, `@cloudroom/host-workspace`, or any other
+`@cloudroom/*` package; the host artifact build rejects those imports anywhere in its
 dependency graph, including type-only imports and relative paths that resolve
 into a private package. Keep shared contract types plugin-local and validate
 them at the RPC boundary.

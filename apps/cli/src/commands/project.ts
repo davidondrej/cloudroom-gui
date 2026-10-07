@@ -5,7 +5,7 @@ import type {
   CreateProjectSourceRequest,
   ProjectResponse,
   UpdateProjectSourceRequest,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { action } from "../action.js";
 import { createCliBbSdk } from "../client.js";
 import { resolveLocalHostId } from "../daemon.js";
@@ -19,6 +19,7 @@ import {
 
 interface ProjectListCommandOptions {
   includePersonal?: boolean;
+  hidden?: boolean;
   json?: boolean;
 }
 
@@ -67,6 +68,10 @@ function addProjectWorkspaceRoutingOptions(command: Command): Command {
 
 interface ProjectUpdateCommandOptions {
   name?: string;
+  json?: boolean;
+}
+
+interface ProjectHideCommandOptions {
   json?: boolean;
 }
 
@@ -325,12 +330,14 @@ export function registerProjectCommands(
     .command("list")
     .description("List projects")
     .option("--include-personal", "Include the personal project")
+    .option("--hidden", "List only projects hidden from the sidebar")
     .option("--json", "Print machine-readable JSON output")
     .action(
       action(async (opts: ProjectListCommandOptions) => {
         const sdk = createCliBbSdk(getUrl());
         const projects = await sdk.projects.list({
           includePersonal: opts.includePersonal,
+          ...(opts.hidden ? { hidden: true } : {}),
         });
         if (outputJson(opts, projects)) return;
         if (projects.length === 0) {
@@ -541,9 +548,33 @@ export function registerProjectCommands(
       }),
     );
 
+  for (const [command, hidden] of [
+    ["hide", true],
+    ["unhide", false],
+  ] as const) {
+    project
+      .command(`${command} <id>`)
+      .description(
+        hidden
+          ? "Hide a project from the sidebar and archive its threads. Nothing is deleted."
+          : "Show a hidden project in the sidebar again",
+      )
+      .option("--json", "Print machine-readable JSON output")
+      .action(
+        action(async (id: string, opts: ProjectHideCommandOptions) => {
+          const sdk = createCliBbSdk(getUrl());
+          const updated = await sdk.projects.update({ projectId: id, hidden });
+          if (outputJson(opts, updated)) return;
+          console.log(`Project ${updated.id} ${hidden ? "hidden" : "shown"}`);
+        }),
+      );
+  }
+
   project
     .command("delete <id>")
-    .description("Delete a project and all its threads")
+    .description(
+      "Delete a project and all its threads, including archived ones. Use hide to keep them.",
+    )
     .option("--yes", "Skip confirmation prompt")
     .option("--json", "Print machine-readable JSON output")
     .action(

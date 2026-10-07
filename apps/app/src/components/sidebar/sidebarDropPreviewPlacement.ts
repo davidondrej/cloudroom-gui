@@ -1,4 +1,4 @@
-import type { ThreadListEntry } from "@bb/domain";
+import type { ThreadListEntry } from "@cloudroom/domain";
 import {
   buildPinnedSidebarState,
   buildProjectThreadGroups,
@@ -9,7 +9,7 @@ import {
   type ProjectThreadNode,
   type SidebarSectionDefinition,
   type ThreadComparator,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 export type SidebarDropPreviewTarget =
   | { kind: "container"; parentKey: string; sectionId: string | null }

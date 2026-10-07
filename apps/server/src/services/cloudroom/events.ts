@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import { commandGuardBlockReason } from "@get-bb/plugin-sdk/internal/command-guard";
-import { cloudroomCommands, cloudroomThreads, deleteThreadEventSuffixInTransaction, events, threadConversationOutlines, threadSearchSegments, getThread, type DbConnection, type DbQueryConnection, type DbTransaction, type AppendStoredThreadEventArgs } from "@bb/db";
+import { cloudroomCommands, cloudroomThreads, deleteThreadEventSuffixInTransaction, events, threadConversationOutlines, threadSearchSegments, getThread, type DbConnection, type DbQueryConnection, type DbTransaction, type AppendStoredThreadEventArgs } from "@cloudroom/db";
 import { and, desc, eq } from "drizzle-orm";
 import { appendThreadEventsInTransaction, appendThreadProvisioningEventInTransaction } from "../threads/thread-events.js";
-import { LEGACY_CODEX_GOAL_EXTENSION_KIND, reasoningLevelSchema, threadEventSchema, threadScope, turnScope, encodeClientTurnRequestIdNumber, type ProvisioningTranscriptEntry, type SystemThreadProvisioningStatus, type ThreadEvent, type ThreadEventTurnStatus } from "@bb/domain";
+import { LEGACY_CODEX_GOAL_EXTENSION_KIND, reasoningLevelSchema, threadEventSchema, threadScope, turnScope, encodeClientTurnRequestIdNumber, type ProvisioningTranscriptEntry, type SystemThreadProvisioningStatus, type ThreadEvent, type ThreadEventTurnStatus } from "@cloudroom/domain";
 import { z } from "zod";
 import { CloudroomError, type SessionRecord } from "./client.js";
 import { codexErrorFields } from "./codex-errors.js";
@@ -44,6 +44,10 @@ function requestedTurns(db: DbQueryConnection, threadId: string) {
     } catch { /* a malformed row cannot match a live cloud request */ }
   }
   return found;
+}
+
+function turnStarted(db: DbQueryConnection, threadId: string, turnId: string): boolean {
+  return Boolean(db.select({ id: events.id }).from(events).where(and(eq(events.threadId, threadId), eq(events.turnId, turnId), eq(events.type, "turn/started"))).get());
 }
 
 function promptRequestedEvent(db: DbQueryConnection, saved: Binding, request: Command, steeredTurnId?: string): ThreadEvent {
@@ -135,7 +139,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
     const saved = binding(tx, threadId);
     if (!saved || record.sequence <= saved.cursor) return [];
     if (record.session_id !== saved.sessionId) throw new Error("Cloudroom session mismatch");
-    const data = object.parse(record.data);
+    const data = object.parse(record.data ?? {});
     const harness = getThread(tx, threadId)?.providerId;
     const projected: ThreadEvent[] = [];
     const emit = (event: unknown) => {
@@ -168,8 +172,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
       }
       saveCommandState(tx, threadId, receipt.request_id, receipt.state);
       if (receipt.command === "start" && receipt.state === "accepted" && object.parse(data.input).workspace) saveStatus(tx, threadId, "pending");
-      const turnStarted = () => Boolean(tx.select({ id: events.id }).from(events).where(and(eq(events.threadId, threadId), eq(events.turnId, receipt.request_id), eq(events.type, "turn/started"))).get());
-      if ((harness === "pi" || isAcpProvider(harness) || harness === "claude-code") && (receipt.command === "auto" || (previous && receipt.command === "prompt")) && FINISHED.includes(receipt.state) && saved.nativeId && turnStarted()) {
+      if ((harness === "pi" || isAcpProvider(harness) || harness === "claude-code") && (receipt.command === "auto" || (previous && receipt.command === "prompt")) && FINISHED.includes(receipt.state) && saved.nativeId && turnStarted(tx, threadId, receipt.request_id)) {
         emit({ threadId, providerThreadId: saved.nativeId, scope: turnScope(receipt.request_id), type: "turn/completed", status: turnStatus(receipt.state) });
       }
       const lastError = () => tx.select({ data: events.data }).from(events).where(and(eq(events.threadId, threadId), eq(events.type, "system/error"))).orderBy(desc(events.sequence)).limit(1).get();
@@ -285,7 +288,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
         ...(typeof data.stderr === "string" ? { detail: `Harness stderr (last lines):\n${data.stderr}` } : {}),
       });
     }
-    if (harness === "claude-code" && data.harness === "claude-code" && saved.nativeId && typeof data.request_id === "string") {
+    if (harness === "claude-code" && data.harness === "claude-code" && saved.nativeId && typeof data.request_id === "string" && turnStarted(tx, threadId, data.request_id)) {
       const base = { threadId, providerThreadId: saved.nativeId, scope: turnScope(data.request_id) };
       const id = typeof data.item_id === "string" ? `${data.request_id}:${data.item_id}` : null;
       if (id && (record.kind === "text_delta" || record.kind === "thinking_delta")) {
@@ -300,16 +303,17 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
         } });
       }
     }
-    if (harness === "pi" && record.native && record.kind !== "native_record" && saved.nativeId && saved.turnId) {
+    const recordTurn = typeof data.request_id === "string" ? data.request_id : saved.turnId;
+    if (harness === "pi" && record.native && record.kind !== "native_record" && saved.nativeId && recordTurn) {
       const frame = object.parse(JSON.parse(record.native));
-      const base = { threadId, providerThreadId: saved.nativeId, scope: turnScope(saved.turnId) };
-      const latestMessage = () => tx.select({ id: events.itemId }).from(events).where(and(eq(events.threadId, threadId), eq(events.turnId, saved.turnId!), eq(events.type, "item/started"), eq(events.itemKind, "agentMessage"))).orderBy(desc(events.sequence)).limit(1).get()?.id;
+      const base = { threadId, providerThreadId: saved.nativeId, scope: turnScope(recordTurn) };
+      const latestMessage = () => tx.select({ id: events.itemId }).from(events).where(and(eq(events.threadId, threadId), eq(events.turnId, recordTurn), eq(events.type, "item/started"), eq(events.itemKind, "agentMessage"))).orderBy(desc(events.sequence)).limit(1).get()?.id;
       const contentText = (value: unknown) => {
         const content = object.parse(value).content;
         return Array.isArray(content) ? content.map((part) => { const item = object.parse(part); return item.type === "text" && typeof item.text === "string" ? item.text : ""; }).filter(Boolean).join("\n") : "";
       };
       if (frame.type === "message_start" && object.parse(frame.message).role === "assistant") {
-        emit({ ...base, type: "item/started", item: { type: "agentMessage", id: `${saved.turnId}:pi:${record.sequence}`, text: "" } });
+        emit({ ...base, type: "item/started", item: { type: "agentMessage", id: `${recordTurn}:pi:${record.sequence}`, text: "" } });
       } else if (frame.type === "message_update") {
         const update = object.parse(frame.assistantMessageEvent);
         if (["text_delta", "thinking_start", "thinking_delta"].includes(String(update.type))) {
@@ -335,7 +339,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
             type: payload.state === "completed" ? "item/completed" : "item/started",
             item: {
               type: "delegation",
-              id: `${saved.turnId}:${payload.id}`,
+              id: `${recordTurn}:${payload.id}`,
               childRef: payload.id,
               label: "child",
               status: payload.state === "completed" ? "completed" : "pending",
@@ -345,7 +349,7 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
           });
         }
       } else if (["tool_execution_start", "tool_execution_update", "tool_execution_end"].includes(String(frame.type))) {
-        const id = `${saved.turnId}:${z.string().parse(frame.toolCallId)}`;
+        const id = `${recordTurn}:${z.string().parse(frame.toolCallId)}`;
         if (frame.type === "tool_execution_update") emit({ ...base, type: "item/toolCall/progress", itemId: id, message: contentText(frame.partialResult) });
         else emit({ ...base, type: frame.type === "tool_execution_start" ? "item/started" : "item/completed", item: {
           type: "toolCall", id, tool: z.string().parse(frame.toolName), status: frame.type === "tool_execution_start" ? "pending" : frame.isError ? "failed" : "completed",
@@ -353,9 +357,9 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
         } });
       }
     }
-    if (isAcpProvider(harness) && saved.nativeId && saved.turnId && data.harness === CLOUD_HARNESSES[harness]) {
-      const base = { threadId, providerThreadId: saved.nativeId, scope: turnScope(saved.turnId) };
-      const itemId = `${saved.turnId}:${String(data.item_id)}`;
+    if (isAcpProvider(harness) && saved.nativeId && recordTurn && data.harness === CLOUD_HARNESSES[harness]) {
+      const base = { threadId, providerThreadId: saved.nativeId, scope: turnScope(recordTurn) };
+      const itemId = `${recordTurn}:${String(data.item_id)}`;
       if (record.kind === "text_delta" || record.kind === "thinking_delta") {
         emit({ ...base, type: record.kind === "text_delta" ? "item/agentMessage/delta" : "item/reasoning/textDelta", itemId, delta: z.string().parse(data.delta) });
       } else if (["item_started", "item_completed", "tool_snapshot"].includes(record.kind)) {

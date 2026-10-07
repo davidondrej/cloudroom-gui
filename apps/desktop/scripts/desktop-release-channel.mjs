@@ -37,6 +37,7 @@ export function createDesktopReleaseConfig(channel) {
       applicationName: "Cloudroom Nightly",
       artifactName: "gui-cloudroom-nightly-${version}-${arch}.${ext}",
       iconFileName: "icon-nightly.png",
+      linuxDesktopName: "cloudroom-nightly.desktop",
       // The Linux binary name must differ from stable so both channels can be
       // installed at once without one shadowing the other on PATH.
       linuxExecutableName: "gui-cloudroom-nightly",
@@ -54,6 +55,7 @@ export function createDesktopReleaseConfig(channel) {
     applicationName: "Cloudroom",
     artifactName: "${productName}-${version}-${arch}.${ext}",
     iconFileName: "icon.png",
+    linuxDesktopName: "cloudroom.desktop",
     linuxExecutableName: "gui-cloudroom",
     macIconPath: "assets/icon.icns",
     releaseTag: "desktop-latest",

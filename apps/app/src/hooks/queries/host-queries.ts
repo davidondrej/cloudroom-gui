@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { keepPreviousData, skipToken, useQuery } from "@tanstack/react-query";
-import type { Host } from "@bb/domain";
-import type { HostDirectoryListing } from "@bb/server-contract";
+import type { Host } from "@cloudroom/domain";
+import type { HostDirectoryListing } from "@cloudroom/server-contract";
 import { sdk } from "@/lib/sdk";
 import { useHostListRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useSystemConfig } from "@/hooks/queries/system-queries";

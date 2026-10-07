@@ -1,4 +1,4 @@
-import { jsonValueSchema } from "@bb/domain";
+import { jsonValueSchema } from "@cloudroom/domain";
 import type { StandardSchemaV1 } from "@get-bb/plugin-sdk";
 import { z } from "zod";
 import type { PluginHookInvocation } from "../plugins/plugin-hook-registry.js";

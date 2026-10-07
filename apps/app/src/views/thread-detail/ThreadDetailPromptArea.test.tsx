@@ -12,7 +12,7 @@ import type {
   ThreadTimelineGoal,
   ThreadTimelineModelFallback,
   ThreadWithRuntime,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   cleanup,
   fireEvent,
@@ -25,16 +25,16 @@ import {
 import type {
   ExistingThreadExecutionInputSources,
   TimelineWorkflowWorkRow,
-} from "@bb/server-contract";
-import { createDeferredPromise } from "@bb/test-helpers";
+} from "@cloudroom/server-contract";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
 import {
   makeThreadQueuedMessage as makeThreadQueuedMessageFixture,
   makeThreadWithRuntime as makeThreadWithRuntimeFixture,
-} from "@bb/test-helpers/domain-fixtures";
+} from "@cloudroom/test-helpers/domain-fixtures";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { workflowRow } from "@/test/fixtures/thread-timeline-rows";
-import type { PromptDraftAttachment } from "@bb/client-core";
+import type { PromptDraftAttachment } from "@cloudroom/client-core";
 import { BbHttpError } from "@/lib/sdk";
 import type { TypeaheadConfig } from "@/components/promptbox/PromptBoxInternal";
 import type { PluginComposerHost } from "@/components/plugin/plugin-composer-host";

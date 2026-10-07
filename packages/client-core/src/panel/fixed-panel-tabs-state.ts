@@ -4,13 +4,13 @@ import {
   BB_DESKTOP_BROWSER_MAX_URL_LENGTH,
   bbDesktopBrowserTargetSchema,
   type BbDesktopBrowserTarget,
-} from "@bb/desktop-contract";
+} from "@cloudroom/desktop-contract";
 import {
   terminalCreateTargetSchema,
   threadTabFileOpenerOwnerSchema,
   type TerminalCreateTarget,
   type ThreadTabFileOpenerOwner,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   areFilePreviewLineRangesEqual,
   areEnvironmentFilePreviewSourcesEqual,

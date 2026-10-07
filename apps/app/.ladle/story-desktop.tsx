@@ -4,7 +4,7 @@ import type {
   BbDesktopBrowserApi,
   BbDesktopBrowserState,
   BbDesktopInfo,
-} from "@bb/desktop-contract";
+} from "@cloudroom/desktop-contract";
 
 const STORY_DESKTOP_INFO: BbDesktopInfo = {
   lastCheckedAt: null,

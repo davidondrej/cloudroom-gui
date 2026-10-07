@@ -18,21 +18,21 @@ import type {
   SystemThreadInterruptedReason,
   ThreadQueuedMessage,
   WorkspaceProvisionType,
-} from "@bb/domain";
-import type { ProviderFork } from "@bb/domain/provider-fork";
+} from "@cloudroom/domain";
+import type { ProviderFork } from "@cloudroom/domain/provider-fork";
 import type {
   BbSdk,
   ThreadPluginMetadataArgs,
   ThreadPluginMetadataUpdateArgs,
   ThreadPluginMetadataResult,
-} from "@bb/sdk";
+} from "@cloudroom/sdk";
 import type {
   ExecutionInputFieldSource,
   StartedOnBehalfOf,
   ThreadCreateOrigin,
   ThreadResponse,
   TerminalSession,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { JsonValue, ReadonlyJsonValue } from "./json-value.js";
 import type {
   PluginRpcContract,
@@ -1238,7 +1238,7 @@ export interface PluginProviderCapabilities {
  * Provider copy core surfaces render from per-provider tables today (usage
  * banners, sign-in hints, the mobile picker, the agent guide). Declared once
  * here so no core surface keys copy on a provider id. Mirrors
- * `ProviderStrings` in `@bb/domain`, which is the client projection.
+ * `ProviderStrings` in `@cloudroom/domain`, which is the client projection.
  */
 export interface PluginProviderStrings {
   /** How to sign in on the host ("Run `claude` on the machine to sign in."). */

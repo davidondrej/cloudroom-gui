@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import type { Host } from "@bb/domain";
-import type { CliSkillMachineStatus } from "@bb/server-contract";
-import { Button } from "@bb/shared-ui/button";
-import { Checkbox } from "@bb/shared-ui/checkbox";
+import type { Host } from "@cloudroom/domain";
+import type { CliSkillMachineStatus } from "@cloudroom/server-contract";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Checkbox } from "@cloudroom/shared-ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
+} from "@cloudroom/shared-ui/dialog";
 import { MachineStatusDot } from "@/components/machines/MachineStatusDot";
 
 interface InstallCliSkillsDialogContentProps {

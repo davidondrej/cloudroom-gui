@@ -3,7 +3,7 @@ import type {
   Environment,
   ThreadPullRequest,
   WorkspaceDiffTarget,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   EnvironmentDiffFileQuery,
   EnvironmentDiffFileResponse,
@@ -12,14 +12,14 @@ import type {
   EnvironmentPullRequestResponse,
   EnvironmentStatusResponse,
   WorkspacePathListResponse,
-} from "@bb/server-contract";
-import type { EnvironmentDiffArgs } from "@bb/sdk/browser";
+} from "@cloudroom/server-contract";
+import type { EnvironmentDiffArgs } from "@cloudroom/sdk/browser";
 import {
   buildFilePreview,
   normalizeFilePreviewMimeType,
   type EnvironmentFilePreviewSource,
   type FilePreview,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { decodeBase64Bytes, encodeBase64Bytes } from "@/lib/base64-bytes";
 import { buildEnvironmentDiffFileContentUrl } from "@/lib/file-content-urls";
 import { sdk } from "@/lib/sdk";

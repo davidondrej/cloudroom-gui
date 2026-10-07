@@ -9,7 +9,7 @@ import type {
   TimelineRowStatus,
   TimelineToolWorkRow,
   TimelineSystemRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   buildTimelineWorkSummaryLabel,
   buildTimelineViewRows,

@@ -3,9 +3,9 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Icon } from "@bb/shared-ui/icon";
-import { Button } from "@bb/shared-ui/button";
-import { Switch } from "@bb/shared-ui/switch";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Switch } from "@cloudroom/shared-ui/switch";
 import { SettingsWithControl } from "@/components/ui/settings-section";
 import { useReorderDnd } from "@/components/ui/useReorderDnd";
 import { useSidebarSortable } from "@/components/sidebar/sortableMotion";

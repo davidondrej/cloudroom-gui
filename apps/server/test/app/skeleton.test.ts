@@ -7,9 +7,9 @@ import {
   getProjectExecutionDefaults,
   hosts,
   type DbConnection,
-} from "@bb/db";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
-import { HOST_DAEMON_PROTOCOL_VERSION } from "@bb/host-daemon-contract";
+} from "@cloudroom/db";
+import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
+import { HOST_DAEMON_PROTOCOL_VERSION } from "@cloudroom/host-daemon-contract";
 import { initDb } from "../../src/db.js";
 import { createApp } from "../../src/server.js";
 import { readJson } from "../helpers/json.js";

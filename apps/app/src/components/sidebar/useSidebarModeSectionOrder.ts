@@ -10,7 +10,7 @@ import {
 import {
   normalizeSidebarSectionOrder,
   type LegacySidebarEntityAnchor,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 const MODE_SECTION_ORDER_CONFIG: Record<
   SidebarOrganizationMode,

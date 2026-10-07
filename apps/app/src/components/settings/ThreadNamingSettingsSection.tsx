@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAtom } from "jotai";
-import { Slider } from "@bb/shared-ui/slider";
-import { Textarea } from "@bb/shared-ui/textarea";
-import { DEFAULT_THREAD_NAMING_RULES } from "@bb/domain";
+import { Slider } from "@cloudroom/shared-ui/slider";
+import { Textarea } from "@cloudroom/shared-ui/textarea";
+import { DEFAULT_THREAD_NAMING_RULES } from "@cloudroom/domain";
 import {
   SettingsSection,
   SettingsWithControl,

@@ -8,7 +8,7 @@ export default defineWorkspaceTestConfig({
     silent: "passed-only",
     projects: sharedWorkerProjects({
       pkgDir: __dirname,
-      name: "@bb/provider-bridge-acp",
+      name: "@cloudroom/provider-bridge-acp",
       include: ["src/**/*.test.ts"],
     }),
   },

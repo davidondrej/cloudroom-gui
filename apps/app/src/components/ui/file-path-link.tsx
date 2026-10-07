@@ -1,4 +1,4 @@
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { TruncateStart } from "./truncate-start.js";
 
 interface FilePathLinkProps {

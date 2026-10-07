@@ -1,13 +1,13 @@
-import { listHosts, listNonDestroyedHostsByIds } from "@bb/db";
+import { listHosts, listNonDestroyedHostsByIds } from "@cloudroom/db";
 import type {
   CliSkillMachineStatus,
   SystemCliSkillsStatusResponse,
   SystemInstallCliSkillsResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   HostGlobalSkillsStatusResult,
   HostInstallGlobalSkill,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { COMMAND_TIMEOUT_MS } from "../../constants.js";
 import { ApiError } from "../../errors.js";
 import type { AppDeps } from "../../types.js";

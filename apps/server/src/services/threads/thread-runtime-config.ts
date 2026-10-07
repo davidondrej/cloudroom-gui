@@ -3,7 +3,7 @@ import {
   resolveHostEnvironment,
   mergeHostAndProviderEnvironment,
 } from "../hosts/host-environment.js";
-import { getAppSettings, getEnvironment, getHost, getProject } from "@bb/db";
+import { getAppSettings, getEnvironment, getHost, getProject } from "@cloudroom/db";
 import type {
   DynamicTool,
   InstructionMode,
@@ -11,11 +11,11 @@ import type {
   Thread,
   ThreadTurnInitiator,
   EnvironmentStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   HostDaemonContributedEnvEntry,
   HostDaemonInjectedSkillSource,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { ApiError } from "../../errors.js";
 import type { LoggedWorkSessionDeps } from "../../types.js";
 import { throwEnvironmentNotReady } from "../lib/lifecycle-api-errors.js";

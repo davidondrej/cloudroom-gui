@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
-import { Popover, PopoverContent, PopoverTrigger } from "@bb/shared-ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@bb/shared-ui/tooltip";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Popover, PopoverContent, PopoverTrigger } from "@cloudroom/shared-ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@cloudroom/shared-ui/tooltip";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { SidebarMenuItem } from "@/components/ui/sidebar";
 import { appToast } from "@/components/ui/app-toast";
 import { useOpenSetup, useSetupProgress } from "@/components/Onboarding";

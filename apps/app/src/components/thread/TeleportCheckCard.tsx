@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { reasoningLevelSchema } from "@bb/domain";
-import { Icon } from "@bb/shared-ui/icon";
+import { reasoningLevelSchema } from "@cloudroom/domain";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { PromptStackCard, PROMPT_STACK_CARD_ROW_HEIGHT, PROMPT_STACK_INLAY_SEGMENT_CLASS } from "@/components/promptbox/banner/PromptStackCard";
 import { BannerActionSlot, PromptBannerActionButton } from "@/components/promptbox/banner/prompt-banner-actions";
 import type { ModelPickerOption } from "@/components/pickers/model-picker-option";
 import { reasoningLevelLabel } from "@/lib/reasoning-labels";
 import { BbHttpError } from "@/lib/sdk";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 type Choice = { model: string; reasoning: string };
 

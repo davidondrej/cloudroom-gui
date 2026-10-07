@@ -10,7 +10,7 @@ import {
   threadScope,
   turnScope,
   type PromptInput,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { noopNotifier } from "../../src/notifier.js";
 import type { DbNotifier } from "../../src/notifier.js";
 import {

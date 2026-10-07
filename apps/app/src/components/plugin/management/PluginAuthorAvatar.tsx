@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@bb/shared-ui/avatar";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@cloudroom/shared-ui/avatar";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 function authorInitials(name: string): string {
   const initials = name

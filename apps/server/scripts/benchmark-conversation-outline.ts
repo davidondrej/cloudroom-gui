@@ -6,8 +6,8 @@ import {
   getThread,
   listStoredConversationOutlineEventRows,
   type DbConnection,
-} from "@bb/db";
-import { threadConversationOutlineResponseSchema } from "@bb/server-contract";
+} from "@cloudroom/db";
+import { threadConversationOutlineResponseSchema } from "@cloudroom/server-contract";
 import { Hono } from "hono";
 import { registerThreadDataRoutes } from "../src/routes/threads/data.js";
 import { buildThreadConversationOutline } from "../src/services/threads/timeline.js";

@@ -10,12 +10,12 @@ import {
   updateTerminalSessions,
   type TerminalSessionMutation,
   type TerminalSessionRow,
-} from "@bb/db";
-import type { TerminalSessionCloseReason } from "@bb/domain";
+} from "@cloudroom/db";
+import type { TerminalSessionCloseReason } from "@cloudroom/domain";
 import type {
   HostDaemonDaemonWsMessage,
   HostDaemonServerWsMessage,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type {
   CloseTerminalRequest,
   CreateTerminalRequest,
@@ -29,7 +29,7 @@ import type {
   TerminalResizeRequest,
   TerminalSession,
   UpdateTerminalRequest,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { ApiError } from "../../errors.js";
 import type { AppDeps, ServerLogger } from "../../types.js";
 import {

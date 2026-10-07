@@ -1,5 +1,5 @@
-import { closeSecondaryPanelTabInState } from "@bb/client-core";
-import type { TerminalSession } from "@bb/server-contract";
+import { closeSecondaryPanelTabInState } from "@cloudroom/client-core";
+import type { TerminalSession } from "@cloudroom/server-contract";
 import {
   createTerminalFixedPanelTab,
   type FixedPanelTabsState,

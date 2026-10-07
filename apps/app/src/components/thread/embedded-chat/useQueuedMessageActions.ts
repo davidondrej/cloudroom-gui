@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { PromptInput, ThreadQueuedMessage } from "@bb/domain";
-import type { SendQueuedMessageMode } from "@bb/server-contract";
+import type { PromptInput, ThreadQueuedMessage } from "@cloudroom/domain";
+import type { SendQueuedMessageMode } from "@cloudroom/server-contract";
 import type { QueuedMessageProcessingAction } from "@/components/promptbox/banner/QueuedMessagesList";
 import {
   useDeleteThreadQueuedMessage,

@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Icon } from "@bb/shared-ui/icon";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import {
   ResourceCollectionViewport,
   ResourceListState,
   ResourceToolbar,
-} from "@bb/shared-ui/resource-list";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/resource-list";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   type PluginCatalogSearchEntry,
   usePluginCatalogSearch,

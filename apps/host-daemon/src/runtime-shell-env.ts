@@ -3,8 +3,8 @@ import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import { basename, delimiter, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { AgentRuntimeOptions } from "@bb/agent-runtime";
-import { assignIfDefined } from "@bb/config/objects";
+import type { AgentRuntimeOptions } from "@cloudroom/agent-runtime";
+import { assignIfDefined } from "@cloudroom/config/objects";
 
 interface ResolveLocalBbExecutablePathOptions {
   cliExecutablePath?: string;
@@ -18,6 +18,8 @@ interface PrepareRuntimeShellEnvOptions {
   hostDaemonPort?: number;
   serverUrl: string;
   inheritedPath?: string;
+  /** Cloudroom's own agent tools, such as the browser-harness shim. */
+  toolsDirectory?: string;
 }
 
 interface ResolveUserShellEnvOptions {
@@ -90,7 +92,7 @@ async function resolveCliEntryPath(cliExecutablePath: string): Promise<string> {
       } catch (error) {
         if (getErrorCode(error) === "EACCES") {
           throw new Error(
-            `Resolved bb CLI entry is not executable: ${cliEntryPath}. Build @bb/cli before starting the host daemon.`,
+            `Resolved bb CLI entry is not executable: ${cliEntryPath}. Build @cloudroom/cli before starting the host daemon.`,
           );
         }
         throw error;
@@ -99,7 +101,7 @@ async function resolveCliEntryPath(cliExecutablePath: string): Promise<string> {
   } catch (error) {
     if (getErrorCode(error) === "ENOENT") {
       throw new Error(
-        `Missing built bb CLI entry at ${cliEntryPath}. Build @bb/cli before starting the host daemon.`,
+        `Missing built bb CLI entry at ${cliEntryPath}. Build @cloudroom/cli before starting the host daemon.`,
       );
     }
     throw error;
@@ -121,7 +123,7 @@ async function requireCliRuntimePath(cliRuntimePath: string): Promise<void> {
   } catch (error) {
     if (getErrorCode(error) === "ENOENT") {
       throw new Error(
-        `Missing built bb CLI runtime at ${resolvedCliRuntimePath}. Build @bb/cli before starting the host daemon.`,
+        `Missing built bb CLI runtime at ${resolvedCliRuntimePath}. Build @cloudroom/cli before starting the host daemon.`,
       );
     }
     throw error;
@@ -448,14 +450,19 @@ export function prepareRuntimeShellEnv(
   const bbExecutablePath =
     options.bbExecutablePath ??
     resolveBbExecutablePathInDirectory(options.bbExecutableDirectory);
+  const inheritedPath = options.inheritedPath ?? process.env.PATH;
   const shellEnv: NonNullable<AgentRuntimeOptions["shellEnv"]> = {
     PATH: prependPath(
       options.bbExecutableDirectory,
-      options.inheritedPath ?? process.env.PATH,
+      options.toolsDirectory === undefined
+        ? inheritedPath
+        : prependPath(options.toolsDirectory, inheritedPath),
     ),
     ROOM_CLI: bbExecutablePath,
     ROOM_SERVER_URL: options.serverUrl,
-    ...(options.dataDir === undefined ? {} : { ROOM_DATA_DIR: options.dataDir }),
+    ...(options.dataDir === undefined
+      ? {}
+      : { ROOM_DATA_DIR: options.dataDir }),
   };
   assignIfDefined({
     key: "ROOM_HOST_DAEMON_PORT",

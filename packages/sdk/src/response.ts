@@ -1,4 +1,4 @@
-import { extractErrorMessage } from "@bb/core-ui";
+import { extractErrorMessage } from "@cloudroom/core-ui";
 
 export const DEFAULT_BB_REQUEST_TIMEOUT_MS = 75_000;
 

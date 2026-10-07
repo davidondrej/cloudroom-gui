@@ -1,11 +1,11 @@
 import type { QueryClient } from "@tanstack/react-query";
-import type { ThreadListEntry, ThreadWithRuntime } from "@bb/domain";
+import type { ThreadListEntry, ThreadWithRuntime } from "@cloudroom/domain";
 import type {
   ProjectResponse,
   ReorderPinnedThreadRequest,
   ThreadArchiveAllResponse,
-} from "@bb/server-contract";
-import { applyNeighborReorder } from "@bb/client-core";
+} from "@cloudroom/server-contract";
+import { applyNeighborReorder } from "@cloudroom/client-core";
 import {
   projectsQueryKey,
   sidebarNavigationQueryKey,

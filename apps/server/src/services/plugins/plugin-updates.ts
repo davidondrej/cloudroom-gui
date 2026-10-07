@@ -7,7 +7,7 @@ import {
   setInstalledPluginUpdateState,
   type InstalledPluginRow,
   type PluginGitSelector,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { gitSelectorForRow } from "./git-source-intent.js";
 import {
   gitArtifactCacheDir,
@@ -40,7 +40,7 @@ import {
   pluginUpdateCheckEntrySchema,
   type PluginSourceDetail,
   type PluginUpdateCheckEntry,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   PluginApplyUpdateOutcome,
   PluginServiceDeps,

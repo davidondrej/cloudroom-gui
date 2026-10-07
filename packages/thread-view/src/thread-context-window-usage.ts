@@ -1,5 +1,5 @@
-import { toPositiveNumber, type ContextSnapshot } from "@bb/domain";
-import type { ThreadContextWindowUsage } from "@bb/server-contract";
+import { toPositiveNumber, type ContextSnapshot } from "@cloudroom/domain";
+import type { ThreadContextWindowUsage } from "@cloudroom/server-contract";
 import type { ThreadEventWithMeta } from "./build-event-projection.js";
 
 interface ThreadContextWindowSignal {

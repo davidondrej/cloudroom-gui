@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { matchPath, useLocation, useNavigate } from "react-router-dom";
-import type { PromptTextMention } from "@bb/domain";
+import type { PromptTextMention } from "@cloudroom/domain";
 import type {
   BbContext,
   BbNavigate,
@@ -27,7 +27,7 @@ import type {
   ExperimentalPluginFixedTabReference,
   JsonValue,
 } from "@get-bb/plugin-sdk";
-import { jsonValueSchema } from "@bb/domain";
+import { jsonValueSchema } from "@cloudroom/domain";
 import {
   PluginSlotOwnershipContext,
   usePluginId,
@@ -51,7 +51,7 @@ import {
 import {
   appendQuoteAndAttachmentsToDraft,
   isPromptDraftEmpty,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   AUTOMATIONS_PLUGIN_ID,
   getPluginPanelRoutePath,

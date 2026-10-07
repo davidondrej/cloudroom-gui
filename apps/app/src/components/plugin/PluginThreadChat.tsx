@@ -7,10 +7,10 @@ import type {
 import {
   formatEnvironmentDisplay,
   type EnvironmentDisplayHostContext,
-} from "@bb/core-ui";
-import { EmptyStatePanel } from "@bb/shared-ui/empty-state";
-import { Skeleton } from "@bb/shared-ui/skeleton";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/core-ui";
+import { EmptyStatePanel } from "@cloudroom/shared-ui/empty-state";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
 import { ThreadEnvironmentSummary } from "@/components/promptbox/ThreadEnvironmentSummary";
 import { EmbeddedThreadChat } from "@/components/thread/embedded-chat";

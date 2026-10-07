@@ -13,9 +13,9 @@ import {
   listQueuedThreadMessages,
   queuedThreadMessages,
   threads,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type { AppDeps } from "../../types.js";
-import type { PromptInput } from "@bb/domain";
+import type { PromptInput } from "@cloudroom/domain";
 import { ApiError } from "../../errors.js";
 import { runLiveHostCommand } from "../hosts/live-command.js";
 import { workspaceContextFromPath } from "../environments/workspace-command-target.js";
@@ -856,6 +856,12 @@ class Teleport {
           service_tier: state.serviceTier,
           command_guard_enabled: getAppSettings(this.deps.db)
             .commandGuardEnabled,
+          ...(capability.strip_ai_co_authors === true
+            ? {
+                strip_ai_co_authors: getAppSettings(this.deps.db)
+                  .stripAiCoAuthorsEnabled,
+              }
+            : {}),
           ...(capability.system_prompt === true
             ? { system_prompt: cloudroomSystemPrompt(this.deps.db) }
             : {}),

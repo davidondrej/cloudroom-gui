@@ -1,4 +1,4 @@
-import { environments, events, getEnvironment, getThread, threads } from "@bb/db";
+import { environments, events, getEnvironment, getThread, threads } from "@cloudroom/db";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import {
   PromptInput,
@@ -11,12 +11,12 @@ import {
   ClientTurnRequestId,
   EnvironmentStatus,
   promptInputHasCommandMention,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   type HostDaemonCommand,
   type ThreadStopIntent,
   type TurnSubmitTarget,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type { AppDeps, LoggedWorkSessionDeps } from "../../types.js";
 import type { CommandResultSideEffectsDeps } from "../../internal/command-result-side-effects.js";
 import { ApiError } from "../../errors.js";

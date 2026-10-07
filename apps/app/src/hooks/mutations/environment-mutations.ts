@@ -5,12 +5,12 @@ import {
   type ArchiveThreadsTransaction,
 } from "../cache-owners/thread-state-cache-owner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Environment } from "@bb/domain";
+import type { Environment } from "@cloudroom/domain";
 import type {
   EnvironmentArchiveThreadsResponse,
   EnvironmentActionResponse,
   UpdateEnvironmentRequest,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { sdk } from "@/lib/sdk";
 import type { RequestEnvironmentActionMutationRequest } from "./mutation-request-types";
 import { invalidateEnvironmentActionQueries } from "../cache-owners/environment-cache-effects";

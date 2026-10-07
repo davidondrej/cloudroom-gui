@@ -1,11 +1,11 @@
-import type { ThreadListEntry } from "@bb/domain";
+import type { ThreadListEntry } from "@cloudroom/domain";
 import { describe, expect, it } from "vitest";
 import {
   buildPinnedSidebarState,
   buildSectionThreadList,
   CHRONOLOGICAL_CONTAINER_ID,
-} from "@bb/client-core";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+} from "@cloudroom/client-core";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import {
   getSidebarNestParentKey,
   resolveSidebarDropPreviewPlacement,

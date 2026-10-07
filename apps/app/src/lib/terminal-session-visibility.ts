@@ -1,5 +1,5 @@
-import { isActiveTerminalSessionStatus } from "@bb/domain";
-import type { TerminalSession } from "@bb/server-contract";
+import { isActiveTerminalSessionStatus } from "@cloudroom/domain";
+import type { TerminalSession } from "@cloudroom/server-contract";
 
 interface RetainedTerminalSessionArgs {
   retainedTerminalId: string | null;

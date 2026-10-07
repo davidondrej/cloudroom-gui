@@ -5,7 +5,7 @@ import type { CloudroomClient, SessionRecord } from "./client.js";
 // A cloud agent's `cloudroom secret request` reuses the Secrets plugin's form.
 // Values go straight back to the core and never enter thread events.
 const PLUGIN_ID = "secrets";
-const RENDERER_ID = "secret-request"; // SECRET_REQUEST_RENDERER_ID in @bb/plugin-interaction-contracts
+const RENDERER_ID = "secret-request"; // SECRET_REQUEST_RENDERER_ID in @cloudroom/plugin-interaction-contracts
 const FORM_TIMEOUT_MS = 60 * 60_000;
 
 const requestSchema = z.discriminatedUnion("state", [

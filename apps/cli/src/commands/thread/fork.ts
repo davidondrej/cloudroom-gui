@@ -3,8 +3,8 @@ import {
   threadVisibilitySchema,
   type PromptInput,
   type Thread,
-} from "@bb/domain";
-import type { EnvironmentArgs } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { EnvironmentArgs } from "@cloudroom/server-contract";
 import { action } from "../../action.js";
 import { createCliBbSdk } from "../../client.js";
 import { resolveExplicitIdFlag } from "../../context-env.js";

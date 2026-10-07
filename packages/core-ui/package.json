@@ -1,5 +1,5 @@
 {
-  "name": "@bb/core-ui",
+  "name": "@cloudroom/core-ui",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -16,10 +16,10 @@
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "@bb/domain": "workspace:*"
+    "@cloudroom/domain": "workspace:*"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-7": "npm:typescript@^7.0.2"

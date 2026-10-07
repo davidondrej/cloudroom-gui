@@ -3,11 +3,11 @@
  * bridge.
  *
  * A provider bridge ships inside its plugin's `bb.host` artifact, and a host
- * artifact may not import private `@bb/*` workspace packages: an external
+ * artifact may not import private `@cloudroom/*` workspace packages: an external
  * plugin cannot resolve them. Everything a bridge needs therefore has to be
  * reachable through this package, which is why this module exists — it is the
  * bridge half of the same facade the root export already is for
- * `BbPluginApi`/`@bb/domain` types.
+ * `BbPluginApi`/`@cloudroom/domain` types.
  *
  * Curated by hand, never `export *`. The list below is the surface bb promises
  * bridge authors; a name that is not here is bb-internal and may move. It is
@@ -22,12 +22,12 @@
  *
  * On (4): the protocol owns its own timeline vocabulary (the delta grammar in
  * section 2) — bridges no longer construct `ThreadEvent`s, so the domain
- * event vocabulary is NOT re-exported here. What remains from `@bb/domain` is
+ * event vocabulary is NOT re-exported here. What remains from `@cloudroom/domain` is
  * the command-plane and interaction surface the protocol's params are made of
  * (PromptInput, permission/interaction payloads, dynamic tools, rate limits,
  * reasoning levels) plus the enum/status types the delta shapes reference
  * (item status, turn status, plan steps, usage breakdowns). Those live in
- * `@bb/domain` — bb's persisted vocabulary shared by the server, the app and
+ * `@cloudroom/domain` — bb's persisted vocabulary shared by the server, the app and
  * the runtime — so the SDK names them here and the published bundle inlines
  * them, exactly as the root export already does for `PromptInput` and
  * friends.
@@ -46,12 +46,12 @@
 export {
   PROVIDER_BRIDGE_EXPORT_NAME,
   experimental_defineProviderBridge,
-} from "@bb/provider-bridge-protocol/bridge-kit";
+} from "@cloudroom/provider-bridge-protocol/bridge-kit";
 export type {
   ProviderBridgeContext,
   ProviderBridgeDefinition,
   ProviderBridgeEntry,
-} from "@bb/provider-bridge-protocol/bridge-kit";
+} from "@cloudroom/provider-bridge-protocol/bridge-kit";
 
 // ---------------------------------------------------------------------------
 // 2. The Provider Bridge Protocol
@@ -119,7 +119,7 @@ export {
   threadUnarchiveParamsSchema,
   turnStartParamsSchema,
   turnSteerParamsSchema,
-} from "@bb/provider-bridge-protocol";
+} from "@cloudroom/provider-bridge-protocol";
 export type {
   BridgeCapabilities,
   BridgeExecutionOptions,
@@ -163,7 +163,7 @@ export type {
   ThreadDelta,
   ThreadDeltaKind,
   ThreadDeltaNotificationParams,
-} from "@bb/provider-bridge-protocol";
+} from "@cloudroom/provider-bridge-protocol";
 
 // ---------------------------------------------------------------------------
 // 3. The bridge kit
@@ -233,7 +233,7 @@ export {
   withoutBridgeRuntimeEnv,
   ProviderRequestDecodeError,
   ProviderResponseEncodeError,
-} from "@bb/provider-bridge-protocol/bridge-kit";
+} from "@cloudroom/provider-bridge-protocol/bridge-kit";
 export type {
   BoundedLineReaderArgs,
   BridgeJsonRpcResponse,
@@ -250,14 +250,14 @@ export type {
   ProviderRawEventDescription,
   ProviderRuntimeEvent,
   ProviderVisibilityMetadata,
-} from "@bb/provider-bridge-protocol/bridge-kit";
+} from "@cloudroom/provider-bridge-protocol/bridge-kit";
 
 /**
  * A bridge that supervises child processes builds their environment with this
  * one allowlist function rather than handing them the daemon's own env
  * (incident rule: ambient env leaks).
  */
-export { sanitizeInheritedChildProcessEnv } from "@bb/process-utils";
+export { sanitizeInheritedChildProcessEnv } from "@cloudroom/process-utils";
 
 /**
  * Finds the `codex` or `claude` CLI the way a shell would, then in common
@@ -268,7 +268,7 @@ export { sanitizeInheritedChildProcessEnv } from "@bb/process-utils";
 export {
   findBrokenCliLink as experimental_findBrokenCliLink,
   findCliExecutable as experimental_findCliExecutable,
-} from "@bb/process-utils";
+} from "@cloudroom/process-utils";
 
 // ---------------------------------------------------------------------------
 // 4. The domain vocabulary the protocol's payloads reference
@@ -324,7 +324,7 @@ export {
   removeCommandMentionsFromPromptInput,
   runtimePermissionScopeValues,
   toPositiveNumber,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 export type {
   ApprovalInteractionOutcome,
   ApprovalPendingInteractionPayload,
@@ -378,7 +378,7 @@ export type {
   WorkflowAgentState,
   WorkflowPhaseSnapshot,
   WorkflowProgressSnapshot,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 // ---------------------------------------------------------------------------
 // 5. Scheduled removals (next major)
@@ -400,8 +400,8 @@ export type {
 export {
   acpLaunchSpecSchema as hostDaemonAcpLaunchSpecSchema,
   normalizeAcpLaunchSpec as normalizeHostDaemonAcpLaunchSpec,
-} from "@bb/provider-bridge-acp/launch-spec";
-export type { AcpLaunchSpec as HostDaemonAcpLaunchSpec } from "@bb/provider-bridge-acp/launch-spec";
+} from "@cloudroom/provider-bridge-acp/launch-spec";
+export type { AcpLaunchSpec as HostDaemonAcpLaunchSpec } from "@cloudroom/provider-bridge-acp/launch-spec";
 
 /**
  * The Claude Code task-tool names and outputs core once shared with the
@@ -419,4 +419,4 @@ export {
   type ContextSnapshot,
   type ContextCategory,
   type ContextEntry,
-} from "@bb/domain";
+} from "@cloudroom/domain";

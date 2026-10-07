@@ -3,8 +3,8 @@ import type { TypeaheadConfig } from "@/components/promptbox/PromptBoxInternal";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
 import type { PromptBoxAction } from "@/components/promptbox/PromptBoxActionsMenu";
 import { withAppPromptActions } from "@/components/promptbox/PromptBoxActionsMenu";
-import type { ProviderComposerAction } from "@bb/domain";
-import { buildProviderPromptActionProps } from "@bb/client-core";
+import type { ProviderComposerAction } from "@cloudroom/domain";
+import { buildProviderPromptActionProps } from "@cloudroom/client-core";
 import { useCommandSuggestions } from "@/hooks/useCommandSuggestions";
 import { usePromptMentions } from "@/hooks/usePromptMentions";
 

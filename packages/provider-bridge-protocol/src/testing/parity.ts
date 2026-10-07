@@ -9,7 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ThreadEvent } from "@bb/domain";
+import type { ThreadEvent } from "@cloudroom/domain";
 import { readBoundedLines } from "../bridge-kit/bounded-line-reader.js";
 import type { BridgeRecordingEntry } from "../bridge-kit/bridge-recorder.js";
 import { PROVIDER_BRIDGE_PROTOCOL_VERSION } from "../version.js";

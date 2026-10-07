@@ -1,9 +1,9 @@
 import type {
   PendingInteractionUserAnswer,
   PendingInteractionUserQuestionQuestion,
-} from "@bb/domain";
-import type { TimelineQuestionViewWorkRow } from "@bb/thread-view";
-import { formatPendingInteractionUserQuestionOptionLabel } from "@bb/core-ui";
+} from "@cloudroom/domain";
+import type { TimelineQuestionViewWorkRow } from "@cloudroom/thread-view";
+import { formatPendingInteractionUserQuestionOptionLabel } from "@cloudroom/core-ui";
 
 interface QuestionWorkRowBodyProps {
   row: TimelineQuestionViewWorkRow;

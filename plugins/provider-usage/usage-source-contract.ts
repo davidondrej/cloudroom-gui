@@ -130,3 +130,21 @@ export const usageSourceRpcContract = defineRpcContract({
       "Returns actual usage for exactly one listed resource, even when refresh is false. False permits cached observations; true requests a fresh attempt. Never collects other resources as a side effect. A removed resource fails the RPC; consumers relist. Per-account authentication and collection failures are usage states. observedAt is the last successful measurement time.",
   },
 });
+
+export const ACCOUNTS_LIST_METHOD = "accounts.list";
+export const accountViewsSchema = z.array(
+  z.object({
+    id: z.string(),
+    name: z.string().nullish(),
+    email: z.string().nullable(),
+    plan: z.string().nullable(),
+    inUse: z.boolean(),
+    windows: z.array(
+      z.object({
+        label: z.string(),
+        usedPercent: z.number(),
+        resetsAt: z.number().nullable(),
+      }),
+    ),
+  }),
+);

@@ -1,5 +1,5 @@
 import { and, count, eq, inArray, ne } from "drizzle-orm";
-import type { ProjectSource } from "@bb/domain";
+import type { ProjectSource } from "@cloudroom/domain";
 import type { DbConnection } from "../connection.js";
 import type { DbNotifier } from "../notifier.js";
 import { projectSources } from "../schema.js";

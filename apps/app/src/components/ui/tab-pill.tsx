@@ -1,7 +1,7 @@
-import { Icon } from "@bb/shared-ui/icon";
-import { COARSE_POINTER_TEXT_SM_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { LIST_HOVER_TRANSITION } from "@bb/shared-ui/motion";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { COARSE_POINTER_TEXT_SM_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { LIST_HOVER_TRANSITION } from "@cloudroom/shared-ui/motion";
 import type { ReactNode } from "react";
 import { CONTEXT_SELECTION_SURFACE_CLASS } from "./context-selection";
 

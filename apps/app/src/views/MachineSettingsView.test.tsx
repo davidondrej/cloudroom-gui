@@ -7,20 +7,20 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import type { Host } from "@bb/domain";
-import { makeHost as makeHostFixture } from "@bb/test-helpers/domain-fixtures";
-import type { SystemConfigResponse } from "@bb/server-contract";
+import type { Host } from "@cloudroom/domain";
+import { makeHost as makeHostFixture } from "@cloudroom/test-helpers/domain-fixtures";
+import type { SystemConfigResponse } from "@cloudroom/server-contract";
 import type {
   ProviderCliKey,
   ProviderCliStatus,
   ProviderCliStatusResponse,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sdk } from "@/lib/sdk";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
 import { makeSystemConfig } from "@/test/fixtures/system-config";
-import { makeProviderInfo } from "@bb/test-helpers/domain-fixtures";
+import { makeProviderInfo } from "@cloudroom/test-helpers/domain-fixtures";
 import { MachineSettingsView } from "./MachineSettingsView";
 
 vi.mock("@/lib/sdk", () => ({

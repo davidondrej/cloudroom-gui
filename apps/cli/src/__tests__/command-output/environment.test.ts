@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ThreadPullRequest, WorkspaceStatus } from "@bb/domain";
+import type { ThreadPullRequest, WorkspaceStatus } from "@cloudroom/domain";
 import {
   setupCommandOutputTestEnvironment,
   collectLogLines,

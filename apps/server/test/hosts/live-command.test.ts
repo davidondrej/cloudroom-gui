@@ -4,7 +4,7 @@ import {
   getAppSettings,
   setAppSettings,
   updateHost,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { replaceMachineEnvironment } from "../../src/services/machines/environment-settings.js";
@@ -116,6 +116,7 @@ it("preserves provisioning when the host transport disappears", async () => {
 
 it("resolves fresh setup values at dispatch without retaining them in the request", async () => {
   await withTestHarness(async (harness) => {
+    setAppSettings(harness.db, { ...getAppSettings(harness.db), stripAiCoAuthorsEnabled: false });
     setAppSettings(harness.db, {
       ...getAppSettings(harness.db),
       machineGitCredentialsEnabled: false,

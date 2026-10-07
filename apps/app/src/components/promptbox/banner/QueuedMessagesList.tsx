@@ -51,9 +51,9 @@ import type {
   PromptInput,
   PromptTextMention,
   ThreadQueuedMessage,
-} from "@bb/domain";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
+} from "@cloudroom/domain";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import {
   PROMPT_STACK_EDGE_CARET_BUTTON_WIDTH_CLASS,
   PromptStackCard,
@@ -62,18 +62,19 @@ import { PROMPT_STACK_ROW_ACTION_TAKEOVER_CLASS } from "@/components/promptbox/b
 import { useScrollOverflowState } from "@/components/thread/timeline/useScrollOverflowState";
 import { OverflowFade } from "@/components/ui/overflow-fade";
 import { InlineMessageEditorFrame } from "@/components/promptbox/InlineMessageEditorFrame";
+import { resolveAttachmentPreviewSrc } from "@/components/promptbox/AttachmentPreview";
 import { useBottomAnchoredScroll } from "@/components/ui/bottom-anchored-scroll-body";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/tooltip";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   countQueuedMessageAttachments,
   formatQueuedMessagePreview,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import type { QueuedMessageReorderRequest } from "@/lib/queued-message-reorder";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
 import {
@@ -111,6 +112,7 @@ export interface QueuedMessagesListProps {
   reorderable?: boolean;
   queuedMessages: readonly ThreadQueuedMessage[];
   resolveMentionLink?: PromptMentionLinkResolver;
+  attachmentProjectId?: string;
   sendAction: QueuedMessageSendAction;
   sendDisabled: boolean;
   actionDisabled: boolean;
@@ -136,6 +138,7 @@ interface QueuedMessageRowProps {
   senderLabel: string | null;
   queuedMessage: ThreadQueuedMessage;
   resolveMentionLink?: PromptMentionLinkResolver;
+  attachmentProjectId?: string;
   index: number;
   isProcessing: boolean;
   processingLabel: string;
@@ -160,6 +163,7 @@ const DRAWER_LIST_PADDING = 2;
 const DRAWER_ROW_HEIGHT = 29;
 const DRAWER_SECOND_LINE_HEIGHT = 16;
 const DRAWER_SENDER_PILL_LINE_HEIGHT = 22;
+const DRAWER_IMAGE_ROW_EXTRA_HEIGHT = 4;
 const WORKSPACE_MIN_HEIGHT = 240;
 const WORKSPACE_MAX_HEIGHT = 360;
 const WORKSPACE_CHROME_HEIGHT = 29;
@@ -189,13 +193,27 @@ function getDrawerHeight({
                 queuedMessage.senderThreadId !== null
                 ? DRAWER_SENDER_PILL_LINE_HEIGHT
                 : DRAWER_SECOND_LINE_HEIGHT
-              : 0),
+              : 0) +
+            (findQueuedMessageImagePath(queuedMessage) === null
+              ? 0
+              : DRAWER_IMAGE_ROW_EXTRA_HEIGHT),
           0,
         );
   return Math.min(
     DRAWER_HEIGHT,
     DRAWER_CHROME_HEIGHT + DRAWER_LIST_PADDING + rowsHeight,
   );
+}
+
+function findQueuedMessageImagePath(
+  queuedMessage: ThreadQueuedMessage,
+): string | null {
+  for (const chunk of queuedMessage.content) {
+    if (chunk.type === "localImage" && chunk.visibility !== "agent-only") {
+      return chunk.path;
+    }
+  }
+  return null;
 }
 
 function getPendingDrawerHeight(queuedMessageCount: number): number {
@@ -618,10 +636,53 @@ function QueuedMessageProcessingLine({ label }: { label: string }) {
   );
 }
 
+function QueuedMessageImageThumbnail({
+  src,
+  attachmentCount,
+}: {
+  src: string;
+  attachmentCount: number;
+}) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <span
+      data-queued-message-image=""
+      className="relative mr-1.5 shrink-0"
+      role="img"
+      aria-label={
+        attachmentCount === 1 ? "1 attachment" : `${attachmentCount} attachments`
+      }
+    >
+      {failed ? (
+        <span className="flex size-6 items-center justify-center rounded-[5px] border border-border bg-muted text-subtle-foreground">
+          <Icon name="FileAttachment" className="size-3.5" aria-hidden />
+        </span>
+      ) : (
+        <img
+          src={src}
+          alt=""
+          draggable={false}
+          onError={() => setFailed(true)}
+          className="block size-6 rounded-[5px] border border-white/15 object-cover"
+        />
+      )}
+      {attachmentCount > 1 ? (
+        <span
+          aria-hidden
+          className="absolute bottom-px right-px rounded-[3px] bg-black/75 px-[3px] text-[9px] font-semibold leading-[11px] text-white tabular-nums"
+        >
+          +{attachmentCount - 1}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 const QueuedMessageRow = memo(function QueuedMessageRow({
   senderLabel,
   queuedMessage,
   resolveMentionLink,
+  attachmentProjectId,
   index,
   isProcessing,
   processingLabel,
@@ -649,6 +710,10 @@ const QueuedMessageRow = memo(function QueuedMessageRow({
   const attachmentCount = useMemo(
     () => countQueuedMessageAttachments(queuedMessage.content),
     [queuedMessage.content],
+  );
+  const imagePath = useMemo(
+    () => findQueuedMessageImagePath(queuedMessage),
+    [queuedMessage],
   );
   const pluginDisplayName = usePluginDisplayName(
     queuedMessage.waitingOn?.kind === "plugin"
@@ -737,12 +802,18 @@ const QueuedMessageRow = memo(function QueuedMessageRow({
                 <Icon name="Lock" className="size-3" aria-hidden />
               </span>
             ) : null}
+            {imagePath === null ? null : (
+              <QueuedMessageImageThumbnail
+                src={resolveAttachmentPreviewSrc(imagePath, attachmentProjectId)}
+                attachmentCount={attachmentCount}
+              />
+            )}
             <QueuedMessagePreview
               compact={compact}
               queuedMessage={queuedMessage}
               resolveMentionLink={resolveMentionLink}
             />
-            {attachmentCount > 0 ? (
+            {attachmentCount > 0 && imagePath === null ? (
               <span
                 data-queued-message-attachment=""
                 className={cn(
@@ -1021,6 +1092,7 @@ export function QueuedMessagesList({
   reorderable = true,
   queuedMessages,
   resolveMentionLink,
+  attachmentProjectId,
   sendAction,
   sendDisabled,
   actionDisabled,
@@ -1470,6 +1542,7 @@ export function QueuedMessagesList({
                 : null
           }
           resolveMentionLink={resolveMentionLink}
+          attachmentProjectId={attachmentProjectId}
           index={messageIndex}
           isProcessing={processingMessageId === queuedMessage.id}
           processingLabel={processingLabel}

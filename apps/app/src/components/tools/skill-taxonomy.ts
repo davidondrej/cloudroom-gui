@@ -2,7 +2,7 @@ import type {
   EditableSkillScope,
   SkillScope,
   SkillSummary,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 
 const SKILL_ROOT_LABELS: Record<
   Exclude<SkillScope, "provider-user" | "provider-project">,

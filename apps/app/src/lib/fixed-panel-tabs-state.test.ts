@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { threadTabsSchema } from "@bb/server-contract";
+import { threadTabsSchema } from "@cloudroom/server-contract";
 import {
   EMPTY_FIXED_PANEL_TABS_STATE,
   areFixedPanelTabsEquivalent,

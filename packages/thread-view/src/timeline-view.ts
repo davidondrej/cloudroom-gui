@@ -10,7 +10,7 @@ import type {
   TimelineSystemRow,
   TimelineTurnRow,
   TimelineWorkRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { assertNever } from "./assert-never.js";
 import {
   getFileChangeAction,

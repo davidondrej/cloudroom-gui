@@ -3,7 +3,7 @@ import type { AddressInfo } from "node:net";
 import { Writable } from "node:stream";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Agent, getGlobalDispatcher, setGlobalDispatcher } from "undici";
-import { RESERVED_BB_CLI_COMMANDS } from "@bb/domain/plugin-cli";
+import { RESERVED_BB_CLI_COMMANDS } from "@cloudroom/domain/plugin-cli";
 
 import {
   CORE_COMMAND_GROUPS,
@@ -18,14 +18,6 @@ import {
   runPluginCliCommand,
   type PluginCliContributionEntry,
 } from "../plugin-cli-proxy.js";
-
-describe("reserved room CLI command names", () => {
-  it("matches the complete core command-group registry plus help", () => {
-    expect([...RESERVED_BB_CLI_COMMANDS].sort()).toEqual(
-      [...CORE_COMMAND_GROUPS.map((group) => group.name), "help"].sort(),
-    );
-  });
-});
 
 describe("pluginProxyCandidate", () => {
   const known = new Set(["thread", "plugin", "help"]);

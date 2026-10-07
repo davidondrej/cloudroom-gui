@@ -1,4 +1,4 @@
-import type { HostDaemonEntrypointConfig } from "@bb/config/host-daemon-entrypoint";
+import type { HostDaemonEntrypointConfig } from "@cloudroom/config/host-daemon-entrypoint";
 
 export interface HostDaemonRuntimeEnvironment extends HostDaemonEntrypointConfig {
   BB_DATA_DIR: string;

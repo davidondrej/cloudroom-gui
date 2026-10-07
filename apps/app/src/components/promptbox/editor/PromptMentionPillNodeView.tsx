@@ -8,7 +8,7 @@ import {
 } from "@/components/promptbox/mentions/prompt-mention-display";
 import { PromptMentionIcon } from "@/components/promptbox/mentions/PromptMentionIcon";
 import { promptMentionClipboardDataAttributes } from "@/components/promptbox/mentions/prompt-mention-clipboard";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { PromptMentionLinkContext } from "./prompt-mention-link";
 import { parsePromptEditorMentionAttrs } from "./prompt-editor-serialization";
 import { useThreadTitleDisplayText } from "@/components/thread/ThreadTitleMentions";

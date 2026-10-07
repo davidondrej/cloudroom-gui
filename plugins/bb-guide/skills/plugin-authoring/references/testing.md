@@ -120,7 +120,7 @@ invalid fixture metadata.
 Run `experimental_scanPublicSdkOnly(packageRoot, { allow })` in a package
 test. Assert that `violations` and `privateDependencies` are empty. The scanner
 checks source and test imports, dynamic import names, relative paths that leave
-the package, and private `@bb/*` dependencies. It permits public SDK paths,
+the package, and private `@cloudroom/*` dependencies. It permits public SDK paths,
 Zod, Node modules, package-local files, and declared extra patterns. It skips
 `node_modules` and `dist`.
 
@@ -229,7 +229,7 @@ Cloudroom Official plugins in `plugins/` (a cloudroom checkout):
 - `github` — a gh-CLI-backed issue/PR browser in a single navPanel (with
   `headerContent`), subPath-based sub-navigation, shared-ui
   Tabs/Select/DropdownMenu/Badge/Skeleton + sonner toast throughout (in-repo
-  plugins import `@bb/shared-ui`; out-of-repo authors vendor the same
+  plugins import `@cloudroom/shared-ui`; out-of-repo authors vendor the same
   components from the registry), background sync service, rpc + realtime,
   project setting, a `room-cli github` CLI command, and agent-spawn buttons.
 - `docs` (stable plugin id `simple-notes`) — multi-host Docs vaults over

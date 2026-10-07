@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Host } from "@bb/domain";
+import type { Host } from "@cloudroom/domain";
 import {
   collectLogPayloads,
   runCommand,

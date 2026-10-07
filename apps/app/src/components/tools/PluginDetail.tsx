@@ -9,16 +9,16 @@ import {
   ResourceListState,
   ResourceOverflowMenu,
   type ResourceOverflowMenuItem,
-} from "@bb/shared-ui/resource-list";
-import { Switch } from "@bb/shared-ui/switch";
+} from "@cloudroom/shared-ui/resource-list";
+import { Switch } from "@cloudroom/shared-ui/switch";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
-import { formatHomePathForDisplay } from "@bb/shared-ui/lib/utils";
-import { Icon } from "@bb/shared-ui/icon";
+} from "@cloudroom/shared-ui/tooltip";
+import { formatHomePathForDisplay } from "@cloudroom/shared-ui/lib/utils";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { Link } from "react-router-dom";
 import { getPluginConfigurationRoutePath } from "@/lib/route-paths";
 import { CheckPluginUpdatesButton } from "@/components/plugin/management/CheckPluginUpdatesButton";

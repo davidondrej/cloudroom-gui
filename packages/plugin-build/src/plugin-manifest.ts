@@ -4,7 +4,7 @@ import {
   isPluginOwnedIconPath,
   pluginPackageJsonSchema,
   type PluginPackageJson,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   assertValidPluginCompactIconSvg,
   assertValidPluginIconSvg,

@@ -1,5 +1,5 @@
-import { events, getThread, type DbConnection } from "@bb/db";
-import type { PromptInput } from "@bb/domain";
+import { events, getThread, type DbConnection } from "@cloudroom/db";
+import type { PromptInput } from "@cloudroom/domain";
 import { and, eq } from "drizzle-orm";
 import type { CommandResultSideEffectsDeps } from "../../internal/command-result-side-effects.js";
 import type { SandboxDirectory } from "../cloudroom/sandboxes.js";

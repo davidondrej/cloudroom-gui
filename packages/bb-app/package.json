@@ -81,9 +81,9 @@
     "zod": "4.3.6"
   },
   "devDependencies": {
-    "@bb/config": "workspace:*",
-    "@bb/sdk": "workspace:*",
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/config": "workspace:*",
+    "@cloudroom/sdk": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/node": "^22.0.0",
     "rimraf": "^6.1.0",
     "rollup": "^4.62.2",

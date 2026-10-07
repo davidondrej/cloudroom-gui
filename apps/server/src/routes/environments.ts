@@ -4,12 +4,12 @@ import {
   countLiveThreadsInEnvironment,
   listEnvironments,
   updateEnvironmentMetadata,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   environmentStatusValues,
   type EnvironmentStatus,
   type ThreadPullRequest,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   publicApiRoutes,
   typedRoutes,
@@ -18,7 +18,7 @@ import {
   type EnvironmentDiffQuery,
   type PublicApiSchema,
   type PullRequestMergeMethod,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { Hono } from "hono";
 import type { AppDeps } from "../types.js";
 import {

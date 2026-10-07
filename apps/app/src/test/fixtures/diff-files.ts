@@ -1,4 +1,4 @@
-import type { DiffFileEntry } from "@bb/server-contract";
+import type { DiffFileEntry } from "@cloudroom/server-contract";
 
 export function makeDiffFileEntry(
   overrides: Partial<DiffFileEntry> = {},

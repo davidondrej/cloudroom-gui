@@ -1,7 +1,7 @@
 import type {
   EnvironmentActionResponse,
   SendMessageResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   RequestEnvironmentActionMutationRequest,
   SendThreadMessageMutationRequest,

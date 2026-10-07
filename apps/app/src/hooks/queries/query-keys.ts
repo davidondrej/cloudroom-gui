@@ -1,6 +1,6 @@
-import type { WorkspaceDiffTarget } from "@bb/domain";
-import type { ThreadListFilters, ThreadSearchFilters } from "@bb/client-core";
-import type { EnvironmentFilePreviewSource } from "@bb/client-core";
+import type { WorkspaceDiffTarget } from "@cloudroom/domain";
+import type { ThreadListFilters, ThreadSearchFilters } from "@cloudroom/client-core";
+import type { EnvironmentFilePreviewSource } from "@cloudroom/client-core";
 import {
   DEFAULT_THREAD_STORAGE_FILE_LIST_OPTIONS,
   type ThreadStorageFileListOptions,
@@ -121,6 +121,7 @@ type HostCloneDefaultPathQueryKey = readonly [
   string | null,
 ];
 type ProjectsQueryKey = readonly [typeof PROJECTS_QUERY_KEY];
+type HiddenProjectsQueryKey = readonly [typeof PROJECTS_QUERY_KEY, "hidden"];
 type AllProjectPathsQueryKeyPrefix = readonly [typeof PROJECT_PATHS_QUERY_KEY];
 type AllProjectSourceBranchesQueryKeyPrefix = readonly [
   typeof PROJECT_SOURCE_BRANCHES_QUERY_KEY,
@@ -540,6 +541,10 @@ export function hostCloneDefaultPathQueryKey(
 
 export function projectsQueryKey(): ProjectsQueryKey {
   return [PROJECTS_QUERY_KEY];
+}
+
+export function hiddenProjectsQueryKey(): HiddenProjectsQueryKey {
+  return [PROJECTS_QUERY_KEY, "hidden"];
 }
 
 export function projectPathsQueryKey(

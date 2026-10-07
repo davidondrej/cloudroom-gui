@@ -1,4 +1,4 @@
-import type { AvailableModel } from "@bb/domain";
+import type { AvailableModel } from "@cloudroom/domain";
 
 const PREFERRED_TEST_MODELS_BY_PROVIDER: Record<string, readonly string[]> = {
   codex: ["gpt-5.4"],

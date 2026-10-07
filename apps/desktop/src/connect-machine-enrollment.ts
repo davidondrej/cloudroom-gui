@@ -4,7 +4,7 @@ import {
   deriveConnectBaseUrl,
   redeemMachineCredential,
   type ConnectCredential,
-} from "@bb/connect-client";
+} from "@cloudroom/connect-client";
 
 const CREATE_MACHINE_CODE_RPC = "createMachineCode";
 

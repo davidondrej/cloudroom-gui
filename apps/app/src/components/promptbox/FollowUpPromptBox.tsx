@@ -1,6 +1,6 @@
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { Button } from "@bb/shared-ui/button";
-import type { FollowUpSubmitMode } from "@bb/client-core";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { Button } from "@cloudroom/shared-ui/button";
+import type { FollowUpSubmitMode } from "@cloudroom/client-core";
 import {
   memo,
   useCallback,
@@ -17,7 +17,7 @@ import type {
   PromptTextMention,
   ThreadRuntimeDisplayStatus,
   ThreadTimelineActivePromptMode,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { ComposerView, PluginComposerScope } from "@get-bb/plugin-sdk";
 import type { ComposerTextEffectSource } from "@/lib/composer-text-effects";
 import { modifierSubmitShortcutLabel } from "./modifier-submit-shortcut";
@@ -53,8 +53,8 @@ import {
   type ExecutionPermissionConfig,
 } from "@/components/promptbox/ExecutionControls";
 import { useBottomAnchoredScroll } from "@/components/ui/bottom-anchored-scroll-body.js";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
-import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
+import { usePointerCoarse } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
 import { ThreadTimelineScrollToBottomButton } from "@/views/thread-detail/ThreadTimelineScrollToBottomButton";
 import { useOptionalPaneContext } from "@/views/thread-detail/PaneContext";
 import { ThreadContextWindowIndicator } from "@/components/thread/timeline";
@@ -117,7 +117,7 @@ const MOBILE_KEYBOARD_VIEWPORT_MIN_DELTA_PX = 80;
 const MOBILE_FOCUS_EXPANSION_FALLBACK_MS = 350;
 const MOBILE_KEYBOARD_DISMISSAL_FALLBACK_MS = 750;
 
-export type { FollowUpSubmitMode } from "@bb/client-core";
+export type { FollowUpSubmitMode } from "@cloudroom/client-core";
 
 export interface FollowUpComposerProps {
   history: HistoryConfig;

@@ -1,6 +1,6 @@
 import { useCallback } from "react";
-import type { ThreadTimelineResponse, TimelineRow } from "@bb/server-contract";
-import type { PromptDraftState } from "@bb/client-core";
+import type { ThreadTimelineResponse, TimelineRow } from "@cloudroom/server-contract";
+import type { PromptDraftState } from "@cloudroom/client-core";
 import { appToast } from "@/components/ui/app-toast";
 import { threadTimelineQueryKey } from "@/hooks/queries/query-keys";
 import { appQueryClient } from "@/lib/app-query-client";

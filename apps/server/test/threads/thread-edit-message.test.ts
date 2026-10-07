@@ -6,7 +6,7 @@ import {
   listEvents,
   listStoredProjectPromptHistoryRows,
   listStoredThreadPromptHistoryRows,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   encodeClientTurnRequestIdNumber,
   threadScope,
@@ -14,7 +14,7 @@ import {
   type PromptInput,
   type ThreadEventTurnStatus,
   type ThreadStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { describe, expect, it, vi } from "vitest";
 import { editThreadMessage } from "../../src/services/threads/thread-edit-message.js";
 import { requestThreadStopForCurrentState } from "../../src/services/threads/thread-lifecycle.js";

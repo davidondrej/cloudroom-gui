@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { Button } from "@bb/shared-ui/button";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Icon } from "@bb/shared-ui/icon";
-import { Popover, PopoverContent, PopoverTrigger } from "@bb/shared-ui/popover";
+import { Button } from "@cloudroom/shared-ui/button";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Popover, PopoverContent, PopoverTrigger } from "@cloudroom/shared-ui/popover";
 import { useCloudroomAccount } from "@/hooks/queries/cloudroom-queries";
-import { BbHttpError, sdk } from "@/lib/sdk";
+import { sdk } from "@/lib/sdk";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
 import { ClaudeApiKeyForm } from "./ClaudeApiKeyForm";
 
@@ -52,7 +52,7 @@ const schema = z.object({
 type Status = z.infer<typeof schema>;
 const returnsToMac = (url: string) => new URL(url).searchParams.get("redirect_uri")?.startsWith("http://localhost") === true;
 type Action = {
-  action?: "login" | "cancel" | "complete" | "setup-token" | "install";
+  action?: "login" | "cancel" | "complete" | "setup-token";
   requestId?: string;
   code?: string;
   state?: string;
@@ -239,18 +239,17 @@ function ClaudeConnectionPanel({
   const client = useQueryClient();
   const auth = useClaudeConnection(target);
   const action = useMutation({
-    mutationFn: async (kind: "login" | "cancel" | "complete" | "install") => {
+    mutationFn: async (kind: "login" | "cancel" | "complete") => {
       const codeInput = code.trim();
       setCode("");
       const requestId =
-        kind === "login" || kind === "install" ? crypto.randomUUID() : auth.data?.login_id;
+        kind === "login" ? crypto.randomUUID() : auth.data?.login_id;
       if (!requestId) throw new Error("Sign-in expired. Start again.");
       const openSignIn = (result: Status) => {
         if (result.state === "error") throw new Error(result.message ?? "Claude sign-in failed.");
         if (result.state === "waiting" && result.verification_url) openUrlInExternalBrowser(result.verification_url);
         return result;
       };
-      if (kind === "install") return openSignIn(await request(target, { action: "install", requestId }));
       // Cloud first tries a one-year token made on this Mac (ADR 0121); the VM code flow is the fallback.
       // Sandboxes have no fallback, so its error must not hide why the token failed.
       let tokenError: unknown = null;
@@ -304,10 +303,6 @@ function ClaudeConnectionPanel({
   const error = (auth.error?.message ?? action.error?.message)?.replace(/^HTTP \d+: /, "");
   const signInUrl = manual ? auth.data?.manual_url : auth.data?.verification_url;
   const pasteCode = target.target === "cloud" ? Boolean(signInUrl) && !returnsToMac(signInUrl!) : manual;
-  const needsInstall =
-    target.target === "cloud" &&
-    action.isError &&
-    (action.variables === "install" || (action.error instanceof BbHttpError && action.error.code === "claude_missing"));
   return (
     <div className="space-y-2 text-xs">
       <div className="flex items-center justify-between gap-2">
@@ -424,21 +419,6 @@ function ClaudeConnectionPanel({
         >
           Check again
         </Button>
-      ) : needsInstall || (action.isPending && action.variables === "install") ? (
-        <>
-          <p className="text-muted-foreground">
-            Cloudroom installs it with Anthropic&apos;s official installer, then opens Claude sign-in.
-          </p>
-          <Button
-            size="sm"
-            className="h-7 w-full text-xs"
-            disabled={action.isPending}
-            onClick={() => action.mutate("install")}
-          >
-            {action.isPending ? "Installing Claude Code… 1–3 minutes" : "Install Claude Code"}
-          </Button>
-          <ClaudeApiKeyForm />
-        </>
       ) : (
         <>
           <Button

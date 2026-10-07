@@ -2,7 +2,7 @@ import {
   deriveConnectBaseUrl,
   parseMobilePairingPayload,
   serverUrlForHandle,
-} from "@bb/connect-client";
+} from "@cloudroom/connect-client";
 
 export const DEFAULT_CONNECT_APEX_URL = "https://getbb.app";
 

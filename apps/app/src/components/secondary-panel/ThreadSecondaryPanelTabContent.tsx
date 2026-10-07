@@ -1,10 +1,10 @@
 import { type ReactNode, useEffect, useMemo } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { DiffPresentation } from "@/components/code/code-rendering";
-import type { WorkspaceDiffTarget } from "@bb/domain";
+import type { WorkspaceDiffTarget } from "@cloudroom/domain";
 import type { MarkdownLinkRouting } from "@/components/ui/markdown-link-routing.js";
-import { Skeleton } from "@bb/shared-ui/skeleton";
-import { EmptyStatePanel } from "@bb/shared-ui/empty-state";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
+import { EmptyStatePanel } from "@cloudroom/shared-ui/empty-state";
 import {
   useEnvironmentDiffFiles,
   useEnvironment,
@@ -28,8 +28,8 @@ import type {
   FilePreview,
   FilePreviewLineRange,
   WorkspaceFilePreviewStatusLabel,
-} from "@bb/client-core";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/client-core";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { PANEL_SCROLL_SLOT_CLASS } from "./panelChromeClasses";
 import { DiffFilesPanel } from "./git-diff/DiffFilesPanel";
 import { clearDiffFileCardStates } from "./git-diff/diffFilesStore";

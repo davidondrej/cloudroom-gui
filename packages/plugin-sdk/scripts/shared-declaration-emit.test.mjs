@@ -15,21 +15,21 @@ it("preserves inferred types, ambient declarations, and distinct workspace compi
   try {
     const sdk = path.join(root, "sdk");
     const contract = path.join(root, "contract");
-    await mkdir(path.join(sdk, "node_modules/@bb"), { recursive: true });
+    await mkdir(path.join(sdk, "node_modules/@cloudroom"), { recursive: true });
     await mkdir(contract);
-    await symlink(contract, path.join(sdk, "node_modules/@bb/contract"), "dir");
+    await symlink(contract, path.join(sdk, "node_modules/@cloudroom/contract"), "dir");
     await writeFile(
       path.join(contract, "package.json"),
-      JSON.stringify({ name: "@bb/contract", types: "index.ts" }),
+      JSON.stringify({ name: "@cloudroom/contract", types: "index.ts" }),
     );
     const entries = [path.join(sdk, "index.ts"), path.join(sdk, "other.ts")];
     await writeFile(
       entries[0],
-      'export { value, nullable, ambientValue } from "@bb/contract";\nexport const own = [1, null];',
+      'export { value, nullable, ambientValue } from "@cloudroom/contract";\nexport const own = [1, null];',
     );
     await writeFile(
       entries[1],
-      'export { value } from "@bb/contract";\nexport const other = "second" as const;',
+      'export { value } from "@cloudroom/contract";\nexport const other = "second" as const;',
     );
     await writeFile(
       path.join(contract, "index.ts"),
@@ -50,7 +50,7 @@ it("preserves inferred types, ambient declarations, and distinct workspace compi
       }),
     );
     const resolveSource = (id) =>
-      id === "@bb/contract" ? path.join(contract, "index.ts") : null;
+      id === "@cloudroom/contract" ? path.join(contract, "index.ts") : null;
     async function bundle(entry, plugins) {
       const build = await rollup({ input: entry, plugins });
       try {

@@ -12,25 +12,25 @@ import {
   type ExperimentalSidebarFooterDisclosureProps,
   useBbContext,
 } from "@get-bb/plugin-sdk/app";
-import { Icon } from "@bb/shared-ui/icon";
-import { Button } from "@bb/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/dropdown-menu";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   formatUsageReset,
   formatUsdCents,
   usageBarColorClass,
-} from "@bb/shared-ui/lib/usage-format";
-import { LIST_HOVER_TRANSITION } from "@bb/shared-ui/motion";
+} from "@cloudroom/shared-ui/lib/usage-format";
+import { LIST_HOVER_TRANSITION } from "@cloudroom/shared-ui/motion";
 import {
   OPTION_BASE_CLASS_NAME,
   OPTION_INTERACTIVE_CLASS_NAME,
-} from "@bb/shared-ui/option-display";
+} from "@cloudroom/shared-ui/option-display";
 import {
   selectUsageMachine,
   usageRpcSuccessSchema,
@@ -257,6 +257,89 @@ function ProviderUsageBody({ provider }: { provider: UsageProvider }) {
   }
 }
 
+function AccountPager({
+  accounts,
+  refresh,
+}: {
+  accounts: UsageProvider[];
+  refresh: () => void;
+}) {
+  const inUse = Math.max(
+    0,
+    accounts.findIndex((account) => account.inUse === true),
+  );
+  const [picked, setPicked] = useState<string | null>(null);
+  const index = Math.max(
+    0,
+    picked === null
+      ? inUse
+      : accounts.findIndex((account) => account.id === picked),
+  );
+  const account = accounts[index]!;
+  const flip = (step: number) =>
+    setPicked(accounts[(index + step + accounts.length) % accounts.length]!.id);
+  const label =
+    account.accountLabel ??
+    (account.usage?.status === "ok" ? account.usage.accountEmail : null) ??
+    "This machine's login";
+  const use = async () => {
+    await fetch("/api/v1/plugins/accounts/rpc/accounts.use", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        provider: account.providerId,
+        id: account.accountId,
+      }),
+    }).catch(() => undefined);
+    setPicked(null);
+    refresh();
+  };
+  const chevron =
+    "flex size-4 shrink-0 items-center justify-center rounded-sm text-subtle-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground";
+  return (
+    <div className="mt-1 pl-5.5">
+      <div className="flex min-w-0 items-center gap-1 text-2xs text-subtle-foreground">
+        <button
+          type="button"
+          aria-label="Previous account"
+          className={chevron}
+          onClick={() => flip(-1)}
+        >
+          <Icon name="ChevronLeft" aria-hidden="true" className="size-3" />
+        </button>
+        <span title={label} className="min-w-0 flex-1 truncate">
+          {label}
+        </span>
+        {account.inUse ? (
+          <span className="shrink-0 text-sidebar-foreground">In use</span>
+        ) : (
+          <button
+            type="button"
+            className="shrink-0 underline-offset-2 hover:text-sidebar-foreground hover:underline"
+            onClick={() => void use()}
+          >
+            Use
+          </button>
+        )}
+        <span className="shrink-0 tabular-nums">
+          {index + 1}/{accounts.length}
+        </span>
+        <button
+          type="button"
+          aria-label="Next account"
+          className={chevron}
+          onClick={() => flip(1)}
+        >
+          <Icon name="ChevronRight" aria-hidden="true" className="size-3" />
+        </button>
+      </div>
+      <div className="mt-1">
+        <ProviderUsageBody provider={account} />
+      </div>
+    </div>
+  );
+}
+
 function MachineSelector({
   machines,
   activeMachine,
@@ -327,6 +410,43 @@ function MachineSelector({
         })}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/** Today's active minutes, shown only while the Time in Cloudroom plugin is enabled. */
+function TimeInCloudroom() {
+  const [minutes, setMinutes] = useState<number | null>(null);
+  useEffect(() => {
+    let live = true;
+    let timer: number | null = null;
+    const load = async () => {
+      if (document.visibilityState !== "visible") return;
+      const time = (await (await fetch("/api/v1/cloudroom/time-in-app?only=today")).json()) as { today?: unknown };
+      if (live) setMinutes(typeof time.today === "number" ? time.today : null);
+    };
+    // The plugin list is checked once, when the panel opens; then only today's number, once a minute.
+    void (async () => {
+      const list = (await (await fetch("/api/v1/plugins")).json()) as { plugins?: { id: string; enabled: boolean }[] };
+      if (!live || !list.plugins?.some((plugin) => plugin.id === "time-in-cloudroom" && plugin.enabled)) return;
+      await load();
+      if (live) timer = window.setInterval(() => void load().catch(() => {}), 60_000);
+    })().catch(() => {});
+    return () => {
+      live = false;
+      if (timer !== null) window.clearInterval(timer);
+    };
+  }, []);
+  if (minutes === null) return null;
+  return (
+    <section aria-label="Time in Cloudroom">
+      <h2 className="flex min-w-0 items-center gap-2 text-xs font-medium text-sidebar-foreground">
+        <Icon name="Clock" aria-hidden="true" className="size-3.5 shrink-0" />
+        <span className="min-w-0 flex-1 truncate">Time in Cloudroom</span>
+        <span className="text-2xs font-normal tabular-nums text-subtle-foreground">
+          {minutes < 60 ? `${minutes}m` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`} today
+        </span>
+      </h2>
+    </section>
   );
 }
 
@@ -465,6 +585,7 @@ export function ProviderUsageStatusContent({
         </button>
       </div>
       <div className="min-h-0 space-y-3 overflow-y-auto p-2.5">
+        <TimeInCloudroom />
         {feedback === null ? null : (
           <UsageFeedback
             message={feedback}
@@ -482,30 +603,46 @@ export function ProviderUsageStatusContent({
               />
               <span className="truncate">{provider.displayName}</span>
             </h2>
-            {provider.accounts.map((account) => (
-              <div key={account.id} className="mt-1 pl-5.5">
-                {account.accountLabel === null ? null : (
-                  <h3
-                    title={account.accountLabel}
-                    className="truncate text-2xs text-subtle-foreground"
-                  >
-                    {account.accountLabel}
-                  </h3>
-                )}
-                {account.usage === null && snapshot.isRefreshing ? (
-                  <p className="text-xs text-muted-foreground">
-                    {usageFeedbackMessages.loading}
-                  </p>
-                ) : account.usage === null &&
-                  (activeMachine?.error != null || snapshot.error !== null) ? (
-                  <p className="text-xs text-muted-foreground">
-                    {usageFeedbackMessages.unavailable}
-                  </p>
-                ) : (
-                  <ProviderUsageBody provider={account} />
-                )}
-              </div>
-            ))}
+            {provider.accounts.some((account) => account.accountId) ? (
+              <AccountPager
+                accounts={provider.accounts}
+                refresh={() =>
+                  void refreshUsage({
+                    force: false,
+                    machineIds:
+                      activeMachineId === null ? null : [activeMachineId],
+                    maxAgeMs: CARD_MAX_AGE_MS,
+                  })
+                }
+              />
+            ) : null}
+            {provider.accounts.some((account) => account.accountId)
+              ? null
+              : provider.accounts.map((account) => (
+                  <div key={account.id} className="mt-1 pl-5.5">
+                    {account.accountLabel === null ? null : (
+                      <h3
+                        title={account.accountLabel}
+                        className="truncate text-2xs text-subtle-foreground"
+                      >
+                        {account.accountLabel}
+                      </h3>
+                    )}
+                    {account.usage === null && snapshot.isRefreshing ? (
+                      <p className="text-xs text-muted-foreground">
+                        {usageFeedbackMessages.loading}
+                      </p>
+                    ) : account.usage === null &&
+                      (activeMachine?.error != null ||
+                        snapshot.error !== null) ? (
+                      <p className="text-xs text-muted-foreground">
+                        {usageFeedbackMessages.unavailable}
+                      </p>
+                    ) : (
+                      <ProviderUsageBody provider={account} />
+                    )}
+                  </div>
+                ))}
           </section>
         ))}
       </div>

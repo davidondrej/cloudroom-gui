@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { publishedMigrationWhensByTag } from "../src/migration-history.js";
-import { defaultAppSettings } from "@bb/domain";
+import { defaultAppSettings } from "@cloudroom/domain";
 import {
   createQueuedThreadMessage,
   createThread,
@@ -682,6 +682,7 @@ function dropCloudroomSchema(db: DbConnection): void {
   for (const [table, column] of [
     ["threads", "execution_target"],
     ["queued_thread_messages", "hard_queue"],
+    ["projects", "hidden_at"],
   ]) {
     if (
       db.$client

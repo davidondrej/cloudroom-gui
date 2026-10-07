@@ -6,20 +6,20 @@ import {
   type MouseEventHandler,
   type ReactNode,
 } from "react";
-import type { ThreadListEntry } from "@bb/domain";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
-import type { ThreadSearchMatch } from "@bb/server-contract";
+import type { ThreadListEntry } from "@cloudroom/domain";
+import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
+import type { ThreadSearchMatch } from "@cloudroom/server-contract";
 import {
   resolveThreadListIndicator,
   threadListIndicatorStateForThread,
-} from "@bb/client-core";
-import { CHROME_SECTION_LABEL_CLASS } from "@bb/shared-ui/chrome-style-tokens";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/client-core";
+import { CHROME_SECTION_LABEL_CLASS } from "@cloudroom/shared-ui/chrome-style-tokens";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   COARSE_POINTER_ICON_SIZE_CLASS,
   COARSE_POINTER_TEXT_SM_CLASS,
-} from "@bb/shared-ui/coarse-pointer-sizing";
+} from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import { useThreadTitleMentionResources } from "@/components/thread/ThreadTitleMentions";
 import { ThreadStatusGlyph } from "@/components/sidebar/ThreadRow";
 import {

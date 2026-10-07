@@ -3,7 +3,7 @@ import type {
   ThreadEvent,
   ThreadEventWebFetchItem,
   ThreadEventWebSearchItem,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { promptTextInput } from "./test/prompt-input.js";
 import {
   cleanup,

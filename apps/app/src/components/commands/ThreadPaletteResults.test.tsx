@@ -9,12 +9,12 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ThreadListEntry } from "@bb/domain";
+import type { ThreadListEntry } from "@cloudroom/domain";
 import type {
   ThreadSearchMatch,
   ThreadSearchResponse,
   SidebarBootstrapResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   useThreadSearch,
   type UseThreadSearchResult,
@@ -23,7 +23,7 @@ import {
   ThreadPaletteResults,
   type ThreadPaletteNavigationItem,
 } from "./ThreadPaletteResults";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import {
   makeProjectWithThreadsResponse,
   makeSidebarBootstrapResponse,

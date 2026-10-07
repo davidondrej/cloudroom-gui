@@ -6,9 +6,9 @@ import { afterEach, beforeEach, expect, it } from "vitest";
 import {
   formatConformanceReport,
   runBridgeConformance,
-} from "@bb/provider-bridge-protocol/conformance";
-import { captureBridgeJsonRpcOutput } from "@bb/provider-bridge-protocol/testing";
-import type { CapturedBridgeJsonRpcOutput } from "@bb/provider-bridge-protocol/testing";
+} from "@cloudroom/provider-bridge-protocol/conformance";
+import { captureBridgeJsonRpcOutput } from "@cloudroom/provider-bridge-protocol/testing";
+import type { CapturedBridgeJsonRpcOutput } from "@cloudroom/provider-bridge-protocol/testing";
 
 import { handleLine } from "./bridge.js";
 

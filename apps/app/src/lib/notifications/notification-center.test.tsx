@@ -8,7 +8,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { Toaster } from "sonner";
-import { CompactViewportOverrideProvider } from "@bb/shared-ui/hooks/use-compact-viewport";
+import { CompactViewportOverrideProvider } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { appToast } from "@/components/ui/app-toast";
 import {

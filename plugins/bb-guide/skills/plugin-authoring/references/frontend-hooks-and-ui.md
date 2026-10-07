@@ -112,7 +112,7 @@ component kit is removed. The app module still exports focused Cloudroom capabil
 components such as `ThreadChat`, `Markdown`, file links, pickers, source and
 diff viewers, and the new-thread composer.
 
-- Builtin plugins in this repo import shared UI from `@bb/shared-ui` (the
+- Builtin plugins in this repo import shared UI from `@cloudroom/shared-ui` (the
   single source of truth the app also consumes and the registry generates
   from); external and example plugins still vendor source through the registry.
 - `room-cli plugin new` pre-vendors button, card, input, checkbox, dialog (plus

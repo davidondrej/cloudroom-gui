@@ -1,4 +1,4 @@
-import { getEnvironment, getThread } from "@bb/db";
+import { getEnvironment, getThread } from "@cloudroom/db";
 import { requireNativeThread } from "../cloudroom/commands.js";
 import { command as savedCloudCommand, teleportProgress } from "../cloudroom/store.js";
 import { resolveHostEnvironment } from "./host-environment.js";
@@ -7,7 +7,7 @@ import {
   type HostDaemonCommand,
   type HostDaemonCommandResult,
   type HostDaemonSettledCommandType,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { ApiError } from "../../errors.js";
 import {
   buildCommandResultSettlementDeps,

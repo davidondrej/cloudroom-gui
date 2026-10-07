@@ -1,6 +1,6 @@
-import { recordEnvironmentCurrentBranch } from "@bb/db/internal-environment-lifecycle";
-import type { Environment } from "@bb/domain";
-import type { HostDaemonOnlineRpcResult } from "@bb/host-daemon-contract";
+import { recordEnvironmentCurrentBranch } from "@cloudroom/db/internal-environment-lifecycle";
+import type { Environment } from "@cloudroom/domain";
+import type { HostDaemonOnlineRpcResult } from "@cloudroom/host-daemon-contract";
 import {
   COMMAND_TIMEOUT_MS,
   WORKSPACE_STATUS_MAX_UNTRACKED_LINE_STAT_BYTES,

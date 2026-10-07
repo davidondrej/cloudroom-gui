@@ -3,8 +3,8 @@ import {
   encodeClientTurnRequestIdNumber,
   threadScope,
   turnScope,
-} from "@bb/domain";
-import type { ClientTurnRequestId, Thread } from "@bb/domain";
+} from "@cloudroom/domain";
+import type { ClientTurnRequestId, Thread } from "@cloudroom/domain";
 import {
   createConnection,
   createProject,
@@ -13,8 +13,8 @@ import {
   migrate,
   noopNotifier,
   upsertHost,
-} from "@bb/db";
-import type { DbConnection } from "@bb/db";
+} from "@cloudroom/db";
+import type { DbConnection } from "@cloudroom/db";
 import { buildThreadTimelineWithProfile } from "../../../src/services/threads/timeline.js";
 
 const providerThreadId = "provider-root";

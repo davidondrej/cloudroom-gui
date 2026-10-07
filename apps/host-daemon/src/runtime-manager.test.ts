@@ -3,21 +3,21 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import type { AgentRuntime, AgentRuntimeOptions } from "@bb/agent-runtime";
-import type { ThreadEvent } from "@bb/domain";
-import { threadScope, turnScope } from "@bb/domain";
-import type { HostDaemonInjectedSkillSource } from "@bb/host-daemon-contract";
-import type { HostWatcher } from "@bb/host-watcher";
+import type { AgentRuntime, AgentRuntimeOptions } from "@cloudroom/agent-runtime";
+import type { ThreadEvent } from "@cloudroom/domain";
+import { threadScope, turnScope } from "@cloudroom/domain";
+import type { HostDaemonInjectedSkillSource } from "@cloudroom/host-daemon-contract";
+import type { HostWatcher } from "@cloudroom/host-watcher";
 import {
   provisionWorkspace,
   type HostWorkspace,
   type ProvisionWorkspaceArgs,
-} from "@bb/host-workspace";
+} from "@cloudroom/host-workspace";
 import {
   createDeferredPromise,
   makeWorkspaceMergeBase,
   makeWorkspaceStatus,
-} from "@bb/test-helpers";
+} from "@cloudroom/test-helpers";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   RuntimeManager,

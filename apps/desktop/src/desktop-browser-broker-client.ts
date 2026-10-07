@@ -7,7 +7,7 @@ import {
   desktopBrowserBrokerDescriptorSchema,
   desktopBrowserBrokerRequestSchema,
   desktopBrowserResultSchemas,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type { DesktopBrowserBroker } from "./desktop-browser-broker.js";
 
 async function readBrokerDescriptor(dataDir: string) {

@@ -6,22 +6,22 @@ import {
   createAgentRuntime,
   type AgentRuntime,
   type AgentRuntimeProcessExitInfo,
-} from "@bb/agent-runtime";
+} from "@cloudroom/agent-runtime";
 import {
   createScriptedEchoRequestRecord,
   type ScriptedEchoLaunchScript,
   type ScriptedEchoRequestRecord,
-} from "@bb/agent-runtime/test";
-import { buildPluginHost, resolvePluginBuildToolchain } from "@bb/plugin-build";
+} from "@cloudroom/agent-runtime/test";
+import { buildPluginHost, resolvePluginBuildToolchain } from "@cloudroom/plugin-build";
 import {
   encodeClientTurnRequestIdNumber,
   type ClientTurnRequestId,
   type ThreadEvent,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   HostDaemonBridgeLaunch,
   HostDaemonOnlineRpcResponseMessage,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { dispatchCommand } from "../../src/command-dispatch.js";
 import {

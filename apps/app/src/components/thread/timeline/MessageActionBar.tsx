@@ -10,25 +10,25 @@ import {
 import { flushSync } from "react-dom";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { CopyButton } from "../../ui/copy-button.js";
-import { Icon } from "@bb/shared-ui/icon";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
-import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
-import { preventOverlayTriggerSelection } from "@bb/shared-ui/overlay-trigger";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
+import { usePointerCoarse } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
+import { preventOverlayTriggerSelection } from "@cloudroom/shared-ui/overlay-trigger";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
+} from "@cloudroom/shared-ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
-import { cn } from "@bb/shared-ui/lib/utils";
-import type { PromptDraftAttachment } from "@bb/client-core";
+} from "@cloudroom/shared-ui/tooltip";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import type { PromptDraftAttachment } from "@cloudroom/client-core";
 import { usePortalScopeProps } from "@/lib/portal-scope";
 import { PluginIcon, pluginIconName } from "@/components/plugin/PluginIcon";
 import type { ThreadTimelinePluginMessageAction } from "./types.js";

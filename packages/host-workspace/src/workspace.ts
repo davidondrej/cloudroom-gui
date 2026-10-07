@@ -6,10 +6,10 @@ import type {
   WorkspaceFileStatus,
   WorkspaceFileStatusKind,
   WorkspaceStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import os from "node:os";
 import path from "node:path";
-import { pathExists } from "@bb/process-utils";
+import { pathExists } from "@cloudroom/process-utils";
 import {
   getPullRequestForCurrentBranch,
   runPullRequestActionForCurrentBranch,

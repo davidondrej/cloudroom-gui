@@ -1,5 +1,5 @@
-import { extractErrorMessage, toRecord } from "@bb/core-ui";
-import { BbHttpError } from "@bb/sdk/browser";
+import { extractErrorMessage, toRecord } from "@cloudroom/core-ui";
+import { BbHttpError } from "@cloudroom/sdk/browser";
 import { appToast } from "@/components/ui/app-toast";
 import { HttpError } from "./api";
 import {

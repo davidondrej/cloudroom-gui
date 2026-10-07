@@ -7,7 +7,7 @@ import {
   type BbDesktopBrowserSetBoundsRequest,
   type BbDesktopBrowserSetVisibleRequest,
   type BbDesktopBrowserStopFindInPageRequest,
-} from "@bb/desktop-contract";
+} from "@cloudroom/desktop-contract";
 import {
   BB_DESKTOP_BROWSER_ATTACH_CHANNEL,
   BB_DESKTOP_BROWSER_DETACH_CHANNEL,

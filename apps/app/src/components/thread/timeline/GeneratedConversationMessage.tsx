@@ -1,23 +1,23 @@
 import { memo, useCallback, useMemo, useRef } from "react";
-import type { TimelineUserConversationRow } from "@bb/server-contract";
+import type { TimelineUserConversationRow } from "@cloudroom/server-contract";
 import type {
   PromptTextMention,
   SystemMessageKind,
   SystemMessageSubject,
   ThreadOriginKind,
-} from "@bb/domain";
-import type { TimelineTitle, TimelineTitleSegment } from "@bb/thread-view";
-import { type IconName } from "@bb/shared-ui/icon";
+} from "@cloudroom/domain";
+import type { TimelineTitle, TimelineTitleSegment } from "@cloudroom/thread-view";
+import { type IconName } from "@cloudroom/shared-ui/icon";
 import { MarkdownPreview } from "@/components/ui/markdown-preview.js";
 import type { MarkdownLinkRouting } from "@/components/ui/markdown-link-routing.js";
 import { buildMarkdownMessageLinkRouting } from "@/components/ui/markdown-message-link-routing";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
 import {
   ConversationAttachments,
   type ConversationAttachmentItems,
 } from "./ConversationAttachments.js";
-import { computeMutedPrefixLength } from "@bb/client-core";
+import { computeMutedPrefixLength } from "@cloudroom/client-core";
 import {
   clipMentionTextToVisibleRange,
   shiftMentionsToTextRange,
@@ -32,7 +32,7 @@ import type {
   ThreadTimelineLinkHandler,
   ThreadTimelineLocalFileLinkHandler,
 } from "./types.js";
-import { turnRequestLabel } from "@bb/client-core";
+import { turnRequestLabel } from "@cloudroom/client-core";
 import { TurnRequestLabel } from "./TurnRequestLabel.js";
 import { useOverflowMeasurement } from "./conversation-message-overflow.js";
 import { PromptMentionPill } from "./ConversationMessageMentions.js";
@@ -43,7 +43,7 @@ import {
   closeUnterminatedMarkdownCodeSpan,
   endsInsideExactRawThreadIdCodeSpan,
   GENERATED_MESSAGE_COLLAPSED_PREVIEW_CHAR_CAP,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 interface GeneratedConversationMessageProps {
   attachmentItems: ConversationAttachmentItems;

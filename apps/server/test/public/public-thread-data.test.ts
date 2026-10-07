@@ -15,14 +15,14 @@ import {
   getThread,
   queuedThreadMessages,
   setThreadExecutionOverride,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   encodeClientTurnRequestIdNumber,
   threadQueuedMessageSchema,
   threadScope,
   threadSchema,
   turnScope,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   type TimelineRow,
   sidebarBootstrapResponseSchema,
@@ -35,8 +35,8 @@ import {
   threadWithIncludesResponseSchema,
   timelineTurnSummaryDetailsResponseSchema,
   uploadedPromptAttachmentSchema,
-} from "@bb/server-contract";
-import { renderTemplate } from "@bb/templates";
+} from "@cloudroom/server-contract";
+import { renderTemplate } from "@cloudroom/templates";
 import { z } from "zod";
 import { describe, expect, it, vi } from "vitest";
 import type { TelemetryService } from "../../src/services/system/telemetry.js";

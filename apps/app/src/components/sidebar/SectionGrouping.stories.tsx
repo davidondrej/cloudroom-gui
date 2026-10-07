@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { ThreadListEntry } from "@bb/domain";
+import type { ThreadListEntry } from "@cloudroom/domain";
 import {
   PROJECT_IDS,
   makeThreadListEntry,
@@ -16,7 +16,7 @@ import {
   buildSidebarEntitySectionId,
   compareStandardThreads,
   type SidebarSectionDefinition,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 export default {
   title: "sidebar/Section grouping",

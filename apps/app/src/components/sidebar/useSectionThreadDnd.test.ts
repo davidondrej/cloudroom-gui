@@ -1,10 +1,10 @@
-import type { ThreadListEntry } from "@bb/domain";
+import type { ThreadListEntry } from "@cloudroom/domain";
 import { describe, expect, it } from "vitest";
 import {
   buildPinnedSidebarState,
   buildSectionThreadList,
   CHRONOLOGICAL_CONTAINER_ID,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   buildPinInsertRequest,
   collectSectionThreadDndLookup,
@@ -18,7 +18,7 @@ import {
   resolveThreadRowNestCollisions,
 } from "./useSectionThreadDnd";
 import { getSidebarThreadRowDroppableId } from "./sidebarThreadRowDroppable";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 
 function createThread(overrides: Partial<ThreadListEntry>): ThreadListEntry {
   return makeThreadListEntry({

@@ -1,10 +1,10 @@
 import { setTimeout as delay } from "node:timers/promises";
 import { SERVER_DIRECT_AI_SERVICE_IDS } from "@get-bb/plugin-sdk/internal/host-policy";
-import { jsonObjectSchema, type JsonObject, type JsonValue } from "@bb/domain";
+import { jsonObjectSchema, type JsonObject, type JsonValue } from "@cloudroom/domain";
 import {
   parseProviderModelConfig,
   type ProviderModelInfo,
-} from "@bb/config/inference-model";
+} from "@cloudroom/config/inference-model";
 import { validateToolCall } from "@earendil-works/pi-ai";
 import type { Static, TSchema, Tool, ToolCall } from "@earendil-works/pi-ai";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";

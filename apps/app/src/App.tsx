@@ -11,6 +11,8 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { CloudroomAccountPanels } from "./components/CloudroomAccountPanels";
 import { Onboarding } from "./components/Onboarding";
 import { InviteOffer } from "./components/InviteOffer";
+import { SharedThreadOpener } from "./components/SharedThreadOpener";
+import { InstallAppSheet } from "./components/InstallAppSheet";
 import { AuthCallbackView } from "./views/AuthCallbackView";
 import { QuickCreateProjectProvider } from "./hooks/useQuickCreateProject";
 import { RouteNavigationProvider } from "./components/ui/app-route-anchor";
@@ -445,6 +447,8 @@ export function App() {
               <ProviderCliInstallLogDialogHost />
               <Onboarding />
               <InviteOffer />
+              <SharedThreadOpener />
+              <InstallAppSheet />
               <CloudroomAccountPanels />
             </AppFileExternalNavigationHost>
           </AppNavigationUrlHost>

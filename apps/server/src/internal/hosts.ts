@@ -1,11 +1,11 @@
-import { upsertHost } from "@bb/db";
-import { isLoopbackAddress } from "@bb/config/loopback";
+import { upsertHost } from "@cloudroom/db";
+import { isLoopbackAddress } from "@cloudroom/config/loopback";
 import {
   hostDaemonEnrollKeyRequestSchema,
   hostDaemonEnrollRequestSchema,
   typedRoutes,
   type HostDaemonInternalSchema,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type { Hono } from "hono";
 import type { AppDeps } from "../types.js";
 import { ApiError } from "../errors.js";

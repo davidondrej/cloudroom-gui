@@ -1,7 +1,7 @@
-import type { TimelineConversationTurnRequest } from "@bb/server-contract";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { turnRequestLabel } from "@bb/client-core";
+import type { TimelineConversationTurnRequest } from "@cloudroom/server-contract";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { turnRequestLabel } from "@cloudroom/client-core";
 
 interface TurnRequestLabelProps {
   turnRequest: TimelineConversationTurnRequest;

@@ -1,5 +1,5 @@
 // Semver parsing, comparison, and bump derivation shared by the repo's version
-// bump scripts (scripts/bump-version.mjs for bb-app/@bb/desktop,
+// bump scripts (scripts/bump-version.mjs for bb-app/@cloudroom/desktop,
 // scripts/bump-plugin-sdk.mjs for @get-bb/plugin-sdk). Kept dependency-free so
 // the release workflow can run it without an install step.
 const semverPattern =

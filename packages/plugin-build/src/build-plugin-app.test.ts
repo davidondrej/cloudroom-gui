@@ -84,8 +84,8 @@ describe("plugin app runtime shim", () => {
           `import clsx from "clsx";`,
           `import { twMerge } from "tailwind-merge";`,
           `import { cva } from "class-variance-authority";`,
-          `import { Icon } from "@bb/shared-ui/icon";`,
-          `import { useQuestionFormHost } from "@bb/shared-ui/question-form-host";`,
+          `import { Icon } from "@cloudroom/shared-ui/icon";`,
+          `import { useQuestionFormHost } from "@cloudroom/shared-ui/question-form-host";`,
           `export { clsx, twMerge, cva, Icon, useQuestionFormHost };`,
         ].join("\n"),
         loader: "js",
@@ -141,10 +141,10 @@ describe("plugin app runtime shim", () => {
   it("shims shared-ui's relative ./icon import but bundles a plugin's own icon module", async () => {
     const dir = await mkdtemp(join(tmpdir(), "bb-plugin-icon-rel-"));
     tempDirs.push(dir);
-    const sharedUiDir = join(dir, "node_modules", "@bb", "shared-ui");
+    const sharedUiDir = join(dir, "node_modules", "@cloudroom", "shared-ui");
     const files: Record<string, string> = {
       [join(sharedUiDir, "package.json")]: JSON.stringify({
-        name: "@bb/shared-ui",
+        name: "@cloudroom/shared-ui",
         type: "module",
         exports: {
           "./empty-state": "./src/components/ui/empty-state.tsx",
@@ -160,7 +160,7 @@ describe("plugin app runtime shim", () => {
       [join(dir, "components", "ui", "button.tsx")]:
         `import { Icon } from "./icon";\nexport function Button() { return Icon; }\n`,
       [join(dir, "app.tsx")]:
-        `import { EmptyState } from "@bb/shared-ui/empty-state";\nimport { Button } from "./components/ui/button";\nexport { EmptyState, Button };\n`,
+        `import { EmptyState } from "@cloudroom/shared-ui/empty-state";\nimport { Button } from "./components/ui/button";\nexport { EmptyState, Button };\n`,
     };
     for (const [filePath, contents] of Object.entries(files)) {
       await mkdir(dirname(filePath), { recursive: true });

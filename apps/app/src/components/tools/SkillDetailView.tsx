@@ -1,8 +1,8 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
-import { formatHomePathForDisplay } from "@bb/shared-ui/lib/utils";
-import { ResourceInfiniteScrollSentinel } from "@bb/shared-ui/resource-pagination";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { formatHomePathForDisplay } from "@cloudroom/shared-ui/lib/utils";
+import { ResourceInfiniteScrollSentinel } from "@cloudroom/shared-ui/resource-pagination";
 import {
   ResourceDefinitionSection,
   ResourceDetailCollection,
@@ -10,13 +10,13 @@ import {
   ResourceDetailPage,
   ResourceDetailPanel,
   ResourceDetailStack,
-} from "@bb/shared-ui/resource-list";
+} from "@cloudroom/shared-ui/resource-list";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
+} from "@cloudroom/shared-ui/tooltip";
 import { FilePreview } from "@/components/secondary-panel/FilePreview.js";
 import { ProvenancePill } from "@/components/tools/ProvenancePill";
 import { useClipboardCopy } from "@/lib/clipboard";

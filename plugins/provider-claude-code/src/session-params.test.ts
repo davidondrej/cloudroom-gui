@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RuntimePermissionPolicy } from "@bb/domain";
+import type { RuntimePermissionPolicy } from "@cloudroom/domain";
 import {
   buildClaudeSessionParams,
   buildClaudeTurnParams,

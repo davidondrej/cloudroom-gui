@@ -4,13 +4,13 @@ import {
   getThread,
   listIdleThreadsWithQueuedMessages,
   listQueuedThreadMessages,
-} from "@bb/db";
-import { applyEnvironmentLifecycleEvent } from "@bb/db/internal-environment-lifecycle";
+} from "@cloudroom/db";
+import { applyEnvironmentLifecycleEvent } from "@cloudroom/db/internal-environment-lifecycle";
 import {
   encodeClientTurnRequestIdNumber,
   threadScope,
   type EnvironmentStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { describe, expect, it } from "vitest";
 import { readJson } from "../helpers/json.js";
 import {

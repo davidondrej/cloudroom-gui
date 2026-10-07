@@ -2,10 +2,11 @@ import { z } from "zod";
 import { describe, expect, it } from "vitest";
 import {
   ensurePersonalProject,
+  getThread,
   listPublicProjects,
   setExperiments,
-} from "@bb/db";
-import { defaultExperiments, PERSONAL_PROJECT_ID } from "@bb/domain";
+} from "@cloudroom/db";
+import { defaultExperiments, PERSONAL_PROJECT_ID } from "@cloudroom/domain";
 import {
   reportQueuedCommandSuccess,
   waitForQueuedCommand,
@@ -114,6 +115,66 @@ describe("public project local host routes", () => {
       );
       expect(repeatedProject.id).toBe(firstProject.id);
       expect(listPublicProjects(harness.db)).toHaveLength(1);
+    });
+  });
+
+  it("hides a project without deleting its threads, and adding its folder again shows it", async () => {
+    await withTestHarness(async (harness) => {
+      const host = seedHost(harness.deps, { id: "host-hidden-project" });
+      seedPrimaryHost(harness.deps, host.id);
+      const { project } = seedProjectWithSource(harness.deps, {
+        hostId: host.id,
+        path: "/tmp/hidden-project",
+      });
+      const thread = seedThread(harness.deps, {
+        projectId: project.id,
+        status: "idle",
+      });
+      const visibleIds = async () =>
+        z
+          .object({ projects: z.array(z.object({ id: z.string() })) })
+          .parse(
+            await readJson(
+              await harness.app.request("/api/v1/sidebar-bootstrap"),
+            ),
+          )
+          .projects.map((entry) => entry.id);
+
+      const hide = await harness.app.request(`/api/v1/projects/${project.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ hidden: true }),
+      });
+      expect(hide.status).toBe(200);
+      expect(await visibleIds()).not.toContain(project.id);
+      const hidden = await harness.app.request("/api/v1/projects?hidden=true");
+      expect(await readJson(hidden)).toEqual([
+        expect.objectContaining({ id: project.id }),
+      ]);
+      expect(getThread(harness.db, thread.id)).toMatchObject({
+        archivedAt: expect.any(Number),
+        deletedAt: null,
+      });
+
+      const readd = await harness.app.request("/api/v1/projects", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: "Hidden Project",
+          source: {
+            type: "local_path",
+            hostId: host.id,
+            path: "/tmp/hidden-project",
+          },
+        }),
+      });
+      expect(projectResponseSchema.parse(await readJson(readd)).id).toBe(
+        project.id,
+      );
+      expect(await visibleIds()).toContain(project.id);
+      expect(getThread(harness.db, thread.id)?.archivedAt).toEqual(
+        expect.any(Number),
+      );
     });
   });
 

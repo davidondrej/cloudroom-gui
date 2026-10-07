@@ -3,13 +3,13 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createStore } from "jotai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BbHttpError } from "@bb/sdk/browser";
+import { BbHttpError } from "@cloudroom/sdk/browser";
 import {
   defaultUiPreferences,
   type UiPreferenceKey,
   type UiPreferenceValue,
-} from "@bb/domain";
-import type { UiPreferencesResponse } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { UiPreferencesResponse } from "@cloudroom/server-contract";
 import {
   getCachedUiPreferences,
   setCachedUiPreferences,
@@ -30,7 +30,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/sdk", async () => {
-  const actual = await import("@bb/sdk/browser");
+  const actual = await import("@cloudroom/sdk/browser");
   return {
     BbHttpError: actual.BbHttpError,
     sdk: {

@@ -8,12 +8,12 @@ import {
   type PromptInput,
   serviceTierSchema,
   type ServiceTier,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   DEFAULT_THREAD_WAIT_POLL_INTERVAL_MS,
   DEFAULT_THREAD_WAIT_TIMEOUT_MS,
-} from "@bb/sdk";
-import type { BbSdk } from "@bb/sdk/node";
+} from "@cloudroom/sdk";
+import type { BbSdk } from "@cloudroom/sdk/node";
 import { joinValues } from "../helpers.js";
 
 export const THREAD_WAIT_EXIT_CODE_TIMEOUT = 2;

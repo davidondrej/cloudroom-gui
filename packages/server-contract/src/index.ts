@@ -6,14 +6,14 @@ export * from "./errors.js";
 export * from "./public-api.js";
 export * from "./thread-timeline.js";
 
-export { typedRoutes } from "@bb/hono-typed-routes";
+export { typedRoutes } from "@cloudroom/hono-typed-routes";
 
 export {
   changedMessageLenientSchema,
   pingMessageSchema,
   pongMessageLenientSchema,
   realtimeSubscriptionTargetKey,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 export type {
   ChangedMessage,
@@ -21,6 +21,6 @@ export type {
   RealtimeSubscriptionTarget,
   ThreadChangeKind,
   ThreadChangedMessage,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 export * from "./api/machine-environment.js";

@@ -4,7 +4,7 @@ import {
   threadOpenSplitSchema,
   type PanelFileSource,
   type ThreadOpenFile,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { action } from "../../action.js";
 import { createCliBbSdk } from "../../client.js";
 import {

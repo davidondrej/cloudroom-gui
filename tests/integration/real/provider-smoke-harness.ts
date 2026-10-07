@@ -8,8 +8,8 @@ import {
   type ClientTurnRequestId,
   type ThreadEventRow,
   type ThreadExecutionOptions,
-} from "@bb/domain";
-import { resolvePreferredTestModel } from "@bb/test-helpers";
+} from "@cloudroom/domain";
+import { resolvePreferredTestModel } from "@cloudroom/test-helpers";
 import {
   getAvailableModels,
   getThread,

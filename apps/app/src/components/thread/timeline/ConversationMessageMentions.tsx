@@ -1,12 +1,12 @@
 import type { KeyboardEvent, MouseEvent } from "react";
 import { Link } from "react-router-dom";
-import type { PromptMentionResource, PromptTextMention } from "@bb/domain";
+import type { PromptMentionResource, PromptTextMention } from "@cloudroom/domain";
 import { RouteAnchor } from "@/components/ui/app-route-anchor.js";
 import {
   getProjectComposeRoutePath,
   getThreadRoutePath,
 } from "@/lib/route-paths";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   isSkillMention,
   PROMPT_MENTION_PILL_CLASS,

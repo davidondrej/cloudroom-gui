@@ -2,7 +2,7 @@ import type {
   BbDesktopApi,
   BbDesktopBrowserApi,
   BbDesktopInfo,
-} from "@bb/desktop-contract";
+} from "@cloudroom/desktop-contract";
 
 export function createNoopDesktopBrowserApi(): BbDesktopBrowserApi {
   return {

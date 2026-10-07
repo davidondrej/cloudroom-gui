@@ -12,12 +12,12 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import type {
   ProjectResponse,
   ThreadSectionResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   findLocalPathProjectSourceForHost,
   PERSONAL_PROJECT_ID,
   type ThreadListEntry,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { useRouteState } from "@/hooks/useRouteState";
 import {
   useConnectionAwareQueryState,
@@ -45,16 +45,16 @@ import {
   getCollapsedChildActivity,
   getProjectThreadItemDescendants,
   type ProjectThreadNode,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { useSectionThreadDnd } from "./useSectionThreadDnd";
 import { useRenderedSectionThreadDnd } from "./useRenderedSectionThreadDnd";
 import { getRootComposeRoutePath } from "@/lib/route-paths";
 import { getThreadDisplayTitle } from "@/lib/thread-title";
 import { getMutationErrorMessage } from "@/lib/mutation-errors";
-import { BbHttpError } from "@bb/sdk/browser";
+import { BbHttpError } from "@cloudroom/sdk/browser";
 import { useSetRootComposeProjectId } from "@/lib/root-compose-selection";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Button } from "@bb/shared-ui/button";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   AppCommandShortcutHint,
   AppCommandShortcutPill,
@@ -68,14 +68,14 @@ import {
   ConfirmDeleteDialog,
   ConfirmDeleteDialogContent,
 } from "@/components/dialogs/ConfirmDeleteDialog";
-import { Icon } from "@bb/shared-ui/icon";
-import { LIST_HOVER_TRANSITION } from "@bb/shared-ui/motion";
-import { Skeleton } from "@bb/shared-ui/skeleton";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { LIST_HOVER_TRANSITION } from "@cloudroom/shared-ui/motion";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
 import {
   SidebarGroupContent,
   SidebarStickyStack,
 } from "@/components/ui/sidebar.js";
-import { COARSE_POINTER_ROW_HEIGHT_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
+import { COARSE_POINTER_ROW_HEIGHT_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import {
   ChronologicalSectionThreadSections,
   ProjectThreadTree,
@@ -96,7 +96,7 @@ import {
   type ProjectThreadItem,
   type SidebarSectionDefinition,
   type ThreadComparator,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   SortableProjectRow,
   type ProjectListRowModel,

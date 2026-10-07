@@ -1,10 +1,10 @@
-import { fuzzyMatchText } from "@bb/fuzzy-match";
-import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@bb/domain";
-import type { PromptMentionSuggestion } from "@bb/client-core";
+import { fuzzyMatchText } from "@cloudroom/fuzzy-match";
+import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@cloudroom/domain";
+import type { PromptMentionSuggestion } from "@cloudroom/client-core";
 import {
   compareCodepoint,
   threadListIndicatorStateForThread,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 type ThreadMentionSuggestion = Extract<
   PromptMentionSuggestion,

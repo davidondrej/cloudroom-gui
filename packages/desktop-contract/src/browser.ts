@@ -4,7 +4,7 @@ import {
   desktopBrowserProfileSchema,
   type DesktopBrowserImportOutcome,
   type DesktopBrowserImportSource,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 
 export const BB_DESKTOP_BROWSER_MAX_URL_LENGTH = 4096;
 export const BB_DESKTOP_BROWSER_MAX_TITLE_LENGTH = 1024;

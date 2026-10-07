@@ -1,7 +1,7 @@
 import type {
   SystemExecutionOptionsQuery,
   SystemExecutionOptionsResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { BbSdkTransport } from "../transport.js";
 
 export interface CreateSdkAreaArgs {

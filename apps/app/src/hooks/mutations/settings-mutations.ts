@@ -4,8 +4,8 @@ import {
   type AppSettings,
   type AppThemeSelection,
   type Experiments,
-} from "@bb/domain";
-import type { SystemInstallCliSkillsRequest } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { SystemInstallCliSkillsRequest } from "@cloudroom/server-contract";
 import { sdk } from "@/lib/sdk";
 import {
   invalidateGeneralSettingsDependencies,

@@ -11,20 +11,20 @@ const commandConfig = {
     turboChecks: [
       [
         "build",
-        "--filter=@bb/server",
-        "--filter=@bb/host-daemon",
-        "--filter=@bb/cli",
+        "--filter=@cloudroom/server",
+        "--filter=@cloudroom/host-daemon",
+        "--filter=@cloudroom/cli",
       ],
-      ["typecheck", "--filter=@bb/qa"],
+      ["typecheck", "--filter=@cloudroom/qa"],
     ],
   },
   "standalone:stop": {
     packageScript: "standalone:stop",
-    turboChecks: [["typecheck", "--filter=@bb/qa"]],
+    turboChecks: [["typecheck", "--filter=@cloudroom/qa"]],
   },
   "standalone:cleanup": {
     packageScript: "standalone:cleanup",
-    turboChecks: [["typecheck", "--filter=@bb/qa"]],
+    turboChecks: [["typecheck", "--filter=@cloudroom/qa"]],
   },
 };
 
@@ -99,7 +99,7 @@ function main() {
 
   return run(
     "pnpm",
-    ["--silent", "--filter", "@bb/qa", config.packageScript, ...args],
+    ["--silent", "--filter", "@cloudroom/qa", config.packageScript, ...args],
     "inherit",
     packageEnv,
   );

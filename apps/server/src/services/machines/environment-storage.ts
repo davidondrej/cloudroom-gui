@@ -7,13 +7,13 @@ import {
   appSettingsValues,
   type DbConnection,
   type DbQueryConnection,
-} from "@bb/db";
-import { readOrCreateSecretFile } from "@bb/secret-storage";
+} from "@cloudroom/db";
+import { readOrCreateSecretFile } from "@cloudroom/secret-storage";
 import {
   machineEnvironmentNameSchema,
   type MachineEnvironmentReplace,
   type MachineEnvironmentSet,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { runSerialized } from "../lib/async-deduper.js";
 
 const prefix = "machineEnvironment:";

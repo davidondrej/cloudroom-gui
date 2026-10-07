@@ -24,11 +24,11 @@ import type {
   ThreadSearchSourceKind,
   ThreadStatus,
   ThreadVisibility,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   evaluateThreadLifecycleEvent,
   threadSearchSourceKindSchema,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { DbConnection, DbTransaction } from "../connection.js";
 import type { DbQueryConnection } from "../connection.js";
 import type { DbNotifier } from "../notifier.js";
@@ -42,6 +42,7 @@ import {
 import { createThreadId } from "../ids.js";
 import { createOrderKeyBetween } from "./order-keys.js";
 import { insertThreadPluginMetadata } from "./thread-plugin-metadata.js";
+import { setProjectHidden } from "./projects.js";
 
 type ThreadWriteConnection = DbConnection | DbTransaction;
 
@@ -333,6 +334,7 @@ export function createThread(
     projectId: input.projectId,
   });
   notifier.notifyProject(input.projectId, ["threads-changed"]);
+  showProjectOfVisibleThread(db, notifier, thread);
   return thread;
 }
 
@@ -1382,6 +1384,19 @@ export function countLiveThreadsInEnvironment(
   );
 }
 
+export function listLiveThreadIdsInProject(
+  db: ThreadWriteConnection,
+  projectId: string,
+): string[] {
+  return db
+    .select({ id: threads.id })
+    .from(threads)
+    .where(liveThreads(eq(threads.projectId, projectId)))
+    .orderBy(asc(threads.createdAt))
+    .all()
+    .map((row) => row.id);
+}
+
 export function listLiveThreadsInEnvironment(
   db: ThreadWriteConnection,
   args: ListLiveThreadsInEnvironmentArgs,
@@ -1921,8 +1936,19 @@ export function unarchiveThread(
     notifier.notifyThread(id, ["archived-changed"], {
       projectId: updated.projectId,
     });
+    showProjectOfVisibleThread(db, notifier, updated);
   }
   return updated ?? null;
+}
+
+function showProjectOfVisibleThread(
+  db: DbQueryConnection,
+  notifier: DbNotifier,
+  thread: Pick<ThreadRow, "projectId" | "visibility">,
+): void {
+  if (thread.visibility === "visible") {
+    setProjectHidden(db, notifier, thread.projectId, false);
+  }
 }
 
 export type ApplyThreadLifecycleEventNoopReason =

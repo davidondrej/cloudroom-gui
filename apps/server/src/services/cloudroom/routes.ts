@@ -1,9 +1,9 @@
 import type { Hono, MiddlewareHandler } from "hono";
 import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
-import { getThread } from "@bb/db";
+import { getThread } from "@cloudroom/db";
 import { z } from "zod";
-import { threadGoalSetRequestSchema } from "@bb/server-contract";
+import { threadGoalSetRequestSchema } from "@cloudroom/server-contract";
 import { cloudroom, isCloudThread } from "./commands.js";
 import { cloudroomAccount } from "./account.js";
 import { macAccessLevels, setMacAccess } from "./previews.js";
@@ -11,7 +11,7 @@ import { cloudSkills, setCloudSkills, setCopyLogins, skillInCloud } from "./sync
 import { teleports } from "./teleport.js";
 import { binding, teleportBlocked, teleportProgress } from "./store.js";
 import { browserRequestProblem } from "../../browser-request-guard.js";
-import { cancelClaudeToken, claudePlan, installClaude, isClaudeApiKey, startClaudeToken, withClaudeTokenRun } from "./claude-token.js";
+import { cancelClaudeToken, claudePlan, ensureClaudeCli, isClaudeApiKey, startClaudeToken, withClaudeTokenRun } from "./claude-token.js";
 import { startClaudeVersionSync } from "./harness-versions.js";
 import { importBbThreads } from "./bb-import.js";
 import { importNativeSessions, listNativeSessions } from "./session-import.js";
@@ -21,6 +21,8 @@ import { CloudroomError } from "./client.js";
 import { archiveThreadAndChildren } from "../threads/thread-archive.js";
 import { queueChildThreadTurnNotificationBestEffort } from "../threads/child-thread-notifications.js";
 import { reportBug } from "./bug-reports.js";
+import { continueShare, shareThread, stopSharing, threadShare } from "./shares.js";
+import { noteActiveMinute, timeInApp } from "./time-in-app.js";
 import { disconnectGithub, githubAccount, githubAuth } from "./github-login.js";
 import { addGithubRepo, repoSuggestions } from "./repo-suggestions.js";
 import { SETUP_ACTIONS, SETUP_DETAILS, SETUP_STEPS } from "../system/telemetry.js";
@@ -57,6 +59,18 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     if (body.action === "move") return context.json(await moveToSandbox(deps, id, choice), 202);
     return context.json(await teleports(deps).begin(id, choice), 202);
   });
+  app.get("/api/v1/cloudroom/threads/:id/share", async context => context.json(await threadShare(deps, context.req.param("id"))));
+  app.post("/api/v1/cloudroom/threads/:id/share", async context => {
+    const { action } = z.object({ action: z.enum(["save", "stop"]) }).strict().parse(await context.req.json());
+    const id = context.req.param("id");
+    if (action === "save") return context.json(await shareThread(deps, id));
+    await stopSharing(deps, id);
+    return context.json(null);
+  });
+  app.post("/api/v1/cloudroom/shares/continue", async context => {
+    const { link } = z.object({ link: z.string().trim().min(1).max(500) }).strict().parse(await context.req.json());
+    return context.json(await continueShare(deps, link));
+  });
   app.post("/api/v1/cloudroom/threads/:id/open-file", async context => {
     const input = z.object({ path: z.string().regex(/^\/[^\0]*$/).max(4096) }).strict().parse(await context.req.json());
     return context.json(await openOnMac(deps, context.req.param("id"), input.path));
@@ -85,6 +99,15 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   app.post("/api/v1/cloudroom/account/activity", async (context) => {
     z.object({}).strict().parse(await context.req.json());
     await cloudroom(deps).noteActivity();
+    return context.json({ ok: true });
+  });
+  app.get("/api/v1/cloudroom/time-in-app", async (context) => {
+    const time = await timeInApp(deps);
+    return context.json(context.req.query("only") === "today" ? { today: time.today } : time);
+  });
+  app.post("/api/v1/cloudroom/time-in-app", async (context) => {
+    z.object({}).strict().parse(await context.req.json());
+    await noteActiveMinute(deps);
     return context.json({ ok: true });
   });
   let desktopUpdate: { version: string; installAt: number | null; seenAt: number; install: boolean } | null = null;
@@ -204,16 +227,23 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   });
   const claudeStatus = async () => withClaudeTokenRun(await cloudroom(deps).claudeAuth());
   app.get("/api/v1/cloudroom/account/claude", async context => context.json(await claudeStatus()));
-  for (const action of ["setup-token", "install"] as const) {
-    app.post(`/api/v1/cloudroom/account/claude/${action}`, async context => {
-      const problem = browserRequestProblem(context, deps, { requireJsonForMutation: true });
-      if (problem) return context.json({ message: "Use the local Cloudroom app." }, problem.status);
-      const { requestId } = z.object({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/) }).strict().parse(await context.req.json());
-      if (action === "install") await installClaude();
-      await startClaudeToken(requestId, async token => cloudroom(deps).claudeAuth("token", requestId, token, await claudePlan()));
-      return context.json(await claudeStatus());
-    });
-  }
+  app.post("/api/v1/cloudroom/account/claude/setup-token", async context => {
+    const problem = browserRequestProblem(context, deps, { requireJsonForMutation: true });
+    if (problem) return context.json({ message: "Use the local Cloudroom app." }, problem.status);
+    const { requestId } = z.object({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/) }).strict().parse(await context.req.json());
+    await ensureClaudeCli((error) => deps.logger.warn({ error }, "Claude Code could not be installed in the background"));
+    await startClaudeToken(requestId, async token => cloudroom(deps).claudeAuth("token", requestId, token, await claudePlan()));
+    return context.json(await claudeStatus());
+  });
+  // The Accounts plugin saves the account in use as the Cloud login (ADR 0197).
+  app.post("/api/v1/cloudroom/account/claude/token", async context => {
+    const problem = browserRequestProblem(context, deps, { requireJsonForMutation: true });
+    if (problem) return context.json({ message: "Use the local Cloudroom app." }, problem.status);
+    const input = z.object({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/), token: z.string().regex(/^sk-ant-oat[A-Za-z0-9_-]{20,}$/), plan: z.string().regex(/^[a-z_]{1,32}$/).optional() }).strict().parse(await context.req.json());
+    const status = await cloudroom(deps).claudeAuth("token", input.requestId, input.token, input.plan);
+    cloudroom(deps).restartAwakeClaude();
+    return context.json(status);
+  });
   app.post("/api/v1/cloudroom/account/claude/key", async context => {
     const parsed = z.object({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/), apiKey: z.string().refine(isClaudeApiKey) }).strict().safeParse(await context.req.json().catch(() => null));
     if (!parsed.success) throw new ApiError(400, "invalid_claude_key", "Paste an Anthropic API key from the Claude Console. It starts with sk-ant-.");
@@ -254,7 +284,7 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   app.get("/api/v1/cloudroom/account/repo-suggestions", async context => context.json(await repoSuggestions(deps)));
   app.post("/api/v1/cloudroom/account/repo-suggestions/github", async context => {
     const input = z.object({ repo: z.string().regex(/^[\w.-]+\/[\w.-]+$/) }).strict().parse(await context.req.json());
-    return context.json(addGithubRepo(deps, input.repo));
+    return context.json(await addGithubRepo(deps, input.repo));
   });
   for (const action of ["login", "cancel"] as const) {
     app.post(`/api/v1/cloudroom/account/github/${action}`, async context => {

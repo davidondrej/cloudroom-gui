@@ -2,7 +2,7 @@ import type { BbPluginApi } from "@get-bb/plugin-sdk";
 import {
   PLUGIN_GUIDE_SURFACE_PROVIDER_ID,
   pluginSurfaceAgentContext,
-} from "@bb/plugin-api-map/agent-reference";
+} from "@cloudroom/plugin-api-map/agent-reference";
 
 export default function plugin(bb: BbPluginApi) {
   bb.ui.registerMentionProvider({

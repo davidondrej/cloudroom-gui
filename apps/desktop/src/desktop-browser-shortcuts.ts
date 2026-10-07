@@ -4,7 +4,7 @@ import {
   type AppCommandId,
   type AppKeybindings,
   type AppShortcutInput,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 interface ResolveDesktopBrowserAppCommandArgs {
   input: AppShortcutInput;

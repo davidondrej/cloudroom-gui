@@ -1,6 +1,6 @@
-import { createThread, getThread } from "@bb/db";
-import { threadScope } from "@bb/domain";
-import { groupHostDaemonEvents } from "@bb/host-daemon-contract";
+import { createThread, getThread } from "@cloudroom/db";
+import { threadScope } from "@cloudroom/domain";
+import { groupHostDaemonEvents } from "@cloudroom/host-daemon-contract";
 import { describe, expect, it } from "vitest";
 import {
   createTestDaemonEventEnvelope,

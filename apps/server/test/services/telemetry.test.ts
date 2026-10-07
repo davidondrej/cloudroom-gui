@@ -6,10 +6,10 @@ import {
   migrate,
   getAppSettings,
   setAppSettings,
-} from "@bb/db";
-import { defaultAppSettings } from "@bb/domain";
+} from "@cloudroom/db";
+import { defaultAppSettings } from "@cloudroom/domain";
 import { withTestHarness } from "../helpers/test-app.js";
-import { DEFAULTS } from "@bb/config/defaults";
+import { DEFAULTS } from "@cloudroom/config/defaults";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createTelemetryService,

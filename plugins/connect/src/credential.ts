@@ -1,5 +1,5 @@
-import { connectCredentialSchema } from "@bb/connect-client";
-import type { ConnectCredential } from "@bb/connect-client";
+import { connectCredentialSchema } from "@cloudroom/connect-client";
+import type { ConnectCredential } from "@cloudroom/connect-client";
 import type { PluginKvStorage } from "@get-bb/plugin-sdk";
 
 export const CREDENTIAL_KV_KEY = "credential";

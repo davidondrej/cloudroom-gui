@@ -8,8 +8,8 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DiffFileEntry } from "@bb/server-contract";
-import { POINTER_COARSE_QUERY } from "@bb/shared-ui/hooks/use-pointer-coarse";
+import type { DiffFileEntry } from "@cloudroom/server-contract";
+import { POINTER_COARSE_QUERY } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
 import type {
   DiffFileContentsResult,
   RequestDiffFileContents,

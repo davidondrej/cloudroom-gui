@@ -2,9 +2,9 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFile, writeFile, mkdir, stat, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { and, desc, eq, gt, inArray } from "drizzle-orm";
-import { createThread, getAppSettings, getProject, getThread, getThreadExecutionOverride, setThreadExecutionOverride, updateThread, cloudroomThreads, cloudroomCommands, events, type DbConnection, type DbQueryConnection } from "@bb/db";
-import { PERSONAL_PROJECT_ID, encodeClientTurnRequestIdNumber, isStandaloneBuiltinCompactCommand, promptInputSchema, reasoningLevelSchema, threadQueuedMessageSchema, type Thread, type PromptInput, type ThreadEventType, type ThreadEventTurnStatus, type ThreadChangeKind, type ReasoningLevel } from "@bb/domain";
-import type { CreateThreadRequest, ForkThreadRequest, SendMessageRequest, SendMessageResponse } from "@bb/server-contract";
+import { createThread, getAppSettings, getProject, getThread, getThreadExecutionOverride, setThreadExecutionOverride, updateThread, cloudroomThreads, cloudroomCommands, events, type DbConnection, type DbQueryConnection } from "@cloudroom/db";
+import { PERSONAL_PROJECT_ID, encodeClientTurnRequestIdNumber, isStandaloneBuiltinCompactCommand, promptInputSchema, reasoningLevelSchema, threadQueuedMessageSchema, type Thread, type PromptInput, type ThreadEventType, type ThreadEventTurnStatus, type ThreadChangeKind, type ReasoningLevel } from "@cloudroom/domain";
+import type { CreateThreadRequest, ForkThreadRequest, SendMessageRequest, SendMessageResponse } from "@cloudroom/server-contract";
 import { z } from "zod";
 import { ApiError } from "../../errors.js";
 import { CloudroomClient, CloudroomConnectionError, CloudroomError, authRequiredMessages, type CodexAuthStatus, type VmRun, type VmRunResult } from "./client.js";
@@ -20,14 +20,16 @@ import { copyForkSourceHistory } from "../threads/thread-fork-history.js";
 import { appendClientTurnEvent } from "../threads/thread-events.js";
 import { getLeadingAgentOnlyInput, resolveDeferredFirstTurnContext } from "../threads/deferred-first-turn-context.js";
 import { deriveTitleFallback, shouldGenerateThreadTitle } from "../threads/title-generation.js";
+import { buildSuggestedBranchName } from "../threads/thread-create-helpers.js";
 import { assertValidParentThread, isParentNotifiableChildThread } from "../threads/thread-parent.js";
 import { inferThreadMetadata, queueThreadTitle } from "../threads/thread-metadata-inference.js";
 import { cloudSkills, copyLogins, copyMacGithub, importCodexLogin, importPiLogin, setupSync, skillInCloud, stopSync, syncStatus } from "./sync.js";
 import { setupPreviews, stopPreviews, previewStatus } from "./previews.js";
 import { CloudSecrets } from "./secrets.js";
-import { cancelMacCodexLogin, hasMacCodexLogin, macCodexLogin, macCursorLogin, revokeDesktopToken, startMacCodexLogin, SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject, type SandboxTrigger, type SandboxWakeTrigger } from "./sandboxes.js";
+import { cancelMacCodexLogin, hasMacCodexLogin, macCodexLogin, macCodexLoginExpired, macCursorLogin, revokeDesktopToken, startMacCodexLogin, SANDBOX_PREFIX, SandboxAsleep, SandboxDirectory, sandboxThread, type SandboxProject, type SandboxTrigger, type SandboxWakeTrigger } from "./sandboxes.js";
 import type { AppDeps, LoggedWorkSessionDeps } from "../../types.js";
-import type { EditMessageRequest, EditMessageResponse } from "@bb/server-contract";
+import { markMinutesSent, unsentMinutes } from "./time-in-app.js";
+import type { EditMessageRequest, EditMessageResponse } from "@cloudroom/server-contract";
 
 const accountSchema = z.object({ id: z.string().uuid(), email: z.string().email() }).strict();
 const connectionSchema = z.object({ url: z.string().url(), token: z.string().min(32), gateToken: z.string().regex(/^[a-zA-Z0-9._~-]{1,4096}$/).optional(), projectId: z.string().min(1).optional() }).strict();
@@ -56,6 +58,7 @@ const capabilitiesSchema = z.object({
   root_workspace: z.boolean().default(false),
   teleport: z.boolean().default(false),
   command_guard: z.boolean().default(false),
+  strip_ai_co_authors: z.boolean().default(false),
   system_prompt: z.boolean().default(false),
   codex_auth: z.boolean().default(false),
   cursor_auth: z.boolean().default(false),
@@ -623,12 +626,17 @@ class CloudroomService {
   }
 
   private active = { day: "", at: 0 };
-  /** Reports once per UTC day that this account sent a message, Local or Cloud. Failures retry after 10 minutes. */
+  /** Reports once per UTC day that this account sent a message, Local or Cloud, with past days' active minutes. Failures retry after 10 minutes. */
   noteActiveDay(): void {
     const day = new Date().toISOString().slice(0, 10);
     if (this.active.day === day || Date.now() - this.active.at < 600_000) return;
     this.active.at = Date.now();
-    void this.sandboxes.active().then(() => { this.active.day = day; }, () => {});
+    void (async () => {
+      const minutes = await unsentMinutes(this.deps);
+      const saved = await this.sandboxes.active(minutes);
+      this.active.day = day;
+      await markMinutesSent(this.deps, saved ? minutes : {});
+    })().catch(() => {});
   }
 
   async selectOnboardingProject(projectId: string): Promise<void> {
@@ -796,6 +804,17 @@ class CloudroomService {
     return status;
   }
 
+  /** After an Accounts switch, awake Claude sessions restart once idle, so their next message uses the new login (ADR 0197).
+   *  Asleep sandboxes stay asleep; they read the new login when they wake. */
+  restartAwakeClaude(): void {
+    for (const saved of bindings(this.deps.db)) {
+      const thread = getThread(this.deps.db, saved.threadId);
+      const sessionId = saved.sessionId;
+      if (!sessionId || thread?.providerId !== "claude-code" || thread.archivedAt || thread.deletedAt) continue;
+      void this.client(saved, false).then(client => client.sleep(sessionId, randomUUID())).catch(() => {});
+    }
+  }
+
   /** Starts that waited for a Claude sign-in continue on their own. Later tries cover a login still reaching an awake sandbox. */
   private resumeClaudeStarts(): void {
     const waiting = (threadId: string) => {
@@ -881,8 +900,8 @@ class CloudroomService {
       if (action === "cancel") cancelMacCodexLogin();
       if (action === "login") {
         if (await copyLogins(this.deps) !== true) throw new ApiError(409, "codex_auth_unsupported", "Cloud sandboxes use this Mac's Codex login. Allow copying logins in Cloudroom's setup, then try again.");
-        // Signed out here: sign in on this Mac first, then the next status check copies the new login.
-        if (await hasMacCodexLogin()) await this.sandboxes.copyMacLogins(true, await copyMacGithub(this.deps));
+        // Signed out or expired here: sign in on this Mac first, then the next status check copies the new login.
+        if (await hasMacCodexLogin() && !await macCodexLoginExpired()) await this.sandboxes.copyMacLogins(true, await copyMacGithub(this.deps));
         else startMacCodexLogin();
       }
       const run = macCodexLogin();
@@ -1042,6 +1061,7 @@ class CloudroomService {
         input: JSON.stringify(this.snapshotInstructions(thread, "prompt", {
           ...payload, ...workspace, provider: remoteModel?.provider,
           command_guard_enabled: getAppSettings(this.deps.db).commandGuardEnabled,
+          strip_ai_co_authors: getAppSettings(this.deps.db).stripAiCoAuthorsEnabled,
           system_prompt: [cloudroomSystemPrompt(this.deps.db), projectNote].filter(Boolean).join("\n\n") || undefined,
           ...(request.serviceTier && request.serviceTier !== "default" ? { service_tier: request.serviceTier } : {}),
           ...(request.baseBranch ? { base_branch: request.baseBranch } : {}),
@@ -1099,6 +1119,7 @@ class CloudroomService {
         input: JSON.stringify(this.snapshotInstructions(thread, "prompt", {
           ...payload, ...workspace, fork,
           command_guard_enabled: getAppSettings(this.deps.db).commandGuardEnabled,
+          strip_ai_co_authors: getAppSettings(this.deps.db).stripAiCoAuthorsEnabled,
           system_prompt: [cloudroomSystemPrompt(this.deps.db), projectNote].filter(Boolean).join("\n\n") || undefined,
           ...(request.serviceTier && request.serviceTier !== "default" ? { service_tier: request.serviceTier } : {}),
         })),
@@ -1284,8 +1305,7 @@ class CloudroomService {
     const saved = binding(this.deps.db, threadId);
     const thread = getThread(this.deps.db, threadId);
     if (!saved?.sessionId || !thread || sandboxThread(saved.coreUrl) !== threadId) return;
-    const slug = (thread.title ?? thread.titleFallback ?? "task").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40).replace(/-+$/, "") || "task";
-    const name = `room/${slug}-${threadId.replace(/^thr_/, "").slice(-4)}`;
+    const name = buildSuggestedBranchName({ branchPrefix: "room/", title: thread.title ?? thread.titleFallback ?? null, threadId });
     try {
       const client = await this.client(saved, false);
       const workspace = await client.sessionWorkspace(saved.sessionId);
@@ -1665,8 +1685,9 @@ class CloudroomService {
         this.progress(threadId, [cloudStep(Boolean(sandbox), "completed"), { key: "agent", text: `Starting ${HARNESS_NAMES[harness]}`, status: "started" }]);
         const { model, provider } = coreModel(harness, saved.model, capabilities);
         const initial = command(this.deps.db, `first_${threadId}`);
-        const options = initial ? z.object({ workspace: z.string().optional(), workspace_name: z.string().optional(), provider: z.string().optional(), command_guard_enabled: z.boolean().optional(), system_prompt: z.string().optional() }).parse(JSON.parse(initial.input)) : {};
+        const options = initial ? z.object({ workspace: z.string().optional(), workspace_name: z.string().optional(), provider: z.string().optional(), command_guard_enabled: z.boolean().optional(), strip_ai_co_authors: z.boolean().optional(), system_prompt: z.string().optional() }).parse(JSON.parse(initial.input)) : {};
         if (!capabilities.command_guard) delete options.command_guard_enabled;
+        if (!capabilities.strip_ai_co_authors) delete options.strip_ai_co_authors;
         if (!capabilities.system_prompt) delete options.system_prompt;
         if (!capabilities.direct_workspaces) throw new ApiError(503, "cloudroom_update", "Update the cloud core to start agents without copying files. Your message is saved.");
         if (options.workspace === ROOT_WORKSPACE && !capabilities.root_workspace) throw new ApiError(503, "cloudroom_update", "Update the cloud core to start agents outside a project. Your message is saved.");
@@ -1681,6 +1702,7 @@ class CloudroomService {
               model, provider: provider ?? null, reasoning: saved.reasoning, service_tier: z.object({ service_tier: z.string().optional() }).parse(JSON.parse(initial!.input)).service_tier ?? null,
               workspace: options.workspace ?? ROOT_WORKSPACE, workspace_name: options.workspace_name ?? ROOT_WORKSPACE,
               ...(options.command_guard_enabled === undefined ? {} : { command_guard_enabled: options.command_guard_enabled }),
+              ...(options.strip_ai_co_authors === undefined ? {} : { strip_ai_co_authors: options.strip_ai_co_authors }),
               ...(options.system_prompt ? { system_prompt: options.system_prompt } : {}),
             }, (transfer) => {
               const latest = command(this.deps.db, `first_${threadId}`)!;

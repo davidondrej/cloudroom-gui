@@ -39,7 +39,8 @@ it("shows identity/offline status and signs out locally without a machine creati
   expect(await screen.findByText("member@example.invalid")).toBeDefined();
   expect(screen.getByText("VM is offline")).toBeDefined();
   expect(screen.queryByRole("button", { name: "Add a machine" })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Sign out of this app" }));
+  fireEvent.pointerDown(screen.getByRole("button", { name: "Account actions" }), { button: 0 });
+  fireEvent.click(await screen.findByRole("menuitem", { name: "Sign out of this app" }));
   await waitFor(() => expect(sdk.cloudroom.logout).toHaveBeenCalledOnce());
   await screen.findByText("Not signed in to Cloudroom");
 });

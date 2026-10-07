@@ -1,4 +1,4 @@
-import type { Thread } from "@bb/domain";
+import type { Thread } from "@cloudroom/domain";
 import { useAppCommandHandler } from "@/components/commands/AppCommandProvider";
 import { useThreadActions } from "@/components/thread/ThreadActionsProvider";
 import { usePaneContext } from "./PaneContext";

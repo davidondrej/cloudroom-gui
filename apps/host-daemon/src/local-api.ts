@@ -3,15 +3,15 @@ import { serve } from "@hono/node-server";
 import {
   buildLocalAppOrigins,
   type BuildLocalAppOriginsArgs,
-} from "@bb/config/local-app-origins";
+} from "@cloudroom/config/local-app-origins";
 import {
   formatClientConfigPath,
   normalizeClientServerOrigin,
   parseClientConfig,
   resolveClientSshAuthority,
   type ClientConfig,
-} from "@bb/config/client-config";
-import { assignIfDefined } from "@bb/config/objects";
+} from "@cloudroom/config/client-config";
+import { assignIfDefined } from "@cloudroom/config/objects";
 import {
   healthResponseSchema,
   HOST_DAEMON_PROTOCOL_VERSION,
@@ -22,14 +22,14 @@ import {
   type OpenInTargetRequest,
   type WorkspaceOpenTarget,
   type WorkspaceOpenTargetsQuery,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   createWorkspaceOpenTargetRuntime,
   listWorkspaceOpenTargetsWithRuntime,
   openPathInTargetWithRuntime,
   type OpenPathInTargetArgs,
   WorkspaceOpenTargetError,
-} from "@bb/local-open-targets";
+} from "@cloudroom/local-open-targets";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";

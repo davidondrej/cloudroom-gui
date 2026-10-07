@@ -12,7 +12,7 @@ import type {
   AutomationRunResponse,
   AutomationsOverviewResponse,
 } from "bb-plugin-automations/rpc-types";
-import { ResourceListState } from "@bb/shared-ui/resource-list";
+import { ResourceListState } from "@cloudroom/shared-ui/resource-list";
 import { StoryCard, StoryRow } from "../../../.ladle/story-card";
 import { ModelPickerStoryQueryProvider } from "../../../.ladle/model-picker-query-provider";
 

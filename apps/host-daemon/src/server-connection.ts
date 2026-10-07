@@ -9,7 +9,7 @@ import {
   type HostDaemonSessionCloseReason,
   type HostDaemonSessionOpenResponse,
   type HostDaemonDaemonWsMessage,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { z } from "zod";
 import {
   DEFAULT_CONNECTION_TIMEOUT_MS,
@@ -24,7 +24,7 @@ import {
   type ReconnectingWebSocketLike,
   type ServerConnectionOptions,
 } from "./server-connection-support.js";
-import { isLikelySystemSuspensionDelay } from "@bb/process-utils";
+import { isLikelySystemSuspensionDelay } from "@cloudroom/process-utils";
 import { normalizeCaughtError, runtimeErrorLogFields } from "./error-utils.js";
 import { ServerResponseError } from "./server-client.js";
 

@@ -1,9 +1,9 @@
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@bb/shared-ui/button";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
-import { COARSE_POINTER_ICON_SIZE_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { COARSE_POINTER_ICON_SIZE_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +15,7 @@ import {
 } from "@/components/sidebar/SidebarChrome";
 import { PROJECT_LIST_ACTION_BUTTON_CLASS } from "@/components/sidebar/ProjectList";
 import { SIDEBAR_STANDARD_ROW_PADDING_CLASS } from "@/components/sidebar/sidebarRowClasses";
-import { CHROME_SECTION_LABEL_CLASS } from "@bb/shared-ui/chrome-style-tokens";
+import { CHROME_SECTION_LABEL_CLASS } from "@cloudroom/shared-ui/chrome-style-tokens";
 
 export function SectionSidebarIcon({ name }: { name: IconName }) {
   return <Icon name={name} className={COARSE_POINTER_ICON_SIZE_CLASS} />;

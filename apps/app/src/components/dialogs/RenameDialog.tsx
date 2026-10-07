@@ -1,4 +1,4 @@
-import { capitalize } from "@bb/thread-view";
+import { capitalize } from "@cloudroom/thread-view";
 import {
   useCallback,
   useId,
@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,8 +16,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
-import { Input } from "@bb/shared-ui/input";
+} from "@cloudroom/shared-ui/dialog";
+import { Input } from "@cloudroom/shared-ui/input";
 import { useNameValidation } from "./useNameValidation.js";
 import { useRenameDialogAutoFocus } from "./useRenameDialogAutoFocus.js";
 

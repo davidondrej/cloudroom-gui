@@ -4,7 +4,7 @@ import {
   ConnectListError,
   type DesktopSession,
   type ListAccountServersResult,
-} from "@bb/connect-client";
+} from "@cloudroom/connect-client";
 import { ConnectPairError } from "./redeem.js";
 import type { ConnectTunnel } from "./tunnel.js";
 import type { ConnectStatus, ShareListing } from "./types.js";

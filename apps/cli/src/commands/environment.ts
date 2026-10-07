@@ -1,16 +1,16 @@
 import { Command } from "commander";
-import type { CommitActionResponse } from "@bb/server-contract";
+import type { CommitActionResponse } from "@cloudroom/server-contract";
 import type {
   EnvironmentDiffArgs,
   EnvironmentDiffFileArgs,
   EnvironmentDiffPatchArgs,
   EnvironmentUpdateArgs,
-} from "@bb/sdk";
+} from "@cloudroom/sdk";
 import {
   environmentStatusSchema,
   environmentStatusValues,
   type EnvironmentStatus,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { action } from "../action.js";
 import { createCliBbSdk } from "../client.js";
 import { resolveMachineHostId, resolveMachineTargetOption } from "./machine.js";

@@ -3,7 +3,7 @@ import {
   encodeClientTurnRequestIdNumber,
   threadScope,
   turnScope,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   ApprovalPendingInteractionResolution,
   ClientTurnRequestId,
@@ -22,8 +22,8 @@ import type {
   ThreadTimelinePendingTodos,
   ThreadTurnInitiator,
   TurnRequestTarget,
-} from "@bb/domain";
-import type { TimelineRow } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { TimelineRow } from "@cloudroom/server-contract";
 import type {
   BuildEventProjectionOptions,
   EventProjection,

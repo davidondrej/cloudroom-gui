@@ -17,7 +17,7 @@ import {
   derivePluginId,
   PLUGIN_SDK_NPM_VERSION,
   PLUGIN_SDK_VERSION,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { loadPluginSdkDeclarations } from "./plugin-sdk-dts.js";
 import {
   PLUGIN_SHIMMED_TYPE_DEPENDENCIES,

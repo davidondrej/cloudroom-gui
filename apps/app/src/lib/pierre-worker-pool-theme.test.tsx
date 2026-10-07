@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, render } from "@testing-library/react";
 import type { WorkerPoolManager } from "@pierre/diffs/worker";
-import { defaultResolvedCodeTheme } from "@bb/domain";
+import { defaultResolvedCodeTheme } from "@cloudroom/domain";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { applyResolvedCodeTheme } from "./code-theme";
 import {

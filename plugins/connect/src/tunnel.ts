@@ -2,13 +2,13 @@ import { WebSocket as NodeWebSocket } from "ws";
 import {
   PROTOCOL_VERSION,
   TUNNEL_PROTOCOL_QUERY_PARAM,
-} from "@bb/tunnel-contract";
+} from "@cloudroom/tunnel-contract";
 import {
   humanizeTransportError,
   ReconnectBackoff,
   TunnelSession,
   type StreamOriginResult,
-} from "@bb/tunnel-client";
+} from "@cloudroom/tunnel-client";
 import type { PluginLogger } from "@get-bb/plugin-sdk";
 import {
   ConnectListError,
@@ -19,7 +19,7 @@ import {
   type ConnectCredential,
   type DesktopSession,
   type ListAccountServersResult,
-} from "@bb/connect-client";
+} from "@cloudroom/connect-client";
 import type { CredentialStore } from "./credential.js";
 import { fetchMachineCode, MachineCodeError } from "./machine-code.js";
 import { asConnectPairError, redeemConnectCode } from "./redeem.js";

@@ -10,7 +10,7 @@ import {
 } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
-import { derivePluginId } from "@bb/domain";
+import { derivePluginId } from "@cloudroom/domain";
 import type { Metafile, Plugin } from "esbuild";
 import {
   PLUGIN_THEME_CSS,
@@ -27,6 +27,7 @@ import {
 } from "./plugin-manifest.js";
 import {
   LEGACY_PLUGIN_SDK_APP_SPECIFIER,
+  LEGACY_SHIM_SPECIFIERS,
   PLUGIN_SDK_APP_SPECIFIER,
   RUNTIME_SLOT_BY_SPECIFIER,
   SHARED_UI_ICON_SPECIFIER,
@@ -122,7 +123,7 @@ async function shimModuleSource(
 
 const SHIM_NAMESPACE = "bb-plugin-runtime-shim";
 const SHIM_FILTER = new RegExp(
-  `^(${Object.keys(RUNTIME_SLOT_BY_SPECIFIER)
+  `^(${[...Object.keys(RUNTIME_SLOT_BY_SPECIFIER), ...Object.keys(LEGACY_SHIM_SPECIFIERS)]
     .map((specifier) => specifier.replace(/[/@.-]/g, "\\$&"))
     .join("|")})$`,
 );
@@ -132,7 +133,7 @@ export function runtimeShimPlugin(pluginSdkAppModuleUrl?: string): Plugin {
     name: "bb-plugin-runtime-shims",
     setup(build) {
       build.onResolve({ filter: SHIM_FILTER }, (args) => ({
-        path: args.path,
+        path: LEGACY_SHIM_SPECIFIERS[args.path] ?? args.path,
         namespace: SHIM_NAMESPACE,
       }));
       build.onResolve({ filter: /(^|\/)icon(\.[jt]sx?)?$/ }, (args) => {

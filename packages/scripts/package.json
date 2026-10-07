@@ -1,5 +1,5 @@
 {
-  "name": "@bb/scripts",
+  "name": "@cloudroom/scripts",
   "version": "0.0.1",
   "type": "module",
   "private": true,
@@ -35,15 +35,15 @@
     "codex:archive-tmp-bb-sessions": "node dist/commands/archive-codex-tmp-bb-sessions.js"
   },
   "dependencies": {
-    "@bb/config": "workspace:*",
-    "@bb/db": "workspace:*",
-    "@bb/domain": "workspace:*",
-    "@bb/host-daemon-contract": "workspace:*",
-    "@bb/process-utils": "workspace:*",
+    "@cloudroom/config": "workspace:*",
+    "@cloudroom/db": "workspace:*",
+    "@cloudroom/domain": "workspace:*",
+    "@cloudroom/host-daemon-contract": "workspace:*",
+    "@cloudroom/process-utils": "workspace:*",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-7": "npm:typescript@^7.0.2",

@@ -2,11 +2,11 @@ import {
   promptTextMentionSchema,
   type PromptInput,
   type PromptTextMention,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   uploadedPromptAttachmentSchema,
   type UploadedPromptAttachment,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { z } from "zod";
 import {
   isAutomationPromptCommandResource,

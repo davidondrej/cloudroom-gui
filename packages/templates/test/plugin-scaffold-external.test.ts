@@ -23,7 +23,7 @@ import {
   expect,
   it,
 } from "vitest";
-import { PLUGIN_SDK_NPM_VERSION, PLUGIN_SDK_VERSION } from "@bb/domain";
+import { PLUGIN_SDK_NPM_VERSION, PLUGIN_SDK_VERSION } from "@cloudroom/domain";
 import { scaffoldPlugin } from "../src/plugin-scaffold.js";
 
 const execFileAsync = promisify(execFile);
@@ -480,15 +480,15 @@ describe("external plugin scaffold types", () => {
         ...declarations.matchAll(/from ['"](@(?:get-)?bb\/[^'"]+)['"]/gu),
       ].map((match) => match[1]);
       expect(new Set(bbImports)).toEqual(new Set(["@get-bb/plugin-sdk"]));
-      expect(declarations).not.toContain("@bb/sdk");
-      expect(declarations).not.toContain("@bb/server-contract");
+      expect(declarations).not.toContain("@cloudroom/sdk");
+      expect(declarations).not.toContain("@cloudroom/server-contract");
     }
     for (const runtimePath of [
       "dist/testing/index.js",
       "dist/testing/app.js",
     ]) {
       const runtime = await readFile(join(installedSdk, runtimePath), "utf8");
-      expect(runtime).not.toMatch(/from ['"]@bb\//u);
+      expect(runtime).not.toMatch(/from ['"]@cloudroom\//u);
     }
     await expect(access(join(installedSdk, "src"))).rejects.toThrow();
     const backendTsconfig = JSON.parse(

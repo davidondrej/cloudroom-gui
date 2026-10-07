@@ -27,7 +27,11 @@ export default function plugin(bb: BbPluginApi) {
         ? (await bb.sdk.environments.get({ environmentId })).hostId
         : (hostId ?? (await bb.sdk.system.config()).primaryHostId);
       if (!target) throw new Error("No local machine is connected.");
-      return host.call("account", input, { hostId: target });
+      const status = await host.call("account", input, { hostId: target });
+      if (status.state !== "missing" || input.action !== "status") return status;
+      return (await hasSuppliedClaudeLogin(bb, target))
+        ? { ...status, state: "connected" as const }
+        : status;
     },
   });
   bb.settings.define({
@@ -105,7 +109,7 @@ export default function plugin(bb: BbPluginApi) {
       { id: "max", label: "Max" },
     ],
     composerActions: ["plan"],
-    completedTurnDisplay: "flat",
+    completedTurnDisplay: "collapse",
     env: { passthrough: ["BB_CLAUDE_CODE_EXECUTABLE"] },
     models: {
       scope: "host",
@@ -132,4 +136,20 @@ export default function plugin(bb: BbPluginApi) {
       };
     },
   });
+}
+
+/** `claude auth status` sees only the Mac's own login. Threads can also run on a login Cloudroom supplies, like the
+ *  account's cloud Claude login (ADR 0175); provider health counts those. */
+async function hasSuppliedClaudeLogin(
+  bb: BbPluginApi,
+  hostId: string,
+): Promise<boolean> {
+  try {
+    const { providers } = await bb.sdk.system.providerStates({ hostId });
+    return providers.some(
+      (provider) => provider.providerId === "claude-code" && provider.status === "ready",
+    );
+  } catch {
+    return false;
+  }
 }

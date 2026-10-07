@@ -1,11 +1,11 @@
-import type { Host } from "@bb/domain";
-import { Button } from "@bb/shared-ui/button";
+import type { Host } from "@cloudroom/domain";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
+} from "@cloudroom/shared-ui/dialog";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { useRemoveHost } from "@/hooks/mutations/host-mutations";
 import { getMutationErrorMessage } from "@/lib/mutation-errors";

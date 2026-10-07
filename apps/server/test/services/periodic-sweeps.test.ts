@@ -9,8 +9,8 @@ import {
   listQueuedThreadMessages,
   RETAINED_EVENT_OUTPUT_TARGETS,
   retainedEventOutputs,
-} from "@bb/db";
-import { threadScope } from "@bb/domain";
+} from "@cloudroom/db";
+import { threadScope } from "@cloudroom/domain";
 import type { PluginHookName } from "@get-bb/plugin-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {

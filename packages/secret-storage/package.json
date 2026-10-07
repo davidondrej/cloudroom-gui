@@ -1,5 +1,5 @@
 {
-  "name": "@bb/secret-storage",
+  "name": "@cloudroom/secret-storage",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -16,7 +16,7 @@
     "test": "vitest run --config vitest.config.ts"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-7": "npm:typescript@^7.0.2",

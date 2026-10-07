@@ -3,7 +3,7 @@ import type {
   ProviderCliInstallActionKind,
   ProviderCliInstallEvent,
   ProviderCliKey,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type { ProviderCliInstallLogDialogState } from "@/components/dialogs/ProviderCliInstallLogDialog";
 import type { ProviderCliInstallTarget } from "@/components/provider-cli/provider-cli-install";
 import { appToast } from "@/components/ui/app-toast";

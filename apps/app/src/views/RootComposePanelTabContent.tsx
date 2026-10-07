@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from "react";
-import type { OpenInTargetContext } from "@bb/host-daemon-contract";
+import type { OpenInTargetContext } from "@cloudroom/host-daemon-contract";
 import type { SidebarProject } from "@/hooks/queries/project-queries";
-import { findLocalPathProjectSourceForHost } from "@bb/domain";
+import { findLocalPathProjectSourceForHost } from "@cloudroom/domain";
 import type { PluginFileOpenerSource } from "@get-bb/plugin-sdk";
 import type {
   PluginPanelFixedPanelTab,
@@ -35,7 +35,7 @@ import {
   buildOpenInEditorHandler,
   resolveEnvironmentOpenContext,
 } from "./thread-detail/threadWorkspaceOpenPath";
-import { getFilePreviewLineRangeStart } from "@bb/client-core";
+import { getFilePreviewLineRangeStart } from "@cloudroom/client-core";
 import { resolveAbsoluteFilePath } from "@/lib/absolute-file-path";
 import { useAppCommandHandler } from "@/components/commands/AppCommandProvider";
 import type { MarkdownPreviewLinkHandler } from "@/components/ui/markdown-link";

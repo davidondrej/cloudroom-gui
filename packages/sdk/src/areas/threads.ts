@@ -12,11 +12,11 @@ import {
   type ThreadQueuedMessage,
   type ThreadStatus,
   validatePluginMetadata,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   DEFAULT_TURN_RETRY_REASON,
   threadTabsResponseSchema,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   CreateQueuedMessageRequest,
   CreateThreadRequest,
@@ -75,7 +75,7 @@ import type {
   UpdateThreadTabsRequest,
   UpdateThreadRequest,
   UpdateQueuedMessageRequest,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { signalRequestArgs, type CreateSdkAreaArgs } from "./common.js";
 
 export const DEFAULT_THREAD_WAIT_TIMEOUT_MS = 20 * 60 * 1000;

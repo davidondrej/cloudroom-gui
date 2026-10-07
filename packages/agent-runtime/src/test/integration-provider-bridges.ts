@@ -6,7 +6,7 @@ import {
   jsonObjectSchema,
   permissionModeSchema,
   providerForkSchema,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { AgentRuntimeBridgeLaunch } from "../types.js";
 
 export const INTEGRATION_PROVIDER_BRIDGE_MANIFEST_PATH = join(

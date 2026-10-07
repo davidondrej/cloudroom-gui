@@ -2,7 +2,7 @@
 
 import { cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { defaultAppTheme } from "@bb/domain";
+import { defaultAppTheme } from "@cloudroom/domain";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
 import {
   FAVICON_COLOR_SERVER_SYNCED_STORAGE_KEY,

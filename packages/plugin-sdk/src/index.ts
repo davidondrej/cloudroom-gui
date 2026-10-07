@@ -19,6 +19,6 @@ export type {
   ExperimentalDesktopBrowserLease,
   ExperimentalDesktopBrowserCreateInput,
   ExperimentalDesktopBrowserAcquireInput,
-} from "@bb/sdk";
+} from "@cloudroom/sdk";
 
 export type * from "./machine-bootstrap.js";

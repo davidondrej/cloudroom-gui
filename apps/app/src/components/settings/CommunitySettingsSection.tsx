@@ -1,5 +1,5 @@
-import { Button } from "@bb/shared-ui/button";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
 import {
   SettingsSection,
   SettingsWithControl,

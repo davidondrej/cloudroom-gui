@@ -7,8 +7,8 @@ import {
   MoreHorizontalIcon,
   PlusSignIcon,
 } from "@hugeicons/core-free-icons";
-import { MAX_PER_ACCOUNT } from "@bb/connect-db";
-import type { HandleValidationError, LabelAvailability } from "@bb/connect-db";
+import { MAX_PER_ACCOUNT } from "@cloudroom/connect-db";
+import type { HandleValidationError, LabelAvailability } from "@cloudroom/connect-db";
 import appCss from "../styles.css?url";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

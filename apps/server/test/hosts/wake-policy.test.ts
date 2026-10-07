@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { getHost, updateHost } from "@bb/db";
-import type { HostDaemonCommand } from "@bb/host-daemon-contract";
+import { getHost, updateHost } from "@cloudroom/db";
+import type { HostDaemonCommand } from "@cloudroom/host-daemon-contract";
 import {
   callHostOnlineRpc,
   callHostOnlineRpcForWork,

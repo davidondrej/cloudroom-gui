@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { ExperimentalLiveFileTarget } from "@get-bb/plugin-sdk";
-import type { OpenInTargetContext } from "@bb/host-daemon-contract";
+import type { OpenInTargetContext } from "@cloudroom/host-daemon-contract";
 import { useEnvironment } from "@/hooks/queries/environment-queries";
 import { useThreadStorageLocation } from "@/hooks/queries/thread-queries";
 import { useHostDaemon } from "@/hooks/useHostDaemon";

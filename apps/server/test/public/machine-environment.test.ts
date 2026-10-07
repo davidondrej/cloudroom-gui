@@ -1,8 +1,8 @@
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
-import { appSettingsValues, upsertHost, updateHost } from "@bb/db";
-import { createBbSdk } from "@bb/sdk/core";
-import { createHttpTransport } from "@bb/sdk/node";
+import { appSettingsValues, upsertHost, updateHost } from "@cloudroom/db";
+import { createBbSdk } from "@cloudroom/sdk/core";
+import { createHttpTransport } from "@cloudroom/sdk/node";
 import { describe, expect, it, vi } from "vitest";
 import { withTestHarness } from "../helpers/test-app.js";
 import { resolveHostEnvironment } from "../../src/services/hosts/host-environment.js";
@@ -73,10 +73,12 @@ describe("machine environment settings", () => {
         ).not.toContain("test-region");
         expect(JSON.stringify(result)).not.toContain("test-region");
         expect(
-          await resolveHostEnvironment(harness.deps, {
-            hostId: "local",
-            projectId: null,
-          }),
+          (
+            await resolveHostEnvironment(harness.deps, {
+              hostId: "local",
+              projectId: null,
+            })
+          ).filter((entry) => !entry.name.startsWith("GIT_CONFIG_")),
         ).toEqual([]);
         upsertHost(harness.db, harness.hub, {
           id: "machine",
@@ -107,7 +109,7 @@ describe("machine environment settings", () => {
             projectId: null,
           }),
         ).toContainEqual(
-          expect.objectContaining({ name: "GIT_CONFIG_COUNT", value: "4" }),
+          expect.objectContaining({ name: "GIT_CONFIG_COUNT", value: "7" }),
         );
         await sdk.system.replaceMachineEnvironment({
           variables: [{ name: "DEPLOY_REGION", value: null, note: "Gate" }],

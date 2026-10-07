@@ -3,10 +3,10 @@ import {
   getStoredProviderModelCatalog,
   setAppSettings,
   updateHost,
-} from "@bb/db";
-import type { JsonValue, ProviderFork } from "@bb/domain";
-import type { HostDaemonOnlineRpcRequestMessage } from "@bb/host-daemon-contract";
-import { createDeferredPromise } from "@bb/test-helpers";
+} from "@cloudroom/db";
+import type { JsonValue, ProviderFork } from "@cloudroom/domain";
+import type { HostDaemonOnlineRpcRequestMessage } from "@cloudroom/host-daemon-contract";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
 import { describe, expect, it, vi } from "vitest";
 import {
   resolveSystemExecutionOptions,

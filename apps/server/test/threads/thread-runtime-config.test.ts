@@ -6,15 +6,15 @@ import {
   markThreadDeleted,
   setExperiments,
   setThreadExecutionOverride,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   defaultExperiments,
   encodeClientTurnRequestIdNumber,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { validatePluginProviderDeclaration } from "@get-bb/plugin-sdk/internal/host-policy";
 import type { PluginAgentConfigurationContext } from "@get-bb/plugin-sdk";
 import { buildPluginProviderRegistration } from "../../src/services/providers/plugin-provider-registration.js";
-import type { DiscoveredSkill } from "@bb/host-daemon-contract";
+import type { DiscoveredSkill } from "@cloudroom/host-daemon-contract";
 import { setPluginAgentContributions } from "../../src/services/plugins/plugin-agent-contributions.js";
 import { readSkillTreeManifest } from "../../src/services/skills/injected-skills.js";
 import type { PluginAgentToolContribution } from "../../src/services/plugins/plugin-service.js";
@@ -800,7 +800,9 @@ describe("thread runtime config", () => {
         entryPath: "SKILL.md",
       });
       expect(command.injectedSkillSources).toEqual([
-        ...["adr-verbatim", "decisions", "file-tree"].map(sharedSkill),
+        ...["adr-verbatim", "browser-harness", "decisions", "file-tree"].map(
+          sharedSkill,
+        ),
         {
           kind: "workspace-path",
           sourceType: "project",

@@ -1,10 +1,10 @@
-import { authApiKeys, getHost } from "@bb/db";
+import { authApiKeys, getHost } from "@cloudroom/db";
 import { eq } from "drizzle-orm";
 import {
   hostDaemonEnrollKeyResponseSchema,
   hostDaemonEnrollResponseSchema,
   type HostDaemonEnrollKeyResponse,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import { errorToResponse } from "../src/errors.js";

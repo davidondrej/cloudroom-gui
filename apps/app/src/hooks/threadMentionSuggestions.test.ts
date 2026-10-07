@@ -1,5 +1,5 @@
-import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@bb/domain";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@cloudroom/domain";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import { describe, expect, it } from "vitest";
 import { buildThreadMentionSuggestions } from "./threadMentionSuggestions";
 

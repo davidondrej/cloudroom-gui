@@ -1,14 +1,14 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { AgentRuntime } from "@bb/agent-runtime";
+import type { AgentRuntime } from "@cloudroom/agent-runtime";
 import type {
   HostDaemonInjectedSkillSource,
   ProviderCliInstallEvent,
   ProviderCliStatus,
-} from "@bb/host-daemon-contract";
-import type { HostWorkspace } from "@bb/host-workspace";
-import { createDeferredPromise } from "@bb/test-helpers";
+} from "@cloudroom/host-daemon-contract";
+import type { HostWorkspace } from "@cloudroom/host-workspace";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
 import { afterEach, describe, expect, it, vi, type Mock } from "vitest";
 import {
   dispatchCommand,

@@ -8,8 +8,8 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { turnScope, type ThreadEvent } from "@bb/domain";
-import type { RuntimePermissionPolicy } from "@bb/domain";
+import { turnScope, type ThreadEvent } from "@cloudroom/domain";
+import type { RuntimePermissionPolicy } from "@cloudroom/domain";
 import { experimental_createDeltaAssembler as createDeltaAssembler } from "@get-bb/plugin-sdk/provider-bridge/testing";
 import type { DeltaAssembler } from "@get-bb/plugin-sdk/provider-bridge/testing";
 import type { ServerNotification as CodexServerNotification } from "./generated/codex-app-server/schema/ServerNotification.js";

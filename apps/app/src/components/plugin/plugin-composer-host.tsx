@@ -17,7 +17,7 @@ import type {
   PluginComposerScope,
 } from "@get-bb/plugin-sdk";
 import { isComposerDraftEmpty } from "@get-bb/plugin-sdk/internal/composer-view";
-import type { PromptDraftState } from "@bb/client-core";
+import type { PromptDraftState } from "@cloudroom/client-core";
 
 export interface PluginComposerHost {
   scope: PluginComposerScope;

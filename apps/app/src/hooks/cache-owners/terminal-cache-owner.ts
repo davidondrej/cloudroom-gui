@@ -2,7 +2,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type {
   TerminalListResponse,
   TerminalSession,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   allTerminalsQueryKeyPrefix,
   terminalsQueryKey,

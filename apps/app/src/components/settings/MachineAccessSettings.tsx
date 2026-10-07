@@ -1,12 +1,12 @@
-import type { ServerAccessStatus } from "@bb/server-contract";
+import type { ServerAccessStatus } from "@cloudroom/server-contract";
 import { isLocalOnlyUrl } from "@/lib/loopback-hostname";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import { getPluginConfigurationRoutePath } from "@/lib/route-paths";
-import { Icon } from "@bb/shared-ui/icon";
-import { Input } from "@bb/shared-ui/input";
-import { COARSE_POINTER_INPUT_HEIGHT_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Input } from "@cloudroom/shared-ui/input";
+import { COARSE_POINTER_INPUT_HEIGHT_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import { OptionPicker } from "@/components/pickers/OptionPicker";
 import { useSystemConfig } from "@/hooks/queries/system-queries";
 import { useUpdateGeneralSettings } from "@/hooks/mutations/settings-mutations";

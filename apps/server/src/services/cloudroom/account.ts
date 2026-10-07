@@ -1,7 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { createServer, type Server } from "node:http";
 import { z } from "zod";
-import { getProject, type DbConnection } from "@bb/db";
+import { getProject, type DbConnection } from "@cloudroom/db";
 import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { cloudroom } from "./commands.js";

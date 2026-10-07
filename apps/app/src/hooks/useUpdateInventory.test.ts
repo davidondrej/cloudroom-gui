@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import type {
   ProviderCliStatus,
   ProviderCliStatusResponse,
-} from "@bb/host-daemon-contract";
-import { makeHost } from "@bb/test-helpers/domain-fixtures";
+} from "@cloudroom/host-daemon-contract";
+import { makeHost } from "@cloudroom/test-helpers/domain-fixtures";
 import {
   buildUpdateInventoryProviderIssues,
   updateInventoryHosts,

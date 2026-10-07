@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { insertEvents } from "@bb/db";
+import { insertEvents } from "@cloudroom/db";
 import {
   THREAD_CONTEXT_CLEAR_OPERATION,
   threadScope,
   turnScope,
   type ContextSnapshot,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { seedThreadFixture } from "../helpers/seed.js";
 import { withTestHarness } from "../helpers/test-app.js";
 

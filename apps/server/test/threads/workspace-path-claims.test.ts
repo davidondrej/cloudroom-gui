@@ -1,4 +1,4 @@
-import { createEnvironment } from "@bb/db";
+import { createEnvironment } from "@cloudroom/db";
 import { describe, expect, it } from "vitest";
 import { foreignProviderOwnedPathRefusal } from "../../src/services/threads/workspace-path-claims.js";
 import {

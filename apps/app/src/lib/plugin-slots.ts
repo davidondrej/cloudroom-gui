@@ -1,4 +1,4 @@
-import { setAppIcons } from "@bb/shared-ui/icon-registry";
+import { setAppIcons } from "@cloudroom/shared-ui/icon-registry";
 import { useSyncExternalStore } from "react";
 import type {
   ComposerCustomization,

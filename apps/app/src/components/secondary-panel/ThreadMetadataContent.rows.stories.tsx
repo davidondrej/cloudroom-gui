@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import type { EnvironmentDisplayHostContext } from "@bb/core-ui";
-import type { WorkspaceMergeBase, WorkspaceWorkingTree } from "@bb/domain";
+import type { EnvironmentDisplayHostContext } from "@cloudroom/core-ui";
+import type { WorkspaceMergeBase, WorkspaceWorkingTree } from "@cloudroom/domain";
 import {
   ParentSelectorRow,
   EnvironmentRow,

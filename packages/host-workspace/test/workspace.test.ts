@@ -2,8 +2,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { WorkspaceChangeStats } from "@bb/domain";
-import { createDeferredPromise } from "@bb/test-helpers";
+import type { WorkspaceChangeStats } from "@cloudroom/domain";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
 import {
   ProcessLocalQueuedLockTimeoutError,
   withProcessLocalQueuedLocks,

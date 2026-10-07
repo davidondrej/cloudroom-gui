@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { appSettingsValues, createConnection, migrate } from "@bb/db";
+import { appSettingsValues, createConnection, migrate } from "@cloudroom/db";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import {
   decryptMachineEnvironment,

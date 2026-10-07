@@ -12,7 +12,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ThreadDetailHeader } from "./ThreadDetailHeader";
 import { PaneContext, type PaneContextValue } from "./PaneContext";
 import { ThreadTitleMentionResourcesProvider } from "@/components/thread/ThreadTitleMentions";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import { sdk } from "@/lib/sdk";
 
 const mocks = vi.hoisted(() => ({
@@ -50,7 +50,7 @@ vi.mock("@/components/layout/AppPageHeader", () => ({
 
 const viewportState = vi.hoisted(() => ({ isCompactViewport: false }));
 
-vi.mock("@bb/shared-ui/hooks/use-compact-viewport", () => ({
+vi.mock("@cloudroom/shared-ui/hooks/use-compact-viewport", () => ({
   useIsCompactViewport: () => viewportState.isCompactViewport,
 }));
 

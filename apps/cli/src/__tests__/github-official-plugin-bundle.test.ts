@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.setConfig({ testTimeout: 60_000 });
-import { buildPluginApp, resolvePluginBuildToolchain } from "@bb/plugin-build";
+import { buildPluginApp, resolvePluginBuildToolchain } from "@cloudroom/plugin-build";
 function testToolchain() {
   return resolvePluginBuildToolchain(join(tmpdir(), "bb-toolchain-unused"));
 }
@@ -44,7 +44,7 @@ describe("GitHub official plugin frontend bundle", () => {
         return name !== "dist" && name !== "node_modules";
       },
     });
-    const sharedUiLink = join(pluginDir, "node_modules", "@bb", "shared-ui");
+    const sharedUiLink = join(pluginDir, "node_modules", "@cloudroom", "shared-ui");
     await mkdir(dirname(sharedUiLink), { recursive: true });
     await symlink(
       fileURLToPath(new URL("../../../../packages/shared-ui", import.meta.url)),

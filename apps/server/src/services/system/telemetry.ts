@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { DEFAULTS } from "@bb/config/defaults";
-import { readOrCreateSecretFile } from "@bb/secret-storage";
-import type { AppSurface, RequestAppSurface } from "@bb/config/app-surface";
+import { DEFAULTS } from "@cloudroom/config/defaults";
+import { readOrCreateSecretFile } from "@cloudroom/secret-storage";
+import type { AppSurface, RequestAppSurface } from "@cloudroom/config/app-surface";
 import type { ServerLogger } from "../../types.js";
 
 const POSTHOG_INGESTION_URL = "https://us.i.posthog.com/capture/";

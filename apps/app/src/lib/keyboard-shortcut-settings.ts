@@ -10,7 +10,7 @@ import {
   type AppKeybindingOverrides,
   type AppShortcut,
   type AppShortcutInput,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 const MODIFIER_KEYS = new Set(["Alt", "Control", "Meta", "OS", "Shift"]);
 const QUESTION_COMMANDS = new Set<KeyboardCommandId>(

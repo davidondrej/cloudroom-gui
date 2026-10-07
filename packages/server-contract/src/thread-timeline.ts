@@ -16,7 +16,7 @@ import {
   workflowProgressSnapshotSchema,
   type JsonObject,
   type ThreadEventItemPresentation,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 export const timelineRowStatusValues = [
   "pending",

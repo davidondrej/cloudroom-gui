@@ -4,7 +4,7 @@ import type {
   WorkflowAgentState,
   WorkflowPhaseSnapshot,
   WorkflowProgressSnapshot,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { ThreadWorkflowCard } from "./ThreadWorkflowCard";
 import { workflowRow } from "@/test/fixtures/thread-timeline-rows";
 import { StoryCard, StoryRow } from "../../../../.ladle/story-card";

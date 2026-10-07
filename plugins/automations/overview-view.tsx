@@ -14,14 +14,14 @@ import {
   AutomationLifecycleControl,
   automationIconName,
 } from "./detail-view.js";
-import { Icon } from "@bb/shared-ui/icon";
-import { DelayedLoading } from "@bb/shared-ui/delayed-loading";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { DelayedLoading } from "@cloudroom/shared-ui/delayed-loading";
 import {
   ResourcePagination,
   useResourcePagination,
   useResourceViewportPageSize,
-} from "@bb/shared-ui/resource-pagination";
-import { COARSE_POINTER_ICON_SIZE_SHRINK_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
+} from "@cloudroom/shared-ui/resource-pagination";
+import { COARSE_POINTER_ICON_SIZE_SHRINK_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import {
   ResourceBrowseGrid,
   ResourceCollectionPage,
@@ -36,9 +36,9 @@ import {
   ResourceSortMenu,
   ResourceTemplateBrowseCard,
   ResourceToolbar,
-} from "@bb/shared-ui/resource-list";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Button } from "@bb/shared-ui/button";
+} from "@cloudroom/shared-ui/resource-list";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   type AutomationStatusFilter,
   formatAutomationTrigger,

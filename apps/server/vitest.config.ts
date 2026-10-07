@@ -14,7 +14,7 @@ export default defineWorkspaceTestConfig({
     },
     projects: sharedWorkerProjects({
       pkgDir: __dirname,
-      name: "@bb/server",
+      name: "@cloudroom/server",
       include: ["src/**/*.test.ts", "test/**/*.test.ts"],
     }),
   },

@@ -1,10 +1,10 @@
-import { getEnvironment } from "@bb/db";
-import { getThread } from "@bb/db";
+import { getEnvironment } from "@cloudroom/db";
+import { getThread } from "@cloudroom/db";
 import {
   PERSONAL_PROJECT_ID,
   threadSchema,
   type GitSourceInspection,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { describe, expect, it, vi } from "vitest";
 import { resolveProjectDefaultThreadEnvironment } from "../../src/services/threads/thread-default-policy.js";
 import { getThreadProvisionContext } from "../../src/services/threads/thread-startup-store.js";

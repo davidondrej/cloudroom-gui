@@ -2,7 +2,7 @@ import type {
   ThreadEvent,
   ThreadEventItemType,
   ThreadEventType,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 export interface StoredEventItemFields {
   itemId: string | null;

@@ -1,14 +1,14 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { AgentRuntime } from "@bb/agent-runtime";
-import type { HostDaemonDaemonWsMessage } from "@bb/host-daemon-contract";
-import type { HostWorkspace } from "@bb/host-workspace";
+import type { AgentRuntime } from "@cloudroom/agent-runtime";
+import type { HostDaemonDaemonWsMessage } from "@cloudroom/host-daemon-contract";
+import type { HostWorkspace } from "@cloudroom/host-workspace";
 import {
   createDeferredPromise,
   makeWorkspaceMergeBase,
   makeWorkspaceStatus,
-} from "@bb/test-helpers";
+} from "@cloudroom/test-helpers";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HostDaemonLogger } from "../logger.js";
 import { RuntimeManager } from "../runtime-manager.js";
@@ -359,7 +359,7 @@ function shellQuote(value: string): string {
 
 async function openTerminal(
   harness: TerminalManagerHarness,
-  contributedEnv: import("@bb/host-daemon-contract").HostDaemonContributedEnvEntry[] = [],
+  contributedEnv: import("@cloudroom/host-daemon-contract").HostDaemonContributedEnvEntry[] = [],
 ): Promise<FakeTerminalPty> {
   await harness.manager.handleMessage({
     type: "terminal.open",

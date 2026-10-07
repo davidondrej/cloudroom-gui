@@ -10,7 +10,7 @@ import type {
   PluginMarketplaceRefreshResult,
   PluginSourceDetail as SdkPluginSourceDetail,
   PluginUpdateCheckEntry,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { useQuery } from "@tanstack/react-query";
 import { createPluginsClient } from "./plugin-client";
 import { toEpochMs } from "./plugin-settings-queries";

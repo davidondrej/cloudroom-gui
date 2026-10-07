@@ -1,13 +1,13 @@
-import { getThread } from "@bb/db";
-import type { EnvironmentRow } from "@bb/db";
+import { getThread } from "@cloudroom/db";
+import type { EnvironmentRow } from "@cloudroom/db";
 import {
   encodeClientTurnRequestIdNumber,
   threadScope,
   turnScope,
   type ResolvedThreadExecutionOptions,
   type Thread,
-} from "@bb/domain";
-import { groupHostDaemonEvents } from "@bb/host-daemon-contract";
+} from "@cloudroom/domain";
+import { groupHostDaemonEvents } from "@cloudroom/host-daemon-contract";
 import { describe, expect, it } from "vitest";
 import {
   hasLiveThreadStartInFlight,

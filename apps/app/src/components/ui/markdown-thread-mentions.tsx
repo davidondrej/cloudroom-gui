@@ -6,8 +6,8 @@ import {
   isRawThreadId,
   RAW_THREAD_ID_PATTERN_SOURCE,
   type PromptTextMention,
-} from "@bb/domain";
-import type { TimelineTitleLink } from "@bb/thread-view";
+} from "@cloudroom/domain";
+import type { TimelineTitleLink } from "@cloudroom/thread-view";
 import {
   PromptMentionPill,
   resolveThreadMentionResource,

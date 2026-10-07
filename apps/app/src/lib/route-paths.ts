@@ -10,7 +10,7 @@ import {
   SKILLS_ROUTE_PATH,
   TOOLS_ROUTE_PATH,
   stripRoutePathSuffix,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 export {
   APP_ROOT_ROUTE_PATH,
@@ -74,8 +74,8 @@ export {
   getAutomationEditRoutePath,
   getPluginPanelRoutePath,
   getThreadRoutePath,
-} from "@bb/client-core";
-export type { ThreadRoutePathArgs } from "@bb/client-core";
+} from "@cloudroom/client-core";
+export type { ThreadRoutePathArgs } from "@cloudroom/client-core";
 
 export function getPluginPanelRoutePluginId(pathname: string): string | null {
   return matchPath(PLUGIN_PANEL_ROUTE_PATH, pathname)?.params.pluginId ?? null;

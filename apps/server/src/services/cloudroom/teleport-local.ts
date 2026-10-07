@@ -17,8 +17,8 @@ import {
   listProjectSourcesByProjectIds,
   threadPluginMetadata,
   threads,
-} from "@bb/db";
-import { PERSONAL_PROJECT_ID, type Thread } from "@bb/domain";
+} from "@cloudroom/db";
+import { PERSONAL_PROJECT_ID, type Thread } from "@cloudroom/domain";
 import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { resolvePrimaryHostId } from "../hosts/primary-host.js";

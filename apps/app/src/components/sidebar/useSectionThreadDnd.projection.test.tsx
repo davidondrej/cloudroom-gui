@@ -9,21 +9,21 @@ import type {
   DragOverEvent,
   DragStartEvent,
 } from "@dnd-kit/core";
-import type { ThreadListEntry } from "@bb/domain";
+import type { ThreadListEntry } from "@cloudroom/domain";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildSectionThreadList,
   CHRONOLOGICAL_CONTAINER_ID,
   type ProjectThreadItem,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   collectSectionThreadDndLookup,
   NEST_HOVER_DELAY_MS,
   SectionThreadProjectionGate,
   useSectionThreadDnd,
 } from "./useSectionThreadDnd";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import { getSidebarThreadRowDroppableId } from "./sidebarThreadRowDroppable";
 
 let updateThreadDeferred: {

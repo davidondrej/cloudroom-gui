@@ -47,11 +47,40 @@ export function ProjectDeleteDialogContent({
 }: ProjectDeleteDialogContentProps) {
   return (
     <ConfirmDeleteDialogContent
-      title="Remove project?"
-      description={`Remove "${target.name}" and all of its threads? This cannot be undone.`}
-      confirmLabel="Remove project"
+      title="Delete project?"
+      description={`Delete "${target.name}" and all of its threads, including archived ones? Your project folder on disk is not touched. This cannot be undone.`}
+      confirmLabel="Delete project"
       pending={pending}
       onConfirm={() => onDelete(target.id)}
     />
+  );
+}
+
+interface ProjectHideDialogProps {
+  target: ProjectDeleteDialogTarget | null;
+  pending: boolean;
+  onOpenChange: (open: boolean) => void;
+  onHide: (projectId: string) => void;
+}
+
+export function ProjectHideDialog({
+  target,
+  pending,
+  onOpenChange,
+  onHide,
+}: ProjectHideDialogProps) {
+  return (
+    <ConfirmDeleteDialog open={target !== null} onOpenChange={onOpenChange}>
+      {target ? (
+        <ConfirmDeleteDialogContent
+          title="Hide project?"
+          description={`Hide "${target.name}" from the sidebar? Its threads are archived, not deleted, and running agents stop. To bring it back, add its folder again or use Settings → Projects.`}
+          confirmLabel="Hide project"
+          confirmVariant="default"
+          pending={pending}
+          onConfirm={() => onHide(target.id)}
+        />
+      ) : null}
+    </ConfirmDeleteDialog>
   );
 }

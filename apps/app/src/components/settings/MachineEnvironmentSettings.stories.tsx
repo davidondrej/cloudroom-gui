@@ -1,4 +1,4 @@
-import type { MachineEnvironmentList } from "@bb/server-contract";
+import type { MachineEnvironmentList } from "@cloudroom/server-contract";
 import { MachineEnvironmentSettingsContent } from "./MachineEnvironmentSettings";
 import { StoryCard, StoryRow } from "../../../.ladle/story-card";
 

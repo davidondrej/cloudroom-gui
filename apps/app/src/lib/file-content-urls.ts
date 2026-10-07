@@ -1,4 +1,4 @@
-import type { EnvironmentDiffFileQuery } from "@bb/server-contract";
+import type { EnvironmentDiffFileQuery } from "@cloudroom/server-contract";
 import { apiClient, toRelativeUrl } from "./api-server";
 
 function encodePathSegments(path: string): string {

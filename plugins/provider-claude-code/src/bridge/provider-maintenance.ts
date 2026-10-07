@@ -25,6 +25,7 @@ import {
   experimental_versionFrom as versionFrom,
 } from "@get-bb/plugin-sdk/provider-bridge";
 import { z } from "zod";
+import { fetchWithProxyFallback } from "./proxy-fallback.js";
 
 const execFileAsync = promisify(execFile);
 const USAGE_FETCH_TIMEOUT_MS = 15_000;
@@ -524,16 +525,19 @@ export async function getClaudeProviderUsage(): Promise<ProviderUsageResult> {
   }
   const known = { planLabel: planLabel(credentials), accountEmail: email };
   try {
-    const response = await fetch(CLAUDE_USAGE_URL, {
-      headers: {
-        Authorization: `Bearer ${credentials.accessToken}`,
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "anthropic-beta": "oauth-2025-04-20",
-        "User-Agent": "claude-code/2.1.0",
-      },
-      signal: AbortSignal.timeout(USAGE_FETCH_TIMEOUT_MS),
-    });
+    const response = await fetchWithProxyFallback((init) =>
+      fetch(CLAUDE_USAGE_URL, {
+        ...init,
+        headers: {
+          Authorization: `Bearer ${credentials.accessToken}`,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "anthropic-beta": "oauth-2025-04-20",
+          "User-Agent": "claude-code/2.1.0",
+        },
+        signal: AbortSignal.timeout(USAGE_FETCH_TIMEOUT_MS),
+      }),
+    );
     if (response.status === 401) {
       return { supported: true, usage: { status: "expired" } };
     }

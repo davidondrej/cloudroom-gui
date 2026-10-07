@@ -1,11 +1,11 @@
 import { useMemo, useState, type ReactNode } from "react";
 import type { ComposerPlusMenuItem, ComposerView } from "@get-bb/plugin-sdk";
-import { Button } from "@bb/shared-ui/button";
-import { COARSE_POINTER_PROMPT_ICON_ACTION_BUTTON_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
-import { DropdownMenuItem } from "@bb/shared-ui/dropdown-menu";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@bb/shared-ui/popover";
+import { Button } from "@cloudroom/shared-ui/button";
+import { COARSE_POINTER_PROMPT_ICON_ACTION_BUTTON_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { DropdownMenuItem } from "@cloudroom/shared-ui/dropdown-menu";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@cloudroom/shared-ui/popover";
 import { appToast } from "@/components/ui/app-toast";
 import {
   recordPluginComposerActionUse,

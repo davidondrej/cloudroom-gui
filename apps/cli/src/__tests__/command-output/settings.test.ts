@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { defaultAppSettings, defaultExperiments } from "@bb/domain";
+import { defaultAppSettings, defaultExperiments } from "@cloudroom/domain";
 import {
   collectLogPayloads,
   runCommand,

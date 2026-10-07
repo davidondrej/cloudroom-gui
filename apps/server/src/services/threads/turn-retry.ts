@@ -1,16 +1,16 @@
-import { hasQueuedRetryOfTurnRequest } from "@bb/db";
-import { permissionModeSchema } from "@bb/domain";
+import { hasQueuedRetryOfTurnRequest } from "@cloudroom/db";
+import { permissionModeSchema } from "@cloudroom/domain";
 import type {
   ClientTurnRequestId,
   PermissionMode,
   PromptInput,
   Thread,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   RetryTurnRequest,
   RetryTurnResponse,
   SendMessageRequest,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { ApiError } from "../../errors.js";
 import type { LoggedPendingInteractionWorkSessionDeps } from "../../types.js";
 import { attemptDispatch } from "./dispatch-attempt.js";

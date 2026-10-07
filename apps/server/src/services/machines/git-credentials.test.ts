@@ -1,13 +1,23 @@
 import { mergeHostAndProviderEnvironment } from "../hosts/host-environment.js";
-import { execFile, spawn } from "node:child_process";
+import { execFile, execFileSync, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { resolveGitCredentials, machineGitHealth } from "./git-credentials.js";
+import {
+  resolveGitCredentials,
+  machineGitHealth,
+  withAiCoAuthorStripping,
+} from "./git-credentials.js";
 
 const exec = promisify(execFile);
+const [gitMajor = 0, gitMinor = 0] = execFileSync("git", ["version"], {
+  encoding: "utf8",
+})
+  .match(/\d+/gu)!
+  .map(Number);
+const gitHasConfigHooks = gitMajor > 2 || (gitMajor === 2 && gitMinor >= 54);
 const cleanup: Array<() => Promise<void>> = [];
 afterEach(async () => {
   for (const dispose of cleanup.splice(0)) await dispose();
@@ -21,10 +31,12 @@ function gh(email: string | null = null) {
   );
 }
 
-async function gitEnv() {
+async function gitEnv(
+  entries: Awaited<ReturnType<typeof resolveGitCredentials>> | null = null,
+) {
   const home = await mkdtemp(join(tmpdir(), "bb-git-env-"));
   cleanup.push(() => rm(home, { recursive: true, force: true }));
-  const entries = await resolveGitCredentials(gh());
+  entries ??= await resolveGitCredentials(gh());
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     HOME: home,
@@ -57,6 +69,43 @@ function fill(
 }
 
 describe("machine Git environment", () => {
+  it.skipIf(!gitHasConfigHooks)(
+    "strips AI co-author lines from commits and keeps human ones",
+    async () => {
+      const { home, env } = await gitEnv(
+        withAiCoAuthorStripping(await resolveGitCredentials(gh())),
+      );
+      const repo = join(home, "repo");
+      await exec("git", ["init", "-q", repo], { env });
+      await writeFile(join(repo, "file.txt"), "content\n");
+      await exec("git", ["add", "file.txt"], { cwd: repo, env });
+      await exec(
+        "git",
+        [
+          "commit",
+          "-q",
+          "--no-verify",
+          "-m",
+          "Add file",
+          "-m",
+          [
+            "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>",
+            "Co-authored-by: Cursor <cursoragent@cursor.com>",
+            "Co-authored-by: Ada Lovelace <ada@example.com>",
+          ].join("\n"),
+        ],
+        { cwd: repo, env },
+      );
+      const { stdout } = await exec("git", ["log", "-1", "--format=%B"], {
+        cwd: repo,
+        env,
+      });
+      expect(stdout.trim()).toBe(
+        "Add file\n\nCo-authored-by: Ada Lovelace <ada@example.com>",
+      );
+    },
+  );
+
   it("lets agent-provider contributions override host credentials", async () => {
     const host = await resolveGitCredentials(gh());
     const provider = [

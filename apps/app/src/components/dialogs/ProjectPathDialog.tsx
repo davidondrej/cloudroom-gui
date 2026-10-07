@@ -4,16 +4,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { Icon } from "@bb/shared-ui/icon";
+} from "@cloudroom/shared-ui/dropdown-menu";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import {
   deriveProjectNameFromPath,
   getProjectPathValidationMessage,
   normalizeProjectPathInput,
   type Host,
-} from "@bb/domain";
-import type { HostPlatform } from "@bb/host-daemon-contract";
-import { Button } from "@bb/shared-ui/button";
+} from "@cloudroom/domain";
+import type { HostPlatform } from "@cloudroom/host-daemon-contract";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   Dialog,
   DialogContent,
@@ -21,12 +21,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
-import { Input } from "@bb/shared-ui/input";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/dialog";
+import { Input } from "@cloudroom/shared-ui/input";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { RemotePathBrowser } from "@/components/dialogs/RemotePathBrowser";
 import { MachineStatusDot } from "@/components/machines/MachineStatusDot";
-import { usePointerCoarse } from "@bb/shared-ui/hooks/use-pointer-coarse";
+import { usePointerCoarse } from "@cloudroom/shared-ui/hooks/use-pointer-coarse";
 import { selectHosts } from "@/hooks/queries/host-queries";
 
 export type ProjectPathDialogTarget =

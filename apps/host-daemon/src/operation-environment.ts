@@ -1,5 +1,5 @@
-import { sanitizeInheritedChildProcessEnv } from "@bb/process-utils";
-import type { HostDaemonContributedEnvEntry } from "@bb/host-daemon-contract";
+import { sanitizeInheritedChildProcessEnv } from "@cloudroom/process-utils";
+import type { HostDaemonContributedEnvEntry } from "@cloudroom/host-daemon-contract";
 
 export function operationEnvironment(
   entries: readonly HostDaemonContributedEnvEntry[],

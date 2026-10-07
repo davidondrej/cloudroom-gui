@@ -3,8 +3,8 @@ import type {
   ThreadEvent,
   ThreadEventBackgroundTaskItem,
   ThreadEventDelegationItem,
-} from "@bb/domain";
-import { threadScope, turnScope } from "@bb/domain";
+} from "@cloudroom/domain";
+import { threadScope, turnScope } from "@cloudroom/domain";
 import { RuntimeBackgroundWorkState } from "./runtime-background-work-state.js";
 
 interface TaskOptions {

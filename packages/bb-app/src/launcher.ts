@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { readProcessLogTail, spawnLoggedProcess } from "./logged-process.js";
-import { mutateManagedJsonFile } from "@bb/config/managed-json-file";
+import { mutateManagedJsonFile } from "@cloudroom/config/managed-json-file";
 import { access, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -16,21 +16,21 @@ import {
   clearOwnBbAppRuntimeFile,
   formatBbAppRuntimeFilePath,
   readBbAppRuntimeFile,
-} from "@bb/config/app-runtime-file";
-import { stopVerifiedProcess } from "@bb/config/verified-process-stop";
+} from "@cloudroom/config/app-runtime-file";
+import { stopVerifiedProcess } from "@cloudroom/config/verified-process-stop";
 import {
   hasProcessExited,
   waitForProcessExit,
   waitForProcessExitWithTimeout,
   type ChildProcessExitResult,
-} from "@bb/config/child-process-exit";
+} from "@cloudroom/config/child-process-exit";
 import {
   APP_SURFACE_DESKTOP,
   APP_SURFACE_ENV_NAME,
   APP_SURFACE_WEB,
   parseAppSurface,
   type AppSurface,
-} from "@bb/config/app-surface";
+} from "@cloudroom/config/app-surface";
 import {
   BB_APP_MANAGED_CONFIG_KEYS,
   bbAppManagedEnvFileSchema,
@@ -43,22 +43,22 @@ import {
   type BbAppManagedConfigValues,
   type BbAppManagedEnvConfig,
   type BbAppManagedEnvFile,
-} from "@bb/config/bb-app-managed-config";
+} from "@cloudroom/config/bb-app-managed-config";
 import {
   formatClientConfigPath,
   normalizeClientServerOrigin,
   parseClientConfig,
   type ClientConfig,
-} from "@bb/config/client-config";
+} from "@cloudroom/config/client-config";
 import {
   validateInferenceFallbackModel,
   validateInferenceModel,
   validateTranscriptionModel,
-} from "@bb/config/inference-model";
-import { validateLogLevel } from "@bb/config/log-level";
-import { validateOptionalUrl } from "@bb/config/public-url";
-import { parseServerBindHost, type ServerBindHost } from "@bb/config/server";
-import { toOptionalString } from "@bb/config/strings";
+} from "@cloudroom/config/inference-model";
+import { validateLogLevel } from "@cloudroom/config/log-level";
+import { validateOptionalUrl } from "@cloudroom/config/public-url";
+import { parseServerBindHost, type ServerBindHost } from "@cloudroom/config/server";
+import { toOptionalString } from "@cloudroom/config/strings";
 import {
   BB_PROD_HOST_DAEMON_PORT,
   BB_LOOPBACK_HOST,
@@ -71,7 +71,7 @@ import {
   resolvePortFromEnv,
   resolveProdDataDir,
   stripThreadContextEnv,
-} from "@bb/config/runtime";
+} from "@cloudroom/config/runtime";
 import { z } from "zod";
 import {
   bold,

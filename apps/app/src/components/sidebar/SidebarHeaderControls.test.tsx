@@ -9,14 +9,14 @@ import {
 } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { TooltipProvider } from "@bb/shared-ui/tooltip";
+import { TooltipProvider } from "@cloudroom/shared-ui/tooltip";
 import { SIDEBAR_CONTROL_STATE_CLASS } from "./sidebarRowClasses";
 import {
   SidebarHeaderActionsProvider,
   SidebarHeaderControls,
   SidebarSectionMenuItems,
 } from "./SidebarHeaderControls";
-import type { SidebarSectionId } from "@bb/client-core";
+import type { SidebarSectionId } from "@cloudroom/client-core";
 import {
   sidebarChronologicalSortAtom,
   sidebarOrganizationModeAtom,
@@ -25,7 +25,7 @@ import {
 } from "./sidebarCollapsedAtoms";
 
 const viewport = vi.hoisted(() => ({ compact: false }));
-vi.mock("@bb/shared-ui/hooks/use-compact-viewport", () => ({
+vi.mock("@cloudroom/shared-ui/hooks/use-compact-viewport", () => ({
   useIsCompactViewport: () => viewport.compact,
 }));
 

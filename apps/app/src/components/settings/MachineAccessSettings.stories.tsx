@@ -1,4 +1,4 @@
-import type { ServerAccessStatus } from "@bb/server-contract";
+import type { ServerAccessStatus } from "@cloudroom/server-contract";
 import {
   MachineAccessSettingsContent,
   type MachineAccessState,

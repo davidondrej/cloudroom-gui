@@ -1,4 +1,4 @@
-import { PLUGIN_SDK_VERSION } from "@bb/domain";
+import { PLUGIN_SDK_VERSION } from "@cloudroom/domain";
 import {
   getInstalledPlugin,
   getPluginArtifact,
@@ -13,7 +13,7 @@ import {
   type PluginProvenance,
   type PluginSourceIntent,
   type PluginStateSnapshotRow,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   createPluginStateSnapshotOnDisk,
   readPluginSnapshotRegistration,
@@ -24,7 +24,7 @@ import {
   garbageCollectPluginArtifacts,
   pluginArtifactStorageRoot,
 } from "./plugin-artifact-gc.js";
-import type { PluginRuntimeStatus } from "@bb/server-contract";
+import type { PluginRuntimeStatus } from "@cloudroom/server-contract";
 import type { PluginServiceDeps } from "./plugin-service-internal.js";
 import type { PluginManifest } from "./manifest.js";
 

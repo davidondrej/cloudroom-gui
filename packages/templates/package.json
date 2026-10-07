@@ -1,5 +1,5 @@
 {
-  "name": "@bb/templates",
+  "name": "@cloudroom/templates",
   "version": "0.0.1",
   "type": "module",
   "exports": {
@@ -28,13 +28,13 @@
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "@bb/domain": "workspace:*",
+    "@cloudroom/domain": "workspace:*",
     "gray-matter": "^4.0.3",
     "handlebars": "^4.7.8",
     "semver": "^7.7.4"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/node": "^22.0.0",
     "@types/semver": "^7.7.1",
     "typescript": "npm:@typescript/typescript6@^6.0.2",

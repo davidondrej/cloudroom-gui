@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { BbDesktopApi, BbDesktopInfo } from "@bb/desktop-contract";
+import type { BbDesktopApi, BbDesktopInfo } from "@cloudroom/desktop-contract";
 import { getBbDesktopInfo } from "@/lib/bb-desktop";
 
 interface DesktopUpdateInfo {

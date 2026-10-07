@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { threadScope, turnScope } from "@bb/domain";
+import { threadScope, turnScope } from "@cloudroom/domain";
 import type {
   ThreadEvent,
   ThreadEventBackgroundTaskItem,
   ThreadEventItem,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   TURN_1,
   TURN_2,

@@ -6,7 +6,7 @@ import {
   isHtmlFilePreviewPath,
   normalizeFilePreviewMimeType,
   type FilePreview,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import type { QueryOptions } from "./query-helpers";
 import { hostFilePreviewQueryKey } from "./query-keys";
 import { HEAVY_PAYLOAD_QUERY_POLICY } from "./query-policies";

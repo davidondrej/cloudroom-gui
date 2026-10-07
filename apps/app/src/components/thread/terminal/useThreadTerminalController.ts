@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { TerminalSession } from "@bb/server-contract";
+import type { TerminalSession } from "@cloudroom/server-contract";
 import {
   useCloseTerminal,
   useCloseEnvironmentTerminal,
@@ -29,7 +29,7 @@ import {
   shouldShowRetainedTerminalSession,
 } from "@/lib/terminal-session-visibility";
 import { normalizeTerminalTitle } from "./thread-terminal-title";
-import type { TerminalCreateTarget } from "@bb/server-contract";
+import type { TerminalCreateTarget } from "@cloudroom/server-contract";
 
 export const DEFAULT_TERMINAL_COLS = 100;
 export const DEFAULT_TERMINAL_ROWS = 30;

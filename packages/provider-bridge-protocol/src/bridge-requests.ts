@@ -1,4 +1,4 @@
-import { pendingInteractionPayloadSchema } from "@bb/domain";
+import { pendingInteractionPayloadSchema } from "@cloudroom/domain";
 import { z } from "zod";
 
 export const BRIDGE_INBOUND_REQUEST_METHODS = {

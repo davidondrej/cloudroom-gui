@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { useState } from "react";
-import { arrayMove } from "@bb/client-core";
+import { arrayMove } from "@cloudroom/client-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ThreadSecondaryPanelProps } from "@/components/secondary-panel/ThreadSecondaryPanel";
 import {

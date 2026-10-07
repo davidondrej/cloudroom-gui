@@ -1,4 +1,4 @@
-import type { SystemProvidersQuery } from "@bb/server-contract";
+import type { SystemProvidersQuery } from "@cloudroom/server-contract";
 import type { ExperimentalProviderModelPickerRouting } from "@get-bb/plugin-sdk";
 
 export interface ResolvedPluginExecutionRouting {

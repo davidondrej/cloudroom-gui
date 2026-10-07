@@ -1,4 +1,4 @@
-import { jsonValueSchema, type JsonValue } from "@bb/domain";
+import { jsonValueSchema, type JsonValue } from "@cloudroom/domain";
 import {
   installedPluginSchema,
   pluginRpcDiscoveryQuerySchema,
@@ -44,7 +44,7 @@ import {
   type PluginSourceSelection,
   type PluginTokenResponse,
   type PluginUpdateCheckEntry,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { z } from "zod";
 import type { CreateSdkAreaArgs } from "./common.js";
 

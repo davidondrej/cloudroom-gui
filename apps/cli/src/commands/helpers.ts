@@ -3,7 +3,7 @@ import {
   reasoningLevelSchema,
   reasoningLevelValues,
   type ReasoningLevel,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { ResolvedId } from "../context-env.js";
 
 export {

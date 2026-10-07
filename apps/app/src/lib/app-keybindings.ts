@@ -1,5 +1,5 @@
-import type { AppCommandContext, AppKeybinding, AppShortcut } from "@bb/domain";
-import { isMacKeyboardPlatform } from "@bb/domain";
+import type { AppCommandContext, AppKeybinding, AppShortcut } from "@cloudroom/domain";
+import { isMacKeyboardPlatform } from "@cloudroom/domain";
 
 export interface AppShortcutPresentation {
   ariaKeyshortcuts: string;

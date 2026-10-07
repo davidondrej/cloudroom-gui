@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ThreadTimelinePendingTodos } from "@bb/domain";
-import type { ThreadTimelineResponse } from "@bb/server-contract";
+import type { ThreadTimelinePendingTodos } from "@cloudroom/domain";
+import type { ThreadTimelineResponse } from "@cloudroom/server-contract";
 import {
   createNodeBbSdk,
   type BbSdk,
   type FetchImplementation,
-} from "@bb/sdk/node";
+} from "@cloudroom/sdk/node";
 
 import { fetchThreadPendingTodos, printPendingTodos } from "./pending-todos.js";
 

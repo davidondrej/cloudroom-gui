@@ -18,7 +18,7 @@ import type {
   ThreadEventSearchMode,
   ThreadTurnInitiator,
   WorkflowProgressSnapshot,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { EventProjection } from "./event-projection.js";
 
 const eventProjectionMessageStatusValues = [

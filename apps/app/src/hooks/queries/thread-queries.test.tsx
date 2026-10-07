@@ -2,16 +2,16 @@
 
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { PendingInteraction, ThreadListEntry } from "@bb/domain";
+import type { PendingInteraction, ThreadListEntry } from "@cloudroom/domain";
 import type {
   SidebarBootstrapResponse,
   ThreadTimelineResponse,
   ThreadWithIncludesResponse,
-} from "@bb/server-contract";
-import { COMPACT_VIEWPORT_QUERY } from "@bb/shared-ui/hooks/use-compact-viewport";
+} from "@cloudroom/server-contract";
+import { COMPACT_VIEWPORT_QUERY } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import * as api from "@/lib/api";
 import { sdk } from "@/lib/sdk";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
 import { ARCHIVED_THREADS_PAGE_SIZE } from "./archived-threads-page-size";
 import {

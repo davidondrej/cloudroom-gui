@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, renderHook, waitFor } from "@testing-library/react";
-import type { WorkspaceFile } from "@bb/server-contract";
+import type { WorkspaceFile } from "@cloudroom/server-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useThreadStorageBrowser } from "./useThreadStorageBrowser";
 

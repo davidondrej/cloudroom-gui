@@ -3,8 +3,8 @@ import type {
   ThreadPullRequest,
   WorkspaceFileStatus,
   WorkspaceStatus,
-} from "@bb/domain";
-import type { PullRequestMergeMethod } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { PullRequestMergeMethod } from "@cloudroom/server-contract";
 import {
   ThreadPromptContextBanner,
   type ContextBannerMergeBaseConfig,

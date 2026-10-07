@@ -5,8 +5,8 @@ import {
   type InstalledPlugin,
   type PluginCatalogInstallPlan,
   type PluginCatalogResolvedSource,
-} from "@bb/server-contract";
-import { Button } from "@bb/shared-ui/button";
+} from "@cloudroom/server-contract";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   Dialog,
   DialogContent,
@@ -14,9 +14,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
-import { Icon } from "@bb/shared-ui/icon";
-import { Input } from "@bb/shared-ui/input";
+} from "@cloudroom/shared-ui/dialog";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Input } from "@cloudroom/shared-ui/input";
 import { appToast } from "@/components/ui/app-toast.js";
 import { pluginToast } from "@/components/plugin/PluginNotificationDescription";
 import { pluginAdminErrorMessage } from "@/lib/plugin-admin-error";

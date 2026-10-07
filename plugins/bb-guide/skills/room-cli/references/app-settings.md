@@ -46,6 +46,14 @@ every window and client sees the same value.
 - The complete default table is in `docs/configuration.md` in the cloudroom source
   repository.
 
+## Remove AI co-authors
+
+Settings → Defaults → Remove AI co-authors is on by default. Set
+`stripAiCoAuthorsEnabled` with
+`room-cli settings general stripAiCoAuthorsEnabled <true|false|on|off>`.
+New Local and Cloud sessions drop agent `Co-authored-by` lines from commits and
+keep human ones. It needs Git 2.54 or newer.
+
 ## Command Guard
 
 Settings → Advanced → Command Guard is on by default. Set `commandGuardEnabled` with
@@ -113,8 +121,8 @@ This blocks common catastrophic shell commands; it is not a sandbox.
 
 - When a turn finishes, cloudroom can collapse its work into one `Worked for` row
   and leave the final answer visible (`collapse`), or keep every step visible
-  (`flat`). Each provider declares a default: Claude Code is `flat`; every
-  other first-party provider is `collapse`.
+  (`flat`). Each provider declares a default; every
+  first-party provider is `collapse`.
 - `room-cli settings completed-turns [--json]` lists every provider with its current
   display and whether it comes from your setting or the provider default.
 - `room-cli settings completed-turns <provider-id> <collapse|flat|default>` sets the
@@ -182,7 +190,7 @@ reports setup required. `room-cli settings show --json` includes serverAccess wi
 effective direct URL, its source and provider availability. Availability is refreshed
 on each read, with failed or timed-out checks reported as unavailable. It does
 not acquire a machine grant. These grants carry runtime
-requests, including account-pool traffic, after enrolment.
+requests after enrolment.
 
 Automatic machine GitHub credentials are enabled by default. Use
 `room-cli settings general machineGitCredentialsEnabled false` to stop forwarding the

@@ -4,7 +4,7 @@ import {
   useThreadTerminalController,
   type ThreadTerminalTarget,
 } from "./useThreadTerminalController";
-import type { TerminalCreateTarget } from "@bb/server-contract";
+import type { TerminalCreateTarget } from "@cloudroom/server-contract";
 
 interface ThreadTerminalPanelProps {
   autoFocus?: boolean;

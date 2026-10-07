@@ -5,7 +5,7 @@ import {
   type ThreadTimelineViewRow,
   type TimelineViewWorkRow,
   type TimelineWorkSummaryChild,
-} from "@bb/thread-view";
+} from "@cloudroom/thread-view";
 
 interface CollectTimelineAutoExpansionRowIdsArgs {
   rows: readonly ThreadTimelineViewRow[];

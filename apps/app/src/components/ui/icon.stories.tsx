@@ -1,11 +1,11 @@
-import { Icon, ICON_NAMES, type IconName } from "@bb/shared-ui/icon";
-import { Button } from "@bb/shared-ui/button";
+import { Icon, ICON_NAMES, type IconName } from "@cloudroom/shared-ui/icon";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
+} from "@cloudroom/shared-ui/tooltip";
 import { StoryCard, StoryRow } from "../../../.ladle/story-card";
 
 export default {

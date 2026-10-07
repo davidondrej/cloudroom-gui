@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import { machine, server } from "@bb/connect-db";
+import { machine, server } from "@cloudroom/connect-db";
 import {
   HEARTBEAT_REQUEST,
   HEARTBEAT_RESPONSE,
@@ -9,7 +9,7 @@ import {
   encodeFrame,
   type Frame,
   type HeaderPair,
-} from "@bb/tunnel-contract";
+} from "@cloudroom/tunnel-contract";
 import { relayedResponse } from "./response-encoding.js";
 import { TUNNEL_TARGET_HEADER } from "./protocol-headers.js";
 

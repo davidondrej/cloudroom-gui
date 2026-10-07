@@ -7,7 +7,7 @@ import {
   type DbQueryConnection,
   type QueuedThreadMessageRow,
   type StoredPromptHistoryEntryRow,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   promptInputSchema,
   takeVisiblePromptHistoryEntries,
@@ -16,7 +16,7 @@ import {
   type Thread,
   type ThreadTurnInitiator,
   type TurnRequestTarget,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { z } from "zod";
 import { toThreadQueuedMessage } from "./threads/thread-queued-messages.js";
 import type { AppDeps } from "../types.js";

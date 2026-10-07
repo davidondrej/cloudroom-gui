@@ -1,4 +1,5 @@
 export const BB_DESKTOP_OPEN_NEW_TAB_CHANNEL = "bb-desktop:open-new-tab";
+export const BB_DESKTOP_OPEN_LINK_CHANNEL = "bb-desktop:open-link";
 export const BB_DESKTOP_APP_COMMAND_CHANNEL = "bb-desktop:app-command";
 export const BB_DESKTOP_ADD_IMAGE_TO_CHAT_CHANNEL =
   "bb-desktop:add-image-to-chat";

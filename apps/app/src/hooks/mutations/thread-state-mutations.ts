@@ -1,12 +1,12 @@
 import { useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Thread } from "@bb/domain";
+import type { Thread } from "@cloudroom/domain";
 import type {
   ReorderPinnedThreadRequest,
   ThreadArchiveAllResponse,
   ThreadResponse,
   UpdateThreadRequest,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { sdk } from "@/lib/sdk";
 import type { LifecycleErrorOperation } from "@/lib/lifecycle-errors";
 import {

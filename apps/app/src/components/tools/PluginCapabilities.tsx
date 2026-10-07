@@ -1,17 +1,17 @@
 import type { ReactNode } from "react";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
-import { pluginCliCall } from "@bb/domain/plugin-cli";
+import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
+import { pluginCliCall } from "@cloudroom/domain/plugin-cli";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Button } from "@bb/shared-ui/button";
-import type { PluginCapability, SkillListResponse } from "@bb/server-contract";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
+import { Button } from "@cloudroom/shared-ui/button";
+import type { PluginCapability, SkillListResponse } from "@cloudroom/server-contract";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
 import {
   ResourceDetailIncludesSection,
   ResourceStatus,
   type ResourceStatusTone,
-} from "@bb/shared-ui/resource-list";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/resource-list";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { PluginBannerBar } from "@/components/tools/plugin-detail-banner";
 import {
   PluginDetailGlyph,

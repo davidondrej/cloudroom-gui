@@ -36,7 +36,7 @@ room-cli memory add \
   --scope project \
   --name turbo-validation \
   --summary "Use Turbo for builds and typechecks" \
-  --details "Run pnpm exec turbo run typecheck --filter=@bb/<pkg>." \
+  --details "Run pnpm exec turbo run typecheck --filter=@cloudroom/<pkg>." \
   --kind procedure \
   --tag build \
   --tag testing \

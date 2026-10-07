@@ -11,20 +11,20 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createStandaloneBuiltinCompactCommandInput } from "@bb/domain";
-import type { DynamicTool, ReasoningLevel } from "@bb/domain";
+import { createStandaloneBuiltinCompactCommandInput } from "@cloudroom/domain";
+import type { DynamicTool, ReasoningLevel } from "@cloudroom/domain";
 import {
   PROVIDER_BRIDGE_PROTOCOL_VERSION,
   THREAD_DELTA_NOTIFICATION_METHOD,
-} from "@bb/provider-bridge-protocol";
+} from "@cloudroom/provider-bridge-protocol";
 import {
   assembleCapturedThreadEvents,
   captureBridgeJsonRpcOutput,
-} from "@bb/provider-bridge-protocol/testing";
+} from "@cloudroom/provider-bridge-protocol/testing";
 import type {
   BridgeJsonRpcOutputMessage,
   CapturedBridgeJsonRpcOutput,
-} from "@bb/provider-bridge-protocol/testing";
+} from "@cloudroom/provider-bridge-protocol/testing";
 
 import { handleLine } from "./bridge.js";
 import { ACP_BRIDGE_NO_ACTIVE_TURN_ERROR_CODE } from "../bridge-protocol.js";

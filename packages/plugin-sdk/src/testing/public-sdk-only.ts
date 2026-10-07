@@ -1,13 +1,13 @@
 /**
  * The rule a plugin proves about itself: it reaches every capability through
- * the public SDK alone. No file in the package may import a private `@bb/*`
+ * the public SDK alone. No file in the package may import a private `@cloudroom/*`
  * workspace package — not the plugin code, not the tests — and nothing may
  * import outside the allowlist: `@get-bb/plugin-sdk` and its published
  * subpaths, `zod`, node built-ins, the package's own files, plus whatever
  * public packages the plugin names in `allow`; test files may add the
  * published testing subpaths and the test runner.
  *
- * A `@bb/*` import still typechecks and runs inside bb's own monorepo, which
+ * A `@cloudroom/*` import still typechecks and runs inside bb's own monorepo, which
  * is exactly why it needs a test: the workspace hides the privilege. Inside
  * the monorepo a relative path can climb out of the package into a private
  * package's source just as quietly, so a relative specifier that resolves
@@ -22,7 +22,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist"]);
 const SOURCE_EXTENSIONS = /\.(?:[cm]?[jt]s|tsx)$/u;
 const TEST_FILE_PATTERN = /\.test\.[cm]?[jt]sx?$/u;
-const PRIVATE_PACKAGE_PREFIX = "@bb/";
+const PRIVATE_PACKAGE_PREFIX = "@cloudroom/";
 
 /** Specifiers plugin code (server, host, bridge, app) may import. */
 const PLUGIN_IMPORT_ALLOWLIST: readonly RegExp[] = [
@@ -71,7 +71,7 @@ export interface PublicSdkOnlyScan {
   /** Every source file scanned, relative to the package root, in walk order. */
   files: string[];
   violations: PublicSdkOnlyViolation[];
-  /** `@bb/*` names in the package.json dependencies and devDependencies. */
+  /** `@cloudroom/*` names in the package.json dependencies and devDependencies. */
   privateDependencies: string[];
 }
 

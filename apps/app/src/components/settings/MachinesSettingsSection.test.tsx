@@ -7,14 +7,14 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import type { Host } from "@bb/domain";
-import { makeHost } from "@bb/test-helpers/domain-fixtures";
-import { RETRY_ACTION_ICON } from "@bb/domain/update-state";
-import { HOST_DAEMON_PROTOCOL_VERSION } from "@bb/host-daemon-contract";
+import type { Host } from "@cloudroom/domain";
+import { makeHost } from "@cloudroom/test-helpers/domain-fixtures";
+import { RETRY_ACTION_ICON } from "@cloudroom/domain/update-state";
+import { HOST_DAEMON_PROTOCOL_VERSION } from "@cloudroom/host-daemon-contract";
 import type {
   SystemConfigResponse,
   SystemMachineProvider,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sdk } from "@/lib/sdk";
@@ -172,17 +172,18 @@ describe("MachinesSettingsSection", () => {
 
     const persistentName = await screen.findByText(primaryHost.name);
     expect(
-      persistentName.parentElement?.querySelector('[data-icon="Laptop"]'),
+      persistentName
+        .closest("[data-machine-row]")
+        ?.querySelector('[data-icon="Laptop"]'),
     ).not.toBeNull();
     expect(screen.queryByText(sandboxHost.name)).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Show all machines" }));
 
     const sandboxName = screen.getByText(sandboxHost.name);
-    expect(sandboxName.parentElement?.querySelector("svg")).not.toBeNull();
-    expect(
-      sandboxName.parentElement?.querySelector('[data-icon="Laptop"]'),
-    ).toBeNull();
+    const sandboxCard = sandboxName.closest("[data-machine-row]");
+    expect(sandboxCard?.querySelector("a svg")).not.toBeNull();
+    expect(sandboxCard?.querySelector('[data-icon="Laptop"]')).toBeNull();
     expect(screen.queryByText(modalMachineProvider.displayName)).toBeNull();
     await openHostMenu(sandboxHost.name);
     fireEvent.click(await screen.findByRole("menuitem", { name: "Suspend" }));
@@ -375,10 +376,9 @@ describe("MachinesSettingsSection", () => {
     });
     expect(addMachine.textContent).toBe("Add a machine");
     expect(addMachine.querySelector('[data-icon="Plus"]')).not.toBeNull();
-    const action = addMachine.parentElement;
-    expect(action?.className).toContain("self-start");
-    expect(action?.parentElement?.className).toContain("flex-col");
-    expect(action?.parentElement?.className).toContain("sm:flex-row");
+    const grid = addMachine.parentElement;
+    expect(grid?.querySelectorAll("[data-machine-row]")).toHaveLength(2);
+    expect(grid?.lastElementChild).toBe(addMachine);
     fireEvent.click(addMachine);
     expect(
       await screen.findByRole("heading", { name: "Set up machine access" }),
@@ -417,7 +417,7 @@ describe("MachinesSettingsSection", () => {
     });
   });
 
-  it("shows permission metadata as text and reserves a hover caret", async () => {
+  it("shows permission metadata as text on a hoverable card with an actions menu", async () => {
     vi.mocked(sdk.system.config).mockResolvedValue(systemConfig());
     vi.mocked(sdk.hosts.list).mockResolvedValue([
       primaryHost,
@@ -439,30 +439,13 @@ describe("MachinesSettingsSection", () => {
     const row = machineLink.closest("[data-machine-row]");
     expect(row?.className).toContain("hover:bg-state-hover");
     expect(row?.className).toContain("focus-within:bg-state-hover");
-    expect(row?.className).toContain("px-2");
-    expect(row?.className).toContain("py-2");
-    const caret = row?.querySelector('[data-icon="ChevronRight"]');
-    expect(caret?.classList.contains("opacity-0")).toBe(true);
-    expect(caret?.classList.contains("size-3.5")).toBe(true);
-    expect(caret?.classList.contains("text-subtle-foreground")).toBe(true);
-    expect(caret?.classList.contains("group-hover:opacity-100")).toBe(true);
-    expect(caret?.classList.contains("group-focus-within:opacity-100")).toBe(
-      true,
-    );
+    expect(row?.className).toContain("cursor-pointer");
     const overflow = row?.querySelector('[data-icon="MoreHorizontal"]');
     expect(overflow).not.toBeNull();
-    expect(caret).not.toBeNull();
-    expect(
-      overflow && caret
-        ? Boolean(
-            overflow.compareDocumentPosition(caret) &
-            Node.DOCUMENT_POSITION_FOLLOWING,
-          )
-        : false,
-    ).toBe(true);
+    expect(machineLink.contains(overflow ?? null)).toBe(false);
   });
 
-  it("navigates to the machine detail route when the row caret is clicked", async () => {
+  it("navigates to the machine detail route when the card is clicked", async () => {
     vi.mocked(sdk.system.config).mockResolvedValue(systemConfig());
     vi.mocked(sdk.hosts.list).mockResolvedValue([primaryHost, offlineHost]);
     stubSidebarBootstrapFetch();
@@ -472,12 +455,11 @@ describe("MachinesSettingsSection", () => {
     const machineLink = await screen.findByRole("link", {
       name: "Open dev-vm",
     });
-    const row = machineLink.closest("[data-machine-row]");
-    const caret = row?.querySelector('[data-icon="ChevronRight"]');
-    expect(caret).not.toBeNull();
-    if (caret === null || caret === undefined) return;
+    const card = machineLink.closest("[data-machine-row]");
+    expect(card).not.toBeNull();
+    if (card === null) return;
 
-    fireEvent.click(caret);
+    fireEvent.click(card);
 
     await waitFor(() => {
       expect(screen.getByTestId("location").textContent).toBe(

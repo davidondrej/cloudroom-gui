@@ -11,8 +11,8 @@ import {
   migrate,
   pluginSchedules,
   type DbConnection,
-} from "@bb/db";
-import type { Logger } from "@bb/logger";
+} from "@cloudroom/db";
+import type { Logger } from "@cloudroom/logger";
 import { createAiServiceRegistry } from "../../../src/services/ai/ai-service-registry.js";
 import {
   createPluginService,

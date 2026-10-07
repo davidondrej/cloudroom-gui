@@ -1,9 +1,9 @@
 import {
   HOST_DAEMON_PROTOCOL_VERSION,
   createHostDaemonClient,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { describe, expect, it } from "vitest";
-import { getHost, updateHost, upsertHost } from "@bb/db";
+import { getHost, updateHost, upsertHost } from "@cloudroom/db";
 import {
   createTestDaemonHostKey,
   startTestServer,

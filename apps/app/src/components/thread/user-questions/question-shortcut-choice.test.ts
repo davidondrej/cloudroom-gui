@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Question } from "@bb/shared-ui/question-form-state";
-import { resolveQuestionShortcutChoice } from "@bb/shared-ui/question-form-state";
+import type { Question } from "@cloudroom/shared-ui/question-form-state";
+import { resolveQuestionShortcutChoice } from "@cloudroom/shared-ui/question-form-state";
 
 const question: Question = {
   id: "question-1",

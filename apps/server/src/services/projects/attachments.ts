@@ -10,9 +10,9 @@ import {
   resolve,
   win32,
 } from "node:path";
-import { resolveContainedPath } from "@bb/process-utils";
-import type { PromptInput } from "@bb/domain";
-import type { UploadedPromptAttachment } from "@bb/server-contract";
+import { resolveContainedPath } from "@cloudroom/process-utils";
+import type { PromptInput } from "@cloudroom/domain";
+import type { UploadedPromptAttachment } from "@cloudroom/server-contract";
 import mimeTypes from "mime-types";
 import { ApiError } from "../../errors.js";
 

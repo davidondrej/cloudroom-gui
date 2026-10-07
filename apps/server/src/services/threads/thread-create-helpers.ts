@@ -5,10 +5,10 @@ import {
   getProject,
   getThread,
   isSqliteForeignKeyConstraint,
-} from "@bb/db";
-import type { DbNotifier } from "@bb/db";
-import type { HostDaemonCommand } from "@bb/host-daemon-contract";
-import type { LocalPathProjectSource } from "@bb/domain";
+} from "@cloudroom/db";
+import type { DbNotifier } from "@cloudroom/db";
+import type { HostDaemonCommand } from "@cloudroom/host-daemon-contract";
+import type { LocalPathProjectSource } from "@cloudroom/domain";
 import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { emitPluginThreadCreated } from "../plugins/plugin-thread-events.js";
@@ -29,14 +29,14 @@ interface SuggestedBranchNameArgs {
   threadId: string;
 }
 
+/** Local and Cloud share one shape: <prefix><title-slug>-<last 4 chars of the thread ID> (docs/scopes/sandboxes.md). */
 export function buildSuggestedBranchName(
   args: SuggestedBranchNameArgs,
 ): string {
   const branchSlug =
-    args.title === null ? null : sanitizeGeneratedBranchSlug(args.title);
-  return branchSlug
-    ? `${args.branchPrefix}${branchSlug}-${args.threadId}`
-    : `${args.branchPrefix}${args.threadId}`;
+    (args.title === null ? null : sanitizeGeneratedBranchSlug(args.title)) ??
+    "task";
+  return `${args.branchPrefix}${branchSlug}-${args.threadId.replace(/^thr_/, "").slice(-4)}`;
 }
 
 export function requirePublicProjectForThreadCreate(

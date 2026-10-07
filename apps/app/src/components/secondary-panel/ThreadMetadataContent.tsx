@@ -18,13 +18,13 @@ import type {
   ThreadPullRequest,
   WorkspaceCommitSummary,
   WorkspaceStatus,
-} from "@bb/domain";
-import type { WorkspaceResolutionFailure } from "@bb/host-daemon-contract";
+} from "@cloudroom/domain";
+import type { WorkspaceResolutionFailure } from "@cloudroom/host-daemon-contract";
 import {
   formatEnvironmentDisplay,
   type EnvironmentDisplayHostContext,
-} from "@bb/core-ui";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/core-ui";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
 import { cloudroomEnvironmentPresentation } from "@/lib/cloudroom-environment-label";
 import {
@@ -36,11 +36,11 @@ import { useSystemMachineProviders } from "@/hooks/queries/machine-provider-quer
 import { useHosts } from "@/hooks/queries/host-queries";
 import { MachineLabel } from "@/components/machines/MachineLabel";
 import { formatWorkspaceCheckoutDisplay } from "@/lib/workspace-checkout-display";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   COARSE_POINTER_COMPACT_ICON_BUTTON_CLASS,
   COARSE_POINTER_TEXT_SM_CLASS,
-} from "@bb/shared-ui/coarse-pointer-sizing";
+} from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import { CopyableInlineLabel } from "@/components/ui/copy-button.js";
 import { TruncatedList } from "@/components/ui/truncated-list.js";
 import {
@@ -48,10 +48,10 @@ import {
   DetailRow,
   DetailRowIconLabel,
 } from "@/components/ui/detail-card.js";
-import { CHROME_SECTION_LABEL_CLASS } from "@bb/shared-ui/chrome-style-tokens";
+import { CHROME_SECTION_LABEL_CLASS } from "@cloudroom/shared-ui/chrome-style-tokens";
 import { useCreateThreadInEnvironment } from "@/hooks/useCreateThreadInEnvironment";
-import { Icon } from "@bb/shared-ui/icon";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@bb/shared-ui/tooltip";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@cloudroom/shared-ui/tooltip";
 import {
   BranchPicker,
   getMergeBaseBranchCandidateGroups,

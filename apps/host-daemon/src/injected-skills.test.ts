@@ -15,11 +15,11 @@ import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AgentRuntimeSkillRoot } from "@bb/agent-runtime";
+import type { AgentRuntimeSkillRoot } from "@cloudroom/agent-runtime";
 import type {
   HostDaemonInjectedSkillSource,
   HostDaemonSkillTree,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   cleanupInjectedSkillStagingDirs,
   ensureDataDirSkillsRootPath,

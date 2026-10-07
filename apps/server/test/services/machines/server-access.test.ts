@@ -1,8 +1,8 @@
-import { createDeferredPromise } from "@bb/test-helpers";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
 import { createFakePluginHost } from "@get-bb/plugin-sdk/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getHost, setAppSettings, updateHost, upsertHost } from "@bb/db";
-import { defaultAppSettings } from "@bb/domain";
+import { getHost, setAppSettings, updateHost, upsertHost } from "@cloudroom/db";
+import { defaultAppSettings } from "@cloudroom/domain";
 import type { ServerAccessProviderDeclaration } from "@get-bb/plugin-sdk";
 import {
   serverAccess,

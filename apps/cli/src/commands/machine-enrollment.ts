@@ -10,7 +10,7 @@ import {
 import { homedir, hostname } from "node:os";
 import { join, resolve } from "node:path";
 import { createServer } from "node:net";
-import { mutateManagedJsonFile } from "@bb/config/managed-json-file";
+import { mutateManagedJsonFile } from "@cloudroom/config/managed-json-file";
 import { z } from "zod";
 
 const serverUrlSchema = z

@@ -7,7 +7,7 @@ import {
   isPluginOwnedIconPath,
   pluginPackageJsonSchema,
   type UiCodeThemeDeclaration,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { resolvePluginCodeThemePath } from "../system/code-themes.js";
 import {
   readPluginPackageJsonFile,
@@ -16,7 +16,7 @@ import {
   resolveManifestPath,
   assertValidPluginCompactIconSvg,
   assertValidPluginIconSvg,
-} from "@bb/plugin-build";
+} from "@cloudroom/plugin-build";
 
 export interface PluginManifest {
   id: string;

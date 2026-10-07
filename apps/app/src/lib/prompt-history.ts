@@ -2,13 +2,13 @@ import {
   PROMPT_HISTORY_ENTRY_LIMIT,
   takeVisiblePromptHistoryEntries,
   type PromptHistoryEntry,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   arePromptDraftStatesEqual,
   isPromptDraftEmpty,
   promptInputToDraft,
   type PromptDraftState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 export function promptHistoryEntriesToDrafts(
   entries: readonly PromptHistoryEntry[],

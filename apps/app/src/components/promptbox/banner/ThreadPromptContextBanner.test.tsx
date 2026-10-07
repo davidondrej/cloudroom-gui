@@ -3,7 +3,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
-import type { ThreadPullRequest } from "@bb/domain";
+import type { ThreadPullRequest } from "@cloudroom/domain";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   ThreadPromptContextBanner,

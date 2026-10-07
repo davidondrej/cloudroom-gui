@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
-import { markThreadDeleted, threadPluginMetadata } from "@bb/db";
-import { jsonObjectSchema, PLUGIN_METADATA_MAX_BYTES } from "@bb/domain";
+import { markThreadDeleted, threadPluginMetadata } from "@cloudroom/db";
+import { jsonObjectSchema, PLUGIN_METADATA_MAX_BYTES } from "@cloudroom/domain";
 import { describe, expect, it, vi } from "vitest";
 import { readJson } from "../helpers/json.js";
 import {

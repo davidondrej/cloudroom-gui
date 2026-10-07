@@ -3,14 +3,14 @@ import type {
   ResolvedThreadExecutionOptions,
   ThreadListEntry,
   ThreadQueuedMessage,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   ProjectWithThreadsResponse,
   SidebarBootstrapResponse,
   SystemVersionResponse,
   ThreadResponse,
   ThreadTabsResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   DEMO_HOST_ID,
   DEMO_PERSONAL_PROJECT_ID,

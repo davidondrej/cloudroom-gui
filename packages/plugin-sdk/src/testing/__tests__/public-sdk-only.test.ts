@@ -29,8 +29,8 @@ describe("experimental_scanPublicSdkOnly", () => {
       "src/helper.ts": `import "@get-bb/plugin-sdk/provider-bridge";\nimport "@get-bb/plugin-sdk/provider-bridge/acp";\nimport "@get-bb/plugin-sdk/host";\nimport "@get-bb/plugin-sdk/ai-services";\nexport const helper = 1;\n`,
       "app.tsx": `import "@get-bb/plugin-sdk/app";\n`,
       "server.test.ts": `import { it } from "vitest";\nimport "@get-bb/plugin-sdk/testing";\nimport "@get-bb/plugin-sdk/provider-bridge/testing";\n`,
-      "node_modules/dep/index.js": `require("@bb/domain");\n`,
-      "dist/server.js": `import "@bb/domain";\n`,
+      "node_modules/dep/index.js": `require("@cloudroom/domain");\n`,
+      "dist/server.js": `import "@cloudroom/domain";\n`,
     });
     const scan = scanPublicSdkOnly(packageRoot);
     expect(scan.files.sort()).toEqual([
@@ -45,11 +45,11 @@ describe("experimental_scanPublicSdkOnly", () => {
 
   it("reports a private workspace import, a specifier outside the allowlist, and a testing subpath in plugin code", () => {
     plant({
-      "server.ts": `import { events } from "@bb/db";\nimport yaml from "yaml";\nimport "@get-bb/plugin-sdk/testing";\n`,
+      "server.ts": `import { events } from "@cloudroom/db";\nimport yaml from "yaml";\nimport "@get-bb/plugin-sdk/testing";\n`,
       "server.test.ts": `import { createFakePluginHost } from "@get-bb/plugin-sdk/testing";\nimport { describe } from "vitest";\n`,
     });
     expect(scanPublicSdkOnly(packageRoot).violations).toEqual([
-      { file: "server.ts", specifier: "@bb/db", reason: "private-package" },
+      { file: "server.ts", specifier: "@cloudroom/db", reason: "private-package" },
       { file: "server.ts", specifier: "yaml", reason: "outside-allowlist" },
       {
         file: "server.ts",
@@ -120,17 +120,17 @@ describe("experimental_scanPublicSdkOnly", () => {
     ]);
   });
 
-  it("lists @bb/* names from both dependency blocks of package.json", () => {
+  it("lists @cloudroom/* names from both dependency blocks of package.json", () => {
     plant(
       { "server.ts": "" },
       {
-        dependencies: { "@get-bb/plugin-sdk": "^0.4.0", "@bb/domain": "*" },
-        devDependencies: { vitest: "^4", "@bb/test-helpers": "*" },
+        dependencies: { "@get-bb/plugin-sdk": "^0.4.0", "@cloudroom/domain": "*" },
+        devDependencies: { vitest: "^4", "@cloudroom/test-helpers": "*" },
       },
     );
     expect(scanPublicSdkOnly(packageRoot).privateDependencies).toEqual([
-      "@bb/domain",
-      "@bb/test-helpers",
+      "@cloudroom/domain",
+      "@cloudroom/test-helpers",
     ]);
   });
 });

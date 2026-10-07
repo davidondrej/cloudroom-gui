@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   Dialog,
   DialogContent,
@@ -7,12 +7,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@bb/shared-ui/dialog";
+} from "@cloudroom/shared-ui/dialog";
 
 interface ConfirmDeleteDialogContentProps {
   title: string;
   description: ReactNode;
   confirmLabel: string;
+  confirmVariant?: "destructive" | "default";
   pending: boolean;
   onConfirm: () => void;
   onCancel?: () => void;
@@ -22,6 +23,7 @@ export function ConfirmDeleteDialogContent({
   title,
   description,
   confirmLabel,
+  confirmVariant = "destructive",
   pending,
   onConfirm,
   onCancel,
@@ -45,7 +47,7 @@ export function ConfirmDeleteDialogContent({
         ) : null}
         <Button
           type="button"
-          variant="destructive"
+          variant={confirmVariant}
           disabled={pending}
           onClick={onConfirm}
         >

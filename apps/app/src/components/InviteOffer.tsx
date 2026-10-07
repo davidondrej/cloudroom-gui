@@ -3,7 +3,7 @@ import { atom, useAtom, useSetAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { BbLogo } from "@/components/ui/bb-logo";
 import { useCloudroomAccount } from "@/hooks/queries/cloudroom-queries";
 import { fetchWithAppSurface } from "@/lib/app-surface";

@@ -1,7 +1,7 @@
 import {
   getProjectExecutionDefaults,
   upsertProjectExecutionDefaults,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { describe, expect, it } from "vitest";
 import { createThreadFromRequest } from "../../../src/services/threads/thread-create.js";
 import {

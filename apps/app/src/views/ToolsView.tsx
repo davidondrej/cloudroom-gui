@@ -8,11 +8,11 @@ import {
   type ReactNode,
 } from "react";
 import { matchPath, useLocation, useNavigate } from "react-router-dom";
-import "@bb/shared-ui/icon-extended";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
+import "@cloudroom/shared-ui/icon-extended";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { useMutation } from "@tanstack/react-query";
-import { buildPluginEditThreadPrompt } from "@bb/shared-ui/resource-edit-prompt";
+import { buildPluginEditThreadPrompt } from "@cloudroom/shared-ui/resource-edit-prompt";
 import { appToast } from "@/components/ui/app-toast";
 import { OverflowFade } from "@/components/ui/overflow-fade";
 import { useScrollOverflowState } from "@/components/thread/timeline/useScrollOverflowState";
@@ -27,8 +27,8 @@ import {
 import {
   ResourceListState,
   useResourceRouteLabel,
-} from "@bb/shared-ui/resource-list";
-import { Skeleton } from "@bb/shared-ui/skeleton";
+} from "@cloudroom/shared-ui/resource-list";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
 import { PluginsOverview } from "@/components/plugin/PluginsOverview";
 import {
   CatalogPluginDetail,
@@ -59,7 +59,7 @@ import {
   isPluginsRoutePath,
 } from "@/lib/route-paths";
 import { getToolsOwnedCollectionRoutePath } from "@/components/tools/tools-navigation";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { SkillsLibrary } from "@/components/tools/SkillsLibrary";
 import { pluginToast } from "@/components/plugin/PluginNotificationDescription";
 

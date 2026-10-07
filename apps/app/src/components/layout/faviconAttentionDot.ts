@@ -1,6 +1,6 @@
-import type { ThreadListEntry } from "@bb/domain";
-import { isSidebarProjectThread } from "@bb/client-core";
-import { isThreadRead, type ThreadReadState } from "@bb/client-core";
+import type { ThreadListEntry } from "@cloudroom/domain";
+import { isSidebarProjectThread } from "@cloudroom/client-core";
+import { isThreadRead, type ThreadReadState } from "@cloudroom/client-core";
 
 type FaviconSidebarThread = ThreadReadState &
   Pick<

@@ -3,7 +3,7 @@ import {
   APP_COMMAND_IDS,
   type AppDefaultKeybindings,
   type AppKeybindings,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { getAppCommandMetadata } from "./app-command-metadata";
 import {
   appShortcutFromInput,

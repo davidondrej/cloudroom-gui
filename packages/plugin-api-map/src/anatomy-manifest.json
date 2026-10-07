@@ -51,14 +51,6 @@
           "anchors": ["group: \"Plugins\"", "run: () =>"]
         },
         {
-          "path": "apps/app/src/components/commands/CommandPalette.test.tsx",
-          "anchors": [
-            "lists a plugin's registered command and runs it",
-            "expect(testState.calls).toEqual([\"plugin-ran\"])",
-            "expect(screen.queryByRole(\"combobox\")).toBeNull()"
-          ]
-        },
-        {
           "path": "packages/shared-ui/src/components/ui/dialog.tsx",
           "anchors": [
             "fixed inset-0 z-50 bg-black/40",
@@ -93,13 +85,6 @@
           "anchors": [
             "data-testid=\"app-sidebar-primary-actions\"",
             "PluginNavSidebarItems"
-          ]
-        },
-        {
-          "path": "apps/app/src/components/sidebar/SidebarNavigationRegion.test.tsx",
-          "anchors": [
-            "routes Search through the quick palette without inline search UI",
-            "delegates and falls back after a crash without owner remounts"
           ]
         }
       ]

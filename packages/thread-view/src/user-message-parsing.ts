@@ -2,7 +2,7 @@ import {
   type PromptInput,
   type PromptTextMention,
   type ThreadEvent,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { EventMeta } from "./event-decode.js";
 import type { AcceptedClientRequest } from "./accepted-client-request-context.js";
 import type {

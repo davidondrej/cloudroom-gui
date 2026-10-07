@@ -12,8 +12,8 @@ import type {
   PendingInteractionResolution,
   PromptInput,
   ThreadEvent,
-} from "@bb/domain";
-import { BRIDGE_INBOUND_REQUEST_METHODS } from "@bb/provider-bridge-protocol";
+} from "@cloudroom/domain";
+import { BRIDGE_INBOUND_REQUEST_METHODS } from "@cloudroom/provider-bridge-protocol";
 
 const { forkSessionMock, queryMock } = vi.hoisted(() => ({
   forkSessionMock: vi.fn(),

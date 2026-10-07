@@ -1,4 +1,4 @@
-import type { SystemExecutionOptionsModelLoadError } from "@bb/server-contract";
+import type { SystemExecutionOptionsModelLoadError } from "@cloudroom/server-contract";
 
 interface FormatModelLoadErrorTextArgs {
   error: SystemExecutionOptionsModelLoadError;

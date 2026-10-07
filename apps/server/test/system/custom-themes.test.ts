@@ -6,7 +6,7 @@ import {
   CUSTOM_THEME_CSS_MAX_LENGTH,
   defaultAppTheme,
   resolveCodeTheme,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   listCustomThemeNames,
   readCustomThemeCss,

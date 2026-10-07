@@ -28,11 +28,11 @@ import {
   listPluginArtifacts,
   migrate,
   type DbConnection,
-} from "@bb/db";
-import { ROOT_PLUGIN_SOURCE_SELECTION } from "@bb/server-contract";
-import type { Logger } from "@bb/logger";
-import { scaffoldPlugin } from "@bb/templates/plugin-scaffold";
-import { PLUGIN_SDK_MAJOR, PLUGIN_SDK_VERSION } from "@bb/domain";
+} from "@cloudroom/db";
+import { ROOT_PLUGIN_SOURCE_SELECTION } from "@cloudroom/server-contract";
+import type { Logger } from "@cloudroom/logger";
+import { scaffoldPlugin } from "@cloudroom/templates/plugin-scaffold";
+import { PLUGIN_SDK_MAJOR, PLUGIN_SDK_VERSION } from "@cloudroom/domain";
 import { validatePluginArtifactMeta } from "../../../src/services/plugins/app-bundle.js";
 import {
   gitArtifactCacheDir,

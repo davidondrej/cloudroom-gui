@@ -4,7 +4,7 @@ import {
   hostStatusSchema,
   pluginIdSchema,
   threadStatusSchema,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 export const apiErrorSchema = z.object({
   code: z.string().min(1),

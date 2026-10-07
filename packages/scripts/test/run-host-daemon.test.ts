@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   HOST_AUTH_FILE_NAME,
   HOST_ID_FILE_NAME,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   expectedDevDataDir,
   expectedDevServerUrl,

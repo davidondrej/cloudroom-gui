@@ -2,8 +2,8 @@ import {
   type EnvironmentDisplayInfo,
   type EnvironmentDisplayProviderLookup,
   formatEnvironmentDisplay,
-} from "@bb/core-ui";
-import type { BbSdk } from "@bb/sdk";
+} from "@cloudroom/core-ui";
+import type { BbSdk } from "@cloudroom/sdk";
 
 export interface ThreadEnvironmentInfo {
   display: EnvironmentDisplayInfo;

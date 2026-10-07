@@ -1,5 +1,5 @@
 {
-  "extends": ["@bb/tsconfig/base.json"],
+  "extends": ["@cloudroom/tsconfig/base.json"],
   "compilerOptions": {
     "rootDir": "../..",
     "module": "ESNext",

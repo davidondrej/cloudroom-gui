@@ -18,9 +18,9 @@ import {
   getInstalledPluginRegistration,
   migrate,
   type DbConnection,
-} from "@bb/db";
-import { PLUGIN_SDK_MAJOR, PLUGIN_SDK_VERSION } from "@bb/domain";
-import type { Logger } from "@bb/logger";
+} from "@cloudroom/db";
+import { PLUGIN_SDK_MAJOR, PLUGIN_SDK_VERSION } from "@cloudroom/domain";
+import type { Logger } from "@cloudroom/logger";
 import { createAiServiceRegistry } from "../../../src/services/ai/ai-service-registry.js";
 import {
   createPluginService,
@@ -30,12 +30,11 @@ import {
 } from "../../../src/services/plugins/plugin-service.js";
 import { readPluginManifest } from "../../../src/services/plugins/manifest.js";
 import {
-  accountPoolDefaultEnabled,
   BUILTIN_PLUGINS,
   OFFICIAL_PLUGINS,
   resolveBuiltinPluginRootPath,
 } from "../../../src/services/plugins/builtin-registry.js";
-import { copyPluginRuntime } from "@bb/plugin-build";
+import { copyPluginRuntime } from "@cloudroom/plugin-build";
 import { testLogger } from "../../helpers/test-app.js";
 import { createNoopTelemetryService } from "../../../src/services/system/telemetry.js";
 
@@ -259,7 +258,6 @@ describe("builtin plugin reconciliation", () => {
     const optionalNames = OFFICIAL_PLUGINS.map((plugin) => plugin.name);
     expect(optionalNames).toEqual([
       "environment-modal-sandbox",
-      "browser-automation",
       "github",
       "docs",
       "memory",
@@ -272,23 +270,10 @@ describe("builtin plugin reconciliation", () => {
     expect(OFFICIAL_PLUGINS.every((plugin) => !plugin.autoInstall)).toBe(true);
   });
 
-  it("enables the account pooler only when a parent bb server pool is present", () => {
-    expect(accountPoolDefaultEnabled({})).toBe(false);
-    expect(accountPoolDefaultEnabled({ BB_ACCOUNT_POOL_PARENT_URL: "" })).toBe(
-      false,
-    );
-    expect(
-      accountPoolDefaultEnabled({
-        BB_ACCOUNT_POOL_PARENT_URL:
-          "http://127.0.0.1:38886/api/v1/plugins/account-pool/http",
-      }),
-    ).toBe(true);
-  });
-
   it("gives every builtin plugin a deliberate settings icon", async () => {
     const expectedIcons = new Map([
       ["bb-guide", "Explore"],
-      ["account-pool", "Layers"],
+      ["accounts", "Layers"],
       ["ask-user-question", "MessageQuestion"],
       ["automations", "Repeat"],
       ["connect", "Smartphone"],
@@ -314,6 +299,7 @@ describe("builtin plugin reconciliation", () => {
       ["scheduled-send", "Calendar"],
       ["secrets", "Lock"],
       ["side-chat", "SideChat"],
+      ["time-in-cloudroom", "Clock"],
       ["workflows", "Workflow"],
       ["environment-git-worktree", "FolderGit"],
     ]);

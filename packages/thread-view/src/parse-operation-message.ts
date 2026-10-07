@@ -5,13 +5,13 @@ import type {
   SystemThreadProvisioningStatus,
   SystemThreadInterruptedReason,
   UserQuestionInteractionLifecycle,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   THREAD_CONTEXT_CLEAR_OPERATION,
   isApprovalInteractionLifecycle,
   isUserQuestionInteractionLifecycle,
   ownershipChangeOperationMetadataSchema,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { assertNever } from "./assert-never.js";
 import { getCompactionKey } from "./compaction-lifecycle.js";
 import { OWNERSHIP_CHANGE_VERBS } from "./family-a-verbs.js";

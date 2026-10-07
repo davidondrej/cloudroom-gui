@@ -7,7 +7,7 @@ import {
   spawnPortablePipedProcess,
   stopProcessGroupLeaderFirst,
   supportsProcessGroups,
-} from "@bb/process-utils";
+} from "@cloudroom/process-utils";
 import type { BridgeProtocolAdapter } from "./bridge-protocol-adapter.js";
 import type { CreateBridgeAdapterOptions } from "./provider-adapter.js";
 import { createProviderForId } from "./provider-registry.js";
@@ -17,7 +17,7 @@ import {
   readBoundedLines,
   type PendingJsonRpcRequest,
   sendJsonRpcRequest,
-} from "@bb/provider-bridge-protocol/bridge-kit";
+} from "@cloudroom/provider-bridge-protocol/bridge-kit";
 import type { RuntimeProviderIdentityState } from "./runtime-thread-identity.js";
 import type {
   AgentRuntimeBridgeLaunch,

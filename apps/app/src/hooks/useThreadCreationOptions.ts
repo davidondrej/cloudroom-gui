@@ -14,18 +14,18 @@ import type {
   ProviderModelCatalogScope,
   ReasoningLevel,
   ServiceTier,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   CreateExecutionInputSources,
   ExecutionInputFieldSource,
   ExistingThreadExecutionInputSources,
   SystemExecutionOptionsModelLoadError,
   SystemProvidersQuery,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   PROJECT_CHECKOUT_ENVIRONMENT_PROVIDER_ID,
   GIT_WORKTREE_ENVIRONMENT_PROVIDER_ID,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import type { PickerOption } from "@/components/pickers/OptionPicker";
 import type { ModelPickerOption } from "@/components/pickers/model-picker-option";
 import type { ProviderPickerOption } from "@/components/pickers/model-brand-prefix";
@@ -40,7 +40,7 @@ import { fastServiceTierLabel } from "@/lib/reasoning-labels";
 import {
   permissionModeRank,
   providerModelCatalogDependsOnWorkspace,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { selectPrimaryHost, useHosts } from "./queries/host-queries";
 import {
   useKnownProviderModelCatalogScope,

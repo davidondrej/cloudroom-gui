@@ -2,7 +2,7 @@
 
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
-import { Dialog, DialogContent, DialogTitle } from "@bb/shared-ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@cloudroom/shared-ui/dialog";
 import { useIsBrowserDimmingModalOpen } from "@/hooks/useBrowserDimmingModal";
 
 function DimProbe() {

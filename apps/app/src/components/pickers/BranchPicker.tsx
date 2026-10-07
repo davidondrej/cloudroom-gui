@@ -4,26 +4,26 @@ import {
   BranchPickerRow,
   BranchPickerSearch,
   BranchPickerSectionHeader,
-} from "@bb/shared-ui/branch-picker-primitives";
-import { Button } from "@bb/shared-ui/button";
-import { Icon } from "@bb/shared-ui/icon";
-import { LIST_HOVER_TRANSITION } from "@bb/shared-ui/motion";
-import { MenuHoverProvider } from "@bb/shared-ui/menu-item-hover";
+} from "@cloudroom/shared-ui/branch-picker-primitives";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { LIST_HOVER_TRANSITION } from "@cloudroom/shared-ui/motion";
+import { MenuHoverProvider } from "@cloudroom/shared-ui/menu-item-hover";
 import {
   COARSE_POINTER_COMPACT_ICON_SIZE_CLASS,
   COARSE_POINTER_COMPACT_ICON_SIZE_SHRINK_CLASS,
-} from "@bb/shared-ui/coarse-pointer-sizing";
-import { blurActiveKeyboardInputWithin } from "@bb/shared-ui/overlay-trigger";
-import { Popover, PopoverContent, PopoverTrigger } from "@bb/shared-ui/popover";
+} from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { blurActiveKeyboardInputWithin } from "@cloudroom/shared-ui/overlay-trigger";
+import { Popover, PopoverContent, PopoverTrigger } from "@cloudroom/shared-ui/popover";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
   OPTION_BASE_CLASS_NAME,
   OPTION_INTERACTIVE_CLASS_NAME,
   OPTION_MUTED_CLASS_NAME,
   OPTION_TRIGGER_CONTENT_CLASS_NAME,
-} from "@bb/shared-ui/option-display";
-import { cn } from "@bb/shared-ui/lib/utils";
-import type { GitBranchRefClassification } from "@bb/domain";
+} from "@cloudroom/shared-ui/option-display";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import type { GitBranchRefClassification } from "@cloudroom/domain";
 import { searchPickerOptions } from "./picker-search";
 import { useResetPickerScroll } from "./useResetPickerScroll";
 

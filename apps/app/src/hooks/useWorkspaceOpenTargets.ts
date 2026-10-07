@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import type {
   OpenInTargetRequest,
   WorkspaceOpenTarget,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   hostDaemonPortAtom,
   localHostDaemonReachableAtom,

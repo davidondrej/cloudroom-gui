@@ -1,6 +1,6 @@
-import { renderTemplate } from "@bb/templates";
-import { getThread, updateThread } from "@bb/db";
-import type { PromptInput } from "@bb/domain";
+import { renderTemplate } from "@cloudroom/templates";
+import { getThread, updateThread } from "@cloudroom/db";
+import type { PromptInput } from "@cloudroom/domain";
 import type { AppDeps, LoggedWorkSessionDeps } from "../../types.js";
 import { Type } from "@earendil-works/pi-ai";
 import {
@@ -11,7 +11,7 @@ import {
 import { readUiPreferences } from "../system/ui-preferences.js";
 
 const MAX_GENERATED_TITLE_LENGTH = 80;
-const MAX_BRANCH_SLUG_LENGTH = 48;
+const MAX_BRANCH_SLUG_LENGTH = 40;
 
 interface ApplyGeneratedThreadTitleArgs {
   threadId: string;

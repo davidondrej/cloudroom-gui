@@ -11,12 +11,12 @@ import {
   noopNotifier,
   threads,
   upsertHost,
-} from "@bb/db";
-import type { DbConnection } from "@bb/db";
-import { defaultFeatureFlags } from "@bb/domain";
-import type { Thread } from "@bb/domain";
-import type { ThreadTimelineResponse } from "@bb/server-contract";
-import type { CorpusThread } from "@bb/test-helpers";
+} from "@cloudroom/db";
+import type { DbConnection } from "@cloudroom/db";
+import { defaultFeatureFlags } from "@cloudroom/domain";
+import type { Thread } from "@cloudroom/domain";
+import type { ThreadTimelineResponse } from "@cloudroom/server-contract";
+import type { CorpusThread } from "@cloudroom/test-helpers";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { resolveRepoRelativeFile } from "./env-file-path.js";

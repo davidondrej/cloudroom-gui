@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getEnvironment } from "@bb/db";
-import type { GitHostPullRequest } from "@bb/domain";
+import { getEnvironment } from "@cloudroom/db";
+import type { GitHostPullRequest } from "@cloudroom/domain";
 import { readJson } from "../helpers/json.js";
 import {
   reportQueuedCommandSuccess,

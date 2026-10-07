@@ -1,5 +1,5 @@
-import type { EnvironmentStatus } from "@bb/domain";
-import type { WorkspaceContext } from "@bb/host-daemon-contract";
+import type { EnvironmentStatus } from "@cloudroom/domain";
+import type { WorkspaceContext } from "@cloudroom/host-daemon-contract";
 import { throwEnvironmentNotReady } from "../lib/lifecycle-api-errors.js";
 
 interface WorkspaceCommandTargetEnvironment {

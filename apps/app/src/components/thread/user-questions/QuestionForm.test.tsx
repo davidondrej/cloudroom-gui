@@ -5,14 +5,14 @@ import {
   render as renderReact,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { QuestionForm } from "@bb/shared-ui/question-form";
+import { QuestionForm } from "@cloudroom/shared-ui/question-form";
 import type {
   Question,
   QuestionAnswer,
-} from "@bb/shared-ui/question-form-state";
+} from "@cloudroom/shared-ui/question-form-state";
 import { ThreadQuestionFormHost } from "./ThreadQuestionFormHost";
 import { AppCommandProvider } from "@/components/commands/AppCommandProvider";
-import { defaultAppSettings } from "@bb/domain";
+import { defaultAppSettings } from "@cloudroom/domain";
 type InteractionPayload = { questions: Question[] };
 type InteractionResponse = { answers: Record<string, QuestionAnswer> };
 

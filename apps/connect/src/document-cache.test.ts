@@ -3,7 +3,7 @@ import { gzipSync } from "node:zlib";
 import { build } from "esbuild";
 import { Miniflare } from "miniflare";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { decodeFrame, encodeFrame, type Frame } from "@bb/tunnel-contract";
+import { decodeFrame, encodeFrame, type Frame } from "@cloudroom/tunnel-contract";
 
 const SHELL_CACHE_CONTROL = "no-cache";
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useReducer } from "react";
-import type { Thread } from "@bb/domain";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+import type { Thread } from "@cloudroom/domain";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   PromptStackCard,
   PROMPT_STACK_CARD_ROW_HEIGHT,

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { getHost, listPublicHosts, type DbConnection } from "@bb/db";
-import { HOST_ID_FILE_NAME } from "@bb/host-daemon-contract";
+import { getHost, listPublicHosts, type DbConnection } from "@cloudroom/db";
+import { HOST_ID_FILE_NAME } from "@cloudroom/host-daemon-contract";
 import { ApiError } from "../../errors.js";
 import type { AppDeps } from "../../types.js";
 import {

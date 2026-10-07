@@ -1,6 +1,6 @@
 import { type CSSProperties, type ReactNode, type Ref } from "react";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 export const PROMPT_STACK_CARD_ROW_HEIGHT = 32;
 export const PROMPT_STACK_CARD_HEADER_BUTTON_CLASS =

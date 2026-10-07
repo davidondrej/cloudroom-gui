@@ -1,4 +1,4 @@
-import type { DesktopSession } from "@bb/connect-client";
+import type { DesktopSession } from "@cloudroom/connect-client";
 import { QueryObserver } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {

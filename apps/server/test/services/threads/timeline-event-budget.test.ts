@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { getTimelineGroupingContext } from "../../../src/services/threads/timeline-context-order.js";
-import { prependOlderTimelineRows } from "@bb/client-core";
+import { prependOlderTimelineRows } from "@cloudroom/client-core";
 import {
   threadTimelineResponseSchema,
   type TimelineRow,
-} from "@bb/server-contract";
-import { defaultFeatureFlags } from "@bb/domain";
+} from "@cloudroom/server-contract";
+import { defaultFeatureFlags } from "@cloudroom/domain";
 import { createTestAppHarness } from "../../helpers/test-app.js";
 import {
   mergeLoadedTimelineWithLatest,
   buildLoadedTimelineState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   encodeClientTurnRequestIdNumber,
   threadScope,
   turnScope,
-} from "@bb/domain";
-import type { ClientTurnRequestId, Thread } from "@bb/domain";
+} from "@cloudroom/domain";
+import type { ClientTurnRequestId, Thread } from "@cloudroom/domain";
 import {
   createConnection,
   createProject,
@@ -25,12 +25,12 @@ import {
   migrate,
   noopNotifier,
   upsertHost,
-} from "@bb/db";
-import type { DbConnection } from "@bb/db";
+} from "@cloudroom/db";
+import type { DbConnection } from "@cloudroom/db";
 import type {
   ThreadTimelineResponse,
   TimelinePaginationCursor,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { buildThreadTimelineWithProfile } from "../../../src/services/threads/timeline.js";
 
 const LARGE_BUDGET = 1_000_000;

@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { ThreadQueuedMessage } from "@bb/domain";
+import type { ThreadQueuedMessage } from "@cloudroom/domain";
 import type {
   CreateQueuedMessageRequest,
   SendQueuedMessageMode,
   SendQueuedMessageResponse,
   ThreadQueuedMessageListResponse,
   UpdateQueuedMessageRequest,
-} from "@bb/server-contract";
-import type { AppCreateThreadRequest } from "@bb/client-core";
+} from "@cloudroom/server-contract";
+import type { AppCreateThreadRequest } from "@cloudroom/client-core";
 import { BbHttpError, sdk } from "@/lib/sdk";
 import { retryTransient } from "@/lib/retry-transient";
 import { wsManager } from "@/lib/ws";

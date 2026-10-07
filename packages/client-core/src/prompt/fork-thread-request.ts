@@ -4,7 +4,7 @@ import type {
   ReasoningLevel,
   ServiceTier,
   Thread,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { AppCreateThreadRequest } from "../api-types.js";
 
 export const FORK_THREAD_CREATE_SEED_LOCATION_STATE_KEY =

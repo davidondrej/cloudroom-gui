@@ -3,7 +3,7 @@ import {
   pluginCatalogCategoryIdSchema,
   pluginMarketplaceCollectionIdSchema,
   pluginMarketplaceCollectionPluginIdSchema,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { z } from "zod";
 
 export const pluginRuntimeStatusSchema = z.enum([
@@ -199,7 +199,7 @@ export const installedPluginSchema = z.object({
    * renders the per-kind fallback glyph. Identity-backed like `iconUrl`, so a
    * disabled plugin's icons still resolve. Empty for a plugin that declares
    * none; the server fills it for every plugin, with the same response-side
-   * tolerance as `providerIds` in @bb/sdk for servers older than the field.
+   * tolerance as `providerIds` in @cloudroom/sdk for servers older than the field.
    */
   icons: z.record(z.string(), z.string()),
 });

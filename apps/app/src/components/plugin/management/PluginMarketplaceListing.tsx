@@ -6,15 +6,15 @@ import {
   CarouselNext,
   CarouselPrevious,
   type CarouselApi,
-} from "@bb/shared-ui/carousel";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/carousel";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   ResourceDefinitionSection,
   ResourceListPanel,
   ResourceRow,
   ResourceRowDetailChevron,
-} from "@bb/shared-ui/resource-list";
+} from "@cloudroom/shared-ui/resource-list";
 import type { PluginCatalogSearchEntry } from "@/hooks/queries/plugin-catalog-queries";
 import { PluginOverviewMarkdown } from "@/components/plugin/management/PluginOverviewMarkdown";
 import {

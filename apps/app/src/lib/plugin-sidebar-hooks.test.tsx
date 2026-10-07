@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, renderHook } from "@testing-library/react";
-import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@bb/domain";
+import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@cloudroom/domain";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import {
   useSidebarThreadActions,
   useSidebarThreads,
@@ -54,7 +54,7 @@ vi.mock("@/components/ui/app-route-anchor", () => ({
   useRouteNavigate: () => actions.navigate,
 }));
 
-vi.mock("@bb/shared-ui/hooks/use-compact-viewport", () => ({
+vi.mock("@cloudroom/shared-ui/hooks/use-compact-viewport", () => ({
   useIsCompactViewport: () => false,
 }));
 

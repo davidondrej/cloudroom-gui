@@ -1,8 +1,8 @@
-import type { Host } from "@bb/domain";
-import type { SystemMachineProvider } from "@bb/server-contract";
-import { Button } from "@bb/shared-ui/button";
-import { DropdownMenuItem } from "@bb/shared-ui/dropdown-menu";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
+import type { Host } from "@cloudroom/domain";
+import type { SystemMachineProvider } from "@cloudroom/server-contract";
+import { Button } from "@cloudroom/shared-ui/button";
+import { DropdownMenuItem } from "@cloudroom/shared-ui/dropdown-menu";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
 
 interface MachineLifecycleActionsProps {
   host: Host;

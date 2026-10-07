@@ -3,7 +3,7 @@ import type {
   PendingInteractionToolUseApprovalSubject,
   ThreadEventItemPresentationIcon,
   ThreadEventItemPresentationTint,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 export interface PendingInteractionToolUseAsk {
   title: string;

@@ -8,7 +8,7 @@ import type {
   ThreadEventType,
   ThreadStatusChangeMetadata,
   ThreadWithRuntime,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   getCachedEnvironmentRefWorkspaceStateInvalidationQueryKeys,
   getCachedGlobalThreadListInvalidationQueryKeys,

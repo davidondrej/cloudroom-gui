@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useAtomValue } from "jotai";
-import type { SidebarSectionSort } from "@bb/domain";
-import type { SidebarSectionId, ThreadComparator } from "@bb/client-core";
+import type { SidebarSectionSort } from "@cloudroom/domain";
+import type { SidebarSectionId, ThreadComparator } from "@cloudroom/client-core";
 import {
   sidebarChronologicalSortAtom,
   sidebarSectionSortsAtom,

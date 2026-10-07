@@ -1,4 +1,4 @@
-import { startEventLoopDelaySampler } from "@bb/process-utils";
+import { startEventLoopDelaySampler } from "@cloudroom/process-utils";
 import type { ServerLogger } from "../../types.js";
 import { takeEventLoopWorkWindowSnapshot } from "./event-loop-work.js";
 

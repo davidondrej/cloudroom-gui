@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ReasoningLevel } from "@bb/domain";
+import type { ReasoningLevel } from "@cloudroom/domain";
 import {
   cycleReasoningValue,
   nextCycleValue,

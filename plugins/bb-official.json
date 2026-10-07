@@ -1,5 +1,5 @@
 {
-  "account-pool": {
+  "accounts": {
     "category": "agents-and-providers",
     "screenshots": []
   },
@@ -82,6 +82,10 @@
     "category": "agents-and-providers",
     "screenshots": []
   },
+  "time-in-cloudroom": {
+    "category": "utilities",
+    "screenshots": []
+  },
   "secrets": {
     "category": "security",
     "screenshots": []
@@ -124,10 +128,6 @@
   },
   "push-notifications": {
     "category": "notifications",
-    "screenshots": []
-  },
-  "browser-automation": {
-    "category": "agents-and-providers",
     "screenshots": []
   },
   "environment-project-checkout": {

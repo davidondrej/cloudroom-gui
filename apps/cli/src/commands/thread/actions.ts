@@ -6,11 +6,11 @@ import {
   type ReasoningLevel,
   type ServiceTier,
   type ThreadVisibility,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { action } from "../../action.js";
 import { createCliBbSdk } from "../../client.js";
-import type { ThreadRetryResult, ThreadSendResult } from "@bb/sdk";
-import type { QueuedMessageWaitingOn } from "@bb/domain";
+import type { ThreadRetryResult, ThreadSendResult } from "@cloudroom/sdk";
+import type { QueuedMessageWaitingOn } from "@cloudroom/domain";
 import {
   collectOption,
   confirmDestructiveAction,

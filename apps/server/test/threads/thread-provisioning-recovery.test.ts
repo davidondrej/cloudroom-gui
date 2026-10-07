@@ -11,12 +11,12 @@ import {
   listEvents,
   setThreadStartupContext,
   markThreadDeleted,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   encodeClientTurnRequestIdNumber,
   threadScope,
   type ResolvedThreadExecutionOptions,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { describe, expect, it, vi } from "vitest";
 import {
   runThreadLifecycleSweep,
@@ -62,7 +62,7 @@ import { withTestHarness } from "../helpers/test-app.js";
 import { handleDaemonSocketClosed } from "../../src/internal/session-owner-side-effects.js";
 import { DAEMON_ACTIVE_WORK_DISCONNECT_GRACE_MS } from "../../src/constants.js";
 import { onDaemonSocketOpen } from "../../src/ws/daemon-protocol.js";
-import { HOST_DAEMON_PROTOCOL_VERSION } from "@bb/host-daemon-contract";
+import { HOST_DAEMON_PROTOCOL_VERSION } from "@cloudroom/host-daemon-contract";
 
 const THREAD_START_EXECUTION = {
   model: "gpt-5",

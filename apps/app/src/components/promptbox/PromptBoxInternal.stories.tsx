@@ -1,11 +1,11 @@
 import { useState } from "react";
-import type { PromptMentionResource, PromptTextMention } from "@bb/domain";
-import type { UploadedPromptAttachment } from "@bb/server-contract";
+import type { PromptMentionResource, PromptTextMention } from "@cloudroom/domain";
+import type { UploadedPromptAttachment } from "@cloudroom/server-contract";
 import { ExecutionControls } from "@/components/promptbox/ExecutionControls";
 import type {
   PromptMentionSuggestion,
   ProviderCommandSuggestion,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   PromptBoxInternal,
   type HistoryConfig,

@@ -197,7 +197,7 @@ describe("plugin host build", () => {
     ).rejects.toThrow(/escapes the plugin directory/u);
   });
 
-  it("rejects private BB workspace imports from host entries", async () => {
+  it("rejects private Cloudroom workspace imports from host entries", async () => {
     const dir = await mkdtemp(join(process.cwd(), ".host-build-private-test-"));
     tempDirs.push(dir);
     await writeFile(
@@ -225,12 +225,12 @@ describe("plugin host build", () => {
     );
     await writeFile(
       join(dir, "helper.ts"),
-      'import type { JsonValue } from "@bb/domain";\nexport default function helper(value: JsonValue) { return value; }\n',
+      'import type { JsonValue } from "@cloudroom/domain";\nexport default function helper(value: JsonValue) { return value; }\n',
     );
 
     await expect(
       buildPluginHost(dir, "0.9.0-test", await testToolchain()),
-    ).rejects.toThrow(/cannot import private BB workspace package/u);
+    ).rejects.toThrow(/cannot import private Cloudroom workspace package/u);
   });
 
   it("bundles the published bridge surface without stubbing it", async () => {
@@ -276,7 +276,7 @@ describe("plugin host build", () => {
       await testToolchain(),
     );
     const bundle = await readFile(result.jsPath, "utf8");
-    expect(bundle).not.toMatch(/from\s*"@bb\//u);
+    expect(bundle).not.toMatch(/from\s*"@cloudroom\//u);
     expect(bundle).toContain("experimental_apiVersion");
     expect(bundle).not.toMatch(/(?:from\s*|require\()["']semver/u);
     const builtEntry = await import(
@@ -368,7 +368,7 @@ describe("plugin host build", () => {
     });
   });
 
-  it("rejects relative type imports into private BB workspace packages", async () => {
+  it("rejects relative type imports into private Cloudroom workspace packages", async () => {
     const parent = await mkdtemp(join(tmpdir(), "bb-host-relative-private-"));
     tempDirs.push(parent);
     const dir = join(parent, "plugin");
@@ -377,7 +377,7 @@ describe("plugin host build", () => {
     await mkdir(privatePackage, { recursive: true });
     await writeFile(
       join(privatePackage, "package.json"),
-      JSON.stringify({ name: "@bb/private-fixture", type: "module" }),
+      JSON.stringify({ name: "@cloudroom/private-fixture", type: "module" }),
     );
     await writeFile(
       join(privatePackage, "index.ts"),
@@ -409,7 +409,7 @@ describe("plugin host build", () => {
 
     await expect(
       buildPluginHost(dir, "0.9.0-test", await testToolchain()),
-    ).rejects.toThrow(/@bb\/private-fixture/u);
+    ).rejects.toThrow(/@cloudroom\/private-fixture/u);
   });
 
   it("allows private package names in comments and diagnostic strings", async () => {
@@ -436,7 +436,7 @@ describe("plugin host build", () => {
     );
     await writeFile(
       join(dir, "host.ts"),
-      '// Do not import from "@bb/domain".\nexport default "import type X from \'@bb/domain\'";\n',
+      '// Do not import from "@cloudroom/domain".\nexport default "import type X from \'@cloudroom/domain\'";\n',
     );
 
     await expect(

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { ThreadListEntry } from "@bb/domain";
+import type { ThreadListEntry } from "@cloudroom/domain";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
@@ -8,14 +8,14 @@ import { Provider, createStore } from "jotai";
 import { collapsedThreadIdsAtom } from "@/components/sidebar/sidebarCollapsedAtoms";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
-import type { SystemEnvironmentProvider } from "@bb/server-contract";
+import type { SystemEnvironmentProvider } from "@cloudroom/server-contract";
 import { systemEnvironmentProvidersQueryKey } from "@/hooks/queries/environment-provider-queries";
 import {
   getMobileRecentAncestorIds,
   getMobileRecentThreads,
   RootComposeMobileRecents,
 } from "./RootComposeMobileRecents";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 
 const personalProvider: SystemEnvironmentProvider = {
   machineProviderId: null,

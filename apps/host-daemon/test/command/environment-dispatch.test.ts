@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
-import { WorkspaceError, type HostWorkspace } from "@bb/host-workspace";
+import { WorkspaceError, type HostWorkspace } from "@cloudroom/host-workspace";
 import { dispatchCommand } from "../../src/command-dispatch.js";
 import type { EventSinkInput } from "../../src/event-sink.js";
 import {

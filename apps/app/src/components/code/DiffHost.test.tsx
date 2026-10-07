@@ -7,7 +7,7 @@ import type {
   ExperimentalDiffFullFileContents,
   PluginDiffRendererProps,
 } from "@get-bb/plugin-sdk";
-import { defaultResolvedCodeTheme } from "@bb/domain";
+import { defaultResolvedCodeTheme } from "@cloudroom/domain";
 import { applyResolvedCodeTheme } from "@/lib/code-theme";
 import {
   resetPluginSlotStoreForTest,

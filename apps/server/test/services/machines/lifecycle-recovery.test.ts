@@ -11,7 +11,7 @@ import {
   hosts,
   listThreadIdsWithHostOfflineQueueWaits,
   updateHost,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { validatePluginEnvironmentProviderDeclaration } from "@get-bb/plugin-sdk/internal/host-policy";
 import {
   requestMachineRemoval,

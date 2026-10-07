@@ -1,7 +1,7 @@
 import type {
   HostDaemonCommand,
   HostDaemonSettledCommandType,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   emptyCommandResultSideEffects,
   type CommandResultReportForType,

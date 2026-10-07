@@ -27,8 +27,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { createPortal } from "react-dom";
-import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@bb/domain";
-import type { ProjectResponse } from "@bb/server-contract";
+import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@cloudroom/domain";
+import type { ProjectResponse } from "@cloudroom/server-contract";
 import { NavLink } from "react-router-dom";
 import { useCreateThreadInEnvironment } from "@/hooks/useCreateThreadInEnvironment";
 import { useSystemEnvironmentProviders } from "@/hooks/queries/environment-provider-queries";
@@ -37,7 +37,7 @@ import {
   getEnvironmentLabelIconName,
   UNNAMED_ENVIRONMENT_LABEL,
 } from "@/lib/environment-workspace-display";
-import { resolveEnvironmentDisplayName } from "@bb/core-ui";
+import { resolveEnvironmentDisplayName } from "@cloudroom/core-ui";
 import {
   usePromptDraftHasInput,
   usePromptDraftInputThreadIds,
@@ -47,15 +47,15 @@ import {
   useUpdateEnvironment,
 } from "@/hooks/mutations/environment-mutations";
 import { useDialogState } from "@/hooks/useDialogState";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { EmptyState } from "@bb/shared-ui/empty-state";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
+} from "@cloudroom/shared-ui/dropdown-menu";
+import { EmptyState } from "@cloudroom/shared-ui/empty-state";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
 import {
   SidebarMenuSkeleton,
   SidebarStickyGroup,
@@ -75,7 +75,7 @@ import {
   COARSE_POINTER_ICON_SIZE_CLASS,
   COARSE_POINTER_ROW_ACTION_SIZE_CLASS,
   COARSE_POINTER_ROW_HEIGHT_CLASS,
-} from "@bb/shared-ui/coarse-pointer-sizing";
+} from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import {
   SIDEBAR_HOVER_ACTIONS_CLASS,
   SIDEBAR_HOVER_ACTIONS_FADE_CLASS,
@@ -88,8 +88,8 @@ import {
   isUnreadDoneThread,
   NO_COLLAPSED_CHILD_ACTIVITY,
   type CollapsedChildActivity,
-} from "@bb/client-core";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/client-core";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { getMutationErrorMessage } from "@/lib/mutation-errors";
 import { getSettingsProjectRoutePath } from "@/lib/route-paths";
 import { getThreadDisplayTitle } from "@/lib/thread-title";
@@ -118,7 +118,7 @@ import {
   type SidebarSectionDefinition,
   type SidebarSectionGroup,
   type ThreadComparator,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { SidebarWindowedItems } from "./SidebarWindowedItems";
 import { SidebarSectionRow } from "./SidebarSectionRow";
 import { TopLevelSidebarSection } from "./TopLevelSidebarSection";
@@ -139,7 +139,7 @@ import {
   type SidebarSortableDragBindings,
 } from "./sortableMotion";
 import type { ConsumeDragClickSuppression } from "@/components/ui/use-drag-click-suppression";
-import type { NeighborReorderRequest } from "@bb/client-core";
+import type { NeighborReorderRequest } from "@cloudroom/client-core";
 import type { SidebarSectionComparator } from "./sidebarSectionSort";
 import { SidebarChildToggleChevron } from "./SidebarChildToggleChevron";
 import { SidebarSectionOrderList } from "./SidebarSectionOrderList";

@@ -8,13 +8,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   observedBorderBoxBlockSize,
   observeSharedResize,
 } from "@/lib/shared-resize-observer";
 import { layoutAnimationInFlightCountAtom } from "./layoutAnimationAtoms.js";
-import { CONTROL_HOVER_TRANSITION } from "@bb/shared-ui/motion";
+import { CONTROL_HOVER_TRANSITION } from "@cloudroom/shared-ui/motion";
 
 const EXPANDABLE_PANEL_TRANSITION_MS = 200;
 

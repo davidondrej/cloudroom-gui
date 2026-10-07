@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import {
   getCollapsedChildActivity,
   hasThreadListWorkingActivity,

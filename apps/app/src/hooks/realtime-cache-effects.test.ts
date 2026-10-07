@@ -6,9 +6,9 @@ import {
   PROJECT_CHANGE_KINDS,
   SYSTEM_CHANGE_KINDS,
   THREAD_CHANGE_KINDS,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { QueryClient } from "@tanstack/react-query";
-import { makeEnvironment } from "@bb/test-helpers/domain-fixtures";
+import { makeEnvironment } from "@cloudroom/test-helpers/domain-fixtures";
 import { createAppQueryClient } from "@/lib/query-client";
 import {
   archivedThreadsListQueryKey,

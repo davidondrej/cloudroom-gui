@@ -2,11 +2,11 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { PLUGIN_SDK_MAJOR, PLUGIN_SDK_VERSION } from "@bb/domain";
+import { PLUGIN_SDK_MAJOR, PLUGIN_SDK_VERSION } from "@cloudroom/domain";
 import {
   buildPluginServer,
   resolvePluginBuildToolchain,
-} from "@bb/plugin-build";
+} from "@cloudroom/plugin-build";
 function testToolchain() {
   return resolvePluginBuildToolchain(join(tmpdir(), "bb-toolchain-unused"));
 }

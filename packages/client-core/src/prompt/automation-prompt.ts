@@ -1,4 +1,4 @@
-import type { PromptMentionResource } from "@bb/domain";
+import type { PromptMentionResource } from "@cloudroom/domain";
 import { CREATE_AUTOMATION_PROMPT } from "./create-resource-prompts.js";
 
 export const SUBMITTED_AUTOMATION_PROMPT_PREFIX =

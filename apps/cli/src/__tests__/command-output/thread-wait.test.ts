@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import * as domain from "@bb/domain";
+import * as domain from "@cloudroom/domain";
 import {
   setupCommandOutputTestEnvironment,
   collectLogLines,

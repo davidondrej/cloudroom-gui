@@ -4,7 +4,7 @@ import {
   getThread,
   listEvents,
   threads,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { describe, expect, it } from "vitest";
 import { ApiError } from "../../src/errors.js";
 import { runStartupRecoverySweep } from "../../src/services/system/periodic-sweeps.js";

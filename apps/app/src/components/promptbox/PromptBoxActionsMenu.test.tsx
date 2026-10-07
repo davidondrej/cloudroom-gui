@@ -16,7 +16,7 @@ import {
   type PluginComposerHost,
 } from "@/components/plugin/plugin-composer-host";
 import type { PluginComposerPlusMenuContribution } from "@/components/plugin/PluginComposerActions";
-import { emptyPromptDraftState } from "@bb/client-core";
+import { emptyPromptDraftState } from "@cloudroom/client-core";
 import {
   resetPluginLogoStoreForTest,
   setPluginLogoUrls,

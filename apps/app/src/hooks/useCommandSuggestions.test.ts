@@ -1,4 +1,4 @@
-import { filterCommandSuggestions } from "@bb/client-core";
+import { filterCommandSuggestions } from "@cloudroom/client-core";
 import { describe, expect, it } from "vitest";
 import { AUTOMATION_PROMPT_ACTION } from "@/components/promptbox/PromptBoxActionsMenu";
 import { promptActionCommandSuggestions } from "./useCommandSuggestions";

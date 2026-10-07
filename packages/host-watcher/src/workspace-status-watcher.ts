@@ -3,7 +3,7 @@ import path from "node:path";
 import {
   calculateExponentialBackoffDelay,
   createDebouncedCallbackScheduler,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   RootSubscription,
   type ParcelWatcherEventBatch,

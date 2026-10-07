@@ -9,7 +9,7 @@ export default defineWorkspaceTestConfig({
     environment: "node",
     projects: sharedWorkerProjects({
       pkgDir: __dirname,
-      name: "@bb/client-core",
+      name: "@cloudroom/client-core",
       include: ["test/**/*.test.ts"],
     }),
   },

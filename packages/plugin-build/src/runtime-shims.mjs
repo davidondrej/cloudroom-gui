@@ -26,7 +26,12 @@ export const LEGACY_PLUGIN_SDK_APP_SPECIFIER = "@bb/plugin-sdk/app";
  * runtime shim plugin routes both to the same host slot so no plugin bundle
  * carries a second hugeicons map.
  */
-export const SHARED_UI_ICON_SPECIFIER = "@bb/shared-ui/icon";
+export const SHARED_UI_ICON_SPECIFIER = "@cloudroom/shared-ui/icon";
+
+export const LEGACY_SHIM_SPECIFIERS = Object.freeze({
+  "@bb/shared-ui/icon": SHARED_UI_ICON_SPECIFIER,
+  "@bb/shared-ui/question-form-host": "@cloudroom/shared-ui/question-form-host",
+});
 
 /**
  * Runtime slot on `globalThis.__bbPluginRuntime` per shimmed specifier.
@@ -86,7 +91,7 @@ export const RUNTIME_SLOT_BY_SPECIFIER = Object.freeze({
   "tailwind-merge": "tailwindMerge",
   "class-variance-authority": "classVarianceAuthority",
   [SHARED_UI_ICON_SPECIFIER]: "sharedUiIcon",
-  "@bb/shared-ui/question-form-host": "questionFormHost",
+  "@cloudroom/shared-ui/question-form-host": "questionFormHost",
 });
 
 /** The npm package owning a specifier: `react/jsx-runtime` → `react`. */

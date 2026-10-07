@@ -1,4 +1,4 @@
-import { type HostDaemonRpcCommand } from "@bb/host-daemon-contract";
+import { type HostDaemonRpcCommand } from "@cloudroom/host-daemon-contract";
 
 const hostCommandWakePolicy = {
   "thread.rewind.discard": "never",

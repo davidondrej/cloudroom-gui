@@ -1,6 +1,6 @@
-import type { PromptMentionResource } from "@bb/domain";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+import type { PromptMentionResource } from "@cloudroom/domain";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { PluginIcon } from "@/components/plugin/PluginIcon";
 import { useThreadTitleMentionResources } from "@/components/thread/ThreadTitleMentions";
 import { promptMentionIconName } from "./prompt-mention-display";

@@ -1,5 +1,5 @@
-import { updateHost, upsertProjectExecutionDefaults } from "@bb/db";
-import type { PermissionMode } from "@bb/domain";
+import { updateHost, upsertProjectExecutionDefaults } from "@cloudroom/db";
+import type { PermissionMode } from "@cloudroom/domain";
 import { describe, expect, it } from "vitest";
 import {
   buildExistingThreadExecutionInput,

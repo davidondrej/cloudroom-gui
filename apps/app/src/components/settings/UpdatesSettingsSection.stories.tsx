@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
-import type { Host } from "@bb/domain";
-import { UPDATE_ACTION_ICON } from "@bb/domain/update-state";
+import type { Host } from "@cloudroom/domain";
+import { UPDATE_ACTION_ICON } from "@cloudroom/domain/update-state";
 import {
   HOST_DAEMON_PROTOCOL_VERSION,
   type ProviderCliKey,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type { ProviderCliIssue } from "@/components/provider-cli/provider-cli-install";
 import type { UpdateInventoryMachine } from "@/hooks/useUpdateInventory";
 import { SettingsStoryChrome } from "../../../.ladle/story-settings-chrome";

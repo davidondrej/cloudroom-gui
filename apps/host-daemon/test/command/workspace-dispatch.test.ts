@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { GitHostPullRequest } from "@bb/domain";
+import type { GitHostPullRequest } from "@cloudroom/domain";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   dispatchCommand,

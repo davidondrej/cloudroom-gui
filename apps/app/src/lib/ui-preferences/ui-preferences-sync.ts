@@ -6,8 +6,8 @@ import {
   type UiPreferenceEntry,
   type UiPreferenceKey,
   type UiPreferenceValue,
-} from "@bb/domain";
-import type { UiPreferencesResponse } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { UiPreferencesResponse } from "@cloudroom/server-contract";
 import { appToast } from "@/components/ui/app-toast";
 import {
   getCachedUiPreferences,

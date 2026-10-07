@@ -5,8 +5,8 @@ import type {
   ThreadPullRequestChecksState,
   ThreadPullRequestMergeabilityState,
   ThreadPullRequestReviewState,
-} from "@bb/domain";
-import type { IconName } from "@bb/shared-ui/icon";
+} from "@cloudroom/domain";
+import type { IconName } from "@cloudroom/shared-ui/icon";
 
 interface PullRequestDisplay {
   label: string;

@@ -10,7 +10,7 @@ import { join } from "node:path";
 import Database from "better-sqlite3";
 import { CronExpressionParser } from "cron-parser";
 import { Hono } from "hono";
-import { deepFreezePluginMetadata, validatePluginMetadata } from "@bb/domain";
+import { deepFreezePluginMetadata, validatePluginMetadata } from "@cloudroom/domain";
 import {
   adoptHttpRouteResponse,
   aiServiceAlreadyRegisteredMessage,

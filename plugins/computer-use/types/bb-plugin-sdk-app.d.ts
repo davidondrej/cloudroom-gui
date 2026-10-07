@@ -1,6 +1,6 @@
 // Portable type declarations for `@get-bb/plugin-sdk`. Unpublished BB
 // workspace contracts are flattened; public subpaths may reuse the
-// package root without requiring any other @bb/* package.
+// package root without requiring any other @cloudroom/* package.
 //
 // Confused by the API, or need a symbol that isn't here? Clone the BB repo
 // and read the real source: https://github.com/get-bb/bb
@@ -1008,7 +1008,7 @@ interface PluginPendingInteractionRegistration {
      * splits on the slash to find this registration under its plugin.
      * `bb.ui.requestInput` validates `rendererId` against `/^[a-zA-Z0-9_-]+$/`;
      * an extension kind must match `/^[a-z0-9-]+\/[a-z0-9-]+$/`
-     * (`EXTENSION_KIND_PATTERN` in @bb/domain), so an id addressable both ways
+     * (`EXTENSION_KIND_PATTERN` in @cloudroom/domain), so an id addressable both ways
      * uses lowercase letters, digits, and "-" only.
      */
     id: string;

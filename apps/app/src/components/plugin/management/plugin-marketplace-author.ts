@@ -1,4 +1,4 @@
-import type { PluginCatalogAuthor } from "@bb/server-contract";
+import type { PluginCatalogAuthor } from "@cloudroom/server-contract";
 import type { PluginCatalogSearchEntry } from "@/hooks/queries/plugin-catalog-queries";
 
 const GITHUB_AUTHOR_PREFIX = "github:";

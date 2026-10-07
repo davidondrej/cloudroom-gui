@@ -17,7 +17,7 @@ import {
 } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
+import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
 import type {
   PluginComposerApi,
   PluginFileOpenerProps,
@@ -77,7 +77,7 @@ import {
 import { NewTabActions } from "@/components/secondary-panel/NewTabActions";
 import { buildFileOpenerPanelTab } from "./file-opener-tabs";
 import { splitLayoutAtom } from "@/lib/split-layout/atoms";
-import type { PromptDraftState } from "@bb/client-core";
+import type { PromptDraftState } from "@cloudroom/client-core";
 
 function composerTextEffectValues(storageKey: string | null) {
   return getComposerTextEffects(storageKey).map(({ effect }) => effect);

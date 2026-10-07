@@ -10,8 +10,8 @@ import {
 import { useState, type ComponentProps } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
-import type { SkillSummary } from "@bb/server-contract";
+import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
+import type { SkillSummary } from "@cloudroom/server-contract";
 import type {
   AgentExecutionUpdate,
   AutomationResponse,

@@ -1,8 +1,8 @@
 import { useState, type ComponentProps, type ReactNode } from "react";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
-import { Skeleton } from "@bb/shared-ui/skeleton";
-import { COARSE_POINTER_HEADER_ICON_BUTTON_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
+import { COARSE_POINTER_HEADER_ICON_BUTTON_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { CompactHeaderVersionMark } from "@/components/layout/CloudroomVersionMark";
 import { PluginHomepageSections } from "@/components/plugin/PluginHomepageSections";
 import { usePluginComposerHost } from "@/components/plugin/plugin-composer-host";

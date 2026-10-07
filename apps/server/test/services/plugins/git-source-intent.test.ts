@@ -4,7 +4,7 @@ import {
   migrate,
   upsertInstalledPlugin,
   type DbConnection,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { gitSelectorForRow } from "../../../src/services/plugins/git-source-intent.js";
 
 describe("persisted git source intent", () => {

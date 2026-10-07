@@ -2,7 +2,7 @@ import {
   type AppCommandId,
   type AppKeybindings,
   type AppShortcut,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 export interface ApplicationMenuAccelerators {
   archiveThread: string | undefined;

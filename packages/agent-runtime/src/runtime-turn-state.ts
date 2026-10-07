@@ -1,5 +1,5 @@
-import type { ThreadEvent } from "@bb/domain";
-import { requireThreadEventScopeTurnId } from "@bb/domain";
+import type { ThreadEvent } from "@cloudroom/domain";
+import { requireThreadEventScopeTurnId } from "@cloudroom/domain";
 
 interface PendingActiveTurnWaiter {
   resolve: (turnId: string | null) => void;

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { HostDaemonOnlineRpcResult } from "@bb/host-daemon-contract";
-import { isPathWithinDirectory } from "@bb/process-utils";
+import type { HostDaemonOnlineRpcResult } from "@cloudroom/host-daemon-contract";
+import { isPathWithinDirectory } from "@cloudroom/process-utils";
 import { CommandDispatchError } from "../command-dispatch-support.js";
 import type { CommandOf } from "../command-dispatch-support.js";
 import { resolveNonSymlinkDirectoryPath } from "./root-path.js";

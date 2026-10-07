@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PendingInteraction } from "@bb/domain";
+import type { PendingInteraction } from "@cloudroom/domain";
 import { classifyInteractionRequest } from "./interaction-request";
 
 const base = {

@@ -18,7 +18,7 @@ async function assertPathExists(pathToCheck, label) {
     await access(pathToCheck);
   } catch {
     throw new Error(
-      `Missing ${label} at ${pathToCheck}. Build @bb/app, @bb/server, and @bb/host-daemon before packaging bb-app.`,
+      `Missing ${label} at ${pathToCheck}. Build @cloudroom/app, @cloudroom/server, and @cloudroom/host-daemon before packaging bb-app.`,
     );
   }
 }
@@ -69,22 +69,22 @@ await buildNodeEsmEntry({
 
 await copyBuildOutput({
   from: resolve(workspaceRoot, "apps", "app", "dist"),
-  label: "@bb/app dist",
+  label: "@cloudroom/app dist",
   to: resolve(packageRoot, "app", "dist"),
 });
 await copyBuildOutput({
   from: resolve(workspaceRoot, "apps", "server", "dist"),
-  label: "@bb/server dist",
+  label: "@cloudroom/server dist",
   to: resolve(packageRoot, "server", "dist"),
 });
 await copyBuildOutput({
   from: resolve(workspaceRoot, "packages", "bundled-plugins", "dist"),
-  label: "@bb/bundled-plugins dist",
+  label: "@cloudroom/bundled-plugins dist",
   to: resolve(packageRoot, "server", "dist", "builtin-plugins"),
 });
 await copyBuildOutput({
   from: resolve(workspaceRoot, "apps", "host-daemon", "dist"),
-  label: "@bb/host-daemon dist",
+  label: "@cloudroom/host-daemon dist",
   to: resolve(packageRoot, "host-daemon", "dist"),
 });
 // The bb CLI is code-split into host-daemon/dist/room-cli-chunks. A turbo cache hit

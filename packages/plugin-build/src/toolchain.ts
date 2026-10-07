@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { omitNpmScriptPolicyEnv } from "@bb/process-utils";
+import { omitNpmScriptPolicyEnv } from "@cloudroom/process-utils";
 import { resolvePluginNpmCli } from "./npm-cli.js";
 
 const run = promisify(execFile);

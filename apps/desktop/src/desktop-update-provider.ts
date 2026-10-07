@@ -1,7 +1,7 @@
 import {
   createBbDesktopVersionFeedFileName,
   type BbDesktopVersionFeedPlatform,
-} from "@bb/desktop-contract";
+} from "@cloudroom/desktop-contract";
 
 type DesktopReleaseChannel = "latest" | "nightly";
 

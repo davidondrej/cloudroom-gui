@@ -1,13 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { dirname } from "node:path";
-import { loadHostDaemonStartConfig } from "@bb/config/host-daemon";
+import { loadHostDaemonStartConfig } from "@cloudroom/config/host-daemon";
 import {
   createHostWatcher,
   createSubprocessParcelWatcherBackend,
   setParcelWatcherBackend,
-} from "@bb/host-watcher";
-import { createLogger } from "@bb/logger";
+} from "@cloudroom/host-watcher";
+import { createLogger } from "@cloudroom/logger";
 import { createHostDaemonApp } from "./app.js";
+import { installBrowserHarnessShim } from "./browser-harness.js";
 import {
   readHostAuthState,
   resolveServerUrl,
@@ -152,6 +153,12 @@ export async function startHostDaemon(
       }),
     );
     const hostWatcher = createHostWatcher();
+    const toolsDirectory = await installBrowserHarnessShim(dataDir).catch(
+      (error: unknown) => {
+        logger.warn({ error }, "Could not write the browser-harness shim");
+        return undefined;
+      },
+    );
     const resolveUserShellEnv = createUserShellEnvResolver();
     let providerUserEnv: Record<string, string> = {};
     const resolveRuntimeShellEnv = async () => {
@@ -166,6 +173,7 @@ export async function startHostDaemon(
         hostDaemonPort: localApiConfig.port,
         inheritedPath: userShellEnv?.PATH ?? process.env.PATH,
         serverUrl: machineAuthProxy?.serverUrl ?? serverUrl,
+        toolsDirectory,
       });
     };
     const runtimeShellEnv = await resolveRuntimeShellEnv();

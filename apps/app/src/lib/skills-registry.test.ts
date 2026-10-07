@@ -1,5 +1,5 @@
-import type { SkillSummary } from "@bb/server-contract";
-import { RESOURCE_GRID_PAGE_SIZE } from "@bb/shared-ui/resource-pagination";
+import type { SkillSummary } from "@cloudroom/server-contract";
+import { RESOURCE_GRID_PAGE_SIZE } from "@cloudroom/shared-ui/resource-pagination";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildRegistrySkillReferencePrompt,

@@ -2,7 +2,7 @@ import { sleep, waitForChildExit } from "./child-process-helpers.mjs";
 import { appendOutput, formatProcessOutput } from "./smoke-output.mjs";
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
-import { readFile, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -12,6 +12,7 @@ import {
 import { createPackagedAppLaunchArguments } from "./packaged-app-launch.mjs";
 import { resolvePackagedAppBinary } from "./packaged-app-paths.mjs";
 import { smokePackagedNpm } from "./smoke-packaged-npm.mjs";
+import { readCloudroomVersion } from "./cloudroom-version.mjs";
 import { withPackagedAppFixture, run } from "./macos-bundle.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
@@ -118,20 +119,7 @@ async function readDesktopPackageVersion(appBinary) {
     const version = stdout.trim();
     return /^\d+\.0\.0$/.test(version) ? `v${version.split(".")[0]}` : version;
   }
-  const packageJsonText = await readFile(
-    join(desktopPackageRoot, "package.json"),
-    "utf8",
-  );
-  const packageJson = JSON.parse(packageJsonText);
-  if (
-    typeof packageJson !== "object" ||
-    packageJson === null ||
-    typeof packageJson.version !== "string" ||
-    packageJson.version.length === 0
-  ) {
-    throw new Error("apps/desktop/package.json must define a version");
-  }
-  return packageJson.version;
+  return readCloudroomVersion({ allowMissing: true });
 }
 
 async function startSmokeServer({

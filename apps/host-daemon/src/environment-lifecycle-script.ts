@@ -2,15 +2,15 @@ import { StringDecoder } from "node:string_decoder";
 import {
   DEFAULT_ENV_SETUP_SCRIPT_NAME,
   DEFAULT_ENV_TEARDOWN_SCRIPT_NAME,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { operationEnvironment } from "./operation-environment.js";
-import type { HostDaemonContributedEnvEntry } from "@bb/host-daemon-contract";
+import type { HostDaemonContributedEnvEntry } from "@cloudroom/host-daemon-contract";
 import {
   isProcessGroupAlive,
   killProcessGroup,
   spawnPortableOutputProcess,
   supportsProcessGroups,
-} from "@bb/process-utils";
+} from "@cloudroom/process-utils";
 import fs from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import path from "node:path";

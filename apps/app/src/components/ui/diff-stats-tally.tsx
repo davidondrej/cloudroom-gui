@@ -1,5 +1,5 @@
-import { formatDiffCount } from "@bb/thread-view";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { formatDiffCount } from "@cloudroom/thread-view";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 interface DiffStatsTallyProps {
   insertions: number;

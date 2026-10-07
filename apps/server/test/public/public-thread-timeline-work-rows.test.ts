@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { turnScope } from "@bb/domain";
+import { turnScope } from "@cloudroom/domain";
 import {
   threadTimelineResponseSchema,
   timelineTurnSummaryDetailsResponseSchema,
   type ThreadTimelineResponse,
   type TimelineRow,
   type TimelineTurnSummaryDetailsResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { readJson } from "../helpers/json.js";
 import { seedEvent, seedThreadFixture } from "../helpers/seed.js";
 import { withTestHarness } from "../helpers/test-app.js";

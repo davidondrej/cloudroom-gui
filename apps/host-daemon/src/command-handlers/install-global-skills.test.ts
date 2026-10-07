@@ -10,7 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { HostDaemonSkillTree } from "@bb/host-daemon-contract";
+import type { HostDaemonSkillTree } from "@cloudroom/host-daemon-contract";
 import {
   installGlobalSkills,
   readGlobalSkillsStatus,

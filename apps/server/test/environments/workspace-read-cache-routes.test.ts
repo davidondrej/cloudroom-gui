@@ -1,7 +1,7 @@
-import { updateHost } from "@bb/db";
+import { updateHost } from "@cloudroom/db";
 import { describe, expect, it } from "vitest";
-import type { GitHostPullRequest, WorkspaceWorkingTree } from "@bb/domain";
-import type { HostDaemonOnlineRpcResult } from "@bb/host-daemon-contract";
+import type { GitHostPullRequest, WorkspaceWorkingTree } from "@cloudroom/domain";
+import type { HostDaemonOnlineRpcResult } from "@cloudroom/host-daemon-contract";
 import {
   listQueuedCommands,
   reportQueuedCommandSuccess,

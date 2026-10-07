@@ -8,12 +8,12 @@ import {
   noopNotifier,
   updateThread,
   upsertHost,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { eq } from "drizzle-orm";
 import {
   hostDaemonServerWsMessageSchema,
   type HostDaemonServerWsMessage,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { describe, expect, it } from "vitest";
 import { NotificationHub } from "../../src/ws/hub.js";
 import { WatchInterestCoordinator } from "../../src/ws/watch-interests.js";

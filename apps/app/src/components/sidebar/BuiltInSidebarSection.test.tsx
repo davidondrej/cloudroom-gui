@@ -6,7 +6,7 @@ import {
   renderBuiltInSidebarSection,
   type BuiltInSidebarSectionOptionsById,
 } from "./BuiltInSidebarSection";
-import { NO_COLLAPSED_CHILD_ACTIVITY } from "@bb/client-core";
+import { NO_COLLAPSED_CHILD_ACTIVITY } from "@cloudroom/client-core";
 
 const SECTIONS: BuiltInSidebarSectionOptionsById = {
   pinned: {

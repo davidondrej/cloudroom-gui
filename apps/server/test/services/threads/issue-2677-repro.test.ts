@@ -1,10 +1,10 @@
 import { and, eq } from "drizzle-orm";
-import { events, getThread } from "@bb/db";
-import { turnRequestEventDataSchema, turnScope } from "@bb/domain";
+import { events, getThread } from "@cloudroom/db";
+import { turnRequestEventDataSchema, turnScope } from "@cloudroom/domain";
 import {
   groupHostDaemonEvents,
   type HostDaemonEventEnvelope,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { describe, expect, it } from "vitest";
 import { queueChildThreadTurnNotificationBestEffort } from "../../../src/services/threads/child-thread-notifications.js";
 import { sendThreadMessage } from "../../../src/services/threads/thread-send.js";

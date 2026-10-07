@@ -1,4 +1,4 @@
-import type { ThreadStatus } from "@bb/domain";
+import type { ThreadStatus } from "@cloudroom/domain";
 
 type PreStartThreadStatus = Extract<ThreadStatus, "starting">;
 

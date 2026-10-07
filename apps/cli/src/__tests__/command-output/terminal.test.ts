@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 import { Readable } from "node:stream";
 import { describe, expect, it, vi } from "vitest";
-import { TERMINAL_DATA_MAX_BYTES } from "@bb/domain";
+import { TERMINAL_DATA_MAX_BYTES } from "@cloudroom/domain";
 import {
   collectLogLines,
   collectLogPayloads,

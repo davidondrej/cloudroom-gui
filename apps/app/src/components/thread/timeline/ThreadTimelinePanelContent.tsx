@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { isRunningThreadRuntimeDisplayStatus } from "@bb/client-core";
-import { EmptyStatePanel } from "@bb/shared-ui/empty-state";
-import { Skeleton } from "@bb/shared-ui/skeleton";
+import { isRunningThreadRuntimeDisplayStatus } from "@cloudroom/client-core";
+import { EmptyStatePanel } from "@cloudroom/shared-ui/empty-state";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
 import { ConversationTimeline } from "@/components/ui/conversation.js";
 import { useThread } from "@/hooks/queries/thread-queries";

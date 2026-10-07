@@ -2,7 +2,7 @@ import path from "node:path";
 import type {
   GitBranchRefClassification,
   WorkspaceGitOperation,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   detectGitRepoKind,
   detectLinkedWorktree,
@@ -15,8 +15,8 @@ import {
   readDefaultBranchRefs,
   type GitProcessOptions,
   withGitRefMutationLock,
-} from "@bb/host-workspace";
-import type { HostDaemonOnlineRpcResult } from "@bb/host-daemon-contract";
+} from "@cloudroom/host-workspace";
+import type { HostDaemonOnlineRpcResult } from "@cloudroom/host-daemon-contract";
 import { CommandDispatchError } from "../command-dispatch-support.js";
 import type {
   CommandDispatchOptions,

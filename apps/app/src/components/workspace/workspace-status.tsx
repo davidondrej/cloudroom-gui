@@ -1,7 +1,7 @@
-import { assertNever } from "@bb/core-ui";
-import type { WorkspaceStatus } from "@bb/domain";
-import type { WorkspaceResolutionFailure } from "@bb/host-daemon-contract";
-import { BbHttpError } from "@bb/sdk/browser";
+import { assertNever } from "@cloudroom/core-ui";
+import type { WorkspaceStatus } from "@cloudroom/domain";
+import type { WorkspaceResolutionFailure } from "@cloudroom/host-daemon-contract";
+import { BbHttpError } from "@cloudroom/sdk/browser";
 import { describeLifecycleError } from "@/lib/lifecycle-errors";
 
 export interface ThreadGitStatusDisplay {

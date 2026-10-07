@@ -1,13 +1,13 @@
 import {
   isApprovalPendingInteractionPayload,
   isApprovalPendingInteractionResolution,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   PendingInteractionApprovalDecision,
   PendingInteractionApprovalSubject,
   PendingInteractionPayload,
   PendingInteractionResolution,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { toolKindPresentation } from "./presentation.js";
 import {
   type AcpToolCallOperation,

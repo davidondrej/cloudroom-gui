@@ -1,10 +1,11 @@
 import { spawn } from "node:child_process";
-import { bbAppManagedEnvFileSchema } from "@bb/config/bb-app-managed-config";
+import { bbAppManagedEnvFileSchema } from "@cloudroom/config/bb-app-managed-config";
 import { readFile } from "node:fs/promises";
-import { mutateManagedJsonFile } from "@bb/config/managed-json-file";
+import { mutateManagedJsonFile } from "@cloudroom/config/managed-json-file";
 import {
   chmodSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
@@ -488,6 +489,8 @@ describe("managed JSON CLI process transactions", options, () => {
       { pause: "read" },
     );
     await launcher.event("paused");
+    mkdirSync(join(dir, "npm", "bin"), { recursive: true });
+    writeFileSync(join(dir, "npm", "bin", "bb-app"), "");
     const enrollment = start(dir, [], {
       entry: enrollmentEntry,
       env: {

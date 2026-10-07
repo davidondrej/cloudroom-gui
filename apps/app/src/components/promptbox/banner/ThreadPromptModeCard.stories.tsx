@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ThreadTimelineActivePromptMode } from "@bb/domain";
+import type { ThreadTimelineActivePromptMode } from "@cloudroom/domain";
 import { StoryCard, StoryRow } from "../../../../.ladle/story-card";
 import { ResponsiveStage } from "./banner-story-stages";
 import { ThreadPromptModeCard } from "./ThreadPromptModeCard";

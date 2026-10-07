@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   normalizePluginMentionTriggers,
   type PluginMentionTrigger,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { pluginContributionsQueryKey } from "./query-keys";
 
 interface PluginMentionProviderContribution {

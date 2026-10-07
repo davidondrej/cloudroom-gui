@@ -22,9 +22,9 @@ import {
   type HostDaemonToolCallRequest,
   type HostDaemonToolCallResponse,
   type HostDaemonSkillTree,
-} from "@bb/host-daemon-contract";
-import { HOST_ARTIFACT_MAX_BYTES } from "@bb/host-daemon-contract/protocol";
-import type { PendingInteractionCreate, ToolCallRequest } from "@bb/domain";
+} from "@cloudroom/host-daemon-contract";
+import { HOST_ARTIFACT_MAX_BYTES } from "@cloudroom/host-daemon-contract/protocol";
+import type { PendingInteractionCreate, ToolCallRequest } from "@cloudroom/domain";
 import type { HostDaemonLogger } from "./logger.js";
 import type { EventPostResult } from "./event-sink.js";
 import { runtimeErrorLogFields } from "./error-utils.js";

@@ -5,10 +5,10 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import { useAtomValue } from "jotai";
-import { Icon } from "@bb/shared-ui/icon";
-import { Pill } from "@bb/shared-ui/pill";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Pill } from "@cloudroom/shared-ui/pill";
 import {
   AppPageHeader,
   COMPACT_SHELF_HIDDEN_PAGE_HEADER_ACTIONS_CLASS,
@@ -20,7 +20,7 @@ import {
   MACOS_WINDOW_NO_DRAG_CLASS,
   shouldUseMacosDesktopChrome,
 } from "@/lib/bb-desktop";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { useAppCommandShortcut } from "@/components/commands/AppCommandProvider";
 import { AppCommandShortcutHint } from "@/components/commands/AppCommandShortcutHint";
 import { useInlineThreadTitle } from "@/components/thread/InlineThreadTitle";
@@ -28,8 +28,8 @@ import { useThreadActions } from "@/components/thread/ThreadActionsProvider";
 import { ThreadTitleMentions } from "@/components/thread/ThreadTitleMentions";
 import { SecondaryPanelHostLayoutContext } from "@/components/secondary-panel/SecondaryPanelHostLayoutContext";
 import { RIGHT_PANEL_TOGGLE_ICON_NAME } from "@/components/secondary-panel/panelToggleControlState";
-import { CHROME_SUBTLE_ICON_BUTTON_FOREGROUND_CLASS } from "@bb/shared-ui/chrome-style-tokens";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
+import { CHROME_SUBTLE_ICON_BUTTON_FOREGROUND_CLASS } from "@cloudroom/shared-ui/chrome-style-tokens";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import { dimInactiveSplitsAtom } from "@/lib/split-layout/atoms";
 import {
   CONTEXT_INACTIVE_TEXT_CLASS,
@@ -45,6 +45,7 @@ interface ThreadDetailHeaderProps {
   onClosePane?: () => void;
   onToggleSecondaryPanel: () => void;
   pluginActions?: ReactNode;
+  shareButton?: ReactNode;
   threadId: string;
   threadTitle: string;
 }
@@ -56,6 +57,7 @@ export function ThreadDetailHeader({
   onClosePane,
   onToggleSecondaryPanel,
   pluginActions,
+  shareButton,
   threadId,
   threadTitle,
 }: ThreadDetailHeaderProps) {
@@ -166,6 +168,7 @@ export function ThreadDetailHeader({
         className="flex items-center gap-1"
         data-thread-header-workflow-actions=""
       >
+        {shareButton}
         {pluginActions}
       </div>
       <div

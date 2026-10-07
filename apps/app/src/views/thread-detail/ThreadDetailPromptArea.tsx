@@ -20,8 +20,8 @@ import {
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useIsMutating } from "@tanstack/react-query";
-import type { IconName } from "@bb/shared-ui/icon";
-import { Button } from "@bb/shared-ui/button";
+import type { IconName } from "@cloudroom/shared-ui/icon";
+import { Button } from "@cloudroom/shared-ui/button";
 import { PromptStackCard } from "@/components/promptbox/banner/PromptStackCard";
 import { CloudUsageLimitNotice } from "@/components/CloudUsageLimitNotice";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
@@ -29,7 +29,7 @@ import {
   getFollowUpPromptPlaceholder,
   getCompactFollowUpPromptPlaceholder,
 } from "@/components/promptbox/follow-up-placeholder";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
+import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
 import type {
   PermissionMode,
   ReasoningLevel,
@@ -43,13 +43,13 @@ import type {
   ThreadTimelineModelFallback,
   ThreadTimelinePendingTodos,
   ThreadWithRuntime,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   PullRequestMergeMethod,
   SendMessageRequest,
   ThreadTimelineResponse,
   TimelineWorkflowWorkRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type { ExperimentalComposerSubmitOptions } from "@get-bb/plugin-sdk";
 import type { ChildThreadPendingAttention } from "@/hooks/queries/child-thread-pending-interactions";
 import { ThreadPendingInteractionBanner } from "@/components/thread/pending-interactions/ThreadPendingInteractionBanner";
@@ -136,13 +136,13 @@ import {
   buildThreadHandoffFollowUpDraft,
   stripThreadHandoffPrefix,
   type ThreadHandoffCreateSeed,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   emptyPromptDraftState,
   promptDraftToInput,
   type PromptDraftAttachment,
   type PromptDraftState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import {
   FollowUpPromptBox,
   type FollowUpComposerProps,
@@ -159,7 +159,7 @@ import {
   resolveDefaultExecutionOptionsState,
   shouldQueueFollowUpMessage,
   type FollowUpExecutionSelection,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 const ignorePromptBannerFileClick = () => {};
 const ignoreToastedCreateThreadError = () => {};
@@ -380,7 +380,7 @@ async function runWhileFollowUpShortcutSending(
 
 import { showCloudSignIn, useCloudLocked } from "@/hooks/useCloudLocked";
 import { useCloudroomThread, useSetCloudReasoning, useCloudroomThreadWorkspace, useCloudroomConnection, useRetryCloudStart, useTeleportThread, useTeleportLocal, cloudroomRequestId, clearCloudroomRequestId, cloudReasoningLevels, cloudServiceTierSupported, cloudFeatureSupported } from "@/hooks/queries/cloudroom-queries";
-import { reasoningLevelSchema } from "@bb/domain";
+import { reasoningLevelSchema } from "@cloudroom/domain";
 import { reasoningLevelLabel } from "@/lib/reasoning-labels";
 import { useCopyCommand } from "@/hooks/useCopyCommand";
 
@@ -2293,6 +2293,7 @@ export function ThreadDetailPromptArea({
             attachedToComposer={true}
             queuedMessages={queuedMessages}
             resolveMentionLink={resolveMentionLink}
+            attachmentProjectId={projectId}
             inlineEditor={queuedMessageEditor ?? undefined}
             reorderable={!isCloud || cloudConnection.data?.queue_reorder === true}
             sendAction={shouldSteerWhenReady ? "steer-when-ready" : "send-now"}
@@ -2356,6 +2357,7 @@ export function ThreadDetailPromptArea({
       submitMode.kind,
       thread.archivedAt,
       thread.id,
+      projectId,
       workspaceChangedFilesSection,
       workspaceStatusPending,
     ],
@@ -2433,7 +2435,7 @@ export function ThreadDetailPromptArea({
     <FollowUpPromptBox
       id={THREAD_DETAIL_COMPOSER_TEXTAREA_ID}
       attachments={bottomAttachmentsConfig}
-      stack={<>{!isCloud && !teleporting && <TeleportCheckCard error={teleport.error} models={[...modelOptions, ...moreModelOptions]} reasoning={reasoningLevel} usedTokens={contextWindowUsage?.usedTokens ?? null} levelsFor={(model) => cloudReasoningLevels(cloudConnection.data, thread.providerId, model)} onTeleport={(choice) => teleport.mutate(choice)} onDismiss={teleport.reset} />}{thread.teleport && <TeleportNotice thread={thread} pendingDelivery={cloudState.data?.pendingDelivery} paused={cloudState.data?.paused} sending={sendMessage.isPending} />}{thread.projectCopy && <ProjectCopyNotice thread={thread} />}{cloudNotice}{!isCloud && !shouldHideComposer && <LocalSignInNotice threadId={thread.id} providerId={thread.providerId} hostId={environmentHostId} environmentId={thread.environmentId} authFailed={providerAuthFailed} />}{pendingInteractionNode ? pendingInteractionStack : promptStack}</>}
+      stack={<>{!isCloud && !teleporting && <TeleportCheckCard error={teleport.error} models={[...modelOptions, ...moreModelOptions]} reasoning={reasoningLevel} usedTokens={contextWindowUsage?.usedTokens ?? null} levelsFor={(model) => cloudReasoningLevels(cloudConnection.data, thread.providerId, model)} onTeleport={(choice) => teleport.mutate(choice)} onDismiss={teleport.reset} />}{thread.teleport && <TeleportNotice thread={thread} pendingDelivery={cloudState.data?.pendingDelivery} paused={cloudState.data?.paused} sending={sendMessage.isPending} />}{thread.projectCopy && <ProjectCopyNotice thread={thread} />}{cloudNotice}{!isCloud && !shouldHideComposer && <LocalSignInNotice threadId={thread.id} providerId={thread.providerId} hostId={environmentHostId} environmentId={thread.environmentId} authFailed={providerAuthFailed} started={thread.status !== "pending"} />}{pendingInteractionNode ? pendingInteractionStack : promptStack}</>}
       pendingInteraction={pendingInteractionNode}
       activePromptMode={isHandoffSelection ? null : activePromptMode}
       composer={shouldHideComposer || teleporting || transferredChild || movingToLocal ? null : bottomComposerConfig}

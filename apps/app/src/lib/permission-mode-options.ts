@@ -1,9 +1,9 @@
-import type { PermissionMode } from "@bb/domain";
-import type { IconName } from "@bb/shared-ui/icon";
+import type { PermissionMode } from "@cloudroom/domain";
+import type { IconName } from "@cloudroom/shared-ui/icon";
 import {
   PERMISSION_MODE_OPTIONS as CORE_PERMISSION_MODE_OPTIONS,
   type PermissionModeOption as CorePermissionModeOption,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 export interface PermissionModeOption extends CorePermissionModeOption {
   iconName: IconName;

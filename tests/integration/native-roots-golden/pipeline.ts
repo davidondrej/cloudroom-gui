@@ -4,11 +4,11 @@ import {
   normalizeProviderNativeRoots,
   providerNativeRootSetSchema,
   type ProviderNativeRootSet,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   DiscoveredSkill,
   HostProviderCommand,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import type { PluginProviderDeclaration } from "../../../packages/plugin-sdk/src/backend-contract.js";
 import {
   discoverProviderCommands,

@@ -1,5 +1,5 @@
-import { getHost, updateHost } from "@bb/db";
-import type { HostDaemonOnlineRpcRequestMessage } from "@bb/host-daemon-contract";
+import { getHost, updateHost } from "@cloudroom/db";
+import type { HostDaemonOnlineRpcRequestMessage } from "@cloudroom/host-daemon-contract";
 import { validatePluginMachineProviderDeclaration } from "@get-bb/plugin-sdk/internal/host-policy";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { setPluginMachineProviderBridge } from "../src/services/plugins/plugin-machine-provider-registry.js";

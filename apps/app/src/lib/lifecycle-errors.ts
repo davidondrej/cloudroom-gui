@@ -1,9 +1,9 @@
-import { assertNever } from "@bb/core-ui";
-import { BbHttpError } from "@bb/sdk/browser";
+import { assertNever } from "@cloudroom/core-ui";
+import { BbHttpError } from "@cloudroom/sdk/browser";
 import {
   lifecycleApiErrorSchema,
   type LifecycleApiError,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { HttpError } from "./api";
 
 type LifecycleErrorSeverity = "info" | "warning" | "error";

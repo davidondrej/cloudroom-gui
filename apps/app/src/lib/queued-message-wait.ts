@@ -1,5 +1,5 @@
-import type { QueuedMessagePayload, QueuedMessageWaitingOn } from "@bb/domain";
-import type { IconName } from "@bb/shared-ui/icon";
+import type { QueuedMessagePayload, QueuedMessageWaitingOn } from "@cloudroom/domain";
+import type { IconName } from "@cloudroom/shared-ui/icon";
 import { formatScheduledTime } from "@/lib/relative-time";
 
 const MINUTE_MS = 60 * 1000;

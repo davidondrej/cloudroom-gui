@@ -7,7 +7,7 @@ import {
   getProjectSourceByHost,
   isSqliteUniqueConstraintOnColumns,
   setProjectGitRemoteUrlIfMissing,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type { CommandResultSideEffectsDeps } from "../../internal/command-result-side-effects.js";
 import { ApiError } from "../../errors.js";
 import { COMMAND_TIMEOUT_MS } from "../../constants.js";

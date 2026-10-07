@@ -1,13 +1,13 @@
 import readline from "node:readline";
 import { setTimeout as sleep } from "node:timers/promises";
 import { Command } from "commander";
-import { formatPendingInteractionSummary } from "@bb/core-ui";
+import { formatPendingInteractionSummary } from "@cloudroom/core-ui";
 import {
   isApprovalPendingInteractionPayload,
   type PendingInteraction,
   type ThreadStatus,
-} from "@bb/domain";
-import { formatThreadTimelineText } from "@bb/thread-view";
+} from "@cloudroom/domain";
+import { formatThreadTimelineText } from "@cloudroom/thread-view";
 import { action } from "../../action.js";
 import { createCliBbSdk } from "../../client.js";
 import { createHerdrReporter } from "../../herdr.js";

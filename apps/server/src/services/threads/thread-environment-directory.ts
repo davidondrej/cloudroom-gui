@@ -8,9 +8,9 @@ import {
   getEnvironment,
   getThread,
   updateThread,
-} from "@bb/db";
-import { turnScope } from "@bb/domain";
-import type { DynamicTool, Thread, ToolCallResponse } from "@bb/domain";
+} from "@cloudroom/db";
+import { turnScope } from "@cloudroom/domain";
+import type { DynamicTool, Thread, ToolCallResponse } from "@cloudroom/domain";
 import type { AppDeps } from "../../types.js";
 import { runLiveHostCommand } from "../hosts/live-command.js";
 import { appendThreadEventInTransaction } from "./thread-events.js";

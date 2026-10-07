@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
-import { Icon, type IconName } from "@bb/shared-ui/icon";
+import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
 import { usePluginCompactBranding } from "@/lib/plugin-logos";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 export function pluginIconName(icon: string | null): IconName {
   return icon ?? "Zap";

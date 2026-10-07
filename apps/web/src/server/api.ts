@@ -13,8 +13,8 @@ import {
   server,
   sha256Hex,
   user,
-} from "@bb/connect-db";
-import type { ConnectDb, LabelAvailability } from "@bb/connect-db";
+} from "@cloudroom/connect-db";
+import type { ConnectDb, LabelAvailability } from "@cloudroom/connect-db";
 import type { Env } from "./env.js";
 import { generateConnectCode, generateToken } from "./tokens.js";
 

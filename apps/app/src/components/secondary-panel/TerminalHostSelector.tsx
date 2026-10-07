@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import type { Host } from "@bb/domain";
-import { OptionDisplay } from "@bb/shared-ui/option-display";
+import type { Host } from "@cloudroom/domain";
+import { OptionDisplay } from "@cloudroom/shared-ui/option-display";
 import {
   OptionPicker,
   type PickerOption,

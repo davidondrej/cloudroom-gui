@@ -3,13 +3,13 @@ import type {
   DbNotifier,
   DbQueryConnection,
   DbTransaction,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   applyEnvironmentLifecycleEvent,
   applyEnvironmentLifecycleEventInTransaction,
   type ApplyEnvironmentLifecycleEventArgs,
   type ApplyEnvironmentLifecycleEventOutcome,
-} from "@bb/db/internal-environment-lifecycle";
+} from "@cloudroom/db/internal-environment-lifecycle";
 import type { ServerLogger } from "../../types.js";
 
 interface ApplyLoggedEnvironmentLifecycleEventDeps {

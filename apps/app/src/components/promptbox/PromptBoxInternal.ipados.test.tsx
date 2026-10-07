@@ -23,8 +23,8 @@ vi.hoisted(() => {
   });
 });
 
-import type { PromptTextMention } from "@bb/domain";
-import { EMPTY_ORDERED_MENTION_SUGGESTIONS } from "@bb/client-core";
+import type { PromptTextMention } from "@cloudroom/domain";
+import { EMPTY_ORDERED_MENTION_SUGGESTIONS } from "@cloudroom/client-core";
 import { useState } from "react";
 import {
   act,

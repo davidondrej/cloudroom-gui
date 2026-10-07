@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { AppCommandId } from "@bb/domain";
+import type { AppCommandId } from "@cloudroom/domain";
 import type { AppShortcutPresentation } from "@/lib/app-keybindings";
 import {
   buildAppCommandActions,

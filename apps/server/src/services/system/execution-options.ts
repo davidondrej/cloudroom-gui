@@ -6,14 +6,14 @@ import type {
   SystemInstallableProvidersQuery,
   SystemRestartModelDiscoveryRequest,
   SystemProvidersQuery,
-} from "@bb/server-contract";
-import { type CustomProviderModel } from "@bb/config/bb-app-managed-config";
+} from "@cloudroom/server-contract";
+import { type CustomProviderModel } from "@cloudroom/config/bb-app-managed-config";
 import {
   reasoningEffortsForLevels,
   type AvailableModel,
   type ProviderInfo,
-} from "@bb/domain";
-import { getAppSettings } from "@bb/db";
+} from "@cloudroom/domain";
+import { getAppSettings } from "@cloudroom/db";
 import type { LoggedWorkSessionDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { callHostRetryableOnlineRpc } from "../hosts/online-rpc.js";

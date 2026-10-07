@@ -31,7 +31,7 @@ import {
   FILE_LIST_LIMIT_MAX,
   FILE_LIST_QUERY_MAX_LENGTH,
   flattenPromptInputGroups,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { z } from "zod";
 import {
   pathsExistRequestSchema,
@@ -49,7 +49,7 @@ import {
   providerUsageResultSchema,
   providerUsageSchema,
   providerUsageWindowSchema,
-} from "@bb/provider-bridge-protocol";
+} from "@cloudroom/provider-bridge-protocol";
 
 export {
   HOST_ARTIFACT_MAX_BYTES,
@@ -69,7 +69,7 @@ export {
   FILE_LIST_EXCLUDE_NAMES_MAX,
   FILE_LIST_LIMIT_MAX,
   FILE_LIST_QUERY_MAX_LENGTH,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 const INJECTED_SKILL_NAME_PATTERN =
   /^(?!.*--)[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/u;
 
@@ -903,7 +903,7 @@ export { providerHealthSchema };
 export type {
   ProviderHealth,
   ProviderHealthResult,
-} from "@bb/provider-bridge-protocol";
+} from "@cloudroom/provider-bridge-protocol";
 
 const provisionInitiatorSchema = z
   .object({
@@ -1258,12 +1258,12 @@ const workspaceCommitResultSchema = z.object({
 const workspacePullRequestActionResultSchema = z.object({}).strict();
 
 export { providerUsageWindowSchema };
-export type { ProviderUsageWindow } from "@bb/provider-bridge-protocol";
+export type { ProviderUsageWindow } from "@cloudroom/provider-bridge-protocol";
 
 export type {
   ProviderUsage,
   ProviderUsageResult,
-} from "@bb/provider-bridge-protocol";
+} from "@cloudroom/provider-bridge-protocol";
 
 export const providerUsageResponseSchema = z.record(
   z.string().min(1),

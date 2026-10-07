@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
+} from "@cloudroom/shared-ui/dropdown-menu";
 import {
   ContextMenu,
   ContextMenuCheckboxItem,
@@ -24,9 +24,9 @@ import {
   ContextMenuSubTrigger,
   ContextMenuShortcut,
   ContextMenuTrigger,
-} from "@bb/shared-ui/context-menu";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/context-menu";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import type { TaskEdit } from "./optimistic.js";
 import { PriorityIcon, StatusIcon } from "./icons.js";
 import {

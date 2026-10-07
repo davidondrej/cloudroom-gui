@@ -6,7 +6,7 @@ import {
   resolveSharedDevInstanceConfig,
   toDevProcessEnv,
   type DevInstanceConfig,
-} from "@bb/config/runtime";
+} from "@cloudroom/config/runtime";
 import { migrateLegacyDevData } from "../lib/legacy-dev-data-migration.js";
 import { runScriptProcess } from "../lib/process-helpers.js";
 import { repoRoot, runMainIfEntrypoint } from "../lib/script-entry.js";
@@ -32,8 +32,8 @@ export function createDevTurboCommand(shared = false): DevCommand {
       "turbo",
       "run",
       "dev",
-      "--filter=@bb/app",
-      ...(shared ? [] : ["--filter=@bb/server", "--filter=@bb/host-daemon"]),
+      "--filter=@cloudroom/app",
+      ...(shared ? [] : ["--filter=@cloudroom/server", "--filter=@cloudroom/host-daemon"]),
       "--ui",
       "tui",
       "--concurrency",

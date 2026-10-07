@@ -1,16 +1,16 @@
-import { getEnvironment, getThread, type DbConnection } from "@bb/db";
+import { getEnvironment, getThread, type DbConnection } from "@cloudroom/db";
 import {
   realtimeSubscriptionTargetKey,
   type EnvironmentChangeKind,
   type RealtimeSubscriptionTarget,
   type ThreadChangeKind,
   type ThreadEventType,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   HostDaemonWatchSet,
   HostDaemonWatchSetThreadStorageTarget,
   HostDaemonWatchSetWorkspaceTarget,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { workspaceContextFromPath } from "../services/environments/workspace-command-target.js";
 import type { NotificationHub, ServerChangedMessage } from "./hub.js";
 

@@ -1,4 +1,4 @@
-import type { ThreadEvent } from "@bb/domain";
+import type { ThreadEvent } from "@cloudroom/domain";
 import {
   THREAD_DELTA_NOTIFICATION_METHOD,
   threadDeltaNotificationParamsSchema,

@@ -1,11 +1,11 @@
 import {
   getProjectExecutionDefaults,
   upsertProjectExecutionDefaults,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type {
   ProjectExecutionDefaults,
   ResolvedThreadExecutionOptions,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type { AppDeps } from "../../types.js";
 import type {
   ThreadCreateServiceRequest,

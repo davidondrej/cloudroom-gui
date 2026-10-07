@@ -1,4 +1,4 @@
-import { THREAD_EVENT_ITEM_PRESENTATION_DETAIL_MAX_LENGTH } from "@bb/domain";
+import { THREAD_EVENT_ITEM_PRESENTATION_DETAIL_MAX_LENGTH } from "@cloudroom/domain";
 import type { DeltaPresentation } from "../thread-delta.js";
 
 export const PRESENTATION_TITLE_MAX_LENGTH = 160;

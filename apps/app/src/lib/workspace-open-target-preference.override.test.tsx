@@ -3,7 +3,7 @@
 import { Provider, createStore } from "jotai";
 import type { ReactNode } from "react";
 import { renderHook, waitFor } from "@testing-library/react";
-import type { WorkspaceOpenTarget } from "@bb/host-daemon-contract";
+import type { WorkspaceOpenTarget } from "@cloudroom/host-daemon-contract";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   FILE_OPEN_TARGET_STORAGE_KEY,

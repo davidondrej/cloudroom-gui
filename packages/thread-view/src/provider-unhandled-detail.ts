@@ -1,4 +1,4 @@
-import type { ProviderUnhandledEvent } from "@bb/domain";
+import type { ProviderUnhandledEvent } from "@cloudroom/domain";
 
 const HUMANIZED_EVENT_TOKEN_MAP: Record<string, string> = {
   api: "API",

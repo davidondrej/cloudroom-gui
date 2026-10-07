@@ -1,5 +1,5 @@
-import type { ThreadEventWithMeta } from "@bb/thread-view";
-import type { TimelineRow } from "@bb/server-contract";
+import type { ThreadEventWithMeta } from "@cloudroom/thread-view";
+import type { TimelineRow } from "@cloudroom/server-contract";
 import {
   getDatabaseDataVersion,
   getFirstParentedTimelineBoundarySequence,
@@ -7,7 +7,7 @@ import {
   hasTimelineGroupingContextRowsInRange,
   listTimelineOrderingContext,
   type DbConnection,
-} from "@bb/db";
+} from "@cloudroom/db";
 
 interface TimelineGroupingContext {
   orderingBoundarySequence: number | null;

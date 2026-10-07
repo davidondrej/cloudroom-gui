@@ -1,29 +1,38 @@
 import { useSetPluginEnabled } from "@/components/plugin/useSetPluginEnabled";
-import { useEffect, useId, useState, type FocusEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useState,
+  type FocusEvent,
+  type ReactNode,
+} from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { appToast } from "@/components/ui/app-toast.js";
-import { PluginSettingsSections } from "@/components/plugin/PluginSettingsSections";
-import { Button } from "@bb/shared-ui/button";
+import {
+  PluginSettingsSections,
+  ProviderAccountsSection,
+} from "@/components/plugin/PluginSettingsSections";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { Icon } from "@bb/shared-ui/icon";
-import { Input } from "@bb/shared-ui/input";
-import { Textarea } from "@bb/shared-ui/textarea";
+} from "@cloudroom/shared-ui/dropdown-menu";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { Input } from "@cloudroom/shared-ui/input";
+import { Textarea } from "@cloudroom/shared-ui/textarea";
 import { Link } from "react-router-dom";
 import { SettingsWithControl } from "@/components/ui/settings-section.js";
 import { getPluginDetailRoutePath } from "@/lib/route-paths";
-import { Skeleton } from "@bb/shared-ui/skeleton";
-import { Switch } from "@bb/shared-ui/switch";
+import { Skeleton } from "@cloudroom/shared-ui/skeleton";
+import { Switch } from "@cloudroom/shared-ui/switch";
 import {
   ResourceDetailConfigurationSection,
   ResourceDetailOverviewSection,
   ResourceDetailPanel,
   ResourceDetailStack,
-} from "@bb/shared-ui/resource-list";
+} from "@cloudroom/shared-ui/resource-list";
 import { PluginIcon } from "@/components/plugin/PluginIcon";
 import {
   applyPluginSettingsView,
@@ -533,7 +542,13 @@ function PluginSettingsPageSkeleton() {
   );
 }
 
-export function PluginSettingsPage({ pluginId }: { pluginId: string }) {
+export function PluginSettingsPage({
+  children,
+  pluginId,
+}: {
+  children?: ReactNode;
+  pluginId: string;
+}) {
   const listQuery = usePluginList({ enabled: true });
   const plugin =
     listQuery.data?.plugins.find(
@@ -556,10 +571,20 @@ export function PluginSettingsPage({ pluginId }: { pluginId: string }) {
       </p>
     );
   }
-  return <PluginSettingsContent key={plugin.id} plugin={plugin} />;
+  return (
+    <PluginSettingsContent key={plugin.id} plugin={plugin}>
+      {children}
+    </PluginSettingsContent>
+  );
 }
 
-function PluginSettingsContent({ plugin }: { plugin: PluginListItem }) {
+function PluginSettingsContent({
+  children,
+  plugin,
+}: {
+  children?: ReactNode;
+  plugin: PluginListItem;
+}) {
   const queryClient = useQueryClient();
   const { settingsSections } = usePluginSlots();
   const setEnabled = useSetPluginEnabled();
@@ -614,6 +639,9 @@ function PluginSettingsContent({ plugin }: { plugin: PluginListItem }) {
       </header>
       <ResourceDetailStack className="mt-6">
         {enabled && plugin.enabled ? (
+          <ProviderAccountsSection pluginId={plugin.id} />
+        ) : null}
+        {enabled && plugin.enabled ? (
           <PluginMachineServerAccessNotice pluginId={plugin.id} />
         ) : null}
         {enabled && plugin.enabled && hasAvailableSettings ? (
@@ -621,6 +649,7 @@ function PluginSettingsContent({ plugin }: { plugin: PluginListItem }) {
             <PluginSettingsDetail plugin={plugin} />
           </ResourceDetailConfigurationSection>
         ) : null}
+        {enabled && plugin.enabled ? children : null}
         <ResourceDetailOverviewSection label="Plugin details">
           <p className="max-w-none text-sm leading-relaxed text-muted-foreground">
             Release, capabilities, and health live on{" "}

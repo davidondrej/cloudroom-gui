@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   THREAD_CONTEXT_CLEAR_OPERATION,
   type ThreadEventType,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   deleteThreadEventSuffixInTransaction,
   getLatestCompletedThreadContextClearSequence,
   getLatestThreadSequence,
   pruneThreadEventsBeforeSequence,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   clearTimelineOrderingContextCache,
   getTimelineGroupingContext,

@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   SystemExecutionOptionsModelLoadError,
   SystemProvidersQuery,
-} from "@bb/server-contract";
-import { Icon } from "@bb/shared-ui/icon";
+} from "@cloudroom/server-contract";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { systemExecutionOptionsQueryKey } from "@/hooks/queries/query-keys";
 import {
   modelCatalogCacheKey,

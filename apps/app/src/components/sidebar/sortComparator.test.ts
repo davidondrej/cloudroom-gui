@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@bb/domain";
+import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@cloudroom/domain";
 import {
   getSelectedThreadSidebarExpansion,
   getSidebarThreadComparator,
@@ -9,10 +9,10 @@ import {
   type ProjectThreadNode,
   type ProjectThreadItem,
   type ThreadComparator,
-} from "@bb/client-core";
-import { NO_COLLAPSED_CHILD_ACTIVITY } from "@bb/client-core";
+} from "@cloudroom/client-core";
+import { NO_COLLAPSED_CHILD_ACTIVITY } from "@cloudroom/client-core";
 import type { ThreadTitleMentionResources } from "@/components/thread/ThreadTitleMentions";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 
 function thread(overrides: Partial<ThreadListEntry>): ThreadListEntry {
   return makeThreadListEntry({

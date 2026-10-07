@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { pluginPackageJsonSchema } from "@bb/domain";
+import { pluginPackageJsonSchema } from "@cloudroom/domain";
 import type { PluginSettingValue } from "@get-bb/plugin-sdk";
 import type { NormalizedPluginProviderDeclaration } from "@get-bb/plugin-sdk/internal/host-policy";
 import { createFakePluginHost } from "@get-bb/plugin-sdk/testing";

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import type { PermissionMode } from "@bb/domain";
-import { LIST_HOVER_TRANSITION } from "@bb/shared-ui/motion";
-import { cn } from "@bb/shared-ui/lib/utils";
+import type { PermissionMode } from "@cloudroom/domain";
+import { LIST_HOVER_TRANSITION } from "@cloudroom/shared-ui/motion";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { OptionPicker, type PickerOption } from "./OptionPicker";
 
 type PermissionModeOption = PickerOption<PermissionMode>;

@@ -2,12 +2,12 @@ import {
   threadScope,
   type ProvisioningTranscriptEntry,
   WORKSPACE_PROVISIONING_STEP_KEYS,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   EnvironmentProvisionCommand,
   HostDaemonCommandResult,
-} from "@bb/host-daemon-contract";
-import type { ProvisionWorkspaceArgs } from "@bb/host-workspace";
+} from "@cloudroom/host-daemon-contract";
+import type { ProvisionWorkspaceArgs } from "@cloudroom/host-workspace";
 import {
   type CommandDispatchOptions,
   type CommandOf,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { useSystemVersion } from "@/hooks/queries/system-queries";
 import { useDesktopUpdate, useInstallDesktopUpdate } from "@/hooks/queries/cloudroom-queries";
 import { CHROME_ROW_CLASS, getBbDesktopInfo } from "@/lib/bb-desktop";

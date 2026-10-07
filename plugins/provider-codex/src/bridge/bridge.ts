@@ -277,8 +277,28 @@ function sendRuntimeRequest(
 
 const CODEX_APP_SERVER_COMMAND_ENV = "BB_CODEX_BRIDGE_APP_SERVER_COMMAND";
 const CODEX_APP_SERVER_ARGS_ENV = "BB_CODEX_BRIDGE_APP_SERVER_ARGS";
-const CODEX_POOL_BASE_URL_ENV = "CODEX_OPENAI_BASE_URL";
-const CODEX_POOL_AUTH_TOKEN_ENV = "CODEX_POOL_AUTH_TOKEN";
+const CLOUDROOM_CODEX_ACCESS_TOKEN_ENV = "CLOUDROOM_CODEX_ACCESS_TOKEN";
+const CLOUDROOM_CODEX_ACCOUNT_ID_ENV = "CLOUDROOM_CODEX_ACCOUNT_ID";
+const CLOUDROOM_CODEX_PLAN_TYPE_ENV = "CLOUDROOM_CODEX_PLAN_TYPE";
+
+async function signInCloudroomAccount(
+  connection: CodexAppServerConnection,
+  envVars: Readonly<Record<string, string>> | undefined,
+): Promise<void> {
+  const accessToken = envVars?.[CLOUDROOM_CODEX_ACCESS_TOKEN_ENV];
+  if (!accessToken) return;
+  await connection.request({
+    method: "account/login/start",
+    params: {
+      type: "chatgptAuthTokens",
+      accessToken,
+      chatgptAccountId: envVars?.[CLOUDROOM_CODEX_ACCOUNT_ID_ENV] ?? "",
+      chatgptPlanType: envVars?.[CLOUDROOM_CODEX_PLAN_TYPE_ENV] || null,
+    },
+    resultSchema: ignoredChildResultSchema,
+    timeoutMs: CHILD_REQUEST_TIMEOUT_MS,
+  });
+}
 
 const CODEX_INITIALIZE_PARAMS = {
   clientInfo: { name: "bb", version: "1.0.0", title: null },
@@ -359,56 +379,13 @@ export function resolveAppServerLaunch(
       ? z.array(z.string()).parse(JSON.parse(rawArgs))
       : []
     : ["app-server"];
-  const poolBaseUrl = env[CODEX_POOL_BASE_URL_ENV];
-  const poolToken = env[CODEX_POOL_AUTH_TOKEN_ENV];
-  if (!poolBaseUrl || !poolToken)
-    return { command: command ?? codexCommand, args };
-  return {
-    command: command ?? codexCommand,
-    args: [
-      ...args,
-      "-c",
-      `openai_base_url=${JSON.stringify(poolBaseUrl)}`,
-      "-c",
-      'model_provider="bb-account-pool"',
-      "-c",
-      'model_providers.bb-account-pool.name="OpenAI"',
-      "-c",
-      `model_providers.bb-account-pool.base_url=${JSON.stringify(poolBaseUrl)}`,
-      "-c",
-      'model_providers.bb-account-pool.wire_api="responses"',
-      "-c",
-      "model_providers.bb-account-pool.requires_openai_auth=true",
-      "-c",
-      "model_providers.bb-account-pool.supports_websockets=false",
-      "-c",
-      'model_providers.bb-account-pool.env_http_headers.x-bb-account-pool-token="CODEX_POOL_AUTH_TOKEN"',
-    ],
-  };
+  return { command: command ?? codexCommand, args };
 }
 
-function appServerLaunchEnv(
-  envVars: Readonly<Record<string, string>> | undefined,
-): NodeJS.ProcessEnv {
-  const poolBaseUrl = envVars?.[CODEX_POOL_BASE_URL_ENV];
-  const poolAuthToken = envVars?.[CODEX_POOL_AUTH_TOKEN_ENV];
-  return {
-    ...process.env,
-    ...(poolBaseUrl === undefined
-      ? {}
-      : { [CODEX_POOL_BASE_URL_ENV]: poolBaseUrl }),
-    ...(poolAuthToken === undefined
-      ? {}
-      : { [CODEX_POOL_AUTH_TOKEN_ENV]: poolAuthToken }),
-  };
-}
-
-function buildAppServerEnv(
-  envVars: Readonly<Record<string, string>> | undefined,
-): NodeJS.ProcessEnv {
+function buildAppServerEnv(): NodeJS.ProcessEnv {
   return withoutBridgeRuntimeEnv(
     sanitizeInheritedChildProcessEnv({
-      env: appServerLaunchEnv(envVars),
+      env: process.env,
     }),
   );
 }
@@ -528,9 +505,12 @@ function constructionSignature(
   sessionOptions: CodexSessionOptions,
 ): string {
   const permissionSettings = toCodexThreadPermissionSettings(sessionOptions);
-  const poolBaseUrl = sessionOptions.envVars?.[CODEX_POOL_BASE_URL_ENV];
-  const poolToken = sessionOptions.envVars?.[CODEX_POOL_AUTH_TOKEN_ENV];
+  const accountToken = sessionOptions.envVars?.[CLOUDROOM_CODEX_ACCESS_TOKEN_ENV];
   return JSON.stringify({
+    account:
+      accountToken === undefined
+        ? null
+        : createHash("sha256").update(accountToken).digest("hex"),
     cwd,
     reasoningLevel: sessionOptions.reasoningLevel ?? null,
     memoryEnabled: sessionOptions.memoryEnabled ?? null,
@@ -538,13 +518,6 @@ function constructionSignature(
     approvalPolicy: permissionSettings.approvalPolicy,
     approvalsReviewer: permissionSettings.approvalsReviewer,
     sandbox: permissionSettings.sandbox,
-    poolRoute:
-      poolBaseUrl === undefined || poolToken === undefined
-        ? null
-        : {
-            baseUrl: poolBaseUrl,
-            tokenHash: createHash("sha256").update(poolToken).digest("hex"),
-          },
   });
 }
 
@@ -703,6 +676,14 @@ function handleChildRequest(
     return;
   }
 
+  if (method === "account/chatgptAuthTokens/refresh") {
+    responder.error(
+      BRIDGE_JSON_RPC_ERRORS.BRIDGE_ERROR,
+      "Cloudroom renews this account's sign-in before the next turn.",
+    );
+    return;
+  }
+
   if (method === BRIDGE_INBOUND_REQUEST_METHODS.toolCall) {
     const parsed = codexChildToolCallParamsSchema.safeParse(params);
     if (!parsed.success) {
@@ -845,7 +826,6 @@ function handleChildExit(
 }
 
 function spawnChildConnection(callbacks: {
-  envVars?: Readonly<Record<string, string>>;
   recordThreadId: string | null;
   onNotification: (method: string, params: unknown) => void;
   onRequest: (
@@ -855,16 +835,13 @@ function spawnChildConnection(callbacks: {
   ) => void;
   onExit: (info: CodexAppServerExitInfo) => void;
 }): CodexAppServerConnection {
-  const env = buildAppServerEnv(callbacks.envVars);
-  const launchEnv = appServerLaunchEnv(callbacks.envVars);
-  const launch = resolveAppServerLaunch(launchEnv, codexExecutable(launchEnv));
-  const { envVars: _envVars, ...connectionCallbacks } = callbacks;
+  const launch = resolveAppServerLaunch(process.env, codexExecutable(process.env));
   return createCodexAppServerConnection({
     command: launch.command,
     args: launch.args,
     cwd: process.cwd(),
-    env,
-    ...connectionCallbacks,
+    env: buildAppServerEnv(),
+    ...callbacks,
   });
 }
 
@@ -1000,7 +977,6 @@ async function constructThreadSession(
   sendThreadDeltas(session, [{ kind: "session.reset" }]);
 
   const connection = spawnChildConnection({
-    envVars: decoded.sessionOptions.envVars,
     recordThreadId: args.threadId,
     onNotification: (method, params) =>
       handleChildNotification(args.threadId, serial, method, params),
@@ -1012,6 +988,7 @@ async function constructThreadSession(
 
   try {
     await initializeChild(connection, translator.buildPostInitializeRequests());
+    await signInCloudroomAccount(connection, decoded.sessionOptions.envVars);
     if (args.options.providerOptions?.commandGuardEnabled !== false) {
       const settings = await connection.request({
         method: "config/read",

@@ -3,12 +3,12 @@ import {
   getThread,
   type DbConnection,
   type DbTransaction,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   promptInputSchema,
   type PromptInput,
   type ProvisioningTranscriptEntry,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { eq, like } from "drizzle-orm";
 import { z } from "zod";
 import type { LoggedWorkSessionDeps } from "../../types.js";

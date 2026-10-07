@@ -1,6 +1,6 @@
 import { withHostCleanup } from "../hosts/cleanup-context.js";
 import { findHostDataDir } from "../lib/entity-lookup.js";
-import { updateThread } from "@bb/db";
+import { updateThread } from "@cloudroom/db";
 import { assertEnvironmentPathAvailable } from "./path-admission.js";
 import { saveThreadProvisionContext } from "../threads/thread-startup-store.js";
 import {
@@ -36,7 +36,7 @@ import {
   type DbNotifier,
   type DbQueryConnection,
   threads,
-} from "@bb/db";
+} from "@cloudroom/db";
 import {
   jsonValueSchema,
   type Environment,
@@ -48,8 +48,8 @@ import {
   type SystemThreadProvisioningStatus,
   type ThreadStatus,
   threadScope,
-} from "@bb/domain";
-import { type ThreadResponse } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import { type ThreadResponse } from "@cloudroom/server-contract";
 import {
   type PluginEnvironmentProviderCreateResult,
   type PluginEnvironmentProviderProgress,
@@ -71,7 +71,7 @@ import {
   applyLoggedEnvironmentLifecycleEventInTransaction,
 } from "./lifecycle-outcome.js";
 import { buildEnvironmentProvisionCommand } from "../threads/thread-create-helpers.js";
-import { recordProvisionedEnvironmentWorkspace } from "@bb/db/internal-environment-lifecycle";
+import { recordProvisionedEnvironmentWorkspace } from "@cloudroom/db/internal-environment-lifecycle";
 import { type AppDeps } from "../../types.js";
 import {
   appendThreadProvisioningEvent,

@@ -3,7 +3,7 @@ import {
   bbDesktopVersionFeedSchema,
   type BbDesktopInfo,
   type BbDesktopVersionFeed,
-} from "@bb/desktop-contract";
+} from "@cloudroom/desktop-contract";
 import {
   createDesktopUpdateScheduler,
   type DesktopUpdateService,

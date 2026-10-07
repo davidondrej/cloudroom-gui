@@ -6,10 +6,10 @@ import {
 } from "@get-bb/plugin-sdk/app";
 import type { memoryRpcContract } from "./server.js";
 import { isMemoryKind, MEMORY_KINDS } from "./memory-kinds.js";
-import { Button } from "@bb/shared-ui/button";
-import { Input } from "@bb/shared-ui/input";
-import { Switch } from "@bb/shared-ui/switch";
-import { Textarea } from "@bb/shared-ui/textarea";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Input } from "@cloudroom/shared-ui/input";
+import { Switch } from "@cloudroom/shared-ui/switch";
+import { Textarea } from "@cloudroom/shared-ui/textarea";
 
 type MemoryRecord = PluginRpcResult<
   (typeof memoryRpcContract)["listMemories"]

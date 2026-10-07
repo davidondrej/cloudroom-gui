@@ -7,8 +7,8 @@ import type {
   ProviderFork,
   ProviderInfo,
   ReasoningLevel,
-} from "@bb/domain";
-import { parseExtensionKind } from "@bb/domain";
+} from "@cloudroom/domain";
+import { parseExtensionKind } from "@cloudroom/domain";
 import type {
   PluginProviderExtensionKindDeclaration,
   PluginProviderOptionsContext,

@@ -3,17 +3,17 @@ import {
   bridgeCapabilitiesSchema,
   bridgeExecutionOptionsSchema,
   providerRecoveryNotificationSchema,
-} from "@bb/provider-bridge-protocol";
+} from "@cloudroom/provider-bridge-protocol";
 import {
   providerRecoveryKindValues,
   threadEventDelegationItemSchema,
   threadEventItemPresentationSchema,
   type ThreadEventItemPresentation,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   timelineCommandWorkRowSchema,
   type TimelineCommandWorkRow,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { z } from "zod";
 import type { PluginAppSlots } from "../app-contract.js";

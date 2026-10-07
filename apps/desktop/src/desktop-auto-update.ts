@@ -4,7 +4,7 @@ import type {
   UpdateDownloadedEvent,
   UpdateInfo,
 } from "electron-updater";
-import type { BbDesktopInfo } from "@bb/desktop-contract";
+import type { BbDesktopInfo } from "@cloudroom/desktop-contract";
 import {
   DESKTOP_AUTO_UPDATE_FEED_CONFIG,
   type DesktopAutoUpdateFeedConfig,

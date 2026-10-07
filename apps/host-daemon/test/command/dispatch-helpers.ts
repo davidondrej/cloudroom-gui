@@ -8,21 +8,21 @@ import type {
   AgentRuntime,
   AgentRuntimeBridgeLaunch,
   AgentRuntimeProviderSession,
-} from "@bb/agent-runtime";
+} from "@cloudroom/agent-runtime";
 import type {
   ClientTurnRequestId,
   AvailableModel,
   DynamicTool,
   GitHostPullRequest,
   PromptInput,
-} from "@bb/domain";
-import type { HostDaemonBridgeLaunch } from "@bb/host-daemon-contract";
-import { makeWorkspaceMergeBase, makeWorkspaceStatus } from "@bb/test-helpers";
+} from "@cloudroom/domain";
+import type { HostDaemonBridgeLaunch } from "@cloudroom/host-daemon-contract";
+import { makeWorkspaceMergeBase, makeWorkspaceStatus } from "@cloudroom/test-helpers";
 import type {
   HostWorkspace,
   ProvisionWorkspaceArgs,
   PullRequestActionOptions,
-} from "@bb/host-workspace";
+} from "@cloudroom/host-workspace";
 import { RuntimeManager } from "../../src/runtime-manager.js";
 import { noopEventSink } from "../../src/command-dispatch-support.js";
 import type { CommandDispatchOptions } from "../../src/command-dispatch-support.js";

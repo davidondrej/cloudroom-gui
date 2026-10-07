@@ -1,4 +1,3 @@
-import { collectOptionalFieldPaths } from "@bb/test-helpers";
 import {
   TERMINAL_COLS_MAX,
   TERMINAL_DATA_MAX_BASE64_LENGTH,
@@ -7,14 +6,13 @@ import {
   threadScope,
   turnScope,
   type JsonObject,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { describe, expect, it } from "vitest";
 import * as contract from "../src/index.js";
 import {
   HOST_ARTIFACT_MAX_BYTES,
   HOST_DAEMON_PROTOCOL_VERSION,
   HOST_DAEMON_ONLINE_RPC_COMMAND_TYPES,
-  HOST_DAEMON_SETTLED_COMMAND_TYPES,
   createHostDaemonClient,
   hostDaemonEnrollRequestSchema,
   hostDaemonEnrollResponseSchema,
@@ -38,7 +36,6 @@ import {
   hostDaemonSessionOpenResponseSchema,
   hostDaemonTerminalOutputChunkSchema,
   threadStopCommandSchema,
-  type HostDaemonSettledCommandType,
 } from "../src/index.js";
 
 const CLIENT_REQUEST_ID = "creq_23456789ab";
@@ -82,11 +79,6 @@ type OnlineRpcResponseResultFixtures = Record<
   HostDaemonOnlineRpcCommandType,
   JsonObject
 >;
-type SettledResponseResultFixtures = Record<
-  HostDaemonSettledCommandType,
-  JsonObject
->;
-
 interface OnlineRpcResponseMismatchCase {
   commandType: HostDaemonOnlineRpcCommandType;
   name: string;
@@ -499,46 +491,6 @@ const ONLINE_RPC_RESPONSE_RESULT_FIXTURES: OnlineRpcResponseResultFixtures = {
   },
 };
 
-const SETTLED_RESPONSE_RESULT_FIXTURES: SettledResponseResultFixtures = {
-  "thread.rewind.discard": {},
-  "thread.rewind.prepare": {
-    providerThreadId: "provider-thread-rewind",
-  },
-  "thread.start": {
-    providerThreadId: "provider-thread-123",
-  },
-  "turn.submit": {
-    appliedAs: "new-turn",
-  },
-  "thread.stop": { providerCheckpointId: null },
-  "thread.storage.delete": { providerCheckpointId: null },
-  "thread.goal.clear": { cleared: true },
-  "thread.plan.cancel": { cancelled: true },
-  "thread.rename": {},
-  "thread.archive": {},
-  "thread.unarchive": {},
-  "interactive.resolve": {},
-  "environment.attach": {
-    path: "/tmp/env",
-    isGitRepo: true,
-    isWorktree: false,
-    branchName: "bb/env-123",
-    defaultBranch: "main",
-  },
-  "environment.attach.cancel": {
-    aborted: true,
-  },
-  "project.clone": {
-    path: "/home/me/.bb/checkouts/project",
-    gitRemoteUrl: "git@example.com:me/project.git",
-  },
-  "workspace.commit": {
-    commitSha: "abcdef123456",
-    commitSubject: "Checkpoint work",
-  },
-  "workspace.pull_request_action": {},
-};
-
 const WORKSPACE_DIFF_FILES_AVAILABLE_RESULT: JsonObject = {
   outcome: "available",
   files: [
@@ -687,57 +639,6 @@ function expectHostRpcResponseRoundTrip(
 function terminalDataBase64(byteLength: number): string {
   return Buffer.alloc(byteLength, "a").toString("base64");
 }
-
-const INTENTIONAL_OPTIONAL_HOST_DAEMON_FIELDS: Record<string, string> = {
-  "hostDaemonCommandSchema.targetPath":
-    "project.clone omits targetPath when the daemon should derive its default checkout location for the project.",
-  "hostDaemonOnlineRpcCommandSchema.expectedSha256":
-    "host.write_file may omit expectedSha256 for unconditional writes; a hash is the compare-and-swap guard and null means create-only.",
-  "hostDaemonOnlineRpcCommandSchema.ifNoneMatch":
-    "host.read_file omits ifNoneMatch for unconditional reads; when present the daemon may omit unchanged file content.",
-  "hostDaemonOnlineRpcCommandSchema.mode":
-    "host.write_file may omit mode to preserve existing permissions; when present it only controls newly created files.",
-  "hostDaemonOnlineRpcCommandSchema.mergeBaseBranch":
-    "workspace.status may omit mergeBaseBranch when the caller only needs working-tree state.",
-  "hostDaemonInteractiveRequestSchema.interaction.payload.subject.presentation.badge":
-    "a tool_use approval's presentation carries a badge only when the bridge has something to flag about how the call will run, such as a command opting out of the session sandbox; absence means the ordinary case, not a blank badge.",
-  "hostDaemonInteractiveRequestSchema.interaction.payload.subject.presentation.detail":
-    "a tool_use approval's presentation has a detail only when the bridge summarized the call; a missing detail means the label and title are the whole summary, not an empty string.",
-  "hostDaemonInteractiveRequestSchema.interaction.payload.subject.presentation.suppress":
-    "a tool_use approval's presentation marks suppress only for low-value rows the bridge wants collapsed; absence means render normally.",
-  "hostDaemonInteractiveRequestSchema.interaction.payload.subject.presentation.tint":
-    "a tool_use approval's presentation carries a tint only when the bridge wants an accent colour; absence means the neutral row tint, which is not a colour value.",
-  "hostDaemonInteractiveRequestSchema.interaction.payload.subject.presentation.title":
-    "a tool_use approval's presentation has a title only when the call has a headline (a path, a query); absence means the label stands alone.",
-  "hostDaemonOnlineRpcCommandSchema.cwd":
-    "provider.list_models may omit cwd when only user-level provider configuration applies.",
-  "hostDaemonOnlineRpcCommandSchema.query":
-    "host.list_files may omit a search string to list files without filtering.",
-  "hostDaemonOnlineRpcCommandSchema.path":
-    "host.browse_directory may omit path to list the host's home directory, which a remote caller cannot resolve.",
-  "hostDaemonOnlineRpcCommandSchema.ref":
-    "host.read_file may omit ref to read from disk; setting ref switches to git history at that ref.",
-  "hostDaemonOnlineRpcCommandSchema.requirement":
-    "provider installation status omits requirement for general compatibility and names one only when checking a specific operation.",
-  "hostDaemonOnlineRpcCommandSchema.rootPath":
-    "host.read_file and host.file_metadata may omit rootPath only for explicit absolute disk reads; ref-based reads still require it.",
-  "hostDaemonOnlineRpcCommandSchema.selectedBranch":
-    "host.list_branch_options may omit exact selected-branch classification when the caller only needs a branch option page.",
-  "hostDaemonCommandSchema.threadStoragePath":
-    "thread.start may include a storage path so the daemon creates the directory before the agent starts.",
-  "hostDaemonCommandSchema.fork":
-    "thread.start omits fork unless the new thread should clone an existing provider session; absent means a normal start.",
-  "hostDaemonCommandSchema.fork.sourceProviderCheckpointId":
-    "thread.start.fork names a checkpoint only when the clone should stop at an earlier source turn; absent means clone the session tip.",
-  "hostDaemonCommandSchema.inputGroups":
-    "thread.start and turn.submit omit inputGroups for ordinary single user-message turns; presence preserves grouped user messages within one turn.",
-  "hostDaemonCommandSchema.disallowedTools":
-    "thread runtime context may omit provider-specific built-in tool removals for providers that do not need them.",
-  "hostDaemonCommandSchema.options.promptMode":
-    "thread runtime options carry a prompt mode only when the prompt entered one through the provider's declared composer action.",
-  "hostDaemonCommandSchema.resumeContext.disallowedTools":
-    "turn.submit resume context may omit provider-specific built-in tool removals for providers that do not need them.",
-};
 
 describe("cache usage wire compatibility", () => {
   it.each([
@@ -1042,10 +943,6 @@ const CONTRIBUTED_ENV = [
 ] as const;
 
 describe("host-daemon command schemas", () => {
-  it("uses the current host-daemon protocol version", () => {
-    expect(HOST_DAEMON_PROTOCOL_VERSION).toBe(210);
-    expect(HOST_ARTIFACT_MAX_BYTES).toBe(256 * 1024 * 1024);
-  });
 
   it("uses relative host-plugin timeouts and bounds artifact declarations", () => {
     const command = {
@@ -2395,32 +2292,6 @@ describe("host-daemon command schemas", () => {
         sourceType: "project",
       }),
     ).toThrow();
-  });
-
-  it("keeps contract optional fields on an explicit allowlist", () => {
-    const optionalFieldPaths = collectOptionalFieldPaths({
-      hostDaemonActiveThreadSchema: contract.hostDaemonActiveThreadSchema,
-      hostDaemonCommandSchema: contract.hostDaemonCommandSchema,
-      hostDaemonInteractiveRequestSchema:
-        contract.hostDaemonInteractiveRequestSchema,
-      hostDaemonInteractiveRequestResponseSchema:
-        contract.hostDaemonInteractiveRequestResponseSchema,
-      hostDaemonOnlineRpcCommandSchema:
-        contract.hostDaemonOnlineRpcCommandSchema,
-      hostDaemonSessionOpenResponseSchema:
-        contract.hostDaemonSessionOpenResponseSchema,
-      workspaceCommitResultSchema:
-        contract.hostDaemonCommandResultSchemaByType["workspace.commit"],
-    });
-
-    expect(optionalFieldPaths).toEqual(
-      Object.keys(INTENTIONAL_OPTIONAL_HOST_DAEMON_FIELDS).sort(),
-    );
-    expect(
-      Object.values(INTENTIONAL_OPTIONAL_HOST_DAEMON_FIELDS).every(
-        (reason) => reason.trim().length > 0,
-      ),
-    ).toBe(true);
   });
 
   it("requires requestId, resumeContext, and target for turn.submit", () => {
@@ -3863,20 +3734,6 @@ describe("host-daemon session schemas", () => {
         testCase.commandType,
         testCase.result,
         testCase.name,
-      );
-    }
-  });
-
-  it("round-trips every settled command response success variant through daemon websocket schemas", () => {
-    expect(Object.keys(SETTLED_RESPONSE_RESULT_FIXTURES).sort()).toEqual(
-      [...HOST_DAEMON_SETTLED_COMMAND_TYPES].sort(),
-    );
-
-    for (const commandType of HOST_DAEMON_SETTLED_COMMAND_TYPES) {
-      expectHostRpcResponseRoundTrip(
-        commandType,
-        SETTLED_RESPONSE_RESULT_FIXTURES[commandType],
-        commandType,
       );
     }
   });

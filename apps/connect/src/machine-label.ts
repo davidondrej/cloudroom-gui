@@ -6,7 +6,7 @@ import {
   schema,
   validateLabel,
   type ConnectDb,
-} from "@bb/connect-db";
+} from "@cloudroom/connect-db";
 import { verifyMachineCredentialDetails } from "./session.js";
 import { methodNotAllowed } from "./json-response.js";
 import { MACHINE_CREDENTIAL_HEADER } from "./protocol-headers.js";

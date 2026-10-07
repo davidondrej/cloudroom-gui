@@ -1,7 +1,7 @@
 import { isEditableKeyboardTarget } from "@/lib/app-keybindings";
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
-import { QUESTION_SELECT_APP_COMMAND_IDS } from "@bb/domain";
-import { QuestionFormHostProvider } from "@bb/shared-ui/question-form-host";
+import { QUESTION_SELECT_APP_COMMAND_IDS } from "@cloudroom/domain";
+import { QuestionFormHostProvider } from "@cloudroom/shared-ui/question-form-host";
 import {
   useAppCommandContext,
   useAppCommandShortcuts,

@@ -2,21 +2,21 @@ import fs from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
-import type { AgentRuntime, AgentRuntimeOptions } from "@bb/agent-runtime";
+import type { AgentRuntime, AgentRuntimeOptions } from "@cloudroom/agent-runtime";
 import {
   threadScope,
   turnScope,
   type PendingInteractionCreate,
   type ToolCallRequest,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   hostDaemonEventBatchRequestSchema,
   hostDaemonInteractiveInterruptRequestSchema,
   type HostDaemonInteractiveRequestResponse,
   type HostDaemonContributedEnvEntry,
-} from "@bb/host-daemon-contract";
-import type { HostWatcher } from "@bb/host-watcher";
-import { createDeferredPromise } from "@bb/test-helpers";
+} from "@cloudroom/host-daemon-contract";
+import type { HostWatcher } from "@cloudroom/host-watcher";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DISPATCH_TEST_BRIDGE_LAUNCH,

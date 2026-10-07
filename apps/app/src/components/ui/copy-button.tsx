@@ -4,9 +4,9 @@ import {
   type ReactNode,
 } from "react";
 import { useClipboardCopy, type ClipboardCopyOptions } from "@/lib/clipboard";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { Icon } from "@bb/shared-ui/icon";
-import { CONTROL_HOVER_TRANSITION } from "@bb/shared-ui/motion";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { CONTROL_HOVER_TRANSITION } from "@cloudroom/shared-ui/motion";
 
 interface CopyButtonProps
   extends

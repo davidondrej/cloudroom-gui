@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ThreadQueuedMessage } from "@bb/domain";
+import type { ThreadQueuedMessage } from "@cloudroom/domain";
 import {
   runCommand,
   setupCommandOutputTestEnvironment,

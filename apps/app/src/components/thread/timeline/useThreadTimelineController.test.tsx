@@ -18,16 +18,16 @@ import type { QueryClient } from "@tanstack/react-query";
 import type {
   ThreadTimelineResponse,
   TimelineUserConversationRow,
-} from "@bb/server-contract";
-import { mergeLatestTimelineRows } from "@bb/client-core";
-import { createDeferredPromise, type DeferredPromise } from "@bb/test-helpers";
+} from "@cloudroom/server-contract";
+import { mergeLatestTimelineRows } from "@cloudroom/client-core";
+import { createDeferredPromise, type DeferredPromise } from "@cloudroom/test-helpers";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   BottomAnchorContext,
   type BottomAnchorContextValue,
 } from "@/components/ui/bottom-anchored-scroll-body.js";
 import { BbHttpError, sdk } from "@/lib/sdk";
-import { OPTIMISTIC_TIMELINE_ROW_ID_PREFIX } from "@bb/client-core";
+import { OPTIMISTIC_TIMELINE_ROW_ID_PREFIX } from "@cloudroom/client-core";
 import { threadTimelineQueryKey } from "@/hooks/queries/query-keys";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
 import { systemRow } from "@/test/fixtures/thread-timeline-rows";

@@ -7,7 +7,7 @@ import { expect, it, vi } from "vitest";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
 import { createTestAppHarness } from "../helpers/test-app.js";
 import { seedHostSession, seedProjectWithSource } from "../helpers/seed.js";
-import { cloudroomThreads, getThread } from "@bb/db";
+import { cloudroomThreads, getThread } from "@cloudroom/db";
 
 const listen = async (server: ReturnType<typeof createServer>) => {
   server.listen(0, "127.0.0.1"); await once(server, "listening");

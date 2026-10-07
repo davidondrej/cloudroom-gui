@@ -4,9 +4,9 @@ import {
   useRpc,
   type StandardSchemaV1InferOutput,
 } from "@get-bb/plugin-sdk/app";
-import { Checkbox } from "@bb/shared-ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@bb/shared-ui/radio-group";
-import { Switch } from "@bb/shared-ui/switch";
+import { Checkbox } from "@cloudroom/shared-ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@cloudroom/shared-ui/radio-group";
+import { Switch } from "@cloudroom/shared-ui/switch";
 import type { keepAwakeRpcContract } from "./server.js";
 
 type ConfigurationView = StandardSchemaV1InferOutput<

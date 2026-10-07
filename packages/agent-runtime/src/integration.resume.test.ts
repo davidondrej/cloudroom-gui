@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ThreadEvent } from "@bb/domain";
+import type { ThreadEvent } from "@cloudroom/domain";
 import {
   cleanup,
   createTestRuntime,

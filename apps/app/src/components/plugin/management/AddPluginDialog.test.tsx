@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
-import type { InstalledPlugin } from "@bb/server-contract";
+import type { InstalledPlugin } from "@cloudroom/server-contract";
 import {
   pluginCatalogSearchQueryKey,
   pluginListQueryKey,

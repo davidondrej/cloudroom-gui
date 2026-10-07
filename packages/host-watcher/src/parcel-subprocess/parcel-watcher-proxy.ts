@@ -1,4 +1,4 @@
-import { calculateExponentialBackoffDelay } from "@bb/domain";
+import { calculateExponentialBackoffDelay } from "@cloudroom/domain";
 import type {
   ParcelAsyncSubscription,
   ParcelWatcherBackend,

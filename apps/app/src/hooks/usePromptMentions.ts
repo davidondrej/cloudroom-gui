@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import type { SidebarBootstrapResponse } from "@bb/server-contract";
+import type { SidebarBootstrapResponse } from "@cloudroom/server-contract";
 import {
   buildProjectMentionSuggestions,
   buildSectionMentionSuggestions,
@@ -24,7 +24,7 @@ import {
   PLUGIN_MENTION_TRIGGER_VALUES,
   type OrderedMentionSuggestions,
   type PluginMentionTrigger,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { buildPromptMentionResults } from "./promptMentionCandidates";
 
 const PROMPT_MENTION_SOURCE_LIMIT = 8;

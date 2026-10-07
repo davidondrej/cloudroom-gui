@@ -1,5 +1,5 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 interface SettingsSectionProps {
   action?: ReactNode;
@@ -8,6 +8,7 @@ interface SettingsSectionProps {
   description?: string;
   title: ReactNode;
   bodyClassName?: string;
+  plain?: boolean;
 }
 
 export function SettingsSection({
@@ -17,6 +18,7 @@ export function SettingsSection({
   description,
   title,
   bodyClassName,
+  plain = false,
 }: SettingsSectionProps) {
   return (
     <section className="space-y-3">
@@ -50,7 +52,7 @@ export function SettingsSection({
       </div>
       <div
         className={cn(
-          "rounded-lg border border-border bg-card px-4 py-3.5",
+          !plain && "rounded-lg border border-border bg-card px-4 py-3.5",
           bodyClassName,
         )}
       >

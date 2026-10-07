@@ -1,4 +1,4 @@
-import type { ApiClient } from "@bb/server-contract";
+import type { ApiClient } from "@cloudroom/server-contract";
 import type {
   FetchImplementation,
   JsonBodyOf,

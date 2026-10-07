@@ -2,7 +2,7 @@ import {
   promptInputSchema,
   queuedMessageWaitingOnSchema,
   threadQueuedMessageSchema,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   PermissionMode,
   PromptInput,
@@ -10,7 +10,7 @@ import type {
   QueuedMessagePayloadKind,
   QueuedMessageWaitingOn,
   ThreadQueuedMessage,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { z } from "zod";
 import { ApiError } from "../../errors.js";
 

@@ -30,8 +30,8 @@ import {
   type BbDesktopBrowserStopFindInPageRequest,
   type BbDesktopBrowserViewportBounds,
   type BbDesktopBrowserViewBounds,
-} from "@bb/desktop-contract";
-import type { AppCommandId, AppShortcutInput } from "@bb/domain";
+} from "@cloudroom/desktop-contract";
+import type { AppCommandId, AppShortcutInput } from "@cloudroom/domain";
 import {
   BB_DESKTOP_BROWSER_FIND_RESULT_CHANNEL,
   BB_DESKTOP_BROWSER_OPEN_TAB_CHANNEL,

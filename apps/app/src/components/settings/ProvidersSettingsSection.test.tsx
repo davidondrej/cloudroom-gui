@@ -9,10 +9,11 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ProviderInfo } from "@bb/domain";
-import { defaultAppSettings } from "@bb/domain";
-import { makeProviderInfo } from "@bb/test-helpers/domain-fixtures";
+import type { ProviderInfo } from "@cloudroom/domain";
+import { defaultAppSettings } from "@cloudroom/domain";
+import { makeProviderInfo } from "@cloudroom/test-helpers/domain-fixtures";
 import {
+  ProviderTurnDisplaySection,
   ProvidersSettingsSection,
   reorderProviderIds,
 } from "./ProvidersSettingsSection";
@@ -122,9 +123,10 @@ describe("ProvidersSettingsSection", () => {
     mocks.providers = [
       {
         ...provider("claude-code", "Claude Code"),
+        pluginId: "provider-test",
         completedTurnDisplay: "flat",
       },
-      provider("codex", "Codex"),
+      { ...provider("codex", "Codex"), pluginId: "provider-test" },
     ];
     const onChange = vi.fn();
     const generalSettings = {
@@ -140,10 +142,11 @@ describe("ProvidersSettingsSection", () => {
       verification_url: null,
     });
     render(
-      <ProvidersSettingsSection
+      <ProviderTurnDisplaySection
         disabled={false}
         generalSettings={generalSettings}
         onGeneralSettingsChange={onChange}
+        pluginId="provider-test"
       />,
       {
         wrapper: ({ children }) => (

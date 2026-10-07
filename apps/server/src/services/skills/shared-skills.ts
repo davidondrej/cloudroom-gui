@@ -3,9 +3,9 @@ import {
   EMPTY_PROVIDER_NATIVE_ROOTS,
   EMPTY_PROVIDER_RESOLVED_NATIVE_ROOTS,
   normalizeProviderNativeRoots,
-} from "@bb/domain";
-import type { DiscoveredSkill } from "@bb/host-daemon-contract";
-import type { SkillSummary } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { DiscoveredSkill } from "@cloudroom/host-daemon-contract";
+import type { SkillSummary } from "@cloudroom/server-contract";
 import { COMMAND_TIMEOUT_MS } from "../../constants.js";
 import type { LoggedWorkSessionDeps } from "../../types.js";
 import { callHostRetryableOnlineRpc } from "../hosts/online-rpc.js";

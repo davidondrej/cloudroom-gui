@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { Toaster, type ToasterProps } from "sonner";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import { usePreferredTheme } from "@/hooks/useTheme";
 
 const COMPACT_TOAST_OFFSET: NonNullable<ToasterProps["offset"]> = {

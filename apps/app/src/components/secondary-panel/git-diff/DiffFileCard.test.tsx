@@ -8,7 +8,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PluginDiffRendererProps } from "@get-bb/plugin-sdk";
-import type { DiffFileEntry } from "@bb/server-contract";
+import type { DiffFileEntry } from "@cloudroom/server-contract";
 import type {
   DiffFileContentsResult,
   RequestDiffFileContents,

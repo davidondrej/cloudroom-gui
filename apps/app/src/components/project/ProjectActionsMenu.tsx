@@ -1,30 +1,30 @@
-import { Icon } from "@bb/shared-ui/icon";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import {
   ActionMenuItem,
   ActionMenuSeparator,
 } from "@/components/ui/action-menu-items";
-import { findLocalPathProjectSourceForHost } from "@bb/domain";
-import type { ProjectResponse } from "@bb/server-contract";
+import { findLocalPathProjectSourceForHost } from "@cloudroom/domain";
+import type { ProjectResponse } from "@cloudroom/server-contract";
 import type { MouseEvent, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 
-import { COARSE_POINTER_ICON_SIZE_CLASS } from "@bb/shared-ui/coarse-pointer-sizing";
+import { COARSE_POINTER_ICON_SIZE_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuTrigger,
-} from "@bb/shared-ui/context-menu";
+} from "@cloudroom/shared-ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@bb/shared-ui/dropdown-menu";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
+} from "@cloudroom/shared-ui/dropdown-menu";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import { CompactLongPressMenu } from "@/components/ui/compact-long-press-menu";
 import { usePathPickerHost } from "@/hooks/useLocalPathPicker";
 import { getSettingsProjectRoutePath } from "@/lib/route-paths";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { useProjectActions } from "./ProjectActionsProvider";
 
 interface ProjectActionsMenuBaseProps {
@@ -56,7 +56,7 @@ export function ProjectActionsMenuItems({
 }: ProjectActionsMenuItemsProps) {
   const navigate = useNavigate();
   const { hostId: pickerHostId } = usePathPickerHost();
-  const { requestRename, requestDelete, requestAddLocalPath } =
+  const { requestRename, requestHide, requestAddLocalPath } =
     useProjectActions();
   const showAddLocalPath =
     pickerHostId != null &&
@@ -96,13 +96,12 @@ export function ProjectActionsMenuItems({
       <ActionMenuSeparator surface={surface} />
       <ActionMenuItem
         surface={surface}
-        icon="Trash2"
-        variant="destructive"
+        icon="EyeOff"
         onSelect={() => {
-          requestDelete(project);
+          requestHide(project);
         }}
       >
-        Remove
+        Hide from sidebar
       </ActionMenuItem>
     </>
   );

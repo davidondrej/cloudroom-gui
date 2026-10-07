@@ -14,7 +14,7 @@ import {
   defaultAppSettings,
   type AppDefaultKeybindings,
   type AppKeybindingOverrides,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { collectPluginAppRegistrations } from "@get-bb/plugin-sdk/internal/plugin-app-collector";
 import {
   setPluginSlotRegistrations,
@@ -163,8 +163,8 @@ vi.mock("@/hooks/mutations/settings-mutations", () => ({
   }),
 }));
 
-vi.mock("@bb/shared-ui/button", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@bb/shared-ui/button")>();
+vi.mock("@cloudroom/shared-ui/button", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@cloudroom/shared-ui/button")>();
   return {
     ...actual,
     Button: (props: ComponentProps<typeof actual.Button>) => {

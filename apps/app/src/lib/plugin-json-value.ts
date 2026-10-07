@@ -1,4 +1,4 @@
-import { jsonValueSchema } from "@bb/domain";
+import { jsonValueSchema } from "@cloudroom/domain";
 import type { JsonValue } from "@get-bb/plugin-sdk";
 
 export function serializePluginPanelParams(

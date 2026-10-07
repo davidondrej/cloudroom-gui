@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import type { ThreadTimelinePendingTodos } from "@bb/domain";
+import type { ThreadTimelinePendingTodos } from "@cloudroom/domain";
 import { action } from "../action.js";
 import {
   resolveContextSnapshot,

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { BbDesktopBrowserApi } from "./browser.js";
 import { bbDesktopVersionFeedPlatformSchema } from "./version-feed.js";
-import type { AppCommandId } from "@bb/domain";
+import type { AppCommandId } from "@cloudroom/domain";
 
 const isoUtcDateTimeSchema = z.iso.datetime();
 
@@ -43,6 +43,7 @@ export type BbDesktopWindowStateChangeHandler = (
   state: BbDesktopWindowState,
 ) => void;
 export type BbDesktopOpenNewTabHandler = () => void;
+export type BbDesktopOpenLinkHandler = (url: string) => void;
 export type BbDesktopAppCommandHandler = (command: AppCommandId) => void;
 export type BbDesktopCloseWindowRequestHandler = () => boolean;
 
@@ -57,6 +58,7 @@ export interface BbDesktopApi extends BbDesktopInfo {
     listener: BbDesktopWindowStateChangeHandler,
   ): BbDesktopInfoUnsubscribe;
   onOpenNewTab?(listener: BbDesktopOpenNewTabHandler): BbDesktopInfoUnsubscribe;
+  onOpenLink?(listener: BbDesktopOpenLinkHandler): BbDesktopInfoUnsubscribe;
   onAppCommand?(listener: BbDesktopAppCommandHandler): BbDesktopInfoUnsubscribe;
   onAddImageToChat?(
     listener: (imageUrl: string) => void,

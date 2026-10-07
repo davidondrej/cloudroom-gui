@@ -6,7 +6,7 @@ import type {
   PendingInteractionCreate,
   PendingInteractionResolution,
   ThreadEvent,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { promptTextInput } from "./test/prompt-input.js";
 import {
   createScriptedEchoRuntime,

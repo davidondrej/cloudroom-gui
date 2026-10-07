@@ -1,18 +1,18 @@
 import type {
   DiscoveredSkill,
   HostDaemonOnlineRpcRequestMessage,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { setExperiments } from "@bb/db";
-import { defaultExperiments } from "@bb/domain";
+import { setExperiments } from "@cloudroom/db";
+import { defaultExperiments } from "@cloudroom/domain";
 import {
   skillContentResponseSchema,
   skillFilesResponseSchema,
   skillListResponseSchema,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { writeRegistrySkillProvenance } from "../../src/services/skills/registry-skill-provenance.js";
 import { providerHasNativeRootSurface } from "../../src/services/providers/native-roots.js";
@@ -1137,6 +1137,7 @@ describe("public project skills route", () => {
         },
         ...[
           "adr-verbatim",
+          "browser-harness",
           "decisions",
           "file-tree",
           "risky-changes",

@@ -28,105 +28,18 @@ Control commands such as `/compact` stay unchanged; the next message includes th
 instructions again. After upgrading, resume Local sessions after an idle app restart
 to clear the old startup copy.
 
-The builtin Account Pooler plugin is disabled on fresh installations. It stores
-Claude and Codex account tokens in per-account 0600 secret files and proxies
-provider API requests through the cloudroom server. Enable it and add an account:
-
-```
-room-cli plugin enable account-pool
-room-cli pool account add --provider claude --login
-printf '%s\n' "$CLAUDE_AUTH_CODE" | room-cli pool account login-complete --session <id> --code-stdin
-room-cli pool account add --provider claude --import
-room-cli pool account add --provider codex --import
-printf '%s\n' "$ANTHROPIC_API_KEY" | room-cli pool account add --provider claude --api-key-stdin [--label <text>] [--priority <n>]
-room-cli pool account add --provider claude --api-key <key> [--label <text>] [--priority <n>]
-room-cli pool account list [--json]
-room-cli pool account remove <id>
-room-cli pool account enable <id>
-room-cli pool account disable <id>
-room-cli pool account priority <id> <n>
-room-cli pool account reorder <claude|codex> <id>...
-room-cli pool account refresh <id>
-room-cli pool status [--json]
-room-cli pool routing <claude|codex> [--off]
-room-cli pool config
-room-cli pool config set <anthropicUpstreamBaseUrl|codexUpstreamBaseUrl|switchThreshold|parentMode|cacheMissDebug|cacheMissMinTokens> <value>
-room-cli pool cache-miss list [--json]
-room-cli pool cache-miss clear
-room-cli pool token rotate --machine <id-or-name>
-room-cli pool bypass <thread-id> [--off]
-```
-
-Claude `--login` starts a ten-minute in-memory PKCE session, prints the browser
-sign-in URL and session ID, then exits. After sign-in, pipe the manual callback
-code to `account login-complete` with that session ID. The browser does not need
-to run on the cloudroom server machine, and neither the code nor account tokens enter
-process arguments. Codex `--login` prints a device verification URL, one-time
-code, session ID, and an `account login-poll` command that waits for
-authorization. Both flows are available in the plugin settings page through
-the **Sign in to Claude** and **Sign in to Codex** buttons. The CLI Codex import
-path continues to read the cloudroom server host's `~/.codex/auth.json`.
-
-The hub starts immediately, even before an account is configured, so newly
-added or enabled accounts are available without a plugin reload. With an
-enabled account whose secret file remains readable and valid, the plugin
-contributes its provider-specific server route and a distinct secret token to
-Claude Code or Codex sessions on every host. Claude Code also receives
-`ENABLE_TOOL_SEARCH=true` so tool search stays on through the hub. Codex
-receives `CODEX_OPENAI_BASE_URL` and the secret `CODEX_POOL_AUTH_TOKEN`; its
-app server uses those values without editing `~/.codex/config.toml`.
-Codex image generation and editing use the same authenticated pool route.
-Tokens are never printed. `status` prunes tokens for
-unenrolled machines and shows token timestamps plus recently routed threads
-whose machines need a local Claude login before the pool can be disabled
-safely. Rotation keeps the prior token valid for ten minutes. Agents should use
-`--api-key-stdin`, which reads exactly one non-empty key from piped standard
-input. The compatibility form `--api-key <key>` exposes the key in process
-arguments, shell history, and agent transcripts. Prefer `--import` when Claude
-Code is already signed in. OAuth quota refreshes on add or enable and every
-five minutes while the account is idle. Use `room-cli pool account refresh <id>` to
-request an immediate refresh for one account. Account tables add columns for
-the family buckets Anthropic reports, and JSON status exposes the same
-observations under `familyWeekly`. Selection skips an account only for a spent
-requested family while retaining it for other families. When Claude Code supplies an
-account UUID in `metadata.user_id`, the hub aligns it with the selected OAuth
-account. `room-cli pool config` prints the quota switch threshold, both upstream
-URLs, the parent mode, and the cache miss debugging values. Use
-`room-cli pool config set <key> <value>` to change one; the two URL values
-are QA-only overrides. Upgrading from a build that stored these values through
-plugin settings resets the threshold and QA overrides to their defaults.
-`cacheMissDebug true` (default `false`) records large prompt cache misses on
-pooled Claude and Codex requests in server memory; `cacheMissMinTokens`
-(default `10000`) sets the smallest missed token count reported. Parsing runs
-after the first response chunk is forwarded, and analysis after the response
-ends. Claude requests without a `cache_control`
-breakpoint are not tracked, and Codex idle gaps are judged against a 30 minute
-cache lifetime.
-`room-cli pool cache-miss list` prints each miss's likely causes and first changed
-prompt segment; with `--json` it also prints `cacheMissDebug` and
-`forwardsToParent`, so an empty list can be told apart from reporting that is
-off or left to the parent. `room-cli pool cache-miss clear` removes the reports. Logs carry
-ids, token counts, and cause kinds but no prompt text. A nested server in proxy
-mode does not analyze forwarded traffic; enable it on the parent.
-
-Accounts run sequentially per provider: lower priority numbers first, with ties
-following the order accounts were added. New conversations use the current
-account until it reaches the switch threshold or fails; the pool then advances
-to the next eligible account and wraps at the end. It keeps using that fallback
-even when an earlier account recovers. Existing conversations stay pinned while
-their account remains eligible. Short temporary rate limits wait on the same
-account once; longer holds return Retry-After for pinned conversations while new
-conversations can advance. A model-family limit detours only requests for that
-family without moving the session's main pin or the provider cursor. The cursor
-and session pins survive hub restarts. Session pins expire after 30 idle minutes,
-and the pool retains the 4,096 most recently used pins.
-
-Use the up/down arrows in Account Pooler settings, or
-`room-cli pool account reorder <claude|codex> <id>...`, to set the complete order for
-one provider. Include disabled accounts too. Reordering changes the next failover
-sequence without moving the current account. `room-cli pool account priority <id> <n>`
-sets an individual priority; the same operations are available through the
-`account.reorder` and `account.setPriority` plugin RPCs.
+The builtin Accounts plugin is always on. It lets one user connect up to 10
+Claude Code and up to 10 Codex subscriptions. Add them at the top of Settings →
+Agents → Claude Code or Codex; the machine's own CLI login is the first entry
+and is never copied. Every thread uses the top account, and **Use** picks
+another; nothing switches automatically. Claude hides the machine's own login once
+an account is added, and Cloud Claude follows the account in use.
+Claude Code receives the account through `CLAUDE_CODE_OAUTH_TOKEN`; Codex signs its
+app server in memory through `chatgptAuthTokens`, so `~/.codex` stays untouched.
+Tokens live in 0600 files in the server data directory and refresh before each
+turn could outlive them. The sidebar usage box flips between accounts with its
+chevrons; **Use** moves one to the top. Plugin RPCs: `accounts.list`,
+`accounts.use`, `accounts.move`, `accounts.remove`.
 
 The builtin Keep Awake plugin prevents macOS idle sleep while Cloudroom is running.
 Its settings page lets you target all hosts or selected hosts. The CLI
@@ -613,7 +526,7 @@ of the TypeScript source. A declared `bb.host` is bundled into a self-contained
 Node 22 ESM artifact and delivered lazily to the targeted daemon after digest
 verification. Host production code may import public
 `@get-bb/plugin-sdk` entrypoints, Node APIs, and ordinary dependencies, but no
-private `@bb/*` workspace packages; the host build rejects direct, transitive,
+private `@cloudroom/*` workspace packages; the host build rejects direct, transitive,
 type-only, and relative imports that resolve into those packages.
 Keep the SDK in exact devDependencies: the builder supplies and bundles its
 small host runtime, so managed installs and remote workers do not resolve an

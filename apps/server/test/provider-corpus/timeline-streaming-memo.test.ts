@@ -2,16 +2,16 @@ import {
   corpusAvailable,
   listCorpusThreads,
   loadCorpusThread,
-} from "@bb/test-helpers";
+} from "@cloudroom/test-helpers";
 import {
   createConnection,
   getLatestThreadSequence,
   insertEvents,
   noopNotifier,
-} from "@bb/db";
-import type { DbConnection } from "@bb/db";
-import type { Thread, ThreadEventType } from "@bb/domain";
-import { turnScope } from "@bb/domain";
+} from "@cloudroom/db";
+import type { DbConnection } from "@cloudroom/db";
+import type { Thread, ThreadEventType } from "@cloudroom/domain";
+import { turnScope } from "@cloudroom/domain";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { ProviderRegistryService } from "../../src/services/providers/provider-registry.js";
 import { clearTimelineOrderingContextCache } from "../../src/services/threads/timeline-context-order.js";

@@ -31,7 +31,7 @@ export type SystemMessageKind = z.infer<typeof systemMessageKindSchema>;
 // `initiator: "system"` messages, so the subject is otherwise unrecoverable
 // downstream. This schema is just the union of subject shapes; the
 // required-but-nullable read-model contract is documented on the row field in
-// `@bb/server-contract`'s `thread-timeline.ts`.
+// `@cloudroom/server-contract`'s `thread-timeline.ts`.
 export const systemMessageSubjectSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("thread"),

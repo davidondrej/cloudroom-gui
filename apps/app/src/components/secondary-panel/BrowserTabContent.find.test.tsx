@@ -7,15 +7,15 @@ import {
   render,
   screen,
 } from "@testing-library/react";
-import { BB_DESKTOP_BROWSER_MAX_FIND_TEXT_LENGTH } from "@bb/desktop-contract";
+import { BB_DESKTOP_BROWSER_MAX_FIND_TEXT_LENGTH } from "@cloudroom/desktop-contract";
 import type {
   BbDesktopBrowserApi,
   BbDesktopBrowserFindInPageRequest,
   BbDesktopBrowserFindResult,
   BbDesktopBrowserState,
   BbDesktopBrowserStopFindInPageRequest,
-} from "@bb/desktop-contract";
-import { defaultAppSettings } from "@bb/domain";
+} from "@cloudroom/desktop-contract";
+import { defaultAppSettings } from "@cloudroom/domain";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createBbDesktopApi,

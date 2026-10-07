@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
   TerminalServerMessage,
   TerminalSession,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   TerminalWebSocketTransport,
   type TerminalBrowserSocket,

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
-import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@bb/domain";
-import type { SidebarBootstrapResponse } from "@bb/server-contract";
+import { PERSONAL_PROJECT_ID, type ThreadListEntry } from "@cloudroom/domain";
+import type { SidebarBootstrapResponse } from "@cloudroom/server-contract";
 import { listSidebarNavigationThreads } from "@/hooks/cache-owners/query-cache";
 import { apiClient } from "@/lib/api-server";
 import { request, requestOptions } from "@/lib/api";

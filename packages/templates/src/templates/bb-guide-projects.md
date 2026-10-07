@@ -29,7 +29,11 @@ A project maps to a code repository. All threads belong to a project.
   room-cli project update <id>                  Update a project
     --name <name>                         New name
 
-  room-cli project delete <id>                  Delete project and all threads
+  room-cli project hide <id>                    Hide from sidebar, archive threads
+  room-cli project unhide <id>                  Show a hidden project again
+  room-cli project list --hidden                List hidden projects
+  room-cli project delete <id>                  Delete project and all threads,
+                                                including archived ones
     --yes                                 Skip confirmation
 
 Discovery:

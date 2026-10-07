@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ClientTurnRequestId, ThreadEvent } from "@bb/domain";
-import { threadScope, turnScope } from "@bb/domain";
+import type { ClientTurnRequestId, ThreadEvent } from "@cloudroom/domain";
+import { threadScope, turnScope } from "@cloudroom/domain";
 import type { DeltaItemShape, ThreadDelta } from "../thread-delta.js";
 import {
   createDeltaAssembler,

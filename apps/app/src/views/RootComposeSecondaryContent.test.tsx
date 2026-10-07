@@ -3,7 +3,7 @@
 import type { ComponentProps, ReactNode } from "react";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CompactViewportOverrideProvider } from "@bb/shared-ui/hooks/use-compact-viewport";
+import { CompactViewportOverrideProvider } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import {
   PaneContext,
   type PaneContextValue,
@@ -88,10 +88,10 @@ vi.mock("react-resizable-panels", async () => {
   return { Panel, PanelGroup };
 });
 
-vi.mock("@bb/shared-ui/responsive-overlay", async (importOriginal) => {
+vi.mock("@cloudroom/shared-ui/responsive-overlay", async (importOriginal) => {
   const React = await import("react");
   const actual =
-    await importOriginal<typeof import("@bb/shared-ui/responsive-overlay")>();
+    await importOriginal<typeof import("@cloudroom/shared-ui/responsive-overlay")>();
 
   const PersistentResponsiveDrawerShell = ({
     children,

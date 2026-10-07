@@ -7,13 +7,13 @@ import {
   type BbAppManagedConfig,
   type BbAppManagedEnvConfig,
   type BbAppManagedEnvFile,
-} from "@bb/config/bb-app-managed-config";
+} from "@cloudroom/config/bb-app-managed-config";
 import {
   validateInferenceFallbackModel,
   validateInferenceModel,
   validateTranscriptionModel,
-} from "@bb/config/inference-model";
-import { validateOptionalUrl } from "@bb/config/public-url";
+} from "@cloudroom/config/inference-model";
+import { validateOptionalUrl } from "@cloudroom/config/public-url";
 import type { ServerLogger, ServerRuntimeConfig } from "../../types.js";
 import type { NotificationHub } from "../../ws/hub.js";
 

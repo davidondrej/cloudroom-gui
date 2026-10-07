@@ -1,5 +1,5 @@
-import type { Thread } from "@bb/domain";
-import { makeThread as makeThreadFixture } from "@bb/test-helpers/domain-fixtures";
+import type { Thread } from "@cloudroom/domain";
+import { makeThread as makeThreadFixture } from "@cloudroom/test-helpers/domain-fixtures";
 import { describe, expect, it } from "vitest";
 import {
   buildForkThreadRequest,

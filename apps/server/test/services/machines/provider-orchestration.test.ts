@@ -11,10 +11,10 @@ import {
   replaceStoredProviderModelCatalog,
   setThreadStartupContext,
   updateHost,
-} from "@bb/db";
-import { createDeferredPromise } from "@bb/test-helpers";
+} from "@cloudroom/db";
+import { createDeferredPromise } from "@cloudroom/test-helpers";
 import { eq } from "drizzle-orm";
-import type { JsonValue } from "@bb/domain";
+import type { JsonValue } from "@cloudroom/domain";
 import type { PluginMachineProviderDeclaration } from "@get-bb/plugin-sdk";
 import {
   askMachineLaunch,

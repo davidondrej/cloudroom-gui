@@ -1,10 +1,10 @@
 import { Command } from "commander";
-import type { Host } from "@bb/domain";
+import type { Host } from "@cloudroom/domain";
 import {
   UPDATE_STATE_PRESENTATION,
   type UpdateState,
-} from "@bb/domain/update-state";
-import type { HostProviderCliStatusResponse } from "@bb/server-contract";
+} from "@cloudroom/domain/update-state";
+import type { HostProviderCliStatusResponse } from "@cloudroom/server-contract";
 import { action } from "../action.js";
 import { createCliBbSdk } from "../client.js";
 import { columnWidths, printBorderlessTable } from "../table.js";

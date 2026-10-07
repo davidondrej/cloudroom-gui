@@ -6,14 +6,14 @@ import {
   getEnvironment,
   getProjectSourceByHost,
   getThread,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type {
   ProjectExecutionDefaults,
   Project,
   Thread,
   ThreadOriginKind,
   ThreadVisibility,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import type {
   AppDeps,
   LoggedPendingInteractionWorkSessionDeps,
@@ -40,7 +40,7 @@ import {
   hostIdForEnvironmentIntent,
   type PendingThreadStartContext,
 } from "./dispatch-attempt.js";
-import { setThreadStartupContext } from "@bb/db";
+import { setThreadStartupContext } from "@cloudroom/db";
 import { emitPluginThreadDeleted } from "../plugins/plugin-thread-events.js";
 import {
   createThreadRecord,

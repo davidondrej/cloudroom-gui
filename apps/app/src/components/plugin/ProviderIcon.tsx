@@ -6,9 +6,9 @@ import {
   type ReactNode,
 } from "react";
 import type { ExperimentalProviderIconProps } from "@get-bb/plugin-sdk/app";
-import { isPresentationTintColor } from "@bb/domain";
-import { Icon } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { isPresentationTintColor } from "@cloudroom/domain";
+import { Icon } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   getPluginSlotSnapshot,
   subscribePluginSlots,

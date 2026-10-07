@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { delimiter } from "node:path";
-import { defaultFeatureFlags } from "@bb/domain";
+import { defaultFeatureFlags } from "@cloudroom/domain";
 import { DEFAULTS } from "./defaults.js";
 import { defineEnvVar, type EnvVarParseArgs } from "./env.js";
 import {

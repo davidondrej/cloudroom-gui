@@ -1,10 +1,10 @@
 import { machineGitHealth } from "./git-credentials.js";
-import { getAppSettings, type DbConnection } from "@bb/db";
+import { getAppSettings, type DbConnection } from "@cloudroom/db";
 import {
   readMachineEnvironment,
   decryptMachineEnvironment,
 } from "./environment-storage.js";
-import type { HostDaemonContributedEnvEntry } from "@bb/host-daemon-contract";
+import type { HostDaemonContributedEnvEntry } from "@cloudroom/host-daemon-contract";
 
 export { replaceMachineEnvironment } from "./environment-storage.js";
 

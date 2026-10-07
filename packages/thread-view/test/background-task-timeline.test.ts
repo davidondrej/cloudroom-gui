@@ -1,10 +1,10 @@
-import { threadScope, turnScope } from "@bb/domain";
+import { threadScope, turnScope } from "@cloudroom/domain";
 import type {
   ThreadEvent,
   ThreadEventBackgroundTaskItem,
   WorkflowProgressSnapshot,
-} from "@bb/domain";
-import type { TimelineRow, TimelineWorkflowWorkRow } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import type { TimelineRow, TimelineWorkflowWorkRow } from "@cloudroom/server-contract";
 import { describe, expect, it } from "vitest";
 import {
   buildThreadTimelineFromEvents,

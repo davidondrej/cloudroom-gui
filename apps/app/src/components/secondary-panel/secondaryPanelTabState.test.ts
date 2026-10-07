@@ -23,7 +23,7 @@ import {
   updateSecondaryPanelTabInState,
   reorderSecondaryPanelFileTabInState,
   replaceNewTabWithSecondaryPanelTabInState,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 
 function makeWorkspaceTab(environmentId: string) {
   return createWorkspaceFilePreviewFixedPanelTab({

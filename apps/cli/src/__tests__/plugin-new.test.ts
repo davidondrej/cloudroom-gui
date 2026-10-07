@@ -1,8 +1,8 @@
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { PLUGIN_SDK_NPM_VERSION } from "@bb/domain";
-import { RESERVED_BB_CLI_COMMANDS } from "@bb/domain/plugin-cli";
+import { PLUGIN_SDK_NPM_VERSION } from "@cloudroom/domain";
+import { RESERVED_BB_CLI_COMMANDS } from "@cloudroom/domain/plugin-cli";
 import { Command } from "commander";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {

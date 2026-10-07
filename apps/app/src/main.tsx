@@ -15,11 +15,13 @@ import { appQueryClient } from "./lib/app-query-client";
 import { applyCachedAppThemeCss } from "./lib/themes";
 import { installPerfMonitor } from "./lib/perf";
 import { installNewThreadKeyboardPrimer } from "./lib/new-thread-keyboard-primer";
+import { installTimeInApp } from "./lib/time-in-app";
 import "./app.css";
 
 installForeignDomMutationGuard();
 installPerfMonitor();
 installNewThreadKeyboardPrimer();
+installTimeInApp();
 
 Error.stackTraceLimit = 50;
 

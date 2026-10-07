@@ -1,8 +1,8 @@
-import type { ThreadGitDiffResponse, WorkspaceStatus } from "@bb/domain";
+import type { ThreadGitDiffResponse, WorkspaceStatus } from "@cloudroom/domain";
 import type {
   HostDaemonOnlineRpcResult,
   WorkspaceResolutionFailure,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import { ApiError } from "../../errors.js";
 
 type WorkspaceStatusCommandResult =

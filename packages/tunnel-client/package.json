@@ -1,5 +1,5 @@
 {
-  "name": "@bb/tunnel-client",
+  "name": "@cloudroom/tunnel-client",
   "version": "0.0.1",
   "type": "module",
   "private": true,
@@ -15,11 +15,11 @@
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "@bb/tunnel-contract": "workspace:*",
+    "@cloudroom/tunnel-contract": "workspace:*",
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "@bb/tsconfig": "workspace:*",
+    "@cloudroom/tsconfig": "workspace:*",
     "@types/node": "^22.0.0",
     "@types/ws": "^8.18.1",
     "typescript": "npm:@typescript/typescript6@^6.0.2",

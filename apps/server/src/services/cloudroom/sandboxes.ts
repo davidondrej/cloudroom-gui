@@ -5,8 +5,8 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 import { gzipSync } from "node:zlib";
-import type { HostDaemonContributedEnvEntry } from "@bb/host-daemon-contract";
-import { findCliExecutable } from "@bb/process-utils";
+import type { HostDaemonContributedEnvEntry } from "@cloudroom/host-daemon-contract";
+import { findCliExecutable } from "@cloudroom/process-utils";
 import matter from "gray-matter";
 import { z } from "zod";
 import { hasSupportedFrontmatterDelimiter } from "../skills/injected-skills.js";
@@ -84,6 +84,44 @@ export function macCodexLogin(): MacCodexLogin | null {
 export function cancelMacCodexLogin(): void {
   macCodexLoginRun?.child.kill();
   macCodexLoginRun = null;
+}
+
+/** When the saved Codex access token stops working, in milliseconds, or null when the login has none. */
+function codexTokenExpiry(text: string): number | null {
+  try {
+    const token = (JSON.parse(text) as { tokens?: { access_token?: unknown } }).tokens?.access_token;
+    const exp = typeof token === "string" ? (JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString()) as { exp?: unknown }).exp : null;
+    return typeof exp === "number" ? exp * 1000 : null;
+  } catch { return null; }
+}
+/** True only when this Mac's Codex login is dead: its access token is past expiry and Codex itself could not renew it.
+ *  A valid token, an offline Mac, or any other failure counts as signed in, so working logins behave as before. */
+export async function macCodexLoginExpired(): Promise<boolean> {
+  const expiry = codexTokenExpiry(await readFile(codexAuthPath(), "utf8").catch(() => ""));
+  if (expiry === null || Date.now() < expiry) return false;
+  return new Promise(resolve => {
+    const child = spawn(findCliExecutable("codex") ?? "codex", ["app-server"], { stdio: ["pipe", "pipe", "ignore"], timeout: 20_000 });
+    const end = (expired: boolean) => { resolve(expired); child.kill(); };
+    const send = (message: object) => child.stdin?.write(`${JSON.stringify(message)}\n`);
+    child.stdin?.on("error", () => end(false));
+    child.on("error", () => end(false));
+    child.on("exit", () => end(false));
+    let buffer = "";
+    child.stdout?.on("data", (chunk: Buffer) => {
+      buffer += chunk.toString();
+      for (let at; (at = buffer.indexOf("\n")) >= 0; buffer = buffer.slice(at + 1)) {
+        let message: { id?: unknown; result?: { account?: unknown; requiresOpenaiAuth?: unknown } };
+        try { message = JSON.parse(buffer.slice(0, at)); } catch { continue; }
+        if (message.id === 1) {
+          send({ method: "initialized" });
+          // Codex renews the token itself and saves it; a rejected renewal reports no account.
+          send({ id: 2, method: "account/read", params: { refreshToken: true } });
+        }
+        if (message.id === 2) end(message.result?.account === null && message.result.requiresOpenaiAuth === true);
+      }
+    });
+    send({ id: 1, method: "initialize", params: { clientInfo: { name: "cloudroom", version: "1" } } });
+  });
 }
 
 function contentDigest(tar: Buffer): string {
@@ -284,8 +322,10 @@ export class SandboxDirectory {
     return this.limit?.on ?? false;
   }
 
-  async active(): Promise<void> {
-    await this.call({}, "active");
+  /** Reports today as active, with finished days' active minutes. True when the website saved the minutes. */
+  async active(minutes: Record<string, number>): Promise<boolean> {
+    const value = await this.call(Object.keys(minutes).length ? { minutes } : {}, "active");
+    return z.object({ minutes: z.boolean().optional() }).parse(value).minutes !== false;
   }
 
   async requestMoreUsage() {
@@ -318,6 +358,11 @@ export class SandboxDirectory {
     const value = await response.json().catch(() => ({})) as { text?: unknown; error?: unknown };
     if (!response.ok || typeof value.text !== "string") throw new CloudroomError(typeof value.error === "string" ? value.error : `The website returned HTTP ${response.status}.`);
     return value.text;
+  }
+
+  /** Thread share links on the website (docs/scopes/thread-share-links.md): save, stop, or open one. */
+  async shares(body: Record<string, unknown>): Promise<unknown> {
+    return this.call(body, "shares");
   }
 
   private remember(view: View): View {

@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
-import { Pill } from "@bb/shared-ui/pill";
+import { Pill } from "@cloudroom/shared-ui/pill";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
+} from "@cloudroom/shared-ui/tooltip";
 
 export function ProvenancePill({
   label,

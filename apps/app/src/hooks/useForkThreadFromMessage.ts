@@ -1,12 +1,12 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Thread } from "@bb/domain";
+import type { Thread } from "@cloudroom/domain";
 import { sdk } from "@/lib/sdk";
 import {
   FORK_THREAD_CREATE_SEED_LOCATION_STATE_KEY,
   isThreadForkable,
   type ForkThreadCreateSeed,
-} from "@bb/client-core";
+} from "@cloudroom/client-core";
 import { getRootComposeRoutePath } from "@/lib/route-paths";
 import { getThreadDisplayTitle } from "@/lib/thread-title";
 import { useSetRootComposeProjectId } from "@/lib/root-compose-selection";

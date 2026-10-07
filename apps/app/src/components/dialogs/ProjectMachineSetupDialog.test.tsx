@@ -8,8 +8,8 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import type { ProjectSource } from "@bb/domain";
-import { BbHttpError } from "@bb/sdk/browser";
+import type { ProjectSource } from "@cloudroom/domain";
+import { BbHttpError } from "@cloudroom/sdk/browser";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { sdk } from "@/lib/sdk";
 import {

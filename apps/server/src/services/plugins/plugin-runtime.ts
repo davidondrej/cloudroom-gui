@@ -20,7 +20,7 @@ import { createRequire, registerHooks } from "node:module";
 import { performance } from "node:perf_hooks";
 import { createJiti } from "jiti";
 import semver from "semver";
-import { HOST_ARTIFACT_MAX_BYTES } from "@bb/host-daemon-contract/protocol";
+import { HOST_ARTIFACT_MAX_BYTES } from "@cloudroom/host-daemon-contract/protocol";
 import {
   calculateExponentialBackoffDelay,
   isPluginOwnedIconPath,
@@ -29,15 +29,15 @@ import {
   PLUGIN_SDK_VERSION,
   type Thread,
   type ThreadQueuedMessage,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   buildPluginApp,
   buildPluginHost,
   isIgnoredPluginDevPath,
-} from "@bb/plugin-build";
+} from "@cloudroom/plugin-build";
 import { PluginHostArtifactRegistry } from "./plugin-host-artifact-registry.js";
 import { getPluginBuildToolchain } from "./build-toolchain.js";
-import { createNodeBbSdk, type BbSdk } from "@bb/sdk";
+import { createNodeBbSdk, type BbSdk } from "@cloudroom/sdk";
 import { experimental_aiServicesHostContract } from "@get-bb/plugin-sdk/ai-services";
 import {
   getInstalledPlugin,
@@ -45,7 +45,7 @@ import {
   prunePluginSchedules,
   upsertPluginSchedule,
   type InstalledPluginRow,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { toThreadResponseFromThread } from "../threads/thread-runtime-display.js";
 import {
   brandingAssetHash,
@@ -91,7 +91,7 @@ import {
 import type {
   PluginHandlerStats,
   PluginRuntimeStatus,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import type {
   LoadedPlugin,
   PluginServiceDeps,

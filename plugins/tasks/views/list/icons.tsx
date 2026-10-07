@@ -1,5 +1,5 @@
 import type { TaskPriority, TaskStatus } from "../../shared/contract.js";
-import { cn } from "@bb/shared-ui/lib/utils";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 const STATUS_COLOR_CLASS: Record<TaskStatus, string> = {
   backlog: "text-subtle-foreground",

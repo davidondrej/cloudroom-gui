@@ -3,7 +3,7 @@ import { join } from "node:path";
 import {
   connectCredentialSchema,
   type ConnectCredential,
-} from "@bb/connect-client";
+} from "@cloudroom/connect-client";
 
 const CONNECT_CREDENTIAL_FILE_NAME = "connect-credential.bin";
 

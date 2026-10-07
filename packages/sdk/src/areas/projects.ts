@@ -21,14 +21,15 @@ import type {
   UploadedPromptAttachment,
   WorkspacePathListResponse,
   WorkspaceFileListResponse,
-} from "@bb/server-contract";
-import { uploadedPromptAttachmentSchema } from "@bb/server-contract";
-import type { ProjectExecutionDefaults, ProjectSource } from "@bb/domain";
+} from "@cloudroom/server-contract";
+import { uploadedPromptAttachmentSchema } from "@cloudroom/server-contract";
+import type { ProjectExecutionDefaults, ProjectSource } from "@cloudroom/domain";
 import { signalRequestArgs, type CreateSdkAreaArgs } from "./common.js";
 
 export interface ProjectListArgs {
   include?: ProjectListQuery["include"];
   includePersonal?: boolean;
+  hidden?: boolean;
   signal?: AbortSignal;
 }
 
@@ -225,6 +226,7 @@ export interface ProjectsArea {
 function projectUpdateJson(args: ProjectUpdateArgs): UpdateProjectRequest {
   return {
     name: args.name,
+    hidden: args.hidden,
   };
 }
 
@@ -267,6 +269,9 @@ function projectListQuery(input: ProjectListArgs): ProjectListQuery {
     ...(input.includePersonal === undefined
       ? {}
       : { includePersonal: input.includePersonal ? "true" : "false" }),
+    ...(input.hidden === undefined
+      ? {}
+      : { hidden: input.hidden ? "true" : "false" }),
   };
 }
 

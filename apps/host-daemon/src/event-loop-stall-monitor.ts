@@ -1,4 +1,4 @@
-import { startEventLoopDelaySampler } from "@bb/process-utils";
+import { startEventLoopDelaySampler } from "@cloudroom/process-utils";
 import type { HostDaemonLogger } from "./logger.js";
 
 interface EventLoopStallMonitorOptions {

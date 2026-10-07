@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cn } from "@bb/shared-ui/lib/utils";
-import { THREAD_JUMP_APP_COMMAND_IDS } from "@bb/domain";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
+import { THREAD_JUMP_APP_COMMAND_IDS } from "@cloudroom/domain";
 import { useNavigate } from "react-router-dom";
 import { OverflowFade } from "@/components/ui/overflow-fade.js";
 import {
@@ -123,6 +123,7 @@ export function AppSidebar({
       targets[index] ??
       getSidebarThreadShortcutTargets(sidebarRef.current)[index];
     if (!target?.element) return false;
+    revealSidebarThread(sidebarRef.current, target.threadId);
     target.element.click();
     return true;
   }, []);

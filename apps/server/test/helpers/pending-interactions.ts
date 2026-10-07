@@ -6,7 +6,7 @@ import type {
   PendingInteractionGrantablePermissionProfile,
   UserQuestionPendingInteractionPayload,
   UserQuestionPendingInteractionResolution,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 
 type PendingInteractionFileChangeWriteScope = string;
 

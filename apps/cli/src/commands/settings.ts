@@ -16,9 +16,9 @@ import {
   type Experiments,
   type UiPreferenceKey,
   type UiPreferenceValue,
-} from "@bb/domain";
-import { BbHttpError } from "@bb/sdk";
-import type { SystemProviderInfo } from "@bb/server-contract";
+} from "@cloudroom/domain";
+import { BbHttpError } from "@cloudroom/sdk";
+import type { SystemProviderInfo } from "@cloudroom/server-contract";
 import { action } from "../action.js";
 import { createCliBbSdk } from "../client.js";
 import { columnWidths, printBorderlessTable } from "../table.js";

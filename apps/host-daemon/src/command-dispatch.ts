@@ -15,8 +15,8 @@ import {
   type HostDaemonSettledCommandType,
   type ProviderCliInstallEvent,
   type WorkspaceResolutionFailure,
-} from "@bb/host-daemon-contract";
-import type { AgentRuntimeBridgeLaunch } from "@bb/agent-runtime";
+} from "@cloudroom/host-daemon-contract";
+import type { AgentRuntimeBridgeLaunch } from "@cloudroom/agent-runtime";
 import semver from "semver";
 import {
   ExpectedCommandDispatchError,
@@ -66,7 +66,7 @@ import {
 import type {
   ProviderInstallationStatus,
   ProviderInstallationVerification,
-} from "@bb/provider-bridge-protocol";
+} from "@cloudroom/provider-bridge-protocol";
 import {
   discardThreadRewind,
   deleteThreadStorage,
@@ -75,7 +75,7 @@ import {
   startThread,
   submitTurn,
 } from "./command-handlers/thread.js";
-import { WorkspaceError, type HostWorkspace } from "@bb/host-workspace";
+import { WorkspaceError, type HostWorkspace } from "@cloudroom/host-workspace";
 import {
   cloneProject,
   inspectProjectPath,

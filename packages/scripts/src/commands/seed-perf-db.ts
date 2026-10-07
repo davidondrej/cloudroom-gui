@@ -2,12 +2,12 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { createConnection, migrate } from "@bb/db";
+import { createConnection, migrate } from "@cloudroom/db";
 import {
   resolveDataDirDatabasePath,
   resolveProdDataDir,
-} from "@bb/config/runtime";
-import { HOST_ID_FILE_NAME } from "@bb/host-daemon-contract";
+} from "@cloudroom/config/runtime";
+import { HOST_ID_FILE_NAME } from "@cloudroom/host-daemon-contract";
 import { resolveDevDataDir } from "../lib/dev-restart-utils.js";
 import { runMainIfEntrypoint } from "../lib/script-entry.js";
 import { seedPerfFixture } from "../lib/seed-perf-fixture.js";

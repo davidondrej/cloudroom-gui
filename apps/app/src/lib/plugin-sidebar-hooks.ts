@@ -4,8 +4,8 @@ import {
   PERSONAL_PROJECT_ID,
   type Host,
   type ThreadListEntry,
-} from "@bb/domain";
-import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
+} from "@cloudroom/domain";
+import { useIsCompactViewport } from "@cloudroom/shared-ui/hooks/use-compact-viewport";
 import type {
   PluginSidebarProject,
   PluginSidebarThread,

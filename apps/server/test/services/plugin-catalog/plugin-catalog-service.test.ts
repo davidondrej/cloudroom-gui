@@ -10,9 +10,9 @@ import {
   upsertPluginMarketplace,
   upsertInstalledPlugin,
   type DbConnection,
-} from "@bb/db";
-import { ROOT_PLUGIN_SOURCE_SELECTION } from "@bb/server-contract";
-import { PLUGIN_CATALOG_CATEGORIES } from "@bb/domain";
+} from "@cloudroom/db";
+import { ROOT_PLUGIN_SOURCE_SELECTION } from "@cloudroom/server-contract";
+import { PLUGIN_CATALOG_CATEGORIES } from "@cloudroom/domain";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createPluginCatalogService } from "../../../src/services/plugin-catalog/plugin-catalog-service.js";
 import { refreshCuratedMarketplace } from "../../helpers/plugin-catalog.js";

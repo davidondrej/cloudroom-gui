@@ -1,5 +1,5 @@
-import { hostProviderCliInstallEventSchema } from "@bb/server-contract";
-import type { Host } from "@bb/domain";
+import { hostProviderCliInstallEventSchema } from "@cloudroom/server-contract";
+import type { Host } from "@cloudroom/domain";
 import type {
   CreateHostJoinCodeResponse,
   CreateMachineRequest,
@@ -19,7 +19,7 @@ import type {
   HostRetryUpdateResponse,
   UpdateHostRequest,
   SystemMachineProvider,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { signalRequestArgs, type CreateSdkAreaArgs } from "./common.js";
 
 export interface HostGetArgs {

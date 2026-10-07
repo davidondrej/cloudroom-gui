@@ -3,9 +3,9 @@ import {
   definePluginApp,
   type PluginPendingInteractionProps,
 } from "@get-bb/plugin-sdk/app";
-import { Button } from "@bb/shared-ui/button";
-import { Input } from "@bb/shared-ui/input";
-import { Label } from "@bb/shared-ui/label";
+import { Button } from "@cloudroom/shared-ui/button";
+import { Input } from "@cloudroom/shared-ui/input";
+import { Label } from "@cloudroom/shared-ui/label";
 import {
   DashedLineCircleIcon,
   ViewIcon,
@@ -16,7 +16,7 @@ import {
   SECRET_REQUEST_RENDERER_ID,
   secretRequestPayloadSchema,
   secretRequestResponseSchema,
-} from "@bb/plugin-interaction-contracts";
+} from "@cloudroom/plugin-interaction-contracts";
 import { reconcileDotenv } from "./src/dotenv.js";
 
 function SecretRequestInteraction({

@@ -11,13 +11,13 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
-import { buildSkillEditThreadPrompt } from "@bb/shared-ui/resource-edit-prompt";
-import type { EditableSkillScope, SkillSummary } from "@bb/server-contract";
+import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
+import { buildSkillEditThreadPrompt } from "@cloudroom/shared-ui/resource-edit-prompt";
+import type { EditableSkillScope, SkillSummary } from "@cloudroom/server-contract";
 import {
   ResourceListState,
   useResourceRouteLabel,
-} from "@bb/shared-ui/resource-list";
+} from "@cloudroom/shared-ui/resource-list";
 import {
   RegistrySkillDetailView,
   RegistrySkillsBrowsePage,
@@ -30,7 +30,7 @@ import {
 } from "@/components/tools/SkillsCollection";
 import { useSystemProviders } from "@/hooks/queries/system-queries";
 import { isSkillEditable } from "@/components/tools/skill-taxonomy";
-import { CREATE_SKILL_PROMPT } from "@bb/client-core";
+import { CREATE_SKILL_PROMPT } from "@cloudroom/client-core";
 import { usePrimaryHost } from "@/hooks/queries/host-queries";
 import { useHostFilePreview } from "@/hooks/queries/host-file-preview-query";
 import { getAbsoluteDirname } from "@/lib/absolute-file-path";

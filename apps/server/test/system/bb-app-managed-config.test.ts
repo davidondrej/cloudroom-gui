@@ -4,8 +4,8 @@ import { join } from "node:path";
 import {
   formatBbAppConfigPath,
   formatBbAppEnvPath,
-} from "@bb/config/bb-app-managed-config";
-import { defaultFeatureFlags } from "@bb/domain";
+} from "@cloudroom/config/bb-app-managed-config";
+import { defaultFeatureFlags } from "@cloudroom/domain";
 import { describe, expect, it } from "vitest";
 import {
   applyBbAppManagedConfig,

@@ -7,8 +7,8 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { brotliDecompressSync, gunzipSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { upsertInstalledPlugin } from "@bb/db";
-import { PLUGIN_SDK_MAJOR, PLUGIN_SDK_VERSION } from "@bb/domain";
+import { upsertInstalledPlugin } from "@cloudroom/db";
+import { PLUGIN_SDK_MAJOR, PLUGIN_SDK_VERSION } from "@cloudroom/domain";
 import {
   createTestAppHarness,
   type TestAppHarness,

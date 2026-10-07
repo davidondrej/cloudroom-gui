@@ -7,14 +7,14 @@ import {
   Notification02Icon,
   NotificationOff02Icon,
 } from "@hugeicons/core-free-icons";
-import { Button } from "@bb/shared-ui/button";
+import { Button } from "@cloudroom/shared-ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
-import { cn } from "@bb/shared-ui/lib/utils";
+} from "@cloudroom/shared-ui/tooltip";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { TasksEditor } from "../../editor/tasks-editor.js";
 import { useBbNavigate } from "@get-bb/plugin-sdk/app";
 import {

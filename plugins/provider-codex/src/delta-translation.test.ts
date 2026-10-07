@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { threadScope, turnScope, type ThreadEvent } from "@bb/domain";
+import { threadScope, turnScope, type ThreadEvent } from "@cloudroom/domain";
 import {
   experimental_COMPACTION_PRESENTATION as COMPACTION_PRESENTATION,
   experimental_REASONING_PRESENTATION as REASONING_PRESENTATION,

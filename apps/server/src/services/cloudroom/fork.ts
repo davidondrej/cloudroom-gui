@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import { basename } from "node:path";
 import { and, asc, eq } from "drizzle-orm";
-import { events, findLastCompletedRootStoredTurn, findLastRootStoredTurnStarted, getThread, listStoredTurnCompletedRowsByTurnIds, type DbConnection } from "@bb/db";
-import type { Thread } from "@bb/domain";
+import { events, findLastCompletedRootStoredTurn, findLastRootStoredTurnStarted, getThread, listStoredTurnCompletedRowsByTurnIds, type DbConnection } from "@cloudroom/db";
+import type { Thread } from "@cloudroom/domain";
 import { z } from "zod";
 import { ApiError } from "../../errors.js";
 import { UPLOAD_PART, type CloudroomClient, type Harness, type TeleportManifest } from "./client.js";

@@ -6,14 +6,14 @@ import type {
   ReasoningLevel,
   ServiceTier,
   Thread,
-} from "@bb/domain";
-import { getEnvironment } from "@bb/db";
+} from "@cloudroom/domain";
+import { getEnvironment } from "@cloudroom/db";
 import { DEFAULT_ENVIRONMENT_PROVIDER_ID } from "../environments/environment-provider-ids.js";
-import { PERSONAL_PROJECT_ID, clampPermissionModeToCeiling } from "@bb/domain";
+import { PERSONAL_PROJECT_ID, clampPermissionModeToCeiling } from "@cloudroom/domain";
 import type {
   EnvironmentArgs,
   ProviderEnvironmentArgs,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import { COMMAND_TIMEOUT_MS } from "../../constants.js";
 import type { WorkSessionDeps } from "../../types.js";
 import type { ProviderRegistryService } from "../providers/provider-registry.js";

@@ -20,7 +20,7 @@ import {
   migrate,
   noopNotifier,
   upsertHost,
-} from "@bb/db";
+} from "@cloudroom/db";
 import type { ServerLogger } from "../../src/types.js";
 import { runDatabaseMaintenanceSweep } from "../../src/services/system/periodic-sweeps.js";
 import { testLogger } from "../helpers/test-app.js";

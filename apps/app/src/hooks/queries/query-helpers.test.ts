@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { ThreadListEntry, WorkspaceStatus } from "@bb/domain";
+import type { ThreadListEntry, WorkspaceStatus } from "@cloudroom/domain";
 import {
   makeWorkspaceMergeBase,
   makeWorkspaceStatus,
   makeWorkspaceWorkingTree,
-} from "@bb/test-helpers";
+} from "@cloudroom/test-helpers";
 import type {
   EnvironmentDiffBranchesResponse,
   EnvironmentStatusResponse,
@@ -12,7 +12,7 @@ import type {
   SidebarBootstrapResponse,
   ThreadResponse,
   ThreadTimelineResponse,
-} from "@bb/server-contract";
+} from "@cloudroom/server-contract";
 import {
   makeProjectWithThreadsResponse,
   makeSidebarBootstrapResponse,

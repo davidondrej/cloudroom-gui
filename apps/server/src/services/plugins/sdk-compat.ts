@@ -1,5 +1,5 @@
 import semver from "semver";
-import { PLUGIN_SDK_VERSION } from "@bb/domain";
+import { PLUGIN_SDK_VERSION } from "@cloudroom/domain";
 
 export function isPluginSdkRangeSatisfied(range: string): boolean {
   if (semver.validRange(range) === null) return false;

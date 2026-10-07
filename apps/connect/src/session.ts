@@ -10,7 +10,7 @@ import {
   server,
   session,
   sha256Hex,
-} from "@bb/connect-db";
+} from "@cloudroom/connect-db";
 
 const LABEL_TTL_MS = 15_000;
 const SESSION_TTL_MS = 20_000;

@@ -1,5 +1,5 @@
 import { ProviderIcon } from "@/components/plugin/ProviderIcon";
-import { Icon } from "@bb/shared-ui/icon";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { useCallback, useMemo } from "react";
 import type { MarkdownProps, PluginSdkApp } from "@get-bb/plugin-sdk";
 import { PluginDiff } from "@/components/plugin/PluginDiff";

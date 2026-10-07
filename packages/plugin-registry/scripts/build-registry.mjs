@@ -7,7 +7,7 @@
 // Inputs:
 // - registry.json — the item list (uiItems).
 // - packages/shared-ui/src/components/ui/*.tsx — component source, verbatim.
-//   @bb/shared-ui is itself the plugin/registry flavor: its portal-scope and
+//   @cloudroom/shared-ui is itself the plugin/registry flavor: its portal-scope and
 //   useBrowserDimmingModal leaves are already the no-op/plugin variants (the
 //   app injects its own flavors at build time).
 //
@@ -20,7 +20,7 @@
 // at bundle time, but plugin authors need their types to typecheck).
 //
 // Output: r/<item>.json + r/index.json, checked in; `--check` exits 1 on any
-// drift (wired into this package's typecheck/test like @bb/templates).
+// drift (wired into this package's typecheck/test like @cloudroom/templates).
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";

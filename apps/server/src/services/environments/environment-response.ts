@@ -1,9 +1,9 @@
-import type { EnvironmentRow } from "@bb/db";
+import type { EnvironmentRow } from "@cloudroom/db";
 import type {
   Environment,
   EnvironmentWorkspaceDisplayKind,
   WorkspaceProvisionType,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import { DEFAULT_ENVIRONMENT_PROVIDER_ID } from "./environment-provider-ids.js";
 
 const DEPRECATED_WORKSPACE_PROVISION_TYPE_BY_PROVIDER_ID = new Map<

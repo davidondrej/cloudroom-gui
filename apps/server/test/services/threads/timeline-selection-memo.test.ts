@@ -5,7 +5,7 @@ import {
   THREAD_CONTEXT_CLEAR_OPERATION,
   type ThreadEventItemType,
   type ThreadEventType,
-} from "@bb/domain";
+} from "@cloudroom/domain";
 import {
   createThread,
   deleteThreadEventSuffixInTransaction,
@@ -13,7 +13,7 @@ import {
   noopNotifier,
   pruneContextWindowUsageEventsBeforeSequence,
   pruneResolvedItemDeltas,
-} from "@bb/db";
+} from "@cloudroom/db";
 import { pruneThreadEventHistory } from "../../../src/services/system/event-pruning.js";
 import {
   clearTimelineOrderingContextCache,

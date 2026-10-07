@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import type { Thread } from "@bb/domain";
-import { isThreadRead, type ThreadReadState } from "@bb/client-core";
+import type { Thread } from "@cloudroom/domain";
+import { isThreadRead, type ThreadReadState } from "@cloudroom/client-core";
 import {
   isDocumentVisible,
   useDocumentVisibilityRevision,

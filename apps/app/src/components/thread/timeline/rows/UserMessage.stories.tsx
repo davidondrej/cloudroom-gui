@@ -1,12 +1,12 @@
-import type { TimelineConversationAttachments } from "@bb/server-contract";
+import type { TimelineConversationAttachments } from "@cloudroom/server-contract";
 import type { ThreadTimelinePluginMessageAction } from "@/components/thread/timeline/types";
-import type { PromptMentionResource, PromptTextMention } from "@bb/domain";
-import type { TimelineTitleLink } from "@bb/thread-view";
-import { renderTemplate } from "@bb/templates";
+import type { PromptMentionResource, PromptTextMention } from "@cloudroom/domain";
+import type { TimelineTitleLink } from "@cloudroom/thread-view";
+import { renderTemplate } from "@cloudroom/templates";
 import type { ReactNode } from "react";
 import { ConversationMessageContent } from "@/components/thread/timeline/ConversationMessageContent";
 import { ThreadTitleMentionResourcesProvider } from "@/components/thread/ThreadTitleMentions";
-import { makeThreadListEntry } from "@bb/test-helpers/domain-fixtures";
+import { makeThreadListEntry } from "@cloudroom/test-helpers/domain-fixtures";
 import {
   StoryDraftPromptBox,
   useStoryPromptDraft,
@@ -321,7 +321,7 @@ const parentChildSystemMessageFixtures = [
         updates: [
           "@thread:thr_schema completed:",
           "",
-          "Migrated the thread ownership queries to targeted joins and added regression coverage. Validation passed for @bb/server.",
+          "Migrated the thread ownership queries to targeted joins and added regression coverage. Validation passed for @cloudroom/server.",
         ].join("\n"),
       }),
       [
@@ -442,8 +442,8 @@ const longSystemMessage = buildMessage(
     "- Sweep does not queue duplicate stop RPCs while one is already in flight.",
     "",
     "Validation:",
-    "- `pnpm exec turbo run test --filter=@bb/server -- test/threads/thread-stop-retry.test.ts` passed, 2 tests.",
-    "- `pnpm exec turbo run typecheck --filter=@bb/server` passed.",
+    "- `pnpm exec turbo run test --filter=@cloudroom/server -- test/threads/thread-stop-retry.test.ts` passed, 2 tests.",
+    "- `pnpm exec turbo run typecheck --filter=@cloudroom/server` passed.",
     "",
     "Blockers: none. Worktree status: clean.",
   ].join("\n"),

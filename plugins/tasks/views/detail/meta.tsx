@@ -4,8 +4,8 @@ import type {
   TaskStatus,
   TaskThread,
 } from "../../shared/contract.js";
-import type { IconName } from "@bb/shared-ui/icon";
-import { cn } from "@bb/shared-ui/lib/utils";
+import type { IconName } from "@cloudroom/shared-ui/icon";
+import { cn } from "@cloudroom/shared-ui/lib/utils";
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
   backlog: "var(--muted-foreground)",

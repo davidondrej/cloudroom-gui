@@ -1,4 +1,4 @@
-import type { BbDesktopApi } from "@bb/desktop-contract";
+import type { BbDesktopApi } from "@cloudroom/desktop-contract";
 
 declare global {
   interface Window {

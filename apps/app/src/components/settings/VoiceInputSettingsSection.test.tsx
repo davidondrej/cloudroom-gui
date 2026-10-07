@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen } from "@testing-library/react";
-import { TooltipProvider } from "@bb/shared-ui/tooltip";
+import { TooltipProvider } from "@cloudroom/shared-ui/tooltip";
 import { afterEach, describe, expect, it } from "vitest";
 import { VoiceInputSettingsSectionContent } from "./VoiceInputSettingsSection";
 

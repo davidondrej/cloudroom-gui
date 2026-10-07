@@ -1,5 +1,5 @@
-import { ensurePersonalProject, listEnvironments } from "@bb/db";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
+import { ensurePersonalProject, listEnvironments } from "@cloudroom/db";
+import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
 import type { PluginEnvironmentProviderValidateContext } from "@get-bb/plugin-sdk/environment-provider";
 import { describe, expect, it } from "vitest";
 import { createThreadFromRequest } from "../../src/services/threads/thread-create.js";

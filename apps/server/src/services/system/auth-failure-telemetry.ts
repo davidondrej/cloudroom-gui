@@ -1,4 +1,4 @@
-import { countThreads, getThread, type DbConnection } from "@bb/db";
+import { countThreads, getThread, type DbConnection } from "@cloudroom/db";
 import type { ServerLogger } from "../../types.js";
 import { buildTurnFailedEvent } from "../threads/turn-failed.js";
 import type { TelemetryService } from "./telemetry.js";

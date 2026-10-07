@@ -2,8 +2,8 @@ import type {
   InstalledPlugin,
   PluginSettingDescriptor,
   PluginSettingsResponse,
-} from "@bb/server-contract";
-import { pluginSettingsUpdateRequestSchema } from "@bb/server-contract";
+} from "@cloudroom/server-contract";
+import { pluginSettingsUpdateRequestSchema } from "@cloudroom/server-contract";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { createPluginsClient } from "./plugin-client";
 import { pluginListQueryKey, pluginSettingsViewQueryKey } from "./query-keys";

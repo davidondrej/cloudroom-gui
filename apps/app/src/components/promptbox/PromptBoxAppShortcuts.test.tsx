@@ -3,8 +3,8 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { defaultAppSettings, type AppShortcut } from "@bb/domain";
-import { EMPTY_ORDERED_MENTION_SUGGESTIONS } from "@bb/client-core";
+import { defaultAppSettings, type AppShortcut } from "@cloudroom/domain";
+import { EMPTY_ORDERED_MENTION_SUGGESTIONS } from "@cloudroom/client-core";
 import {
   AppCommandProvider,
   useAppCommandHandler,

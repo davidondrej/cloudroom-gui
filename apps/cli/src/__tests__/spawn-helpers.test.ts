@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_THREAD_WAIT_POLL_INTERVAL_MS } from "@bb/sdk";
+import { DEFAULT_THREAD_WAIT_POLL_INTERVAL_MS } from "@cloudroom/sdk";
 import {
   buildSpawnEnvironment,
   looksLikePath,

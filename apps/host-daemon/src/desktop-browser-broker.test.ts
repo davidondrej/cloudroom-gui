@@ -7,7 +7,7 @@ import { WebSocket } from "ws";
 import {
   DESKTOP_BROWSER_BROKER_DESCRIPTOR_FILE,
   desktopBrowserBrokerRequestSchema,
-} from "@bb/host-daemon-contract";
+} from "@cloudroom/host-daemon-contract";
 import {
   startDesktopBrowserBroker,
   type DesktopBrowserBroker,

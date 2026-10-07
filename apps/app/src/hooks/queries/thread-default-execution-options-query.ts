@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ResolvedThreadExecutionOptions } from "@bb/domain";
+import type { ResolvedThreadExecutionOptions } from "@cloudroom/domain";
 import { sdk } from "@/lib/sdk";
 import {
   readCachedThreadExecutionOptions,
