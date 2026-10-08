@@ -9,7 +9,7 @@ import { cancelGithubLogin } from "./github-login.js";
 import { macAccess } from "./previews.js";
 import { hasMacCodexLogin } from "./sandboxes.js";
 import { copyLogins } from "./sync.js";
-import { reportSignInFailed } from "./setup-telemetry.js";
+import { linkInstall, reportSignInFailed } from "./setup-telemetry.js";
 
 const website = "https://www.cloudroom.dev";
 // Keep the loopback listener open while a VM is provisioned. The one-use pairing code expires separately after five minutes.
@@ -137,6 +137,7 @@ export class CloudroomAccountService {
         const handoff = handoffSchema.parse(JSON.parse(Buffer.concat(chunks).toString("utf8")));
         abort.signal.throwIfAborted();
         await cloudroom(this.deps).configure(handoff.connection ? { ...handoff.connection, projectId: input.projectId } : null, handoff.account, abort.signal, origin.origin, handoff.sandboxes?.token);
+        linkInstall();
         reply(200, "You’re done here. Everything else happens in the Cloudroom app.");
       } catch (error) {
         if (!abort.signal.aborted) {

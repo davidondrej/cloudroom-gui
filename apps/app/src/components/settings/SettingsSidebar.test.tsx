@@ -150,7 +150,7 @@ describe("SettingsSidebarContent navigation", () => {
     expect(resultLabels()[0]).toBe("ThemeAppearance");
     fireEvent.change(search, { target: { value: "how to disable telemetry" } });
     expect(resultLabels()).toEqual([
-      "Share anonymous usage dataGeneral › Privacy & diagnostics",
+      "Share usage data and setup errorsGeneral › Privacy & diagnostics",
     ]);
     fireEvent.change(search, { target: { value: "archived" } });
     fireEvent.keyDown(search, { key: "Enter" });

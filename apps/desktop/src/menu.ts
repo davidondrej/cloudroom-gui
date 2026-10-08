@@ -19,6 +19,14 @@ const TOGGLE_DEVELOPER_TOOLS_MENU_LABEL = "Toggle Developer Tools";
 const TOGGLE_DEVELOPER_TOOLS_ACCELERATOR = "Command+Option+I";
 const RELOAD_ACCELERATOR = "CommandOrControl+R";
 const FORCE_RELOAD_ACCELERATOR = "CommandOrControl+Shift+R";
+// Electron gives each zoom role one key. On Linux, Ctrl+=, numpad −, and
+// numpad 0 don't match it, so add them as hidden duplicates.
+const LINUX_EXTRA_ZOOM_ITEMS: MenuItemConstructorOptions[] = [
+  { role: "zoomIn", accelerator: "CommandOrControl+=", visible: false },
+  { role: "zoomIn", accelerator: "CommandOrControl+numadd", visible: false },
+  { role: "zoomOut", accelerator: "CommandOrControl+numsub", visible: false },
+  { role: "resetZoom", accelerator: "CommandOrControl+num0", visible: false },
+];
 const SERVER_MENU_LABEL = "Server";
 const SERVER_MENU_ITEM_ID = "bb-server-menu";
 export const SET_SERVER_URL_MENU_LABEL = "Set Server URL…";
@@ -41,6 +49,7 @@ interface ApplicationMenuServerItem {
 
 export interface InstallApplicationMenuArgs {
   accelerators: ApplicationMenuAccelerators;
+  isLinux: boolean;
   isMac: boolean;
   openAbout(): void;
   openNewTab(): void;
@@ -243,6 +252,7 @@ export function buildApplicationMenuTemplate(
         { role: "resetZoom" },
         { role: "zoomIn" },
         { role: "zoomOut" },
+        ...(args.isLinux ? LINUX_EXTRA_ZOOM_ITEMS : []),
         ...createServerDaemonLogsMenuItems(args),
       ],
     },

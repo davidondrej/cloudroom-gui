@@ -167,6 +167,19 @@ const testState = vi.hoisted(() => ({
       },
     },
     {
+      command: "modelPicker.cycleReasoning" as const,
+      desktopOnly: false,
+      shortcut: {
+        key: "t",
+        mod: false,
+        meta: false,
+        control: false,
+        alt: true,
+        shift: false,
+      },
+      when: { all: ["mainSurface" as const], none: [] },
+    },
+    {
       command: "panel.toggle" as const,
       desktopOnly: false,
       shortcut: {
@@ -502,6 +515,36 @@ describe("AppCommandProvider", () => {
 
     expect(dispatchShortcut().defaultPrevented).toBe(true);
     expect(testState.calls).toEqual(["high", "low"]);
+  });
+
+  it("ignores Option shortcuts after Option typed a character until Option is pressed again", () => {
+    renderProvider(
+      <Handler
+        command="modelPicker.cycleReasoning"
+        name="effort"
+        result={true}
+      />,
+    );
+    const press = (key: string, code: string) => {
+      const event = new KeyboardEvent("keydown", {
+        altKey: true,
+        bubbles: true,
+        cancelable: true,
+        code,
+        key,
+      });
+      window.dispatchEvent(event);
+      return event;
+    };
+
+    press("Alt", "AltLeft");
+    press("'", "Backslash");
+    expect(press("†", "KeyT").defaultPrevented).toBe(false);
+    expect(testState.calls).toEqual([]);
+
+    press("Alt", "AltLeft");
+    expect(press("†", "KeyT").defaultPrevented).toBe(true);
+    expect(testState.calls).toEqual(["effort"]);
   });
 
   it("gives later scoped bindings precedence on the same chord", () => {

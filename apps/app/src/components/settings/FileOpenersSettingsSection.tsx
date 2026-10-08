@@ -14,6 +14,7 @@ import {
 import { COARSE_POINTER_ICON_SIZE_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import {
   BUILT_IN_FILE_OPENER_PREFERENCE,
+  BUILT_IN_PREVIEW_EXTENSIONS,
   buildFileOpenerRef,
   useFileOpenerPreference,
 } from "@/lib/file-opener-preference";
@@ -90,7 +91,11 @@ function ExtensionOpenerControl({
   const options = [
     {
       key: AUTOMATIC_FILE_OPENER_PREFERENCE,
-      label: `Automatic (${automaticOpener.title})`,
+      label: `Automatic (${
+        BUILT_IN_PREVIEW_EXTENSIONS.has(extension)
+          ? BUILTIN_LABEL
+          : automaticOpener.title
+      })`,
     },
     { key: BUILT_IN_FILE_OPENER_PREFERENCE, label: BUILTIN_LABEL },
     ...openers.map((opener) => ({

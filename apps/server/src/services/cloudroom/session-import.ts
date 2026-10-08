@@ -8,6 +8,7 @@ import { isNotNull } from "drizzle-orm";
 import { events, findOrCreateProjectByLocalPathSource, getThread, type StoredEventRow } from "@cloudroom/db";
 import type { AppDeps } from "../../types.js";
 import { createThreadFromRequest } from "../threads/thread-create.js";
+import { fillProjectGitRemote } from "../projects/project-source-setup.js";
 import { requireNonDestroyedHostWithStatus } from "../lib/entity-lookup.js";
 import { assertUsableHostId } from "../hosts/primary-host.js";
 import { parseStoredEvent } from "../threads/thread-data.js";
@@ -170,6 +171,7 @@ async function createImportedThread(deps: AppDeps, hostId: string, session: Foun
     name: basename(session.cwd) || session.cwd,
     source: { type: "local_path", hostId, path: session.cwd },
   });
+  await fillProjectGitRemote(deps, project, { hostId, path: session.cwd });
   const app = session.harness === "codex" ? "Codex" : "Claude Code";
   return createThreadFromRequest(deps, {
     projectId: project.id,

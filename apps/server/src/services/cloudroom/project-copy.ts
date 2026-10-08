@@ -5,7 +5,7 @@ import { lstat, mkdtemp, open, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { promisify } from "node:util";
-import { getProject, getThread, listProjectSourcesByProjectIds } from "@cloudroom/db";
+import { getProject, getThread, listProjectSourcesByProjectIds, setProjectGitRemoteUrlIfMissing } from "@cloudroom/db";
 import type { ProjectCopyProgress } from "@cloudroom/domain";
 import type { AppDeps } from "../../types.js";
 import { CloudroomError, UPLOAD_PART, type CloudroomClient } from "./client.js";
@@ -40,6 +40,14 @@ function localProjectPath(deps: Deps, projectId: string): string | undefined {
   return (sources.find((source) => source.isDefault) ?? sources[0])?.path;
 }
 
+/** A project added before it had a GitHub remote picks the remote up here, at its next cloud thread. */
+async function projectRemote(deps: Deps, project: { id: string; gitRemoteUrl: string | null }, path: string | null | undefined): Promise<string | null> {
+  if (project.gitRemoteUrl !== null || !path) return project.gitRemoteUrl;
+  const remote = (await git(path, ["remote", "get-url", "origin"]))?.trim() || null;
+  if (remote) setProjectGitRemoteUrlIfMissing(deps.db, deps.hub, project.id, remote);
+  return remote;
+}
+
 /** Small projects not on GitHub are uploaded whole. Counting stops at the limit, so a huge folder answers fast. */
 async function smallProject(root: string): Promise<boolean> {
   return localFiles(root, "all", SMALL_PROJECT).then(() => true, () => false);
@@ -48,8 +56,8 @@ async function smallProject(root: string): Promise<boolean> {
 /** Tells a new cloud thread where a large project without GitHub lives, since its files stay on the Mac. */
 export async function localProjectNote(deps: Deps, projectId: string): Promise<string | undefined> {
   const project = getProject(deps.db, projectId);
-  const path = project && !githubRepository(project.gitRemoteUrl) ? localProjectPath(deps, project.id) : undefined;
-  if (!path || await smallProject(path)) return undefined;
+  const path = project ? localProjectPath(deps, project.id) : undefined;
+  if (!project || !path || githubRepository(await projectRemote(deps, project, path)) || await smallProject(path)) return undefined;
   return `This project is not on GitHub and too large to copy, so only its \`.env\` files are here. The rest is on the user's Mac at \`${path}\`. Pull only what the task needs with \`cloudroom mac pull\`.`;
 }
 
@@ -58,7 +66,7 @@ export async function planProjectCopy(deps: Deps, client: CloudroomClient, threa
     const project = getProject(deps.db, getThread(deps.db, threadId)?.projectId ?? "");
     if (!project || copying.has(key)) return null;
     const path = localPath ?? localProjectPath(deps, project.id) ?? null;
-    const repository = githubRepository(project.gitRemoteUrl);
+    const repository = githubRepository(await projectRemote(deps, project, path));
     if (!path && !repository) return null;
     const existing = await client.workspace(workspace);
     const empty = !existing || (await client.runOnVm({ command: `[ -z "$(ls -A -- ${quote(existing.path)} 2>/dev/null | grep -Fvx .cloudroom)" ]`, stdin: "" })).code === 0;

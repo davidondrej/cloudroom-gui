@@ -207,6 +207,6 @@ restores visibility and drag-reorders actions. CLI example:
 `room-cli settings ui set sidebar.hiddenFooterItems '["plugin:provider-usage/usage"]'`.
 Use `room-cli settings ui reset sidebar.hiddenFooterItems` to show everything again.
 
-Disable anonymous usage telemetry with `room-cli settings general telemetryEnabled false`
-or Settings → General → Privacy & diagnostics → Share anonymous usage data. This server-wide preference
+Disable usage telemetry with `room-cli settings general telemetryEnabled false`
+or Settings → General → Privacy & diagnostics → Share usage data and setup errors. This server-wide preference
 applies immediately and persists across restarts. `BB_TELEMETRY=false` overrides it.

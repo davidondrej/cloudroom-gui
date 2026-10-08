@@ -338,10 +338,20 @@ export class SandboxDirectory {
     return z.object({ codes: z.array(z.object({ code: z.string(), used: z.boolean(), url: z.string().optional() })), left: z.number(), created: z.string().nullable(), waiting: z.number().nullable().default(null) }).parse(value);
   }
 
+  /** Whether to remind this member to book an onboarding call, and the booking link (docs/scopes/onboarding-calls.md). */
+  async onboardingCall() {
+    return z.object({ due: z.boolean(), url: z.string().url().optional() }).parse(await this.call({}, "onboarding-call"));
+  }
+
   /** Whether the website judges a generated thread title too vague to keep, at the user's sensitivity (2–5). */
   async titleTooVague(check: { title: string; firstMessage: string; agentReply: string; sensitivity: number }): Promise<boolean> {
     const value = await this.call({ ...check, sensitivity: String(check.sensitivity) }, "thread-title");
     return z.object({ rename: z.boolean() }).parse(value).rename;
+  }
+
+  /** Onboarding failures and the install ID link, saved with this account (ADR 0201). */
+  setupEvent(event: string, context: Record<string, unknown>): Promise<unknown> {
+    return this.call({ event, context }, "setup-events");
   }
 
   /** Backup voice transcription on the website, or null when signed out. */

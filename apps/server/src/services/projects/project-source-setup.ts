@@ -11,7 +11,10 @@ import {
 import type { CommandResultSideEffectsDeps } from "../../internal/command-result-side-effects.js";
 import { ApiError } from "../../errors.js";
 import { COMMAND_TIMEOUT_MS } from "../../constants.js";
-import { callHostRetryableOnlineRpcForWork } from "../hosts/online-rpc.js";
+import {
+  callHostRetryableOnlineRpc,
+  callHostRetryableOnlineRpcForWork,
+} from "../hosts/online-rpc.js";
 import { runLiveHostCommand } from "../hosts/live-command.js";
 import { readPrimaryHostIdFromDataDir } from "../hosts/primary-host.js";
 import { cloneTarget } from "../cloudroom/local-repos.js";
@@ -23,6 +26,39 @@ export function projectSourceHostConflict(): ApiError {
     "project_source_host_conflict",
     "Project already has a source on this host",
   );
+}
+
+export async function inspectProjectGitRemoteBestEffort(
+  deps: CommandResultSideEffectsDeps,
+  args: { hostId: string; path: string },
+): Promise<string | null> {
+  try {
+    const inspection = await callHostRetryableOnlineRpc(deps, {
+      hostId: args.hostId,
+      timeoutMs: COMMAND_TIMEOUT_MS,
+      command: { type: "project.inspect", path: args.path },
+    });
+    return inspection.gitRemoteUrl;
+  } catch (error) {
+    deps.logger.warn(
+      { err: error, hostId: args.hostId, path: args.path },
+      "Unable to inspect project source; continuing without a Git remote anchor",
+    );
+    return null;
+  }
+}
+
+/** Saves a project's Git remote from its folder when it has none yet. */
+export async function fillProjectGitRemote(
+  deps: CommandResultSideEffectsDeps,
+  project: { id: string; gitRemoteUrl: string | null },
+  folder: { hostId: string; path: string },
+): Promise<void> {
+  if (project.gitRemoteUrl !== null) return;
+  const gitRemoteUrl = await inspectProjectGitRemoteBestEffort(deps, folder);
+  if (gitRemoteUrl !== null) {
+    setProjectGitRemoteUrlIfMissing(deps.db, deps.hub, project.id, gitRemoteUrl);
+  }
 }
 
 export function registerProjectSourceOnHost(

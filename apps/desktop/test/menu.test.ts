@@ -33,6 +33,7 @@ function menuArgs(
     closeWindowOrSideTab: () => {},
     connectServersSkipReason: null,
     createNewWindow: () => {},
+    isLinux: false,
     isMac: true,
     openAbout: () => {},
     openNewTab: () => {},
@@ -225,7 +226,7 @@ describe("application menu", () => {
   it("builds a native Linux menu with the Linux DevTools accelerator", () => {
     vi.mocked(Menu.sendActionToFirstResponder).mockClear();
     const template = buildApplicationMenuTemplate(
-      menuArgs(() => {}, { isMac: false }),
+      menuArgs(() => {}, { isLinux: true, isMac: false }),
     );
     const appMenu = template[0]?.submenu as MenuItemConstructorOptions[];
     const windowMenu = template.find((item) => item.label === "Window");
@@ -247,6 +248,10 @@ describe("application menu", () => {
       viewSubmenu.find((item) => item.label === "Toggle Developer Tools")
         ?.accelerator,
     ).toBe("Control+Shift+I");
+    expect(
+      viewSubmenu.find((item) => item.role === "zoomOut" && item.visible === false)
+        ?.accelerator,
+    ).toBe("CommandOrControl+numsub");
 
     closeWindow?.click?.({} as never, null as never, {} as never);
     expect(Menu.sendActionToFirstResponder).not.toHaveBeenCalled();

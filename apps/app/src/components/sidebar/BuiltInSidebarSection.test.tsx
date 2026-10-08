@@ -46,7 +46,7 @@ afterEach(() => cleanup());
 
 describe("built-in sidebar section renderer", () => {
   it.each([false, true])(
-    "keeps Pinned in normal flow without changing Threads stickiness (collapsed: %s)",
+    "keeps Pinned and Threads labels sticky (collapsed: %s)",
     (collapsed) => {
       for (const sectionId of ["pinned", "threads"] as const) {
         render(
@@ -66,9 +66,12 @@ describe("built-in sidebar section renderer", () => {
           .getByTitle(label)
           .closest('[data-sidebar-sticky-tier="label"]');
 
-      expect(header("Pinned")?.classList.contains("relative")).toBe(true);
-      expect(header("Pinned")?.classList.contains("top-auto")).toBe(true);
-      expect(header("Threads")?.classList.contains("relative")).toBe(false);
+      // Pinned parents pin in the slot under the section label, so the label
+      // must pin too or children scroll through an empty band above them.
+      for (const label of ["Pinned", "Threads"]) {
+        expect(header(label)?.classList.contains("relative")).toBe(false);
+        expect(header(label)?.classList.contains("top-auto")).toBe(false);
+      }
       expect(screen.queryByText("Pinned content") !== null).toBe(!collapsed);
     },
   );

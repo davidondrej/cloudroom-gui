@@ -12,9 +12,12 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
+import type { UsageWindow } from "./contract.js";
+import { readReset, SignInAgainError, type Secret } from "./tokens.js";
 
 const TOKEN = /(sk-ant-oat[A-Za-z0-9_-]{20,})[^A-Za-z0-9_-]/;
 const YEAR_MS = 365 * 24 * 60 * 60_000;
+const LIMITS = "anthropic-ratelimit-unified";
 
 function claudeBinary(): string | null {
   const dirs = [
@@ -135,6 +138,50 @@ export const claudeSecret = (token: string) => ({
   refreshToken: "",
   expiresAt: Date.now() + YEAR_MS,
 });
+
+// One-year setup tokens can't read /api/oauth/usage (it needs user:profile),
+// but every Claude reply carries the account's limits in its headers, even a 429.
+// OAuth replies need the Claude Code system prompt, or Anthropic answers 429.
+export async function claudeUsage(secret: Secret): Promise<UsageWindow[]> {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${secret.accessToken}`,
+      "anthropic-beta": "oauth-2025-04-20",
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-5-5",
+      max_tokens: 1,
+      system: "You are Claude Code, Anthropic's official CLI for Claude.",
+      messages: [{ role: "user", content: "hi" }],
+    }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  await response.body?.cancel();
+  if (response.status === 401)
+    throw new SignInAgainError("Claude rejected this login. Sign in again.");
+  const windows = (
+    [
+      ["Five-hour limit", "5h"],
+      ["Weekly limit", "7d"],
+    ] as const
+  ).flatMap(([label, key]) => {
+    const used = response.headers.get(`${LIMITS}-${key}-utilization`);
+    if (used === null || !Number.isFinite(Number(used))) return [];
+    return [
+      {
+        label,
+        usedPercent: Number(used) * 100,
+        resetsAt: readReset(response.headers.get(`${LIMITS}-${key}-reset`)),
+      },
+    ];
+  });
+  if (windows.length === 0)
+    throw new Error(`Claude usage failed (HTTP ${response.status}).`);
+  return windows;
+}
 
 export async function localClaudeEmail(): Promise<string | null> {
   try {

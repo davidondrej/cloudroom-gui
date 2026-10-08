@@ -114,6 +114,7 @@ export function AppCommandProvider({ children }: { children: ReactNode }) {
   );
   const sequenceRef = useRef(0);
   const attemptedEventsRef = useRef(new WeakSet<KeyboardEvent>());
+  const optionTypedCharRef = useRef(false);
   const clearShortcutHintHoldRef = useRef<() => void>(() => {});
 
   useEffect(() => {
@@ -298,6 +299,12 @@ export function AppCommandProvider({ children }: { children: ReactNode }) {
       }
       if (attemptedEventsRef.current.has(event)) return false;
       attemptedEventsRef.current.add(event);
+      if (event.key === "Alt") {
+        optionTypedCharRef.current = false;
+        return false;
+      }
+      const optionOnly = event.altKey && !event.ctrlKey && !event.metaKey;
+      if (optionOnly && optionTypedCharRef.current) return false;
       const bindings = keybindingsRef.current;
       let context: AppCommandContext | null = null;
       const isMac = isMacKeyboardPlatform(browserPlatform());
@@ -315,6 +322,9 @@ export function AppCommandProvider({ children }: { children: ReactNode }) {
         event.preventDefault();
         event.stopPropagation();
         return true;
+      }
+      if (optionOnly && event.key.length === 1) {
+        optionTypedCharRef.current = true;
       }
       return false;
     },

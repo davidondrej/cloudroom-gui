@@ -7,6 +7,7 @@ import { findOrCreateProjectByLocalPathSource, getThread, type StoredEventRow } 
 import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { createThreadFromRequest } from "../threads/thread-create.js";
+import { fillProjectGitRemote } from "../projects/project-source-setup.js";
 import { requireNonDestroyedHostWithStatus } from "../lib/entity-lookup.js";
 import { assertUsableHostId } from "../hosts/primary-host.js";
 import { INHERITED_EVENT_TYPES, selectInheritedHistoryRows } from "../threads/thread-fork-history.js";
@@ -100,6 +101,7 @@ async function importThread(deps: AppDeps, bb: Database.Database, source: BbThre
     name: source.projectName ?? source.path!.split("/").at(-1)!,
     source: { type: "local_path", hostId, path: source.path! },
   });
+  await fillProjectGitRemote(deps, project, { hostId, path: source.path! });
   return createThreadFromRequest(deps, {
     projectId: project.id,
     providerId: source.providerId,

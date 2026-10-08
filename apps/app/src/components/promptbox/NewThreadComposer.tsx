@@ -95,7 +95,7 @@ import {
 } from "@/hooks/usePromptDraftStorage";
 import { usePromptMentions } from "@/hooks/usePromptMentions";
 import { usePromptBoxMachinePreference } from "@/hooks/thread-creation-options/persisted-selection-fields";
-import { startingExecutionTarget } from "@/hooks/useStartingMachine";
+import { agentExecutionTarget, startingExecutionTarget } from "@/hooks/useStartingMachine";
 import { useThreadCreationOptions } from "@/hooks/useThreadCreationOptions";
 import { useComposerTextEffects } from "@/lib/composer-text-effects";
 import { getMutationErrorMessage } from "@/lib/mutation-errors";
@@ -447,7 +447,9 @@ export function NewThreadComposer({
         selectionScope === "new-thread" && seed?.environment === undefined,
       ),
   );
-  const executionTarget = cloudLocked ? "local" : storedExecutionTarget;
+  const [cloudPicked, setCloudPicked] = useState(
+    seed?.executionTarget === "cloud",
+  );
   const [cloudBranch, setCloudBranch] = useState<{
     projectId: string | null;
     branch: string | null;
@@ -485,15 +487,6 @@ export function NewThreadComposer({
     return candidateKnown ? requestedCandidate : PERSONAL_PROJECT_ID;
   }, [candidateKnown, projects, replayKnowsCandidate, requestedCandidate]);
   const isProjectless = isProjectlessProjectId(projectId);
-  useEffect(() => {
-    if (executionTarget !== "cloud" || !cloudConnection.data?.ready) return;
-    const select = () => void fetchWithAppSurface("/api/v1/cloudroom/account/project", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ projectId }),
-    }).catch(() => {});
-    select();
-    const timer = setInterval(() => { if (document.visibilityState === "visible") select(); }, 5 * 60_000);
-    return () => clearInterval(timer);
-  }, [executionTarget, projectId, cloudConnection.data?.ready]);
   const currentProject = useMemo(() => {
     if (isProjectless) {
       const personalProject = sidebarNavigationQuery.data?.personalProject;
@@ -646,6 +639,7 @@ export function NewThreadComposer({
     setPickedProviderMachine(null);
     if (seed?.environment !== undefined) setExecutionTarget("local");
     if (seed?.executionTarget) setExecutionTarget(seed.executionTarget);
+    setCloudPicked(seed?.executionTarget === "cloud");
   }
 
   const resolveProviderSelection = useCallback(
@@ -828,6 +822,18 @@ export function NewThreadComposer({
     supportsServiceTier,
     clearReuseEnvironment,
   } = creationOptions;
+  const executionTarget = cloudLocked
+    ? "local"
+    : agentExecutionTarget(storedExecutionTarget, cloudPicked, selectedProviderId);
+  useEffect(() => {
+    if (executionTarget !== "cloud" || !cloudConnection.data?.ready) return;
+    const select = () => void fetchWithAppSurface("/api/v1/cloudroom/account/project", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ projectId }),
+    }).catch(() => {});
+    select();
+    const timer = setInterval(() => { if (document.visibilityState === "visible") select(); }, 5 * 60_000);
+    return () => clearInterval(timer);
+  }, [executionTarget, projectId, cloudConnection.data?.ready]);
   const selectedThreadModel = activeModel?.model ?? selectedModel;
   const cloudLevels = cloudReasoningLevels(cloudConnection.data, selectedProviderId, selectedThreadModel);
   const cloudFastSupported = executionTarget === "cloud" && cloudServiceTierSupported(cloudConnection.data, selectedProviderId);
@@ -1620,8 +1626,10 @@ export function NewThreadComposer({
         if (executionTarget === "cloud")
           clearCloudroomRequestId(promptDraft.storageKey);
         clearReuseEnvironment();
-        if (selectionScope === "new-thread")
+        if (selectionScope === "new-thread") {
           setExecutionTarget(startingExecutionTarget(true));
+          setCloudPicked(false);
+        }
       } catch (submitError) {
         setComposerError(
           getMutationErrorMessage({
@@ -1781,6 +1789,7 @@ export function NewThreadComposer({
                   if (cloudLocked) return showCloudSignIn();
                   snapshotDraftBeforeOptionChange();
                   setExecutionTarget("cloud");
+                  setCloudPicked(true);
                   localStorage.setItem("cloudroom.executionTarget", "cloud");
                 },
               },

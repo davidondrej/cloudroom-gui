@@ -2,6 +2,18 @@
 
 Also on [cloudroom.dev/changelog](https://www.cloudroom.dev/changelog).
 
+## 96
+
+Compact usage and better previews (2026-10-07)
+
+### Changes
+
+- The usage box is now a compact readout that fits inside the sidebar.
+- Markdown and CSV files open in a rendered preview by default.
+- The Skills page shows every agent's skills, not just Cloudroom's.
+- Imported projects keep their GitHub link, so Cloud threads get the full repo.
+- Sign in with one browser button, and Linux zoom shortcuts now work.
+
 ## 95
 
 Clearer Claude accounts (2026-10-07)

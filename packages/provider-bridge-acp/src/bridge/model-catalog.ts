@@ -236,6 +236,17 @@ export function buildModelCatalogFromConfigOptions(
       );
 }
 
+function sessionModelDisplayName(
+  model: NonNullable<AcpSessionModels["availableModels"]>[number],
+): string {
+  const name = model.name ?? model.modelId;
+  const split = name.indexOf(" · ");
+  const provider = name.slice(0, split);
+  return split > 0 && model.description?.startsWith(`Provider: ${provider}`)
+    ? `${name.slice(split + 3)} (${provider})`
+    : name;
+}
+
 export function buildModelCatalogFromSessionModels(
   sessionModels: AcpSessionModels | undefined,
 ): AvailableModel[] {
@@ -252,7 +263,7 @@ export function buildModelCatalogFromSessionModels(
     return {
       id: model.modelId,
       model: model.modelId,
-      displayName: model.name ?? model.modelId,
+      displayName: sessionModelDisplayName(model),
       description: model.description ?? "",
       supportedReasoningEfforts: ACP_NATIVE_REASONING_EFFORTS,
       defaultReasoningEffort: "medium",

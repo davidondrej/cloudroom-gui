@@ -146,6 +146,7 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     const input = z.object({ message: z.string().trim().min(1).max(4000), threadId: z.string().min(1).max(200).optional() }).strict().parse(await context.req.json());
     return context.json(await reportBug(deps, input));
   });
+  app.get("/api/v1/cloudroom/account/onboarding-call", async (context) => context.json(await cloudroom(deps).sandboxes.onboardingCall()));
   app.get("/api/v1/cloudroom/account/invites", async (context) => context.json(await cloudroom(deps).sandboxes.invites("list")));
   app.post("/api/v1/cloudroom/account/invites", async (context) => {
     z.object({}).strict().parse(await context.req.json());
@@ -332,11 +333,14 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     const id = context.req.param("id");
     if (!id) return next();
     const thread = getThread(deps.db, id);
-    if (teleportingToLocal(id)) return context.json({ message: "Teleport to Local is in progress.", code: "teleport_in_progress" }, 409);
-    if (teleportBlocked(deps.db, id)) {
+    const toLocal = teleportingToLocal(id);
+    if (toLocal || teleportBlocked(deps.db, id)) {
+      // UI-only writes (tabs, read state, rename) never touch the conversation, so they pass during any Teleport.
       const suffix = context.req.path.slice(`/api/v1/threads/${id}`.length);
       const rename = context.req.method === "PATCH" && suffix === "" && await context.req.json<unknown>().then((body) => Boolean(body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).join() === "title"), () => false);
-      if (!rename && !["/read", "/unread", "/tabs", "/archive-all"].includes(suffix) && !(suffix === "/stop" && teleportProgress(deps.db, id)?.cloudStarted)) return context.json({ message: "Teleport is in progress. Wait for completion, or use Cancel before cloud execution starts.", code: "teleport_in_progress" }, 409);
+      const uiOnly = rename || ["/read", "/unread", "/tabs"].includes(suffix);
+      if (toLocal && !uiOnly) return context.json({ message: "Teleport to Local is in progress.", code: "teleport_in_progress" }, 409);
+      if (!toLocal && !uiOnly && suffix !== "/archive-all" && !(suffix === "/stop" && teleportProgress(deps.db, id)?.cloudStarted)) return context.json({ message: "Teleport is in progress. Wait for completion, or use Cancel before cloud execution starts.", code: "teleport_in_progress" }, 409);
     }
     if (!thread || !isCloudThread(thread)) return next();
     const path = context.req.path.slice(`/api/v1/threads/${thread.id}`.length);

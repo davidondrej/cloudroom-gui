@@ -164,7 +164,41 @@ function formatResetCountdown(resetsAt: string | null): string | null {
   const days = Math.floor(hours / 24);
   return hours % 24 === 0 ? `${days}d` : `${days}d ${hours % 24}h`;
 }
-function UsageWindow({ window }: { window: UsageWindowValue }) {
+const USAGE_BLOCKS = 12;
+
+function usageTextColorClass(usedPercent: number): string {
+  if (usedPercent >= 95) return "text-destructive-text";
+  if (usedPercent >= 80) return "text-warning-text";
+  return "text-sidebar-foreground";
+}
+
+function UsageBlocks({ usedPercent }: { usedPercent: number }) {
+  const lit = Math.max(
+    1,
+    Math.round((Math.min(100, usedPercent) / 100) * USAGE_BLOCKS),
+  );
+  return (
+    <span aria-hidden="true" className="flex shrink-0 gap-[1.5px]">
+      {Array.from({ length: USAGE_BLOCKS }, (_, index) => (
+        <span
+          key={index}
+          className={cn(
+            "h-[9px] w-[5px] rounded-[1px]",
+            index < lit ? usageBarColorClass(usedPercent) : "bg-sidebar-border",
+          )}
+        />
+      ))}
+    </span>
+  );
+}
+
+function UsageWindow({
+  window,
+  last,
+}: {
+  window: UsageWindowValue;
+  last: boolean;
+}) {
   const [showReset, setShowReset] = useState(false);
   const reset = formatUsageReset(window.resetsAt);
   const countdown = formatResetCountdown(window.resetsAt);
@@ -177,43 +211,43 @@ function UsageWindow({ window }: { window: UsageWindowValue }) {
   const label = window.label
     .replace(/^Five-hour limit$|^5 hours$/u, "5h")
     .replace(/^Weekly limit$|^Weekly/u, "7d")
-    .replace(/^Daily limit$/u, "1d");
+    .replace(/^Daily limit$/u, "1d")
+    .replace(/^Plan usage$/u, "plan")
+    .replace(/^On-demand spend$/u, "spend");
   return (
     <button
       type="button"
-      className="block w-full rounded-sm py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+      className="block w-full rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
       title={`${window.label} · ${reset ?? "Reset time not reported"}`}
       aria-label={`${window.label}: ${value}. ${reset ?? "Reset time not reported"}`}
       aria-expanded={showReset}
       onClick={() => setShowReset((shown) => !shown)}
     >
-      <span className="flex items-center gap-3 text-2xs">
-        <span className="w-24 shrink-0 truncate text-subtle-foreground">
+      <span className="flex items-center gap-[7px] whitespace-nowrap">
+        <span aria-hidden="true" className="text-subtle-foreground">
+          {last ? "└" : "├"}
+        </span>
+        <span className="w-11 shrink-0 truncate lowercase text-muted-foreground">
           {label}
         </span>
-        <span className="block h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-sidebar-border">
-          <span
-            className={
-              "block h-full rounded-full " +
-              usageBarColorClass(window.usedPercent)
-            }
-            style={{
-              width: Math.max(2, Math.min(100, window.usedPercent)) + "%",
-            }}
-          />
-        </span>
-        <span className="w-9 shrink-0 text-right tabular-nums text-sidebar-foreground">
+        <UsageBlocks usedPercent={window.usedPercent} />
+        <span
+          className={cn(
+            "w-[30px] shrink-0 text-right tabular-nums",
+            usageTextColorClass(window.usedPercent),
+          )}
+        >
           {Math.round(window.usedPercent)}%
         </span>
         <span
           aria-hidden="true"
-          className="w-14 shrink-0 text-right tabular-nums text-subtle-foreground"
+          className="min-w-0 truncate tabular-nums text-subtle-foreground"
         >
           {countdown ?? "—"}
         </span>
       </span>
       {showReset ? (
-        <span className="mt-1 block text-2xs text-subtle-foreground">
+        <span className="block whitespace-normal pl-3.5 text-subtle-foreground">
           {reset ?? "Reset time not reported."}
           {window.cost === null ? "" : ` · ${value}`}
         </span>
@@ -222,40 +256,44 @@ function UsageWindow({ window }: { window: UsageWindowValue }) {
   );
 }
 
+/** A tree-style status line under a provider, like `└ not installed`. */
+function UsageNote({ children }: { children: string }) {
+  return (
+    <p className="flex gap-[7px] text-muted-foreground">
+      <span aria-hidden="true" className="text-subtle-foreground">
+        └
+      </span>
+      <span className="min-w-0">{children}</span>
+    </p>
+  );
+}
+
 function ProviderUsageBody({ provider }: { provider: UsageProvider }) {
   const usage = provider.usage;
-  if (usage === null) {
-    return <p className="text-xs text-muted-foreground">Usage not reported.</p>;
-  }
+  if (usage === null) return <UsageNote>Usage not reported.</UsageNote>;
   switch (usage.status) {
     case "ok":
       return usage.windows.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
-          No usage limits reported for this plan.
-        </p>
+        <UsageNote>No usage limits reported for this plan.</UsageNote>
       ) : (
-        <div className="space-y-1.5">
-          {usage.windows.map((window) => (
-            <UsageWindow key={window.label} window={window} />
+        <div>
+          {usage.windows.map((window, index) => (
+            <UsageWindow
+              key={window.label}
+              window={window}
+              last={index === usage.windows.length - 1}
+            />
           ))}
         </div>
       );
     case "not_installed":
-      return (
-        <p className="text-xs text-muted-foreground">
-          Not installed on this machine.
-        </p>
-      );
+      return <UsageNote>Not installed on this machine.</UsageNote>;
     case "unauthenticated":
-      return (
-        <p className="text-xs text-muted-foreground">{provider.signInHint}</p>
-      );
+      return <UsageNote>{provider.signInHint}</UsageNote>;
     case "expired":
-      return (
-        <p className="text-xs text-muted-foreground">{provider.expiredHint}</p>
-      );
+      return <UsageNote>{provider.expiredHint}</UsageNote>;
     case "error":
-      return <p className="text-xs text-muted-foreground">{usage.message}</p>;
+      return <UsageNote>{usage.message}</UsageNote>;
   }
 }
 
@@ -279,13 +317,12 @@ function AccountChip({
     (accounts.length === 1 ? accounts[0] : undefined);
   const label = shown ? accountName(shown) : null;
   const switchable = accounts.filter((account) => account.accountId);
-  const chip =
-    "flex min-w-0 max-w-[65%] items-center gap-1.5 rounded-full border border-sidebar-border px-2 py-0.5 text-2xs font-normal text-sidebar-foreground";
+  const chip = "block min-w-0 truncate font-normal text-subtle-foreground";
   if (label === null) return null;
   if (switchable.length < 2)
     return (
       <span title={label} className={chip}>
-        <span className="truncate">{label}</span>
+        {label}
       </span>
     );
   const use = async (account: UsageProvider) => {
@@ -306,11 +343,9 @@ function AccountChip({
           type="button"
           title={label}
           aria-label={`Account in use: ${label}`}
-          className={cn(chip, "hover:bg-sidebar-accent")}
+          className={cn(chip, "text-left hover:text-sidebar-foreground")}
         >
-          <span className="size-1.5 shrink-0 rounded-full bg-primary" />
-          <span className="truncate">{label}</span>
-          <Icon name="ChevronDown" aria-hidden="true" className="size-3 shrink-0" />
+          {label}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="max-w-72">
@@ -366,11 +401,11 @@ function MachineSelector({
             OPTION_BASE_CLASS_NAME,
             OPTION_INTERACTIVE_CLASS_NAME,
             LIST_HOVER_TRANSITION,
-            "h-7 shrink overflow-hidden px-1 text-sidebar-foreground hover:bg-sidebar-accent",
+            "h-6 shrink overflow-hidden px-1 font-mono text-[10.5px] font-normal text-subtle-foreground hover:bg-sidebar-accent",
           )}
         >
           <span className="block min-w-0 flex-1 truncate">
-            {activeMachine?.displayName ?? "Usage"}
+            ~/{activeMachine?.displayName ?? "usage"}
           </span>
         </Button>
       </DropdownMenuTrigger>
@@ -438,14 +473,13 @@ function TimeInCloudroom() {
   }, []);
   if (minutes === null) return null;
   return (
-    <section aria-label="Time in Cloudroom">
-      <h2 className="flex min-w-0 items-center gap-2 text-xs font-medium text-sidebar-foreground">
-        <Icon name="Clock" aria-hidden="true" className="size-3.5 shrink-0" />
-        <span className="min-w-0 flex-1 truncate">Time in Cloudroom</span>
-        <span className="text-2xs font-normal tabular-nums text-subtle-foreground">
-          {minutes < 60 ? `${minutes}m` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`} today
-        </span>
-      </h2>
+    <section
+      aria-label="Time in Cloudroom"
+      title="Time in Cloudroom today"
+      className="flex shrink-0 items-center gap-1 tabular-nums"
+    >
+      <Icon name="Clock" aria-hidden="true" className="size-3 shrink-0" />
+      {minutes < 60 ? `${minutes}m` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`}
     </section>
   );
 }
@@ -545,7 +579,7 @@ export function ProviderUsageStatusContent({
     <div className="flex max-h-80 flex-col">
       <div
         data-provider-usage-header=""
-        className="flex h-10 min-w-0 shrink-0 items-center gap-1 border-b border-sidebar-border px-1.5"
+        className="mx-1.5 flex h-9 min-w-0 shrink-0 items-center gap-1 border-b border-sidebar-border pr-1 font-mono text-[10.5px] text-subtle-foreground"
       >
         <div className="flex min-w-0 flex-1">
           <MachineSelector
@@ -554,11 +588,12 @@ export function ProviderUsageStatusContent({
             onSelect={selectMachine}
           />
         </div>
+        <TimeInCloudroom />
         <button
           type="button"
           aria-label="Reload provider usage"
           disabled={snapshot.isRefreshing}
-          className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:opacity-50"
+          className="flex size-6 shrink-0 items-center justify-center rounded-md text-subtle-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:opacity-50"
           onClick={() =>
             void refreshUsage({
               force: true,
@@ -571,21 +606,20 @@ export function ProviderUsageStatusContent({
             name="RotateCcw"
             aria-hidden="true"
             className={
-              "size-3.5 " + (snapshot.isRefreshing ? "animate-spin" : "")
+              "size-3 " + (snapshot.isRefreshing ? "animate-spin" : "")
             }
           />
         </button>
         <button
           type="button"
           aria-label="Collapse provider usage"
-          className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+          className="flex size-6 shrink-0 items-center justify-center rounded-md text-subtle-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
           onClick={dismiss}
         >
-          <Icon name="ChevronDown" aria-hidden="true" className="size-4" />
+          <Icon name="ChevronDown" aria-hidden="true" className="size-3.5" />
         </button>
       </div>
-      <div className="min-h-0 space-y-3 overflow-y-auto p-2.5">
-        <TimeInCloudroom />
+      <div className="min-h-0 space-y-1.5 overflow-y-auto px-[11px] pb-2.5 pt-1.5 font-mono text-[10.5px] leading-[1.75]">
         {feedback === null ? null : (
           <UsageFeedback
             message={feedback}
@@ -594,14 +628,14 @@ export function ProviderUsageStatusContent({
         )}
         {providers.map((provider) => (
           <section key={provider.id} aria-label={provider.displayName}>
-            <h2 className="flex min-w-0 items-center gap-2 text-xs font-medium text-sidebar-foreground">
+            <h2 className="flex min-w-0 items-center gap-2 font-normal">
               <ProviderIcon
                 providerKind="agent"
                 provider={provider}
                 fallback="Bot"
-                className="size-3.5 shrink-0"
+                className="size-3 shrink-0"
               />
-              <span className="min-w-0 flex-1 truncate">
+              <span className="shrink-0 lowercase text-primary-text">
                 {provider.displayName}
               </span>
               <AccountChip
@@ -623,27 +657,23 @@ export function ProviderUsageStatusContent({
                 ]
               : provider.accounts
             ).map((account) => (
-                  <div key={account.id} className="mt-1">
+                  <div key={account.id}>
                     {account.accountLabel === null ||
                     provider.accounts.length === 1 ||
                     account.accountId ? null : (
                       <h3
                         title={account.accountLabel}
-                        className="truncate text-2xs text-subtle-foreground"
+                        className="truncate text-subtle-foreground"
                       >
                         {account.accountLabel}
                       </h3>
                     )}
                     {account.usage === null && snapshot.isRefreshing ? (
-                      <p className="text-xs text-muted-foreground">
-                        {usageFeedbackMessages.loading}
-                      </p>
+                      <UsageNote>{usageFeedbackMessages.loading}</UsageNote>
                     ) : account.usage === null &&
                       (activeMachine?.error != null ||
                         snapshot.error !== null) ? (
-                      <p className="text-xs text-muted-foreground">
-                        {usageFeedbackMessages.unavailable}
-                      </p>
+                      <UsageNote>{usageFeedbackMessages.unavailable}</UsageNote>
                     ) : (
                       <ProviderUsageBody provider={account} />
                     )}

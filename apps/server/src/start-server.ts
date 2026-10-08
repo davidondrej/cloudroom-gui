@@ -269,7 +269,7 @@ export async function runServer(serverConfig: ServerConfig): Promise<void> {
     },
   });
 
-  startSetupTelemetry({ telemetry, config: runtimeConfig, logger });
+  startSetupTelemetry({ telemetry, config: runtimeConfig, logger, db, sandboxes: cloud.sandboxes, telemetryAllowed: serverConfig.BB_TELEMETRY });
 
   pluginService.bindSdk({
     baseUrl: `http://127.0.0.1:${serverConfig.BB_SERVER_PORT}`,

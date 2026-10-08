@@ -123,7 +123,6 @@ export function AppSidebar({
       targets[index] ??
       getSidebarThreadShortcutTargets(sidebarRef.current)[index];
     if (!target?.element) return false;
-    revealSidebarThread(sidebarRef.current, target.threadId);
     target.element.click();
     return true;
   }, []);
@@ -131,7 +130,6 @@ export function AppSidebar({
   const openNavigationTarget = useCallback(
     (target: SidebarThreadShortcutTarget | undefined): boolean => {
       if (!target) return false;
-      revealSidebarThread(sidebarRef.current, target.threadId);
       if (target.element) {
         target.element.click();
         return true;
@@ -206,6 +204,12 @@ export function AppSidebar({
   useAppCommandHandler("thread.oldestInProject", () =>
     isHiddenHostedBody ? false : activateOldestProjectThread(),
   );
+
+  useEffect(() => {
+    if (activeThreadId && !isHiddenHostedBody) {
+      revealSidebarThread(sidebarRef.current, activeThreadId);
+    }
+  }, [activeThreadId, isHiddenHostedBody]);
 
   useEffect(() => {
     if (isAppCommandModifierHeld) {
@@ -315,7 +319,13 @@ export function AppSidebar({
           {body}
         </div>
       ) : (
-        <Sidebar ref={sidebarRef}>{body}</Sidebar>
+        <Sidebar
+          ref={sidebarRef}
+          // The footer popup spills past the sidebar; lift the sidebar above the thread composer while it is open.
+          className={pluginSidebarFooter.activeItem ? "md:z-40" : undefined}
+        >
+          {body}
+        </Sidebar>
       )}
     </SidebarThreadShortcutKeysContext.Provider>
   );

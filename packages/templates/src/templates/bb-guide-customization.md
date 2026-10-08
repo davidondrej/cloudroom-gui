@@ -310,7 +310,7 @@ microphone picker stores the selected browser MediaDevices device id in
 localStorage as `bb.voiceInput.audioInputDeviceId`; it does not have a `room-cli`
 command and does not change the server-side transcription model.
 
-Anonymous usage telemetry can be disabled in Settings → General → Privacy & diagnostics → Share anonymous usage data,
+Usage telemetry can be disabled in Settings → General → Privacy & diagnostics → Share usage data and setup errors,
 or with `room-cli settings general telemetryEnabled false`. The saved server-wide preference
 takes effect immediately and persists across restarts. SDK callers can use
 `system.updateGeneralSettings` with `telemetryEnabled`. `BB_TELEMETRY=false`

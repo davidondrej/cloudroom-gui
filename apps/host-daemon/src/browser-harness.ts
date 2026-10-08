@@ -57,6 +57,18 @@ if [ "$(uname -s)" = Darwin ] && { [ $# -eq 0 ] || [ "$1" = -c ]; } && [ -z "$BU
   ' 2>/dev/null || true)
   [ -z "$app" ] || open -g -b "$app" 2>/dev/null || true
 fi
+# One daemon per thread, so parallel agents never act in each other's tab. Daemons never exit on
+# their own: stop the ones whose thread hasn't used the browser for 2 hours. They restart on next use.
+if [ -z "$BU_NAME" ] && [ -n "$ROOM_THREAD_ID" ]; then
+  BU_NAME=$(printf %s "$ROOM_THREAD_ID" | tr -c 'A-Za-z0-9_-' _ | cut -c1-64)
+  export BU_NAME
+  mkdir -p "$home/active"
+  touch "$home/active/$BU_NAME"
+  for idle in $(find "$home/active" -type f -mmin +120 2>/dev/null); do
+    rm -f "$idle"
+    BU_NAME=$(basename "$idle") "$venv/bin/browser-harness" --reload >/dev/null 2>&1 &
+  done
+fi
 exec "$venv/bin/browser-harness" "$@"
 `;
 

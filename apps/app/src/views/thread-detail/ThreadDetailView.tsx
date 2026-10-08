@@ -2474,8 +2474,15 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     ? formatWorkspaceCheckoutDisplay({ checkout: workspaceStatus.checkout })
     : undefined;
   const isWorkspaceDeleted = environment?.status === "destroyed";
+  // A removed provider environment (e.g. a worktree deleted after archive) is
+  // rebuilt on the next send, so keep the composer open for it.
+  const isEnvironmentRebuildable =
+    environment?.environmentProviderId != null &&
+    environment.environmentProviderSelection !== null;
   const threadEnvironmentGoneStatus =
-    environment?.status === "destroyed" ? environment.status : null;
+    environment?.status === "destroyed" && !isEnvironmentRebuildable
+      ? environment.status
+      : null;
   const threadGitStatusDisplay = getGitStatusDisplay(workspaceStatus, {
     mergeBaseBranch: effectiveMergeBaseBranch,
     showBranchComparison: showBranchComparisonUi,
@@ -2484,7 +2491,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     workspaceDeleted: isWorkspaceDeleted,
   });
   const threadTitle = getThreadDisplayTitle(thread);
-  const responsiveWorkspaceActions: ThreadActionsMenuResponsiveAction[] =
+  const workspaceOpenActions: ThreadActionsMenuResponsiveAction[] =
     workspaceOpenPath && preferredDirectoryTarget
       ? [
           preferredDirectoryTarget,
@@ -2493,7 +2500,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
           ),
         ].map((target) => ({
           icon: "FolderOpen" as const,
-          label: `Open workspace in ${target.label}`,
+          label: target.label,
           onSelect: async () => {
             if (target.id === preferredDirectoryTarget.id) {
               await openPathInPreferredDirectoryTarget({
@@ -2510,6 +2517,17 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
             });
           },
         }))
+      : [];
+  // The last-used app gets one row; every other app goes in an "Open in" submenu.
+  const [preferredOpenAction, ...otherOpenActions] = workspaceOpenActions;
+  const responsiveWorkspaceActions: ThreadActionsMenuResponsiveAction[] =
+    preferredOpenAction
+      ? [
+          { ...preferredOpenAction, label: `Open in ${preferredOpenAction.label}` },
+          ...(otherOpenActions.length > 0
+            ? [{ icon: "FolderOpen" as const, label: "Open in", children: otherOpenActions }]
+            : []),
+        ]
       : [];
   const responsiveGitActions: ThreadActionsMenuResponsiveAction[] =
     gitActions.threadHeaderGitActions.map((action) => ({

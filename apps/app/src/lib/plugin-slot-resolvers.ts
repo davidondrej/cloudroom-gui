@@ -272,6 +272,12 @@ export type FileOpenerPreferenceMap = Record<string, string>;
 
 export const BUILT_IN_FILE_OPENER_PREFERENCE = "__builtin__";
 
+export const BUILT_IN_PREVIEW_EXTENSIONS: ReadonlySet<string> = new Set([
+  "md",
+  "markdown",
+  "csv",
+]);
+
 export function getFileExtension(path: string): string | null {
   const name = path.split("/").at(-1) ?? path;
   const dotIndex = name.lastIndexOf(".");
@@ -306,7 +312,10 @@ export function resolveFileOpenerReplacement(args: {
   const extension = getFileExtension(args.path);
   if (extension === null) return OWNER_REPLACEMENT;
   const preference = args.preference?.[extension];
-  if (preference === BUILT_IN_FILE_OPENER_PREFERENCE) {
+  if (
+    preference === BUILT_IN_FILE_OPENER_PREFERENCE ||
+    (preference === undefined && BUILT_IN_PREVIEW_EXTENSIONS.has(extension))
+  ) {
     return OWNER_REPLACEMENT;
   }
   return resolveReplacement(

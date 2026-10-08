@@ -152,7 +152,7 @@ describe("replacement resolvers", () => {
     expect(resolveReplacement([], () => true)).toEqual({ kind: "owner" });
   });
 
-  it("activates the first matching file opener and preserves per-open overrides", () => {
+  it("keeps built-in previews by default and preserves per-open overrides", () => {
     const markdown: PluginFileOpenerSlot = {
       pluginId: "docs",
       generation: 1,
@@ -174,7 +174,13 @@ describe("replacement resolvers", () => {
         registrations: [markdown, text],
         path: "README.MD",
       }),
-    ).toEqual({ kind: "plugin", registration: markdown });
+    ).toEqual({ kind: "owner" });
+    expect(
+      resolveFileOpenerReplacement({
+        registrations: [markdown, text],
+        path: "notes.txt",
+      }),
+    ).toEqual({ kind: "plugin", registration: text });
     expect(
       resolveFileOpenerReplacement({
         registrations: [markdown, alternate],
@@ -217,7 +223,7 @@ describe("replacement resolvers", () => {
       generation: 1,
       id: "markdown",
       title: "Alpha Markdown",
-      extensions: ["md"],
+      extensions: ["mdx"],
       component: Component,
     };
     const second = { ...first, pluginId: "beta", title: "Beta Markdown" };
@@ -225,20 +231,20 @@ describe("replacement resolvers", () => {
     expect(
       resolveFileOpenerReplacement({
         registrations: [first, second],
-        path: "README.md",
+        path: "README.mdx",
       }),
     ).toEqual({ kind: "plugin", registration: first });
     expect(
       resolveFileOpenerReplacement({
         registrations: [second],
-        path: "README.md",
+        path: "README.mdx",
       }),
     ).toEqual({ kind: "plugin", registration: second });
     expect(
       resolveFileOpenerReplacement({
         registrations: [second],
-        preference: { md: buildFileOpenerRef(first) },
-        path: "README.md",
+        preference: { mdx: buildFileOpenerRef(first) },
+        path: "README.mdx",
       }),
     ).toEqual({ kind: "owner" });
   });

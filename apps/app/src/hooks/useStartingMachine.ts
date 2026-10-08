@@ -1,5 +1,6 @@
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
+import { cloudCanRunHarness } from "@/hooks/queries/cloudroom-queries";
 import { createLocalStorageEnumStorage } from "@/lib/browser-storage";
 
 export type StartingMachine = "cloud" | "last";
@@ -26,4 +27,15 @@ export function startingExecutionTarget(newThread: boolean): "local" | "cloud" {
     localStorage.getItem("cloudroom.executionTarget") === "cloud"
     ? "cloud"
     : "local";
+}
+
+export function agentExecutionTarget(
+  target: "local" | "cloud",
+  cloudPicked: boolean,
+  providerId: string,
+): "local" | "cloud" {
+  return target === "cloud" && !cloudPicked && providerId !== "" &&
+    !cloudCanRunHarness(providerId)
+    ? "local"
+    : target;
 }

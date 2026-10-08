@@ -3,7 +3,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { BbPluginApi, PluginTurnFailedEvent } from "@get-bb/plugin-sdk";
 import { z } from "zod";
-import { ClaudeLogin, claudeSecret, localClaudeEmail } from "./src/claude.js";
+import {
+  ClaudeLogin,
+  claudeSecret,
+  claudeUsage,
+  localClaudeEmail,
+} from "./src/claude.js";
 import {
   CodexLogin,
   codexAccountId,
@@ -187,7 +192,14 @@ export default async function plugin(bb: BbPluginApi) {
     const before = [account.plan, previous?.error].join();
     try {
       const secret = await freshSecret(account);
-      {
+      if (account.provider === "claude-code") {
+        usage.set(account.id, {
+          windows: await claudeUsage(secret),
+          error: null,
+          signInAgain: false,
+          at: Date.now(),
+        });
+      } else {
         const measured = await codexUsage(secret);
         account.plan = measured.plan ?? account.plan;
         usage.set(account.id, {
@@ -208,10 +220,16 @@ export default async function plugin(bb: BbPluginApi) {
     if ([account.plan, usage.get(account.id)?.error].join() !== before)
       await changed();
   };
+  // A Claude check is a real 1-token reply that can open a 5-hour window,
+  // so only the account in use is checked in the background.
   const refreshAll = (force = false) =>
     Promise.all(
       accounts
-        .filter((account) => account.provider === "codex")
+        .filter(
+          (account) =>
+            account.provider === "codex" ||
+            account.id === current("claude-code"),
+        )
         .map((account) => refreshUsage(account, force)),
     );
   const timer = setInterval(() => void refreshAll(), USAGE_EVERY_MS);
@@ -246,7 +264,7 @@ export default async function plugin(bb: BbPluginApi) {
     ids(provider);
     if (use) move(provider, account.id, 0);
     await changed();
-    if (provider === "codex") void refreshUsage(account, true);
+    void refreshUsage(account, true);
   };
 
   const view = async (provider: Provider): Promise<AccountView[]> => {
@@ -265,7 +283,12 @@ export default async function plugin(bb: BbPluginApi) {
         inUse: id === using,
         limitedUntil: limitedUntil(provider, id),
         error: measured?.error ?? null,
-        windows: measured?.windows ?? [],
+        // Accounts not in use aren't checked, so a window past its reset shows empty.
+        windows: (measured?.windows ?? []).map((window) =>
+          window.resetsAt !== null && window.resetsAt <= Date.now()
+            ? { ...window, usedPercent: 0, resetsAt: null }
+            : window,
+        ),
         needsSignIn: false,
       };
     });
@@ -301,6 +324,8 @@ export default async function plugin(bb: BbPluginApi) {
         move(provider, id, 0);
         delete limits[`${provider}:${id}`];
         await changed();
+        const account = accounts.find((entry) => entry.id === id);
+        if (account) void refreshUsage(account, true);
         return null;
       },
       "accounts.move": async ({ provider, id, direction }) => {

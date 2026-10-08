@@ -1057,14 +1057,14 @@ export function PrivacySettingsSection({
         </SettingsWithControl>
 
         <SettingsWithControl
-          label="Share anonymous usage data"
-          description="Send anonymous app starts, thread and message counts, plugin installs, and short letters-only settings searches that find nothing to help improve Cloudroom. Turning this off takes effect immediately for this server. Details: cloudroom.dev/privacy."
+          label="Share usage data and setup errors"
+          description="Send app starts, thread and message counts, plugin installs, and short letters-only settings searches that find nothing to help improve Cloudroom. Failed agent connects and installs are saved with your account so we can fix them. Turning this off takes effect immediately for this server. Details: cloudroom.dev/privacy."
         >
           <Switch
             checked={telemetryEnabled}
             disabled={disabled}
             onCheckedChange={onTelemetryEnabledChange}
-            aria-label="Share anonymous usage data"
+            aria-label="Share usage data and setup errors"
           />
         </SettingsWithControl>
 

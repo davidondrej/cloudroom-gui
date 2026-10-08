@@ -25,6 +25,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/hooks/queries/system-queries", () => ({
   useHostProviderCliStatus: () => ({ data: undefined }),
   useInstallableProviders: () => ({ data: [] }),
+  useSystemConfig: () => ({ data: undefined }),
+  useSystemProviderStates: () => ({ data: undefined, refetch: vi.fn() }),
   useSystemProviders: () => ({ data: mocks.providers, isPending: false }),
 }));
 

@@ -5,7 +5,7 @@ import type { AppSurface, RequestAppSurface } from "@cloudroom/config/app-surfac
 import type { ServerLogger } from "../../types.js";
 
 const POSTHOG_INGESTION_URL = "https://us.i.posthog.com/capture/";
-const TELEMETRY_ID_FILE_NAME = "telemetry-id";
+export const TELEMETRY_ID_FILE_NAME = "telemetry-id";
 
 const telemetryAppSurfaceStorage = new AsyncLocalStorage<RequestAppSurface>();
 

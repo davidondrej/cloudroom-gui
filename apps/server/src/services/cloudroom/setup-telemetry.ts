@@ -3,18 +3,22 @@ import { existsSync, readdirSync, statSync, statfsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { cpus, homedir, release, totalmem } from "node:os";
 import { delimiter, join } from "node:path";
+import { getAppSettings } from "@cloudroom/db";
 import { findCliExecutable, type KnownCli } from "@cloudroom/process-utils";
+import { readOrCreateSecretFile } from "@cloudroom/secret-storage";
 import type { AppDeps } from "../../types.js";
-import type { TelemetryValue } from "../system/telemetry.js";
+import { TELEMETRY_ID_FILE_NAME, type TelemetryValue } from "../system/telemetry.js";
 import { claudeAuthStatus, claudeBinary, desktopClaude } from "./claude-token.js";
 import { macAccess } from "./previews.js";
+import type { SandboxDirectory } from "./sandboxes.js";
 import { copyLogins } from "./sync.js";
 
 /**
- * Onboarding telemetry (ADR 0198): an anonymous snapshot of this Mac's agent setup, plus connect and install results.
+ * Onboarding telemetry (ADR 0198): a snapshot of this Mac's agent setup, plus connect and install results.
  * Only categories, versions, booleans, and day counts. Never paths, emails, tokens, or file contents.
+ * Failures also go to our database with the account (ADR 0201).
  */
-type Deps = Pick<AppDeps, "telemetry" | "config" | "logger">;
+type Deps = Pick<AppDeps, "telemetry" | "config" | "logger" | "db"> & { sandboxes: Pick<SandboxDirectory, "setupEvent">; telemetryAllowed: boolean };
 let deps: Deps | null = null;
 let firstLaunchAt = Date.now();
 let failureSnapshotSent = false;
@@ -27,6 +31,7 @@ export function startSetupTelemetry(appDeps: Deps): void {
   try { firstLaunchAt = statSync(appDeps.config.dataDir).birthtimeMs || firstLaunchAt; } catch { /* keep now */ }
   const marker = join(appDeps.config.dataDir, "cloudroom-setup-snapshot.json");
   setTimeout(() => {
+    linkInstall();
     void readFile(marker).then(() => {}, async () => {
       await sendSnapshot("first_launch");
       await writeFile(marker, JSON.stringify({ sentAt: Date.now() }), { mode: 0o600 });
@@ -77,10 +82,25 @@ export function cliPlace(path: string | null | undefined): string | null {
   return "other";
 }
 
+/** Links this install to its Cloudroom account, so its PostHog events map to a person. At startup and after sign-in. */
+export const linkInstall = () => save("install_linked", {});
+
 /** Telemetry must never break setup, so building or sending an event can't throw. */
 function capture(name: "setup_snapshot" | "agent_connect" | "cli_install" | "account_sign_in_failed", properties: () => Record<string, TelemetryValue>): void {
-  try { deps?.telemetry.capture({ name, properties: { ...properties(), seconds_since_first_launch: secondsSinceFirstLaunch() } }); }
-  catch (error) { deps?.logger.debug({ err: error, event: name }, "Setup telemetry failed"); }
+  try {
+    const event: Record<string, TelemetryValue> = { ...properties(), seconds_since_first_launch: secondsSinceFirstLaunch() };
+    deps?.telemetry.capture({ name, properties: event });
+    if (event.outcome === "failed" || event.reason === "connect_failed") save(name, event);
+  } catch (error) { deps?.logger.debug({ err: error, event: name }, "Setup telemetry failed"); }
+}
+
+/** Saves an event with the signed-in account through the website. Signed out, telemetry off, or BB_TELEMETRY=false: nothing is sent. */
+function save(event: string, context: Record<string, TelemetryValue>): void {
+  void Promise.resolve().then(async () => {
+    if (!deps?.telemetryAllowed || !getAppSettings(deps.db).telemetryEnabled) return;
+    const installId = await readOrCreateSecretFile({ bytes: 16, dataDir: deps.config.dataDir, encoding: "hex", fileName: TELEMETRY_ID_FILE_NAME });
+    await deps.sandboxes.setupEvent(event, { ...context, install_id: installId });
+  }).catch(error => deps?.logger.debug({ err: error, event }, "Setup event not saved"));
 }
 
 const run = (file: string, args: string[]) => new Promise<string>(resolve => {

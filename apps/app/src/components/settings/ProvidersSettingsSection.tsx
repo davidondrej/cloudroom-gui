@@ -1,11 +1,12 @@
 import { ClaudeConnectionButton } from "@/components/ClaudeConnection";
-import { useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import type {
   AppSettings,
   CompletedTurnDisplay,
   ProviderInfo,
 } from "@cloudroom/domain";
+import type { SystemProviderState } from "@cloudroom/server-contract";
 import { Button } from "@cloudroom/shared-ui/button";
 import { COARSE_POINTER_ICON_SIZE_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
 import { Icon } from "@cloudroom/shared-ui/icon";
@@ -31,11 +32,15 @@ import { providerCliJobKey } from "@/components/provider-cli/provider-cli-instal
 import {
   useHostProviderCliStatus,
   useInstallableProviders,
+  useSystemConfig,
+  useSystemProviderStates,
   useSystemProviders,
 } from "@/hooks/queries/system-queries";
 import { useHostDaemon } from "@/hooks/useHostDaemon";
 import { getProviderIconInfo } from "@/lib/provider-icon";
+import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
 import { ProviderIconMark } from "./ProviderIconMark";
+import { ProviderLoginButton } from "./ProviderLoginButton";
 import {
   SortableSettingsRowList,
   useSortableSettingsRow,
@@ -126,6 +131,7 @@ interface SortableProviderRowProps {
   isDefault: boolean;
   onGeneralSettingsChange: ProvidersSettingsSectionProps["onGeneralSettingsChange"];
   provider: ProviderInfo;
+  setupAction: ReactNode;
 }
 
 function SortableProviderRow({
@@ -134,6 +140,7 @@ function SortableProviderRow({
   isDefault,
   onGeneralSettingsChange,
   provider,
+  setupAction,
 }: SortableProviderRowProps) {
   const { setNodeRef, style, isDragging, handle } = useSortableSettingsRow({
     id: provider.id,
@@ -156,24 +163,78 @@ function SortableProviderRow({
         {provider.displayName}
       </span>
       {!provider.available ? <SettingsBadge>Unavailable</SettingsBadge> : null}
-      {isDefault ? (
-        <SettingsBadge>Default</SettingsBadge>
-      ) : (
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled || !provider.available}
-          onClick={() =>
-            onGeneralSettingsChange({
-              ...generalSettings,
-              defaultProviderId: provider.id,
-            })
-          }
-        >
-          Make default
-        </Button>
-      )}
+      {isDefault ? <SettingsBadge>Default</SettingsBadge> : null}
+      {setupAction ??
+        (isDefault ? null : (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={disabled || !provider.available}
+            onClick={() =>
+              onGeneralSettingsChange({
+                ...generalSettings,
+                defaultProviderId: provider.id,
+              })
+            }
+          >
+            Make default
+          </Button>
+        ))}
     </SettingsRow>
+  );
+}
+
+function ProviderSetupButton({
+  hostId,
+  onChange,
+  provider,
+  state,
+}: {
+  hostId: string;
+  onChange: () => void;
+  provider: ProviderInfo;
+  state: SystemProviderState;
+}) {
+  const { queuedJobKeys, runningJobKey, startInstall } =
+    useProviderCliInstallRunner();
+  if (state.status !== "not_installed") {
+    if (provider.id === "claude-code")
+      return (
+        <ClaudeConnectionButton
+          target="local"
+          hostId={hostId}
+          presentation="inline"
+          className="h-8 px-3"
+          text="Log in"
+          onConnected={onChange}
+        />
+      );
+    return state.loginCommand ? (
+      <ProviderLoginButton
+        command={state.loginCommand}
+        displayName={provider.displayName}
+        hostId={hostId}
+        onDone={onChange}
+      />
+    ) : null;
+  }
+  const installUrl = provider.strings?.installUrl;
+  if (!state.canInstall && !installUrl) return null;
+  const jobKey = providerCliJobKey(hostId, provider.id);
+  const installing = runningJobKey === jobKey || queuedJobKeys.has(jobKey);
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={installing}
+      onClick={() => {
+        if (state.canInstall)
+          startInstall({ hostId, issue: hiddenProviderTarget(provider) });
+        else if (installUrl) openUrlInExternalBrowser(installUrl);
+      }}
+    >
+      {installing ? "Installing…" : "Install"}
+    </Button>
   );
 }
 
@@ -310,6 +371,33 @@ export function ProvidersSettingsSection({
   const ids = providers.map((provider) => provider.id);
   const defaultProviderId =
     generalSettings.defaultProviderId ?? allProviders[0]?.id ?? null;
+  const primaryHostId = useSystemConfig().data?.primaryHostId ?? null;
+  const setupHostId = hostId ?? primaryHostId;
+  const statesQuery = useSystemProviderStates({
+    hostId: setupHostId ?? undefined,
+    enabled: setupHostId !== null,
+    poll: false,
+  });
+  const { refetch: refetchStates } = statesQuery;
+  const refreshStates = useCallback(() => void refetchStates(), [refetchStates]);
+  const setupStates = new Map(
+    (statesQuery.data?.providers ?? []).flatMap((state) =>
+      state.status === "unauthenticated" ||
+      state.status === "expired" ||
+      (state.status === "not_installed" &&
+        cliStatus?.[state.providerId]?.installed !== true)
+        ? [[state.providerId, state] as const]
+        : [],
+    ),
+  );
+  const staleInstall = (statesQuery.data?.providers ?? []).some(
+    (state) =>
+      state.status === "not_installed" &&
+      cliStatus?.[state.providerId]?.installed === true,
+  );
+  useEffect(() => {
+    if (staleInstall) refreshStates();
+  }, [staleInstall, refreshStates]);
   const installable: InstallableProvider[] = [
     ...allProviders.flatMap((provider) => {
       const status = cliStatus?.[provider.id];
@@ -366,25 +454,35 @@ export function ProvidersSettingsSection({
             disabled={disabled}
             onReorder={handleReorder}
           >
-            {providers.map((provider) => (
-              <SortableProviderRow
-                key={provider.id}
-                disabled={disabled}
-                generalSettings={generalSettings}
-                isDefault={provider.id === defaultProviderId}
-                onGeneralSettingsChange={onGeneralSettingsChange}
-                provider={provider}
-              />
-            ))}
+            {providers.map((provider) => {
+              const setupState = setupStates.get(provider.id);
+              return (
+                <SortableProviderRow
+                  key={provider.id}
+                  disabled={disabled}
+                  generalSettings={generalSettings}
+                  isDefault={provider.id === defaultProviderId}
+                  onGeneralSettingsChange={onGeneralSettingsChange}
+                  provider={provider}
+                  setupAction={
+                    setupHostId !== null && setupState !== undefined ? (
+                      <ProviderSetupButton
+                        hostId={setupHostId}
+                        onChange={refreshStates}
+                        provider={provider}
+                        state={setupState}
+                      />
+                    ) : null
+                  }
+                />
+              );
+            })}
           </SortableSettingsRowList>
         )}
       </SettingsSection>
       <InstallableProvidersSection hostId={hostId} installable={installable} />
       {providers.some((provider) => provider.id === "claude-code") ? (
-        <div className="space-y-3">
-          <ClaudeConnectionButton target="local" presentation="settings" />
-          <ClaudeConnectionButton target="cloud" presentation="settings" />
-        </div>
+        <ClaudeConnectionButton target="cloud" presentation="settings" />
       ) : null}
     </>
   );

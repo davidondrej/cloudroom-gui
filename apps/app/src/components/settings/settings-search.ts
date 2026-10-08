@@ -76,7 +76,7 @@ const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
   ]),
   ...entries("general", "Privacy & diagnostics", [
     ["Streamer mode", "hide secrets screen share recording privacy"],
-    ["Share anonymous usage data", "telemetry analytics privacy"],
+    ["Share usage data and setup errors", "telemetry analytics privacy"],
     ["Send agent feedback", "bug reports privacy"],
     ["Show diagnostic events", "debug logs errors"],
   ]),

@@ -281,7 +281,7 @@ function NavigateButton({ to, label }: { to: string; label: string }) {
 }
 
 describe("SkillsOverview", () => {
-  it("defaults to BB skills and places Cloudroom Official skills first", () => {
+  it("shows every provider's skills by default", () => {
     const markup = render({
       skills: [
         makeSkill({ name: "claude-skill", provider: "claude-code" }),
@@ -298,18 +298,15 @@ describe("SkillsOverview", () => {
         }),
       ],
     });
-    expect(markup).not.toContain("claude-skill");
+    expect(markup).toContain("claude-skill");
     expect(markup).toContain("Review the current diff.");
-    expect(markup).toContain('aria-label="Filters: Provider: Cloudroom"');
+    expect(markup).toContain('aria-label="Filters"');
     expect(markup).not.toContain("Provider: 1 selected");
     expect(markup).toContain("Sort");
     expect(markup).not.toContain('role="tab"');
     expect(markup).toContain("Cloudroom Official");
     expect(markup).toContain("New Cloudroom skill");
     expect(markup).not.toContain('aria-label="Open zz-official-skill"');
-    expect(markup.indexOf("zz-official-skill")).toBeLessThan(
-      markup.indexOf("aa-user-skill"),
-    );
   });
 
   it("labels the Type filter and preserves independent source toggles", async () => {
@@ -348,9 +345,7 @@ describe("SkillsOverview", () => {
     expect(screen.getByText("automations")).toBeTruthy();
     const typeTrigger = screen.getByRole("button", { name: /^Filters/ });
     focusWithKeyboard(typeTrigger);
-    expect((await screen.findByRole("tooltip")).textContent).toBe(
-      "Provider: Cloudroom",
-    );
+    expect((await screen.findByRole("tooltip")).textContent).toBe("Filters: All");
     fireEvent.blur(typeTrigger);
     fireEvent.pointerDown(typeTrigger);
     expect(screen.getByText("Type")).toBeTruthy();
@@ -415,7 +410,6 @@ describe("SkillsOverview", () => {
 
     const trigger = screen.getByRole("button", { name: /^Filters/ });
     fireEvent.pointerDown(trigger);
-    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Cloudroom" }));
     fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "User" }));
 
     expect(await screen.findByText("claude-authored")).toBeTruthy();
@@ -642,7 +636,7 @@ describe("SkillsOverview", () => {
       screen
         .getByRole("menuitemcheckbox", { name: "Cloudroom" })
         .getAttribute("aria-disabled"),
-    ).toBeNull();
+    ).toBe("true");
   });
 
   it("labels the Provider filter and prefixes its logo tooltip", async () => {
@@ -667,7 +661,7 @@ describe("SkillsOverview", () => {
     const providerTrigger = screen.getByRole("button", { name: /^Filters/ });
     focusWithKeyboard(providerTrigger);
     expect((await screen.findByRole("tooltip")).textContent?.trim()).toBe(
-      "Provider: Cloudroom",
+      "Filters: All",
     );
     fireEvent.blur(providerTrigger);
 
@@ -678,7 +672,7 @@ describe("SkillsOverview", () => {
     ).not.toBeNull();
   });
 
-  it("keeps the default BB filter selected when only provider skills exist", async () => {
+  it("shows provider skills by default with the Cloudroom filter off", async () => {
     renderDom(
       <SkillsOverview
         providerRoster={NO_PROVIDER_ROSTER}
@@ -696,19 +690,11 @@ describe("SkillsOverview", () => {
       />,
     );
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /^Filters/ })).toBeTruthy();
-      expect(screen.queryByText("codex-skill")).toBeNull();
-    });
+    expect(await screen.findByText("codex-skill")).toBeTruthy();
 
     fireEvent.pointerDown(screen.getByRole("button", { name: /^Filters/ }));
     const bbFilter = screen.getByRole("menuitemcheckbox", { name: "Cloudroom" });
-    expect(bbFilter.getAttribute("aria-checked")).toBe("true");
-    expect(bbFilter.getAttribute("aria-disabled")).toBeNull();
-
-    fireEvent.click(bbFilter);
-
-    expect(await screen.findByText("codex-skill")).toBeTruthy();
+    expect(bbFilter.getAttribute("aria-checked")).toBe("false");
   });
 
   it("preserves a user-selected provider filter across library refreshes", async () => {
@@ -733,7 +719,6 @@ describe("SkillsOverview", () => {
     );
 
     fireEvent.pointerDown(screen.getByRole("button", { name: /^Filters/ }));
-    fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Cloudroom" }));
     fireEvent.click(
       screen.getByRole("menuitemcheckbox", { name: "Claude Code" }),
     );

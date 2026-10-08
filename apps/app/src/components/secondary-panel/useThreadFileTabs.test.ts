@@ -975,7 +975,7 @@ describe("useThreadFileTabs file opener diversion", () => {
           {
             id: "editor",
             title: "Notes editor",
-            extensions: ["md"],
+            extensions: ["mdx"],
             component: NotesEditor,
           },
         ],
@@ -1000,7 +1000,7 @@ describe("useThreadFileTabs file opener diversion", () => {
         kind: "workspace-file-preview",
         tab: {
           lineRange: { startLineNumber: 7, endLineNumber: 9 },
-          path: "notes/todo.md",
+          path: "notes/todo.mdx",
           source: { kind: "working-tree" },
           statusLabel: null,
         },
@@ -1011,13 +1011,13 @@ describe("useThreadFileTabs file opener diversion", () => {
     expect(firstTab).toMatchObject({
       pluginId: "notes",
       actionId: "file-opener:editor",
-      title: "todo.md",
+      title: "todo.mdx",
     });
     const params = JSON.parse(firstTab.paramsJson ?? "null") as {
       path: string;
       source: { kind: string; environmentId: string | null };
     };
-    expect(params.path).toBe("notes/todo.md");
+    expect(params.path).toBe("notes/todo.mdx");
     expect(params.source).toMatchObject({
       kind: "workspace",
       environmentId: "env_1",
@@ -1028,7 +1028,7 @@ describe("useThreadFileTabs file opener diversion", () => {
         lineRange: { startLineNumber: 7, endLineNumber: 9 },
       },
     });
-    expect(result.current.activeWorkspaceFilePath).toBe("notes/todo.md");
+    expect(result.current.activeWorkspaceFilePath).toBe("notes/todo.mdx");
 
     const firstTabId = firstTab.id;
     act(() =>
@@ -1036,7 +1036,7 @@ describe("useThreadFileTabs file opener diversion", () => {
         kind: "workspace-file-preview",
         tab: {
           lineRange: { startLineNumber: 15, endLineNumber: 15 },
-          path: "notes/todo.md",
+          path: "notes/todo.mdx",
           source: { kind: "working-tree" },
           statusLabel: null,
         },
@@ -1066,7 +1066,7 @@ describe("useThreadFileTabs file opener diversion", () => {
         kind: "workspace-file-preview",
         tab: {
           lineRange: { startLineNumber: 15, endLineNumber: 15 },
-          path: "notes/todo.md",
+          path: "notes/todo.mdx",
           source: { kind: "working-tree" },
           statusLabel: null,
         },
@@ -1100,7 +1100,7 @@ describe("useThreadFileTabs file opener diversion", () => {
         kind: "host-file-preview",
         tab: {
           lineRange: { startLineNumber: 11, endLineNumber: 12 },
-          path: "/tmp/readme.md",
+          path: "/tmp/readme.mdx",
         },
       }),
     );
@@ -1112,11 +1112,11 @@ describe("useThreadFileTabs file opener diversion", () => {
       hostId: null,
       tab: {
         lineRange: { startLineNumber: 11, endLineNumber: 12 },
-        path: "/tmp/readme.md",
+        path: "/tmp/readme.mdx",
       },
       threadId: "thr_owner",
     });
-    expect(result.current.activeHostFilePath).toBe("/tmp/readme.md");
+    expect(result.current.activeHostFilePath).toBe("/tmp/readme.mdx");
     expect(result.current.activeHostFileLineRange).toEqual({
       startLineNumber: 11,
       endLineNumber: 12,
@@ -1127,7 +1127,7 @@ describe("useThreadFileTabs file opener diversion", () => {
         kind: "thread-storage-file-preview",
         tab: {
           lineRange: { startLineNumber: 2, endLineNumber: 5 },
-          path: "artifacts/report.md",
+          path: "artifacts/report.mdx",
         },
       }),
     );
@@ -1137,11 +1137,11 @@ describe("useThreadFileTabs file opener diversion", () => {
       environmentId: "env_1",
       tab: {
         lineRange: { startLineNumber: 2, endLineNumber: 5 },
-        path: "artifacts/report.md",
+        path: "artifacts/report.mdx",
       },
       threadId: "thr_owner",
     });
-    expect(result.current.activeStorageFilePath).toBe("artifacts/report.md");
+    expect(result.current.activeStorageFilePath).toBe("artifacts/report.mdx");
     expect(storageOpenerTab.fileOpenerOwner?.tab.lineRange).toEqual({
       startLineNumber: 2,
       endLineNumber: 5,
@@ -1165,14 +1165,14 @@ describe("useThreadFileTabs file opener diversion", () => {
         kind: "workspace-file-preview",
         tab: {
           lineRange: null,
-          path: "notes/todo.md",
+          path: "notes/todo.mdx",
           source: { kind: "head" },
           statusLabel: null,
         },
       }),
     );
     expect(result.current.activeTab?.kind).toBe("workspace-file-preview");
-    expect(result.current.activeWorkspaceFilePath).toBe("notes/todo.md");
+    expect(result.current.activeWorkspaceFilePath).toBe("notes/todo.mdx");
 
     act(() =>
       result.current.openTab({
@@ -1205,7 +1205,7 @@ describe("useThreadFileTabs file opener diversion", () => {
     act(() =>
       result.current.selectFileSearchResult({
         source: "workspace",
-        path: "notes/todo.md",
+        path: "notes/todo.mdx",
       }),
     );
 
@@ -1213,13 +1213,13 @@ describe("useThreadFileTabs file opener diversion", () => {
     expect(pluginTab).toMatchObject({
       pluginId: "notes",
       actionId: "file-opener:editor",
-      title: "todo.md",
+      title: "todo.mdx",
     });
     const params = JSON.parse(pluginTab.paramsJson ?? "null") as {
       path: string;
       source: { kind: string; environmentId: string | null };
     };
-    expect(params.path).toBe("notes/todo.md");
+    expect(params.path).toBe("notes/todo.mdx");
     expect(params.source).toMatchObject({
       kind: "workspace",
       environmentId: "env_1",
@@ -1238,7 +1238,7 @@ describe("useThreadFileTabs file opener diversion", () => {
         syncThreadId: "thr_storage_search",
         environmentId: "env_1",
         storageFiles: {
-          files: [{ name: "notes.md", path: "artifacts/notes.md" }],
+          files: [{ name: "notes.mdx", path: "artifacts/notes.mdx" }],
           truncated: false,
         },
         terminalSessions: undefined,
@@ -1249,7 +1249,7 @@ describe("useThreadFileTabs file opener diversion", () => {
     act(() =>
       result.current.selectFileSearchResult({
         source: "thread-storage",
-        path: "artifacts/notes.md",
+        path: "artifacts/notes.mdx",
       }),
     );
 
@@ -1257,12 +1257,12 @@ describe("useThreadFileTabs file opener diversion", () => {
       kind: "plugin-panel",
       pluginId: "notes",
       actionId: "file-opener:editor",
-      title: "notes.md",
+      title: "notes.mdx",
       fileOpenerOwner: {
         kind: "thread-storage-file-preview",
         environmentId: "env_1",
         threadId: "thr_storage_search",
-        tab: { path: "artifacts/notes.md" },
+        tab: { path: "artifacts/notes.mdx" },
       },
     });
     expect(result.current.activeTab?.kind).toBe("plugin-panel");
@@ -1298,7 +1298,7 @@ describe("useThreadFileTabs file opener diversion", () => {
   it("honors a pinned built-in preference from the file search", () => {
     window.localStorage.setItem(
       "bb.fileOpenerByExtension",
-      JSON.stringify({ md: "__builtin__" }),
+      JSON.stringify({ mdx: "__builtin__" }),
     );
     registerNotesOpener();
     const { result } = renderThreadHook(() =>
@@ -1315,12 +1315,12 @@ describe("useThreadFileTabs file opener diversion", () => {
     act(() =>
       result.current.selectFileSearchResult({
         source: "workspace",
-        path: "notes/todo.md",
+        path: "notes/todo.mdx",
       }),
     );
 
     expect(result.current.activeTab?.kind).toBe("workspace-file-preview");
-    expect(result.current.activeWorkspaceFilePath).toBe("notes/todo.md");
+    expect(result.current.activeWorkspaceFilePath).toBe("notes/todo.mdx");
   });
 
   it("falls back to the built-in preview when no opener is registered", () => {
@@ -1339,20 +1339,20 @@ describe("useThreadFileTabs file opener diversion", () => {
         kind: "workspace-file-preview",
         tab: {
           lineRange: null,
-          path: "notes/todo.md",
+          path: "notes/todo.mdx",
           source: { kind: "working-tree" },
           statusLabel: null,
         },
       }),
     );
     expect(result.current.activeTab?.kind).toBe("workspace-file-preview");
-    expect(result.current.activeWorkspaceFilePath).toBe("notes/todo.md");
+    expect(result.current.activeWorkspaceFilePath).toBe("notes/todo.mdx");
   });
 
   it("keeps the built-in preview when Settings pins it", () => {
     window.localStorage.setItem(
       "bb.fileOpenerByExtension",
-      JSON.stringify({ md: "__builtin__" }),
+      JSON.stringify({ mdx: "__builtin__" }),
     );
     registerNotesOpener();
     const { result } = renderThreadHook(() =>
@@ -1370,7 +1370,7 @@ describe("useThreadFileTabs file opener diversion", () => {
         kind: "workspace-file-preview",
         tab: {
           lineRange: null,
-          path: "notes/todo.md",
+          path: "notes/todo.mdx",
           source: { kind: "working-tree" },
           statusLabel: null,
         },
@@ -1378,7 +1378,7 @@ describe("useThreadFileTabs file opener diversion", () => {
     );
 
     expect(result.current.activeTab?.kind).toBe("workspace-file-preview");
-    expect(result.current.activeWorkspaceFilePath).toBe("notes/todo.md");
+    expect(result.current.activeWorkspaceFilePath).toBe("notes/todo.mdx");
   });
 
   it("honors per-open viewer overrides in both directions", () => {
@@ -1399,7 +1399,7 @@ describe("useThreadFileTabs file opener diversion", () => {
           kind: "workspace-file-preview",
           tab: {
             lineRange: null,
-            path: "notes/todo.md",
+            path: "notes/todo.mdx",
             source: { kind: "working-tree" },
             statusLabel: null,
           },
@@ -1408,7 +1408,7 @@ describe("useThreadFileTabs file opener diversion", () => {
       ),
     );
     expect(result.current.activeTab?.kind).toBe("workspace-file-preview");
-    expect(result.current.activeWorkspaceFilePath).toBe("notes/todo.md");
+    expect(result.current.activeWorkspaceFilePath).toBe("notes/todo.mdx");
 
     act(() =>
       result.current.openTab(
@@ -1416,7 +1416,7 @@ describe("useThreadFileTabs file opener diversion", () => {
           kind: "workspace-file-preview",
           tab: {
             lineRange: null,
-            path: "notes/other.md",
+            path: "notes/other.mdx",
             source: { kind: "working-tree" },
             statusLabel: null,
           },
@@ -1428,7 +1428,7 @@ describe("useThreadFileTabs file opener diversion", () => {
       kind: "plugin-panel",
       pluginId: "notes",
       actionId: "file-opener:editor",
-      title: "other.md",
+      title: "other.mdx",
     });
   });
 });

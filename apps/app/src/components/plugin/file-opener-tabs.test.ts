@@ -11,7 +11,7 @@ import {
 
 const MARKDOWN_OPENER = {
   component: () => null,
-  extensions: ["md"],
+  extensions: ["mdx"],
   generation: 1,
   id: "markdown",
   pluginId: "docs",
@@ -28,7 +28,7 @@ const REQUESTS: readonly {
       kind: "workspace-file-preview",
       tab: {
         lineRange: { endLineNumber: 12, startLineNumber: 8 },
-        path: "docs/readme.md",
+        path: "docs/readme.mdx",
         source: { kind: "working-tree" },
         statusLabel: null,
       },
@@ -38,14 +38,14 @@ const REQUESTS: readonly {
     label: "host file",
     request: {
       kind: "host-file-preview",
-      tab: { lineRange: null, path: "/Users/dev/notes.md" },
+      tab: { lineRange: null, path: "/Users/dev/notes.mdx" },
     },
   },
   {
     label: "thread-storage file",
     request: {
       kind: "thread-storage-file-preview",
-      tab: { lineRange: null, path: "plan.md" },
+      tab: { lineRange: null, path: "plan.mdx" },
     },
   },
 ];
@@ -77,7 +77,7 @@ describe("createFileOpenerTabForRequest thread-tabs contract", () => {
         kind: "workspace-file-preview",
         tab: {
           lineRange: null,
-          path: "docs/readme.md",
+          path: "docs/readme.mdx",
           source: { kind: "working-tree" },
           statusLabel: null,
         },
@@ -105,7 +105,7 @@ describe("createFileOpenerTabForRequest thread-tabs contract", () => {
         kind: "workspace-file-preview",
         tab: {
           lineRange: null,
-          path: "docs/readme.md",
+          path: "docs/readme.mdx",
           source: { kind: "working-tree" },
           statusLabel: null,
         },
@@ -129,7 +129,7 @@ describe("createFileOpenerOriginalTab", () => {
     const openerTab = buildFileOpenerPanelTab(
       MARKDOWN_OPENER,
       {
-        path: "persisted/readme.md",
+        path: "persisted/readme.mdx",
         source: {
           kind: "workspace",
           environmentId: null,
@@ -144,7 +144,7 @@ describe("createFileOpenerOriginalTab", () => {
         projectId: "proj_stale",
         tab: {
           lineRange: { endLineNumber: 12, startLineNumber: 8 },
-          path: "stale/readme.md",
+          path: "stale/readme.mdx",
           source: { kind: "working-tree" },
           statusLabel: null,
         },
@@ -156,7 +156,7 @@ describe("createFileOpenerOriginalTab", () => {
       environmentId: null,
       kind: "workspace-file-preview",
       lineRange: { endLineNumber: 12, startLineNumber: 8 },
-      path: "persisted/readme.md",
+      path: "persisted/readme.mdx",
       projectId: "proj_opened",
       source: { kind: "working-tree" },
     });
@@ -166,7 +166,7 @@ describe("createFileOpenerOriginalTab", () => {
     const openerTab = buildFileOpenerPanelTab(
       MARKDOWN_OPENER,
       {
-        path: "/persisted/notes.md",
+        path: "/persisted/notes.mdx",
         source: {
           kind: "host",
           environmentId: null,
@@ -181,7 +181,7 @@ describe("createFileOpenerOriginalTab", () => {
         kind: "host-file-preview",
         tab: {
           lineRange: { endLineNumber: 4, startLineNumber: 4 },
-          path: "/stale/notes.md",
+          path: "/stale/notes.mdx",
         },
         threadId: null,
       },
@@ -192,7 +192,7 @@ describe("createFileOpenerOriginalTab", () => {
       hostId: "host_opened",
       kind: "host-file-preview",
       lineRange: { endLineNumber: 4, startLineNumber: 4 },
-      path: "/persisted/notes.md",
+      path: "/persisted/notes.mdx",
       threadId: null,
     });
   });
@@ -201,7 +201,7 @@ describe("createFileOpenerOriginalTab", () => {
     const openerTab = buildFileOpenerPanelTab(
       MARKDOWN_OPENER,
       {
-        path: "persisted/plan.md",
+        path: "persisted/plan.mdx",
         source: {
           kind: "thread-storage",
           environmentId: "env_opened",
@@ -212,7 +212,7 @@ describe("createFileOpenerOriginalTab", () => {
       {
         environmentId: "env_stale",
         kind: "thread-storage-file-preview",
-        tab: { lineRange: null, path: "stale/plan.md" },
+        tab: { lineRange: null, path: "stale/plan.mdx" },
         threadId: "thr_stale",
       },
     );
@@ -221,7 +221,7 @@ describe("createFileOpenerOriginalTab", () => {
       environmentId: "env_opened",
       isPinned: false,
       kind: "thread-storage-file-preview",
-      path: "persisted/plan.md",
+      path: "persisted/plan.mdx",
       threadId: "thr_opened",
     });
   });

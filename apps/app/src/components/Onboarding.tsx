@@ -35,16 +35,16 @@ const dismissedAtom = atomWithStorage("cloudroom.setup.dismissed", false, boolea
 const openAtom = atom(false);
 export const useOpenSetup = () => useSetAtom(openAtom);
 
-const STEPS = ["Create account", "Connect an agent", "Connect GitHub", "Import your work"];
+const STEPS = ["Sign in", "Connect an agent", "Connect GitHub", "Import your work"];
 const STEP_IDS = ["account", "agent", "github", "project"] as const;
 type SetupStepId = (typeof STEP_IDS)[number];
-type SetupDetail = "github" | "google" | "email" | "claude" | "codex" | "both" | "none" | "existing" | "found" | "folder" | "bb_import" | "chat_import";
-function track(step: SetupStepId, action: "viewed" | "started" | "done" | "skipped" | "closed" | "detected" | "waitlist", detail: SetupDetail | null = null) {
+type SetupDetail = "claude" | "codex" | "both" | "none" | "existing" | "found" | "folder" | "bb_import" | "chat_import";
+function track(step: SetupStepId, action: "viewed" | "started" | "done" | "skipped" | "closed" | "detected", detail: SetupDetail | null = null) {
   void fetchWithAppSurface("/api/v1/cloudroom/setup-step", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ step, action, detail }),
   }).catch(() => {});
 }
-const LATER = ["Invite-only", "Claude Code or Codex", "For private repos", "Last step"];
+const LATER = ["Your Cloudroom account", "Claude Code or Codex", "For private repos", "Last step"];
 const PALETTE = {
   "--ob-bg": "#faf7ef", "--ob-rail": "#f2ecde", "--ob-card": "#fffdf7", "--ob-line": "#e2dac6", "--ob-dash": "#c9bfa6",
   "--ob-ink": "#29251e", "--ob-muted": "#7a7263", "--ob-lime": "#bfff00", "--ob-ok": "#4d6b00",
@@ -228,7 +228,6 @@ function Heading({ lead, mark }: { lead: string; mark: string }) {
 }
 
 const Note = ({ children }: { children: ReactNode }) => <p className="text-[13px] text-(--ob-muted)">{children}</p>;
-const WAITLIST_URL = "https://www.cloudroom.dev/#waitlist";
 const LINK = "text-(--ob-ink) underline underline-offset-[3px] disabled:opacity-50";
 const QUIET_LINK = "underline decoration-(--ob-dash) underline-offset-[3px] hover:text-(--ob-ink) disabled:opacity-50";
 
@@ -285,10 +284,10 @@ const Connected = () => (
 function AccountStep({ email, signingIn, next }: { email: string | null; signingIn: boolean; next: () => void }) {
   const signIn = useCloudroomSignIn();
   const busy = signingIn || signIn.isPending;
-  const start = (provider: "github" | "google" | "email") => { track("account", "started", provider); signIn.mutate(provider); };
+  const start = () => { track("account", "started"); signIn.mutate("signIn"); };
   return (
     <>
-      <Heading lead="Create your" mark="account" />
+      <Heading lead="Sign in to" mark="Cloudroom" />
       {email ? (
         <div className="mt-8 flex items-center gap-5">
           <Cta onClick={next}>Continue <Icon name="ArrowRight" aria-hidden /></Cta>
@@ -300,12 +299,13 @@ function AccountStep({ email, signingIn, next }: { email: string | null; signing
           <Note>Finish logging in in your browser. <button type="button" className={LINK} onClick={() => signIn.mutate("cancel")}>Cancel</button></Note>
         </div>
       ) : (
-        <div className="mt-8 flex max-w-[420px] flex-col gap-3">
-          <Cta className="w-full" onClick={() => start("github")}><Icon name="Github" aria-hidden />Continue with GitHub</Cta>
-          <Outline className="h-12 w-full justify-center text-[15.5px] font-semibold" onClick={() => start("google")}><GoogleLogo />Continue with Google</Outline>
-          <Note>Opens your browser, then brings you right back. <button type="button" className={LINK} onClick={() => start("email")}>Use email instead</button></Note>
-          <Note>Cloudroom is invite-only. You enter your invite code after signing in. No code yet? <button type="button" className={LINK} onClick={() => { track("account", "waitlist"); openUrlInExternalBrowser(WAITLIST_URL); }}>Join the waitlist</button></Note>
-        </div>
+        <>
+          <p className="mt-3 text-base text-(--ob-muted)">Use the account you made on cloudroom.dev.</p>
+          <div className="mt-8 flex flex-col items-start gap-4">
+            <Cta onClick={start}>Sign in with browser <Icon name="ArrowRight" aria-hidden /></Cta>
+            <Note>Already signed in there? You come right back.</Note>
+          </div>
+        </>
       )}
     </>
   );
@@ -397,7 +397,7 @@ function CloudOffline() {
     <div className="mt-3">
       <Note>
         Your cloud isn't responding.{" "}
-        <button type="button" className={LINK} disabled={signIn.isPending || signingIn} onClick={() => signIn.mutate("email")}>{signingIn ? "Finish in your browser…" : "Sign in again"}</button>
+        <button type="button" className={LINK} disabled={signIn.isPending || signingIn} onClick={() => signIn.mutate("signIn")}>{signingIn ? "Finish in your browser…" : "Sign in again"}</button>
       </Note>
     </div>
   );
@@ -592,16 +592,5 @@ function ProjectStep({ close }: { close: () => void }) {
         </button>
       </p>
     </>
-  );
-}
-
-function GoogleLogo() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-4" aria-hidden>
-      <path fill="#4285F4" d="M21.805 10.023H12v3.954h5.608c-.242 1.272-.975 2.35-2.077 3.073v2.555h3.364c1.969-1.813 3.105-4.484 3.105-7.655 0-.671-.06-1.314-.195-1.927Z" />
-      <path fill="#34A853" d="M12 22c2.7 0 4.964-.895 6.618-2.395l-3.364-2.555c-.931.625-2.124 1.005-3.254 1.005-2.609 0-4.823-1.76-5.614-4.125H2.932v2.636A10 10 0 0 0 12 22Z" />
-      <path fill="#FBBC05" d="M6.386 13.93a6.007 6.007 0 0 1 0-3.86V7.434H2.932a10 10 0 0 0 0 9.132l3.454-2.636Z" />
-      <path fill="#EA4335" d="M12 5.945c1.475 0 2.795.509 3.836 1.504l2.877-2.877C16.964 2.945 14.7 2 12 2a10 10 0 0 0-9.068 5.434l3.454 2.636C7.177 7.705 9.391 5.945 12 5.945Z" />
-    </svg>
   );
 }

@@ -3,12 +3,14 @@ import { useAtom, useAtomValue } from "jotai";
 import { createJsonLocalStorage } from "./browser-storage";
 import {
   BUILT_IN_FILE_OPENER_PREFERENCE,
+  BUILT_IN_PREVIEW_EXTENSIONS,
   buildFileOpenerRef,
   type FileOpenerPreferenceMap,
 } from "./plugin-slot-resolvers";
 
 export {
   BUILT_IN_FILE_OPENER_PREFERENCE,
+  BUILT_IN_PREVIEW_EXTENSIONS,
   buildFileOpenerRef,
   type FileOpenerPreferenceMap,
 };

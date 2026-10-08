@@ -16,7 +16,6 @@ import {
   reorderProject,
   updateProject,
   updateProjectSource,
-  setProjectGitRemoteUrlIfMissing,
   setProjectHidden,
   type ReorderProjectResult,
 } from "@cloudroom/db";
@@ -52,6 +51,8 @@ import { archiveProjectThreads } from "../services/threads/thread-archive.js";
 import { callHostRetryableOnlineRpc } from "../services/hosts/online-rpc.js";
 import {
   cloneProjectSourceOnHost,
+  fillProjectGitRemote,
+  inspectProjectGitRemoteBestEffort,
   registerProjectSourceOnHost,
   projectSourceHostConflict,
 } from "../services/projects/project-source-setup.js";
@@ -303,26 +304,6 @@ function requireProjectSource(
   return source;
 }
 
-async function inspectProjectGitRemoteBestEffort(
-  deps: AppDeps,
-  args: { hostId: string; path: string },
-): Promise<string | null> {
-  try {
-    const inspection = await callHostRetryableOnlineRpc(deps, {
-      hostId: args.hostId,
-      timeoutMs: COMMAND_TIMEOUT_MS,
-      command: { type: "project.inspect", path: args.path },
-    });
-    return inspection.gitRemoteUrl;
-  } catch (error) {
-    deps.logger.warn(
-      { err: error, hostId: args.hostId, path: args.path },
-      "Unable to inspect project source; continuing without a Git remote anchor",
-    );
-    return null;
-  }
-}
-
 export function registerProjectRoutes(app: Hono, deps: AppDeps): void {
   const { get, post, patch, del } = typedRoutes<PublicApiSchema>(app, {
     onValidationError: (msg) => new ApiError(400, "invalid_request", msg),
@@ -371,7 +352,6 @@ export function registerProjectRoutes(app: Hono, deps: AppDeps): void {
         201,
       );
     }
-    const gitRemoteUrl = await inspectProjectGitRemoteBestEffort(deps, source);
     const { project } = findOrCreateProjectByLocalPathSource(
       deps.db,
       deps.hub,
@@ -380,14 +360,7 @@ export function registerProjectRoutes(app: Hono, deps: AppDeps): void {
         source,
       },
     );
-    if (gitRemoteUrl !== null) {
-      setProjectGitRemoteUrlIfMissing(
-        deps.db,
-        deps.hub,
-        project.id,
-        gitRemoteUrl,
-      );
-    }
+    await fillProjectGitRemote(deps, project, source);
     return context.json(buildProjectResponses(deps, project.id)[0], 201);
   });
 
@@ -530,19 +503,8 @@ export function registerProjectRoutes(app: Hono, deps: AppDeps): void {
     if (!source) {
       throw new ApiError(404, "invalid_request", "Project source not found");
     }
-    if (project.gitRemoteUrl === null && source.type === "local_path") {
-      const gitRemoteUrl = await inspectProjectGitRemoteBestEffort(
-        deps,
-        source,
-      );
-      if (gitRemoteUrl !== null) {
-        setProjectGitRemoteUrlIfMissing(
-          deps.db,
-          deps.hub,
-          projectId,
-          gitRemoteUrl,
-        );
-      }
+    if (source.type === "local_path") {
+      await fillProjectGitRemote(deps, project, source);
     }
     return context.json(source);
   });

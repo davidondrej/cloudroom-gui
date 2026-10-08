@@ -1195,7 +1195,7 @@ class CloudroomService {
     if (!parent?.sessionId || !parentThread || parentThread.archivedAt || parentThread.deletedAt) throw new ApiError(409, "cloudroom_parent_unavailable", "The parent Cloud thread is archived or has not started yet.");
     if (request.projectId !== parentThread.projectId) throw new ApiError(400, "cloudroom_unsupported", "A child thread belongs to its parent's project.");
     const providerId = request.providerId ?? parentThread.providerId;
-    if (!isCloudProvider(providerId) || providerId === "acp-cursor" || providerId === "acp-fx" || providerId === "acp-opencode") throw new ApiError(400, "cloudroom_unsupported", "Cloud child threads use Codex, Claude Code or Pi.");
+    if (!isCloudProvider(providerId) || providerId === "acp-cursor" || providerId === "acp-fx") throw new ApiError(400, "cloudroom_unsupported", "Cloud child threads use Codex, Claude Code, Pi or OpenCode.");
     if (request.sendAt || request.pluginSubmission) throw new ApiError(400, "cloudroom_unsupported", "Cloud child threads can't be scheduled.");
     if (request.baseBranch) throw new ApiError(400, "cloudroom_unsupported", "A Cloud parent's child works in the parent's folder and branch, so a base branch doesn't apply.");
     const { text } = promptPayload(request.input, providerId, false);

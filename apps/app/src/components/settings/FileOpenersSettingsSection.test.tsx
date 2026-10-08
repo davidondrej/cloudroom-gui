@@ -42,9 +42,9 @@ describe("FileOpenersSettingsSection", () => {
     const trigger = screen.getByRole("button", {
       name: "Default opener for .md files",
     });
-    expect(trigger.textContent).toContain("Automatic");
+    expect(trigger.textContent).toBe("Automatic (Built-in preview)");
 
-    await selectOption(trigger, /Built-in preview/u);
+    await selectOption(trigger, /^Built-in preview$/u);
     expect(storedPreference()).toEqual({
       md: BUILT_IN_FILE_OPENER_PREFERENCE,
     });

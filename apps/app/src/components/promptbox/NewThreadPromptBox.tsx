@@ -159,7 +159,7 @@ function promptLocationCommands(
   projectless: boolean,
 ): PromptLocationCommand[] | undefined {
   const { cloud, host, onSelectProvider } = environment;
-  if (projectless || !cloud || environment.disabled) return undefined;
+  if (!cloud || environment.disabled) return undefined;
   const commands: PromptLocationCommand[] = [];
   const hostId =
     host?.type !== "ephemeral" && host?.status === "connected"
@@ -173,7 +173,8 @@ function promptLocationCommands(
         : environment.providersByHostId.get(hostId);
   const localPrimary = hostProviders?.find(
     (provider) =>
-      provider.id === "project-checkout" &&
+      provider.id ===
+        (projectless ? "personal-workspace" : "project-checkout") &&
       provider.availability?.status !== "unavailable",
   );
   if (hostId !== null && localPrimary && onSelectProvider) {

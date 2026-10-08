@@ -59,7 +59,6 @@ export interface TopLevelSidebarSectionProps {
   childrenInset?: boolean;
   showChildrenWhenCollapsed?: boolean;
   sectionId?: string;
-  stickyHeader?: boolean;
   status?: ReactNode;
   actions?: ReactNode;
   actionsAlwaysVisible?: boolean;
@@ -81,7 +80,6 @@ export function TopLevelSidebarSection({
   childrenInset = true,
   showChildrenWhenCollapsed = false,
   sectionId,
-  stickyHeader = true,
   status,
   actions,
   actionsAlwaysVisible = false,
@@ -185,7 +183,6 @@ export function TopLevelSidebarSection({
           SIDEBAR_GROUP_TEXT_CLASS,
           SIDEBAR_STANDARD_ROW_PADDING_CLASS,
           "rounded-md pr-0 transition-colors",
-          !stickyHeader && "relative top-auto",
           dragBindings && !dragBindings.disabled && "select-none",
         )}
         {...dragBindings?.attributes}

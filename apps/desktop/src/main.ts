@@ -737,6 +737,7 @@ function refreshApplicationMenu(): void {
     accelerators: currentApplicationMenuAccelerators,
     connectServersSkipReason:
       connectServers.length === 0 ? connectServerSyncSkipReason : null,
+    isLinux: process.platform === "linux",
     isMac: process.platform === "darwin",
     createNewWindow() {
       void createApplicationWindow({

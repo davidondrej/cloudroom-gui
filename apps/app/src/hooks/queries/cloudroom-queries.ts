@@ -51,6 +51,11 @@ export function cloudHarness(status: z.infer<typeof cloudroomStatusSchema> | und
   return status?.harnesses?.find((item) => item.id === id);
 }
 
+const CLOUD_HARNESS_IDS = new Set(["claude-code", "codex", "pi", "fx", "opencode"]);
+export function cloudCanRunHarness(harness: string): boolean {
+  return CLOUD_HARNESS_IDS.has(CORE_HARNESS_IDS[harness] ?? harness);
+}
+
 /** Whether Cloud has told us what it offers. Unknown (a new account before its first sandbox) must not block sends. */
 export function cloudCatalogKnown(status: z.infer<typeof cloudroomStatusSchema> | undefined): boolean {
   return status?.ready === true && status.harnesses !== null;
@@ -95,9 +100,9 @@ export function useCloudroomAccount() {
 export function useCloudroomSignIn() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (action: "github" | "google" | "email" | "cancel") => {
+    mutationFn: async (action: "signIn" | "cancel") => {
       if (action === "cancel") await sdk.cloudroom.cancel();
-      else openUrlInExternalBrowser((await sdk.cloudroom.signIn(action === "email" ? {} : { provider: action })).url);
+      else openUrlInExternalBrowser((await sdk.cloudroom.signIn({})).url);
     },
     onSuccess: () => client.invalidateQueries({ queryKey: ["cloudroom-account"] }),
     onError: (error) => appToast.error(error.message),

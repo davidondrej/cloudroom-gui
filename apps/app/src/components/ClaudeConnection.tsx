@@ -106,18 +106,23 @@ export function ClaudeConnectionButton({
   environmentId,
   presentation = "footer",
   className,
+  text,
+  onConnected,
 }: ClaudeConnectionTarget & {
   presentation?: "settings" | "footer" | "inline";
   className?: string;
+  text?: string;
+  onConnected?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const client = useQueryClient();
   const auth = useClaudeConnection({ target, hostId, environmentId });
   const connected = auth.data?.state === "connected";
   useEffect(() => {
-    if (connected)
-      void client.invalidateQueries({ queryKey: ["systemExecutionOptions"] });
-  }, [connected, client]);
+    if (!connected) return;
+    void client.invalidateQueries({ queryKey: ["systemExecutionOptions"] });
+    onConnected?.();
+  }, [connected, client, onConnected]);
   if (auth.isPending || connected) return null;
   const label =
     auth.isError || auth.data?.state === "unavailable"
@@ -142,7 +147,7 @@ export function ClaudeConnectionButton({
           )}
           aria-label={`${label} · ${target === "cloud" ? "Cloud" : "Local"}`}
         >
-          {presentation === "inline" ? (auth.data?.state === "waiting" ? "Finish" : "Connect") : label}
+          {text ?? (presentation === "inline" ? (auth.data?.state === "waiting" ? "Finish" : "Connect") : label)}
         </Button>
       </PopoverTrigger>
       <PopoverContent

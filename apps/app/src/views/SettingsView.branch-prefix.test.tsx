@@ -118,7 +118,7 @@ it("shows the saved telemetry preference and allows opting out", () => {
   const onChange = vi.fn();
   renderSection({ onTelemetryEnabledChange: onChange });
   const toggle = screen.getByRole("switch", {
-    name: "Share anonymous usage data",
+    name: "Share usage data and setup errors",
   });
   expect(toggle.getAttribute("aria-checked")).toBe("true");
   fireEvent.click(toggle);
@@ -127,7 +127,7 @@ it("shows the saved telemetry preference and allows opting out", () => {
   renderSection({ telemetryEnabled: false });
   expect(
     screen
-      .getByRole("switch", { name: "Share anonymous usage data" })
+      .getByRole("switch", { name: "Share usage data and setup errors" })
       .getAttribute("aria-checked"),
   ).toBe("false");
 });

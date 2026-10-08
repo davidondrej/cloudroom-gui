@@ -50,7 +50,8 @@ interface ThreadActionsMenuBaseProps {
 export interface ThreadActionsMenuResponsiveAction {
   icon: IconName;
   label: string;
-  onSelect: () => void | Promise<void>;
+  onSelect?: () => void | Promise<void>;
+  children?: readonly ThreadActionsMenuResponsiveAction[];
 }
 
 interface ThreadActionsMenuProps extends ThreadActionsMenuBaseProps {
@@ -190,6 +191,42 @@ function ThreadSectionMoveMenu({
   );
 }
 
+function ResponsiveActionSubmenu({
+  action,
+  surface,
+}: {
+  action: ThreadActionsMenuResponsiveAction;
+  surface: ThreadActionsMenuSurface;
+}) {
+  const Sub = surface === "context" ? ContextMenuSub : DropdownMenuSub;
+  const SubTrigger =
+    surface === "context" ? ContextMenuSubTrigger : DropdownMenuSubTrigger;
+  const SubContent =
+    surface === "context" ? ContextMenuSubContent : DropdownMenuSubContent;
+  return (
+    <Sub>
+      <SubTrigger>
+        <Icon name={action.icon} aria-hidden="true" />
+        {action.label}
+      </SubTrigger>
+      <SubContent className="max-h-[min(24rem,calc(100vh-2rem))] min-w-44 overflow-y-auto">
+        {action.children?.map((item) => (
+          <ActionMenuItem
+            key={item.label}
+            surface={surface}
+            icon={item.icon}
+            onSelect={() => {
+              void item.onSelect?.();
+            }}
+          >
+            {item.label}
+          </ActionMenuItem>
+        ))}
+      </SubContent>
+    </Sub>
+  );
+}
+
 function ThreadActionsMenuItems({
   thread,
   onOpenInSplit,
@@ -246,18 +283,24 @@ function ThreadActionsMenuItems({
       {canReturnCloudWork(thread) && <ActionMenuItem surface={surface} icon="GitPullRequestArrow" onSelect={() => void askAgent(RETURN_PR_PROMPT)}>Open pull request</ActionMenuItem>}
       {responsiveActions.length > 0 ? (
         <>
-          {responsiveActions.map((action) => (
-            <ActionMenuItem
-              key={action.label}
-              surface={surface}
-              icon={action.icon}
-              onSelect={() => {
-                void action.onSelect();
-              }}
-            >
-              {action.label}
-            </ActionMenuItem>
-          ))}
+          {responsiveActions.map((action) =>
+            action.children && !isDrawer ? (
+              <ResponsiveActionSubmenu key={action.label} action={action} surface={surface} />
+            ) : (
+              (action.children ?? [action]).map((item) => (
+                <ActionMenuItem
+                  key={item.label}
+                  surface={surface}
+                  icon={item.icon}
+                  onSelect={() => {
+                    void item.onSelect?.();
+                  }}
+                >
+                  {action.children ? `${action.label} ${item.label}` : item.label}
+                </ActionMenuItem>
+              ))
+            ),
+          )}
           {showSeparators ? <ActionMenuSeparator surface={surface} /> : null}
         </>
       ) : null}
