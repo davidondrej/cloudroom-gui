@@ -505,7 +505,7 @@ export function ProviderTurnDisplaySection({
         When a turn finishes, fold its work into one Worked for row and keep the
         final answer visible.
       </p>
-      <ResourceDetailPanel surface="recessed" className="px-3 py-1">
+      <ResourceDetailPanel surface="recessed" className="border-0 bg-surface-recessed px-3 py-1">
         <SettingsRowList>
           {providers.map((provider) => (
             <CompletedTurnDisplayRow

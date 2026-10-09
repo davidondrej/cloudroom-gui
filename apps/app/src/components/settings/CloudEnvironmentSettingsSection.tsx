@@ -53,7 +53,7 @@ export function CloudEnvironmentSettingsSection() {
         )}
       </header>
       {!data ? (
-        <div role={environment.isError ? "alert" : "status"} className="rounded-lg border border-border bg-card px-4 py-6 text-center text-xs text-subtle-foreground">
+        <div role={environment.isError ? "alert" : "status"} className="rounded-lg bg-surface-recessed px-4 py-6 text-center text-xs text-subtle-foreground">
           {environment.isError ? errorText(environment.error) : "Loading your cloud environment…"}
         </div>
       ) : (
@@ -77,7 +77,7 @@ export function CloudEnvironmentSettingsSection() {
 
 function Card({ icon, title, description, action, children }: { icon: string; title: string; description: string; action?: ReactNode; children: ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-lg border border-border bg-card">
+    <section className="overflow-hidden rounded-lg bg-surface-recessed">
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-surface-recessed text-subtle-foreground">

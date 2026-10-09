@@ -5,6 +5,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import {
   type ProviderHealthResult,
+  type ProviderInstallationCommand,
   type ProviderInstallationRunResult,
   type ProviderInstallationStatus,
   type ProviderUsage,
@@ -115,17 +116,29 @@ function claudeDoctor(value: string | null): {
   };
 }
 
-function isDefaultNativeClaudePath(executablePath: string | null): boolean {
-  if (executablePath === null) return false;
-  const normalized = executablePath.replace(/\\/gu, "/");
-  return (
-    normalized.endsWith("/.local/bin/claude") ||
-    (process.platform === "win32" &&
-      normalized.endsWith("/.local/bin/claude.exe"))
-  );
+// Homebrew installs can't run `claude update`, so upgrade the cask that owns the real file.
+async function homebrewUpgradeCommand(
+  executablePath: string | null,
+): Promise<ProviderInstallationCommand | null> {
+  if (executablePath === null || process.platform === "win32") return null;
+  const realPath = await fs.realpath(executablePath).catch(() => null);
+  const match =
+    realPath === null
+      ? null
+      : /^(.*)\/(Caskroom|Cellar)\/([^/]+)\//u.exec(realPath);
+  if (match === null) return null;
+  const [, prefix = "", kind, name = ""] = match;
+  const brew = path.join(prefix, "bin", "brew");
+  if (!(await fs.access(brew).then(() => true, () => false))) return null;
+  const args =
+    kind === "Caskroom" ? ["upgrade", "--cask", name] : ["upgrade", name];
+  return { command: brew, args, displayCommand: formatCommand("brew", args) };
 }
 
-export async function getClaudeProviderInstallationStatus(): Promise<ProviderInstallationStatus> {
+async function claudeInstallation(): Promise<{
+  status: ProviderInstallationStatus;
+  update: ProviderInstallationCommand | null;
+}> {
   const command = claudeExecutable();
   const [
     resolvedExecutable,
@@ -148,11 +161,17 @@ export async function getClaudeProviderInstallationStatus(): Promise<ProviderIns
   const installed = resolvedExecutable !== null || versionOutput !== null;
   const currentVersion = versionFrom(versionOutput);
   const doctor = claudeDoctor(doctorOutput);
+  const homebrew = await homebrewUpgradeCommand(resolvedExecutable);
+  // A cask follows its own channel: claude-code is stable, claude-code@latest is latest.
+  const updateChannel =
+    homebrew === null
+      ? doctor.updateChannel
+      : homebrew.args.at(-1)?.endsWith("@latest")
+        ? "latest"
+        : "stable";
   const tags = claudeDistTags(tagsOutput);
   const latestVersion =
-    doctor.updateChannel === null || tags === null
-      ? null
-      : tags[doctor.updateChannel];
+    updateChannel === null || tags === null ? null : tags[updateChannel];
   const definitelyNeedsUnknownChannelUpdate =
     installed &&
     currentVersion !== null &&
@@ -164,89 +183,92 @@ export async function getClaudeProviderInstallationStatus(): Promise<ProviderIns
     installed && currentVersion !== null && latestVersion !== null
       ? compareVersions(latestVersion, currentVersion) > 0
       : definitelyNeedsUnknownChannelUpdate;
-  const installSource = npmGlobalInstallSource({
-    installed,
-    executablePath: resolvedExecutable,
-    npmBin: npmGlobal.npmBin,
-  });
-  const nativeFallback =
-    doctor.installMethod === null &&
-    installSource === "external" &&
-    isDefaultNativeClaudePath(resolvedExecutable);
-  const canRunNativeUpdate =
-    doctor.installMethod === "native" || nativeFallback;
-  const canRunUpdate =
-    canRunNativeUpdate ||
-    (installSource === "npmGlobal" &&
-      (doctor.installMethod === null || doctor.installMethod === "npm-global"));
+  // Claude's own updater handles native, npm, and unknown installs. Other
+  // package managers (winget, apt, dnf, apk) need the user, often with sudo.
+  const update =
+    homebrew ??
+    (doctor.installMethod === "package-manager"
+      ? null
+      : {
+          command,
+          args: ["update"],
+          displayCommand: formatCommand(command, ["update"]),
+        });
   const versionUnsupported =
-    canRunNativeUpdate &&
+    update !== null &&
     currentVersion !== null &&
     compareVersions(currentVersion, CLAUDE_MINIMUM_SUPPORTED_VERSION) < 0 &&
     (latestVersion === null
-      ? doctor.updateChannel !== "stable"
+      ? updateChannel !== "stable"
       : compareVersions(latestVersion, CLAUDE_MINIMUM_SUPPORTED_VERSION) >= 0);
   const actionKind = !installed
     ? "install"
-    : (needsUpdate || versionUnsupported) && canRunUpdate
+    : (needsUpdate || versionUnsupported) && update !== null
       ? "update"
       : null;
-  const displayCommand =
-    actionKind === "install"
-      ? downloadedInstallerCommand(CLAUDE_INSTALL_SCRIPT_URL).displayCommand
-      : formatCommand(command, ["update"]);
   return {
-    executableName: command,
-    executablePath: resolvedExecutable,
-    installed,
-    installSource,
-    currentVersion,
-    latestVersion,
-    minimumSupportedVersion: CLAUDE_MINIMUM_SUPPORTED_VERSION,
-    npmPackageName: CLAUDE_NPM_PACKAGE,
-    npmGlobalPackageVersion: npmGlobal.npmGlobalPackageVersion,
-    installAction:
-      actionKind === null
-        ? null
-        : {
-            kind: actionKind,
-            label: actionKind === "install" ? "Install" : "Update",
-            command: displayCommand,
-          },
-    needsUpdate,
-    versionUnsupported,
+    update,
+    status: {
+      executableName: command,
+      executablePath: resolvedExecutable,
+      installed,
+      installSource: npmGlobalInstallSource({
+        installed,
+        executablePath: resolvedExecutable,
+        npmBin: npmGlobal.npmBin,
+      }),
+      currentVersion,
+      latestVersion,
+      minimumSupportedVersion: CLAUDE_MINIMUM_SUPPORTED_VERSION,
+      npmPackageName: CLAUDE_NPM_PACKAGE,
+      npmGlobalPackageVersion: npmGlobal.npmGlobalPackageVersion,
+      installAction:
+        actionKind === null
+          ? null
+          : {
+              kind: actionKind,
+              label: actionKind === "install" ? "Install" : "Update",
+              command:
+                actionKind === "install"
+                  ? downloadedInstallerCommand(CLAUDE_INSTALL_SCRIPT_URL)
+                      .displayCommand
+                  : (update?.displayCommand ?? ""),
+            },
+      needsUpdate,
+      versionUnsupported,
+    },
   };
+}
+
+export async function getClaudeProviderInstallationStatus(): Promise<ProviderInstallationStatus> {
+  return (await claudeInstallation()).status;
 }
 
 export async function getClaudeProviderInstallationRun(
   action: "install" | "update",
 ): Promise<ProviderInstallationRunResult> {
-  const status = await getClaudeProviderInstallationStatus();
-  return buildClaudeProviderInstallationRun(status, action);
+  const { status, update } = await claudeInstallation();
+  return buildClaudeProviderInstallationRun(status, action, update);
 }
 
 function buildClaudeProviderInstallationRun(
   status: ProviderInstallationStatus,
   action: "install" | "update",
+  update: ProviderInstallationCommand | null = null,
 ): ProviderInstallationRunResult {
-  if (status.installAction?.kind !== action) {
+  const command =
+    action === "install"
+      ? downloadedInstallerCommand(CLAUDE_INSTALL_SCRIPT_URL)
+      : update;
+  if (status.installAction?.kind !== action || command === null) {
     return {
       available: false,
       message: `Claude Code ${action} is no longer available on this host.`,
     };
   }
-  const command = claudeExecutable();
-  const execution =
-    action === "install"
-      ? downloadedInstallerCommand(CLAUDE_INSTALL_SCRIPT_URL)
-      : {
-          command,
-          args: ["update"],
-          displayCommand: formatCommand(command, ["update"]),
-        };
   return {
     available: true,
-    command: execution,
+    command,
     verification: installationVerification(status, action),
   };
 }

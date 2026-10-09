@@ -6,6 +6,7 @@ import {
 } from "electron";
 import type { ApplicationMenuAccelerators } from "./desktop-menu-shortcuts.js";
 import type { ConnectServerSyncSkipReason } from "./connect-server-sync.js";
+import { BUILTIN_SERVER_NAME } from "./server-target.js";
 
 const SERVER_DAEMON_LOGS_MENU_LABEL = "Server & Daemon Logs";
 const OPEN_NEW_TAB_MENU_LABEL = "New Tab";
@@ -35,7 +36,7 @@ export const CONNECT_SERVERS_SKIPPED_MENU_LABELS: Record<
   string
 > = {
   "no-credential": "No Connect servers — sign in to Cloudroom Connect",
-  "not-paired": "No Connect servers — Connect not paired on This Mac",
+  "not-paired": `No Connect servers — Connect not paired on ${BUILTIN_SERVER_NAME}`,
   "plugin-disabled": "No Connect servers — Connect plugin disabled",
   unauthorized: "No Connect servers — sign in to Cloudroom Connect again",
   unavailable: "No Connect servers — could not reach Cloudroom Connect",
@@ -96,6 +97,7 @@ function createServerMenuItems(
       click() {
         args.selectServer(server.id);
       },
+      id: server.id,
       label: server.name,
       type: "radio" as const,
     }),
@@ -275,8 +277,15 @@ export function buildApplicationMenuTemplate(
   ];
 }
 
+// On Linux the menu bar lives in the window, and every rebuild redraws it. Skip identical ones.
+let installedMenuKey: string | null = null;
+
 export function installApplicationMenu(args: InstallApplicationMenuArgs): void {
-  const menu = Menu.buildFromTemplate(buildApplicationMenuTemplate(args));
+  const template = buildApplicationMenuTemplate(args);
+  const key = JSON.stringify(template);
+  if (key === installedMenuKey) return;
+  installedMenuKey = key;
+  const menu = Menu.buildFromTemplate(template);
   const onServerMenuWillShow = args.onServerMenuWillShow;
   if (onServerMenuWillShow !== undefined) {
     menu

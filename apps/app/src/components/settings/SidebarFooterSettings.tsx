@@ -33,7 +33,7 @@ export function SidebarFooterSettings() {
       controlPlacement="below"
     >
       <div
-        className="rounded-md border border-border"
+        className="rounded-md bg-surface-recessed"
         onClickCapture={onClickCapture}
       >
         <DndContext {...dndContextProps}>

@@ -6,7 +6,6 @@ interface FixtureEnv {
   TUNNEL_DO: DurableObjectNamespace;
   DB: D1Database;
   BASE_DOMAIN: string;
-  BETTER_AUTH_SECRET: string;
   GZIP_BODY_B64: string;
 }
 

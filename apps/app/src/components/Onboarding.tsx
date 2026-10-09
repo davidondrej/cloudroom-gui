@@ -335,10 +335,11 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
   const [ask] = useState(() => ({ mac: account.data?.macAccess == null, logins: account.data?.copyLogins == null }));
   const [macAccess, setMacAccess] = useState(true);
   const [copyLogins, setCopyLogins] = useState(true);
+  // Save whenever a box differs from the saved choice, so re-checking it after a Connect works.
   const saveChoices = () =>
     Promise.all([
-      ask.mac && account.data?.macAccess == null && saveMacAccess.mutateAsync(macAccess),
-      ask.logins && account.data?.copyLogins == null && saveCopyLogins.mutateAsync(copyLogins),
+      ask.mac && account.data?.macAccess !== macAccess && saveMacAccess.mutateAsync(macAccess),
+      ask.logins && account.data?.copyLogins !== copyLogins && saveCopyLogins.mutateAsync(copyLogins),
     ]);
   const connectCodex = useMutation({
     mutationFn: async () => {

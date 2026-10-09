@@ -9,15 +9,17 @@ When you start an HTTP server the user should open, give them a connect share
 URL — not a localhost URL. Shares work from threads running on any enrolled
 host, and the command resolves the thread's host automatically.
 
-1. Check pairing: run `room-cli connect status --json`. If not paired / not
-   connected, give the localhost URL and mention that `room-cli connect` enables
-   remote URLs once paired from the getbb.app dashboard.
+1. Check status: run `room-cli connect status --json`. If not paired / not
+   connected, give the localhost URL. Connect sets itself up once the user is
+   signed in to Cloudroom.
 2. From the thread that started the HTTP server, run `cloudroom connect expose
 <port>`. It prints that host's share URL. Use `--host <name-or-id>` only
    when you intentionally need another enrolled host; outside a thread,
    sharing defaults to the machine running the Cloudroom server.
-3. Give the returned URL to the user as a markdown link. It works for viewers
-   who have the owner's getbb.app session; it is not a public internet link.
+3. Give the returned URL to the user as a markdown link. It opens on the
+   user's signed-in phones and browsers; it is not a public internet link.
+   To sign in a new phone, run `room-cli connect phone-code` and give the user
+   the code for cloudroom.dev/mobile.
 4. When the server stops, run `room-cli connect unexpose <port>` from the same
    thread (or with the same `--host`) so the share is cleaned up. Use
    `room-cli connect shares [--host <name-or-id>]` to inspect that host's shares.

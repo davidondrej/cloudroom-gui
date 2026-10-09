@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { existsSync, readdirSync, statSync, statfsSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import { cpus, homedir, release, totalmem } from "node:os";
 import { delimiter, join } from "node:path";
 import { getAppSettings } from "@cloudroom/db";
@@ -32,6 +32,7 @@ export function startSetupTelemetry(appDeps: Deps): void {
   const marker = join(appDeps.config.dataDir, "cloudroom-setup-snapshot.json");
   setTimeout(() => {
     linkInstall();
+    void reportUpdateAttempt(appDeps.config.dataDir).catch(error => appDeps.logger.debug({ err: error }, "Update report failed"));
     void readFile(marker).then(() => {}, async () => {
       await sendSnapshot("first_launch");
       await writeFile(marker, JSON.stringify({ sentAt: Date.now() }), { mode: 0o600 });
@@ -82,11 +83,44 @@ export function cliPlace(path: string | null | undefined): string | null {
   return "other";
 }
 
+/**
+ * "Restart to update" leaves update-attempt.json (desktop-update-resume.ts). Still on the old version
+ * means the install failed, so report why from macOS's installer log. Failures reach our database.
+ */
+async function reportUpdateAttempt(dataDir: string): Promise<void> {
+  const file = join(dataDir, "update-attempt.json");
+  const text = await readFile(file, "utf8").catch(() => null);
+  if (text === null) return;
+  await rm(file, { force: true });
+  const attempt = JSON.parse(text) as { from: string; to: string; at: number };
+  const version = process.env.BB_DESKTOP_VERSION ?? null;
+  const failed = version === attempt.from;
+  const lines = failed ? await shipItLines(attempt.at) : [];
+  capture("update_install", () => ({
+    outcome: failed ? "failed" : "ok", from: attempt.from, to: attempt.to, version, ms: Date.now() - attempt.at,
+    ...(failed ? { code: updateFailureCode(lines), message: scrub(lines.filter(line => /error|abort|cancel|fail/i.test(line)).at(-1)) } : {}),
+  }));
+}
+
+/** ShipIt's log lines since the attempt, without their timestamp prefix. Its timestamps are local time. */
+async function shipItLines(since: number): Promise<string[]> {
+  const log = await readFile(home("Library", "Caches", "dev.cloudroom.gui.ShipIt", "ShipIt_stderr.log"), "utf8").catch(() => "");
+  return log.split("\n").filter(line => Date.parse(line.slice(0, 23).replace(" ", "T")) >= since).map(line => line.slice(24));
+}
+
+function updateFailureCode(lines: string[]): string {
+  const log = lines.join("\n");
+  if (!log) return "installer_never_ran";
+  if (/App Still Running|running instances of the target app/.test(log)) return "app_still_running";
+  if (/Failed to copy bundle/.test(log)) return "copy_failed";
+  return "installer_failed";
+}
+
 /** Links this install to its Cloudroom account, so its PostHog events map to a person. At startup and after sign-in. */
 export const linkInstall = () => save("install_linked", {});
 
 /** Telemetry must never break setup, so building or sending an event can't throw. */
-function capture(name: "setup_snapshot" | "agent_connect" | "cli_install" | "account_sign_in_failed", properties: () => Record<string, TelemetryValue>): void {
+function capture(name: "setup_snapshot" | "agent_connect" | "cli_install" | "account_sign_in_failed" | "update_install", properties: () => Record<string, TelemetryValue>): void {
   try {
     const event: Record<string, TelemetryValue> = { ...properties(), seconds_since_first_launch: secondsSinceFirstLaunch() };
     deps?.telemetry.capture({ name, properties: event });

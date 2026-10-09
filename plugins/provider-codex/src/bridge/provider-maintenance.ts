@@ -1,3 +1,4 @@
+import { realpath } from "node:fs/promises";
 import {
   type ProviderHealthResult,
   type ProviderInstallationRunResult,
@@ -106,7 +107,13 @@ export async function getCodexProviderInstallationStatus(
     ]);
   const installed = resolvedExecutable !== null || versionOutput !== null;
   const currentVersion = versionFrom(versionOutput);
+  // The ChatGPT app ships its own Codex, which only updates with the app.
+  const appBundled =
+    resolvedExecutable !== null &&
+    (await realpath(resolvedExecutable).catch(() => resolvedExecutable))
+      .includes(".app/");
   const needsUpdate =
+    !appBundled &&
     installed &&
     currentVersion !== null &&
     latestVersion !== null &&
@@ -118,7 +125,7 @@ export async function getCodexProviderInstallationStatus(
       : compareVersions(currentVersion, minimumSupportedVersion) < 0);
   const actionKind = !installed
     ? "install"
-    : needsUpdate || versionUnsupported
+    : (needsUpdate || versionUnsupported) && !appBundled
       ? "update"
       : null;
 

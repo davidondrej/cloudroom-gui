@@ -1,6 +1,7 @@
 import {
   isStandaloneBuiltinClearCommand,
   isStandaloneBuiltinCompactCommand,
+  isStandaloneBuiltinContextCommand,
   isStandaloneBuiltinTeleportCommand,
   type PromptInput,
 } from "@cloudroom/domain";
@@ -46,7 +47,8 @@ export function appendCustomInstructions(
     input.length === 0 ||
     isStandaloneBuiltinCompactCommand(input) ||
     isStandaloneBuiltinClearCommand(input) ||
-    isStandaloneBuiltinTeleportCommand(input)
+    isStandaloneBuiltinTeleportCommand(input) ||
+    isStandaloneBuiltinContextCommand(input)
   )
     return input;
   return [

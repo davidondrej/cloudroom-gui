@@ -84,6 +84,13 @@ async function waitUntilStopped(serverUrl: string, ids: string[]) {
   }
 }
 
+// The server reads this on its next start to report whether the install worked (setup-telemetry.ts).
+const ATTEMPT_FILE_NAME = "update-attempt.json";
+
+export async function saveUpdateAttempt(dataDir: string, from: string, to: string): Promise<void> {
+  await writeFile(join(dataDir, ATTEMPT_FILE_NAME), JSON.stringify({ from, to, at: Date.now() }));
+}
+
 export async function reportDesktopUpdate(
   serverUrl: string,
   version: string,

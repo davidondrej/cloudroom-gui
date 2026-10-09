@@ -290,7 +290,7 @@ export function PluginMoreFromAuthorSection({
   if (moreEntries.length === 0) return null;
   return (
     <ResourceDefinitionSection label="More from this author">
-      <ResourceListPanel className="py-0">
+      <ResourceListPanel className="border-0 bg-surface-recessed py-0">
         {moreEntries.map((candidate) => (
           <ResourceRow
             key={`${candidate.marketplace}/${candidate.entryId}`}

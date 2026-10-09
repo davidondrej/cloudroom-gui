@@ -716,7 +716,7 @@ export function KeyboardSettingsSection() {
         {pendingAssignment !== null ? (
           <div
             role="alert"
-            className="space-y-2 rounded border border-border p-3"
+            className="space-y-2 rounded bg-surface-recessed p-3"
           >
             <p className="text-sm">
               Shortcut already used by{" "}

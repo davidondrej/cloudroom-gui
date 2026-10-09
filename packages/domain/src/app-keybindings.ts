@@ -53,6 +53,8 @@ export const APP_COMMAND_IDS = [
   "pane.close",
   "window.new",
   "app.back",
+  "history.back",
+  "history.forward",
   "settings.open",
   "settings.openServers",
   "sidebar.toggle",

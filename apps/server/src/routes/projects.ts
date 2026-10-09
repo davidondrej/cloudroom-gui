@@ -679,6 +679,8 @@ export function registerProjectRoutes(app: Hono, deps: AppDeps): void {
           "claude-code",
           "acp-opencode",
         ].includes(query.provider),
+        // Claude Code answers `/context` itself; the timeline renders its report as a card.
+        includeBuiltinContext: query.provider === "claude-code",
         skillCatalog,
       }),
     );

@@ -123,6 +123,7 @@ const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
   ),
   ...entries("providers", undefined, [
     ["Providers", "claude code codex pi acp cli install harness agents"],
+    ["More agents", "install add agent cli harness provider"],
     ["Collapse finished turns", "timeline"],
   ]),
   ...entries("defaults", "Defaults", [
@@ -133,14 +134,19 @@ const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     ["GitHub", "account token gh push pr"],
     ["API keys", "secrets environment variables env tokens"],
     ["Skills", "cloud skills"],
+    ["MCP servers", "mcp tools model context protocol cloud"],
     ["GitHub repos", "clone repositories sandbox"],
     ["Setup script", "install sandbox startup"],
   ]),
-  ...entries("projects", undefined, [["Projects", "repos folders rename delete"]]),
+  ...entries("projects", undefined, [
+    ["Projects", "repos folders rename delete"],
+    ["Hidden projects", "hide unhide restore sidebar removed"],
+  ]),
   ...entries("import", undefined, [["Import chats", "history migrate"]]),
   ...entries("archived", undefined, [["Archived threads", "restore unarchive"]]),
   ...entries("machines", undefined, [
     ["Cloudroom account", "sign in login email account sign out"],
+    ["Or connect your own Core", "self-hosted core url api token server"],
     ["Mac access", "cloud agents permission full read-only ask off"],
     ["Agent logins", "codex cursor cloud login connection"],
     ["Machines", "mac computer devices rename"],

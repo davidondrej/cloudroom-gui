@@ -252,7 +252,7 @@ export class ShareRegistry {
     const credential = this.options.getCredential();
     if (credential === null) {
       throw new SharePortError(
-        "this Cloudroom server is not connected to getbb.app — run `room-cli connect` for how to pair",
+        "Cloudroom Connect is not set up yet — sign in to Cloudroom, then try again",
       );
     }
     if (host.isServer) this.serverHostId = host.id;

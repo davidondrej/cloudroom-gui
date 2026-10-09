@@ -85,7 +85,7 @@ export function InviteSettingsCard() {
   if (!list.data || nothingToShare(list.data)) return null;
   const left = list.data.left;
   return (
-    <div data-testid="settings-invite-card" className="flex min-h-13 items-center gap-3 rounded-lg border border-border bg-card py-2 pr-2.5 pl-4">
+    <div data-testid="settings-invite-card" className="flex min-h-13 items-center gap-3 rounded-lg bg-surface-recessed py-2 pr-2.5 pl-4">
       <TicketIcon className="text-muted-foreground" />
       <p className="min-w-0 flex-1 text-sm">
         <span className="font-medium text-foreground">Enjoying Cloudroom?</span>{" "}

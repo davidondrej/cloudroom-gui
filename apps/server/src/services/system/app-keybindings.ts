@@ -126,6 +126,12 @@ const webMainWithoutModal = {
   none: ["modalOpen"],
 } as const;
 
+const historyWithoutModal = {
+  all: ["mainSurface"],
+  desktopOnly: true,
+  none: ["modalOpen", "browserFocus"],
+} as const;
+
 const splitWithoutModal = {
   all: ["mainSurface", "splitActive"],
   none: ["modalOpen"],
@@ -148,6 +154,8 @@ export const DEFAULT_APP_KEYBINDINGS: AppDefaultKeybindings = [
   binding("thread.pin", "g", { mod: true }, mainWithoutModal),
   binding("thread.archive", "w", { mod: true }, mainWithoutModal),
   binding("app.back", "Escape", {}, mainWithoutModal),
+  binding("history.back", "[", { mod: true }, historyWithoutModal),
+  binding("history.forward", "]", { mod: true }, historyWithoutModal),
   binding("settings.open", ",", { mod: true }, mainWithoutModal),
   binding("sidebar.toggle", "b", { mod: true }, mainWithoutModal),
   unassignedBinding("notifications.open", mainWithoutModal),

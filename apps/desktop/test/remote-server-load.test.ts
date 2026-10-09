@@ -4,6 +4,7 @@ import {
   loadRemoteServerPage,
   type LoadRemoteServerPageArgs,
 } from "../src/remote-server-load.js";
+import { BUILTIN_SERVER_NAME } from "../src/server-target.js";
 
 type StartupErrorView = Parameters<
   LoadRemoteServerPageArgs["loadStartupError"]
@@ -60,7 +61,7 @@ describe("loadRemoteServerPage", () => {
     expect(view?.title).toBe("Could not reach this Cloudroom server");
     expect(view?.details).toContain("http://bb-host.tailnet.ts.net:38886");
     expect(view?.details).toContain("Window ▸ Server");
-    expect(view?.details).toContain("This Mac");
+    expect(view?.details).toContain(BUILTIN_SERVER_NAME);
     expect(view?.details).not.toContain("rejectAndCleanup");
     expect(view?.details).not.toContain("node:electron");
 

@@ -1,6 +1,3 @@
-import { and, eq, isNull } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/d1";
-import { machine, server } from "@cloudroom/connect-db";
 import {
   HEARTBEAT_REQUEST,
   HEARTBEAT_RESPONSE,
@@ -12,15 +9,13 @@ import {
 } from "@cloudroom/tunnel-contract";
 import { relayedResponse } from "./response-encoding.js";
 import { TUNNEL_TARGET_HEADER } from "./protocol-headers.js";
+import { markServerSeen } from "./store.js";
 
 export interface Env {
   TUNNEL_DO: DurableObjectNamespace;
   DB: D1Database;
   BASE_DOMAIN: string;
-  BETTER_AUTH_SECRET: string;
-  ACCOUNT_APP_URL?: string;
-  CLOUD_DEV?: string;
-  ASSETLINKS_SHA256_FINGERPRINTS?: string;
+  WEBSITE_URL: string;
 }
 
 const TUNNEL_TAG = "tunnel";
@@ -65,7 +60,7 @@ export function parseClientProtocolVersion(raw: string | null): number {
 }
 
 const PORT_SHARE_TOO_OLD =
-  "this bb's connect plugin is too old for port sharing — update bb and reconnect";
+  "this Mac's Cloudroom is too old for port sharing — update Cloudroom";
 
 interface PendingHttp {
   resolve: (response: Response) => void;
@@ -110,15 +105,9 @@ export class TunnelDO {
   fetch(request: Request): Response | Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/__tunnel") {
-      const serverId = url.searchParams.get("serverId");
-      const machineId = url.searchParams.get("machineId");
-      if (serverId !== null && machineId !== null) {
-        return new Response("conflicting tunnel identity", { status: 400 });
-      }
       return this.acceptTunnel(
         request,
-        serverId,
-        machineId,
+        url.searchParams.get("serverId"),
         parseClientProtocolVersion(
           url.searchParams.get(TUNNEL_PROTOCOL_QUERY_PARAM),
         ),
@@ -128,7 +117,6 @@ export class TunnelDO {
       for (const ws of this.state.getWebSockets(TUNNEL_TAG))
         ws.close(1000, "revoked by owner");
       void this.state.storage.delete("serverId");
-      void this.state.storage.delete("machineId");
       void this.state.storage.delete("protocolVersion");
       this.clientProtocolVersion = 0;
       return new Response(null, { status: 204 });
@@ -141,7 +129,7 @@ export class TunnelDO {
 
     const target = readTunnelTarget(request.headers);
     if (target !== undefined && this.clientProtocolVersion < 1) {
-      return new Response(`bb connect: ${PORT_SHARE_TOO_OLD}\n`, {
+      return new Response(`cloudroom: ${PORT_SHARE_TOO_OLD}\n`, {
         status: 502,
         headers: { "content-type": "text/plain; charset=utf-8" },
       });
@@ -175,7 +163,7 @@ export class TunnelDO {
 
   private offlineResponse(): Response {
     return new Response(
-      "bb connect: this server is offline (no tunnel connected)\n",
+      "cloudroom: this Mac is offline\n",
       {
         status: 503,
         headers: {
@@ -188,30 +176,15 @@ export class TunnelDO {
 
   private async markPresence(): Promise<void> {
     const serverId = await this.state.storage.get<string>("serverId");
-    const machineId = await this.state.storage.get<string>("machineId");
-    if (!serverId && !machineId) return;
+    if (!serverId) return;
     try {
-      const db = drizzle(this.env.DB);
-      if (machineId) {
-        await db
-          .update(machine)
-          .set({ lastSeenAt: new Date() })
-          .where(and(eq(machine.id, machineId), isNull(machine.revokedAt)))
-          .run();
-      } else if (serverId) {
-        await db
-          .update(server)
-          .set({ lastSeenAt: new Date() })
-          .where(eq(server.id, serverId))
-          .run();
-      }
+      await markServerSeen(this.env.DB, serverId);
     } catch {}
   }
 
   async alarm(): Promise<void> {
     if (!this.tunnelSocket()) {
       await this.state.storage.delete("serverId");
-      await this.state.storage.delete("machineId");
       await this.state.storage.delete("protocolVersion");
       this.clientProtocolVersion = 0;
       return;
@@ -223,7 +196,6 @@ export class TunnelDO {
   private acceptTunnel(
     request: Request,
     serverId: string | null,
-    machineId: string | null,
     protocolVersion: number,
   ): Response {
     if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
@@ -239,12 +211,6 @@ export class TunnelDO {
     void this.state.storage.put("protocolVersion", protocolVersion);
     if (serverId) {
       void this.state.storage.put("serverId", serverId);
-      void this.state.storage.delete("machineId");
-      void this.markPresence();
-      void this.state.storage.setAlarm(Date.now() + PRESENCE_INTERVAL_MS);
-    } else if (machineId) {
-      void this.state.storage.put("machineId", machineId);
-      void this.state.storage.delete("serverId");
       void this.markPresence();
       void this.state.storage.setAlarm(Date.now() + PRESENCE_INTERVAL_MS);
     }
@@ -411,7 +377,7 @@ export class TunnelDO {
         .catch(() => {});
     } else {
       entry.resolve(
-        new Response(`bb connect: ${message}\n`, {
+        new Response(`cloudroom: ${message}\n`, {
           status,
           headers: { "content-type": "text/plain; charset=utf-8" },
         }),
@@ -493,7 +459,7 @@ export class TunnelDO {
           this.pendingHttp.delete(frame.streamId);
           entry.resolve(
             new Response(
-              `bb connect: unrelayable origin response (status ${frame.status})\n`,
+              `cloudroom: unrelayable origin response (status ${frame.status})\n`,
               {
                 status: 502,
                 headers: { "content-type": "text/plain; charset=utf-8" },

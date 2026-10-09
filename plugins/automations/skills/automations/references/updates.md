@@ -18,7 +18,9 @@ Choose one of two execution update forms:
   to replace the execution with an agent, or `--script`/`--script-file` to
   replace it with a script. Add `--reasoning` and `--service-tier` when needed.
   Include every desired mode-specific setting;
-  settings from the previous execution do not carry over.
+  settings from the previous execution do not carry over, except an agent
+  automation's target thread or environment, which is kept unless you pass a
+  target flag.
 - A partial agent update preserves every omitted execution field and edits the
   existing agent automation in place. Use any combination of `--prompt`,
   `--provider`, `--model`, `--reasoning`, `--service-tier`, and

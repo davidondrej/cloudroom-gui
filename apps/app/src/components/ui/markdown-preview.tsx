@@ -1,9 +1,11 @@
 import {
   Children,
   cloneElement,
+  createContext,
   isValidElement,
   memo,
-  useLayoutEffect,
+  useCallback,
+  useEffect,
   useContext,
   useMemo,
   useRef,
@@ -16,6 +18,7 @@ import {
   type SetStateAction,
 } from "react";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
+import { createPortal } from "react-dom";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -47,6 +50,14 @@ import {
 } from "./markdown-katex-loader.js";
 import { CopyButton } from "./copy-button.js";
 import { Icon } from "@cloudroom/shared-ui/icon";
+import { usePortalScopeProps } from "@cloudroom/shared-ui/lib/portal-scope";
+import { usePersistentOverlayFocus } from "@cloudroom/shared-ui/responsive-overlay";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@cloudroom/shared-ui/tooltip";
 import { RouteAnchor } from "./app-route-anchor.js";
 import {
   getMarkdownCodeLanguage,
@@ -102,6 +113,7 @@ import { MarkdownMermaidDiagram } from "./markdown-mermaid-diagram.js";
 import type { PromptTextMention } from "@cloudroom/domain";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
 import type { TimelineTitleLinkResolver } from "@/components/thread/timeline/TimelineTitleView.js";
+import { useBrowserDimmingOverlay } from "@/hooks/useBrowserDimmingModal";
 import { usePreferredTheme, type Theme } from "@/hooks/useTheme";
 import {
   rewriteLocalhostLinkHref,
@@ -241,11 +253,6 @@ type ExpandedMarkdownImageSetter = Dispatch<
   SetStateAction<ExpandedMarkdownImage | null>
 >;
 
-interface SetMarkdownContentWidthVariableArgs {
-  element: HTMLElement;
-  width: number;
-}
-
 type MarkdownPreviewPropsEqual = (
   previous: MarkdownPreviewProps,
   next: MarkdownPreviewProps,
@@ -282,10 +289,23 @@ type MarkdownTableHeaderProps = ComponentPropsWithoutRef<"th"> & ExtraProps;
 type MarkdownUnorderedListProps = ComponentPropsWithoutRef<"ul"> & ExtraProps;
 type MarkdownRehypePlugins = NonNullable<ReactMarkdownOptions["rehypePlugins"]>;
 type MarkdownRemarkPlugins = NonNullable<ReactMarkdownOptions["remarkPlugins"]>;
+interface MarkdownHastNode {
+  type: string;
+  tagName?: string;
+  value?: string;
+  children?: MarkdownHastNode[];
+}
 
-const MARKDOWN_TABLE_BREAKOUT_LIMIT_VARIABLE = "--md-table-breakout-max";
-const MARKDOWN_TABLE_BREAKOUT_WIDTH = `max(100%, min(1100px, 100cqw - 2rem, var(${MARKDOWN_TABLE_BREAKOUT_LIMIT_VARIABLE}, 100cqw)))`;
-const MARKDOWN_CONTENT_WIDTH_VARIABLE = "--md-content-w";
+const MARKDOWN_TABLE_CLASS =
+  "w-full border-separate border-spacing-0 text-[13px] leading-normal";
+const MARKDOWN_TABLE_HEADER_CLASS =
+  "whitespace-nowrap border-b border-foreground/10 bg-surface-recessed-solid text-left align-bottom text-xs font-medium text-muted-foreground/70";
+const MARKDOWN_TABLE_CELL_CLASS =
+  "border-b border-foreground/[0.07] align-top first:font-medium first:text-foreground";
+const MARKDOWN_TABLE_STICKY_COLUMN_CLASS =
+  "first:sticky first:left-0 first:shadow-[inset_-1px_0_0_color-mix(in_oklab,var(--foreground)_12%,transparent)]";
+const MARKDOWN_TABLE_SHORT_CELL_LENGTH = 24;
+const MarkdownTableExpandedContext = createContext(false);
 const MARKDOWN_SOURCE_COLOR_SCHEME_MEDIA_PATTERN =
   /^\(\s*prefers-color-scheme\s*:\s*(dark|light)\s*\)$/iu;
 const MARKDOWN_HTML_REHYPE_PLUGINS: MarkdownRehypePlugins = [
@@ -893,45 +913,238 @@ function MarkdownBlockquote({ children }: MarkdownBlockquoteProps) {
   );
 }
 
-function MarkdownTable({ children }: MarkdownTableProps) {
-  const breakoutRef = useMarkdownTableContentWidthVariable();
+function markdownHastText(node: MarkdownHastNode): string {
+  if (node.type === "text") return node.value ?? "";
+  return (node.children ?? []).map(markdownHastText).join("");
+}
+
+function markdownHastTableRows(node: MarkdownHastNode | undefined): string[][] {
+  if (node === undefined) return [];
+  if (node.tagName === "tr") {
+    return [
+      (node.children ?? [])
+        .filter((cell) => cell.tagName === "th" || cell.tagName === "td")
+        .map((cell) => markdownHastText(cell).trim()),
+    ];
+  }
+  return (node.children ?? []).flatMap(markdownHastTableRows);
+}
+
+function previousMarkdownHeadingText(element: HTMLElement | null): string | null {
+  let sibling = element?.previousElementSibling ?? null;
+  for (let step = 0; sibling !== null && step < 4; step += 1) {
+    if (/^H[1-6]$/u.test(sibling.tagName)) {
+      return sibling.textContent?.trim() || null;
+    }
+    sibling = sibling.previousElementSibling;
+  }
+  return null;
+}
+
+function MarkdownTable({ children, node }: MarkdownTableProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [expandedTitle, setExpandedTitle] = useState<string | null>(null);
+  const closeExpanded = useCallback(() => setExpandedTitle(null), []);
 
   return (
     <div
-      ref={breakoutRef}
-      className="my-2 flex justify-center"
-      style={{
-        width: MARKDOWN_TABLE_BREAKOUT_WIDTH,
-        marginInline: `calc((100% - ${MARKDOWN_TABLE_BREAKOUT_WIDTH}) / 2)`,
-      }}
+      ref={containerRef}
+      className="group/table relative my-3 w-full overflow-hidden rounded-lg border border-border"
     >
-      {}
-      <div
-        className="w-max max-w-full overflow-x-auto"
-        style={{
-          minWidth: `min(var(${MARKDOWN_CONTENT_WIDTH_VARIABLE}, 100%), 100%)`,
-        }}
+      <MarkdownTableScroller>
+        <table
+          className={cn(
+            MARKDOWN_TABLE_CLASS,
+            "[&_tbody_tr:last-child_td]:border-b-0 [&_thead_th:last-child]:pr-11",
+          )}
+        >
+          {children}
+        </table>
+      </MarkdownTableScroller>
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label="Expand table"
+              onClick={() =>
+                setExpandedTitle(
+                  previousMarkdownHeadingText(containerRef.current) ?? "Table",
+                )
+              }
+              className="absolute right-1.5 top-1.5 z-[2] inline-flex size-6 cursor-pointer items-center justify-center rounded-md bg-surface-recessed-solid text-muted-foreground/60 transition-colors hover:bg-foreground/10 hover:text-foreground group-hover/table:text-muted-foreground"
+            >
+              <Icon name="Maximize2" className="size-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Expand table</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <MarkdownTableDialog
+        node={node}
+        onClose={closeExpanded}
+        title={expandedTitle}
       >
-        <table className="border border-border">{children}</table>
-      </div>
+        {children}
+      </MarkdownTableDialog>
     </div>
   );
 }
 
+function MarkdownTableScroller({ children }: { children: ReactNode }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [hasMoreRight, setHasMoreRight] = useState(false);
+
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (scroller === null) return;
+    const update = () =>
+      setHasMoreRight(
+        scroller.scrollWidth - scroller.clientWidth - scroller.scrollLeft > 1,
+      );
+    update();
+    scroller.addEventListener("scroll", update, { passive: true });
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
+    observer?.observe(scroller);
+    if (scroller.firstElementChild) observer?.observe(scroller.firstElementChild);
+    return () => {
+      scroller.removeEventListener("scroll", update);
+      observer?.disconnect();
+    };
+  }, []);
+
+  return (
+    <div className="relative">
+      <div ref={scrollerRef} className="overflow-x-auto">
+        {children}
+      </div>
+      {hasMoreRight ? (
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-background to-transparent" />
+      ) : null}
+    </div>
+  );
+}
+
+function MarkdownTableDialog({
+  children,
+  node,
+  onClose,
+  title,
+}: {
+  children: ReactNode;
+  node: MarkdownTableProps["node"];
+  onClose: () => void;
+  title: string | null;
+}) {
+  const open = title !== null;
+  const panelRef = useRef<HTMLDivElement>(null);
+  const scopeProps = usePortalScopeProps();
+  useBrowserDimmingOverlay(open);
+  usePersistentOverlayFocus({ open, panelRef, requestClose: onClose });
+  if (!open) return null;
+
+  const rows = markdownHastTableRows(node);
+  return createPortal(
+    <div
+      {...scopeProps}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 backdrop-blur-[3px] animate-in fade-in-0 duration-150 motion-reduce:animate-none sm:p-12"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
+        className="flex max-h-full w-full max-w-[1400px] flex-col overflow-hidden rounded-xl border border-border bg-background shadow-[0_24px_80px_rgba(0,0,0,0.55)] outline-none animate-in fade-in-0 zoom-in-[0.98] duration-150 motion-reduce:animate-none"
+      >
+        <div className="flex items-center gap-3 border-b border-foreground/10 py-2 pl-5 pr-2">
+          <span className="truncate text-sm font-semibold text-foreground">
+            {title}
+          </span>
+          <span className="shrink-0 text-xs text-muted-foreground/60">
+            {Math.max(rows.length - 1, 0)} rows · {rows[0]?.length ?? 0} columns
+          </span>
+          <span className="flex-1" />
+          <CopyButton
+            text={rows.map((row) => row.join("\t")).join("\n")}
+            label="Copy table"
+          />
+          <kbd className="ml-1 rounded border border-foreground/15 px-1.5 font-mono text-[10px] leading-4 text-muted-foreground/60 max-sm:hidden">
+            Esc
+          </kbd>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={onClose}
+            className="inline-flex size-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+          >
+            <Icon name="X" className="size-4" />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto">
+          <MarkdownTableExpandedContext.Provider value={true}>
+            <table
+              className={cn(
+                MARKDOWN_TABLE_CLASS,
+                "text-sm [&_tbody_tr:hover_td]:bg-surface-recessed-solid",
+              )}
+            >
+              {children}
+            </table>
+          </MarkdownTableExpandedContext.Provider>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 function MarkdownTableHead({ children }: MarkdownTableHeadProps) {
-  return <thead className="bg-surface-recessed">{children}</thead>;
+  return <thead>{children}</thead>;
 }
 
 function MarkdownTableHeader({ children }: MarkdownTableHeaderProps) {
+  const expanded = useContext(MarkdownTableExpandedContext);
   return (
-    <th className="border border-border px-2 py-1 text-left font-medium">
+    <th
+      className={cn(
+        MARKDOWN_TABLE_HEADER_CLASS,
+        MARKDOWN_TABLE_STICKY_COLUMN_CLASS,
+        expanded
+          ? "sticky top-0 z-[2] px-4 py-2.5 first:z-[3]"
+          : "px-3.5 py-2 first:z-[1]",
+      )}
+    >
       {children}
     </th>
   );
 }
 
-function MarkdownTableCell({ children }: MarkdownTableCellProps) {
-  return <td className="border border-border px-2 py-1">{children}</td>;
+function MarkdownTableCell({ children, node }: MarkdownTableCellProps) {
+  const expanded = useContext(MarkdownTableExpandedContext);
+  const text = node ? markdownHastText(node).trim() : "";
+  return (
+    <td
+      className={cn(
+        MARKDOWN_TABLE_CELL_CLASS,
+        MARKDOWN_TABLE_STICKY_COLUMN_CLASS,
+        "first:z-[1] first:bg-background",
+        text.length <= MARKDOWN_TABLE_SHORT_CELL_LENGTH
+          ? "whitespace-nowrap"
+          : "min-w-48",
+        /^[-\u2013\u2014]$/u.test(text) && "text-muted-foreground/45",
+        expanded
+          ? "px-4 py-2.5"
+          : "px-3.5 py-2 first:min-w-40 first:max-w-48 first:whitespace-normal",
+      )}
+    >
+      {children}
+    </td>
+  );
 }
 
 function MarkdownRenderedImage({
@@ -1348,226 +1561,6 @@ function buildMarkdownComponents({
   }
 
   return components;
-}
-
-function setMarkdownContentWidthVariable({
-  element,
-  width,
-}: SetMarkdownContentWidthVariableArgs): void {
-  if (width <= 0) {
-    return;
-  }
-  element.style.setProperty(MARKDOWN_CONTENT_WIDTH_VARIABLE, `${width}px`);
-}
-
-interface MarkdownTableGeometryRegistration {
-  breakout: HTMLElement;
-  clip: HTMLElement | null;
-  content: HTMLElement;
-  lastClipWidth: number;
-  lastContentWidth: number;
-}
-
-type MarkdownTableBreakoutLimitMeasurement =
-  | { kind: "remove" }
-  | { kind: "set"; value: string }
-  | { kind: "unchanged" };
-
-interface MarkdownTableGeometryMeasurement {
-  breakout: HTMLElement;
-  breakoutLimit: MarkdownTableBreakoutLimitMeasurement;
-  contentWidth: number;
-}
-
-const markdownTableRegistrationsByElement = new Map<
-  HTMLElement,
-  Set<MarkdownTableGeometryRegistration>
->();
-let sharedMarkdownTableResizeObserver: ResizeObserver | null = null;
-
-function measureMarkdownTableGeometry(
-  registrations: Iterable<MarkdownTableGeometryRegistration>,
-): void {
-  const measurements: MarkdownTableGeometryMeasurement[] = [];
-  for (const registration of registrations) {
-    const { breakout, clip, content } = registration;
-    const contentWidth = content.getBoundingClientRect().width;
-    const clipWidth = clip?.clientWidth ?? -1;
-    if (
-      contentWidth === registration.lastContentWidth &&
-      clipWidth === registration.lastClipWidth
-    ) {
-      continue;
-    }
-    registration.lastContentWidth = contentWidth;
-    registration.lastClipWidth = clipWidth;
-    measurements.push({
-      breakout,
-      breakoutLimit: readMarkdownTableBreakoutLimit({ breakout, clip }),
-      contentWidth,
-    });
-  }
-
-  for (const { breakout, breakoutLimit, contentWidth } of measurements) {
-    setMarkdownContentWidthVariable({
-      element: breakout,
-      width: contentWidth,
-    });
-    applyMarkdownTableBreakoutLimit({ breakout, measurement: breakoutLimit });
-  }
-}
-
-function getSharedMarkdownTableResizeObserver(): ResizeObserver {
-  sharedMarkdownTableResizeObserver ??= new ResizeObserver((entries) => {
-    const registrations = new Set<MarkdownTableGeometryRegistration>();
-    for (const entry of entries) {
-      if (!(entry.target instanceof HTMLElement)) continue;
-      for (const registration of markdownTableRegistrationsByElement.get(
-        entry.target,
-      ) ?? []) {
-        registrations.add(registration);
-      }
-    }
-    measureMarkdownTableGeometry(registrations);
-  });
-  return sharedMarkdownTableResizeObserver;
-}
-
-function observeMarkdownTableGeometry(
-  registration: MarkdownTableGeometryRegistration,
-): () => void {
-  const elements =
-    registration.clip === null || registration.clip === registration.content
-      ? [registration.content]
-      : [registration.content, registration.clip];
-  const observer = getSharedMarkdownTableResizeObserver();
-  for (const element of elements) {
-    let registrations = markdownTableRegistrationsByElement.get(element);
-    if (!registrations) {
-      registrations = new Set();
-      markdownTableRegistrationsByElement.set(element, registrations);
-      observer.observe(element);
-    }
-    registrations.add(registration);
-  }
-
-  return () => {
-    for (const element of elements) {
-      const registrations = markdownTableRegistrationsByElement.get(element);
-      registrations?.delete(registration);
-      if (registrations?.size === 0) {
-        markdownTableRegistrationsByElement.delete(element);
-        sharedMarkdownTableResizeObserver?.unobserve(element);
-      }
-    }
-    if (markdownTableRegistrationsByElement.size === 0) {
-      sharedMarkdownTableResizeObserver?.disconnect();
-      sharedMarkdownTableResizeObserver = null;
-    }
-  };
-}
-
-function useMarkdownTableContentWidthVariable() {
-  const breakoutRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const breakout = breakoutRef.current;
-    const content = breakout?.closest<HTMLElement>("[data-markdown-preview]");
-    if (!breakout || !content) {
-      return;
-    }
-    const clip = findHorizontalClipAncestor(content);
-    const registration: MarkdownTableGeometryRegistration = {
-      breakout,
-      clip,
-      content,
-      lastClipWidth: -1,
-      lastContentWidth: -1,
-    };
-
-    if (typeof ResizeObserver === "undefined") {
-      measureMarkdownTableGeometry([registration]);
-      return;
-    }
-
-    return observeMarkdownTableGeometry(registration);
-  }, []);
-
-  return breakoutRef;
-}
-
-const HORIZONTAL_CLIP_OVERFLOW_VALUES = new Set([
-  "hidden",
-  "clip",
-  "auto",
-  "scroll",
-]);
-
-function findHorizontalClipAncestor(element: HTMLElement): HTMLElement | null {
-  let current: HTMLElement | null = element;
-  while (current && current !== document.body) {
-    if (
-      HORIZONTAL_CLIP_OVERFLOW_VALUES.has(getComputedStyle(current).overflowX)
-    ) {
-      return current;
-    }
-    current = current.parentElement;
-  }
-  return null;
-}
-
-function readMarkdownTableBreakoutLimit({
-  breakout,
-  clip,
-}: {
-  breakout: HTMLElement;
-  clip: HTMLElement | null;
-}): MarkdownTableBreakoutLimitMeasurement {
-  const parent = breakout.parentElement;
-  if (!clip || !parent) {
-    return { kind: "remove" };
-  }
-  const parentStyle = getComputedStyle(parent);
-  const parentPaddingLeft =
-    parent.getBoundingClientRect().left + parent.clientLeft + clip.scrollLeft;
-  const parentLeft = parentPaddingLeft + cssPixels(parentStyle.paddingLeft);
-  const parentRight =
-    parentPaddingLeft +
-    parent.clientWidth -
-    cssPixels(parentStyle.paddingRight);
-  const parentWidth = parentRight - parentLeft;
-  if (parentWidth <= 0) {
-    return { kind: "unchanged" };
-  }
-  const clipLeft = clip.getBoundingClientRect().left + clip.clientLeft;
-  const clipRight = clipLeft + clip.clientWidth;
-  const room = Math.max(
-    0,
-    Math.min(parentLeft - clipLeft, clipRight - parentRight),
-  );
-  return { kind: "set", value: `${parentWidth + 2 * room}px` };
-}
-
-function applyMarkdownTableBreakoutLimit({
-  breakout,
-  measurement,
-}: {
-  breakout: HTMLElement;
-  measurement: MarkdownTableBreakoutLimitMeasurement;
-}): void {
-  if (measurement.kind === "remove") {
-    breakout.style.removeProperty(MARKDOWN_TABLE_BREAKOUT_LIMIT_VARIABLE);
-  } else if (measurement.kind === "set") {
-    breakout.style.setProperty(
-      MARKDOWN_TABLE_BREAKOUT_LIMIT_VARIABLE,
-      measurement.value,
-    );
-  }
-}
-
-function cssPixels(value: string): number {
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 const FRONTMATTER_PATTERN =

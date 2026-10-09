@@ -15,10 +15,24 @@ import { ConnectTunnel } from "./tunnel.js";
 import { ShareHostResolver } from "./hosts.js";
 import { resolveLocalCloudLoopbackUrl } from "./local-loopback.js";
 import { resolveDefaultConnectBaseUrl } from "./redeem.js";
+import { PhoneRelay } from "./phone.js";
 import {
   CONNECT_REALTIME_CHANNEL,
   REMOTE_ACTIVITY_INSTRUCTIONS_MS,
+  type ConnectStatus,
+  type TunnelStatus,
 } from "./types.js";
+
+const RELAY_CREDENTIAL_KV_KEY = "relay-credential";
+const RELAY_BASE_URL = "https://cloudroom.run";
+
+function recentlyRemote(status: TunnelStatus): boolean {
+  return (
+    status.remoteClients > 0 ||
+    (status.lastRemoteActivityAt !== null &&
+      Date.now() - status.lastRemoteActivityAt < REMOTE_ACTIVITY_INSTRUCTIONS_MS)
+  );
+}
 
 export default async function plugin(bb: BbPluginApi) {
   const settings = bb.settings.define({
@@ -34,41 +48,63 @@ export default async function plugin(bb: BbPluginApi) {
   settings.onChange((next) => {
     currentSettings = next;
   });
-  const store = createKvCredentialStore(bb.storage.kv);
-  let tunnel!: ConnectTunnel;
+  let relay!: ConnectTunnel;
+  let legacy!: ConnectTunnel;
+  let phone!: PhoneRelay;
+  const credential = () => relay.getCredential() ?? legacy.getCredential();
   const hostResolver = new ShareHostResolver(() => bb.sdk);
   const getLoopbackBaseUrl = () =>
     resolveLocalCloudLoopbackUrl(
-      tunnel.getCredential()?.serverUrl,
+      credential()?.serverUrl,
       process.env.BB_DEV_APP_PORT,
     ) ?? bb.server.loopbackBaseUrl;
+
+  const status = (base: TunnelStatus = relay.status()): ConnectStatus => {
+    const old = legacy.status();
+    return {
+      ...base,
+      lastError: base.lastError ?? phone?.error ?? null,
+      signedIn: phone?.signedIn ?? false,
+      legacy: old.paired && old.url !== null ? { url: old.url, state: old.state } : null,
+    };
+  };
+  const publish = () => bb.realtime.publish(CONNECT_REALTIME_CHANNEL, status());
 
   const shares = new ShareRegistry({
     kv: bb.storage.kv,
     hosts: bb.hosts,
     hostResolver,
     getLoopbackBaseUrl,
-    getCredential: () => tunnel.getCredential(),
+    getCredential: credential,
     log: bb.log,
-    onChange: () => {
-      bb.realtime.publish(CONNECT_REALTIME_CHANNEL, tunnel.status());
-    },
+    onChange: publish,
   });
 
+  relay = new ConnectTunnel({
+    store: createKvCredentialStore(bb.storage.kv, RELAY_CREDENTIAL_KV_KEY),
+    shares,
+    defaultBaseUrl: RELAY_BASE_URL,
+    getLoopbackBaseUrl,
+    log: bb.log,
+    onStatusChange: publish,
+    onCredentialRejected: () => void phone.check(true),
+  });
+  phone = new PhoneRelay(bb, relay, publish);
+
   const recheckServerAccess = createServerAccessRecheck(bb);
-  tunnel = new ConnectTunnel({
-    store,
+  legacy = new ConnectTunnel({
+    store: createKvCredentialStore(bb.storage.kv),
     shares,
     defaultBaseUrl: resolveDefaultConnectBaseUrl(process.env),
     getLoopbackBaseUrl,
     log: bb.log,
-    onStatusChange: (status) => {
-      bb.realtime.publish(CONNECT_REALTIME_CHANNEL, status);
-      recheckServerAccess(status);
+    onStatusChange: (legacyStatus) => {
+      publish();
+      recheckServerAccess(legacyStatus);
     },
   });
 
-  await registerServerAccess(bb, tunnel);
+  await registerServerAccess(bb, legacy);
 
   const mobilePairing: MobilePairingGate = {
     enabled: async () => (await bb.sdk.system.config()).experiments.mobileApp,
@@ -76,22 +112,18 @@ export default async function plugin(bb: BbPluginApi) {
 
   bb.rpc.register(
     connectRpcContract,
-    createRpcHandlers(tunnel, hostResolver, mobilePairing),
+    createRpcHandlers({ relay, legacy, phone, status, hostResolver, mobilePairing }),
   );
-  registerConnectCli({ bb, tunnel, hostResolver, mobilePairing });
+  registerConnectCli({ bb, relay, legacy, phone, status, hostResolver, mobilePairing });
 
   bb.agents.contributeInstructions(() => {
     if (!currentSettings.sendRemoteInstructions) return null;
-    const status = tunnel.status();
-    if (!status.paired || status.url === null) return null;
-    const recent =
-      status.remoteClients > 0 ||
-      (status.lastRemoteActivityAt !== null &&
-        Date.now() - status.lastRemoteActivityAt <
-          REMOTE_ACTIVITY_INSTRUCTIONS_MS);
-    if (!recent) return null;
+    const viewing = [relay.status(), legacy.status()].find(
+      (candidate) => candidate.paired && candidate.url !== null && recentlyRemote(candidate),
+    );
+    if (viewing === undefined) return null;
     return (
-      `The user is currently viewing this Cloudroom remotely at ${status.url}. ` +
+      `The user is currently viewing this Cloudroom remotely at ${viewing.url}. ` +
       "Port shares work from a thread on any enrolled host: when you start an HTTP server they should see, run `room-cli connect expose <port>` from that thread. " +
       "The command returns the correct public URL for the thread's host; give it to them as a markdown link because a localhost URL will not work remotely."
     );
@@ -99,7 +131,7 @@ export default async function plugin(bb: BbPluginApi) {
 
   bb.background.service("tunnel", {
     async start(signal) {
-      await tunnel.start();
+      await Promise.all([phone.start(), legacy.start()]);
       await new Promise<void>((resolve) => {
         if (signal.aborted) {
           resolve();
@@ -107,7 +139,8 @@ export default async function plugin(bb: BbPluginApi) {
         }
         signal.addEventListener("abort", () => resolve(), { once: true });
       });
-      tunnel.stop();
+      phone.stop();
+      legacy.stop();
     },
   });
 }

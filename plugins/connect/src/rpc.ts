@@ -7,7 +7,8 @@ import {
 } from "@cloudroom/connect-client";
 import { ConnectPairError } from "./redeem.js";
 import type { ConnectTunnel } from "./tunnel.js";
-import type { ConnectStatus, ShareListing } from "./types.js";
+import type { PhoneRelay } from "./phone.js";
+import type { ConnectStatus, PhoneCode, ShareListing } from "./types.js";
 import { MachineCodeError, type MachineCode } from "./machine-code.js";
 import type { ShareHostResolver } from "./hosts.js";
 
@@ -36,9 +37,11 @@ const shareListingSchema: z.ZodType<ShareListing> = z
   })
   .strict();
 
+const stateSchema = z.enum(["disconnected", "pairing", "connected", "reconnecting"]);
+
 const connectStatusSchema: z.ZodType<ConnectStatus> = z
   .object({
-    state: z.enum(["disconnected", "pairing", "connected", "reconnecting"]),
+    state: stateSchema,
     paired: z.boolean(),
     handle: z.string().nullable(),
     url: z.string().nullable(),
@@ -49,7 +52,13 @@ const connectStatusSchema: z.ZodType<ConnectStatus> = z
     remoteClients: z.number().int(),
     lastRemoteActivityAt: z.number().nullable(),
     shares: z.array(shareListingSchema),
+    signedIn: z.boolean(),
+    legacy: z.object({ url: z.string(), state: stateSchema }).strict().nullable(),
   })
+  .strict();
+
+const phoneCodeSchema: z.ZodType<PhoneCode> = z
+  .object({ code: z.string(), expiresAt: z.number(), url: z.string() })
   .strict();
 
 const listAccountServersResultSchema: z.ZodType<ListAccountServersResult> = z
@@ -99,6 +108,11 @@ export const connectRpcContract = defineRpcContract({
   pair: { input: pairInputSchema, output: connectStatusSchema },
   status: { input: z.null(), output: connectStatusSchema },
   disconnect: { input: z.null(), output: connectStatusSchema },
+  phoneCode: { input: z.null(), output: phoneCodeSchema },
+  signOutPhones: {
+    input: z.null(),
+    output: z.object({ revoked: z.number().int() }).strict(),
+  },
   expose: { input: portInputSchema, output: shareListingSchema },
   unexpose: {
     input: portInputSchema,
@@ -143,28 +157,41 @@ export interface MobilePairingGate {
   enabled(): Promise<boolean>;
 }
 
-export function createRpcHandlers(
-  tunnel: ConnectTunnel,
-  hostResolver: ShareHostResolver,
-  mobilePairing: MobilePairingGate,
-): ConnectRpcHandlers {
+export function createRpcHandlers(args: {
+  relay: ConnectTunnel;
+  legacy: ConnectTunnel;
+  phone: PhoneRelay;
+  status: () => ConnectStatus;
+  hostResolver: ShareHostResolver;
+  mobilePairing: MobilePairingGate;
+}): ConnectRpcHandlers {
+  const { relay, legacy, phone, status, hostResolver, mobilePairing } = args;
+  const tunnel = relay;
   return {
     async pair(args) {
-      return rethrowErrorCode(
+      await rethrowErrorCode(
         () =>
-          tunnel.pair({
+          legacy.pair({
             code: args.code,
             ...(args.server !== undefined ? { serverUrl: args.server } : {}),
             ...(args.baseUrl !== undefined ? { baseUrl: args.baseUrl } : {}),
           }),
         (error) => error instanceof ConnectPairError,
       );
+      return status();
     },
     async status() {
-      return tunnel.refreshStatus();
+      return { ...status(), shares: await relay.listShares() };
     },
     async disconnect() {
-      return tunnel.disconnect();
+      await legacy.disconnect();
+      return status();
+    },
+    async phoneCode() {
+      return phone.phoneCode();
+    },
+    async signOutPhones() {
+      return phone.signOutPhones();
     },
     async expose(args) {
       const host =
@@ -184,13 +211,13 @@ export function createRpcHandlers(
     },
     async listAccountServers() {
       return rethrowErrorCode(
-        () => tunnel.listAccountServers(),
+        () => legacy.listAccountServers(),
         (error) => error instanceof ConnectListError,
       );
     },
     async createDesktopSession() {
       return rethrowErrorCode(
-        () => tunnel.createDesktopSession(),
+        () => legacy.createDesktopSession(),
         (error) => error instanceof ConnectListError,
       );
     },
@@ -199,12 +226,12 @@ export function createRpcHandlers(
     },
     async createMachineCode() {
       return rethrowErrorCode(
-        () => tunnel.createMachineCode(),
+        () => legacy.createMachineCode(),
         (error) => error instanceof MachineCodeError,
       );
     },
     async revokeMachine(args) {
-      await tunnel.revokeMachine(args.machineId);
+      await legacy.revokeMachine(args.machineId);
       return { ok: true };
     },
   };

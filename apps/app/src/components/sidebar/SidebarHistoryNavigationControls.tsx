@@ -3,6 +3,7 @@ import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { Button } from "@cloudroom/shared-ui/button";
 import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
 import { COARSE_POINTER_HEADER_ICON_BUTTON_CLASS } from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import { useAppCommandHandler } from "@/components/commands/AppCommandProvider";
 import { useRouteStateHistoryNavigation } from "@/lib/app-route-history";
 
 interface SidebarHistoryNavigationControlsProps {
@@ -52,19 +53,24 @@ export function SidebarHistoryNavigationControls({
 
   const handleBack = useCallback(() => {
     if (!canGoBack) {
-      return;
+      return false;
     }
     goBack();
     onNavigate?.();
+    return true;
   }, [canGoBack, goBack, onNavigate]);
 
   const handleForward = useCallback(() => {
     if (!canGoForward) {
-      return;
+      return false;
     }
     goForward();
     onNavigate?.();
+    return true;
   }, [canGoForward, goForward, onNavigate]);
+
+  useAppCommandHandler("history.back", handleBack);
+  useAppCommandHandler("history.forward", handleForward);
 
   return (
     <div className={cn("flex items-center gap-1", className)}>

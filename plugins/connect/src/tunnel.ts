@@ -32,7 +32,7 @@ import {
   type ShareRemoval,
 } from "./shares.js";
 import type { ShareHost } from "./hosts.js";
-import type { ConnectStateName, ConnectStatus, ShareListing } from "./types.js";
+import type { ConnectStateName, ShareListing, TunnelStatus } from "./types.js";
 
 const DISCONNECT_TIMEOUT_MS = 5_000;
 const TUNNEL_HANDSHAKE_TIMEOUT_MS = 15_000;
@@ -59,7 +59,8 @@ interface ConnectTunnelOptions {
   defaultBaseUrl: string;
   getLoopbackBaseUrl: () => string;
   log: PluginLogger;
-  onStatusChange?: (status: ConnectStatus) => void;
+  onStatusChange?: (status: TunnelStatus) => void;
+  onCredentialRejected?: () => void;
 }
 
 export class ConnectTunnel {
@@ -101,7 +102,7 @@ export class ConnectTunnel {
     code: string;
     serverUrl?: string;
     baseUrl?: string;
-  }): Promise<ConnectStatus> {
+  }): Promise<TunnelStatus> {
     const baseUrl =
       args.baseUrl ??
       (args.serverUrl !== undefined
@@ -140,7 +141,24 @@ export class ConnectTunnel {
     return this.status();
   }
 
-  async disconnect(): Promise<ConnectStatus> {
+  async useCredential(credential: ConnectCredential): Promise<void> {
+    await this.options.store.write(credential);
+    this.credential = credential;
+    this.lastError = null;
+    this.reconnect();
+    this.startShareActivation();
+    this.publish();
+  }
+
+  async forget(): Promise<void> {
+    this.teardown();
+    await this.options.store.clear();
+    this.credential = null;
+    this.lastError = null;
+    this.publish();
+  }
+
+  async disconnect(): Promise<TunnelStatus> {
     const credential = this.credential;
     this.teardown();
     await this.options.store.clear();
@@ -215,15 +233,15 @@ export class ConnectTunnel {
     await revokeMachine(credential, machineId);
   }
 
-  status(): ConnectStatus {
+  status(): TunnelStatus {
     return this.statusWithShares(this.options.shares.snapshot());
   }
 
-  async refreshStatus(): Promise<ConnectStatus> {
+  async refreshStatus(): Promise<TunnelStatus> {
     return this.statusWithShares(await this.listShares());
   }
 
-  private statusWithShares(shares: ConnectStatus["shares"]): ConnectStatus {
+  private statusWithShares(shares: TunnelStatus["shares"]): TunnelStatus {
     const state = this.computeState();
     return {
       state,
@@ -335,20 +353,24 @@ export class ConnectTunnel {
   }
 
   private credentialRejected(statusCode: number): void {
-    this.lastError =
-      `the gate rejected this Cloudroom server's credential (HTTP ${statusCode}) — ` +
-      "pairing was revoked; get a new code from the getbb.app dashboard and re-pair";
+    this.lastError = this.options.onCredentialRejected
+      ? `Cloudroom Connect rejected this Mac's credential (HTTP ${statusCode}); registering again`
+      : `the gate rejected this Cloudroom server's credential (HTTP ${statusCode}) — ` +
+        "pairing was revoked; get a new code from the getbb.app dashboard and re-pair";
     this.options.log.warn(this.lastError);
     this.credential = null;
     this.teardown();
     this.publish();
-    void this.options.store.clear().catch((error: unknown) => {
-      this.options.log.warn(
-        `failed to clear the rejected credential: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-    });
+    void this.options.store
+      .clear()
+      .catch((error: unknown) => {
+        this.options.log.warn(
+          `failed to clear the rejected credential: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      })
+      .then(() => this.options.onCredentialRejected?.());
   }
 
   private resolveStreamOrigin(target: string | undefined): StreamOriginResult {

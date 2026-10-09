@@ -252,7 +252,7 @@ export function ArchivedThreadsSettingsSection() {
                   {threads.length} {threads.length === 1 ? "thread" : "threads"}
                 </span>
               </div>
-              <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+              <div className="divide-y divide-border overflow-hidden rounded-lg bg-surface-recessed">
                 {threads.map((thread) => (
                   <div
                     key={thread.id}

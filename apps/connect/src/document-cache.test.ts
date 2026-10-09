@@ -141,7 +141,6 @@ beforeAll(async () => {
     d1Databases: { DB: "fixture-db" },
     bindings: {
       BASE_DOMAIN: "relay.test",
-      BETTER_AUTH_SECRET: "fixture-secret",
       GZIP_BODY_B64: gzipSync(Buffer.from("unused")).toString("base64"),
     },
   });

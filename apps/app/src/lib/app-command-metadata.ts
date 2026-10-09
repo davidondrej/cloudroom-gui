@@ -96,6 +96,16 @@ export const APP_COMMAND_GROUPS: readonly AppCommandGroup[] = [
         "Back to app",
         "Return from Settings, Plugins, or Skills to the app.",
       ),
+      command(
+        "history.back",
+        "Go back",
+        "Return to the previous screen, usually your last thread.",
+      ),
+      command(
+        "history.forward",
+        "Go forward",
+        "Go forward to the screen you just left.",
+      ),
       command("settings.open", "Open settings", "Open Cloudroom settings."),
       command(
         "settings.openServers",

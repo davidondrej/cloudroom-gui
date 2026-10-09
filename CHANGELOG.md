@@ -2,6 +2,18 @@
 
 Also on [cloudroom.dev/changelog](https://www.cloudroom.dev/changelog).
 
+## 97
+
+Better search and tables (2026-10-09)
+
+### Changes
+
+- Search matches words in any order and inside words, in threads, pickers, and Settings.
+- Wide tables stay inside the chat, with an expand button to see them full size.
+- Update Claude Code from Homebrew in one click, and use Cmd+[ and Cmd+] to go back and forward.
+- See how much context a Claude thread uses, and Cloud Codex threads now show context usage too.
+- Fixes for Claude and Codex sign-in, Cloud follow-ups, app updates, and Linux menus.
+
 ## 96
 
 Compact usage and better previews (2026-10-07)

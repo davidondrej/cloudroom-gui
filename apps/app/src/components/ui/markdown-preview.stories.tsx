@@ -1,10 +1,6 @@
-import { type CSSProperties, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { MarkdownPreview } from "./markdown-preview";
 import { StoryCard, StoryRow } from "../../../.ladle/story-card";
-
-const STAGE_VARS = {
-  "--md-content-w": "680px",
-} as CSSProperties;
 
 export default {
   title: "ui/Markdown Preview",
@@ -14,7 +10,6 @@ function PreviewStage({ children }: { children: ReactNode }) {
   return (
     <div
       className="@container/page mx-auto w-full max-w-[1280px] overflow-hidden rounded-md border border-border bg-background p-4"
-      style={STAGE_VARS}
     >
       <div className="mx-auto max-w-[680px]">{children}</div>
     </div>

@@ -11,7 +11,10 @@ import {
   serverUrlDialogSubmitRequestSchema,
   type ServerUrlDialogSubmitResponse,
 } from "./server-url-dialog-ipc.js";
-import { normalizeCustomServerUrl } from "./server-target.js";
+import {
+  BUILTIN_SERVER_NAME,
+  normalizeCustomServerUrl,
+} from "./server-target.js";
 
 type ServerUrlDialogResult =
   | { kind: "cancelled" }
@@ -69,7 +72,7 @@ ${DESKTOP_DIALOG_BASE_CSS}
 </head>
 <body>
   <h1>Set Server URL</h1>
-  <p>Point this app at a Cloudroom server. Leave empty to use only This Mac.</p>
+  <p>Point this app at a Cloudroom server. Leave empty to use only ${BUILTIN_SERVER_NAME}.</p>
   <form>
     <input name="url" type="text" placeholder="https://example.com:38886" value="${escapeHtmlText(initialUrl ?? "")}" autocomplete="off" spellcheck="false">
     <div data-error></div>

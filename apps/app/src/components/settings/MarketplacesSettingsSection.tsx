@@ -130,7 +130,7 @@ export function MarketplacesSettingsSection() {
         {marketplaces.map((marketplace) => (
           <li
             key={marketplace.name}
-            className="flex items-start gap-3 rounded-md border border-border p-3"
+            className="flex items-start gap-3 rounded-md bg-surface-recessed p-3"
           >
             <div className="min-w-0 flex-1 space-y-1">
               <p className="flex items-center gap-2 text-sm text-foreground">

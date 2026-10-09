@@ -76,7 +76,7 @@ function TimeHeatmap() {
         </h2>
         <span className="text-xs text-subtle-foreground">{formatMinutes(time.today)} today</span>
       </div>
-      <div className="rounded-lg border border-border bg-card px-4 py-3.5">
+      <div className="rounded-lg bg-surface-recessed px-4 py-3.5">
         <div style={{ display: "grid", gridTemplateColumns: `28px repeat(${WEEKS}, minmax(0, 1fr))`, gap: 3 }}>
           {[["Mon", 3], ["Wed", 5], ["Fri", 7]].map(([name, row]) => (
             <span key={name} className="text-2xs text-subtle-foreground" style={{ gridColumn: 1, gridRow: row, lineHeight: 1, alignSelf: "center" }}>{name}</span>

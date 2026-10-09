@@ -8,6 +8,7 @@ import { MachineCodeError } from "./machine-code.js";
 import type { MobilePairingGate } from "./rpc.js";
 import { parseSharePort } from "./shares.js";
 import type { ConnectTunnel } from "./tunnel.js";
+import type { PhoneRelay } from "./phone.js";
 import type { ConnectStatus } from "./types.js";
 
 interface ParsedFlags {
@@ -64,33 +65,36 @@ function validateFlags(
 
 function helpText(): string {
   return [
-    "Cloudroom Connect, powered by BB Connect. Cloudroom becomes reachable at https://<handle>.getbb.app.",
-    "Share HTTP ports from any enrolled host (owner session only).",
-    "",
-    "  1. Sign in at https://getbb.app and claim a handle.",
-    "  2. Copy the connect command from the dashboard and run it here:",
-    "       room-cli connect --code <code> --server https://<handle>.getbb.app",
+    "Cloudroom Connect opens this Cloudroom from your phone at https://<id>.cloudroom.run.",
+    "It sets itself up once you are signed in to Cloudroom. Share HTTP ports from any enrolled host.",
     "",
     "  room-cli connect status              Show remote-access status",
-    "  room-cli connect off                 Disconnect and forget the pairing (re-pairing needs a new code)",
+    "  room-cli connect phone-code          Get a one-time code for cloudroom.dev/mobile",
+    "  room-cli connect sign-out-phones     Sign out every phone and browser",
     "  room-cli connect expose <port> [--host <name-or-id>]    Share a port from the thread's host",
     "  room-cli connect unexpose <port> [--host <name-or-id>]  Stop sharing a port on that host",
     "  room-cli connect shares [--host <name-or-id>]           List shares for the thread's host",
-    "  room-cli connect servers             List servers on this account (from getbb.app)",
+    "  room-cli connect off                 Forget the old getbb.app pairing",
+    "  room-cli connect servers             List servers on the old getbb.app account",
     "  room-cli connect machine-code        Legacy native-device enrollment (not used by the PWA)",
     "",
-    "For the Cloudroom mobile app, open your remote URL in a phone browser and add it to your home screen.",
-    "The server holds the tunnel; it stays up while Cloudroom is running.",
+    "On your phone, open cloudroom.dev/mobile and enter the code, then add it to your home screen.",
   ].join("\n");
 }
 
 function formatStatus(status: ConnectStatus): string {
-  if (!status.paired) {
-    return "Not paired\nPair from the getbb.app dashboard — run `room-cli connect` for a how-to.";
-  }
-  const lines = [`${status.handle}  ${status.url}  ${status.state}`];
-  if (status.lastError !== null && status.state !== "connected") {
+  const lines = !status.paired
+    ? [
+        status.signedIn
+          ? `Setting up${status.lastError ? ` (${status.lastError})` : ""}`
+          : "Sign in to Cloudroom to use it on your phone.",
+      ]
+    : [`${status.url}  ${status.state}`];
+  if (status.paired && status.lastError !== null && status.state !== "connected") {
     lines.push(`  last error: ${status.lastError}`);
+  }
+  if (status.legacy !== null) {
+    lines.push(`  old getbb.app link: ${status.legacy.url}  ${status.legacy.state}`);
   }
   if (status.shares.length > 0) {
     lines.push("  shares:");
@@ -108,7 +112,7 @@ function asJson(value: unknown): string {
 }
 
 function notPairedError(): string {
-  return "this Cloudroom server is not connected to getbb.app — run `room-cli connect` for how to pair";
+  return "Cloudroom Connect is not set up yet — sign in to Cloudroom, then try again";
 }
 
 function machineCodeErrorText(
@@ -117,7 +121,7 @@ function machineCodeErrorText(
 ): string {
   switch (error.code) {
     case "not_paired":
-      return notPairedError();
+      return "no old getbb.app pairing on this Mac";
     case "machine_limit":
       return `this account has reached its connect machine limit — revoke a device you no longer use at ${dashboardUrl}, then try again`;
     case "network":
@@ -148,15 +152,19 @@ function formatMachineCode(payload: MobilePairingPayload): string {
 
 export function registerConnectCli(args: {
   bb: Pick<BbPluginApi, "cli">;
-  tunnel: ConnectTunnel;
+  relay: ConnectTunnel;
+  legacy: ConnectTunnel;
+  phone: PhoneRelay;
+  status: () => ConnectStatus;
   hostResolver: ShareHostResolver;
   mobilePairing: MobilePairingGate;
 }): void {
-  const { bb, tunnel, hostResolver, mobilePairing } = args;
+  const { bb, relay, legacy, phone, status, hostResolver, mobilePairing } = args;
+  const tunnel = relay;
   bb.cli.register({
     name: "connect",
     summary:
-      "Expose this Cloudroom server at https://<handle>.getbb.app (pair with --code/--server from the dashboard)",
+      "Open this Cloudroom from your phone at cloudroom.run and share ports",
     commands: [
       {
         name: "status",
@@ -164,8 +172,18 @@ export function registerConnectCli(args: {
         usage: "room-cli connect status [--json]",
       },
       {
+        name: "phone-code",
+        summary: "Get a one-time code for cloudroom.dev/mobile",
+        usage: "room-cli connect phone-code [--json]",
+      },
+      {
+        name: "sign-out-phones",
+        summary: "Sign out every phone and browser",
+        usage: "room-cli connect sign-out-phones [--json]",
+      },
+      {
         name: "off",
-        summary: "Disconnect and forget the pairing",
+        summary: "Forget the old getbb.app pairing",
         usage: "room-cli connect off [--json]",
       },
       {
@@ -186,7 +204,7 @@ export function registerConnectCli(args: {
       },
       {
         name: "servers",
-        summary: "List every Cloudroom server on this account",
+        summary: "List servers on the old getbb.app account",
         usage: "room-cli connect servers [--json]",
       },
       {
@@ -202,23 +220,45 @@ export function registerConnectCli(args: {
         if (first === "status") {
           const parsed = parseFlags(argv.slice(1));
           validateFlags(parsed, { boolean: ["json"] });
-          const status = await tunnel.refreshStatus();
+          const current = { ...status(), shares: await relay.listShares() };
           return {
             exitCode: 0,
             stdout: parsed.flags.has("json")
-              ? asJson(status)
-              : `${formatStatus(status)}\n`,
+              ? asJson(current)
+              : `${formatStatus(current)}\n`,
+          };
+        }
+        if (first === "phone-code") {
+          const parsed = parseFlags(argv.slice(1));
+          validateFlags(parsed, { boolean: ["json"] });
+          const code = await phone.phoneCode();
+          return {
+            exitCode: 0,
+            stdout: parsed.flags.has("json")
+              ? asJson(code)
+              : `Code: ${code.code}\nOn your phone, open cloudroom.dev/mobile and enter it, or open ${code.url}\nIt works once, for 10 minutes.\n`,
+          };
+        }
+        if (first === "sign-out-phones") {
+          const parsed = parseFlags(argv.slice(1));
+          validateFlags(parsed, { boolean: ["json"] });
+          const result = await phone.signOutPhones();
+          return {
+            exitCode: 0,
+            stdout: parsed.flags.has("json")
+              ? asJson(result)
+              : `Signed out ${result.revoked} phone or browser session(s)\n`,
           };
         }
         if (first === "off") {
           const parsed = parseFlags(argv.slice(1));
           validateFlags(parsed, { boolean: ["json"] });
-          const status = await tunnel.disconnect();
+          await legacy.disconnect();
           return {
             exitCode: 0,
             stdout: parsed.flags.has("json")
-              ? asJson(status)
-              : "Disconnected\n",
+              ? asJson(status())
+              : "Forgot the old getbb.app pairing\n",
           };
         }
         if (first === "expose") {
@@ -232,7 +272,7 @@ export function registerConnectCli(args: {
           }
           const parsed = parseFlags(argv.slice(2));
           validateFlags(parsed, { boolean: ["json"], value: ["host"] });
-          if (!tunnel.status().paired) {
+          if (!relay.status().paired && !legacy.status().paired) {
             return { exitCode: 1, stderr: `${notPairedError()}\n` };
           }
           const targetHost = await hostResolver.resolve(
@@ -308,10 +348,10 @@ export function registerConnectCli(args: {
         if (first === "servers") {
           const parsed = parseFlags(argv.slice(1));
           validateFlags(parsed, { boolean: ["json"] });
-          if (!tunnel.status().paired) {
-            return { exitCode: 1, stderr: `${notPairedError()}\n` };
+          if (!legacy.status().paired) {
+            return { exitCode: 1, stderr: "no old getbb.app pairing on this Mac\n" };
           }
-          const result = await tunnel.listAccountServers();
+          const result = await legacy.listAccountServers();
           if (parsed.flags.has("json")) {
             return { exitCode: 0, stdout: asJson(result) };
           }
@@ -351,12 +391,12 @@ export function registerConnectCli(args: {
           }
           let payload: MobilePairingPayload;
           try {
-            payload = mobilePairingPayload(await tunnel.createMachineCode());
+            payload = mobilePairingPayload(await legacy.createMachineCode());
           } catch (error) {
             if (error instanceof MachineCodeError) {
               return {
                 exitCode: 1,
-                stderr: `${machineCodeErrorText(error, tunnel.status().dashboardUrl)}\n`,
+                stderr: `${machineCodeErrorText(error, legacy.status().dashboardUrl)}\n`,
               };
             }
             throw error;
@@ -383,19 +423,17 @@ export function registerConnectCli(args: {
         }
         const server = stringFlag(parsed, "server");
         const baseUrl = stringFlag(parsed, "base-url");
-        const status = await tunnel.pair({
+        const paired = await legacy.pair({
           code,
           ...(server !== undefined ? { serverUrl: server } : {}),
           ...(baseUrl !== undefined ? { baseUrl } : {}),
         });
         if (parsed.flags.has("json")) {
-          return { exitCode: 0, stdout: asJson(status) };
+          return { exitCode: 0, stdout: asJson(paired) };
         }
         return {
           exitCode: 0,
-          stdout:
-            `Paired as ${status.handle} — reachable at ${status.url}\n` +
-            "The server holds the tunnel; it stays up while Cloudroom is running.\n",
+          stdout: `Paired the old getbb.app link as ${paired.handle} — reachable at ${paired.url}\n`,
         };
       } catch (error) {
         return {

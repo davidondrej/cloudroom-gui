@@ -52,7 +52,7 @@ export function SettingsSection({
       </div>
       <div
         className={cn(
-          !plain && "rounded-lg border border-border bg-card px-4 py-3.5",
+          !plain && "rounded-lg bg-surface-recessed px-4 py-3.5",
           bodyClassName,
         )}
       >

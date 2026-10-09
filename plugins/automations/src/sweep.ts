@@ -6,6 +6,7 @@ import {
   listDueAutomations,
   parseAutomationExecution,
   parseAutomationTrigger,
+  setAutomationEnabled,
   type AutomationRow,
   type AutomationRunRow,
   type Db,
@@ -25,8 +26,14 @@ export const SWEEP_INTERVAL_MS = 10_000;
 const hostListSchema = z.array(
   z.object({ status: z.enum(["connected", "disconnected"]) }).passthrough(),
 );
+const projectListSchema = z.array(
+  z.object({ id: z.string(), deletedAt: z.number().nullish() }).passthrough(),
+);
 type SweepApi = AgentRunApi & {
-  sdk: { hosts: { list(): Promise<unknown> } };
+  sdk: {
+    hosts: { list(): Promise<unknown> };
+    projects: { list(input: { includePersonal: boolean }): Promise<unknown> };
+  };
 };
 
 function buildScheduleFailureHandler(
@@ -136,6 +143,25 @@ async function hasConnectedHost(
   }
 }
 
+// Empty when the list fails, so a failed lookup never pauses anything.
+async function liveProjectIds(bb: SweepApi): Promise<Set<string>> {
+  try {
+    const projects = projectListSchema.parse(
+      await bb.sdk.projects.list({ includePersonal: true }),
+    );
+    return new Set(
+      projects
+        .filter((project) => !project.deletedAt)
+        .map((project) => project.id),
+    );
+  } catch (error) {
+    bb.log.warn(
+      `Failed to list projects for automation sweep: ${errorMessage(error)}`,
+    );
+    return new Set();
+  }
+}
+
 export async function sweepDueAutomations(
   bb: SweepApi,
   db: Db,
@@ -147,8 +173,25 @@ export async function sweepDueAutomations(
 ): Promise<void> {
   const now = args.now ?? Date.now();
   const due = listDueAutomations(db, { now, limit: DUE_AUTOMATION_BATCH_SIZE });
+  if (due.length === 0) return;
+  const projectIds = await liveProjectIds(bb);
   const agentHostsAvailable = await hasConnectedHost(bb);
   for (const automation of due) {
+    // A removed project's automations are hidden, so pause them instead of
+    // letting them run unseen.
+    if (projectIds.size > 0 && !projectIds.has(automation.projectId)) {
+      setAutomationEnabled(db, {
+        projectId: automation.projectId,
+        automationId: automation.id,
+        enabled: false,
+        nextRunAt: null,
+        lastError: "Paused because its project was removed",
+      });
+      bb.log.warn(
+        `Paused automation ${automation.id}: project ${automation.projectId} was removed`,
+      );
+      continue;
+    }
     try {
       await processDueAutomation(bb, db, {
         pluginDataDir: args.pluginDataDir,

@@ -19,8 +19,8 @@ import {
 import { headersForLoopbackRequest } from "./headers.js";
 import type { TunnelClientLogger } from "./logger.js";
 
-const HEARTBEAT_INTERVAL_MS = 20_000;
-const HEARTBEAT_DEADLINE_MS = 60_000;
+const HEARTBEAT_INTERVAL_MS = 10_000;
+const HEARTBEAT_DEADLINE_MS = 25_000;
 
 const UNREGISTERED_PORT_BODY = "this port is not shared";
 const textEncoder = new TextEncoder();

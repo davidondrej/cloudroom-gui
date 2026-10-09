@@ -52,7 +52,7 @@ export function CloudroomAccountSettings() {
   return <>
     {signedIn ? <section className="space-y-3">
       <h2 className="sr-only">Cloudroom account</h2>
-      <div className="flex items-center gap-4 rounded-xl border border-border bg-card bg-gradient-to-br from-primary/[0.07] to-transparent to-55% p-5">
+      <div className="flex items-center gap-4 rounded-xl bg-surface-recessed bg-gradient-to-br from-primary/[0.07] to-transparent to-55% p-5">
         <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-lg font-semibold text-primary-foreground">{account.email.charAt(0).toUpperCase()}</span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-semibold text-foreground">{account.email}</p>
@@ -114,7 +114,7 @@ function MacAccessTiles() {
         onClick={() => select(level)}
         className={cn(
           "flex flex-col items-start gap-2.5 rounded-xl border p-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-default",
-          selected ? "border-success/60 bg-success/[0.06] ring-3 ring-success/5 dark:border-primary/55 dark:bg-primary/[0.08] dark:ring-primary/5" : "border-border bg-card hover:bg-state-hover",
+          selected ? "border-success/60 bg-success/[0.06] ring-3 ring-success/5 dark:border-primary/55 dark:bg-primary/[0.08] dark:ring-primary/5" : "border-transparent bg-surface-recessed hover:bg-state-hover",
         )}
       >
         <Icon name={level.icon} className={cn("size-[18px]", selected ? "text-success dark:text-primary" : "text-muted-foreground")} aria-hidden />
@@ -133,7 +133,7 @@ function AgentLogins() {
     {AGENT_LOGINS.map(({ id, name, open }) => {
       const provider = providers?.find((entry) => entry.id === id);
       const Logo = getProviderIconInfo("agent", id, provider ?? null).icon;
-      return <div key={id} className="flex items-center gap-3 rounded-xl border border-border bg-card px-3.5 py-3">
+      return <div key={id} className="flex items-center gap-3 rounded-xl bg-surface-recessed px-3.5 py-3">
         <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-background text-foreground" style={provider && getProviderIconTintStyle(provider)}><Logo className="size-[18px]" /></span>
         <span className="min-w-0 flex-1 truncate text-sm text-foreground">{name}</span>
         <Button variant="outline" size="sm" aria-label={`Manage ${name} connection`} onClick={() => open()}>Manage</Button>

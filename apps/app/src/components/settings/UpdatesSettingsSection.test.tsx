@@ -1384,7 +1384,7 @@ The canonical release summary.
     const updateSurface = document.querySelector(
       '[data-updates-machine="host_primary"]',
     );
-    expect(updateSurface?.querySelector(".bg-card")).not.toBeNull();
+    expect(updateSurface?.querySelector(".bg-surface-recessed")).not.toBeNull();
     expect(updateSurface?.querySelector(".divide-y")).not.toBeNull();
     expect(screen.queryByText(/^Update available/)).toBeNull();
 

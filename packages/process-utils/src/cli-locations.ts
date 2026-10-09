@@ -2,7 +2,7 @@ import { accessSync, constants, existsSync, lstatSync, statSync } from "node:fs"
 import { homedir } from "node:os";
 import { delimiter, isAbsolute, join } from "node:path";
 
-export type KnownCli = "codex" | "claude" | "opencode";
+export type KnownCli = "codex" | "claude" | "opencode" | "fx";
 
 function isExecutableFile(candidate: string): boolean {
   try {
@@ -67,7 +67,9 @@ function fallbackCandidates(cli: KnownCli, env: NodeJS.ProcessEnv): string[] {
         ]
       : cli === "opencode"
         ? [join(home, ".opencode", "bin", "opencode")]
-        : [join(home, ".claude", "local", "claude")];
+        : cli === "claude"
+          ? [join(home, ".claude", "local", "claude")]
+          : [];
   return [...binDirs.map((dir) => join(dir, cli)), ...providerPaths];
 }
 

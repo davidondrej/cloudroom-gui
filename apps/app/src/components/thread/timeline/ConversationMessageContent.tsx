@@ -29,6 +29,10 @@ import type {
   UserAttachmentImageSrcResolver,
 } from "./types.js";
 import {
+  ClaudeContextReportCard,
+  parseClaudeContextReport,
+} from "./ClaudeContextReport.js";
+import {
   ConversationAttachments,
   buildAttachmentItems,
   type ConversationAttachmentItems,
@@ -493,6 +497,10 @@ function AssistantConversationMessage({
     () => (streaming ? splitStreamingMarkdown(text) : null),
     [streaming, text],
   );
+  const contextReport = useMemo(
+    () => (streaming ? null : parseClaudeContextReport(text)),
+    [streaming, text],
+  );
   const liveMarkdown = useMemo(() => {
     const tail = streamingSplit?.tail ?? text;
     return streaming ? repairStreamingMarkdownTail(tail) : tail;
@@ -570,33 +578,37 @@ function AssistantConversationMessage({
       )}
       data-message-column=""
     >
-      <SelectableMessageProse onSelect={onSelectProse}>
-        <MarkdownPreview
-          className={
-            streamingSplit === null
-              ? undefined
-              : STREAMING_SETTLED_MARKDOWN_CLASS_NAME
-          }
-          content={
-            streamingSplit === null ? liveMarkdown : streamingSplit.settled
-          }
-          incrementalBlocks
-          linkRouting={linkRouting}
-          messageDirectives={messageDirectives}
-          threadMentions={ASSISTANT_THREAD_MENTIONS}
-        />
-        {streamingSplit === null ? null : (
+      {contextReport ? (
+        <ClaudeContextReportCard report={contextReport} />
+      ) : (
+        <SelectableMessageProse onSelect={onSelectProse}>
           <MarkdownPreview
-            className={STREAMING_TAIL_MARKDOWN_CLASS_NAME}
-            content={liveMarkdown}
-            sourcePrefix={streamingSplit.settled}
+            className={
+              streamingSplit === null
+                ? undefined
+                : STREAMING_SETTLED_MARKDOWN_CLASS_NAME
+            }
+            content={
+              streamingSplit === null ? liveMarkdown : streamingSplit.settled
+            }
             incrementalBlocks
             linkRouting={linkRouting}
             messageDirectives={messageDirectives}
             threadMentions={ASSISTANT_THREAD_MENTIONS}
           />
-        )}
-      </SelectableMessageProse>
+          {streamingSplit === null ? null : (
+            <MarkdownPreview
+              className={STREAMING_TAIL_MARKDOWN_CLASS_NAME}
+              content={liveMarkdown}
+              sourcePrefix={streamingSplit.settled}
+              incrementalBlocks
+              linkRouting={linkRouting}
+              messageDirectives={messageDirectives}
+              threadMentions={ASSISTANT_THREAD_MENTIONS}
+            />
+          )}
+        </SelectableMessageProse>
+      )}
       <ConversationAttachments
         filePaths={attachmentItems.filePaths}
         imageItems={attachmentItems.imageItems}

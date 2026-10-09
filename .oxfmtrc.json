@@ -11,7 +11,6 @@
     "out/",
     ".turbo/",
     "data/",
-    "!apps/mobile/src/data/",
     "output.txt",
     ".codex/",
     ".claude/",
@@ -22,11 +21,6 @@
     "packages/plugin-build/src/generated/",
     "packages/db/drizzle/meta/",
     "*.snapshot.json",
-    "apps/mobile/ios/",
-    "apps/mobile/android/",
-    "apps/mobile/.expo/",
-    "apps/mobile/expo-env.d.ts",
-    "apps/mobile/build-output/",
     "packages/templates/src/templates/"
   ]
 }

@@ -55,6 +55,7 @@ class DesktopAutoUpdaterAdapterStub implements DesktopAutoUpdaterAdapter {
     new Set<DesktopAutoUpdateDownloadedHandler>();
   private readonly updateNotAvailableHandlers =
     new Set<DesktopAutoUpdateNotAvailableHandler>();
+  private readonly squirrelReadyHandlers = new Set<() => void>();
 
   checkForUpdates(): Promise<UpdateCheckResult | null> {
     this.checkForUpdatesCalls += 1;
@@ -87,6 +88,12 @@ class DesktopAutoUpdaterAdapterStub implements DesktopAutoUpdaterAdapter {
     }
   }
 
+  emitSquirrelReady(): void {
+    for (const handler of this.squirrelReadyHandlers) {
+      handler();
+    }
+  }
+
   emitUpdateNotAvailable(info: UpdateInfo): void {
     for (const handler of this.updateNotAvailableHandlers) {
       handler(info);
@@ -107,6 +114,10 @@ class DesktopAutoUpdaterAdapterStub implements DesktopAutoUpdaterAdapter {
 
   onUpdateNotAvailable(handler: DesktopAutoUpdateNotAvailableHandler): void {
     this.updateNotAvailableHandlers.add(handler);
+  }
+
+  onSquirrelReady(handler: () => void): void {
+    this.squirrelReadyHandlers.add(handler);
   }
 
   quitAndInstall(): void {
@@ -259,6 +270,17 @@ describe("desktop auto-update service", () => {
 
     updater.emitUpdateDownloaded(createDownloadedEvent("0.0.2"));
 
+    // Restart is offered only after Squirrel.Mac has staged the update.
+    expect(service.getInfo()).toMatchObject({
+      downloadState: "downloading",
+      pendingVersion: "0.0.2",
+      updateDownloaded: false,
+    });
+    service.installUpdate();
+    expect(updater.quitAndInstallCalls).toBe(0);
+
+    updater.emitSquirrelReady();
+
     expect(service.getInfo()).toEqual({
       autoUpdateEnabled: true,
       downloadState: "downloaded",
@@ -274,7 +296,7 @@ describe("desktop auto-update service", () => {
       "Desktop auto-update available: 0.0.2; downloading in background.",
     );
     expect(messages.infos).toContain(
-      "Desktop auto-update downloaded: 0.0.2; it will install on restart or quit.",
+      "Desktop auto-update staged: 0.0.2; it will install on restart or quit.",
     );
   });
 
@@ -387,6 +409,7 @@ describe("desktop auto-update service", () => {
     updater.emitUpdateAvailable(createUpdateInfo("0.0.2"));
     await Promise.resolve();
     updater.emitUpdateDownloaded(createDownloadedEvent("0.0.2"));
+    updater.emitSquirrelReady();
     expect(updater.downloadUpdateCalls).toBe(1);
 
     // Re-downloading the staged version would make Squirrel.Mac replace its

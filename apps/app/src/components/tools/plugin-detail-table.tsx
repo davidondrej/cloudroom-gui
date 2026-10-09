@@ -18,7 +18,7 @@ const DETAIL_ROW_GRID =
 
 export function PluginDetailTable({ children }: { children: ReactNode }) {
   return (
-    <div className="max-w-full overflow-hidden rounded-lg border border-border bg-card align-top">
+    <div className="max-w-full overflow-hidden rounded-lg bg-surface-recessed align-top">
       <table className="block w-full max-w-full border-collapse text-left">
         <tbody className="block divide-y divide-border">{children}</tbody>
       </table>

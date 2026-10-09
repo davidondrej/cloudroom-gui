@@ -522,7 +522,7 @@ function PluginSettingsPageSkeleton() {
           <ResourceDetailConfigurationSection
             label={<Skeleton className="h-3.5 w-24" />}
           >
-            <ResourceDetailPanel surface="recessed" className="px-3 py-3">
+            <ResourceDetailPanel surface="recessed" className="border-0 bg-surface-recessed px-3 py-3">
               <div className="space-y-4">
                 <PluginSettingsFieldSkeleton />
                 <PluginSettingsFieldSkeleton />
@@ -686,7 +686,7 @@ export function PluginSettingsDetail({ plugin }: { plugin: PluginListItem }) {
   return (
     <div className="space-y-6" data-testid={`plugin-detail-${plugin.id}`}>
       {plugin.hasSettings || !settingsAvailable ? (
-        <ResourceDetailPanel surface="recessed" className="px-3 py-3">
+        <ResourceDetailPanel surface="recessed" className="border-0 bg-surface-recessed px-3 py-3">
           {settingsAvailable ? (
             <PluginSettingsForm key={plugin.id} pluginId={plugin.id} />
           ) : (

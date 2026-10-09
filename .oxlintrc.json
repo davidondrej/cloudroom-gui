@@ -16,9 +16,6 @@
     "**/dist/**",
     "**/coverage/**",
     "**/routeTree.gen.ts",
-    "apps/mobile/ios/**",
-    "apps/mobile/android/**",
-    "apps/mobile/.expo/**",
     "packages/templates/src/generated/**",
     "packages/plugin-build/src/generated/**",
     "packages/plugin-sdk/bundled-types/**"
@@ -126,28 +123,6 @@
       ],
       "rules": {
         "no-restricted-imports": "off"
-      }
-    },
-    {
-      "files": ["apps/mobile/**/*.{ts,tsx}"],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "paths": [
-              {
-                "name": "@cloudroom/sdk",
-                "message": "Import @cloudroom/sdk/browser: the root entry resolves to the Node SDK under Metro's source condition."
-              }
-            ],
-            "patterns": [
-              {
-                "group": ["@cloudroom/shared-ui", "@cloudroom/shared-ui/*"],
-                "message": "@cloudroom/shared-ui is React DOM + Radix. Use the mobile primitives instead."
-              }
-            ]
-          }
-        ]
       }
     },
     {

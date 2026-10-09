@@ -634,6 +634,41 @@ describe("automations server plugin harness", () => {
     await harness.dispose();
   });
 
+  it("keeps the target thread when the CLI replaces the agent execution", async () => {
+    const { harness } = await bootAutomationsPlugin();
+    const created = await createAgentAutomation(harness, {
+      targetThreadId: THREAD_ID,
+    });
+
+    const result = await harness.runCli([
+      "update",
+      created.id,
+      "--project",
+      PROJECT_ID,
+      "--cron",
+      "* * * * *",
+      "--timezone",
+      "UTC",
+      "--prompt",
+      "check in every minute",
+      "--provider",
+      "codex",
+      "--model",
+      "gpt-5",
+      "--json",
+    ]);
+    expect(result.exitCode).toBe(0);
+    expect(
+      automationResponseSchema.parse(JSON.parse(result.stdout ?? "")).execution,
+    ).toMatchObject({
+      prompt: "check in every minute",
+      environment: { type: "project-default" },
+      targetThreadId: THREAD_ID,
+    });
+
+    await harness.dispose();
+  });
+
   it("accepts a long prompt and keeps the automation readable afterwards", async () => {
     const { harness } = await bootAutomationsPlugin();
     const created = await createAgentAutomation(harness);

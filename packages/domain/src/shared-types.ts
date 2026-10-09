@@ -293,6 +293,12 @@ export function isStandaloneBuiltinTeleportCommand(
   return isStandaloneBuiltinCommand(input, "teleport");
 }
 
+export function isStandaloneBuiltinContextCommand(
+  input: readonly PromptInput[],
+): boolean {
+  return isStandaloneBuiltinCommand(input, "context");
+}
+
 export function createStandaloneBuiltinCompactCommandInput(): PromptInput[] {
   return [
     {

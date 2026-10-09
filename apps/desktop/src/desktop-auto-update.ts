@@ -42,6 +42,8 @@ export interface DesktopAutoUpdaterAdapter {
   onUpdateAvailable(handler: DesktopAutoUpdateAvailableHandler): void;
   onUpdateDownloaded(handler: DesktopAutoUpdateDownloadedHandler): void;
   onUpdateNotAvailable(handler: DesktopAutoUpdateNotAvailableHandler): void;
+  // Squirrel.Mac finished unpacking and verifying the zip, so quitAndInstall quits at once.
+  onSquirrelReady(handler: () => void): void;
   quitAndInstall(): void;
   setAutoDownload(enabled: boolean): void;
   setAutoInstallOnAppQuit(enabled: boolean): void;
@@ -121,8 +123,13 @@ export function shouldEnableDesktopAutoUpdate(
   return args.isPackaged || args.env.BB_DESKTOP_AUTO_UPDATE === "1";
 }
 
+interface SquirrelUpdater {
+  on(event: "update-downloaded", listener: () => void): unknown;
+}
+
 export function createElectronAutoUpdaterAdapter(
   updater: AppUpdater,
+  squirrel: SquirrelUpdater,
 ): DesktopAutoUpdaterAdapter {
   return {
     checkForUpdates() {
@@ -144,6 +151,9 @@ export function createElectronAutoUpdaterAdapter(
     },
     onUpdateNotAvailable(handler) {
       updater.on("update-not-available", handler);
+    },
+    onSquirrelReady(handler) {
+      squirrel.on("update-downloaded", () => handler());
     },
     quitAndInstall() {
       updater.quitAndInstall();
@@ -218,6 +228,16 @@ export function createDesktopAutoUpdateService(
     });
   }
 
+  // Nothing is staged yet, so clear pendingVersion and let Retry download it again.
+  function markDownloadFailed(): void {
+    const info = scheduler.getInfo();
+    scheduler.updateInfo({
+      ...info,
+      downloadState: "failed",
+      ...(info.updateDownloaded ? {} : { pendingVersion: null }),
+    });
+  }
+
   function startDownload(): void {
     if (downloadInFlight !== null) {
       return;
@@ -229,10 +249,7 @@ export function createDesktopAutoUpdateService(
     try {
       downloadInFlight = args.updater.downloadUpdate();
     } catch (error: unknown) {
-      scheduler.updateInfo({
-        ...scheduler.getInfo(),
-        downloadState: "failed",
-      });
+      markDownloadFailed();
       args.logger.error(
         `Desktop auto-update download failed; preserving current update state: ${formatErrorMessage(
           error,
@@ -242,10 +259,7 @@ export function createDesktopAutoUpdateService(
     }
     void downloadInFlight
       .catch((error: unknown) => {
-        scheduler.updateInfo({
-          ...scheduler.getInfo(),
-          downloadState: "failed",
-        });
+        markDownloadFailed();
         args.logger.error(
           `Desktop auto-update download failed; preserving current update state: ${formatErrorMessage(
             error,
@@ -314,7 +328,29 @@ export function createDesktopAutoUpdateService(
       );
       startDownload();
     });
+    // On Mac, Squirrel.Mac still has to unpack and verify the zip after this.
+    // A Restart before that leaves the app frozen until it finishes, so users
+    // reopen it and macOS cancels the install. Show Restart only once it's ready.
+    const waitForSquirrel =
+      args.platform === "macos" && args.installNeedsPassword !== true;
+    let stagingVersion: string | null = null;
     args.updater.onUpdateDownloaded((event) => {
+      if (waitForSquirrel) {
+        stagingVersion = event.version;
+        args.logger.info(
+          `Desktop auto-update downloaded: ${event.version}; waiting for Squirrel.Mac to stage it.`,
+        );
+        scheduler.updateInfo({
+          ...scheduler.getInfo(),
+          downloadState: "downloading",
+          lastCheckedAt: formatCheckedAt(now),
+          latestVersion: event.version,
+          pendingVersion: event.version,
+          updateAvailable: true,
+          updateDownloaded: false,
+        });
+        return;
+      }
       args.logger.info(
         `Desktop auto-update downloaded: ${event.version}; it will install on restart or quit.`,
       );
@@ -323,6 +359,18 @@ export function createDesktopAutoUpdateService(
         version: event.version,
       });
     });
+    if (waitForSquirrel) {
+      args.updater.onSquirrelReady(() => {
+        const version = stagingVersion;
+        if (version === null) {
+          return;
+        }
+        args.logger.info(
+          `Desktop auto-update staged: ${version}; it will install on restart or quit.`,
+        );
+        applyUpdateDownloaded({ checkedAt: formatCheckedAt(now), version });
+      });
+    }
     args.updater.onUpdateNotAvailable((info) => {
       args.logger.info(`Desktop auto-update not available: ${info.version}.`);
       applyUpdateNotAvailable({
@@ -338,10 +386,7 @@ export function createDesktopAutoUpdateService(
         )}`,
       );
       if (scheduler.getInfo().downloadState === "downloading") {
-        scheduler.updateInfo({
-          ...scheduler.getInfo(),
-          downloadState: "failed",
-        });
+        markDownloadFailed();
       }
     });
   }

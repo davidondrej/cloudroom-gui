@@ -575,7 +575,7 @@ export function ChangelogPreviewCard() {
           : "grid-rows-[1fr] translate-y-0 opacity-100",
       )}
     >
-      <section className="overflow-hidden rounded-lg border border-border bg-card">
+      <section className="overflow-hidden rounded-lg bg-surface-recessed">
         <div
           data-changelog-release-panel
           aria-hidden={!releaseVisible}

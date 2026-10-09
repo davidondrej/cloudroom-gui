@@ -327,7 +327,7 @@ describe("fuzzyMatchText", () => {
     ).toEqual(["Alpha", "Beta"]);
   });
 
-  it("normalizes outer whitespace while preserving internal spacing", () => {
+  it("ignores extra whitespace between query words", () => {
     const items = ["New thread", "New  thread", "Next thread"];
 
     expect(
@@ -337,7 +337,7 @@ describe("fuzzyMatchText", () => {
         getText: (item) => item,
         limit: items.length,
       }).map((match) => match.item),
-    ).toEqual(["New  thread"]);
+    ).toEqual(["New  thread", "New thread"]);
     expect(
       fuzzyMatchText({
         items,
@@ -346,6 +346,25 @@ describe("fuzzyMatchText", () => {
         limit: 2,
       }).map((match) => match.item),
     ).toEqual(["New thread", "New  thread"]);
+  });
+
+  it("matches query words in any order", () => {
+    const items = ["Toggle sidebar", "New thread", "fix/login-bug"];
+
+    for (const [query, expected] of [
+      ["thread new", "New thread"],
+      ["sidebar toggle", "Toggle sidebar"],
+      ["login fix", "fix/login-bug"],
+    ]) {
+      expect(
+        fuzzyMatchText({
+          items,
+          query,
+          getText: (item) => item,
+          limit: items.length,
+        }).map((match) => match.item),
+      ).toEqual([expected]);
+    }
   });
 
   it("matches non-contiguous title queries", () => {

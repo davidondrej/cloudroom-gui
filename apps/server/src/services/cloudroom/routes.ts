@@ -23,6 +23,8 @@ import { archiveThreadAndChildren } from "../threads/thread-archive.js";
 import { queueChildThreadTurnNotificationBestEffort } from "../threads/child-thread-notifications.js";
 import { reportBug } from "./bug-reports.js";
 import { continueShare, shareThread, stopSharing, threadShare } from "./shares.js";
+import { connectAccount, registerConnect } from "./connect-relay.js";
+import { getGateAuthKind } from "../../request-context.js";
 import { noteActiveMinute, timeInApp } from "./time-in-app.js";
 import { disconnectGithub, githubAccount, githubAuth } from "./github-login.js";
 import { addGithubRepo, repoSuggestions } from "./repo-suggestions.js";
@@ -67,6 +69,11 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     if (action === "save") return context.json(await shareThread(deps, id));
     await stopSharing(deps, id);
     return context.json(null);
+  });
+  app.get("/api/v1/cloudroom/connect", async context => context.json(await connectAccount(deps)));
+  app.post("/api/v1/cloudroom/connect", async context => {
+    if (getGateAuthKind(context) !== null) return context.json({ message: "Register from the Mac, not remotely." }, 403);
+    return context.json(await registerConnect(deps));
   });
   app.post("/api/v1/cloudroom/shares/continue", async context => {
     const { link } = z.object({ link: z.string().trim().min(1).max(500) }).strict().parse(await context.req.json());

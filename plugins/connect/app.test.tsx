@@ -30,13 +30,15 @@ function status(overrides: Partial<ConnectStatus> = {}): ConnectStatus {
     paired: false,
     handle: null,
     url: null,
-    dashboardUrl: "https://getbb.app/dashboard",
+    dashboardUrl: "https://cloudroom.run/dashboard",
     lastError: null,
     nextRetryAt: null,
     since: 1_700_000_000_000,
     remoteClients: 0,
     lastRemoteActivityAt: null,
     shares: [],
+    signedIn: true,
+    legacy: null,
     ...overrides,
   };
 }
@@ -46,124 +48,67 @@ const connected = (overrides: Partial<ConnectStatus> = {}) =>
     state: "connected",
     paired: true,
     handle: "workstation",
-    url: "https://workstation.getbb.app",
+    url: "https://workstation.cloudroom.run",
     since: 1_700_000_060_000,
     ...overrides,
   });
+
+const phoneCode = () => ({
+  code: "K7QM-4XPA",
+  expiresAt: Date.now() + 600_000,
+  url: "https://cloudroom.run/pair?code=K7QM-4XPA",
+});
 
 describe("connect settings section", () => {
   it("uses the plugin page header instead of declaring a second title", () => {
     expect(app.settingsSections[0]?.title).toBeUndefined();
   });
 
-  it("uses the local Cloud dashboard supplied by the server as a native new-tab link", async () => {
-    const dashboardUrl = "http://bb.localhost:42745/dashboard";
+  it("asks a signed-out user to sign in and shows no code", async () => {
     const slot = renderSlot(
       app.settingsSections[0]!,
       {},
-      {
-        openUrl: () => true,
-        rpc: { status: () => status({ dashboardUrl }) },
-      },
+      { rpc: { status: () => status({ signedIn: false }), phoneCode } },
     );
-
-    const link = (await slot.findByRole("link", {
-      name: "Get a connect code",
-    })) as HTMLAnchorElement;
-    expect(link.href).toBe(dashboardUrl);
-    expect(link.target).toBe("_blank");
-    fireEvent.click(link);
-    expect(slot.navigateCalls).toEqual([]);
-    slot.getByText("you.bb.localhost:42745");
-    slot.getByText(/your bb\.localhost:42745 dashboard/);
+    await slot.findByText(/Sign in to Cloudroom to use it on your phone/);
+    expect(slot.queryByText("K7QM-4XPA")).toBeNull();
+    expect(slot.rpcCalls.some((call) => call.method === "phoneCode")).toBe(false);
   });
 
-  it("auto-submits a normalized 4-4 code and applies live paired status", async () => {
-    let currentStatus = status();
+  it("shows setup progress and the reason while the Mac registers", async () => {
     const slot = renderSlot(
       app.settingsSections[0]!,
       {},
       {
         rpc: {
-          status: () => currentStatus,
-          pair: () => null,
+          status: () => status({ lastError: "Cloudroom Connect could not be reached" }),
+          phoneCode,
         },
       },
     );
-
-    await slot.findByText("Get a connect code");
-    fireEvent.change(slot.getByLabelText("Connect code"), {
-      target: { value: "  k7qp-2m4x  " },
-    });
-
-    await waitFor(() =>
-      expect(slot.rpcCalls).toContainEqual({
-        method: "pair",
-        input: { code: "K7QP-2M4X" },
-      }),
-    );
-    expect(slot.queryByText("https://workstation.getbb.app")).toBeNull();
-
-    currentStatus = connected();
-    await slot.emitRealtime(CONNECT_REALTIME_CHANNEL, currentStatus);
-
-    await slot.findByText("Connected");
-    slot.getByText("https://workstation.getbb.app");
-    slot.getByRole("button", { name: "Copy URL" });
+    await slot.findByText("Setting up…");
+    await slot.findByText(/could not be reached/);
   });
 
-  it("does not auto-submit an incomplete code", async () => {
+  it("shows a one-time code, its QR, and the private address once connected", async () => {
     const slot = renderSlot(
       app.settingsSections[0]!,
       {},
-      { rpc: { status: () => status(), pair: () => null } },
+      { rpc: { status: () => connected({ remoteClients: 2 }), phoneCode } },
     );
-    await slot.findByText("Get a connect code");
-    fireEvent.change(slot.getByLabelText("Connect code"), {
-      target: { value: "K7QP-2M4" },
-    });
-    expect(
-      (slot.getByRole("button", { name: "Connect" }) as HTMLButtonElement)
-        .disabled,
-    ).toBe(true);
-    expect(slot.rpcCalls.some((call) => call.method === "pair")).toBe(false);
-  });
-
-  it("maps a typed pair error code to human copy, never wire text", async () => {
-    const slot = renderSlot(
-      app.settingsSections[0]!,
-      {},
-      {
-        rpc: {
-          status: () => status(),
-          pair: () => {
-            throw new Error("expired_code");
-          },
-        },
-      },
-    );
-
-    await slot.findByText("Get a connect code");
-    fireEvent.change(slot.getByLabelText("Connect code"), {
-      target: { value: "K7QP-2M4X" },
-    });
-
-    await slot.findByText(/That code has expired\./);
-    slot.getByRole("link", { name: "Get a new code" });
-    expect(slot.queryByText(/expired_code/)).toBeNull();
-  });
-
-  it("shows a remote-viewer count on the connected status line", async () => {
-    const slot = renderSlot(
-      app.settingsSections[0]!,
-      {},
-      { rpc: { status: () => connected({ remoteClients: 2 }) } },
-    );
-    await slot.findByText("Connected");
+    await slot.findByText("Ready");
     await slot.findByText(/2 viewing remotely/);
+    await slot.findByText("K7QM-4XPA");
+    await slot.findByText("cloudroom.dev/mobile");
+    await slot.findByAltText("QR code to open Cloudroom on your phone");
+    slot.getByText("https://workstation.cloudroom.run");
+    fireEvent.click(slot.getByRole("button", { name: "New code" }));
+    await waitFor(() =>
+      expect(slot.rpcCalls.filter((call) => call.method === "phoneCode")).toHaveLength(2),
+    );
   });
 
-  it("reconnecting shows the amber state with the human transport error", async () => {
+  it("reconnecting shows the amber state and no Open button", async () => {
     const slot = renderSlot(
       app.settingsSections[0]!,
       {},
@@ -172,16 +117,47 @@ describe("connect settings section", () => {
           status: () =>
             connected({
               state: "reconnecting",
-              lastError: "can't reach getbb.app — connection refused",
-              nextRetryAt: null,
+              lastError: "can't reach cloudroom.run — connection refused",
             }),
+          phoneCode,
         },
       },
     );
     await slot.findByText("Reconnecting…");
-    await slot.findByText(/can't reach getbb.app — connection refused/);
-    await slot.findByText(/Local access is unaffected/);
+    await slot.findByText(/connection refused/);
     expect(slot.queryByRole("button", { name: "Open" })).toBeNull();
+  });
+
+  it("signs out every phone only after a second click", async () => {
+    const slot = renderSlot(
+      app.settingsSections[0]!,
+      {},
+      { rpc: { status: () => connected(), phoneCode, signOutPhones: () => ({ revoked: 2 }) } },
+    );
+    fireEvent.click(await slot.findByRole("button", { name: "Sign out all phones" }));
+    expect(slot.rpcCalls.some((call) => call.method === "signOutPhones")).toBe(false);
+    fireEvent.click(slot.getByRole("button", { name: "Sign out all phones?" }));
+    await slot.findByText("Signed out 2 sessions.");
+  });
+
+  it("keeps the old getbb.app link visible until it is turned off", async () => {
+    const slot = renderSlot(
+      app.settingsSections[0]!,
+      {},
+      {
+        rpc: {
+          status: () =>
+            connected({ legacy: { url: "https://sawyer.getbb.app", state: "connected" } }),
+          phoneCode,
+          disconnect: () => connected(),
+        },
+      },
+    );
+    await slot.findByText(/still works/);
+    fireEvent.click(slot.getByRole("button", { name: "Turn off old link" }));
+    await waitFor(() =>
+      expect(slot.rpcCalls.some((call) => call.method === "disconnect")).toBe(true),
+    );
   });
 
   it("revokes a shared port", async () => {
@@ -203,6 +179,7 @@ describe("connect settings section", () => {
               ],
             }),
           unexpose: () => ({ removed: true, port: 3000 }),
+          phoneCode,
         },
       },
     );
@@ -239,6 +216,7 @@ describe("connect settings section", () => {
               ],
             }),
           unexpose: () => ({ removed: true, port: 3000 }),
+          phoneCode,
         },
       },
     );
@@ -291,6 +269,7 @@ describe("connect settings section", () => {
               ],
             }),
           unexpose: () => ({ removed: true, port: 5173 }),
+          phoneCode,
         },
       },
     );
@@ -327,6 +306,7 @@ describe("connect settings section", () => {
       {
         rpc: {
           status: () => connected({ shares: [] }),
+          phoneCode,
           expose: () => {
             throw new Error("this bb is not connected to getbb.app");
           },
@@ -352,136 +332,4 @@ describe("connect settings section", () => {
     await slot.findByText(/this bb is not connected to getbb.app/);
   });
 
-  it("offers the PWA without enabling native mobile pairing", async () => {
-    const slot = renderSlot(
-      app.settingsSections[0]!,
-      {},
-      {
-        rpc: {
-          status: () => connected(),
-          mobilePairing: () => ({ enabled: false }),
-        },
-      },
-    );
-
-    await slot.findByText("Connected");
-    slot.getByText("Cloudroom mobile app");
-    slot.getByText("Powered by BB Connect");
-    expect(slot.rpcCalls.some((call) => call.method === "mobilePairing")).toBe(
-      false,
-    );
-    expect(
-      slot.queryByRole("button", { name: "Add mobile device" }),
-    ).toBeNull();
-    slot.getByRole("button", { name: "Re-pair" });
-  });
-
-  it("shows a browser QR and installation instructions, not a native pairing code", async () => {
-    const slot = renderSlot(
-      app.settingsSections[0]!,
-      {},
-      {
-        rpc: {
-          status: () => connected(),
-          mobilePairing: () => ({ enabled: true }),
-        },
-      },
-    );
-    const qr = (await slot.findByRole("img", {
-      name: "QR code to open Cloudroom on your phone",
-    })) as HTMLImageElement;
-    expect(qr.src.startsWith("data:image/png")).toBe(true);
-    slot.getByText(/Safari.*Share menu/);
-    slot.getByText(/On Android/);
-    expect(
-      slot.queryByRole("button", { name: "Add mobile device" }),
-    ).toBeNull();
-    expect(slot.queryByLabelText("Mobile pairing code")).toBeNull();
-    expect(
-      slot.rpcCalls.some((call) => call.method === "createMachineCode"),
-    ).toBe(false);
-  });
-
-  it("hides PWA setup while reconnecting and restores it after recovery", async () => {
-    const slot = renderSlot(
-      app.settingsSections[0]!,
-      {},
-      {
-        rpc: { status: () => connected() },
-      },
-    );
-    await slot.findByText("Cloudroom mobile app");
-    await slot.emitRealtime(
-      CONNECT_REALTIME_CHANNEL,
-      connected({ state: "reconnecting" }),
-    );
-    await slot.findByText("Reconnecting…");
-    expect(slot.queryByText("Cloudroom mobile app")).toBeNull();
-    await slot.emitRealtime(CONNECT_REALTIME_CHANNEL, connected());
-    await slot.findByText("Cloudroom mobile app");
-    expect(
-      slot.rpcCalls.some((call) => call.method === "createMachineCode"),
-    ).toBe(false);
-  });
-
-  it("does not request native machine credentials to set up the PWA", async () => {
-    const slot = renderSlot(
-      app.settingsSections[0]!,
-      {},
-      {
-        rpc: {
-          status: () => connected(),
-          mobilePairing: () => ({ enabled: true }),
-          createMachineCode: () => {
-            throw new Error("machine_limit");
-          },
-        },
-      },
-    );
-    await slot.findByText("Cloudroom mobile app");
-    slot.getByText(
-      /sign in with the BB Connect account you used to connect this machine/,
-    );
-    expect(
-      slot.rpcCalls.some((call) => call.method === "createMachineCode"),
-    ).toBe(false);
-    expect(slot.queryByText("machine_limit")).toBeNull();
-    await slot.emitRealtime(CONNECT_REALTIME_CHANNEL, status());
-    await slot.findByText("Get a connect code");
-    expect(slot.queryByText("Cloudroom mobile app")).toBeNull();
-  });
-
-  it("disconnect confirms, then lands on the unpaired card with a receipt", async () => {
-    let currentStatus = connected();
-    const slot = renderSlot(
-      app.settingsSections[0]!,
-      {},
-      {
-        rpc: {
-          status: () => currentStatus,
-          disconnect: () => {
-            currentStatus = status();
-            return currentStatus;
-          },
-        },
-      },
-    );
-
-    await slot.findByText("Connected");
-    fireEvent.click(slot.getByRole("button", { name: "Disconnect" }));
-
-    await slot.findByText("Disconnect remote access?");
-    await slot.findByText(/will stop working on all devices/);
-    fireEvent.click(slot.getByRole("button", { name: "Disconnect" }));
-
-    await waitFor(() =>
-      expect(slot.rpcCalls.some((call) => call.method === "disconnect")).toBe(
-        true,
-      ),
-    );
-    await slot.emitRealtime(CONNECT_REALTIME_CHANNEL, currentStatus);
-
-    await slot.findByText("Get a connect code");
-    await slot.findByText("Remote access disconnected");
-  });
 });

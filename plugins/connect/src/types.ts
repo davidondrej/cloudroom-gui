@@ -13,7 +13,7 @@ export interface ShareListing {
   unavailableReason?: string;
 }
 
-export interface ConnectStatus {
+export interface TunnelStatus {
   state: ConnectStateName;
   paired: boolean;
   handle: string | null;
@@ -25,6 +25,17 @@ export interface ConnectStatus {
   remoteClients: number;
   lastRemoteActivityAt: number | null;
   shares: ShareListing[];
+}
+
+export interface ConnectStatus extends TunnelStatus {
+  signedIn: boolean;
+  legacy: { url: string; state: ConnectStateName } | null;
+}
+
+export interface PhoneCode {
+  code: string;
+  expiresAt: number;
+  url: string;
 }
 
 export const CONNECT_REALTIME_CHANNEL = "connect";

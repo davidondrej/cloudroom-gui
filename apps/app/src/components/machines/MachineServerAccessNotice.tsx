@@ -37,7 +37,7 @@ export function MachineServerAccessNoticeContent({
     <div className="@container w-full">
       <div
         role="alert"
-        className="flex flex-col gap-2 rounded-lg border border-border bg-card px-4 py-3 @md:flex-row @md:items-center @md:gap-4"
+        className="flex flex-col gap-2 rounded-lg bg-surface-recessed px-4 py-3 @md:flex-row @md:items-center @md:gap-4"
       >
         <div className="flex min-w-0 flex-1 items-start gap-2">
           <Icon

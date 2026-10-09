@@ -179,13 +179,18 @@ function parseServiceTier(value: string): ServiceTier | null {
   throw new Error("Invalid --service-tier. Expected default, fast, or none.");
 }
 
+const AGENT_TARGET_FLAG_NAMES = [
+  "target-thread",
+  "environment",
+  "new-environment",
+] as const;
+
+function hasAgentTargetFlag(args: ParsedArgs): boolean {
+  return AGENT_TARGET_FLAG_NAMES.some((name) => args.flags.has(name));
+}
+
 function validateAgentTargetOptions(args: ParsedArgs): void {
-  const targetOptionNames = [
-    "target-thread",
-    "environment",
-    "new-environment",
-  ] as const;
-  const providedTargetOptions = targetOptionNames.filter((name) =>
+  const providedTargetOptions = AGENT_TARGET_FLAG_NAMES.filter((name) =>
     args.flags.has(name),
   );
   for (const name of providedTargetOptions) {
@@ -396,10 +401,16 @@ type BuiltExecution = {
   scriptSource?: ScriptFileSource;
 };
 
+type AgentTarget = Pick<
+  Extract<AutomationResponse["execution"], { mode: "agent" }>,
+  "environment" | "targetThreadId"
+>;
+
 async function buildExecution(
   bb: Pick<BbPluginApi, "sdk">,
   args: ParsedArgs,
   ctx: Pick<PluginCliContext, "cwd" | "threadId">,
+  currentTarget?: AgentTarget,
 ): Promise<BuiltExecution> {
   const prompt = flag(args, "prompt");
   const script = flag(args, "script");
@@ -435,7 +446,14 @@ async function buildExecution(
       );
     }
     validateAgentTargetOptions(args);
-    const environment = await buildAgentEnvironment(bb, args);
+    const target: AgentTarget =
+      currentTarget !== undefined && !hasAgentTargetFlag(args)
+        ? currentTarget
+        : {
+            environment: await buildAgentEnvironment(bb, args),
+            targetThreadId: flag(args, "target-thread"),
+          };
+    const { environment } = target;
     const reasoning = flag(args, "reasoning");
     const serviceTier = flag(args, "service-tier");
     const parsedServiceTier =
@@ -458,8 +476,8 @@ async function buildExecution(
           providerRoutingForEnvironment(environment),
         ),
         environment,
-        ...(flag(args, "target-thread")
-          ? { targetThreadId: flag(args, "target-thread") }
+        ...(target.targetThreadId
+          ? { targetThreadId: target.targetThreadId }
           : {}),
       },
     };
@@ -563,8 +581,21 @@ async function buildAgentExecutionUpdate(
   return update;
 }
 
+async function currentAgentTarget(
+  service: Pick<AutomationService, "get">,
+  input: { projectId: string; automationId: string },
+): Promise<AgentTarget | undefined> {
+  const current = await service.get(input);
+  if (!("execution" in current) || current.execution.mode !== "agent") {
+    return undefined;
+  }
+  const { environment, targetThreadId } = current.execution;
+  return { environment, targetThreadId };
+}
+
 async function buildUpdateRequest(
   bb: Pick<BbPluginApi, "sdk">,
+  service: Pick<AutomationService, "get">,
   args: ParsedArgs,
   ctx: Pick<PluginCliContext, "cwd" | "threadId">,
 ): Promise<{
@@ -594,7 +625,11 @@ async function buildUpdateRequest(
     replacesAgentExecution ||
     COMPLETE_EXECUTION_FLAG_NAMES.some((name) => args.flags.has(name))
   ) {
-    const built = await buildExecution(bb, args, ctx);
+    const currentTarget =
+      replacesAgentExecution && !hasAgentTargetFlag(args)
+        ? await currentAgentTarget(service, { projectId, automationId })
+        : undefined;
+    const built = await buildExecution(bb, args, ctx, currentTarget);
     request.execution = built.execution;
     scriptSource = built.scriptSource;
   } else {
@@ -661,6 +696,7 @@ function printAutomation(
       `  Reasoning: ${automation.execution.reasoningLevel}`,
       `  Tier:      ${automation.execution.serviceTier ?? "-"}`,
       `  Permission: ${automation.execution.permissionMode}`,
+      `  Target:    ${automation.execution.targetThreadId ?? "new thread each run"}`,
     );
   }
   if (automation.lastError) lines.push(`  Error:     ${automation.lastError}`);
@@ -807,7 +843,7 @@ function helpText(): string {
 room-cli automation list --project <id>
 room-cli automation create --project <id> --name <name> (--cron <expr> --timezone <tz> | --at <datetime> | --in <duration>) (--prompt <text> --provider <id> --model <model> [--reasoning <level>] [--service-tier default|fast] | --script <inline> | --script-file <path> [--host <name-or-id>])
 room-cli automation show <automationId> --project <id>
-room-cli automation update <automationId> --project <id> [--name <name>] [schedule flags] [complete agent/script execution flags | --provider <id> --model <model> --reasoning <level> --service-tier default|fast|none]
+room-cli automation update <automationId> --project <id> [--name <name>] [schedule flags] [complete agent/script execution flags | --provider <id> --model <model> --reasoning <level> --service-tier default|fast|none] [--target-thread <id> | --environment <id-or-path> | --new-environment worktree] (target is kept unless one is given)
 room-cli automation pause <automationId> --project <id>
 room-cli automation resume <automationId> --project <id>
 room-cli automation run <automationId> --project <id> [--idempotency-key <key>]
@@ -844,7 +880,8 @@ export function registerAutomationCli(args: {
       {
         name: "update",
         summary: "Update automation configuration",
-        usage: "room-cli automation update <automationId> --project <id> [flags]",
+        usage:
+          "room-cli automation update <automationId> --project <id> [flags] [--target-thread <id> | --environment <id-or-path> | --new-environment worktree] (target is kept unless one is given)",
       },
       {
         name: "pause",
@@ -941,6 +978,7 @@ export function registerAutomationCli(args: {
         if (command === "update") {
           const { request, scriptSource } = await buildUpdateRequest(
             bb,
+            service,
             parsed,
             ctx,
           );

@@ -12,19 +12,20 @@ export interface CredentialStore {
 
 export function createKvCredentialStore(
   kv: Pick<PluginKvStorage, "get" | "set" | "delete">,
+  key = CREDENTIAL_KV_KEY,
 ): CredentialStore {
   return {
     async read() {
-      const raw = await kv.get<unknown>(CREDENTIAL_KV_KEY);
+      const raw = await kv.get<unknown>(key);
       if (raw === undefined) return null;
       const parsed = connectCredentialSchema.safeParse(raw);
       return parsed.success ? parsed.data : null;
     },
     async write(value) {
-      await kv.set(CREDENTIAL_KV_KEY, value);
+      await kv.set(key, value);
     },
     async clear() {
-      await kv.delete(CREDENTIAL_KV_KEY);
+      await kv.delete(key);
     },
   };
 }

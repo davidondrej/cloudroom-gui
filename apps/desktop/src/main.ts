@@ -5,6 +5,7 @@ import { arch, homedir, release, type as osType } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import {
   app,
+  autoUpdater as squirrelUpdater,
   BrowserWindow,
   clipboard,
   dialog,
@@ -153,6 +154,7 @@ import {
   reportDesktopUpdate,
   resumeThreadsAfterUpdate,
   runningLocalThreadIds,
+  saveUpdateAttempt,
   stopThreadsForUpdate,
 } from "./desktop-update-resume.js";
 import {
@@ -238,6 +240,7 @@ import {
 
 const OWNED_RUNTIME_STOP_TIMEOUT_MS = 6_000;
 const OWNED_RUNTIME_KILL_TIMEOUT_MS = 1_000;
+const UPDATE_QUIT_TIMEOUT_MS = 60_000;
 const FOREIGN_RUNTIME_STOP_TIMEOUT_MS = 15_000;
 const FOREIGN_RUNTIME_KILL_TIMEOUT_MS = 3_000;
 const REMOTE_SYSTEM_CONFIG_POLL_INTERVAL_MS = 5 * 60 * 1000;
@@ -1636,6 +1639,11 @@ async function finishQuit(): Promise<void> {
   await stopOwnedRuntime();
 }
 
+// electron-updater's "96.0.0" as Cloudroom's "v96".
+function displayVersion(version: string): string {
+  return `v${version.replace(/\.0\.0$/u, "")}`;
+}
+
 function appUpdateNeedsPassword(): boolean {
   return (
     process.platform === "darwin" &&
@@ -1669,22 +1677,49 @@ async function installDownloadedUpdate(): Promise<void> {
       throw new Error("The password prompt was canceled, so the update wasn't installed.");
     }
   }
-  if (currentRuntime?.ownership === "spawned") {
-    await stopThreadsForUpdate({
-      logger: desktopLogger,
-      serverUrl: currentRuntime.serverUrl,
-      userDataPath: app.getPath("userData"),
-    }).catch((error: unknown) => {
-      desktopLogger.error(`Stopping threads for the update failed: ${String(error)}`);
-    });
+  // A window left frozen while the app quits gets reopened, and macOS then
+  // cancels the install ("App Still Running"), so hide it right away.
+  if (process.platform === "darwin") {
+    for (const window of BrowserWindow.getAllWindows()) window.hide();
   }
-  quitting = true;
-  stoppingForQuit = true;
-  await finishQuit();
-  if (process.platform === "darwin" && app.isPackaged) {
+  const reopens =
+    process.platform === "darwin" &&
+    app.isPackaged &&
     reopenAfterExit(process.execPath, process.pid);
+  try {
+    const pendingVersion = desktopAutoUpdateService.getInfo().pendingVersion;
+    if (process.platform === "darwin" && pendingVersion) {
+      await saveUpdateAttempt(
+        resolveDataDirFromEnv({ env: process.env, homeDir: homedir() }),
+        getDesktopVersion(process.env.BB_DESKTOP_VERSION),
+        displayVersion(pendingVersion),
+      ).catch((error: unknown) => {
+        desktopLogger.error(`Saving the update attempt failed: ${String(error)}`);
+      });
+    }
+    if (currentRuntime?.ownership === "spawned") {
+      await stopThreadsForUpdate({
+        logger: desktopLogger,
+        serverUrl: currentRuntime.serverUrl,
+        userDataPath: app.getPath("userData"),
+      }).catch((error: unknown) => {
+        desktopLogger.error(`Stopping threads for the update failed: ${String(error)}`);
+      });
+    }
+    quitting = true;
+    stoppingForQuit = true;
+    await finishQuit();
+    desktopAutoUpdateService.installUpdate();
+  } finally {
+    // The server is already stopped, so never stay hidden if Squirrel.Mac
+    // hangs: exit, and reopenAfterExit brings Cloudroom back.
+    if (reopens) {
+      setTimeout(() => {
+        desktopLogger.error("The update didn't quit Cloudroom in time; exiting so it reopens.");
+        app.exit(0);
+      }, UPDATE_QUIT_TIMEOUT_MS);
+    }
   }
-  desktopAutoUpdateService.installUpdate();
 }
 
 function registerDesktopUpdateIpc(): void {
@@ -2389,7 +2424,7 @@ async function runDesktopApp(): Promise<void> {
     installNeedsPassword: updateNeedsPassword,
     logger: desktopLogger,
     platform: desktopPlatform,
-    updater: createElectronAutoUpdaterAdapter(autoUpdater),
+    updater: createElectronAutoUpdaterAdapter(autoUpdater, squirrelUpdater),
   });
   desktopUpdateService.subscribe(() => {
     sendDesktopInfoChanged();
@@ -2409,7 +2444,7 @@ async function runDesktopApp(): Promise<void> {
       report: async (installAt) => {
         const version = desktopAutoUpdateService?.getInfo().pendingVersion;
         if (currentRuntime?.ownership !== "spawned" || !version) return false;
-        return reportDesktopUpdate(currentRuntime.serverUrl, `v${version.replace(/\.0\.0$/u, "")}`, installAt);
+        return reportDesktopUpdate(currentRuntime.serverUrl, displayVersion(version), installAt);
       },
       install: async () => {
         desktopLogger.info("Installing the downloaded update: this Mac was idle, or a window asked to restart.");

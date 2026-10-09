@@ -71,6 +71,16 @@ describe("rankPaletteActions", () => {
     expect(first?.positions).toEqual([0, 4]);
   });
 
+  it("matches and emphasizes words typed in any order", () => {
+    const [first] = rankPaletteActions({
+      actions: ACTIONS,
+      query: "thread new",
+      recentIds: [],
+    });
+    expect(first?.action.title).toBe("New thread");
+    expect(first?.positions).toEqual([0, 1, 2, 4, 5, 6, 7, 8, 9]);
+  });
+
   it("emphasizes nothing when the query only matched the group", () => {
     const [first] = rankPaletteActions({
       actions: ACTIONS,

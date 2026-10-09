@@ -1,5 +1,13 @@
 import { readFileSync } from "node:fs";
-import { chmod, copyFile, mkdir, rm, stat } from "node:fs/promises";
+import {
+  chmod,
+  copyFile,
+  mkdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
@@ -70,6 +78,13 @@ async function main() {
     });
     if (split) {
       await finalizeSplitOutput(target.outfile);
+    }
+    if (target.hashbang) {
+      const code = await readFile(target.outfile, "utf8");
+      await writeFile(
+        target.outfile,
+        code.replace(/^#!.*/, () => target.hashbang),
+      );
     }
     if (target.executable) {
       await chmod(target.outfile, 0o755);

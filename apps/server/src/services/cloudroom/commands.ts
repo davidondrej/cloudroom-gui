@@ -175,6 +175,8 @@ export function promptPayload(input: PromptInput[], harness: string, attachments
       for (const { resource, start, end } of part.mentions) {
         // Thread tags stay as plain `@thread:thr_...` text; the cloud agent reads that thread through Mac access.
         if (resource.kind === "thread") continue;
+        // `/context` stays plain text; Claude Code runs it as its own command.
+        if (harness === "claude-code" && resource.kind === "command" && resource.source === "command" && resource.origin === "builtin" && resource.name === "context") continue;
         if (resource.kind !== "command" || resource.source !== "skill") throw new ApiError(400, "cloudroom_unsupported", "Cloud supports skill and thread tags, but other mentions and commands are not enabled.");
         if (!resource.name || /\s/.test(resource.name) || start >= end || end > part.text.length || part.text.slice(start, end) !== `/${resource.name}`) throw new ApiError(400, "invalid_request", "The selected skill tag is invalid. Remove it and select the skill again.");
         skills.push({ name: resource.name, chunk, start, end });
@@ -1227,7 +1229,6 @@ class CloudroomService {
       await this.compact(thread);
       return { ok: true, delivery: "sent" };
     }
-    if (payload.permissionMode && payload.permissionMode !== "full") throw new ApiError(409, "cloudroom_unsupported", "Cloud uses the full permission mode; restricted modes are not supported.");
     if (payload.model && payload.model !== saved.model) throw new ApiError(409, "cloudroom_launch_settings", "Model is fixed for this cloud session. Start a new thread to change it.");
     const id = payload.requestId ?? randomUUID();
     const steer = (payload.mode === "steer" || payload.mode === "steer-if-active") && thread.status === "active" && saved.turnId && !unstartedTurn(this.deps.db, thread.id);

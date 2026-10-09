@@ -15,18 +15,18 @@ export interface RankPaletteActionsArgs {
 }
 
 function titleMatchPositions(title: string, query: string): number[] {
-  const positions: number[] = [];
+  const positions = new Set<number>();
   const haystack = title.toLowerCase();
-  const needle = query.toLowerCase();
-  let cursor = 0;
-  for (const character of needle) {
-    if (character === " ") continue;
-    const found = haystack.indexOf(character, cursor);
-    if (found === -1) return [];
-    positions.push(found);
-    cursor = found + 1;
+  for (const word of query.toLowerCase().split(/\s+/)) {
+    let cursor = 0;
+    for (const character of word) {
+      const found = haystack.indexOf(character, cursor);
+      if (found === -1) return [];
+      positions.add(found);
+      cursor = found + 1;
+    }
   }
-  return positions;
+  return [...positions].sort((left, right) => left - right);
 }
 
 export function rankPaletteActions(

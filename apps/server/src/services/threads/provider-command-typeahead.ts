@@ -29,6 +29,13 @@ const BUILT_IN_PROVIDER_COMMANDS: ProviderCommand[] = [
     description: "Move this thread between Local and Cloud",
     argumentHint: null,
   },
+  {
+    name: "context",
+    source: "command",
+    origin: "builtin",
+    description: "Show how the context window is used",
+    argumentHint: null,
+  },
 ];
 
 function providerComposerHasSkillsAction(
@@ -102,6 +109,7 @@ interface BuildCommandListResponseArgs {
   commandUsage?: ReadonlyMap<string, number>;
   includeBuiltinCompact: boolean;
   includeBuiltinTeleport?: boolean;
+  includeBuiltinContext?: boolean;
   skillCatalog: readonly ResolvedSkillCatalogEntry[];
 }
 
@@ -113,7 +121,9 @@ export function buildCommandListResponse(
       ...BUILT_IN_PROVIDER_COMMANDS.filter(
         (command) =>
           (command.name !== "compact" || args.includeBuiltinCompact) &&
-          (command.name !== "teleport" || args.includeBuiltinTeleport === true),
+          (command.name !== "teleport" ||
+            args.includeBuiltinTeleport === true) &&
+          (command.name !== "context" || args.includeBuiltinContext === true),
       ),
       ...args.skillCatalog.map(toSkillCommand),
       ...args.commands.map(toProviderCommand),

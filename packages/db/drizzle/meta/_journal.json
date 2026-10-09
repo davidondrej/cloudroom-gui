@@ -897,6 +897,13 @@
       "when": 1791340378309,
       "tag": "0127_project_hidden_at",
       "breakpoints": true
+    },
+    {
+      "idx": 128,
+      "version": "6",
+      "when": 1791525833641,
+      "tag": "0128_thread_search_trigram_fts",
+      "breakpoints": true
     }
   ]
 }

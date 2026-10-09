@@ -89,11 +89,6 @@ const isSignInUrl = (value: string) => {
   } catch { return false; }
 };
 
-// Claude Code 2.1.292+ skips characters already on screen, so its token is only whole on the rebuilt screen.
-const skipsShownText = (text: string) => {
-  const [major = 0, minor = 0, patch = 0] = text.match(/Code ?v(\d+)\.(\d+)\.(\d+)/)?.slice(1).map(Number) ?? [];
-  return major * 1e12 + minor * 1e6 + patch >= 2e12 + 1e6 + 292;
-};
 function screenText(output: string): string {
   const rows: string[][] = [];
   let row = 0, col = 0;
@@ -152,8 +147,8 @@ function runSetupToken(id: string, save: (token: string) => Promise<unknown>): T
   }, 250);
   child.stdout.on("data", (chunk: Buffer) => {
     output = (output + chunk.toString()).slice(-65536);
-    const text = output.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "");
-    const token = (skipsShownText(text) ? screenText(output) : text).match(TOKEN)?.[1];
+    // Claude Code (2.1.220 and later) skips characters already on screen, so the token is only whole on the rebuilt screen.
+    const token = (screenText(output).match(TOKEN) ?? output.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "").match(TOKEN))?.[1];
     if (!token || saving) return;
     saving = true;
     stopChild();

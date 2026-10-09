@@ -53,6 +53,7 @@ function runThreadSearchMigrationFiles(
     "0039_thread_search.sql",
     "0040_thread_search_rowid_fts.sql",
     "0101_thread_search_prefix_fts.sql",
+    "0128_thread_search_trigram_fts.sql",
   ]) {
     const migrationSql = readFileSync(
       resolve(__dirname, "../../drizzle", migrationFile),
@@ -73,6 +74,7 @@ function dropThreadSearchSchema(db: ReturnType<typeof createConnection>): void {
     DROP TRIGGER IF EXISTS thread_search_segments_after_delete;
     DROP TRIGGER IF EXISTS thread_search_segments_after_insert;
     DROP TABLE IF EXISTS thread_search_segments_fts;
+    DROP TABLE IF EXISTS thread_search_segments_trigram;
     DROP TABLE IF EXISTS thread_search_segments;
   `);
 }
@@ -675,6 +677,43 @@ describe("thread search data", () => {
         "alpha split title",
         "beta split message",
       ]);
+    } finally {
+      closeConnection(db);
+    }
+  });
+
+  it("finds three-letter-or-longer words anywhere inside a word", () => {
+    const { db, project } = setup();
+    try {
+      const thread = createThread(db, noopNotifier, {
+        projectId: project.id,
+        providerId: "codex",
+        title: "Fix CommandPalette.tsx",
+      });
+      appendStoredThreadEvent(db, noopNotifier, {
+        threadId: thread.id,
+        type: "client/turn/requested",
+        scope: threadScope(),
+        data: turnRequestData([textInput("The microphone permission is denied")]),
+      });
+
+      for (const query of ["phone", "palette", "phone palette", "fi"]) {
+        const results = searchThreadsWithPendingInteractionState(db, {
+          query,
+          limitPerGroup: 20,
+        });
+        expect(results.active.results.map((result) => result.thread.id)).toEqual(
+          [thread.id],
+        );
+      }
+      const results = searchThreadsWithPendingInteractionState(db, {
+        query: "phone",
+        limitPerGroup: 20,
+      });
+      expect(results.active.results[0]?.matches[0]).toMatchObject({
+        text: "The microphone permission is denied",
+        highlightRanges: [{ start: 9, end: 14 }],
+      });
     } finally {
       closeConnection(db);
     }

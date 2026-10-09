@@ -69,6 +69,8 @@ import {
   type AcpDeltaTranslator,
 } from "../delta-translation.js";
 import {
+  acpJoinsSteering,
+  acpPromptResultSchemaFor,
   compactionOutcomeForEndTurn,
   resolveAcpDialect,
   type AcpDialect,
@@ -101,7 +103,6 @@ import {
 import {
   type AcpConfigOption,
   acpConfigStateResultSchema,
-  acpPromptResultSchema,
   acpReadTextFileParamsSchema,
   acpRequestPermissionParamsSchema,
   acpSessionForkResultSchema,
@@ -113,6 +114,7 @@ import {
   type AcpConfigStateResult,
   type AcpSessionModels,
   type AcpUsageUpdate,
+  type AcpStopReason,
   acpStopReasonSchema,
   acpWriteTextFileParamsSchema,
   type AcpContentBlock,
@@ -180,6 +182,8 @@ interface AcpThreadSession {
   connection: AcpAgentConnection;
   supportsImageInput: boolean;
   supportsLoadSession: boolean;
+  joinsSteering: boolean;
+  joinedSteers: Promise<AcpStopReason | undefined>[];
   policy: AcpSessionPolicy;
   pendingInstructions: string | undefined;
   activePromptKind: "turn" | "compaction" | null;
@@ -1746,6 +1750,8 @@ async function startAgentSession(
     connection,
     supportsImageInput: false,
     supportsLoadSession: false,
+    joinsSteering: false,
+    joinedSteers: [],
     policy: {
       permissionMode: params.permissionMode,
       workspaceWriteRoots: params.workspaceWriteRoots,
@@ -1790,6 +1796,12 @@ async function startAgentSession(
       );
     }
     session.supportsLoadSession = supportsLoadSession;
+    session.joinsSteering = acpJoinsSteering(
+      dialect,
+      initializeResult.agentCapabilities,
+    );
+    const sessionCapabilities =
+      initializeResult.agentCapabilities?.sessionCapabilities;
     const mcpServers = await buildSessionMcpServers(params);
     const mcpServer = mcpServers[0];
     if (mcpServer) {
@@ -1835,21 +1847,27 @@ async function startAgentSession(
       session.loadingSessionId = request.resumeProviderThreadId;
       session.pendingLoadUsageUpdate = undefined;
       try {
-        const configState = await connection.request({
-          method: "session/load",
-          params: {
-            sessionId: request.resumeProviderThreadId,
-            cwd: params.cwd,
-            mcpServers,
-          },
-          resultSchema: z.union([acpConfigStateResultSchema, z.null()]),
-        });
+        const restoreMethod =
+          dialect.resumeSession === true && sessionCapabilities?.resume != null
+            ? "session/resume"
+            : "session/load";
+        const configState = await retryWhileSessionBusy(dialect, () =>
+          connection.request({
+            method: restoreMethod,
+            params: {
+              sessionId: request.resumeProviderThreadId,
+              cwd: params.cwd,
+              mcpServers,
+            },
+            resultSchema: z.union([acpConfigStateResultSchema, z.null()]),
+          }),
+        );
         loadedConfigOptions = configState?.configOptions;
         loadedModels = configState?.models;
         sessionId = request.resumeProviderThreadId;
       } catch (error) {
         // Resume failed, so a fresh session starts below; log why so the lost context is traceable.
-        console.error(`ACP session/load failed for ${request.resumeProviderThreadId}; starting a new session:`, error);
+        console.error(`ACP session restore failed for ${request.resumeProviderThreadId}; starting a new session:`, error);
         sessionId = undefined;
         session.loading = false;
         session.loadingSessionId = undefined;
@@ -1861,11 +1879,23 @@ async function startAgentSession(
       session.loading = false;
       session.loadingSessionId = undefined;
       session.pendingLoadUsageUpdate = undefined;
+      const systemPrompt = sessionSystemPrompt(
+        dialect,
+        sessionCapabilities?.systemPrompt,
+        session.pendingInstructions,
+      );
       const newSession = await connection.request({
         method: "session/new",
-        params: { cwd: params.cwd, mcpServers },
+        params: {
+          cwd: params.cwd,
+          mcpServers,
+          ...(systemPrompt === undefined ? {} : { systemPrompt }),
+        },
         resultSchema: acpSessionNewResultSchema,
       });
+      if (systemPrompt !== undefined) {
+        session.pendingInstructions = undefined;
+      }
       sessionId = newSession.sessionId;
       session.contextEstimate?.reset();
       session.model = await selectAcpNativeModel({
@@ -1997,6 +2027,77 @@ async function releaseSession(session: AcpThreadSession): Promise<void> {
   await releaseCursorMcpApproval(session);
 }
 
+function joinSteer(
+  session: AcpThreadSession,
+  steerMeta: string,
+  pending: AcpPendingTurnInput,
+): void {
+  const prompt = buildPromptContentBlocks(session, pending.input);
+  session.contextEstimate?.addPrompt(prompt);
+  session.joinedSteers.push(
+    session.connection
+      .request({
+        method: "session/prompt",
+        params: {
+          sessionId: session.providerThreadId,
+          prompt,
+          _meta: { [steerMeta]: { steer: true } },
+        },
+        resultSchema: acpPromptResultSchemaFor(session.dialect),
+      })
+      .then(
+        (result) => result.stopReason,
+        (error: unknown) => {
+          console.error("ACP steer failed:", error);
+          return undefined;
+        },
+      ),
+  );
+  acceptTurnInput(session, pending);
+}
+
+const SESSION_BUSY_ATTEMPTS = 4;
+const SESSION_BUSY_RETRY_MS = 500;
+
+async function retryWhileSessionBusy<T>(
+  dialect: AcpDialect,
+  request: () => Promise<T>,
+): Promise<T> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await request();
+    } catch (error) {
+      if (
+        attempt >= SESSION_BUSY_ATTEMPTS ||
+        !(error instanceof AcpAgentResponseError) ||
+        dialect.isBusySession?.(error.message) !== true
+      ) {
+        throw error;
+      }
+      await new Promise((resolve) =>
+        setTimeout(resolve, SESSION_BUSY_RETRY_MS),
+      );
+    }
+  }
+}
+
+function sessionSystemPrompt(
+  dialect: AcpDialect,
+  capability: unknown,
+  instructions: string | undefined,
+): { type: "text"; text: string }[] | undefined {
+  const limit = dialect.systemPromptLimit;
+  if (
+    limit === undefined ||
+    capability == null ||
+    instructions === undefined ||
+    Buffer.byteLength(instructions) > limit
+  ) {
+    return undefined;
+  }
+  return [{ type: "text", text: instructions }];
+}
+
 function requestSteerCancel(session: AcpThreadSession): void {
   if (
     session.stopping ||
@@ -2093,7 +2194,7 @@ function runTurn(
         const promptResult = session.connection.request({
           method: "session/prompt",
           params: { sessionId: session.providerThreadId, prompt },
-          resultSchema: acpPromptResultSchema,
+          resultSchema: acpPromptResultSchemaFor(session.dialect),
         });
         acceptTurnInput(session, pending);
         if (session.queuedInputs.length > 0) {
@@ -2101,6 +2202,13 @@ function runTurn(
         }
         const result = await promptResult;
         stopReason = result.stopReason;
+        for (
+          let joined = session.joinedSteers.shift();
+          joined !== undefined;
+          joined = session.joinedSteers.shift()
+        ) {
+          stopReason = (await joined) ?? stopReason;
+        }
       } catch (error) {
         session.promptRequestPending = false;
         dropTurnInput(pending, "ACP turn failed before the prompt was sent");
@@ -2154,7 +2262,7 @@ function startCompaction(
       sessionId: session.providerThreadId,
       prompt: [{ type: "text", text: "/compact" }],
     },
-    resultSchema: acpPromptResultSchema,
+    resultSchema: acpPromptResultSchemaFor(session.dialect),
   });
   acceptTurnInput(session, pending);
 
@@ -2688,11 +2796,23 @@ async function handleRequest(
         });
         return;
       }
-      session.queuedInputs.push({
+      const pending: AcpPendingTurnInput = {
         clientRequestId: params.clientRequestId,
         input: params.input,
         requestId: null,
-      });
+      };
+      const steerMeta = session.dialect.steerMeta;
+      if (
+        session.joinsSteering &&
+        steerMeta !== undefined &&
+        session.promptRequestPending &&
+        !session.cancelRequested
+      ) {
+        sendResult(request.id, { threadId: params.threadId });
+        joinSteer(session, steerMeta, pending);
+        return;
+      }
+      session.queuedInputs.push(pending);
       requestSteerCancel(session);
       sendResult(request.id, { threadId: params.threadId });
       return;

@@ -6,20 +6,19 @@ import {
   useRpc,
 } from "@get-bb/plugin-sdk/app";
 import type { connectRpcContract } from "./src/rpc.js";
-import type { ConnectPairErrorCode } from "./src/redeem.js";
 import QRCode from "qrcode";
 import { Button } from "@cloudroom/shared-ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@cloudroom/shared-ui/dialog";
 import { Icon } from "@cloudroom/shared-ui/icon";
 import { Input } from "@cloudroom/shared-ui/input";
 import { cn } from "@cloudroom/shared-ui/lib/utils";
-import { CONNECT_REALTIME_CHANNEL, type ConnectStatus } from "@/src/types";
+import {
+  CONNECT_REALTIME_CHANNEL,
+  type ConnectStateName,
+  type ConnectStatus,
+  type PhoneCode,
+} from "@/src/types";
+
+const LEGACY_UNTIL = "December 7, 2026";
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -28,68 +27,22 @@ function errorText(error: unknown): string {
 const DANGER_QUIET_CLASS =
   "text-destructive-text hover:text-destructive-text hover:bg-surface-destructive";
 
-interface PairErrorCopy {
-  lead: string;
-  linkLabel: string;
-  tail: string;
-}
+const STATES: readonly ConnectStateName[] = [
+  "disconnected",
+  "pairing",
+  "connected",
+  "reconnecting",
+];
 
-const PAIR_ERROR_COPY: Record<ConnectPairErrorCode, PairErrorCopy> = {
-  invalid_code: {
-    lead: "That code is invalid or has expired.",
-    linkLabel: "Get a new code",
-    tail: " — they only last 10 minutes.",
-  },
-  expired_code: {
-    lead: "That code has expired.",
-    linkLabel: "Get a new code",
-    tail: " — they only last 10 minutes.",
-  },
-  already_used: {
-    lead: "That code was already used.",
-    linkLabel: "Get a new code",
-    tail: " — each code works once.",
-  },
-  network: {
-    lead: "Couldn't reach the Connect service.",
-    linkLabel: "Open the dashboard",
-    tail: " — check your connection, then try again.",
-  },
-};
-
-function toPairErrorCode(error: unknown): ConnectPairErrorCode {
-  const message = errorText(error);
-  if (
-    message === "invalid_code" ||
-    message === "expired_code" ||
-    message === "already_used" ||
-    message === "network"
-  ) {
-    return message;
-  }
-  return "invalid_code";
+function isState(value: unknown): value is ConnectStateName {
+  return STATES.includes(value as ConnectStateName);
 }
 
 function asStatus(payload: unknown): ConnectStatus | null {
   if (payload === null || typeof payload !== "object") return null;
-  const record = payload as {
-    state?: unknown;
-    paired?: unknown;
-    handle?: unknown;
-    url?: unknown;
-    dashboardUrl?: unknown;
-    lastError?: unknown;
-    nextRetryAt?: unknown;
-    since?: unknown;
-    remoteClients?: unknown;
-    lastRemoteActivityAt?: unknown;
-    shares?: unknown;
-  };
+  const record = payload as Record<string, unknown>;
   if (
-    (record.state !== "disconnected" &&
-      record.state !== "pairing" &&
-      record.state !== "connected" &&
-      record.state !== "reconnecting") ||
+    !isState(record.state) ||
     typeof record.paired !== "boolean" ||
     typeof record.since !== "number"
   ) {
@@ -97,42 +50,37 @@ function asStatus(payload: unknown): ConnectStatus | null {
   }
   const shares: ConnectStatus["shares"] = [];
   if (Array.isArray(record.shares)) {
-    for (const entry of record.shares) {
+    for (const entry of record.shares as Record<string, unknown>[]) {
       if (
         entry !== null &&
         typeof entry === "object" &&
-        typeof (entry as { hostId?: unknown }).hostId === "string" &&
-        typeof (entry as { hostName?: unknown }).hostName === "string" &&
-        typeof (entry as { port?: unknown }).port === "number" &&
-        typeof (entry as { createdAt?: unknown }).createdAt === "number" &&
-        typeof (entry as { url?: unknown }).url === "string"
+        typeof entry.hostId === "string" &&
+        typeof entry.hostName === "string" &&
+        typeof entry.port === "number" &&
+        typeof entry.createdAt === "number" &&
+        typeof entry.url === "string"
       ) {
         shares.push({
-          hostId: (entry as { hostId: string }).hostId,
-          hostName: (entry as { hostName: string }).hostName,
-          port: (entry as { port: number }).port,
-          createdAt: (entry as { createdAt: number }).createdAt,
-          url: (entry as { url: string }).url,
-          ...(typeof (entry as { unavailableReason?: unknown })
-            .unavailableReason === "string"
-            ? {
-                unavailableReason: (entry as { unavailableReason: string })
-                  .unavailableReason,
-              }
+          hostId: entry.hostId,
+          hostName: entry.hostName,
+          port: entry.port,
+          createdAt: entry.createdAt,
+          url: entry.url,
+          ...(typeof entry.unavailableReason === "string"
+            ? { unavailableReason: entry.unavailableReason }
             : {}),
         });
       }
     }
   }
+  const legacy = record.legacy as { url?: unknown; state?: unknown } | null;
   return {
     state: record.state,
     paired: record.paired,
     handle: typeof record.handle === "string" ? record.handle : null,
     url: typeof record.url === "string" ? record.url : null,
     dashboardUrl:
-      typeof record.dashboardUrl === "string"
-        ? record.dashboardUrl
-        : "https://getbb.app/dashboard",
+      typeof record.dashboardUrl === "string" ? record.dashboardUrl : "",
     lastError: typeof record.lastError === "string" ? record.lastError : null,
     nextRetryAt:
       typeof record.nextRetryAt === "number" ? record.nextRetryAt : null,
@@ -144,6 +92,14 @@ function asStatus(payload: unknown): ConnectStatus | null {
         ? record.lastRemoteActivityAt
         : null,
     shares,
+    signedIn: record.signedIn === true,
+    legacy:
+      legacy !== null &&
+      typeof legacy === "object" &&
+      typeof legacy.url === "string" &&
+      isState(legacy.state)
+        ? { url: legacy.url, state: legacy.state }
+        : null,
   };
 }
 
@@ -171,20 +127,6 @@ function hostOf(url: string): string {
   } catch {
     return url.replace(/^https?:\/\//, "");
   }
-}
-
-function formatConnectCode(raw: string): string {
-  const cleaned = raw
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .slice(0, 8);
-  return cleaned.length > 4
-    ? `${cleaned.slice(0, 4)}-${cleaned.slice(4)}`
-    : cleaned;
-}
-
-function isCompleteCode(formatted: string): boolean {
-  return /^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(formatted);
 }
 
 function StatusDot({ tone }: { tone: "ok" | "warn" | "muted" }) {
@@ -357,121 +299,6 @@ function QuietCopyButton({ text, label }: { text: string; label: string }) {
     >
       {copied ? "Copied" : "Copy"}
     </Button>
-  );
-}
-
-function PairForm({
-  dashboardUrl,
-  onPaired,
-}: {
-  dashboardUrl: string;
-  onPaired: () => void;
-}) {
-  const rpc = useRpc<typeof connectRpcContract>();
-  const [code, setCode] = useState("");
-  const [pending, setPending] = useState(false);
-  const [errorCode, setErrorCode] = useState<ConnectPairErrorCode | null>(null);
-  const submittedRef = useRef<string | null>(null);
-
-  const submit = useCallback(
-    (value: string) => {
-      if (pending) return;
-      const canonical = formatConnectCode(value);
-      if (!isCompleteCode(canonical)) return;
-      submittedRef.current = canonical;
-      setPending(true);
-      setErrorCode(null);
-      rpc.call("pair", { code: canonical }).then(
-        () => {
-          setPending(false);
-          setCode("");
-          submittedRef.current = null;
-          onPaired();
-        },
-        (rpcError: unknown) => {
-          setPending(false);
-          setErrorCode(toPairErrorCode(rpcError));
-        },
-      );
-    },
-    [pending, rpc, onPaired],
-  );
-
-  const onChange = useCallback(
-    (raw: string) => {
-      const formatted = formatConnectCode(raw);
-      setCode(formatted);
-      if (errorCode !== null) setErrorCode(null);
-      if (isCompleteCode(formatted) && formatted !== submittedRef.current) {
-        submit(formatted);
-      }
-    },
-    [errorCode, submit],
-  );
-
-  const complete = isCompleteCode(code);
-  const copy = errorCode !== null ? PAIR_ERROR_COPY[errorCode] : null;
-
-  return (
-    <div className="space-y-2.5">
-      <form
-        className="flex max-w-md items-center gap-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          submit(code);
-        }}
-      >
-        <Input
-          value={code}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder="XXXX–XXXX"
-          autoComplete="off"
-          spellCheck={false}
-          aria-label="Connect code"
-          aria-invalid={errorCode !== null}
-          className={cn(
-            "font-mono tracking-widest",
-            errorCode !== null && "border-destructive ring-1 ring-destructive",
-          )}
-        />
-        <Button type="submit" disabled={pending || !complete}>
-          {pending ? (
-            <Icon name="Spinner" className="size-4 animate-spin" />
-          ) : null}
-          Connect
-        </Button>
-      </form>
-      {copy !== null ? (
-        <div className="max-w-md rounded-md border border-surface-destructive-border bg-surface-destructive px-3 py-2 text-xs text-destructive-text">
-          {copy.lead}{" "}
-          <UrlLink
-            href={dashboardUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="font-semibold underline underline-offset-2"
-          >
-            {copy.linkLabel}
-          </UrlLink>
-          {copy.tail}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function MobileAppSection({ url }: { url: string }) {
-  return (
-    <section className="space-y-2.5 border-t border-border-seam pt-4">
-      <h3 className="text-sm font-semibold">Cloudroom mobile app</h3>
-      <p className="text-xs text-muted-foreground">
-        Open the URL above on your phone. Remote access uses BB Connect, so sign
-        in with the BB Connect account you used to connect this machine.
-        On iPhone, use Safari&apos;s Share menu and choose Add to Home Screen.
-        On Android, use your browser&apos;s Install app or Add to Home screen
-        menu.
-      </p>
-      <QrCodeImage value={url} alt="QR code to open Cloudroom on your phone" />
-    </section>
   );
 }
 
@@ -694,8 +521,7 @@ function SharedPortsSection({
       ) : null}
 
       <p className="text-xs text-subtle-foreground/75">
-        Agents can expose their dev servers too — same owner sign-in required to
-        view.
+        Agents can share their dev servers too. Only your signed-in phones can open them.
       </p>
       {error !== null ? (
         <p className="text-xs text-destructive-text">{error}</p>
@@ -704,284 +530,197 @@ function SharedPortsSection({
   );
 }
 
-function DisconnectDialog({
-  open,
-  onOpenChange,
-  host,
-  dashboardHost,
-  pending,
-  onConfirm,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  host: string;
-  dashboardHost: string;
-  pending: boolean;
-  onConfirm: () => void;
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        {open ? (
-          <>
-            <DialogHeader>
-              <DialogTitle>Disconnect remote access?</DialogTitle>
-            </DialogHeader>
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{host}</span> will
-              stop working on all devices. Re-pairing needs a new code from your{" "}
-              {dashboardHost} dashboard.
-            </p>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={pending}
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={pending}
-                onClick={onConfirm}
-              >
-                {pending ? (
-                  <Icon name="Spinner" className="size-4 animate-spin" />
-                ) : null}
-                {pending ? "Disconnecting…" : "Disconnect"}
-              </Button>
-            </DialogFooter>
-          </>
-        ) : null}
-      </DialogContent>
-    </Dialog>
-  );
-}
+function PhoneCodeCard({ connected }: { connected: boolean }) {
+  const rpc = useRpc<typeof connectRpcContract>();
+  const [code, setCode] = useState<PhoneCode | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-function NotPairedContent({
-  dashboardUrl,
-  onPaired,
-}: {
-  dashboardUrl: string;
-  onPaired: () => void;
-}) {
-  const dashboardHost = hostOf(dashboardUrl);
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Pairing gives this Cloudroom server a private URL like{" "}
-        <span className="rounded bg-surface-recessed px-1.5 py-0.5 font-mono text-xs text-foreground">
-          you.{dashboardHost}
-        </span>
-        . Your code and data stay on this machine.
-      </p>
+  const refresh = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    rpc.call("phoneCode").then(
+      (next) => {
+        setLoading(false);
+        setCode(next);
+      },
+      (rpcError: unknown) => {
+        setLoading(false);
+        setError(errorText(rpcError));
+      },
+    );
+  }, [rpc]);
 
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    if (code === null) return;
+    const timer = setTimeout(refresh, Math.max(0, code.expiresAt - Date.now()));
+    return () => clearTimeout(timer);
+  }, [code, refresh]);
+
+  return (
+    <div className="space-y-3">
       <div className="flex gap-3">
         <StepNumber value={1} />
-        <div className="min-w-0 flex-1 space-y-2">
-          <p className="text-sm">
-            Get a one-time connect code from your {dashboardHost} dashboard.
-          </p>
-          <Button type="button" asChild>
-            <UrlLink href={dashboardUrl} target="_blank" rel="noreferrer">
-              Get a connect code
-              <Icon name="ExternalLink" className="size-3.5" />
-            </UrlLink>
-          </Button>
-        </div>
+        <p className="text-sm">
+          On your phone, open{" "}
+          <span className="font-medium text-foreground">cloudroom.dev/mobile</span>
+        </p>
       </div>
-
       <div className="flex gap-3">
         <StepNumber value={2} />
         <div className="min-w-0 flex-1 space-y-2">
-          <p className="text-sm">Paste it here — it connects automatically.</p>
-          <PairForm dashboardUrl={dashboardUrl} onPaired={onPaired} />
+          <p className="text-sm">Enter this code:</p>
+          <div className="flex items-center gap-2">
+            <span className="rounded-md border border-border bg-surface-recessed px-3 py-1.5 font-mono text-lg font-semibold tracking-widest">
+              {code?.code ?? "····-····"}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              disabled={loading}
+              onClick={refresh}
+            >
+              {loading ? <Icon name="Spinner" className="size-4 animate-spin" /> : null}
+              New code
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            It works once, for 10 minutes. Or scan the QR code with your phone&apos;s camera.
+          </p>
+          {error !== null ? (
+            <p className="text-xs text-destructive-text">{error}</p>
+          ) : null}
+          {code !== null ? (
+            <QrCodeImage value={code.url} alt="QR code to open Cloudroom on your phone" />
+          ) : null}
         </div>
       </div>
-
-      <p className="flex items-start gap-1.5 text-xs text-subtle-foreground">
-        <Icon
-          name="AlertTriangle"
-          className="mt-px size-3.5 shrink-0 opacity-70"
-        />
-        Anyone signed in to your {dashboardHost} account gets full control of
-        this Cloudroom server.
+      <p className="text-xs text-muted-foreground">
+        Then keep it on your home screen. On iPhone, tap Share, then Add to Home
+        Screen. On Android, open the browser menu and tap Install app.
+        {connected ? "" : " Your phone reaches this Mac while Cloudroom is open and the Mac is awake."}
       </p>
     </div>
   );
 }
 
-function DisconnectControls({
-  status,
-  note,
-  onChanged,
-  onDisconnected,
-}: {
-  status: ConnectStatus;
-  note: string;
-  onChanged: () => void;
-  onDisconnected: () => void;
-}) {
+function SignOutPhones() {
   const rpc = useRpc<typeof connectRpcContract>();
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [disconnecting, setDisconnecting] = useState(false);
-  const [disconnectError, setDisconnectError] = useState<string | null>(null);
-
-  const disconnect = useCallback(() => {
-    setDisconnecting(true);
-    setDisconnectError(null);
-    rpc.call("disconnect").then(
-      () => {
-        setDisconnecting(false);
-        setConfirmOpen(false);
-        onDisconnected();
-        onChanged();
+  const [state, setState] = useState<"idle" | "confirm" | "pending">("idle");
+  const [result, setResult] = useState<string | null>(null);
+  const signOut = useCallback(() => {
+    setState("pending");
+    rpc.call("signOutPhones").then(
+      ({ revoked }) => {
+        setState("idle");
+        setResult(revoked === 1 ? "Signed out 1 session." : `Signed out ${revoked} sessions.`);
       },
       (error: unknown) => {
-        setDisconnecting(false);
-        setDisconnectError(errorText(error));
+        setState("idle");
+        setResult(errorText(error));
       },
     );
-  }, [rpc, onChanged, onDisconnected]);
-
-  const host =
-    status.url !== null ? hostOf(status.url) : "this Cloudroom server";
-
+  }, [rpc]);
   return (
-    <>
-      <div className="-mx-4 mt-4 flex items-center gap-3 border-t border-border-seam px-4 pt-3">
-        <span className="min-w-0 text-xs text-muted-foreground">{note}</span>
-        <span className="flex-1" />
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className={DANGER_QUIET_CLASS}
-          onClick={() => setConfirmOpen(true)}
-        >
-          Disconnect
+    <div className="-mx-4 mt-4 flex items-center gap-3 border-t border-border-seam px-4 pt-3">
+      <span className="min-w-0 text-xs text-muted-foreground">
+        {result ?? "Phones stay signed in until you sign them out here."}
+      </span>
+      <span className="flex-1" />
+      {state === "confirm" ? (
+        <Button type="button" variant="ghost" size="sm" onClick={() => setState("idle")}>
+          Cancel
         </Button>
-      </div>
-      {disconnectError !== null ? (
-        <p className="text-xs text-destructive-text">{disconnectError}</p>
       ) : null}
-
-      <DisconnectDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        host={host}
-        dashboardHost={hostOf(status.dashboardUrl)}
-        pending={disconnecting}
-        onConfirm={disconnect}
-      />
-    </>
-  );
-}
-
-function ConnectedContent({
-  status,
-  onChanged,
-  onDisconnected,
-}: {
-  status: ConnectStatus;
-  onChanged: () => void;
-  onDisconnected: () => void;
-}) {
-  const [repairOpen, setRepairOpen] = useState(false);
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <StatusDot tone="ok" />
-        <span className="text-sm font-semibold">Connected</span>
-        <span className="min-w-0 truncate text-xs text-muted-foreground">
-          since {formatSince(status.since)}
-          {status.remoteClients > 0
-            ? ` · ${status.remoteClients} viewing remotely`
-            : ""}
-        </span>
-        <span className="flex-1" />
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-          onClick={() => setRepairOpen((open) => !open)}
-        >
-          Re-pair
-        </Button>
-      </div>
-
-      {status.url !== null ? <UrlHero url={status.url} showOpen /> : null}
-
-      {repairOpen ? (
-        <div className="space-y-2 rounded-md border border-border bg-surface-recessed/50 px-3 py-3">
-          <p className="text-xs text-muted-foreground">
-            Re-pairing replaces this Cloudroom server&apos;s credential. Paste a
-            fresh code from your dashboard.
-          </p>
-          <PairForm dashboardUrl={status.dashboardUrl} onPaired={onChanged} />
-        </div>
-      ) : null}
-
-      {status.url !== null ? <MobileAppSection url={status.url} /> : null}
-
-      <SharedPortsSection shares={status.shares} dimmed={false} />
-
-      <DisconnectControls
-        status={status}
-        note="Disconnecting forgets this Cloudroom server's credential."
-        onChanged={onChanged}
-        onDisconnected={onDisconnected}
-      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={DANGER_QUIET_CLASS}
+        disabled={state === "pending"}
+        onClick={() => (state === "confirm" ? signOut() : setState("confirm"))}
+      >
+        {state === "confirm" ? "Sign out all phones?" : "Sign out all phones"}
+      </Button>
     </div>
   );
 }
 
-function ReconnectingContent({
-  status,
-  onChanged,
-  onDisconnected,
-}: {
-  status: ConnectStatus;
-  onChanged: () => void;
-  onDisconnected: () => void;
-}) {
-  const why = [status.lastError, retryHint(status.nextRetryAt)]
-    .filter((part): part is string => part !== null && part.length > 0)
-    .join(" · ");
-
+function LegacyNote({ url }: { url: string }) {
+  const rpc = useRpc<typeof connectRpcContract>();
+  const [pending, setPending] = useState(false);
   return (
-    <div className="space-y-4">
-      <div className="-mx-4 -mt-3.5 flex items-center gap-2.5 rounded-t-lg border-b border-warning/40 bg-warning/10 px-4 py-3">
-        <StatusDot tone="warn" />
-        <span className="shrink-0 text-sm font-semibold text-warning-text">
-          Reconnecting…
-        </span>
-        <span className="min-w-0 truncate text-xs text-warning-text/80">
-          {why}
-        </span>
-      </div>
+    <div className="flex items-center gap-3 rounded-md border border-border bg-surface-recessed/50 px-3 py-2">
+      <span className="min-w-0 flex-1 text-xs text-muted-foreground">
+        Your old link <span className="font-mono">{hostOf(url)}</span> still works
+        until {LEGACY_UNTIL}. Use cloudroom.dev/mobile instead.
+      </span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={DANGER_QUIET_CLASS}
+        disabled={pending}
+        onClick={() => {
+          setPending(true);
+          rpc.call("disconnect").finally(() => setPending(false));
+        }}
+      >
+        Turn off old link
+      </Button>
+    </div>
+  );
+}
 
-      <div className="space-y-2 pointer-events-none opacity-60 saturate-[0.85]">
-        <p className="text-sm text-muted-foreground">
-          Your Cloudroom will be reachable again at:
-        </p>
-        {status.url !== null ? (
-          <UrlHero url={status.url} showOpen={false} />
+function StatusLine({ status }: { status: ConnectStatus }) {
+  if (!status.signedIn) {
+    return (
+      <div className="flex items-center gap-2">
+        <StatusDot tone="muted" />
+        <span className="text-sm">Sign in to Cloudroom to use it on your phone.</span>
+      </div>
+    );
+  }
+  if (!status.paired) {
+    return (
+      <div className="flex items-center gap-2">
+        <StatusDot tone="warn" />
+        <span className="text-sm font-semibold">Setting up…</span>
+        {status.lastError !== null ? (
+          <span className="min-w-0 truncate text-xs text-muted-foreground">
+            {status.lastError}
+          </span>
         ) : null}
       </div>
-
-      <SharedPortsSection shares={status.shares} dimmed />
-
-      <DisconnectControls
-        status={status}
-        note="Remote devices can't reach this Cloudroom server right now. Local access is unaffected."
-        onChanged={onChanged}
-        onDisconnected={onDisconnected}
-      />
+    );
+  }
+  if (status.state !== "connected") {
+    return (
+      <div className="flex items-center gap-2">
+        <StatusDot tone="warn" />
+        <span className="shrink-0 text-sm font-semibold text-warning-text">Reconnecting…</span>
+        <span className="min-w-0 truncate text-xs text-muted-foreground">
+          {[status.lastError, retryHint(status.nextRetryAt)]
+            .filter((part): part is string => Boolean(part))
+            .join(" · ")}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <StatusDot tone="ok" />
+      <span className="text-sm font-semibold">Ready</span>
+      <span className="min-w-0 truncate text-xs text-muted-foreground">
+        since {formatSince(status.since)}
+        {status.remoteClients > 0 ? ` · ${status.remoteClients} viewing remotely` : ""}
+      </span>
     </div>
   );
 }
@@ -990,27 +729,17 @@ function ConnectSettingsSection() {
   const rpc = useRpc<typeof connectRpcContract>();
   const [status, setStatus] = useState<ConnectStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [flash, setFlash] = useState<string | null>(null);
-  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const refetch = useCallback(() => {
+  useEffect(() => {
     rpc.call("status").then(
       (result) => {
         const next = asStatus(result);
-        if (next !== null) {
-          setStatus(next);
-          setLoadError(null);
-        } else {
-          setLoadError("Unexpected status payload.");
-        }
+        if (next !== null) setStatus(next);
+        else setLoadError("Unexpected status payload.");
       },
       (error: unknown) => setLoadError(errorText(error)),
     );
   }, [rpc]);
-
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
 
   useRealtime(CONNECT_REALTIME_CHANNEL, (payload) => {
     const next = asStatus(payload);
@@ -1019,19 +748,6 @@ function ConnectSettingsSection() {
       setLoadError(null);
     }
   });
-
-  const showDisconnected = useCallback(() => {
-    setFlash("Remote access disconnected");
-    if (flashTimerRef.current !== null) clearTimeout(flashTimerRef.current);
-    flashTimerRef.current = setTimeout(() => setFlash(null), 4000);
-  }, []);
-
-  useEffect(
-    () => () => {
-      if (flashTimerRef.current !== null) clearTimeout(flashTimerRef.current);
-    },
-    [],
-  );
 
   if (loadError !== null) {
     return (
@@ -1045,35 +761,20 @@ function ConnectSettingsSection() {
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">Powered by BB Connect</p>
-      {flash !== null && !status.paired ? (
-        <div
-          role="status"
-          className="flex items-center gap-2 rounded-md border border-border bg-surface-recessed px-3 py-2 text-xs text-foreground"
-        >
-          <Icon name="Check" className="size-3.5 text-success" />
-          {flash}
+    <div className="space-y-4">
+      <StatusLine status={status} />
+      {status.paired ? <PhoneCodeCard connected={status.state === "connected"} /> : null}
+      {status.paired && status.url !== null ? (
+        <div className="space-y-1.5">
+          <p className="text-xs text-muted-foreground">Your private address</p>
+          <UrlHero url={status.url} showOpen={status.state === "connected"} />
         </div>
       ) : null}
-      {!status.paired ? (
-        <NotPairedContent
-          dashboardUrl={status.dashboardUrl}
-          onPaired={refetch}
-        />
-      ) : status.state === "reconnecting" ? (
-        <ReconnectingContent
-          status={status}
-          onChanged={refetch}
-          onDisconnected={showDisconnected}
-        />
-      ) : (
-        <ConnectedContent
-          status={status}
-          onChanged={refetch}
-          onDisconnected={showDisconnected}
-        />
-      )}
+      {status.legacy !== null ? <LegacyNote url={status.legacy.url} /> : null}
+      {status.paired || status.legacy !== null ? (
+        <SharedPortsSection shares={status.shares} dimmed={status.state !== "connected" && status.legacy?.state !== "connected"} />
+      ) : null}
+      {status.paired ? <SignOutPhones /> : null}
     </div>
   );
 }
@@ -1082,7 +783,7 @@ export default definePluginApp((app) => {
   app.slots.settingsSection({
     id: "remote-access",
     description:
-      "Cloudroom Connect gives Cloudroom a private getbb.app address for remote access.",
+      "Open Cloudroom on your phone with one code at cloudroom.dev/mobile.",
     component: ConnectSettingsSection,
   });
   app.experimental_sidebarFooter.register({

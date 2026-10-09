@@ -14,6 +14,14 @@ const NODE_ESM_REQUIRE_BANNER = [
   "const __dirname = __pathDirname(__filename);",
 ].join("");
 
+// Inside Cloudroom.app, run room-cli on the app's own runtime, so the Mac
+// needs no Node (ADR 0202). Elsewhere, use `node`. Line 2 is valid sh and,
+// to JS, a string plus a comment.
+const ROOM_CLI_HASHBANG = [
+  "#!/bin/sh",
+  '":" //; f=$(realpath "$0" 2>/dev/null || readlink "$0" || echo "$0"); for e in "${f%/Contents/Resources/app.asar.unpacked/*}"/Contents/MacOS/*; do [ -x "$e" ] && ELECTRON_RUN_AS_NODE=1 exec "$e" "$f" "$@"; done; exec node "$f" "$@"',
+].join("\n");
+
 export const bundleTargets = [
   {
     banner: NODE_ESM_REQUIRE_BANNER,
@@ -49,6 +57,7 @@ export const bundleTargets = [
     banner: NODE_ESM_REQUIRE_BANNER,
     entryPoint: resolve(workspaceRoot, "apps", "cli", "src", "index.ts"),
     executable: true,
+    hashbang: ROOM_CLI_HASHBANG,
     label: "room-cli",
     outfile: resolve(packageRoot, "dist", "room-cli"),
     // The CLI `import()`s each command group on demand; chunks land in

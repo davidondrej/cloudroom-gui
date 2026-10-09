@@ -803,6 +803,7 @@ describe("automation data access", () => {
     const automation = createScheduledAutomation(db, 1000);
     const bb = {
       sdk: {
+        projects: { list: async () => [] },
         hosts: {
           list: async () => [
             {

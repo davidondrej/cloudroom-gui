@@ -523,6 +523,8 @@ describe("app keybindings", () => {
           .map((binding) => binding.command),
       ).toEqual([
         "thread.new",
+        "history.back",
+        "history.forward",
         "thread.previous",
         "thread.next",
         ...THREAD_JUMP_APP_COMMAND_IDS,

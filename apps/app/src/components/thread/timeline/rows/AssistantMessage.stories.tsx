@@ -1,7 +1,6 @@
 import type { TimelineRow } from "@cloudroom/server-contract";
 import { ConversationMessageContent } from "@/components/thread/timeline/ConversationMessageContent";
 import { ThreadTimelineRows } from "@/components/thread/timeline/ThreadTimelineRows";
-import { PAGE_SHELL_CONTENT_STYLE } from "@/components/ui/page-shell-content-style";
 import { conversationRow } from "@/test/fixtures/thread-timeline-rows";
 import { StoryCard, StoryRow } from "../../../../../.ladle/story-card";
 
@@ -12,10 +11,7 @@ export default {
 function TimelineStage({ children }: { children: React.ReactNode }) {
   return (
     <div className="@container/page w-full">
-      <div
-        className="mx-auto w-full max-w-[760px]"
-        style={PAGE_SHELL_CONTENT_STYLE}
-      >
+      <div className="mx-auto w-full max-w-[760px]">
         {children}
       </div>
     </div>

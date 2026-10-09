@@ -46,7 +46,7 @@ export function InstalledPluginsTab({
 
   return (
     <>
-      <ResourceListPanel>
+      <ResourceListPanel className="border-0 bg-surface-recessed">
         <div className="divide-y divide-border">
           {plugins.map((plugin) => (
             <InstalledPluginRow

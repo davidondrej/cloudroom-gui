@@ -728,22 +728,41 @@ function rankTextQueryMatches<T>(
     tiebreakers,
   });
 
-  const matches: FzfResultItem<NormalizedTextCandidate<T>>[] =
-    matcher.find(query);
+  const findWord = (
+    word: string,
+  ): FzfResultItem<NormalizedTextCandidate<T>>[] => matcher.find(word);
+  const [firstWord = "", ...otherWords] = query.split(/\s+/);
+  const otherWordMatches = otherWords.map(
+    (word) =>
+      new Map(findWord(word).map((match) => [match.item, match] as const)),
+  );
 
-  return matches
-    .map((match) => ({
-      item: match.item.item,
-      itemIndex: match.item.itemIndex,
-      text: match.item.text,
-      textIndex: match.item.textIndex,
-      positions: [...match.positions].sort((left, right) => left - right),
-      score:
-        match.score +
-        getTextRelevanceBonus(match.item.text, query) +
-        (match.item.isAlias ? 0 : PRIMARY_TEXT_SCORE),
-      start: match.start,
-    }))
+  return findWord(firstWord)
+    .flatMap((firstMatch) => {
+      const matches: FzfResultItem<NormalizedTextCandidate<T>>[] = [firstMatch];
+      for (const wordMatches of otherWordMatches) {
+        const match = wordMatches.get(firstMatch.item);
+        if (!match) return [];
+        matches.push(match);
+      }
+      const candidate = firstMatch.item;
+      return [
+        {
+          item: candidate.item,
+          itemIndex: candidate.itemIndex,
+          text: candidate.text,
+          textIndex: candidate.textIndex,
+          positions: [
+            ...new Set(matches.flatMap((match) => [...match.positions])),
+          ].sort((left, right) => left - right),
+          score:
+            matches.reduce((total, match) => total + match.score, 0) +
+            getTextRelevanceBonus(candidate.text, query) +
+            (candidate.isAlias ? 0 : PRIMARY_TEXT_SCORE),
+          start: Math.min(...matches.map((match) => match.start)),
+        },
+      ];
+    })
     .sort(compareRankedTextMatches);
 }
 

@@ -4,8 +4,8 @@ import type { AppDeps } from "../../types.js";
 import { claudeBinary } from "./claude-token.js";
 import type { CloudroomClient } from "./client.js";
 
-/** The Mac's Codex, Claude Code, and OpenCode versions. Cloud runs what ran locally (ADR 0133). */
-export type HarnessVersions = { codex?: string; claude?: string; opencode?: string };
+/** The Mac's Codex, Claude Code, OpenCode, and fx versions. Cloud runs what ran locally (ADR 0133). */
+export type HarnessVersions = { codex?: string; claude?: string; opencode?: string; fx?: string };
 
 function versionOf(binary: string | undefined): Promise<string | undefined> {
   if (!binary) return Promise.resolve(undefined);
@@ -20,8 +20,8 @@ let cached: { at: number; versions: Promise<HarnessVersions> } | undefined;
 /** Read at most once a minute, from the same binaries Local threads run. */
 export function macHarnessVersions(): Promise<HarnessVersions> {
   if (!cached || Date.now() - cached.at > 60_000) {
-    const versions = Promise.all([versionOf(findCliExecutable("codex") ?? undefined), versionOf(claudeBinary()), versionOf(findCliExecutable("opencode") ?? undefined)])
-      .then(([codex, claude, opencode]) => ({ ...(codex ? { codex } : {}), ...(claude ? { claude } : {}), ...(opencode ? { opencode } : {}) }));
+    const versions = Promise.all([versionOf(findCliExecutable("codex") ?? undefined), versionOf(claudeBinary()), versionOf(findCliExecutable("opencode") ?? undefined), versionOf(findCliExecutable("fx") ?? undefined)])
+      .then(([codex, claude, opencode, fx]) => ({ ...(codex ? { codex } : {}), ...(claude ? { claude } : {}), ...(opencode ? { opencode } : {}), ...(fx ? { fx } : {}) }));
     cached = { at: Date.now(), versions };
   }
   return cached.versions;

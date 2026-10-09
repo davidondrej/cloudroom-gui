@@ -165,7 +165,8 @@ async function git(cwd: string, args: string[]): Promise<string | null> {
   return await exec("git", ["-C", cwd, ...args], { maxBuffer: 256 * 1024 * 1024 }).then((result) => result.stdout, () => null);
 }
 
-/** Returns null once the clone is in place, or why it failed. */
+/** Returns null once the clone is in place, or why it failed. gc.auto=0: auto-packing during `git log -S` in a blobless
+ * clone fills the sandbox disk with deleted packs the search still holds open. */
 async function clone(client: CloudroomClient, target: string, repository: string, branch?: string): Promise<string | null> {
   const token = await exec("gh", ["auth", "token", "--hostname", "github.com"], { timeout: 15_000 }).then((result) => result.stdout.trim(), () => "");
   const temporary = quote(`${target}.cloudroom-clone`);
@@ -174,7 +175,7 @@ async function clone(client: CloudroomClient, target: string, repository: string
       "export GIT_TERMINAL_PROMPT=0",
       token ? "{ { gh auth status --hostname github.com || gh auth login --hostname github.com --with-token; } && gh auth setup-git --hostname github.com; } >/dev/null 2>&1 || true" : "",
       `rm -rf -- ${temporary}`,
-      `git clone --quiet --filter=blob:none -- ${quote(repository)} ${temporary} || exit 1`,
+      `git clone --quiet --filter=blob:none -c gc.auto=0 -- ${quote(repository)} ${temporary} || exit 1`,
       branch && branch !== "HEAD" ? `git -C ${temporary} checkout --quiet ${quote(branch)} 2>/dev/null || true` : "",
       `mkdir -p -- ${quote(target)} && (shopt -s dotglob && mv -n -- ${temporary}/* ${quote(target)}/) || true`,
       `rm -rf -- ${temporary}`,

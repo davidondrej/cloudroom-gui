@@ -13,7 +13,10 @@ import {
   type AcpCommandResult,
 } from "./tool-classification.js";
 import {
+  acpPromptResultSchema,
+  acpStopReasonSchema,
   acpToolKindSchema,
+  type AcpStopReason,
   type AcpToolCallUpdateEvent,
   type AcpToolKind,
 } from "./wire.js";
@@ -48,8 +51,42 @@ export interface AcpDialect {
     params: unknown,
   ): AcpClientRequestOutcome | undefined;
   isNotice?(text: string): boolean;
+  stopReasons?: Readonly<Record<string, AcpStopReason>>;
+  steerMeta?: string;
+  resumeSession?: boolean;
+  systemPromptLimit?: number;
+  isBusySession?(message: string): boolean;
   maintenance?: AcpMaintenanceDialect;
   contextEstimate?: AcpContextEstimateTuning;
+}
+
+export function acpPromptResultSchemaFor(dialect: AcpDialect) {
+  const names = dialect.stopReasons;
+  if (names === undefined) {
+    return acpPromptResultSchema;
+  }
+  return acpPromptResultSchema.extend({
+    stopReason: z.preprocess(
+      (value) => (typeof value === "string" ? (names[value] ?? value) : value),
+      acpStopReasonSchema,
+    ),
+  });
+}
+
+const agentMetaSchema = z.object({ _meta: z.record(z.string(), z.unknown()) });
+const steeringMetaSchema = z.object({ steering: z.literal(true) });
+
+export function acpJoinsSteering(
+  dialect: AcpDialect,
+  agentCapabilities: unknown,
+): boolean {
+  const capabilities = agentMetaSchema.safeParse(agentCapabilities);
+  return (
+    dialect.steerMeta !== undefined &&
+    capabilities.success &&
+    steeringMetaSchema.safeParse(capabilities.data._meta[dialect.steerMeta])
+      .success
+  );
 }
 
 export interface AcpClientRequestOutcome {
@@ -381,6 +418,15 @@ export const FX_ACP_DIALECT: AcpDialect = {
   isNotice: (text) =>
     text.startsWith("[context] ") ||
     text.startsWith("skill discovery warning: "),
+  stopReasons: {
+    refused: "refusal",
+    max_output_tokens: "max_tokens",
+    max_model_turns: "max_turn_requests",
+  },
+  steerMeta: "fx",
+  resumeSession: true,
+  systemPromptLimit: 64 * 1024,
+  isBusySession: (message) => message.includes("Session is busy"),
 };
 
 const DIALECTS_BY_ID: ReadonlyMap<string, AcpDialect> = new Map([

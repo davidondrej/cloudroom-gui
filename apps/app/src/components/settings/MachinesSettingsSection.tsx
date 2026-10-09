@@ -141,7 +141,7 @@ export function MachineRowContent({
   return (
     <div
       data-machine-row
-      className="relative flex min-w-0 cursor-pointer rounded-xl border border-border bg-card p-4 transition-colors hover:bg-state-hover focus-within:bg-state-hover"
+      className="relative flex min-w-0 cursor-pointer rounded-xl bg-surface-recessed p-4 transition-colors hover:bg-state-hover focus-within:bg-state-hover"
       onClick={(event) => {
         if (targetsResourceAction(event.target)) return;
         navigate(detailPath);
