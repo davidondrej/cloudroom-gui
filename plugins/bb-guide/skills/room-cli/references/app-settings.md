@@ -111,6 +111,15 @@ This blocks common catastrophic shell commands; it is not a sandbox.
 - The new prefix applies to branches cloudroom creates after the change. It does not
   rename an existing branch or worktree.
 
+## Worktree cleanup
+
+- `worktreeRetention` defaults to `30d`. Options: `5m`, `1h`, `1d`, `7d`,
+  `30d`, `never`. Set it with
+  `room-cli settings general worktreeRetention <option>`.
+- cloudroom deletes a worktree folder that long after its last thread is
+  archived or deleted. The branch stays; uncommitted changes are lost.
+- Changing it restarts the timer for worktrees already waiting.
+
 ## Provider order and default
 
 - `providerOrder` defaults to `[]`. Set it to a JSON array of provider IDs.

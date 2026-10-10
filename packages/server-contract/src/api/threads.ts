@@ -621,16 +621,23 @@ export const updateThreadRequestSchema = z
     title: z.string().min(1).nullable(),
     sectionId: z.string().min(1).nullable(),
     parentThreadId: z.string().min(1).nullable(),
+    /** Another harness for this thread (ADR 0211); needs `model`. */
+    providerId: z.string().min(1),
     model: z.string().min(1).nullable(),
     reasoningLevel: reasoningLevelSchema.nullable(),
     visibility: threadVisibilitySchema,
   })
   .partial()
   .refine(
+    (value) => value.providerId === undefined || typeof value.model === "string",
+    "providerId needs a model",
+  )
+  .refine(
     (value) =>
       value.title !== undefined ||
       value.sectionId !== undefined ||
       value.parentThreadId !== undefined ||
+      value.providerId !== undefined ||
       value.model !== undefined ||
       value.reasoningLevel !== undefined ||
       value.visibility !== undefined,

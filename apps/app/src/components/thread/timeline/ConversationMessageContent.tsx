@@ -277,7 +277,7 @@ function CollapsibleMessageText({
         data-image-gallery-clipped={!isExpanded ? "" : undefined}
         className={cn(
           "break-words",
-          !isExpanded && "max-h-[15lh] overflow-hidden",
+          !isExpanded && "max-h-[22lh] overflow-hidden",
         )}
         style={
           !isExpanded && showToggle ? COLLAPSED_MESSAGE_FADE_STYLE : undefined

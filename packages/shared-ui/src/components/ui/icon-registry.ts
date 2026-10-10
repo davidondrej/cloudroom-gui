@@ -9,6 +9,7 @@ export const EXTENDED_ICON_NAMES = [
   "AppWindow",
   "ArchiveRestore",
   "ArrowDown",
+  "ArrowLeft",
   "ArrowRight",
   "ArrowReloadHorizontal",
   "ArrowUp",

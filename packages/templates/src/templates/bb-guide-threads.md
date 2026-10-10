@@ -94,15 +94,12 @@ Spawning:
   unavailable and why. The first-party providers are Project checkout,
   Worktree, and Personal workspace.
 
-Handoff:
-  In the follow-up model picker, Handoff to new thread starts a new-thread
-  draft with a reference to the source thread. Choose any model, including
-  one from the current provider. Exit handoff restores the original execution
-  settings and keeps draft edits, removing the automatic source reference.
-  Closing the picker keeps handoff active; the composer also has Exit handoff.
-  CLI callers can use room-cli thread spawn with --provider, --model, --environment
-  and --prompt 'Continue from @thread:THREAD_ID ...'. SDK callers use
-  threads.spawn with the corresponding execution, environment and input fields.
+Switching agents:
+  Pick another provider's model in the follow-up picker to switch the thread
+  in place (ADR 0211). The next turn starts a fresh session of the new agent
+  with the conversation so far as hidden context; the prompt cache starts over.
+  In Cloud, any model change works this way. CLI callers use
+  room-cli thread update THREAD --provider PROVIDER --model MODEL.
 
 Forking:
 
@@ -317,6 +314,7 @@ Ownership:
     --clear-parent-thread                  Remove parent assignment
     --section <id>                         Move into a section
     --clear-section                        Remove section assignment
+    --provider <id>                        Switch to another agent in place (needs --model)
     --model <model>                        Set the sticky model for the next and later turns
     --reasoning-level <level>              Set the sticky reasoning level (provider-dependent)
     --visibility <visibility>              Set visible or hidden
@@ -325,9 +323,10 @@ Ownership:
   --clear-section is also supplied. Children released by environment archiving
   also inherit their former parent's section.
 
-  Model and reasoning updates stay within the thread's current provider. Cloudroom
-  validates them against that provider's current model catalog, applies them on
-  the next turn, and keeps using them on later turns until changed.
+  Cloudroom validates model and reasoning updates against the provider's current
+  model catalog, applies them on the next turn, and keeps using them until
+  changed. --provider, or any model change in Cloud, switches the thread in place:
+  the next turn starts a fresh session with the conversation so far.
 
   room-cli thread read [id]                      Mark read
   room-cli thread unread [id]                    Mark unread

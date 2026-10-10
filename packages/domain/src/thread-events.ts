@@ -231,6 +231,8 @@ export type OwnershipChangeOperationMetadata = z.infer<
 >;
 
 export const THREAD_CONTEXT_CLEAR_OPERATION = "context_clear";
+/** The thread moved to another harness or model (ADR 0211): the next turn starts a fresh native session. Hidden in the timeline. */
+export const THREAD_HARNESS_SWITCH_OPERATION = "harness_switch";
 
 export const systemOperationEventDataSchema = z.object({
   operation: z.string(),

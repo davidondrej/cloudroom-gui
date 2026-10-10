@@ -28,7 +28,6 @@ export * from "./prompt/mentions/mention-candidates.js";
 export * from "./prompt/mentions/find-active-trigger.js";
 export * from "./prompt/mentions/command-trigger.js";
 export * from "./prompt/fork-thread-request.js";
-export * from "./prompt/thread-handoff-request.js";
 
 export * from "./timeline/thread-runtime-status.js";
 export * from "./timeline/timeline-auto-expand.js";

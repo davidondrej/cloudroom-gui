@@ -41,6 +41,7 @@ interface ThreadUpdateCommandOptions {
   clearParentThread?: boolean;
   section?: string;
   clearSection?: boolean;
+  provider?: string;
   model?: string;
   reasoningLevel?: string;
   visibility?: string;
@@ -130,6 +131,7 @@ interface ThreadUpdateBody {
   title?: string;
   sectionId?: string | null;
   parentThreadId?: string | null;
+  providerId?: string;
   model?: string;
   reasoningLevel?: ReasoningLevel;
   visibility?: ThreadVisibility;
@@ -150,8 +152,12 @@ export function registerActionsCommands(
     .option("--section <id>", "Move the thread into a section")
     .option("--clear-section", "Remove the thread from its section")
     .option(
+      "--provider <id>",
+      "Switch the thread to another agent harness in place; needs --model. The next turn gets the conversation so far",
+    )
+    .option(
       "--model <model>",
-      "Set the sticky model applied on the thread's next turn (Local only; Cloud threads keep their starting model)",
+      "Set the model for the thread's next turn. In Cloud, or with --provider, this switches the thread in place",
     )
     .option(
       "--reasoning-level <level>",
@@ -174,6 +180,9 @@ export function registerActionsCommands(
             opts.visibility === undefined
               ? undefined
               : threadVisibilitySchema.parse(opts.visibility);
+          if (opts.provider && !opts.model) {
+            throw new Error("--provider needs --model.");
+          }
           if (
             !opts.parentThread &&
             !opts.clearParentThread &&
@@ -211,6 +220,9 @@ export function registerActionsCommands(
           } else if (opts.clearSection) {
             body.sectionId = null;
           }
+          if (opts.provider) {
+            body.providerId = opts.provider;
+          }
           if (opts.model) {
             body.model = opts.model;
           }
@@ -239,6 +251,9 @@ export function registerActionsCommands(
             console.log(
               thread.sectionId ? `Section: ${thread.sectionId}` : "No section",
             );
+          }
+          if (opts.provider) {
+            console.log(`Provider: ${thread.providerId}`);
           }
           if (opts.model) {
             console.log(`Model: ${opts.model}`);

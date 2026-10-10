@@ -13,8 +13,12 @@ import {
   updateAutomationInputSchema,
 } from "./rpc-types.js";
 import { z } from "zod";
-import { defineRpcContract } from "@get-bb/plugin-sdk";
+import { defineRpcContract, type BbPluginApi } from "@get-bb/plugin-sdk";
 import type { AutomationService } from "./service.js";
+
+const cloudAutomationInputSchema = z
+  .object({ action: z.enum(["list", "create", "update", "run", "delete"]) })
+  .passthrough();
 
 export const automationRpcContract = defineRpcContract({
   automations_overview: {
@@ -57,10 +61,21 @@ export const automationRpcContract = defineRpcContract({
     input: automationRunsInputSchema,
     output: automationRunListResponseSchema,
   },
+  // Cloud automations (ADR 0212) live on the website; the app passes requests through.
+  cloud_automations: {
+    input: cloudAutomationInputSchema,
+    output: z.unknown(),
+  },
 });
 
-export function createRpcHandlers(service: AutomationService) {
+type Cloud = Pick<BbPluginApi, "sdk">["sdk"]["cloudroom"];
+
+export function createRpcHandlers(service: AutomationService, cloud?: Cloud) {
   return {
+    cloud_automations(input: z.output<typeof cloudAutomationInputSchema>) {
+      if (!cloud) throw new Error("Cloud automations are unavailable.");
+      return cloud.automations(input as Parameters<Cloud["automations"]>[0]);
+    },
     automations_overview() {
       return service.overview();
     },

@@ -63,7 +63,7 @@ export function resolveThreadExecutionOverrideUpdate(
         throw new ApiError(
           400,
           "invalid_request",
-          `Model "${patch.model}" is not available in this thread's ${providerId} model catalog. Choose a model offered by ${providerId}; changing providers requires starting a new thread.`,
+          `Model "${patch.model}" is not available in this thread's ${providerId} model catalog. Choose a model offered by ${providerId}.`,
         );
       }
       nextModel = patch.model;
@@ -140,6 +140,25 @@ export async function applyThreadExecutionOverride(
     threadId: thread.id,
     modelOverride: next.modelOverride,
     reasoningLevelOverride: next.reasoningLevelOverride,
+  });
+}
+
+/** A harness switch (ADR 0211) checks the model against the new harness's catalog and starts its overrides fresh. */
+export async function resolveHarnessSwitchOverride(
+  deps: LoggedWorkSessionDeps,
+  thread: Thread,
+  target: { providerId: string; model: string; reasoningLevel: ReasoningLevel | null },
+): Promise<ThreadExecutionOverride> {
+  return resolveThreadExecutionOverrideUpdate(deps.providerRegistry, {
+    existing: { modelOverride: null, reasoningLevelOverride: null },
+    patch: { model: target.model, reasoningLevel: target.reasoningLevel },
+    models: await loadThreadProviderModels(
+      deps,
+      { ...thread, providerId: target.providerId },
+      target.model,
+    ),
+    providerId: target.providerId,
+    fallbackModel: null,
   });
 }
 

@@ -20,13 +20,21 @@ import {
 } from "./model-brand-prefix";
 import { fastServiceTierLabel } from "@/lib/reasoning-labels";
 import { Button } from "@cloudroom/shared-ui/button";
-import { Icon, type IconName } from "@cloudroom/shared-ui/icon";
+import { Icon } from "@cloudroom/shared-ui/icon";
 import { Input } from "@cloudroom/shared-ui/input";
 import {
   COARSE_POINTER_ICON_SIZE_CLASS,
   COARSE_POINTER_ICON_SIZE_SHRINK_CLASS,
   COARSE_POINTER_TEXT_SM_CLASS,
 } from "@cloudroom/shared-ui/coarse-pointer-sizing";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@cloudroom/shared-ui/dropdown-menu";
 import {
   Popover,
   PopoverAnchor,
@@ -35,7 +43,6 @@ import {
 } from "@cloudroom/shared-ui/popover";
 import { Skeleton } from "@cloudroom/shared-ui/skeleton";
 import { Switch } from "@cloudroom/shared-ui/switch";
-import { ToggleGroup, ToggleGroupItem } from "@cloudroom/shared-ui/toggle-group";
 import { LIST_HOVER_TRANSITION } from "@cloudroom/shared-ui/motion";
 import {
   MENU_ITEM_LAST_HOVERED_CLASS,
@@ -68,8 +75,14 @@ import {
   useAppCommandShortcut,
   useIndexedAppCommandHandlers,
 } from "@/components/commands/AppCommandProvider";
-import { AppCommandShortcutHint } from "@/components/commands/AppCommandShortcutHint";
-import { isEditableKeyboardTarget } from "@/lib/app-keybindings";
+import {
+  AppCommandShortcutHint,
+  AppCommandShortcutPill,
+} from "@/components/commands/AppCommandShortcutHint";
+import {
+  isEditableKeyboardTarget,
+  type AppShortcutPresentation,
+} from "@/lib/app-keybindings";
 import { useOptionalPaneContext } from "@/views/thread-detail/PaneContext";
 import {
   ownsModelPickerCycleChord,
@@ -94,18 +107,10 @@ interface ResolvedProviderPreview {
   supportsServiceTier: boolean;
 }
 
-export interface ModelReasoningPickerHandoffSelection {
+export interface ModelReasoningPickerSelection {
   providerId: string;
   model: string;
   reasoningLevel: ReasoningLevel;
-}
-
-export interface ModelReasoningPickerHandoff {
-  sourceProviderId: string;
-  active: boolean;
-  onStart: () => void;
-  onExit: () => void;
-  onSelect: (selection: ModelReasoningPickerHandoffSelection) => void;
 }
 
 const FAILED_TO_LOAD_MODELS_LABEL = "Failed to load models";
@@ -126,9 +131,6 @@ const REASONING_CYCLE_COMMANDS = [
 
 const MODEL_SEARCH_MIN_OPTIONS = 5;
 const MODEL_PICKER_MENU_WIDTH_CLASS_NAME = "w-max min-w-64 max-w-80";
-
-const HANDOFF_DRAWER_TOP_CLASS_NAME =
-  "[&>[data-persistent-drawer-handle]]:w-full [&>[data-persistent-drawer-handle]]:rounded-t-xl [&>[data-persistent-drawer-handle]]:bg-background";
 
 function splitModelLabelTag(label: string): ModelLabelParts {
   const match = label.match(/^(.*\S)\s*\(([^()]+)\)$/u);
@@ -209,7 +211,11 @@ interface ModelReasoningPickerProps {
   align?: "start" | "center" | "end";
   disabled?: boolean;
   lockModelSelection?: boolean;
-  handoff?: ModelReasoningPickerHandoff;
+  /**
+   * An existing thread's picker: every model pick, on any provider tab, reports the provider too.
+   * Picking another provider switches the thread's harness in place (ADR 0211).
+   */
+  onSelectModel?: (selection: ModelReasoningPickerSelection) => void;
 }
 
 export function ModelReasoningPicker({
@@ -243,14 +249,21 @@ export function ModelReasoningPicker({
   align = "start",
   disabled,
   lockModelSelection = false,
-  handoff,
+  onSelectModel,
 }: ModelReasoningPickerProps) {
   const isCompactViewport = useIsCompactViewport();
   const [open, setOpen] = useState(false);
+  const [effortOpen, setEffortOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const registeredToggleShortcut = useAppCommandShortcut("modelPicker.toggle");
   const toggleShortcut = commandShortcutsEnabled
     ? registeredToggleShortcut
+    : null;
+  const registeredReasoningShortcut = useAppCommandShortcut(
+    "modelPicker.cycleReasoning",
+  );
+  const reasoningShortcut = commandShortcutsEnabled
+    ? registeredReasoningShortcut
     : null;
   const [searchQuery, setSearchQuery] = useState("");
   const listRef = useResetPickerScroll<HTMLDivElement>(searchQuery);
@@ -268,20 +281,9 @@ export function ModelReasoningPicker({
   const [moreModelsOpen, setMoreModelsOpen] = useState(false);
   const [trackedSelectedProviderId, setTrackedSelectedProviderId] =
     useState(selectedProviderId);
-  const [browsingHandoff, setHandoffMode] = useState(false);
-  const handoffMode =
-    handoff !== undefined && (handoff.active || browsingHandoff);
-  const [handoffReasoningLevel, setHandoffReasoningLevel] =
-    useState<ReasoningLevel | null>(null);
 
   if (trackedSelectedProviderId !== selectedProviderId) {
     setTrackedSelectedProviderId(selectedProviderId);
-    setHandoffMode(
-      open &&
-        handoff !== undefined &&
-        selectedProviderId !== handoff.sourceProviderId,
-    );
-    setHandoffReasoningLevel(null);
     setPreviewProviderId(null);
     setShowMoreModels(false);
     setMoreModelsOpen(false);
@@ -305,7 +307,7 @@ export function ModelReasoningPicker({
     modelLoadFailed || selectedModelLoadErrorMatches;
   const canSwitchProviders =
     hasMultipleProviders &&
-    onSelectedProviderChange !== undefined &&
+    (onSelectedProviderChange !== undefined || onSelectModel !== undefined) &&
     providerOptions.length > 1;
   const queryClient = useQueryClient();
   const prefetchRoutingEnvironmentId = providerRouting?.environmentId;
@@ -364,9 +366,12 @@ export function ModelReasoningPicker({
   const selectedReasoningOption = reasoningOptions.find(
     (r) => r.value === reasoningValue,
   );
-  const triggerReasoningLabel = hasSelectedModel
-    ? (selectedReasoningOption?.label ?? null)
-    : null;
+  const reasoningLabel = selectedReasoningOption?.label ?? "Effort";
+  const showEffortControl =
+    hasSelectedModel && !modelIsLoading && reasoningOptions.length > 0;
+  if (effortOpen && (!showEffortControl || disabled)) {
+    setEffortOpen(false);
+  }
 
   const isPreviewing =
     previewProviderId !== null && previewProviderId !== selectedProviderId;
@@ -443,16 +448,6 @@ export function ModelReasoningPicker({
     previewQuery.data?.providers,
     previewSelection,
   ]);
-  const activeReasoningOptions = isPreviewing
-    ? (previewSelection?.reasoningOptions ?? [])
-    : reasoningOptions;
-  const activeReasoningValue: ReasoningLevel | "" = handoffMode
-    ? (handoffReasoningLevel ??
-      (isPreviewing ? previewSelection?.reasoningLevel : reasoningValue) ??
-      "")
-    : isPreviewing
-      ? ""
-      : reasoningValue;
   const activeModelLoadError = isPreviewing
     ? (previewQuery.data?.modelLoadError ?? null)
     : (modelLoadError ?? null);
@@ -483,7 +478,7 @@ export function ModelReasoningPicker({
   const isShowingModelError =
     !activeModelIsLoading && !hasActiveModelOptions && activeModelLoadFailed;
   const showProviderTabs =
-    (handoffMode || canSwitchProviders) &&
+    canSwitchProviders &&
     providerOptions.length > 1 &&
     (!isShowingModelError || activeModelErrorIsProviderSpecific);
 
@@ -536,7 +531,6 @@ export function ModelReasoningPicker({
 
   const effectiveShowFastModeToggle =
     showFastModeToggle &&
-    !handoffMode &&
     !isPreviewing &&
     hasActiveModelOptions &&
     (!serviceTierSupportByProvider ||
@@ -547,16 +541,8 @@ export function ModelReasoningPicker({
   const fastModeText = `${effectiveFastModeLabel} mode`;
   const showSelectedFastMode =
     hasSelectedModel && fastModeEnabled && modelOptions.length > 0;
-  const showReasoningSection =
-    !isShowingModelError &&
-    activeReasoningOptions.length > 0 &&
-    (isPreviewing
-      ? hasActiveModelOptions && !activeModelIsLoading
-      : hasSelectedModel && !modelIsLoading && !selectedModelLoadFailed);
 
   const resetBrowseState = useCallback(() => {
-    setHandoffMode(false);
-    setHandoffReasoningLevel(null);
     setPreviewProviderId(null);
     setShowMoreModels(false);
     setMoreModelsOpen(false);
@@ -580,29 +566,25 @@ export function ModelReasoningPicker({
     (model: string, close = true) => {
       if (previewSelectionBlocked || lockModelSelection) return;
       if (close) setOpen(false);
-      if (handoff !== undefined && handoffMode) {
-        handoff.onSelect({
+      if (onSelectModel) {
+        onSelectModel({
           providerId: activeProviderId,
           model,
           reasoningLevel:
-            handoffReasoningLevel ??
             (isPreviewing ? previewSelection?.reasoningLevel : undefined) ??
             reasoningValue,
         });
-        setMoreModelsOpen(false);
-        return;
+      } else {
+        onModelChange(model);
       }
-      onModelChange(model);
       setMoreModelsOpen(false);
       setPreviewProviderId(null);
     },
     [
       activeProviderId,
-      handoff,
-      handoffMode,
-      handoffReasoningLevel,
       isPreviewing,
       onModelChange,
+      onSelectModel,
       previewSelection,
       lockModelSelection,
       previewSelectionBlocked,
@@ -610,31 +592,8 @@ export function ModelReasoningPicker({
     ],
   );
 
-  const handleHandoffProviderSelect = useCallback(
-    (providerId: string) => {
-      handoff?.onStart();
-      setHandoffMode(true);
-      setPreviewProviderId(
-        providerId === selectedProviderId ? null : providerId,
-      );
-      setHandoffReasoningLevel(null);
-      setShowMoreModels(false);
-      setMoreModelsOpen(false);
-      setSearchQuery("");
-      setActiveIndex(-1);
-    },
-    [handoff, selectedProviderId],
-  );
   const handleProviderSelect = useCallback(
     (providerId: string) => {
-      if (
-        open &&
-        handoff !== undefined &&
-        (handoffMode || providerId !== handoff.sourceProviderId)
-      ) {
-        handleHandoffProviderSelect(providerId);
-        return;
-      }
       onSelectedProviderChange?.(providerId);
       const nextPreviewProviderId =
         open && providerId !== selectedProviderId ? providerId : null;
@@ -642,71 +601,16 @@ export function ModelReasoningPicker({
       setSearchQuery("");
       setActiveIndex(-1);
     },
-    [
-      handoff,
-      handoffMode,
-      handleHandoffProviderSelect,
-      onSelectedProviderChange,
-      open,
-      selectedProviderId,
-    ],
+    [onSelectedProviderChange, open, selectedProviderId],
   );
-  const startHandoffMode = useCallback(() => {
-    handleHandoffProviderSelect(selectedProviderId);
-  }, [handleHandoffProviderSelect, selectedProviderId]);
-  const exitHandoffMode = useCallback(() => {
-    setHandoffMode(false);
-    setHandoffReasoningLevel(null);
-    setPreviewProviderId(null);
-    setSearchQuery("");
-    handoff?.onExit();
-  }, [handoff]);
 
   const handleReasoningSelect = useCallback(
     (level: ReasoningLevel) => {
-      if (previewSelectionBlocked) return;
-      if (handoffMode) {
-        setHandoffReasoningLevel(level);
-        if (!isPreviewing) {
-          onReasoningChange(level);
-        }
-        return;
-      }
-      if (isPreviewing && previewSelection?.selectedModel) {
-        onModelChange(previewSelection.selectedModel);
-      }
       onReasoningChange(level);
       setPreviewProviderId(null);
-      setMoreModelsOpen(false);
     },
-    [
-      handoffMode,
-      isPreviewing,
-      previewSelection,
-      onModelChange,
-      onReasoningChange,
-      previewSelectionBlocked,
-    ],
+    [onReasoningChange],
   );
-  const reasoningRowModel = isPreviewing
-    ? (previewSelection?.selectedModel ?? "")
-    : modelValue;
-  const reasoningRowValue: ReasoningLevel | "" =
-    activeReasoningValue || (previewSelection?.reasoningLevel ?? "");
-  const showInlineReasoning =
-    showReasoningSection &&
-    !isCompactViewport &&
-    reasoningRowValue !== "" &&
-    (lockModelSelection ||
-      activeModelOptions.some((option) => option.value === reasoningRowModel));
-  const reasoningRowMenu = showInlineReasoning ? (
-    <ReasoningRowMenu
-      value={reasoningRowValue}
-      options={activeReasoningOptions}
-      disabled={previewSelectionBlocked}
-      onSelect={handleReasoningSelect}
-    />
-  ) : null;
 
   const paneContext = useOptionalPaneContext();
   const isFocusedPane = paneContext?.isFocused ?? true;
@@ -742,13 +646,17 @@ export function ModelReasoningPicker({
     },
     [disabled, isFocusedPane, isSplitPane],
   );
+  const anyMenuOpen = open || effortOpen;
   useAppCommandContext(
     "modelPickerOpen",
-    commandShortcutsEnabled && open && !disabled,
+    commandShortcutsEnabled && anyMenuOpen && !disabled,
   );
   const ownsCycleChord = (target: EventTarget | null): boolean =>
     commandShortcutsEnabled &&
-    ownsModelPickerCycleChord({ open, ...resolveCommandScope(target) });
+    ownsModelPickerCycleChord({
+      open: anyMenuOpen,
+      ...resolveCommandScope(target),
+    });
   useAppCommandHandler(
     "modelPicker.toggle",
     ({ target }) => {
@@ -768,22 +676,13 @@ export function ModelReasoningPicker({
     MODEL_CYCLE_COMMANDS,
     (index, { target }) => {
       if (lockModelSelection || !ownsCycleChord(target)) return false;
-      const options = handoffMode ? activeModelOptions : modelOptions;
-      const value =
-        handoffMode && isPreviewing
-          ? (previewSelection?.selectedModel ?? "")
-          : modelValue;
       const next =
         index === 0
-          ? nextCycleValue(options, value)
-          : previousCycleValue(options, value);
+          ? nextCycleValue(modelOptions, modelValue)
+          : previousCycleValue(modelOptions, modelValue);
       if (next !== null) {
-        if (handoffMode) {
-          handleModelSelect(next, false);
-        } else {
-          onModelChange(next);
-          setPreviewProviderId(null);
-        }
+        onModelChange(next);
+        setPreviewProviderId(null);
       }
       return true;
     },
@@ -794,16 +693,6 @@ export function ModelReasoningPicker({
     PROVIDER_CYCLE_COMMANDS,
     (index, { target }) => {
       if (lockModelSelection || !ownsCycleChord(target)) return false;
-      if (handoffMode) {
-        const next =
-          index === 0
-            ? nextCycleValue(providerOptions, activeProviderId)
-            : previousCycleValue(providerOptions, activeProviderId);
-        if (next !== null) {
-          handleHandoffProviderSelect(next);
-        }
-        return true;
-      }
       if (canSwitchProviders && onSelectedProviderChange !== undefined) {
         const next =
           index === 0
@@ -822,20 +711,14 @@ export function ModelReasoningPicker({
     REASONING_CYCLE_COMMANDS,
     (index, { target }) => {
       if (!ownsCycleChord(target)) return false;
-      const value = handoffMode ? activeReasoningValue : reasoningValue;
-      if (value === "") return true;
       const next = cycleReasoningValue(
-        handoffMode ? activeReasoningOptions : reasoningOptions,
-        value,
+        reasoningOptions,
+        reasoningValue,
         index === 0 ? "forward" : "backward",
       );
       if (next !== null) {
-        if (handoffMode) {
-          handleReasoningSelect(next);
-        } else {
-          onReasoningChange(next);
-          setPreviewProviderId(null);
-        }
+        onReasoningChange(next);
+        setPreviewProviderId(null);
       }
       return true;
     },
@@ -852,8 +735,8 @@ export function ModelReasoningPicker({
       event.metaKey ||
       event.shiftKey ||
       disabled ||
-      !showReasoningSection ||
-      previewSelectionBlocked ||
+      !showEffortControl ||
+      isPreviewing ||
       (event.key !== "ArrowLeft" && event.key !== "ArrowRight")
     ) {
       return;
@@ -864,14 +747,14 @@ export function ModelReasoningPicker({
     ) {
       return;
     }
-    const index = activeReasoningOptions.findIndex(
-      (option) => option.value === activeReasoningValue,
+    const index = reasoningOptions.findIndex(
+      (option) => option.value === reasoningValue,
     );
     if (index < 0) return;
     event.preventDefault();
     event.stopPropagation();
     const next =
-      activeReasoningOptions[index + (event.key === "ArrowRight" ? 1 : -1)];
+      reasoningOptions[index + (event.key === "ArrowRight" ? 1 : -1)];
     if (next) handleReasoningSelect(next.value);
   };
 
@@ -936,9 +819,26 @@ export function ModelReasoningPicker({
       : triggerModelLabel;
   const triggerTitle = [
     `${selectedProviderLabel}: ${triggerTitleModelLabel}`,
-    triggerReasoningLabel ? ` · ${triggerReasoningLabel} reasoning` : "",
     showSelectedFastMode ? " (Fast mode)" : "",
   ].join("");
+  const halfClassName = cn(
+    OPTION_BASE_CLASS_NAME,
+    OPTION_INTERACTIVE_CLASS_NAME,
+    LIST_HOVER_TRANSITION,
+    "h-full rounded-none px-2 first:rounded-l-lg last:rounded-r-lg",
+    muted && OPTION_MUTED_CLASS_NAME,
+    muted && "font-normal",
+    disabled && "cursor-default disabled:opacity-100",
+  );
+  const chevron = disabled ? null : (
+    <Icon
+      name="ChevronDown"
+      className={cn(
+        "size-3.5 shrink-0",
+        muted ? "text-subtle-foreground/75" : "text-muted-foreground",
+      )}
+    />
+  );
   const trigger = (
     <Button
       ref={triggerRef}
@@ -947,21 +847,13 @@ export function ModelReasoningPicker({
       size="sm"
       aria-label={
         toggleShortcut
-          ? `Provider, model and reasoning (${toggleShortcut.label})`
-          : "Provider, model and reasoning"
+          ? `Provider and model (${toggleShortcut.label})`
+          : "Provider and model"
       }
       aria-keyshortcuts={toggleShortcut?.ariaKeyshortcuts}
       disabled={disabled}
       onKeyDown={handleReasoningArrowKeyDown}
-      className={cn(
-        OPTION_BASE_CLASS_NAME,
-        OPTION_INTERACTIVE_CLASS_NAME,
-        LIST_HOVER_TRANSITION,
-        muted && OPTION_MUTED_CLASS_NAME,
-        muted && "font-normal",
-        disabled && "cursor-default disabled:opacity-100",
-        className,
-      )}
+      className={cn(halfClassName, "min-w-0 shrink")}
     >
       <span className={OPTION_TRIGGER_CONTENT_CLASS_NAME} title={triggerTitle}>
         {modelIsLoading ? (
@@ -1010,26 +902,10 @@ export function ModelReasoningPicker({
                 {triggerModelTag}
               </span>
             ) : null}
-            {triggerReasoningLabel ? (
-              <span
-                className="shrink-0 text-subtle-foreground"
-                data-promptbox-hide-compact=""
-              >
-                {triggerReasoningLabel}
-              </span>
-            ) : null}
           </>
         )}
       </span>
-      {disabled ? null : (
-        <Icon
-          name="ChevronDown"
-          className={cn(
-            "size-3.5 shrink-0",
-            muted ? "text-subtle-foreground/75" : "text-muted-foreground",
-          )}
-        />
-      )}
+      {showEffortControl ? null : chevron}
       <AppCommandShortcutHint
         shortcut={disabled ? null : toggleShortcut}
         className="ml-1"
@@ -1037,8 +913,61 @@ export function ModelReasoningPicker({
     </Button>
   );
 
+  const effortTrigger = (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      aria-label={`Reasoning effort: ${reasoningLabel}`}
+      aria-keyshortcuts={reasoningShortcut?.ariaKeyshortcuts}
+      disabled={disabled}
+      onKeyDown={handleReasoningArrowKeyDown}
+      className={cn(halfClassName, "shrink-0")}
+    >
+      <span
+        className="whitespace-nowrap text-subtle-foreground"
+        title={`Reasoning effort: ${reasoningLabel}`}
+      >
+        {reasoningLabel}
+      </span>
+      {chevron}
+    </Button>
+  );
+
+  const renderSplit = (modelPart: ReactNode) => (
+    <div
+      className={cn(
+        "inline-flex h-8 min-w-0 max-w-full items-center rounded-lg bg-surface-recessed",
+        className,
+      )}
+    >
+      {modelPart}
+      {showEffortControl ? (
+        <>
+          <span aria-hidden className="h-4 w-px shrink-0 bg-border" />
+          {disabled ? (
+            effortTrigger
+          ) : (
+            <ReasoningEffortMenu
+              open={effortOpen}
+              onOpenChange={setEffortOpen}
+              modal={modal}
+              align={align}
+              value={reasoningValue}
+              options={reasoningOptions}
+              shortcut={reasoningShortcut}
+              onSelect={handleReasoningSelect}
+            >
+              {effortTrigger}
+            </ReasoningEffortMenu>
+          )}
+        </>
+      ) : null}
+    </div>
+  );
+
   if (disabled) {
-    return trigger;
+    return renderSplit(trigger);
   }
 
   const showSearchInput =
@@ -1049,15 +978,12 @@ export function ModelReasoningPicker({
     activeModelOptions.length + activeMoreModelOptions.length >
       MODEL_SEARCH_MIN_OPTIONS;
 
-  return (
+  return renderSplit(
     <Popover open={open} onOpenChange={setOpen} modal={modal}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
         align={align}
-        mobileTitle={handoffMode ? "Handoff to new thread" : "Model"}
-        mobileClassName={
-          handoffMode ? HANDOFF_DRAWER_TOP_CLASS_NAME : undefined
-        }
+        mobileTitle="Model"
         onKeyDown={handleReasoningArrowKeyDown}
         onMobileContentAnimationEnd={handleMobileContentAnimationEnd}
         autoFocusRef={showSearchInput ? searchInputRef : undefined}
@@ -1066,32 +992,21 @@ export function ModelReasoningPicker({
           isCompactViewport
             ? "overflow-y-hidden"
             : "max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-0.5rem))] max-w-[calc(100vw-1rem)] overflow-hidden",
-          !isCompactViewport &&
-            !lockModelSelection &&
-            "data-[side=top]:h-80",
+          !isCompactViewport && !lockModelSelection && "data-[side=top]:h-80",
         )}
       >
         <ResetBrowseStateOnContentUnmount onReset={resetBrowseState} />
-        {handoffMode ? <HandoffModeHeader onBack={exitHandoffMode} /> : null}
         <div className="flex min-h-0 flex-1 flex-col">
           {showProviderTabs ? (
             <div className="flex shrink-0 items-center gap-0.5 border-b border-border bg-background px-1.5">
               {providerOptions.map((provider) => {
                 const TabIcon = provider.icon;
                 const isActive = provider.value === activeProviderId;
-                const isHandoffSource =
-                  handoffMode &&
-                  handoff !== undefined &&
-                  provider.value === handoff.sourceProviderId;
                 return (
                   <button
                     key={provider.value}
                     type="button"
-                    title={
-                      isHandoffSource
-                        ? `${provider.label} (current thread)`
-                        : provider.label
-                    }
+                    title={provider.label}
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {
                       if (provider.value === activeProviderId) {
@@ -1157,7 +1072,6 @@ export function ModelReasoningPicker({
                       ) : null}
                     </span>
                     <span className="ml-auto flex shrink-0 items-center gap-1.5 text-subtle-foreground">
-                      {reasoningRowMenu}
                       <span title="Fixed in this thread">
                         <Icon name="Lock" className="size-3" aria-hidden />
                         <span className="sr-only">Fixed in this thread</span>
@@ -1218,11 +1132,6 @@ export function ModelReasoningPicker({
                               }
                               disabled={previewSelectionBlocked}
                               onClick={() => handleModelSelect(option.value)}
-                              trailing={
-                                option.value === reasoningRowModel
-                                  ? reasoningRowMenu
-                                  : null
-                              }
                             />
                           );
                         })}
@@ -1274,45 +1183,6 @@ export function ModelReasoningPicker({
                   </div>
                 )}
 
-                {showReasoningSection && !showInlineReasoning ? (
-                  <>
-                    <div className="shrink-0 border-t border-border" />
-                    <div className="shrink-0 px-2 py-2.5">
-                      <MenuSectionLabel className="mb-2 px-1 py-0">
-                        Reasoning
-                      </MenuSectionLabel>
-                      <ToggleGroup
-                        type="single"
-                        aria-label="Reasoning"
-                        value={activeReasoningValue}
-                        onValueChange={(value) => {
-                          const option = activeReasoningOptions.find(
-                            (candidate) => candidate.value === value,
-                          );
-                          if (option) handleReasoningSelect(option.value);
-                        }}
-                        disabled={previewSelectionBlocked}
-                        className="flex gap-1"
-                      >
-                        {activeReasoningOptions.map((option) => (
-                          <ToggleGroupItem
-                            key={option.value}
-                            value={option.value}
-                            aria-label={option.label}
-                            className={cn(
-                              "h-6 min-w-0 flex-auto shrink-0 whitespace-nowrap rounded-sm px-1 text-xs font-normal shadow-none hover:bg-state-hover hover:text-foreground data-[state=on]:bg-state-active data-[state=on]:text-foreground data-[state=on]:hover:bg-state-active",
-                              isCompactViewport && "h-9 text-sm",
-                              LIST_HOVER_TRANSITION,
-                            )}
-                          >
-                            {option.label}
-                          </ToggleGroupItem>
-                        ))}
-                      </ToggleGroup>
-                    </div>
-                  </>
-                ) : null}
-
                 {effectiveShowFastModeToggle ? (
                   <>
                     <div className="shrink-0 border-t border-border" />
@@ -1338,70 +1208,12 @@ export function ModelReasoningPicker({
                     </div>
                   </>
                 ) : null}
-
-                {handoff !== undefined &&
-                !handoffMode &&
-                providerOptions.length > 0 ? (
-                  <>
-                    <div className="shrink-0 border-t border-border" />
-                    <div className="shrink-0 p-1">
-                      <MenuActionButton
-                        label="Handoff to new thread"
-                        iconName="MessageSquarePlus"
-                        onClick={startHandoffMode}
-                      />
-                    </div>
-                  </>
-                ) : null}
               </div>
             </MenuHoverProvider>
           </div>
         </div>
       </PopoverContent>
-    </Popover>
-  );
-}
-
-function HandoffModeHeader({ onBack }: { onBack: () => void }) {
-  return (
-    <div className="flex shrink-0 items-center gap-1 border-b border-border bg-background px-2 py-1.5">
-      <button
-        type="button"
-        aria-label="Exit handoff"
-        onClick={onBack}
-        className={cn(
-          "flex size-6 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-state-hover hover:text-foreground",
-          LIST_HOVER_TRANSITION,
-        )}
-      >
-        <Icon name="X" className="size-3.5" aria-hidden />
-      </button>
-      <span className="min-w-0 truncate text-xs font-normal text-subtle-foreground">
-        Handoff to new thread
-      </span>
-    </div>
-  );
-}
-
-function MenuSectionLabel({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  const isCompactViewport = useIsCompactViewport();
-
-  return (
-    <div
-      className={cn(
-        "sticky top-0 z-10 bg-background px-2 text-xs font-medium text-muted-foreground",
-        isCompactViewport ? "pb-1.5 pt-2" : "pb-[0.3125rem] pt-2",
-        className,
-      )}
-    >
-      {children}
-    </div>
+    </Popover>,
   );
 }
 
@@ -1571,7 +1383,6 @@ function MenuRowButton({
   isActive,
   id,
   role,
-  trailing,
 }: {
   label: string;
   qualifier?: string;
@@ -1581,22 +1392,11 @@ function MenuRowButton({
   isActive?: boolean;
   id?: string;
   role?: React.AriaRole;
-  trailing?: ReactNode;
 }) {
   const { hoverProps } = useMenuItemHover();
   const isCompactViewport = useIsCompactViewport();
   const { base, tag } = splitModelLabelTag(label);
-  const check = (
-    <Icon
-      name="Check"
-      className={cn(
-        COARSE_POINTER_ICON_SIZE_SHRINK_CLASS,
-        "text-subtle-foreground dark:text-primary",
-        selected ? "opacity-100" : "opacity-0",
-      )}
-    />
-  );
-  const button = (
+  return (
     <button
       type="button"
       id={id}
@@ -1611,7 +1411,6 @@ function MenuRowButton({
         isActive && "bg-state-active",
         disabled && "cursor-not-allowed opacity-60",
         isCompactViewport ? "py-2" : "py-1",
-        trailing && "pr-28",
       )}
       {...hoverProps}
     >
@@ -1627,110 +1426,81 @@ function MenuRowButton({
           <span className="ml-1.5 text-subtle-foreground">{qualifier}</span>
         ) : null}
       </span>
-      {trailing ? null : (
-        <span className="flex shrink-0 items-center gap-1.5">{check}</span>
-      )}
+      <Icon
+        name="Check"
+        className={cn(
+          COARSE_POINTER_ICON_SIZE_SHRINK_CLASS,
+          "text-subtle-foreground dark:text-primary",
+          selected ? "opacity-100" : "opacity-0",
+        )}
+      />
     </button>
-  );
-  if (!trailing) return button;
-  return (
-    <div className="relative">
-      {button}
-      <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center gap-1.5">
-        <span className="pointer-events-auto">{trailing}</span>
-        {check}
-      </span>
-    </div>
   );
 }
 
-function ReasoningRowMenu({
+function ReasoningEffortMenu({
+  open,
+  onOpenChange,
+  modal,
+  align,
   value,
   options,
-  disabled,
+  shortcut,
   onSelect,
+  children,
 }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  modal: boolean;
+  align: "start" | "center" | "end";
   value: ReasoningLevel;
   options: readonly PickerOption<ReasoningLevel>[];
-  disabled: boolean;
+  shortcut: AppShortcutPresentation | null;
   onSelect: (value: ReasoningLevel) => void;
+  children: ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
-  const label = options.find((option) => option.value === value)?.label;
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={`Reasoning: ${label ?? value}`}
-          disabled={disabled}
-          className={cn(
-            "flex h-5 items-center gap-0.5 rounded-sm border border-border bg-foreground/5 pl-1.5 pr-1 text-xs text-foreground outline-none hover:bg-state-hover focus-visible:border-primary/60",
-            LIST_HOVER_TRANSITION,
-            open && "border-primary/60",
-            disabled && "cursor-not-allowed opacity-60",
-          )}
-        >
-          {label ?? value}
-          <Icon
-            name="ChevronDown"
-            className="size-3 text-muted-foreground"
-            aria-hidden
-          />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        side="bottom"
-        align="end"
-        sideOffset={4}
-        className="flex w-32 flex-col p-1 data-[state=closed]:animate-none"
+    <DropdownMenu open={open} onOpenChange={onOpenChange} modal={modal}>
+      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+      <DropdownMenuContent
+        align={align}
+        mobileTitle="Effort"
+        className="min-w-36"
       >
-        <MenuHoverProvider>
-          {options.map((option) => (
-            <MenuRowButton
+        <DropdownMenuLabel className="font-normal text-subtle-foreground">
+          Effort
+        </DropdownMenuLabel>
+        {options.map((option) => {
+          const selected = option.value === value;
+          return (
+            <DropdownMenuItem
               key={option.value}
-              label={option.label}
-              selected={option.value === value}
-              onClick={() => {
-                onSelect(option.value);
-                setOpen(false);
-              }}
-            />
-          ))}
-        </MenuHoverProvider>
-      </PopoverContent>
-    </Popover>
+              role="menuitemradio"
+              aria-checked={selected}
+              onSelect={() => onSelect(option.value)}
+              className={cn(
+                selected &&
+                  "bg-background text-foreground shadow-message dark:bg-surface-recessed",
+              )}
+            >
+              {option.label}
+            </DropdownMenuItem>
+          );
+        })}
+        {shortcut ? (
+          <>
+            <DropdownMenuSeparator />
+            <div className="flex items-center gap-2 px-2 py-1 text-xs text-subtle-foreground">
+              Cycle
+              <AppCommandShortcutPill shortcut={shortcut} ariaHidden={false} />
+            </div>
+          </>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
-function MenuActionButton({
-  label,
-  iconName,
-  onClick,
-}: {
-  label: string;
-  iconName: IconName;
-  onClick: () => void;
-}) {
-  const { hoverProps } = useMenuItemHover();
-  const isCompactViewport = useIsCompactViewport();
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 text-xs outline-none hover:bg-state-hover hover:text-foreground",
-        LIST_HOVER_TRANSITION,
-        MENU_ITEM_LAST_HOVERED_CLASS,
-        isCompactViewport ? "py-2" : "py-[0.3125rem]",
-      )}
-      {...hoverProps}
-    >
-      <Icon name={iconName} className="size-3.5 shrink-0" aria-hidden />
-      <span className="min-w-0 truncate">{label}</span>
-    </button>
-  );
-}
 interface ModelSearchInputProps {
   inputRef: React.RefObject<HTMLInputElement | null>;
   query: string;

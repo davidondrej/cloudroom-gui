@@ -16,6 +16,30 @@ import {
 import { PROJECT_LIST_ACTION_BUTTON_CLASS } from "@/components/sidebar/ProjectList";
 import { SIDEBAR_STANDARD_ROW_PADDING_CLASS } from "@/components/sidebar/sidebarRowClasses";
 import { CHROME_SECTION_LABEL_CLASS } from "@cloudroom/shared-ui/chrome-style-tokens";
+import { useAppCommandShortcut } from "@/components/commands/AppCommandProvider";
+import { AppCommandShortcutPill } from "@/components/commands/AppCommandShortcutHint";
+
+function SectionSidebarBackButton({ label, to }: { label: string; to: string }) {
+  const closeOnMobile = useCloseMobileSidebar();
+  const shortcut = useAppCommandShortcut("app.back");
+  return (
+    <Link
+      to={to}
+      onClick={closeOnMobile}
+      aria-keyshortcuts={shortcut?.ariaKeyshortcuts}
+      className="flex h-10 w-full items-center gap-2.5 rounded-md bg-primary px-3 text-sm font-bold text-primary-foreground shadow-[0_4px_14px_color-mix(in_oklch,var(--primary)_20%,transparent)] transition-[filter] hover:brightness-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none max-md:pointer-coarse:h-11"
+    >
+      <Icon name="ArrowLeft" className={COARSE_POINTER_ICON_SIZE_CLASS} />
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {shortcut ? (
+        <AppCommandShortcutPill
+          shortcut={shortcut}
+          className="bg-primary-foreground/15 font-semibold text-primary-foreground opacity-100 max-md:pointer-coarse:hidden"
+        />
+      ) : null}
+    </Link>
+  );
+}
 
 export function SectionSidebarIcon({ name }: { name: IconName }) {
   return <Icon name={name} className={COARSE_POINTER_ICON_SIZE_CLASS} />;
@@ -126,11 +150,7 @@ export function SectionSidebar({
         testId={`${testIdPrefix}-sidebar-top-reserve-row`}
       />
       <div className="shrink-0 px-2 py-2">
-        <div className="space-y-1">
-          <SectionSidebarRow active={false} label={backLabel} to={backTo}>
-            <SectionSidebarIcon name="ChevronLeft" />
-          </SectionSidebarRow>
-        </div>
+        <SectionSidebarBackButton label={backLabel} to={backTo} />
       </div>
       <SidebarContent>
         <div className="min-w-0 px-2">{children}</div>

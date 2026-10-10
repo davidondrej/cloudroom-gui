@@ -1,6 +1,6 @@
 import type { ServerAccessStatus } from "@cloudroom/server-contract";
 import { isLocalOnlyUrl } from "@/lib/loopback-hostname";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@cloudroom/shared-ui/button";
 import { getPluginConfigurationRoutePath } from "@/lib/route-paths";
@@ -12,7 +12,8 @@ import { useSystemConfig } from "@/hooks/queries/system-queries";
 import { useUpdateGeneralSettings } from "@/hooks/mutations/settings-mutations";
 import { getMutationErrorMessage } from "@/lib/mutation-errors";
 import {
-  SettingsSection,
+  SETTINGS_CARD_CLASS,
+  SETTINGS_CARD_ROW_CLASS,
   SettingsWithControl,
 } from "@/components/ui/settings-section";
 import { machineServerAccessBlockedReason } from "@/components/machines/machine-server-access";
@@ -123,25 +124,39 @@ function useMachineAccess(): MachineAccessState {
   };
 }
 
-export function MachineAccessSettings() {
+export function MachineAccessSettings({ children }: { children?: ReactNode }) {
   const machineAccess = useMachineAccess();
-  return <MachineAccessSettingsContent machineAccess={machineAccess} />;
+  return (
+    <MachineAccessSettingsContent machineAccess={machineAccess}>
+      {children}
+    </MachineAccessSettingsContent>
+  );
 }
 
+// "Connection method" card; extra rows (Advanced settings) go in children.
 export function MachineAccessSettingsContent({
   machineAccess,
+  children,
 }: {
   machineAccess: MachineAccessState;
+  children?: ReactNode;
 }) {
   return (
-    <SettingsSection
-      title="Machine access"
-      description="Choose how new machines connect to the Cloudroom server."
-      action={<MachineAccessMethodPicker machineAccess={machineAccess} />}
-      bodyClassName="space-y-3"
-    >
-      <MachineAccessDetails machineAccess={machineAccess} />
-    </SettingsSection>
+    <div className={SETTINGS_CARD_CLASS}>
+      <div className={SETTINGS_CARD_ROW_CLASS}>
+        <div className="min-w-0 flex-1">
+          <p className="text-foreground">Connection method</p>
+          <p className="text-xs text-subtle-foreground/75">
+            How new machines reach this Cloudroom server.
+          </p>
+        </div>
+        <MachineAccessMethodPicker machineAccess={machineAccess} />
+      </div>
+      <div className="space-y-3 px-4 py-3">
+        <MachineAccessDetails machineAccess={machineAccess} />
+      </div>
+      {children}
+    </div>
   );
 }
 

@@ -174,9 +174,11 @@ describe("PluginProviderModelPicker", () => {
 
     render(<ControlledPicker />, { wrapper });
     const trigger = screen.getByRole("button", {
-      name: "Provider, model and reasoning",
+      name: "Provider and model",
     });
-    expect(trigger.classList.contains("plugin-picker")).toBe(true);
+    expect(trigger.parentElement?.classList.contains("plugin-picker")).toBe(
+      true,
+    );
     expect(trigger.getAttribute("aria-keyshortcuts")).toBeNull();
     fireEvent.click(trigger);
     fireEvent.click(screen.getByTitle("Cursor"));
@@ -230,9 +232,7 @@ describe("PluginProviderModelPicker", () => {
     }
 
     render(<ControlledPicker />, { wrapper });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Provider, model and reasoning" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Provider and model" }));
     fireEvent.click(screen.getByRole("button", { name: "GPT Light" }));
     await waitFor(() =>
       expect(onChange).toHaveBeenLastCalledWith({
@@ -243,6 +243,7 @@ describe("PluginProviderModelPicker", () => {
       }),
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Provider and model" }));
     const fastMode = screen.getByRole("switch", { name: "Fast mode" });
     expect(fastMode.getAttribute("aria-checked")).toBe("true");
     fireEvent.click(fastMode);
@@ -330,12 +331,12 @@ describe("PluginProviderModelPicker", () => {
     );
 
     const trigger = screen.getByRole("button", {
-      name: "Provider, model and reasoning",
+      name: "Provider and model",
     });
     expect(trigger.textContent).toContain("GPT Retired");
-    expect(trigger.querySelector("[title]")?.getAttribute("title")).toContain(
-      "Extra High reasoning",
-    );
+    expect(
+      screen.getByRole("button", { name: "Reasoning effort: Extra High" }),
+    ).toBeDefined();
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -384,9 +385,7 @@ describe("PluginProviderModelPicker", () => {
       />,
       { wrapper },
     );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Provider, model and reasoning" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Provider and model" }));
     fireEvent.click(screen.getByTitle("Claude Code"));
     await waitFor(() =>
       expect(sdk.system.executionOptions).toHaveBeenCalledWith(
@@ -463,7 +462,7 @@ describe("PluginProviderModelPicker", () => {
 
     render(<RehydratingPicker />, { wrapper });
     const trigger = screen.getByRole("button", {
-      name: "Provider, model and reasoning",
+      name: "Provider and model",
     });
     const rehydrate = screen.getByRole("button", { name: "Rehydrate" });
     fireEvent.click(trigger);
@@ -477,8 +476,14 @@ describe("PluginProviderModelPicker", () => {
       });
       expect(trigger.textContent).toContain("Agent");
       expect(trigger.querySelector("[title]")?.getAttribute("title")).toBe(
-        "Cursor: Agent · High reasoning",
+        "Cursor: Agent",
       );
+      expect(
+        screen.getByRole("button", {
+          name: "Reasoning effort: High",
+          hidden: true,
+        }),
+      ).toBeDefined();
     });
     onChange.mockClear();
 
@@ -486,8 +491,14 @@ describe("PluginProviderModelPicker", () => {
     await waitFor(() => {
       expect(trigger.textContent).toContain("GPT-5.5");
       expect(trigger.querySelector("[title]")?.getAttribute("title")).toBe(
-        "Codex: GPT-5.5 · Medium reasoning",
+        "Codex: GPT-5.5",
       );
+      expect(
+        screen.getByRole("button", {
+          name: "Reasoning effort: Medium",
+          hidden: true,
+        }),
+      ).toBeDefined();
     });
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByRole("button", { name: "GPT-5.5" })).toBeDefined();
@@ -519,9 +530,7 @@ describe("PluginProviderModelPicker", () => {
       { wrapper },
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Provider, model and reasoning" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Provider and model" }));
     expect(screen.queryByTitle("Cursor")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "GPT Light" }));
 

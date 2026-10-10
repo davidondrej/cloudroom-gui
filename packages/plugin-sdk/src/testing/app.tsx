@@ -737,8 +737,8 @@ function TestPermissionModePicker({
         }
       }}
     >
-      <option value="accept-edits">Accept Edits</option>
-      <option value="auto">Approve for me</option>
+      <option value="accept-edits">Manual</option>
+      <option value="auto">Auto</option>
       <option value="full">Full Access</option>
     </select>
   );

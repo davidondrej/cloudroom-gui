@@ -427,7 +427,7 @@ describe("MachinesSettingsSection", () => {
 
     renderSection();
 
-    expect(await screen.findByText("Accept Edits")).toBeDefined();
+    expect(await screen.findByText("Manual")).toBeDefined();
     expect(screen.getByText("Full Access")).toBeDefined();
     expect(
       screen.queryByRole("button", { name: /Permission limit for/ }),

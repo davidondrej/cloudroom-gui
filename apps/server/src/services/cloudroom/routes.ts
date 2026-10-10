@@ -197,6 +197,24 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     const { days } = z.object({ days: autoDeleteDaysSchema }).strict().parse(await context.req.json());
     return context.json(await autoDelete(saveAutoDelete(deps, days)));
   });
+  // Cloud automations (ADR 0212): the website stores and runs them, so they keep running while this Mac is off.
+  // A child Cloud thread shares its parent's sandbox, so the website gets the parent and the child's own session.
+  app.post("/api/v1/cloudroom/account/automations", async (context) => {
+    const input = z.object({ action: z.enum(["list", "create", "update", "run", "delete"]), thread: z.string().min(1).max(64).optional() }).passthrough().parse(await context.req.json());
+    let body: Record<string, unknown> = input;
+    if (input.action === "create") {
+      const thread = input.thread ? getThread(deps.db, input.thread) : null;
+      if (!thread || !isCloudThread(thread) || thread.archivedAt || thread.deletedAt) throw new ApiError(400, "cloud_automation", "Cloud automations need an open Cloud thread.");
+      let root = thread;
+      for (let parent = root.parentThreadId ? getThread(deps.db, root.parentThreadId) : null; parent && isCloudThread(parent); parent = parent.parentThreadId ? getThread(deps.db, parent.parentThreadId) : null) root = parent;
+      const session = binding(deps.db, thread.id)?.sessionId;
+      body = { ...input, thread: root.id, ...(session ? { session } : {}) };
+    }
+    return context.json(await cloudroom(deps).sandboxes.automations(body).catch((error: unknown) => {
+      const status = error instanceof CloudroomError ? error.status : null;
+      throw new ApiError(status === 404 || status === 429 ? status : status ? 400 : 503, "cloud_automation", error instanceof Error ? error.message : String(error));
+    }));
+  });
   // Import from this Mac: the list shows names only, and values go straight to the website.
   app.get("/api/v1/cloudroom/account/environment/mac", async (context) => context.json({ names: Object.keys(await macVariables()).sort() }));
   app.post("/api/v1/cloudroom/account/environment/mac", async (context) => {
@@ -373,11 +391,8 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
     const path = context.req.path.slice(`/api/v1/threads/${thread.id}`.length);
     if (context.req.method === "PATCH" && path === "") {
       const body = await context.req.json<unknown>();
-      if (body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).every((key) => ["title", "reasoningLevel", "model"].includes(key))) {
-        const model = (body as { model?: unknown }).model;
-        if (model === undefined || model === binding(deps.db, thread.id)?.model) return next();
-        return context.json({ message: "Model is fixed for this cloud thread. Start a new thread to change it.", code: "cloudroom_launch_settings" }, 409);
-      }
+      // A model or harness change switches the thread in place (ADR 0211), in the shared update route.
+      if (body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).every((key) => ["title", "reasoningLevel", "model", "providerId"].includes(key))) return next();
     }
     if (["/tabs", "/read", "/unread", "/pin", "/unpin", "/pin-order"].includes(path)) return next();
     if (context.req.method === "POST" && ["/archive-all", "/unarchive"].includes(path)) return next();

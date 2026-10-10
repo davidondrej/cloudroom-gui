@@ -20,6 +20,7 @@ import {
   experimentKeys,
   managedBranchPrefixSchema,
   type AppTheme,
+  type WorktreeRetention,
   type ExperimentKey,
   type Experiments,
   type FaviconColorPreference,
@@ -43,6 +44,7 @@ import {
 } from "@cloudroom/shared-ui/dropdown-menu";
 import { PageShell } from "@/components/ui/page-shell.js";
 import {
+  SETTINGS_CARD_ROW_CLASS,
   SettingsSection,
   SettingsWithControl,
 } from "@/components/ui/settings-section.js";
@@ -84,7 +86,7 @@ import { UpdatesSettingsSection } from "@/components/settings/UpdatesSettingsSec
 import { KeyboardSettingsSection } from "@/components/settings/KeyboardSettingsSection";
 import { BrowserSettingsSection } from "@/components/settings/BrowserSettingsSection";
 import { MachinesSettingsSection } from "@/components/settings/MachinesSettingsSection";
-import { CloudroomAccountSettings } from "@/components/settings/CloudroomAccountSettings";
+import { CloudroomAccountSettings, CloudroomSignOut } from "@/components/settings/CloudroomAccountSettings";
 import { InviteSettingsCard } from "@/components/InviteOffer";
 import { ProjectsSettingsSection } from "@/components/settings/ProjectsSettingsSection";
 import { ArchivedThreadsSettingsSection } from "@/components/settings/ArchivedThreadsSettingsSection";
@@ -193,10 +195,12 @@ interface GeneralSettingsSectionProps {
   onRewriteLocalhostLinksChange: (enabled: boolean) => void;
   onRichTextEditingChange: (enabled: boolean) => void;
   onSteerActiveThreadOnEnterChange: (enabled: boolean) => void;
+  onWorktreeRetentionChange: (retention: WorktreeRetention) => void;
   openLinksInAppBrowser: boolean;
   rewriteLocalhostLinks: boolean;
   richTextEditing: boolean;
   steerActiveThreadOnEnter: boolean;
+  worktreeRetention: WorktreeRetention;
 }
 
 interface PrivacySettingsSectionProps {
@@ -648,6 +652,15 @@ const FOLLOW_UP_BEHAVIOR_OPTIONS = [
 const STREAMER_MODE_SETTING_LABEL = "Streamer mode";
 const MANAGED_BRANCH_PREFIX_SETTING_LABEL = "New branch prefix";
 const MANAGED_BRANCH_PREFIX_EXAMPLE_SLUG = "fix-login-flow-thr_ab12cd34ef";
+const WORKTREE_RETENTION_SETTING_LABEL = "Delete archived worktrees after";
+const WORKTREE_RETENTION_LABELS: Record<WorktreeRetention, string> = {
+  "5m": "5 minutes",
+  "1h": "1 hour",
+  "1d": "1 day",
+  "7d": "7 days",
+  "30d": "30 days",
+  never: "Never",
+};
 
 interface ManagedBranchPrefixSettingProps {
   disabled: boolean;
@@ -910,10 +923,12 @@ export function GeneralSettingsSection({
   onRewriteLocalhostLinksChange,
   onRichTextEditingChange,
   onSteerActiveThreadOnEnterChange,
+  onWorktreeRetentionChange,
   openLinksInAppBrowser,
   rewriteLocalhostLinks,
   richTextEditing,
   steerActiveThreadOnEnter,
+  worktreeRetention,
 }: GeneralSettingsSectionProps) {
   return (
     <>
@@ -1026,6 +1041,55 @@ export function GeneralSettingsSection({
             disabled={generalSettingsDisabled}
             onChange={onManagedBranchPrefixChange}
           />
+          <SettingsWithControl
+            label={WORKTREE_RETENTION_SETTING_LABEL}
+            description="Removes the worktree folder once its last thread is archived or deleted. The branch stays, but uncommitted changes are lost."
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={SETTINGS_DROPDOWN_TRIGGER_CLASS}
+                  disabled={generalSettingsDisabled}
+                  aria-label={WORKTREE_RETENTION_SETTING_LABEL}
+                >
+                  {WORKTREE_RETENTION_LABELS[worktreeRetention]}
+                  <Icon
+                    name="ChevronDown"
+                    className="size-3.5 text-muted-foreground"
+                  />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className={SETTINGS_DROPDOWN_CONTENT_CLASS}
+              >
+                {Object.entries(WORKTREE_RETENTION_LABELS).map(
+                  ([retention, label]) => (
+                    <DropdownMenuItem
+                      key={retention}
+                      onSelect={() =>
+                        onWorktreeRetentionChange(
+                          retention as WorktreeRetention,
+                        )
+                      }
+                    >
+                      {label}
+                      <Icon
+                        name="Check"
+                        className={cn(
+                          "ml-auto",
+                          retention !== worktreeRetention && "opacity-0",
+                          COARSE_POINTER_ICON_SIZE_CLASS,
+                        )}
+                      />
+                    </DropdownMenuItem>
+                  ),
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SettingsWithControl>
         </div>
       </SettingsSection>
     </>
@@ -1337,27 +1401,7 @@ export function SettingsView() {
   } else if (activeSection === "projects") {
     content = <ProjectsSettingsSection />;
   } else if (activeSection === "machines") {
-    content = (
-      <>
-        <CloudroomAccountSettings />
-        <MachinesSettingsSection />
-        <MachineAccessSettings />
-        <details
-          id="advanced-machine-settings"
-          open={location.hash === "#advanced-machine-settings" || undefined}
-          className="group space-y-6"
-        >
-          <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-subtle-foreground [&::-webkit-details-marker]:hidden">
-            Advanced settings
-            <Icon
-              name="ChevronRight"
-              className="size-3.5 transition-transform group-open:rotate-90"
-            />
-          </summary>
-          <MachineEnvironmentSettings />
-        </details>
-      </>
-    );
+    content = <MachinesSettingsPage />;
   } else if (activeSection === "updates") {
     content = (
       <UpdatesSettingsSection
@@ -1447,6 +1491,13 @@ export function SettingsView() {
               steerActiveThreadOnEnter: enabled,
             })
           }
+          worktreeRetention={generalSettings.worktreeRetention}
+          onWorktreeRetentionChange={(retention) =>
+            updateGeneralSettingsMutation.mutate({
+              ...generalSettings,
+              worktreeRetention: retention,
+            })
+          }
         />
         <CliSkillsSettingsSection />
         <ThreadNamingSettingsSection />
@@ -1498,6 +1549,41 @@ export function SettingsView() {
         </div>
       </div>
     </PageShell>
+  );
+}
+
+// Account-page layout (design 4, 2026-10-10): profile, Mac access, logins, machines, connection, sign out.
+export function MachinesSettingsPage() {
+  const location = useLocation();
+  return (
+    <div className="space-y-6">
+      <CloudroomAccountSettings />
+      <MachinesSettingsSection />
+      <MachineAccessSettings>
+        <details
+          id="advanced-machine-settings"
+          open={location.hash === "#advanced-machine-settings" || undefined}
+          className="group"
+        >
+          <summary
+            className={cn(
+              SETTINGS_CARD_ROW_CLASS,
+              "cursor-pointer list-none text-foreground hover:bg-state-hover [&::-webkit-details-marker]:hidden",
+            )}
+          >
+            <span className="flex-1">Advanced settings</span>
+            <Icon
+              name="ChevronRight"
+              className="size-4 text-muted-foreground transition-transform group-open:rotate-90"
+            />
+          </summary>
+          <div className="border-t border-border px-4 py-4">
+            <MachineEnvironmentSettings />
+          </div>
+        </details>
+      </MachineAccessSettings>
+      <CloudroomSignOut />
+    </div>
   );
 }
 

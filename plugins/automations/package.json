@@ -7,6 +7,7 @@
   "exports": {
     "./detail-view": "./detail-view.tsx",
     "./overview-view": "./overview-view.tsx",
+    "./cloud-view": "./cloud-view.tsx",
     "./rpc-types": "./src/rpc-types.ts"
   },
   "engines": {

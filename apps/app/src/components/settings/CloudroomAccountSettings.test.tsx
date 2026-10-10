@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, expect, it, vi } from "vitest";
 import { sdk } from "@/lib/sdk";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
-import { CloudroomAccountSettings } from "./CloudroomAccountSettings";
+import { CloudroomAccountSettings, CloudroomSignOut } from "./CloudroomAccountSettings";
 
 vi.mock("@/lib/sdk", () => ({ sdk: { cloudroom: { status: vi.fn(), signIn: vi.fn(), cancel: vi.fn(), logout: vi.fn() }, projects: { list: vi.fn() } } }));
 vi.mock("@/lib/url-open-routing", () => ({ openUrlInExternalBrowser: vi.fn() }));
@@ -14,7 +14,7 @@ const signedOut = { ready: false, account: null, projectId: null, repository: nu
 function mount() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   clients.push(client);
-  render(<QueryClientProvider client={client}><CloudroomAccountSettings /></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><CloudroomAccountSettings /><CloudroomSignOut /></QueryClientProvider>);
 }
 it("opens system-browser sign-in without a project and exposes cancellation", async () => {
   vi.mocked(sdk.projects.list).mockResolvedValue([{ id: "project", name: "Prepared repository" }] as never);
@@ -39,7 +39,7 @@ it("shows identity/offline status and signs out locally without a machine creati
   expect(await screen.findByText("member@example.invalid")).toBeDefined();
   expect(screen.getByText("VM is offline")).toBeDefined();
   expect(screen.queryByRole("button", { name: "Add a machine" })).toBeNull();
-  fireEvent.pointerDown(screen.getByRole("button", { name: "Account actions" }), { button: 0 });
+  fireEvent.pointerDown(screen.getByRole("button", { name: "Sign out" }), { button: 0 });
   fireEvent.click(await screen.findByRole("menuitem", { name: "Sign out of this app" }));
   await waitFor(() => expect(sdk.cloudroom.logout).toHaveBeenCalledOnce());
   await screen.findByText("Not signed in to Cloudroom");

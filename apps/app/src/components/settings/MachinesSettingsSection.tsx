@@ -32,6 +32,8 @@ import {
 import { MachineRenameDialog } from "@/components/settings/MachineRenameDialog";
 import { MachineIcon } from "@/components/machines/MachineLabel";
 import {
+  SETTINGS_CARD_CLASS,
+  SETTINGS_CARD_ROW_CLASS,
   SettingsBadge,
   SettingsSection,
 } from "@/components/ui/settings-section";
@@ -141,7 +143,10 @@ export function MachineRowContent({
   return (
     <div
       data-machine-row
-      className="relative flex min-w-0 cursor-pointer rounded-xl bg-surface-recessed p-4 transition-colors hover:bg-state-hover focus-within:bg-state-hover"
+      className={cn(
+        SETTINGS_CARD_ROW_CLASS,
+        "group min-w-0 cursor-pointer transition-colors hover:bg-state-hover focus-within:bg-state-hover",
+      )}
       onClick={(event) => {
         if (targetsResourceAction(event.target)) return;
         navigate(detailPath);
@@ -150,18 +155,18 @@ export function MachineRowContent({
       <Link
         to={detailPath}
         aria-label={`Open ${host.name}`}
-        className="flex min-w-0 flex-1 flex-col gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <span className="grid size-9 place-items-center rounded-lg bg-muted text-foreground">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-foreground">
           <MachineIcon
             host={host}
             machineProvider={machineProvider}
-            className="size-[18px]"
+            className="size-4"
           />
         </span>
-        <div className="min-w-0 flex-1 space-y-1">
+        <div className="min-w-0 flex-1 space-y-0.5">
           <div className="flex min-w-0 items-center gap-1.5">
-            <span className="min-w-0 truncate text-sm font-semibold text-foreground">
+            <span className="min-w-0 truncate text-sm text-foreground">
               {host.name}
             </span>
             {isThisMachine ? <SettingsBadge>this machine</SettingsBadge> : null}
@@ -190,7 +195,7 @@ export function MachineRowContent({
           </div>
         </div>
       </Link>
-      <div className="absolute right-3 top-3">
+      <div className="opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 has-[[data-state=open]]:opacity-100 pointer-coarse:opacity-100">
         <TooltipProvider delayDuration={250}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -246,6 +251,11 @@ export function MachineRowContent({
           </DropdownMenu>
         </TooltipProvider>
       </div>
+      <Icon
+        name="ChevronRight"
+        className="size-4 shrink-0 text-muted-foreground"
+        aria-hidden
+      />
     </div>
   );
 }
@@ -297,7 +307,7 @@ export function MachinesSettingsSection() {
     [machineProviders],
   );
   const renderMachineCards = (rows: readonly Host[]) => (
-    <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+    <div className={SETTINGS_CARD_CLASS}>
       {rows.map((host) => (
         <MachineRowContent
           key={host.id}
@@ -367,9 +377,14 @@ export function MachinesSettingsSection() {
       <button
         type="button"
         onClick={() => setAddDialogOpen(true)}
-        className="flex min-h-28 items-center justify-center gap-2 rounded-xl border border-dashed border-border text-sm text-muted-foreground transition-colors hover:bg-state-hover hover:text-foreground"
+        className={cn(
+          SETTINGS_CARD_ROW_CLASS,
+          "w-full text-left text-foreground transition-colors hover:bg-state-hover",
+        )}
       >
-        <Icon name="Plus" className="size-4" />
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border">
+          <Icon name="Plus" className="size-4" />
+        </span>
         Add a machine
       </button>
     </div>

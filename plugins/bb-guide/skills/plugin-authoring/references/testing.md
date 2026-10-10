@@ -270,8 +270,8 @@ Remaining reference examples in `examples/plugins/`:
 - Schedules only fire while the plugin is loaded (rows are durable, the
   runner is not).
 - CLI `run(argv)` argv excludes the command name; core cloudroom command names
-  are reserved; workspace-sandboxed agent threads (Accept Edits / Approve
-  for me) may fail to reach the Cloudroom CLI when the provider sandbox blocks
+  are reserved; workspace-sandboxed agent threads (Manual / Auto)
+  may fail to reach the Cloudroom CLI when the provider sandbox blocks
   loopback network (Claude's macOS sandbox permits it; Linux and other
   providers may not).
 - Mention `search` is 2s-time-boxed; mention `resolve` runs at send time

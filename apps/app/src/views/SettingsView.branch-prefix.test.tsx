@@ -36,6 +36,8 @@ function renderSection(overrides?: {
         rewriteLocalhostLinks={false}
         richTextEditing={false}
         steerActiveThreadOnEnter={false}
+        worktreeRetention="30d"
+        onWorktreeRetentionChange={vi.fn()}
       />
       <PrivacySettingsSection
         disabled={false}

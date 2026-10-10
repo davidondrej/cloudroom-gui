@@ -475,6 +475,9 @@ export function PluginSettingsForm({ pluginId }: { pluginId: string }) {
   );
 }
 
+// Connect renders its whole settings page, its one setting included, in tabs.
+const CONNECT_PLUGIN_ID = "connect";
+
 const PLUGIN_STATUSES_WITH_SETTINGS = [
   "running",
   "needs-configuration",
@@ -644,7 +647,12 @@ function PluginSettingsContent({
         {enabled && plugin.enabled ? (
           <PluginMachineServerAccessNotice pluginId={plugin.id} />
         ) : null}
-        {enabled && plugin.enabled && hasAvailableSettings ? (
+        {enabled &&
+        plugin.enabled &&
+        plugin.id === CONNECT_PLUGIN_ID &&
+        PLUGIN_STATUSES_WITH_SETTINGS.includes(plugin.status) ? (
+          <PluginSettingsSections pluginId={plugin.id} />
+        ) : enabled && plugin.enabled && hasAvailableSettings ? (
           <ResourceDetailConfigurationSection label="Configuration">
             <PluginSettingsDetail plugin={plugin} />
           </ResourceDetailConfigurationSection>

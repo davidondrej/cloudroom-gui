@@ -55,6 +55,7 @@ const mocks = vi.hoisted(() => ({
   clearThreadGoalMutate: vi.fn(),
   createQueuedMessageMutateAsync: vi.fn(),
   createThreadMutateAsync: vi.fn(),
+  updateThreadMutate: vi.fn(),
   defaultExecutionOptions: null as ResolvedThreadExecutionOptions | null,
   executionInputSources: {} as ExistingThreadExecutionInputSources,
   deleteQueuedMessageMutateAsync: vi.fn(),
@@ -152,16 +153,11 @@ vi.mock("@/components/promptbox/FollowUpPromptBox", async () => {
           selectedId: string;
           onChange?: (value: string) => void;
         };
-        handoff?: {
-          active: boolean;
-          onStart: () => void;
-          onExit: () => void;
-          onSelect: (selection: {
-            providerId: string;
-            model: string;
-            reasoningLevel: "medium";
-          }) => void;
-        };
+        onSelectModel?: (selection: {
+          providerId: string;
+          model: string;
+          reasoningLevel: "medium";
+        }) => void;
         reasoning: { value: string; onChange: (value: ReasoningLevel) => void };
         serviceTier?: { value?: string };
       };
@@ -356,41 +352,19 @@ vi.mock("@/components/promptbox/FollowUpPromptBox", async () => {
             </button>
           </>
         ) : null}
-        {execution.handoff ? (
-          <>
-            {execution.handoff.active ? (
-              <button type="button" onClick={execution.handoff.onExit}>
-                Exit handoff
-              </button>
-            ) : null}
-            <button type="button" onClick={execution.handoff.onStart}>
-              Start handoff
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                execution.handoff?.onSelect({
-                  providerId: "codex",
-                  model: "gpt-5-mini",
-                  reasoningLevel: "medium",
-                })
-              }
-            >
-              Same provider handoff
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                execution.handoff?.onSelect({
-                  providerId: "claude-code",
-                  model: "claude-opus-5",
-                  reasoningLevel: "medium",
-                })
-              }
-            >
-              Complete handoff flow
-            </button>
-          </>
+        {execution.onSelectModel ? (
+          <button
+            type="button"
+            onClick={() =>
+              execution.onSelectModel?.({
+                providerId: "claude-code",
+                model: "claude-opus-5",
+                reasoningLevel: "medium",
+              })
+            }
+          >
+            Switch harness
+          </button>
         ) : null}
       </div>
     ),
@@ -710,7 +684,7 @@ vi.mock("@/hooks/mutations/thread-runtime-mutations", () => ({
 }));
 
 vi.mock("@/hooks/mutations/thread-state-mutations", () => ({
-  useUpdateThread: () => ({ mutate: vi.fn() }),
+  useUpdateThread: () => ({ mutate: mocks.updateThreadMutate }),
   useUnarchiveThread: () => ({
     isPending: false,
     mutate: mocks.unarchiveThreadMutate,
@@ -1679,75 +1653,6 @@ describe("ThreadDetailPromptArea", () => {
     ).toBe("Second queued draft");
   });
 
-  it("keeps queued execution and commands source-locked during a bottom handoff", () => {
-    mocks.defaultExecutionOptions = {
-      model: "bottom-model",
-      permissionMode: "auto",
-      reasoningLevel: "medium",
-      serviceTier: "default",
-      source: "client/turn/requested",
-    };
-    mocks.queuedMessages = [
-      makeQueuedMessage({
-        model: "queued-model",
-        permissionMode: "full",
-        reasoningLevel: "high",
-        serviceTier: "fast",
-      }),
-    ];
-
-    renderPromptArea();
-    fireEvent.click(screen.getByRole("button", { name: "Switch provider" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Edit queued message 1" }),
-    );
-    const inlineEditor = within(
-      screen.getByTestId("inline-queued-message-editor"),
-    );
-
-    expect(inlineEditor.getByTestId("selected-provider").textContent).toBe(
-      "codex",
-    );
-    expect(inlineEditor.getByTestId("command-suggestions").textContent).toBe(
-      "codex:thread",
-    );
-    const inlineHost = screen.getByTestId("inline-queued-message-editor");
-    for (const name of ["Switch provider", "Complete handoff flow"]) {
-      expect(inlineEditor.queryByRole("button", { name })).toBeNull();
-      expect(screen.getByRole("button", { name })).not.toBeNull();
-    }
-    expect(
-      screen
-        .getAllByTestId("selected-provider")
-        .filter((element) => !inlineHost.contains(element))
-        .map((element) => element.textContent),
-    ).toEqual(["claude-code"]);
-    expect(
-      screen
-        .getAllByTestId("command-suggestions")
-        .filter((element) => !inlineHost.contains(element))
-        .map((element) => element.textContent),
-    ).toEqual(["claude-code:new-thread"]);
-    expect(inlineEditor.getByTestId("selected-model").textContent).toBe(
-      "queued-model",
-    );
-    expect(inlineEditor.getByTestId("selected-reasoning").textContent).toBe(
-      "high",
-    );
-    expect(inlineEditor.getByTestId("selected-service-tier").textContent).toBe(
-      "fast",
-    );
-    expect(inlineEditor.getByTestId("selected-permission").textContent).toBe(
-      "full",
-    );
-    expect(inlineEditor.getByTestId("execution-read-only").textContent).toBe(
-      "true",
-    );
-    expect(inlineEditor.getByTestId("permission-read-only").textContent).toBe(
-      "true",
-    );
-  });
-
   it("dismisses an inline edit when its thread changes or its live row disappears", async () => {
     mocks.promptDraft.text = "Untouched bottom draft";
     mocks.queuedMessages = [makeQueuedMessage()];
@@ -2121,297 +2026,17 @@ describe("ThreadDetailPromptArea", () => {
     expect(screen.getByText("Model fallback")).toBeTruthy();
   });
 
-  it("creates a new thread with a changed model from the same provider", async () => {
-    mocks.promptDraft.text = "Keep going";
-    mocks.createThreadMutateAsync.mockResolvedValue({
-      id: "thr_new",
-      projectId: "proj_1",
-    });
+  it("switches the harness in place instead of starting a new thread (ADR 0211)", () => {
     renderPromptArea();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Same provider handoff" }),
-    );
-    expect(screen.getByTestId("submit-label").textContent).toBe("New thread");
-    expect(screen.getByTestId("command-suggestions").textContent).toBe(
-      "codex:new-thread",
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Submit composer" }));
-    await waitFor(() =>
-      expect(mocks.createThreadMutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({
-          providerId: "codex",
-          model: "gpt-5-mini",
-          executionInputSources: {
-            providerId: "explicit",
-            model: "explicit",
-            reasoningLevel: "explicit",
-            permissionMode: "explicit",
-          },
-        }),
-      ),
-    );
-    expect(mocks.sendMessageMutateAsync).not.toHaveBeenCalled();
-    expect(mocks.createQueuedMessageMutateAsync).not.toHaveBeenCalled();
-  });
-
-  it("creates a same-provider handoff with unchanged execution marked explicit", async () => {
-    mocks.promptDraft.text = "Keep going";
-    mocks.createThreadMutateAsync.mockResolvedValue({
-      id: "thr_new",
-      projectId: "proj_1",
-    });
-    renderPromptArea();
-    fireEvent.click(screen.getByRole("button", { name: "Start handoff" }));
-    fireEvent.click(screen.getByRole("button", { name: "Submit composer" }));
-
-    await waitFor(() =>
-      expect(mocks.createThreadMutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({
-          providerId: "codex",
-          model: "gpt-5",
-          executionInputSources: {
-            providerId: "explicit",
-            model: "explicit",
-            reasoningLevel: "explicit",
-            permissionMode: "explicit",
-          },
-        }),
-      ),
-    );
-    expect(mocks.sendMessageMutateAsync).not.toHaveBeenCalled();
-    expect(mocks.createQueuedMessageMutateAsync).not.toHaveBeenCalled();
-  });
-
-  it("marks a supported handoff service tier explicit", async () => {
-    mocks.promptDraft.text = "Keep going";
-    mocks.serviceTier = "fast";
-    mocks.supportsServiceTier = true;
-    mocks.createThreadMutateAsync.mockResolvedValue({
-      id: "thr_new",
-      projectId: "proj_1",
-    });
-    renderPromptArea();
-    fireEvent.click(screen.getByRole("button", { name: "Start handoff" }));
-    fireEvent.click(screen.getByRole("button", { name: "Submit composer" }));
-
-    await waitFor(() =>
-      expect(mocks.createThreadMutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({
-          serviceTier: "fast",
-          executionInputSources: expect.objectContaining({
-            serviceTier: "explicit",
-          }),
-        }),
-      ),
-    );
-  });
-
-  it("exits a same-provider handoff and preserves draft edits", () => {
-    mocks.promptDraft.text = "Keep going";
-    renderPromptArea();
-    fireEvent.click(screen.getByRole("button", { name: "Start handoff" }));
-    expect(screen.getByTestId("submit-label").textContent).toBe("New thread");
-    fireEvent.click(
-      screen.getByRole("button", { name: "Same provider handoff" }),
-    );
-    mocks.promptDraft.text += " with tests";
-    fireEvent.click(screen.getByRole("button", { name: "Exit handoff" }));
-    expect(mocks.promptDraft.getCurrent().text).toBe("Keep going with tests");
-    expect(screen.getByTestId("selected-model").textContent).toBe("gpt-5");
-    expect(screen.getByTestId("submit-label").textContent).toBe("");
-    expect(screen.getByTestId("command-suggestions").textContent).toBe(
-      "codex:thread",
-    );
-  });
-
-  it.each(["Switch provider", "Complete handoff flow"])(
-    "%s prepares a handoff and restores the draft on return",
-    (entryAction) => {
-      mocks.promptDraft.text = "Keep going";
-      renderPromptArea();
-      expect(screen.getByTestId("submit-title").textContent).toBe("Submit");
-      expect(screen.getByTestId("submit-label").textContent).toBe("");
-
-      fireEvent.click(screen.getByRole("button", { name: entryAction }));
-
-      expect(screen.getByTestId("submit-label").textContent).toBe("New thread");
-      expect(screen.getByTestId("submit-icon").textContent).toBe(
-        "MessageSquarePlus",
-      );
-      expect(screen.getByTestId("submit-title").textContent).toBe(
-        "Create new thread (Enter)",
-      );
-      expect(screen.getByTestId("selected-model").textContent).toBe(
-        "claude-opus-5",
-      );
-      expect(screen.getByTestId("submit-mode").textContent).toBe("ready:");
-      expect(mocks.promptDraft.setDraft).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          text: "Continue from @thread:thr_1\n\nKeep going",
-        }),
-      );
-
-      fireEvent.click(screen.getByRole("button", { name: "Exit handoff" }));
-
-      expect(mocks.promptDraft.setDraft).toHaveBeenLastCalledWith({
-        attachments: [],
-        mentions: [],
-        text: "Keep going",
-      });
-      expect(screen.getByTestId("submit-label").textContent).toBe("");
-      expect(screen.getByTestId("submit-icon").textContent).toBe("");
-      expect(screen.getByTestId("submit-title").textContent).toBe("Submit");
-    },
-  );
-
-  it("shows destination permissions instead of the source active Plan mode", async () => {
-    mocks.defaultExecutionOptions = {
-      model: "gpt-5",
-      permissionMode: "full",
-      reasoningLevel: "medium",
-      serviceTier: "default",
-      source: "client/turn/requested",
-    };
-    mocks.createThreadMutateAsync.mockResolvedValue({
-      id: "thr_new",
-      projectId: "proj_1",
-    });
-    renderPromptArea({ activePromptMode: activePlan });
-    expect(screen.getByTestId("active-permission-mode").textContent).toBe(
-      "plan",
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Switch provider" }));
-    expect(screen.getByTestId("active-permission-mode").textContent).toBe("");
-    expect(screen.getByTestId("selected-permission").textContent).toBe("full");
-    fireEvent.click(screen.getByRole("button", { name: "Submit composer" }));
-    await waitFor(() =>
-      expect(mocks.createThreadMutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({
-          providerId: "claude-code",
-          permissionMode: "full",
-        }),
-      ),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Exit handoff" }));
-    expect(screen.getByTestId("active-permission-mode").textContent).toBe(
-      "plan",
-    );
-  });
-
-  it.each([false, true])(
-    "keeps the destination model after a source fallback (scheduled: %s)",
-    async (scheduled) => {
-      const thread = makeThread({
-        providerId: "claude-code",
-        environmentId: "env_1",
-      });
-      mocks.createThreadMutateAsync.mockResolvedValue({
-        id: "thr_new",
-        projectId: "proj_1",
-      });
-      const { rerender } = renderPromptArea({ thread });
-      fireEvent.click(
-        screen.getByRole("button", { name: "Switch provider back" }),
-      );
-      rerender(
-        buildPromptAreaElement({
-          thread,
-          modelFallback: {
-            sourceSeq: 43,
-            detectedAt: 123,
-            originalModel: "claude-fable-5",
-            fallbackModel: "claude-opus-4-8",
-            reason: "refusal",
-            message: "Switched to Opus.",
-          },
-        }),
-      );
-      expect(screen.getByTestId("selected-model").textContent).toBe("gpt-5");
-      expect(screen.getByTestId("preview-environment").textContent).toBe(
-        "env_1",
-      );
-      if (scheduled) {
-        fireEvent.click(
-          screen.getByRole("button", { name: "Capture plugin host" }),
-        );
-        await act(async () => {
-          await mocks.pluginComposerHost?.submit?.(
-            { sendAt: 1234567890 },
-            undefined,
-          );
-        });
-      } else {
-        fireEvent.click(
-          screen.getByRole("button", { name: "Submit composer" }),
-        );
-      }
-      await waitFor(() =>
-        expect(mocks.createThreadMutateAsync).toHaveBeenCalledWith(
-          expect.objectContaining({
-            providerId: "codex",
-            model: "gpt-5",
-            ...(scheduled ? { sendAt: 1234567890 } : {}),
-          }),
-        ),
-      );
-    },
-  );
-
-  it("creates a new thread from the draft as typed and navigates to it", async () => {
-    mocks.promptDraft.text = "Refactor the tests";
-    mocks.createThreadMutateAsync.mockResolvedValue({
-      id: "thr_new",
-      projectId: "proj_source",
-    });
-
-    renderPromptArea({
-      thread: makeThread({
-        environmentId: "env_1",
-        id: "thr_source",
-        projectId: "proj_source",
-        runtime: { displayStatus: "active", hostReconnectGraceExpiresAt: null },
-        status: "active",
-        title: "Source thread",
-        titleFallback: null,
-      }),
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Switch provider" }));
-    fireEvent.click(screen.getByRole("button", { name: "Submit composer" }));
-
-    await waitFor(() =>
-      expect(mocks.navigate).toHaveBeenCalledWith(
-        "/projects/proj_source/threads/thr_new",
-      ),
-    );
-    expect(mocks.createThreadMutateAsync).toHaveBeenCalledWith(
+    fireEvent.click(screen.getByRole("button", { name: "Switch harness" }));
+    expect(mocks.updateThreadMutate).toHaveBeenCalledWith(
       expect.objectContaining({
-        environment: { type: "reuse", environmentId: "env_1" },
-        input: [
-          expect.objectContaining({
-            type: "text",
-            text: "Continue from @thread:thr_source\n\nRefactor the tests",
-            mentions: [
-              expect.objectContaining({
-                start: 14,
-                end: 32,
-                resource: expect.objectContaining({ threadId: "thr_source" }),
-              }),
-            ],
-          }),
-        ],
-        model: "claude-opus-5",
-        projectId: "proj_source",
         providerId: "claude-code",
-        executionInputSources: {
-          providerId: "explicit",
-          model: "explicit",
-          reasoningLevel: "explicit",
-          permissionMode: "explicit",
-        },
+        model: "claude-opus-5",
+        reasoningLevel: "medium",
       }),
+      expect.anything(),
     );
-    expect(mocks.sendMessageMutateAsync).not.toHaveBeenCalled();
-    expect(mocks.createQueuedMessageMutateAsync).not.toHaveBeenCalled();
-    expect(mocks.promptDraft.clearIfCurrentMatches).toHaveBeenCalledTimes(1);
+    expect(mocks.createThreadMutateAsync).not.toHaveBeenCalled();
   });
 });

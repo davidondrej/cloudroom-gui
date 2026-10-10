@@ -112,7 +112,19 @@ export default async function plugin(bb: BbPluginApi) {
 
   bb.rpc.register(
     connectRpcContract,
-    createRpcHandlers({ relay, legacy, phone, status, hostResolver, mobilePairing }),
+    createRpcHandlers({
+      relay,
+      legacy,
+      phone,
+      status,
+      hostResolver,
+      mobilePairing,
+      remoteInstructions: async (enabled) =>
+        enabled === undefined
+          ? currentSettings.sendRemoteInstructions
+          : (await settings.experimental_set({ sendRemoteInstructions: enabled }))
+              .sendRemoteInstructions,
+    }),
   );
   registerConnectCli({ bb, relay, legacy, phone, status, hostResolver, mobilePairing });
 

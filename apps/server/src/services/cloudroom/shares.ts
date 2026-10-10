@@ -1,13 +1,13 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { and, asc, eq, isNull, or } from "drizzle-orm";
 import { z } from "zod";
-import { events, getThread } from "@cloudroom/db";
+import { getThread } from "@cloudroom/db";
 import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
 import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
 import { requireConnectedPrimaryHostId } from "../hosts/primary-host.js";
 import { createThreadFromRequest } from "../threads/thread-create.js";
+import { threadMessages } from "../threads/thread-transcript.js";
 import { CloudroomError } from "./client.js";
 import { cloudroom } from "./commands.js";
 import { macVariables } from "./sandboxes.js";
@@ -19,7 +19,6 @@ const HARNESSES = new Set(["claude-code", "codex", "pi"]);
 
 const shareSchema = z.object({ url: z.string().url(), updatedAt: z.string() });
 export type ThreadShare = z.infer<typeof shareSchema>;
-type ShareMessage = { role: "user" | "agent"; text: string };
 const sharedSchema = z.object({
   title: z.string(), harness: z.string(), author: z.string().nullable(), truncated: z.boolean(), updatedAt: z.string(),
   messages: z.array(z.object({ role: z.enum(["user", "agent"]), text: z.string() })),
@@ -76,24 +75,6 @@ export function redactSecrets(text: string, known: readonly string[]): string {
     .replace(URL_PASSWORD, `$1${REMOVED}@`);
 }
 
-export function shareMessages(deps: Pick<AppDeps, "db">, threadId: string): ShareMessage[] {
-  const rows = deps.db.select({ type: events.type, data: events.data }).from(events).where(and(
-    eq(events.threadId, threadId),
-    isNull(events.parentToolCallId),
-    or(eq(events.type, "client/turn/requested"), and(eq(events.type, "item/completed"), or(eq(events.itemKind, "agentMessage"), isNull(events.itemKind)))),
-  )).orderBy(asc(events.sequence)).all();
-  return rows.flatMap((row): ShareMessage[] => {
-    const data = JSON.parse(row.data) as { input?: unknown; item?: { type?: unknown; text?: unknown } };
-    if (row.type === "client/turn/requested") {
-      const parts = Array.isArray(data.input) ? data.input as { type?: unknown; text?: unknown; visibility?: unknown }[] : [];
-      const text = parts.filter((part) => part.type === "text" && part.visibility !== "agent-only" && typeof part.text === "string").map((part) => part.text).join("\n").trim();
-      return text ? [{ role: "user", text }] : [];
-    }
-    const text = data.item?.type === "agentMessage" && typeof data.item.text === "string" ? data.item.text.trim() : "";
-    return text ? [{ role: "agent", text }] : [];
-  });
-}
-
 const threadTitle = (thread: { title: string | null; titleFallback: string | null }) => (thread.title || thread.titleFallback || "Untitled thread").slice(0, 200);
 
 export async function threadShare(deps: AppDeps, threadId: string): Promise<ThreadShare | null> {
@@ -108,7 +89,7 @@ export async function shareThread(deps: AppDeps, threadId: string): Promise<Thre
     const safe = redactSecrets(text, known);
     return safe.length > MESSAGE_LIMIT ? `${safe.slice(0, MESSAGE_LIMIT - 1)}…` : safe;
   };
-  const messages = shareMessages(deps, threadId).map((message) => ({ ...message, text: clean(message.text) }));
+  const messages = threadMessages(deps.db, threadId).map((message) => ({ ...message, text: clean(message.text) }));
   if (!messages.length) throw new ApiError(409, "nothing_to_share", "This thread has no messages to share yet.");
   let total = messages.reduce((sum, message) => sum + message.text.length, 0), start = 0;
   while (total > TEXT_LIMIT) total -= messages[start++]!.text.length;

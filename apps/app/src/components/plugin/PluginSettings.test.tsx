@@ -818,20 +818,20 @@ describe("PluginSettingsPage", () => {
   });
 
   it("keeps a section-only plugin in Configuration with a flat surface", async () => {
-    function ConnectSettings() {
-      return <div>Custom connect settings</div>;
+    function KeepAwakeSettings() {
+      return <div>Custom keep-awake settings</div>;
     }
     setPluginSlotRegistrations(
-      "connect",
+      "keep-awake",
       makePluginRegistrationSet({
         settingsSections: [
-          { id: "remote", title: "Remote access", component: ConnectSettings },
+          { id: "remote", title: "Keep awake", component: KeepAwakeSettings },
         ],
       }),
     );
-    const connect = makeInstalledPlugin({
-      id: "connect",
-      name: "Connect",
+    const keepAwake = makeInstalledPlugin({
+      id: "keep-awake",
+      name: "Keep awake",
       enabled: true,
       status: "running",
       hasSettings: false,
@@ -839,19 +839,19 @@ describe("PluginSettingsPage", () => {
     });
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => jsonOk({ plugins: [connect] })),
+      vi.fn(async () => jsonOk({ plugins: [keepAwake] })),
     );
 
     const { wrapper: QueryClientWrapper } = createQueryClientTestHarness();
     render(
       <MemoryRouter>
         <QueryClientWrapper>
-          <PluginSettingsPage pluginId="connect" />
+          <PluginSettingsPage pluginId="keep-awake" />
         </QueryClientWrapper>
       </MemoryRouter>,
     );
 
-    const section = await screen.findByText("Custom connect settings");
+    const section = await screen.findByText("Custom keep-awake settings");
     expect(section.closest(".overflow-hidden")).toBeNull();
     expect(screen.getByRole("heading", { name: "Configuration" })).toBeTruthy();
   });

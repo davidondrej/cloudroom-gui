@@ -175,9 +175,9 @@ describe("MachineSettingsView", () => {
     expect(machineHeading.tagName).toBe("H1");
     const checkedByMode = Object.fromEntries(
       (await screen.findAllByRole("radio")).map((option) => [
-        option.textContent?.startsWith("Accept Edits")
+        option.textContent?.startsWith("Manual")
           ? "accept-edits"
-          : option.textContent?.startsWith("Approve for me")
+          : option.textContent?.startsWith("Auto")
             ? "auto"
             : "full",
         option.getAttribute("aria-checked"),
@@ -241,7 +241,7 @@ describe("MachineSettingsView", () => {
     expect(installedLabel.nextElementSibling?.className).toContain(
       "sm:justify-end",
     );
-    expect(screen.getByText(/No sandbox and no approvals/u)).toBeDefined();
+    expect(screen.getByText(/No sandbox, no limits/u)).toBeDefined();
   });
 
   it("keeps Rename in the machine title menu", async () => {
@@ -327,7 +327,7 @@ describe("MachineSettingsView", () => {
     renderView();
 
     fireEvent.click(
-      await screen.findByRole("radio", { name: /Accept Edits/u }),
+      await screen.findByRole("radio", { name: /Manual/u }),
     );
 
     await waitFor(() => {

@@ -18,8 +18,6 @@ import { ArchivedThreadsSettingsSection } from "@/components/settings/ArchivedTh
 import { CommunitySettingsSection } from "@/components/settings/CommunitySettingsSection";
 import { KeyboardSettingsSection } from "@/components/settings/KeyboardSettingsSection";
 import { MarketplacesSettingsSection } from "@/components/settings/MarketplacesSettingsSection";
-import { CloudroomAccountSettings } from "@/components/settings/CloudroomAccountSettings";
-import { MachinesSettingsSection } from "@/components/settings/MachinesSettingsSection";
 import { ProjectsSettingsSection } from "@/components/settings/ProjectsSettingsSection";
 import {
   SettingsStoryChrome,
@@ -43,6 +41,7 @@ import {
   ExperimentsSettingsSection,
   GeneralSettingsSection,
   LocalOpenTargetSettingsSection,
+  MachinesSettingsPage,
   type LocalOpenTargetSettingsSectionProps,
 } from "./SettingsView";
 import { MachineSettingsView } from "./MachineSettingsView";
@@ -212,6 +211,8 @@ function GeneralSettingsStory({
         rewriteLocalhostLinks={state.rewriteLocalhostLinks}
         richTextEditing={state.richTextEditing}
         steerActiveThreadOnEnter={state.steerActiveThreadOnEnter}
+        worktreeRetention="30d"
+        onWorktreeRetentionChange={() => {}}
       />
       <CliSkillsSettingsSectionContent
         hasConnectedMachine={false}
@@ -348,12 +349,7 @@ function SettingsStoryContent({ route }: { route: SettingsStoryRoute }) {
     case "projects":
       return <ProjectsSettingsSection />;
     case "machines":
-      return (
-        <>
-          <CloudroomAccountSettings />
-          <MachinesSettingsSection />
-        </>
-      );
+      return <MachinesSettingsPage />;
     case "updates":
       return <SettingsUpdatesStory />;
     case "experiments":

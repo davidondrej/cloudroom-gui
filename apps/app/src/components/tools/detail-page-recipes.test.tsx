@@ -77,9 +77,9 @@ vi.mock("@get-bb/plugin-sdk/app", async (importOriginal) => ({
       onClick={() => onChange(value === "full" ? "auto" : "full")}
     >
       {value === "accept-edits"
-        ? "Accept Edits"
+        ? "Manual"
         : value === "auto"
-          ? "Approve for me"
+          ? "Auto"
           : "Full Access"}
     </button>
   ),
@@ -971,7 +971,7 @@ describe("Automation detail recipe", () => {
     expect(
       promptFooter.querySelector('[title="Environment: Personal workspace"]'),
     ).not.toBeNull();
-    expect(promptFooter.textContent).toContain("Approve for me");
+    expect(promptFooter.textContent).toContain("Auto");
     expect(
       promptFooter.querySelectorAll('[data-option-display=""]'),
     ).toHaveLength(1);
@@ -1098,7 +1098,7 @@ describe("Automation detail recipe", () => {
     expect(promptShell.textContent).toContain("Opus 5");
     expect(promptFooter.textContent).toContain("bb");
     expect(promptFooter.textContent).toContain("~/Code/bb");
-    expect(promptFooter.textContent).toContain("Approve for me");
+    expect(promptFooter.textContent).toContain("Auto");
     expect(promptShell.textContent).toContain("medium");
     expect(
       promptShell.querySelectorAll('[data-option-display=""]'),

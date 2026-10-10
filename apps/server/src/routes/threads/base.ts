@@ -60,6 +60,8 @@ import { assertValidParentThread } from "../../services/threads/thread-parent.js
 import { handleThreadOwnershipChange } from "../../services/threads/thread-ownership.js";
 import { applyThreadExecutionOverride } from "../../services/threads/thread-execution-override.js";
 import { cloudroom, isCloudThread } from "../../services/cloudroom/commands.js";
+import { binding } from "../../services/cloudroom/store.js";
+import { switchThreadHarness } from "../../services/threads/thread-harness-switch.js";
 
 function parseThreadIncludes(query: ThreadGetQuery): Set<ThreadIncludeOption> {
   const includes = new Set<ThreadIncludeOption>();
@@ -386,7 +388,20 @@ export function registerThreadBaseRoutes(app: Hono, deps: AppDeps): void {
       });
     }
 
-    if ("model" in payload || "reasoningLevel" in payload) {
+    // Another harness, or any model change in Cloud (Core fixes a session's model), moves the thread in place (ADR 0211).
+    const switchTo = payload.providerId ?? thread.providerId;
+    if (
+      typeof payload.model === "string" &&
+      (switchTo !== thread.providerId ||
+        (isCloudThread(thread) &&
+          payload.model !== binding(deps.db, thread.id)?.model))
+    ) {
+      await switchThreadHarness(deps, thread.id, {
+        providerId: switchTo,
+        model: payload.model,
+        reasoningLevel: payload.reasoningLevel ?? null,
+      });
+    } else if ("model" in payload || "reasoningLevel" in payload) {
       if (isCloudThread(thread)) {
         if ("reasoningLevel" in payload) {
           await cloudroom(deps).updateReasoningOverride(

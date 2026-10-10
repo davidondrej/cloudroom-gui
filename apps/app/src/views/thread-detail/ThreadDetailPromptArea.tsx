@@ -18,12 +18,11 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
-import { useIsMutating } from "@tanstack/react-query";
+import { useIsMutating, useQueryClient } from "@tanstack/react-query";
 import type { IconName } from "@cloudroom/shared-ui/icon";
 import { Button } from "@cloudroom/shared-ui/button";
 import { PromptStackCard } from "@/components/promptbox/banner/PromptStackCard";
-import { CloudUsageLimitNotice } from "@/components/CloudUsageLimitNotice";
+import { CloudDiskFullNotice, CloudUsageLimitNotice } from "@/components/CloudUsageLimitNotice";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
 import {
   getFollowUpPromptPlaceholder,
@@ -31,9 +30,7 @@ import {
 } from "@/components/promptbox/follow-up-placeholder";
 import { PERSONAL_PROJECT_ID } from "@cloudroom/domain";
 import type {
-  PermissionMode,
   ReasoningLevel,
-  ServiceTier,
   PendingInteraction,
   PromptInput,
   ThreadQueuedMessage,
@@ -72,7 +69,7 @@ import { ThreadWorkflowCard } from "@/components/promptbox/banner/ThreadWorkflow
 import { ThreadBackgroundCommandsCard } from "@/components/promptbox/banner/ThreadBackgroundCommandsCard";
 import { ThreadModelFallbackCard } from "@/components/promptbox/banner/ThreadModelFallbackCard";
 import { InlineMessageEditorFrame } from "@/components/promptbox/InlineMessageEditorFrame";
-import type { ModelReasoningPickerHandoffSelection } from "@/components/pickers/ModelReasoningPicker";
+import type { ModelReasoningPickerSelection } from "@/components/pickers/ModelReasoningPicker";
 import type {
   WorkspaceChangedFileSelection,
   WorkspaceChangedFilesSection,
@@ -106,7 +103,6 @@ import {
   type InlineQueuedMessageEditState,
 } from "@/components/thread/embedded-chat";
 import {
-  useCreateThread,
   useCreateThreadQueuedMessage,
   useCancelThreadPlan,
   useClearThreadGoal,
@@ -129,14 +125,6 @@ import {
 } from "@/lib/mutation-errors";
 import { promptHistoryEntriesToDrafts } from "@/lib/prompt-history";
 import { usePromptHistoryEnabled } from "@/hooks/usePromptHistoryEnabled";
-import { getThreadRoutePath } from "@/lib/route-paths";
-import { getThreadDisplayTitle } from "@/lib/thread-title";
-import {
-  buildThreadHandoffCreateRequest,
-  buildThreadHandoffFollowUpDraft,
-  stripThreadHandoffPrefix,
-  type ThreadHandoffCreateSeed,
-} from "@cloudroom/client-core";
 import {
   emptyPromptDraftState,
   promptDraftToInput,
@@ -162,7 +150,6 @@ import {
 } from "@cloudroom/client-core";
 
 const ignorePromptBannerFileClick = () => {};
-const ignoreToastedCreateThreadError = () => {};
 
 export interface ThreadDetailSentMessageEdit {
   draft: PromptDraftState;
@@ -379,7 +366,7 @@ async function runWhileFollowUpShortcutSending(
 }
 
 import { showCloudSignIn, useCloudLocked } from "@/hooks/useCloudLocked";
-import { useCloudroomThread, useSetCloudReasoning, useCloudroomThreadWorkspace, useCloudroomConnection, useRetryCloudStart, useTeleportThread, useTeleportLocal, cloudroomRequestId, clearCloudroomRequestId, cloudReasoningLevels, cloudServiceTierSupported, cloudFeatureSupported } from "@/hooks/queries/cloudroom-queries";
+import { useCloudroomThread, useSetCloudReasoning, useCloudroomThreadWorkspace, useCloudroomConnection, useRetryCloudStart, useTeleportThread, useTeleportLocal, cloudroomRequestId, clearCloudroomRequestId, cloudReasoningLevels, cloudServiceTierSupported, cloudFeatureSupported, cloudCanRunHarness } from "@/hooks/queries/cloudroom-queries";
 import { reasoningLevelSchema } from "@cloudroom/domain";
 import { reasoningLevelLabel } from "@/lib/reasoning-labels";
 import { useCopyCommand } from "@/hooks/useCopyCommand";
@@ -428,7 +415,6 @@ export function ThreadDetailPromptArea({
   composerFocusRequestNonce,
   thread,
 }: ThreadDetailPromptAreaProps) {
-  const navigate = useNavigate();
   const isCloud = thread.executionTarget === "cloud";
   const teleporting = Boolean(thread.teleport && !["complete", "cancelled"].includes(thread.teleport.phase));
   const transferredChild = Boolean(thread.teleport?.phase === "complete" && thread.teleport.owner !== thread.id);
@@ -558,7 +544,6 @@ export function ThreadDetailPromptArea({
   const clearThreadGoal = useClearThreadGoal();
   const setThreadGoalStatus = useSetThreadGoalStatus();
   const unarchiveThread = useUnarchiveThread();
-  const createThread = useCreateThread();
   const projectName = useProjectDisplayName(
     thread.projectId === PERSONAL_PROJECT_ID ? undefined : thread.projectId,
   );
@@ -706,7 +691,6 @@ export function ThreadDetailPromptArea({
   const {
     executionOptionsRouting,
     selectedProviderId,
-    setSelectedProviderId,
     setProviderModelReasoning,
     providers,
     providerOptions,
@@ -717,7 +701,6 @@ export function ThreadDetailPromptArea({
     serviceTier,
     setServiceTier,
     reasoningLevel,
-    setReasoningLevel,
     permissionMode,
     setPermissionMode,
     activeModel,
@@ -755,6 +738,7 @@ export function ThreadDetailPromptArea({
     }).sort((a, b) => reasoningLevelSchema.options.indexOf(a.value) - reasoningLevelSchema.options.indexOf(b.value));
   }, [cloudConnection.data, cloudReasoning, cloudState.data?.model, thread.providerId]);
   const cloudFastSupported = isCloud && cloudServiceTierSupported(cloudConnection.data, thread.providerId);
+  const cloudProviderOptions = useMemo(() => providerOptions.filter((option) => cloudCanRunHarness(option.value)), [providerOptions]);
   const cloudSteerSupported = isCloud && cloudFeatureSupported(cloudConnection.data, thread.providerId, "steer");
   const fallbackIdentity = modelFallback
     ? `${thread.id}:${modelFallback.sourceSeq}`
@@ -762,36 +746,21 @@ export function ThreadDetailPromptArea({
   const [overriddenFallbackIdentity, setOverriddenFallbackIdentity] = useState<
     string | null
   >(null);
-  const [handoffSourceSelection, setHandoffSourceSelection] = useState<{
-    threadId: string;
-    execution: ModelReasoningPickerHandoffSelection;
-    serviceTier: ServiceTier | undefined;
-    permissionMode: PermissionMode;
-    overriddenFallbackIdentity: string | null;
-  } | null>(null);
-  const isHandoffSelection = handoffSourceSelection?.threadId === thread.id;
   const isFallbackModelActive =
-    !isHandoffSelection &&
     selectedProviderId === thread.providerId &&
     modelFallback !== null &&
     overriddenFallbackIdentity !== fallbackIdentity;
   const effectiveSelectedModel = isFallbackModelActive
     ? modelFallback.fallbackModel
     : (activeModel?.model ?? selectedModel);
-  const followUpReasoningLevel = isHandoffSelection
-    ? reasoningLevel
-    : isCloud
-      ? cloudReasoning
-      : resolveModelReasoningLevel(
-          activeModel,
-          defaultExecutionOptions?.reasoningLevel ?? reasoningLevel,
-        );
+  const followUpReasoningLevel = isCloud
+    ? cloudReasoning
+    : resolveModelReasoningLevel(
+        activeModel,
+        defaultExecutionOptions?.reasoningLevel ?? reasoningLevel,
+      );
   const handleReasoningChange = useCallback(
     (level: ReasoningLevel) => {
-      if (isHandoffSelection) {
-        setReasoningLevel(level);
-        return;
-      }
       if (isCloud) {
         setCloudReasoning.mutate(level);
         return;
@@ -805,8 +774,6 @@ export function ThreadDetailPromptArea({
       });
     },
     [
-      isHandoffSelection,
-      setReasoningLevel,
       setCloudReasoning.mutate,
       updateExecution,
       thread.id,
@@ -824,142 +791,36 @@ export function ThreadDetailPromptArea({
     },
     [fallbackIdentity, setSelectedModel],
   );
-  const sourceThreadDisplayTitle = getThreadDisplayTitle({
-    id: thread.id,
-    title: thread.title,
-    titleFallback: thread.titleFallback,
-  });
-  const handoffSeed = useMemo<ThreadHandoffCreateSeed>(
-    () => ({
-      environmentId: thread.environmentId,
-      projectId: thread.projectId,
-      sourceThreadId: thread.id,
-      sourceThreadTitle: sourceThreadDisplayTitle,
-    }),
-    [
-      sourceThreadDisplayTitle,
-      thread.environmentId,
-      thread.id,
-      thread.projectId,
-    ],
-  );
-  const beginHandoff = useCallback(() => {
-    setHandoffSourceSelection((current) =>
-      current?.threadId === thread.id
-        ? current
-        : {
-            threadId: thread.id,
-            execution: {
-              providerId: thread.providerId,
-              model: effectiveSelectedModel,
-              reasoningLevel: followUpReasoningLevel,
-            },
-            serviceTier,
-            permissionMode,
-            overriddenFallbackIdentity,
-          },
-    );
-    const currentDraft = promptDraft.getCurrent();
-    const seededDraft = buildThreadHandoffFollowUpDraft(
-      handoffSeed,
-      currentDraft,
-    );
-    if (seededDraft !== currentDraft) {
-      promptDraft.setDraft(seededDraft);
-    }
-  }, [
-    effectiveSelectedModel,
-    handoffSeed,
-    overriddenFallbackIdentity,
-    permissionMode,
-    promptDraft,
-    followUpReasoningLevel,
-    serviceTier,
-    thread.id,
-    thread.providerId,
-  ]);
-  const exitHandoff = useCallback(() => {
-    if (handoffSourceSelection?.threadId !== thread.id) return;
-    setProviderModelReasoning(handoffSourceSelection.execution);
-    setServiceTier(handoffSourceSelection.serviceTier);
-    setPermissionMode(handoffSourceSelection.permissionMode);
-    setOverriddenFallbackIdentity(
-      handoffSourceSelection.overriddenFallbackIdentity,
-    );
-    setHandoffSourceSelection(null);
-    const restoredDraft = stripThreadHandoffPrefix(
-      handoffSeed,
-      promptDraft.getCurrent(),
-    );
-    if (restoredDraft !== null) {
-      promptDraft.setDraft(restoredDraft);
-    }
-  }, [
-    handoffSeed,
-    handoffSourceSelection,
-    promptDraft,
-    setPermissionMode,
-    setProviderModelReasoning,
-    setServiceTier,
-    thread.id,
-  ]);
-  const handleProviderChange = useCallback(
-    (providerId: string) => {
-      if (providerId === selectedProviderId) {
-        return;
-      }
-      if (fallbackIdentity !== null) {
-        setOverriddenFallbackIdentity(fallbackIdentity);
-      }
-      beginHandoff();
-      setSelectedProviderId(providerId);
-    },
-    [fallbackIdentity, selectedProviderId, setSelectedProviderId, beginHandoff],
-  );
-  const handleHandoffSelect = useCallback(
-    (selection: Parameters<typeof setProviderModelReasoning>[0]) => {
-      if (fallbackIdentity !== null) {
-        setOverriddenFallbackIdentity(fallbackIdentity);
-      }
-      beginHandoff();
-      setProviderModelReasoning(selection);
-    },
-    [beginHandoff, fallbackIdentity, setProviderModelReasoning],
-  );
-  // A harness can't change mid-thread, so another harness starts a handoff.
+  const queryClient = useQueryClient();
+  // Another harness, or any model change in Cloud, switches this thread in place (ADR 0211).
   const handleSelectModel = useCallback(
-    (selection: { providerId: string; model: string }) => {
-      if (selection.providerId === selectedProviderId) {
-        handleModelChange(selection.model);
-        return;
+    (selection: { providerId: string; model: string } & Partial<ModelReasoningPickerSelection>) => {
+      if (selection.providerId === thread.providerId) {
+        if (!isCloud) {
+          handleModelChange(selection.model);
+          return;
+        }
+        if (selection.model === cloudState.data?.model) return;
       }
-      handleHandoffSelect(selection);
+      const next = { ...selection, reasoningLevel: selection.reasoningLevel ?? followUpReasoningLevel };
+      updateExecution(
+        { id: thread.id, ...next },
+        {
+          onSuccess: () => {
+            if (fallbackIdentity !== null) setOverriddenFallbackIdentity(fallbackIdentity);
+            setProviderModelReasoning(next);
+            void queryClient.invalidateQueries({ queryKey: ["cloudroom-thread", thread.id] });
+          },
+        },
+      );
     },
-    [handleHandoffSelect, handleModelChange, selectedProviderId],
+    [cloudState.data?.model, fallbackIdentity, followUpReasoningLevel, handleModelChange, isCloud, queryClient, setProviderModelReasoning, thread.id, thread.providerId, updateExecution],
   );
-  useEffect(() => {
-    if (isHandoffSelection) {
-      return;
-    }
-    const restoredDraft = stripThreadHandoffPrefix(
-      handoffSeed,
-      promptDraft.getCurrent(),
-    );
-    if (restoredDraft !== null) {
-      promptDraft.setDraft(restoredDraft);
-    }
-  }, [handoffSeed, isHandoffSelection, promptDraft]);
-  const hasSentMessageEdit = sentMessageEdit !== undefined;
-  useEffect(() => {
-    if (hasSentMessageEdit && isHandoffSelection) {
-      exitHandoff();
-    }
-  }, [hasSentMessageEdit, isHandoffSelection, exitHandoff]);
   const { typeaheadConfig, promptActions } = useComposerTypeahead({
     projectId: thread.projectId,
     mentionsProjectId: projectId,
     providerId: selectedProviderId,
-    commandScope: isHandoffSelection ? "new-thread" : "thread",
+    commandScope: "thread",
     environmentId: thread.environmentId,
     currentThreadId: thread.id,
     selectedProviderComposerActions,
@@ -1017,7 +878,6 @@ export function ThreadDetailPromptArea({
     isExecutionUpdatePending ||
     sendMessage.isPending ||
     createQueuedMessage.isPending ||
-    createThread.isPending ||
     isFollowUpShortcutSending;
   const handleStopThread = useCallback(() => {
     stopThread.mutate(thread.id);
@@ -1035,15 +895,6 @@ export function ThreadDetailPromptArea({
     [setThreadGoalStatus, thread.id],
   );
   const submitMode = useMemo<FollowUpSubmitMode>(() => {
-    if (isHandoffSelection && !isStopRequested) {
-      if (effectiveSelectedModel.length > 0) {
-        return { kind: "ready" };
-      }
-      return {
-        kind: "blocked",
-        reason: modelLoadFailed ? "unavailable" : "loading-execution-options",
-      };
-    }
     return buildFollowUpSubmitMode({
       hasPendingInteraction,
       isDefaultExecutionOptionsLoading,
@@ -1053,12 +904,9 @@ export function ThreadDetailPromptArea({
       runtimeDisplayStatus,
     });
   }, [
-    effectiveSelectedModel,
     handleStopThread,
     hasPendingInteraction,
     isDefaultExecutionOptionsLoading,
-    isHandoffSelection,
-    modelLoadFailed,
     pendingInteractionsInitialLoading,
     isStopRequested,
     runtimeDisplayStatus,
@@ -1133,66 +981,6 @@ export function ThreadDetailPromptArea({
     supportsServiceTier,
   ]);
 
-  const createHandoffThread = useCallback(
-    async (
-      submittedDraft: PromptDraftState,
-      sendAt?: number,
-      pluginSubmission?: SendMessageRequest["pluginSubmission"],
-    ) => {
-      const baseRequest = buildThreadHandoffCreateRequest({
-        execution: {
-          providerId: selectedProviderId,
-          model: effectiveSelectedModel,
-          reasoningLevel,
-          serviceTier,
-          supportsServiceTier,
-          permissionMode,
-        },
-        draft: submittedDraft,
-        seed: handoffSeed,
-        ...(sendAt === undefined ? {} : { sendAt }),
-      });
-      if (baseRequest === null) {
-        return false;
-      }
-      const request = {
-        ...baseRequest,
-        ...(pluginSubmission === undefined ? {} : { pluginSubmission }),
-      };
-      const clearedSubmittedDraft =
-        promptDraft.clearIfCurrentMatches(submittedDraft);
-      setBottomAttachmentError(null);
-      try {
-        const created = await createThread.mutateAsync(request);
-        navigate(
-          getThreadRoutePath({
-            projectId: created.projectId,
-            threadId: created.id,
-          }),
-        );
-      } catch (error) {
-        if (clearedSubmittedDraft) {
-          promptDraft.restoreIfEmpty(submittedDraft);
-        }
-        throw error;
-      }
-      return true;
-    },
-    [
-      createThread,
-      effectiveSelectedModel,
-      handoffSeed,
-      navigate,
-      permissionMode,
-      promptDraft,
-      reasoningLevel,
-      selectedProviderId,
-      serviceTier,
-      setBottomAttachmentError,
-      supportsServiceTier,
-    ],
-  );
-
   const sendCloudDraft = useCallback(async (steer: boolean) => {
     const submittedDraft = currentPromptDraft;
     const submittedInput = currentPromptDraftInput;
@@ -1222,12 +1010,6 @@ export function ThreadDetailPromptArea({
     const submittedInput = currentPromptDraftInput;
     if (isCloud) {
       await sendCloudDraft(false);
-      return;
-    }
-    if (isHandoffSelection) {
-      await createHandoffThread(submittedDraft).catch(
-        ignoreToastedCreateThreadError,
-      );
       return;
     }
     const isQueuingMessage = shouldQueueFollowUpMessage(runtimeDisplayStatus);
@@ -1275,13 +1057,11 @@ export function ThreadDetailPromptArea({
     isExecutionUpdatePending,
     isCloud,
     sendCloudDraft,
-    createHandoffThread,
     createQueuedMessage,
     currentPromptDraft,
     currentPromptDraftInput,
     followUpExecutionSelection,
     isDefaultExecutionOptionsLoading,
-    isHandoffSelection,
     promptDraft,
     sendMessage,
     setBottomAttachmentError,
@@ -1324,31 +1104,6 @@ export function ThreadDetailPromptArea({
       submitOptions: ExperimentalComposerSubmitOptions,
       pluginSubmission: SendMessageRequest["pluginSubmission"],
     ) => {
-      if (isHandoffSelection) {
-        if (effectiveSelectedModel.length === 0) {
-          throw new Error("The selected model is still loading.");
-        }
-        let created = false;
-        try {
-          created = await createHandoffThread(
-            promptDraft.getCurrent(),
-            submitOptions.sendAt,
-            pluginSubmission,
-          );
-        } catch (submitError) {
-          throw new Error(
-            getMutationErrorMessage({
-              error: submitError,
-              fallbackMessage: "Failed to create thread",
-              lifecycleOperation: "create_thread",
-            }),
-          );
-        }
-        if (!created) {
-          throw new Error("Type a message before submitting it.");
-        }
-        return;
-      }
       if (isDefaultExecutionOptionsLoading || isExecutionUpdatePending) {
         throw new Error(
           "This thread's execution settings are still loading or saving.",
@@ -1388,12 +1143,9 @@ export function ThreadDetailPromptArea({
       }
     },
     [
-      createHandoffThread,
-      effectiveSelectedModel,
       followUpExecutionSelection,
       isDefaultExecutionOptionsLoading,
       isExecutionUpdatePending,
-      isHandoffSelection,
       promptDraft,
       sendMessage,
       setBottomAttachmentError,
@@ -1572,17 +1324,10 @@ export function ThreadDetailPromptArea({
       mentionRanges: currentPromptDraft.mentions,
       onChangeMessage: handleBottomComposerMessageChange,
       onModifierSubmit: handleBottomComposerModifierSubmit,
-      ...(isCloud || isHandoffSelection
+      ...(isCloud
         ? {}
         : { onHardQueueSubmit: handleBottomComposerHardQueueSubmit }),
       onSubmit: handleBottomComposerSubmit,
-      ...(isHandoffSelection
-        ? {
-            submitLabel: "New thread",
-            submitIcon: "MessageSquarePlus",
-            submitTitle: "Create new thread (Enter)",
-          }
-        : {}),
       compactPromptPlaceholder,
       promptPlaceholder,
       canModifierSubmit: (!isCloud || cloudSteerSupported) && canSubmitModifierShortcut,
@@ -1600,7 +1345,6 @@ export function ThreadDetailPromptArea({
       handleBottomComposerModifierSubmit,
       handleBottomComposerSubmit,
       isFollowUpSubmitting,
-      isHandoffSelection,
       promptHistoryDrafts,
       promptPlaceholder,
       promptDraft.setDraft,
@@ -1712,7 +1456,6 @@ export function ThreadDetailPromptArea({
       provider: {
         options: providerOptions,
         selectedId: selectedProviderId,
-        onChange: handleProviderChange,
         hasMultiple: hasMultipleProviders,
       },
       model: {
@@ -1739,27 +1482,15 @@ export function ThreadDetailPromptArea({
         options: reasoningOptions,
         onChange: handleReasoningChange,
       },
-      handoff: {
-        sourceProviderId: thread.providerId,
-        active: isHandoffSelection,
-        onStart: beginHandoff,
-        onExit: exitHandoff,
-        onSelect: handleHandoffSelect,
-      },
+      onSelectModel: handleSelectModel,
       selectModel: handleSelectModel,
     }),
     [
       effectiveSelectedModel,
       executionOptionsRouting,
-      isCloud,
       hasMultipleProviders,
-      handleHandoffSelect,
       handleSelectModel,
-      beginHandoff,
-      isHandoffSelection,
-      exitHandoff,
       handleModelChange,
-      handleProviderChange,
       isLoadingModels,
       modelLoadFailed,
       modelLoadError,
@@ -1778,14 +1509,13 @@ export function ThreadDetailPromptArea({
       supportsServiceTier,
       serviceTierFastLabel,
       thread.environmentId,
-      thread.providerId,
     ],
   );
   const compactExecutionConfig = useMemo(() => {
     const {
-      handoff: _handoff,
+      onSelectModel: _onSelectModel,
       selectModel: _selectModel,
-      provider: { onChange: _onProviderChange, ...lockedProvider },
+      provider: lockedProvider,
       ...lockedExecution
     } = bottomExecutionConfig;
     return {
@@ -2395,7 +2125,7 @@ export function ThreadDetailPromptArea({
   const cloudOffline = cloudFetchFailed || (typeof navigator !== "undefined" && !navigator.onLine);
   const cloudError = retryCloudStart.error?.message ?? (cloudFetchFailed ? undefined : cloudState.error?.message) ?? cloudState.data?.error;
   const cloudReconnecting = !cloudError && (cloudOffline || cloudState.data?.reconnecting);
-  const cloudLimitNotice = isCloud && !shouldHideComposer && cloudState.data?.usageLimit ? <CloudUsageLimitNotice /> : null;
+  const cloudLimitNotice = isCloud && !shouldHideComposer ? cloudState.data?.usageLimit ? <CloudUsageLimitNotice /> : cloudState.data?.diskFull ? <CloudDiskFullNotice /> : null : null;
   const cloudFixPrompt = cloudError || cloudState.data?.failedStart ? cloudThreadFixPrompt(thread.id, thread.providerId, cloudError) : null;
   const cloudAuthNotice = isCloud && !shouldHideComposer && cloudState.data?.authRequired ? (
     <PromptStackCard ariaLabel="Connect your account" className="w-full max-w-sm justify-self-center p-3 text-xs">
@@ -2437,7 +2167,7 @@ export function ThreadDetailPromptArea({
       attachments={bottomAttachmentsConfig}
       stack={<>{!isCloud && !teleporting && <TeleportCheckCard error={teleport.error} models={[...modelOptions, ...moreModelOptions]} reasoning={reasoningLevel} usedTokens={contextWindowUsage?.usedTokens ?? null} levelsFor={(model) => cloudReasoningLevels(cloudConnection.data, thread.providerId, model)} onTeleport={(choice) => teleport.mutate(choice)} onDismiss={teleport.reset} />}{thread.teleport && <TeleportNotice thread={thread} pendingDelivery={cloudState.data?.pendingDelivery} paused={cloudState.data?.paused} sending={sendMessage.isPending} />}{thread.projectCopy && <ProjectCopyNotice thread={thread} />}{cloudNotice}{!isCloud && !shouldHideComposer && <LocalSignInNotice threadId={thread.id} providerId={thread.providerId} hostId={environmentHostId} environmentId={thread.environmentId} authFailed={providerAuthFailed} started={thread.status !== "pending"} />}{pendingInteractionNode ? pendingInteractionStack : promptStack}</>}
       pendingInteraction={pendingInteractionNode}
-      activePromptMode={isHandoffSelection ? null : activePromptMode}
+      activePromptMode={activePromptMode}
       composer={shouldHideComposer || teleporting || transferredChild || movingToLocal ? null : bottomComposerConfig}
       pluginComposerHost={normalPluginComposerHost}
       pluginComposerScope={normalPluginComposerHost.scope}
@@ -2449,11 +2179,8 @@ export function ThreadDetailPromptArea({
       contextWindowNote={thread.providerId === "acp-cursor" ? "Cursor doesn't report token usage, so this is an estimate." : undefined}
       execution={isCloud ? {
         ...bottomExecutionConfig,
-        lockModelSelection: true,
-        handoff: undefined,
-        selectModel: undefined,
-        provider: { ...bottomExecutionConfig.provider, selectedId: thread.providerId, hasMultiple: false },
-        model: { ...bottomExecutionConfig.model, active: cloudState.data ? { model: cloudState.data.model } : null, isLoading: !cloudState.data, options: [...modelOptions, ...moreModelOptions], moreOptions: [], loadFailed: false, loadError: null },
+        provider: { ...bottomExecutionConfig.provider, selectedId: thread.providerId, options: cloudProviderOptions, hasMultiple: cloudProviderOptions.length > 1 },
+        model: { ...bottomExecutionConfig.model, active: cloudState.data ? { model: cloudState.data.model } : null, isLoading: !cloudState.data, options: [...modelOptions, ...moreModelOptions], moreOptions: [], loadFailed: false, loadError: null, onChange: (model: string) => handleSelectModel({ providerId: thread.providerId, model }) },
         reasoning: { ...bottomExecutionConfig.reasoning, value: cloudReasoning, options: cloudFollowUpReasoningOptions, onChange: handleReasoningChange },
         serviceTier: { ...bottomExecutionConfig.serviceTier, value: cloudFastSupported ? serviceTier : "default", supported: cloudFastSupported },
       } : bottomExecutionConfig}

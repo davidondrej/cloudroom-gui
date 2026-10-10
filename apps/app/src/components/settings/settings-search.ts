@@ -59,7 +59,10 @@ const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     ["Open links in the in-app browser", "web url"],
     ["Rewrite localhost links", "port preview url"],
   ]),
-  ...entries("general", "Git", [["New branch prefix", "branch name worktree"]]),
+  ...entries("general", "Git", [
+    ["New branch prefix", "branch name worktree"],
+    ["Delete archived worktrees after", "worktree cleanup auto delete retention days never"],
+  ]),
   ...entries("general", "Skills", [["Cloudroom CLI skills", "install agents"]]),
   ...entries("general", "Thread naming", [
     ["Thread naming", "title rename name"],
@@ -150,12 +153,12 @@ const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
   ...entries("archived", undefined, [["Archived threads", "restore unarchive"]]),
   ...entries("machines", undefined, [
     ["Cloudroom account", "sign in login email account sign out"],
+    ["Plan & billing", "billing plan subscription invoices upgrade pro ultra payment"],
     ["Or connect your own Core", "self-hosted core url api token server"],
     ["Mac access", "cloud agents permission full read-only ask off"],
     ["Agent logins", "codex cursor cloud login connection"],
     ["Machines", "mac computer devices rename"],
-    ["Machine access", "remote mac access"],
-    ["Connection method", "ssh remote"],
+    ["Connection method", "ssh remote machine access"],
     ["Server address", "url host remote"],
     ["Machine environment", "environment variables path gh_token shell"],
   ]),

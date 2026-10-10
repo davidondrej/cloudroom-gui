@@ -50,6 +50,7 @@ import {
   PERSONAL_PROJECT_ID,
 } from "./lib/format-schedule.js";
 import { AutomationMetadataItem } from "./metadata.js";
+import { CloudAutomationsList } from "./cloud-view.js";
 
 const AUTOMATION_STATUS_FILTER_OPTIONS = [
   { id: "active", label: "Active" },
@@ -92,7 +93,7 @@ type OverviewEntry = AutomationsOverviewResponse["automations"][number];
 type AutomationProjectFilter = `project:${string}`;
 type AutomationSortMode = "project" | "alpha";
 type AutomationSortDirection = "asc" | "desc";
-export type AutomationCollectionMode = "installed" | "browse";
+export type AutomationCollectionMode = "installed" | "cloud" | "browse";
 type ReadableOverviewAutomation =
   | AutomationResponse
   | Extract<AutomationReadProblem, { problem: "missing-agent-prompt" }>;
@@ -616,6 +617,7 @@ export function AutomationOverviewView({
           label: "Installed",
           count: entries?.length ?? undefined,
         },
+        { id: "cloud", label: "Cloud" },
         { id: "browse", label: "Browse" },
       ]}
       activeMode={activeMode}
@@ -628,7 +630,11 @@ export function AutomationOverviewView({
         />
       }
     >
-      {activeMode === "browse" ? (
+      {activeMode === "cloud" ? (
+        <ResourceCollectionViewport contentClassName="space-y-3">
+          <CloudAutomationsList />
+        </ResourceCollectionViewport>
+      ) : activeMode === "browse" ? (
         <ResourceCollectionViewport contentClassName="space-y-3">
           <ResourceBrowseGrid>
             {AUTOMATION_CREATE_TEMPLATES.map((template) => (

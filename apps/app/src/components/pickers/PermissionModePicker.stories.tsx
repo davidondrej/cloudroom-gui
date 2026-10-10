@@ -10,35 +10,32 @@ export default {
 const allOptions: readonly PickerOption<PermissionMode>[] = [
   {
     value: "accept-edits",
-    label: "Accept Edits",
-    description:
-      "Applies edits inside the workspace automatically. Anything beyond the workspace asks you first.",
+    label: "Manual",
+    description: "Asks before anything else",
   },
   {
     value: "auto",
-    label: "Approve for me",
-    description:
-      "Same workspace sandbox, with requests reviewed automatically. High-risk actions can still come back to you.",
+    label: "Auto",
+    description: "AI reviews, risky stuff asks",
   },
   {
     value: "full",
     label: "Full Access",
     tone: "warning",
-    description:
-      "No sandbox and no approvals — the agent can run anything on your machine.",
+    description: "No sandbox, no limits",
   },
 ];
 
 const longOptions: readonly PickerOption<PermissionMode>[] = [
   {
     value: "accept-edits",
-    label: "Accept Edits with repository-scoped writes and background tasks",
+    label: "Manual with repository-scoped writes and background tasks",
     description:
       "Allows file edits in the workspace while keeping the menu content wrapped within the picker width.",
   },
   {
     value: "auto",
-    label: "Approve for me with provider-native automatic request review",
+    label: "Auto with provider-native automatic request review",
     description:
       "Long automatic-review explanations should wrap instead of stretching or clipping the permission menu.",
   },

@@ -616,7 +616,7 @@ describe("thread runtime config", () => {
     });
   });
 
-  it("honors requested Accept Edits permission mode when the provider supports it", async () => {
+  it("honors requested Manual permission mode when the provider supports it", async () => {
     await withTestHarness(async (harness) => {
       const { host } = seedHostSession(harness.deps, {
         id: "host-runtime-permission-mode-workspace-write",

@@ -130,8 +130,7 @@ export function SettingsSidebarContent({
       onResizeMouseDown={onResizeMouseDown}
       testIdPrefix={testIdPrefix}
     >
-      {invite}
-      <div className="relative mb-2">
+      <div className="relative mt-1 mb-2">
         <Icon
           name="Search"
           className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
@@ -225,6 +224,7 @@ export function SettingsSidebarContent({
               <SectionSidebarIcon name={group.icon} />
             </SectionSidebarRow>
           ))}
+          {invite}
         </div>
       )}
     </SectionSidebar>

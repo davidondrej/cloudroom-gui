@@ -96,6 +96,9 @@ const mobilePairingSchema = z
   })
   .strict();
 
+const remoteInstructionsSchema = z.object({ enabled: z.boolean() }).strict();
+const remoteInstructionsInputSchema = z.object({ enabled: z.boolean().optional() }).strict();
+
 const machineCodeSchema: z.ZodType<MachineCode> = z
   .object({
     code: z.string(),
@@ -132,6 +135,8 @@ export const connectRpcContract = defineRpcContract({
   },
   createDesktopSession: { input: z.null(), output: desktopSessionSchema },
   mobilePairing: { input: z.null(), output: mobilePairingSchema },
+  /** Read the "Tell agents about remote access" setting, or set it when `enabled` is given. */
+  remoteInstructions: { input: remoteInstructionsInputSchema, output: remoteInstructionsSchema },
   createMachineCode: { input: z.null(), output: machineCodeSchema },
   revokeMachine: {
     input: revokeMachineInputSchema,
@@ -164,8 +169,9 @@ export function createRpcHandlers(args: {
   status: () => ConnectStatus;
   hostResolver: ShareHostResolver;
   mobilePairing: MobilePairingGate;
+  remoteInstructions: (enabled?: boolean) => Promise<boolean>;
 }): ConnectRpcHandlers {
-  const { relay, legacy, phone, status, hostResolver, mobilePairing } = args;
+  const { relay, legacy, phone, status, hostResolver, mobilePairing, remoteInstructions } = args;
   const tunnel = relay;
   return {
     async pair(args) {
@@ -223,6 +229,9 @@ export function createRpcHandlers(args: {
     },
     async mobilePairing() {
       return { enabled: await mobilePairing.enabled() };
+    },
+    async remoteInstructions(args) {
+      return { enabled: await remoteInstructions(args.enabled) };
     },
     async createMachineCode() {
       return rethrowErrorCode(

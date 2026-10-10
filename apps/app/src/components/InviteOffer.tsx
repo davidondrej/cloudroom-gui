@@ -82,12 +82,14 @@ export function InviteSidebarRow() {
   if (!list.data || nothingToShare(list.data)) return null;
   const left = list.data.left;
   return (
-    <button type="button" onClick={() => open(true)} data-testid="settings-invite"
-      className="mb-2 flex h-9 w-full items-center gap-2.5 rounded-md bg-[#bfff00]/30 px-2 text-sm font-semibold text-sidebar-foreground hover:bg-[#bfff00]/45 dark:bg-[#bfff00]/8 dark:hover:bg-[#bfff00]/15">
-      <TicketIcon />
-      Invite friends
-      {left > 0 && left <= 3 && <span className="ml-auto rounded bg-[#bfff00] px-1.5 py-0.5 text-xs font-bold text-[#0e0d0b] ring-1 ring-black/15 dark:ring-0">{left} left</span>}
-    </button>
+    <div className="mt-2 border-t border-sidebar-border pt-2">
+      <button type="button" onClick={() => open(true)} data-testid="settings-invite"
+        className="flex h-9 w-full items-center gap-2.5 rounded-md bg-[#bfff00]/30 px-2 text-sm font-semibold text-sidebar-foreground hover:bg-[#bfff00]/45 dark:bg-[#bfff00]/8 dark:hover:bg-[#bfff00]/15">
+        <TicketIcon />
+        Invite friends
+        {left > 0 && left <= 3 && <span className="ml-auto rounded bg-[#bfff00] px-1.5 py-0.5 text-xs font-bold text-[#0e0d0b] ring-1 ring-black/15 dark:ring-0">{left} left</span>}
+      </button>
+    </div>
   );
 }
 

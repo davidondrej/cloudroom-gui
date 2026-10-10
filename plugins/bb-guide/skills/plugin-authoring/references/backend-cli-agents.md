@@ -67,7 +67,7 @@ Agents discover plugin commands through the server-generated
 The host rejects a larger result atomically as `plugin_cli_output_too_large`;
 it never clips it. Page growing collections, cap verbose fields, and use
 file/streaming commands for large content. Caveat: under the workspace
-sandbox (Accept Edits / Approve for me), Claude's macOS sandbox permits
+sandbox (Manual / Auto), Claude's macOS sandbox permits
 loopback, so `room-cli` CLI calls (including plugin commands) work sandboxed;
 Linux and other provider sandboxes may still block loopback, in which case
 those calls need escalation approval.

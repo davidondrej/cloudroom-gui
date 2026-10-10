@@ -33,6 +33,7 @@ import {
   LOCAL_SUBAGENT_TASK_TYPE,
   LOCAL_WORKFLOW_TASK_TYPE,
   THREAD_CONTEXT_CLEAR_OPERATION,
+  THREAD_HARNESS_SWITCH_OPERATION,
   clientTurnRequestIdSchema,
   getThreadEventScopeTurnId,
   parseStoredThreadEvent,
@@ -3419,7 +3420,7 @@ export function getLastStoredProviderThreadId(
           FROM events AS context_clear
           WHERE context_clear.thread_id = ${threadId}
             AND context_clear.type = 'system/operation'
-            AND json_extract(context_clear.data, '$.operation') = ${THREAD_CONTEXT_CLEAR_OPERATION}
+            AND json_extract(context_clear.data, '$.operation') IN (${THREAD_CONTEXT_CLEAR_OPERATION}, ${THREAD_HARNESS_SWITCH_OPERATION})
             AND json_extract(context_clear.data, '$.status') = 'completed'
         ), 0)`,
     )
@@ -3513,7 +3514,7 @@ export function listThreadTurnInterruptionEventStates(
               FROM events AS context_clear
               WHERE context_clear.thread_id = ${events.threadId}
                 AND context_clear.type = 'system/operation'
-                AND json_extract(context_clear.data, '$.operation') = ${THREAD_CONTEXT_CLEAR_OPERATION}
+                AND json_extract(context_clear.data, '$.operation') IN (${THREAD_CONTEXT_CLEAR_OPERATION}, ${THREAD_HARNESS_SWITCH_OPERATION})
                 AND json_extract(context_clear.data, '$.status') = 'completed'
             ), 0)
         )`,

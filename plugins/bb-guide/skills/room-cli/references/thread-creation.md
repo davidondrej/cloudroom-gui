@@ -44,13 +44,9 @@ worktree` only; a provider takes its branch through `--environment-inputs`.
   before sending and pass relative server-upload tokens through unchanged.
   Use an absolute path (for example, `--file "$PWD/report.pdf"`) for local files.
 - Spawn creates a root thread unless you pass `--parent-thread`.
-- Handoff can target any model, including one from the source provider. In
-  the follow-up picker, choose **Handoff to new thread**; **Exit handoff** in
-  the picker or composer restores the source execution settings and retains
-  draft edits without the automatic source reference. Closing the picker
-  keeps handoff active. Use `room-cli thread spawn --provider PROVIDER --model MODEL
---environment ENV_ID --prompt 'Continue from @thread:THREAD_ID ...'` for the
-  same thread creation through the CLI, or `threads.spawn` through the SDK.
+- To move a thread to another agent or model in place, use `room-cli thread update
+  THREAD --provider PROVIDER --model MODEL` (ADR 0211). The next turn carries the
+  conversation so far.
 - Use `room-cli thread fork <source-thread-id>` to clone a provider session. The
   fork inherits the source conversation in its timeline. It creates an idle
   fork in the source environment by default; add `--prompt`, select an existing

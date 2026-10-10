@@ -15,9 +15,10 @@ import {
   runEnvironmentHook,
   ENVIRONMENT_HOOK_TIMEOUT_MS,
 } from "./environment-hooks.js";
-import { eq, and, isNull, or, sql } from "drizzle-orm";
+import { eq, and, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
+  getAppSettings,
   releaseFinishedEnvironmentPreparationOwners,
   environmentHasLiveThreads,
   environments,
@@ -48,6 +49,7 @@ import {
   type SystemThreadProvisioningStatus,
   type ThreadStatus,
   threadScope,
+  WORKTREE_RETENTION_MS,
 } from "@cloudroom/domain";
 import { type ThreadResponse } from "@cloudroom/server-contract";
 import {
@@ -59,6 +61,7 @@ import {
   ensureWorkspaceReadyEventInTransaction,
 } from "../threads/thread-provisioning-environment.js";
 import { toEnvironmentResponse } from "./environment-response.js";
+import { DEFAULT_ENVIRONMENT_PROVIDER_ID } from "./environment-provider-ids.js";
 import {
   getEnvironmentProvider,
   invokeEnvironmentProvider,
@@ -292,6 +295,38 @@ function runTrackedOperation(args: {
 }
 
 const REMOVE_RETRY_MS = 60_000;
+
+function retireGraceMs(
+  db: DbQueryConnection,
+  provider: PluginEnvironmentProviderRecord["provider"],
+): number | null {
+  return provider.id === DEFAULT_ENVIRONMENT_PROVIDER_ID.gitWorktree
+    ? WORKTREE_RETENTION_MS[getAppSettings(db).worktreeRetention]
+    : provider.policy.retireGraceMs;
+}
+
+export function rescheduleWorktreeRetirement(deps: {
+  db: DbConnection;
+  hub: Pick<Deps["hub"], "notifyEnvironment">;
+}): void {
+  const rescheduled = deps.db
+    .update(environments)
+    .set({ retireAt: null })
+    .where(
+      and(
+        eq(
+          environments.environmentProviderId,
+          DEFAULT_ENVIRONMENT_PROVIDER_ID.gitWorktree,
+        ),
+        isNull(environments.teardownStatus),
+        isNotNull(environments.retireAt),
+      ),
+    )
+    .returning({ id: environments.id })
+    .all();
+  for (const { id } of rescheduled)
+    deps.hub.notifyEnvironment(id, ["metadata-changed"]);
+}
 
 async function invokeCreate(
   record: PluginEnvironmentProviderRecord,
@@ -768,16 +803,10 @@ async function sweepProviderEnvironmentInSlot(
     return;
   }
   if (row.retireAt === null) {
-    if (
-      !cancelled &&
-      record.provider.policy.retireGraceMs === null &&
-      row.status !== "destroyed"
-    )
-      return;
+    const grace = retireGraceMs(deps.db, record.provider);
+    if (!cancelled && grace === null && row.status !== "destroyed") return;
     const retireAt =
-      row.status === "destroyed" || cancelled
-        ? now
-        : now + (record.provider.policy.retireGraceMs ?? 0);
+      row.status === "destroyed" || cancelled ? now : now + (grace ?? 0);
     writeEnvironment(deps, environmentId, { retireAt });
     row = { ...row, retireAt };
   }
@@ -862,7 +891,7 @@ export function refreshProviderRetirement(
     return;
   const provider = getEnvironmentProvider(row.environmentProviderId);
   if (provider === undefined) return;
-  const grace = provider.provider.policy.retireGraceMs;
+  const grace = retireGraceMs(deps.db, provider.provider);
   const retireAt =
     grace === null || environmentHasLiveThreads(deps.db, environmentId)
       ? null

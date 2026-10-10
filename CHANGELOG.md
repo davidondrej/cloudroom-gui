@@ -2,6 +2,18 @@
 
 Also on [cloudroom.dev/changelog](https://www.cloudroom.dev/changelog).
 
+## 99
+
+Cloud automations and a cleaner composer (2026-10-10)
+
+### Changes
+
+- Schedule automations that run in the cloud, from the new Cloud tab or room-cli.
+- Switch to another agent in the same thread, and pick model and effort from one split button.
+- Permission modes are now Manual, Auto, and Full Access, with a simpler picker.
+- Settings has a Plan & billing row, tabs for Cloudroom Connect, and a choice of how long archived worktrees stay.
+- A clear notice when a cloud sandbox runs out of disk, and longer messages before "Show more".
+
 ## 98
 
 Chat export and Cloud fixes (2026-10-09)

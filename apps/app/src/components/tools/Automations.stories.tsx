@@ -6,6 +6,7 @@ import {
   RunRow,
 } from "bb-plugin-automations/detail-view";
 import { OverviewRow } from "bb-plugin-automations/overview-view";
+import { CloudAutomationRows, type CloudAutomation } from "bb-plugin-automations/cloud-view";
 import type {
   AutomationResponse,
   AgentEnvironment,
@@ -587,3 +588,34 @@ export function RunStates() {
     </StoryCard>
   );
 }
+
+const cloudAutomation = (overrides: Partial<CloudAutomation>): CloudAutomation => ({
+  id: "6f1c2a9e-0d1b-4c7e-9a51-2f6d8b3e4c10",
+  thread_id: "thr_weeklywatch",
+  name: "Weekly price watch",
+  cron: "0 9 * * 1",
+  timezone: "Europe/Prague",
+  run_at: null,
+  enabled: true,
+  next_run_at: "2027-01-18T08:00:00.000Z",
+  last_run_at: "2027-01-11T08:00:12.000Z",
+  last_error: null,
+  runs: 12,
+  ...overrides,
+});
+
+export const CloudAutomations = () => (
+  <StoryCard>
+    <CloudAutomationRows
+      rows={[
+        cloudAutomation({}),
+        cloudAutomation({ id: "b2", name: "Refresh agent context", cron: "*/30 * * * *", timezone: "UTC", next_run_at: "2027-01-15T09:30:00.000Z", runs: 41 }),
+        cloudAutomation({ id: "c3", name: "Nightly test run", cron: "0 2 * * *", enabled: false, next_run_at: null, last_error: "Paused after 3 failed runs. Last error: The Cloud thread did not start." }),
+      ]}
+      onOpen={noop}
+      onRun={noop}
+      onDelete={noop}
+      onEnabledChange={noop}
+    />
+  </StoryCard>
+);

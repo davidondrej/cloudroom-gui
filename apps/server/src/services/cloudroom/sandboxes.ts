@@ -443,11 +443,16 @@ export class SandboxDirectory {
   }
 
   private async checkMode(): Promise<boolean> {
-    const value = z.object({ sandboxes: z.boolean(), limited: z.boolean().default(false) }).parse(await this.call({ action: "mode" }));
+    const value = z.object({ sandboxes: z.boolean(), limited: z.boolean().default(false), small_disk: z.boolean().default(false) }).parse(await this.call({ action: "mode" }));
     this.mode = { on: value.sandboxes, at: Date.now() };
     this.limit = { on: value.limited, at: Date.now() };
+    this.small = value.small_disk;
     return value.sandboxes;
   }
+
+  private small = false;
+  /** Free accounts get 10 GB sandboxes, so a full disk is their moment to upgrade (ADR 0206). Refreshed with usageLimited(). */
+  smallDisk(): boolean { return this.small; }
 
   /** What the account's cloud offers, read by the website from a running spare or sandbox. Null until one runs. */
   async capabilities(): Promise<unknown> {
@@ -526,6 +531,11 @@ export class SandboxDirectory {
 
   async autoDelete(body: { action: "get" | "deleted" } | { action: "set"; days: number | null }): Promise<unknown> {
     return this.call(body, "auto-delete");
+  }
+
+  /** Cloud automations live on the website, which runs them while this Mac is off (ADR 0212). */
+  async automations(body: Record<string, unknown>): Promise<unknown> {
+    return this.call(body, "automations");
   }
 
   /** MCP servers in the cloud, as of the last Cloud environment answer. */

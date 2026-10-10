@@ -8,7 +8,7 @@ import { and, asc, eq, gte, isNull, notLike } from "drizzle-orm";
 import { events, projects, threads } from "@cloudroom/db";
 import type { AppDeps } from "../../types.js";
 import { ApiError } from "../../errors.js";
-import { shareMessages } from "./shares.js";
+import { threadMessages } from "../threads/thread-transcript.js";
 
 // docs/scopes/chat-export.md owns the file format.
 export type ChatExportInput = { scope: "all" | "local" | "cloud"; days: number | null; format: "markdown" | "json" };
@@ -41,7 +41,7 @@ export function exportableChats(deps: Pick<AppDeps, "db">): { target: "local" | 
 
 function markdown(deps: Pick<AppDeps, "db">, thread: ExportedThread, title: string): string {
   const info = `${thread.project ?? "No project"} · ${thread.target === "cloud" ? "Cloud" : "Local"} thread · ${thread.harness} · ${day(thread.createdAt)}`;
-  const messages = shareMessages(deps, thread.id).map((message) => `## ${message.role === "user" ? "You" : "Agent"}\n\n${message.text}`);
+  const messages = threadMessages(deps.db, thread.id).map((message) => `## ${message.role === "user" ? "You" : "Agent"}\n\n${message.text}`);
   return `${[`# ${title}`, info, ...messages].join("\n\n")}\n`;
 }
 

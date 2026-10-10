@@ -7,6 +7,7 @@ import type { DbQueryConnection } from "@cloudroom/db";
 import type { PromptInput } from "@cloudroom/domain";
 import { ApiError } from "../../errors.js";
 import { parseStoredTurnRequestEvent } from "./thread-events.js";
+import { pendingHarnessSwitchSeed } from "./thread-transcript.js";
 
 export interface DeferredFirstTurnContext {
   input: PromptInput[];
@@ -33,7 +34,15 @@ export function getLeadingAgentOnlyInput(input: PromptInput[]): PromptInput[] {
   );
 }
 
+/** Agent-only input the next turn must carry: a spawned thread's seed, or the conversation before a harness switch. */
 export function resolveDeferredFirstTurnContext(
+  db: DbQueryConnection,
+  threadId: string,
+): DeferredFirstTurnContext | null {
+  return spawnSeedContext(db, threadId) ?? pendingHarnessSwitchSeed(db, threadId);
+}
+
+function spawnSeedContext(
   db: DbQueryConnection,
   threadId: string,
 ): DeferredFirstTurnContext | null {

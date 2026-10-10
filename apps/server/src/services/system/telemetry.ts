@@ -31,6 +31,11 @@ export type TelemetryEvent =
         provider: string;
       };
     }
+  /** A thread moved to another harness or model in place (ADR 0211). */
+  | {
+      name: "harness_switched";
+      properties: { execution: TelemetryExecution; from: string; to: string };
+    }
   | {
       name: "user_message_sent";
       properties: {

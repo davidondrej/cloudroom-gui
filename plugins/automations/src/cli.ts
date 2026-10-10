@@ -849,7 +849,83 @@ room-cli automation resume <automationId> --project <id>
 room-cli automation run <automationId> --project <id> [--idempotency-key <key>]
 room-cli automation runs <automationId> --project <id> [--limit <count>] [--output <runId>]
 room-cli automation delete <automationId> --project <id> --yes
+
+Cloud automations run on Cloudroom's servers, even while this Mac is off. Each run re-prompts one Cloud thread.
+room-cli automation create --cloud --thread <cloudThreadId> --name <name> --prompt <text> (--cron <expr> --timezone <tz> | --at <datetime> | --in <duration>)
+room-cli automation list --cloud [--thread <cloudThreadId>]
+room-cli automation show|pause|resume|run <cloudAutomationId>
+room-cli automation update <cloudAutomationId> [--name <name>] [--prompt <text>] [schedule flags]
+room-cli automation delete <cloudAutomationId> --yes
 `;
+}
+
+// Cloud automations (ADR 0212) live on the website, so the Mac can be off. Their IDs are UUIDs; local ones start with auto_.
+const CLOUD_ID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+type Cloud = Pick<BbPluginApi, "sdk">["sdk"]["cloudroom"];
+type CloudAutomation = NonNullable<Awaited<ReturnType<Cloud["automations"]>>["automation"]>;
+
+function isCloudCommand(args: ParsedArgs): boolean {
+  return boolFlag(args, "cloud") || CLOUD_ID.test(args.positionals[0] ?? "");
+}
+
+function cloudSchedule(args: ParsedArgs): { cron: string | null; timezone?: string; run_at: string | null } | null {
+  if (!["cron", "at", "in"].some((name) => args.flags.has(name))) return null;
+  const trigger = buildTrigger(args);
+  return trigger.triggerType === "schedule"
+    ? { cron: trigger.cron, timezone: trigger.timezone, run_at: null }
+    : { cron: null, run_at: new Date(trigger.runAt).toISOString() };
+}
+
+function printCloudAutomation(a: CloudAutomation): string {
+  const schedule = a.cron ? `${a.cron} (${a.timezone})` : `once at ${a.run_at}`;
+  const state = a.enabled ? `next run ${a.next_run_at ?? "within a minute"}` : "paused";
+  return `${a.id}  ${a.name}\n  Cloud thread ${a.thread_id} · ${schedule} · ${state} · ${a.runs} runs${a.last_error ? `\n  Last error: ${a.last_error}` : ""}\n`;
+}
+
+async function runCloudCommand(cloud: Cloud, args: ParsedArgs, ctx: PluginCliContext): Promise<PluginCliResult> {
+  const id = args.positionals[0];
+  const one = async (request: Parameters<Cloud["automations"]>[0], verb: string) => {
+    const { automation } = await cloud.automations(request);
+    if (!automation) throw new Error("The website returned no automation.");
+    return { exitCode: 0, stdout: optionalJson(args, automation) ?? `Cloud automation ${verb}\n${printCloudAutomation(automation)}` };
+  };
+  const requireId = () => {
+    if (!id || !CLOUD_ID.test(id)) throw new Error("Missing cloud automation ID.");
+    return id;
+  };
+  if (args.command === "list") {
+    const { automations = [] } = await cloud.automations({ action: "list", ...(flag(args, "thread") ? { thread: flag(args, "thread")! } : {}) });
+    return { exitCode: 0, stdout: optionalJson(args, automations) ?? (automations.length ? automations.map(printCloudAutomation).join("") : "No cloud automations found\n") };
+  }
+  if (args.command === "show") {
+    const { automations = [] } = await cloud.automations({ action: "list" });
+    const found = automations.find((a) => a.id === requireId());
+    if (!found) throw new Error(`Cloud automation ${id} not found.`);
+    return { exitCode: 0, stdout: optionalJson(args, found) ?? printCloudAutomation(found) };
+  }
+  if (args.command === "create") {
+    if (["provider", "model", "script", "script-file", "environment"].some((name) => args.flags.has(name))) {
+      throw new Error("Cloud automations re-prompt a Cloud thread with its own harness and model. Drop --provider, --model, --script, and --environment.");
+    }
+    const thread = flag(args, "thread") ?? ctx.threadId;
+    if (!thread) throw new Error("Missing required option --thread <cloudThreadId>.");
+    const schedule = cloudSchedule(args);
+    if (!schedule) throw new Error("Provide exactly one schedule flag: --cron, --at, or --in.");
+    return one({ action: "create", thread, name: requireFlag(args, "name"), prompt: requireFlag(args, "prompt"), ...schedule, enabled: !boolFlag(args, "disabled") }, "created");
+  }
+  if (args.command === "update") {
+    const fields = { ...(flag(args, "name") ? { name: flag(args, "name") } : {}), ...(flag(args, "prompt") ? { prompt: flag(args, "prompt") } : {}), ...cloudSchedule(args) };
+    return one({ action: "update", id: requireId(), ...fields }, "updated");
+  }
+  if (args.command === "pause" || args.command === "resume") return one({ action: "update", id: requireId(), enabled: args.command === "resume" }, args.command === "pause" ? "paused" : "resumed");
+  if (args.command === "run") return one({ action: "run", id: requireId() }, "will run within a minute");
+  if (args.command === "delete") {
+    if (!boolFlag(args, "yes")) throw new Error("Deletion requires --yes when run through the plugin CLI.");
+    await cloud.automations({ action: "delete", id: requireId() });
+    return { exitCode: 0, stdout: optionalJson(args, { ok: true, id }) ?? `Cloud automation ${id} deleted\n` };
+  }
+  if (args.command === "runs") throw new Error("Each cloud run is a message in its Cloud thread. Read the thread instead.");
+  throw new Error(`Unknown automation command: ${args.command}`);
 }
 
 export function registerAutomationCli(args: {
@@ -919,6 +995,7 @@ export function registerAutomationCli(args: {
         if (command === "help" || command === "--help" || command === "-h") {
           return { exitCode: 0, stdout: helpText() };
         }
+        if (isCloudCommand(parsed)) return await runCloudCommand(bb.sdk.cloudroom, parsed, ctx);
         if (command === "list") {
           const result = service.list({
             projectId: requireFlag(parsed, "project"),

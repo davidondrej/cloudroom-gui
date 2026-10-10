@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFile, writeFile, mkdir, stat, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { createThread, getAppSettings, getProject, getThread, getThreadExecutionOverride, setThreadExecutionOverride, updateThread, cloudroomThreads, cloudroomCommands, events, type DbConnection, type DbQueryConnection } from "@cloudroom/db";
+import { createThread, getAppSettings, getProject, getThread, getThreadExecutionOverride, setThreadExecutionOverride, updateThread, cloudroomThreads, cloudroomCommands, events, type DbConnection, type DbQueryConnection, type DbTransaction } from "@cloudroom/db";
 import { PERSONAL_PROJECT_ID, encodeClientTurnRequestIdNumber, isStandaloneBuiltinCompactCommand, promptInputSchema, reasoningLevelSchema, threadQueuedMessageSchema, type Thread, type PromptInput, type ThreadEventType, type ThreadEventTurnStatus, type ThreadChangeKind, type ReasoningLevel } from "@cloudroom/domain";
 import type { CreateThreadRequest, ForkThreadRequest, SendMessageRequest, SendMessageResponse } from "@cloudroom/server-contract";
 import { z } from "zod";
@@ -354,6 +354,7 @@ class CloudroomService {
   private readonly streams = new Map<string, AbortController>();
   private readonly streamErrors = new Map<string, string>();
   private readonly connectionIssues = new Map<string, Partial<Record<ConnectionPhase, ConnectionIssue>>>();
+  private readonly diskFull = new Set<string>();
   private readonly deliveries = new Map<string, Promise<void>>();
   private timer: ReturnType<typeof setInterval> | null = null;
   private stopped = false;
@@ -1014,7 +1015,7 @@ class CloudroomService {
     const serviceTier = input.service_tier === "fast" ? "fast" : "default";
     const initial = prompts.find(item => item.id === `first_${threadId}`);
     const issues = Object.values(this.connectionIssues.get(threadId) ?? {});
-    return { authRequired: !saved.sessionId && authRequiredMessages.has(saved.error ?? ""), starting: !saved.queuePaused && Boolean(initial && ["sending", "accepted"].includes(initial.state)), sessionId: saved.sessionId, paused: saved.queuePaused, failedStart: !saved.sessionId && initial?.state === "failed", model: saved.model, reasoning, serviceTier, error: saved.error ?? issues.find(issue => !issue.reconnecting)?.message ?? null, reconnecting: issues.some(issue => issue.reconnecting), usageLimit: Boolean(sandboxThread(saved.coreUrl)) && this.sandboxes.usageLimited(), pendingDelivery: commands(this.deps.db, threadId).filter((c) => c.state === "sending").length };
+    return { authRequired: !saved.sessionId && authRequiredMessages.has(saved.error ?? ""), starting: !saved.queuePaused && Boolean(initial && ["sending", "accepted"].includes(initial.state)), sessionId: saved.sessionId, paused: saved.queuePaused, failedStart: !saved.sessionId && initial?.state === "failed", model: saved.model, reasoning, serviceTier, error: saved.error ?? issues.find(issue => !issue.reconnecting)?.message ?? null, reconnecting: issues.some(issue => issue.reconnecting), usageLimit: Boolean(sandboxThread(saved.coreUrl)) && this.sandboxes.usageLimited(), diskFull: this.diskFull.has(threadId) && Boolean(sandboxThread(saved.coreUrl)) && this.sandboxes.smallDisk(), pendingDelivery: commands(this.deps.db, threadId).filter((c) => c.state === "sending").length };
   }
 
   async create(request: CreateThreadRequest): Promise<Thread> {
@@ -1231,6 +1232,47 @@ class CloudroomService {
     return getThread(this.deps.db, child!.threadId)!;
   }
 
+  /** Moves a Cloud thread to another harness or model (ADR 0211): a new Core session in the same sandbox and folder.
+   *  `record` saves the switch together with the new binding, so the next turn carries the earlier conversation. */
+  async switchHarness(thread: Thread, target: { providerId: string; model: string; reasoningLevel: ReasoningLevel | null }, record: (tx: DbTransaction) => void): Promise<void> {
+    const saved = binding(this.deps.db, thread.id);
+    if (!saved?.sessionId) throw new ApiError(409, "cloudroom_not_started", "Wait for the cloud agent to start, then switch.");
+    await this.requireOwnThread(saved);
+    if (teleportBlocked(this.deps.db, thread.id)) throw new ApiError(409, "teleport_in_progress", "Wait for Teleport to finish, then switch.");
+    if (!isCloudProvider(target.providerId) || target.providerId === "acp-cursor") throw new ApiError(400, "cloudroom_unsupported", "This agent can't run in Cloud.");
+    if (commands(this.deps.db, thread.id).some((c) => c.state === "sending") || queuedPrompts(this.deps.db, thread.id).length) throw new ApiError(409, "thread_busy", "Wait until queued messages are sent, then switch.");
+    const client = await this.client(saved);
+    const capabilities = await this.capabilities(client);
+    if (!harnessProfile(capabilities, target.providerId)) throw new ApiError(400, "cloudroom_unsupported", `${HARNESS_NAMES[target.providerId]} isn't set up in Cloud yet.`);
+    const reasoning = target.reasoningLevel ?? saved.reasoning;
+    const { model, provider } = coreModel(target.providerId, target.model, capabilities);
+    validateReasoning(target.providerId, model, reasoning, capabilities);
+    if (target.providerId === "codex" && capabilities.codex_auth_import && !sandboxThread(saved.coreUrl)) await importCodexLogin(this.deps);
+    if (target.providerId === "pi") await importPiLogin(this.deps);
+    // The same folder and settings as the thread's first start, without its project copy or fork.
+    const initial = command(this.deps.db, `first_${thread.id}`);
+    const options = z.object({ workspace: z.string().optional(), workspace_name: z.string().optional(), command_guard_enabled: z.boolean().optional(), strip_ai_co_authors: z.boolean().optional(), system_prompt: z.string().optional() }).parse(initial ? JSON.parse(initial.input) : {});
+    if (!capabilities.command_guard) delete options.command_guard_enabled;
+    if (!capabilities.strip_ai_co_authors) delete options.strip_ai_co_authors;
+    if (!capabilities.system_prompt) delete options.system_prompt;
+    const startRequestId = randomUUID();
+    const started = await client.start(startRequestId, CLOUD_HARNESSES[target.providerId], { model, reasoning, ...options, ...(provider ? { provider } : {}) });
+    if (!["idle", "error"].includes(getThread(this.deps.db, thread.id)?.status ?? "")) {
+      void client.close(started.session_id, randomUUID()).catch(() => {});
+      throw new ApiError(409, "thread_busy", "The agent started working. Wait until it finishes, then switch.");
+    }
+    this.detach(thread.id);
+    this.deps.db.transaction((tx) => {
+      updateThread(tx, this.deps.hub, thread.id, { providerId: target.providerId });
+      saveBinding(tx, thread.id, { sessionId: started.session_id, startRequestId, model: target.model, reasoning, cursor: 0, nativeId: null, turnId: null, error: null });
+      setThreadExecutionOverride(tx, { threadId: thread.id, modelOverride: null, reasoningLevelOverride: target.reasoningLevel });
+      record(tx);
+    });
+    void client.close(saved.sessionId, randomUUID()).catch((error: unknown) => this.warn("The previous Cloud session could not be closed", error, { threadId: thread.id }));
+    this.notify(thread.id);
+    void this.deliver(thread.id).catch(() => {});
+  }
+
   async send(thread: Thread, payload: SendMessageRequest): Promise<SendMessageResponse> {
     if (teleportBlocked(this.deps.db, thread.id)) throw new ApiError(409, "teleport_in_progress", "Messages are disabled until Teleport finishes.");
     const saved = binding(this.deps.db, thread.id);
@@ -1243,7 +1285,7 @@ class CloudroomService {
       await this.compact(thread);
       return { ok: true, delivery: "sent" };
     }
-    if (payload.model && payload.model !== saved.model) throw new ApiError(409, "cloudroom_launch_settings", "Model is fixed for this cloud session. Start a new thread to change it.");
+    if (payload.model && payload.model !== saved.model) throw new ApiError(409, "cloudroom_launch_settings", "This thread's model just changed. Send your message again.");
     const id = payload.requestId ?? randomUUID();
     const steer = (payload.mode === "steer" || payload.mode === "steer-if-active") && thread.status === "active" && saved.turnId && !unstartedTurn(this.deps.db, thread.id);
     const previous = command(this.deps.db, id);
@@ -2005,7 +2047,11 @@ class CloudroomService {
           if (record.kind === "secret_request") this.secrets.follow(client, saved.threadId, record);
           this.setConnectionIssue(saved.threadId, "replay");
           if (record.kind === "rewind") this.deps.hub.notifyThread(saved.threadId, ["history-rewritten"]);
-          this.notify(saved.threadId, eventTypes, ["state", "receipt", "native_identity"].includes(record.kind));
+          // A full disk shows Free accounts the upgrade notice until space recovers (ADR 0206).
+          const data = record.data as Record<string, unknown> | undefined;
+          if (record.kind === "storage_pause" && data?.paused === true && data.reason === "disk_capacity") this.diskFull.add(saved.threadId);
+          if (record.kind === "storage_recovered") this.diskFull.delete(saved.threadId);
+          this.notify(saved.threadId, eventTypes, ["state", "receipt", "native_identity", "storage_pause", "storage_recovered"].includes(record.kind));
         }
         if (!controller.signal.aborted) {
           const ended = new CloudroomConnectionError("Cloudroom event stream ended");

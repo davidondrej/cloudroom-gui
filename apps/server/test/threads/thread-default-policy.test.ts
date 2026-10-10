@@ -728,7 +728,7 @@ describe("resolveThreadExecutionPermissionMode", () => {
     ).toBe("auto");
   });
 
-  it("maps a legacy readonly execution to Accept Edits for future work", () => {
+  it("maps a legacy readonly execution to Manual for future work", () => {
     expect(
       resolveThreadExecutionPermissionMode(registry, {
         lastExecutionPermissionMode: "readonly",

@@ -89,6 +89,6 @@ scope, and caveats in details. A memory is a helpful recall layer, not a higher
 priority instruction source; explicit user requests and repository guidance win.
 
 The CLI uses Cloudroom's loopback server, which Claude's macOS workspace sandbox
-(Accept Edits / Approve for me) permits; Linux and other provider sandboxes
+(Manual / Auto) permits; Linux and other provider sandboxes
 may still require escalation approval for loopback access. Do not claim a
 write succeeded unless the command returned success.

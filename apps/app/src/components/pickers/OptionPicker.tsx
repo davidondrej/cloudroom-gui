@@ -19,7 +19,6 @@ import {
   OPTION_TRIGGER_CONTENT_CLASS_NAME,
 } from "@cloudroom/shared-ui/option-display";
 
-// Risky options (Full Access) recede to a dim gray instead of a loud color.
 const OPTION_WARNING_TEXT_CLASS_NAME = "text-subtle-foreground/80";
 const OPTION_WARNING_INTERACTIVE_CLASS_NAME =
   "hover:text-muted-foreground data-[state=open]:text-muted-foreground";
@@ -55,6 +54,7 @@ interface OptionPickerProps<T extends string> {
   };
   disabled?: boolean;
   showChevronWhenDisabled?: boolean;
+  tiles?: boolean;
 }
 
 export function OptionPicker<T extends string>({
@@ -72,11 +72,12 @@ export function OptionPicker<T extends string>({
   displayOverride,
   disabled,
   showChevronWhenDisabled,
+  tiles,
 }: OptionPickerProps<T>) {
   const selectedOption = options.find((option) => option.value === value);
   const selectedTone = displayOverride ? "default" : selectedOption?.tone;
   const selectedIsWarning = selectedTone === "warning";
-  const SelectedIcon = selectedOption?.icon;
+  const SelectedIcon = displayOverride ? undefined : selectedOption?.icon;
   const selectedLabel =
     displayOverride?.label ?? selectedOption?.label ?? value;
   const selectedCompactLabel =
@@ -108,7 +109,11 @@ export function OptionPicker<T extends string>({
       )}
     >
       <span className={OPTION_TRIGGER_CONTENT_CLASS_NAME} title={selectedTitle}>
-        {SelectedIcon ? <SelectedIcon className="size-3.5 shrink-0" /> : null}
+        {SelectedIcon ? (
+          <SelectedIcon
+            className={cn("size-3.5 shrink-0", tiles && "dark:text-primary")}
+          />
+        ) : null}
         {selectedCompactLabel ? (
           <>
             <span className="min-w-0 truncate" data-promptbox-full-label="">
@@ -146,26 +151,52 @@ export function OptionPicker<T extends string>({
         className={cn(OPTION_MENU_CONTENT_CLASS_NAME, contentClassName)}
         mobileTitle={label}
       >
-        <DropdownMenuLabel>{label}</DropdownMenuLabel>
+        {tiles ? null : <DropdownMenuLabel>{label}</DropdownMenuLabel>}
         {options.map((option) => {
           const OptionIcon = option.icon;
+          const selected = option.value === value;
           return (
             <DropdownMenuItem
               key={option.value}
               disabled={option.disabled}
               onSelect={() => onChange(option.value)}
               className={cn(
-                "flex items-start justify-between gap-3 whitespace-normal",
+                "flex justify-between gap-3 whitespace-normal",
+                tiles
+                  ? cn(
+                      "items-center rounded-md p-2",
+                      selected && "bg-primary/6",
+                    )
+                  : "items-start",
                 LIST_HOVER_TRANSITION,
               )}
             >
-              <span className="flex min-w-0 flex-1 items-start gap-2">
-                {OptionIcon ? (
+              <span
+                className={cn(
+                  "flex min-w-0 flex-1 gap-2",
+                  tiles ? "items-center gap-3" : "items-start",
+                )}
+              >
+                {OptionIcon && tiles ? (
+                  <span
+                    className={cn(
+                      "grid size-8 shrink-0 place-items-center rounded-md ring-1 ring-inset",
+                      selected
+                        ? "bg-primary text-primary-foreground shadow-[0_0_14px_color-mix(in_oklab,var(--primary)_35%,transparent)] ring-primary"
+                        : "bg-foreground/4 text-muted-foreground ring-border",
+                    )}
+                  >
+                    <OptionIcon className="size-4" />
+                  </span>
+                ) : OptionIcon ? (
                   <OptionIcon className="size-4 shrink-0 max-md:pointer-coarse:mt-0.5" />
                 ) : null}
                 <span className="min-w-0 flex-1">
                   <span
-                    className="block whitespace-normal break-words font-medium"
+                    className={cn(
+                      "block whitespace-normal break-words font-medium",
+                      tiles && "text-sm text-foreground",
+                    )}
                     title={option.label}
                   >
                     {option.label}
@@ -175,7 +206,12 @@ export function OptionPicker<T extends string>({
                       {option.disabledReason}
                     </span>
                   ) : option.description ? (
-                    <span className="mt-0.5 block whitespace-normal break-words text-xs leading-snug text-muted-foreground">
+                    <span
+                      className={cn(
+                        "block whitespace-normal break-words text-xs leading-snug text-muted-foreground",
+                        !tiles && "mt-0.5",
+                      )}
+                    >
                       {option.description}
                     </span>
                   ) : null}
@@ -186,7 +222,8 @@ export function OptionPicker<T extends string>({
                 className={cn(
                   COARSE_POINTER_ICON_SIZE_CLASS,
                   "shrink-0",
-                  option.value === value ? "opacity-100" : "opacity-0",
+                  tiles && "dark:text-primary",
+                  selected ? "opacity-100" : "opacity-0",
                 )}
               />
             </DropdownMenuItem>

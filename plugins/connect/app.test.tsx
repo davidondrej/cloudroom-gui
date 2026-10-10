@@ -132,8 +132,16 @@ describe("connect settings section", () => {
     const slot = renderSlot(
       app.settingsSections[0]!,
       {},
-      { rpc: { status: () => connected(), phoneCode, signOutPhones: () => ({ revoked: 2 }) } },
+      {
+        rpc: {
+          status: () => connected(),
+          phoneCode,
+          remoteInstructions: () => ({ enabled: true }),
+          signOutPhones: () => ({ revoked: 2 }),
+        },
+      },
     );
+    fireEvent.click(await slot.findByRole("tab", { name: /Settings/ }));
     fireEvent.click(await slot.findByRole("button", { name: "Sign out all phones" }));
     expect(slot.rpcCalls.some((call) => call.method === "signOutPhones")).toBe(false);
     fireEvent.click(slot.getByRole("button", { name: "Sign out all phones?" }));
@@ -149,10 +157,12 @@ describe("connect settings section", () => {
           status: () =>
             connected({ legacy: { url: "https://sawyer.getbb.app", state: "connected" } }),
           phoneCode,
+          remoteInstructions: () => ({ enabled: true }),
           disconnect: () => connected(),
         },
       },
     );
+    fireEvent.click(await slot.findByRole("tab", { name: /Settings/ }));
     await slot.findByText(/still works/);
     fireEvent.click(slot.getByRole("button", { name: "Turn off old link" }));
     await waitFor(() =>
@@ -184,6 +194,7 @@ describe("connect settings section", () => {
       },
     );
 
+    fireEvent.click(await slot.findByRole("tab", { name: /Shared servers/ }));
     await slot.findByText(":3000");
     fireEvent.click(slot.getByRole("button", { name: "Revoke" }));
 
@@ -221,6 +232,7 @@ describe("connect settings section", () => {
       },
     );
 
+    fireEvent.click(await slot.findByRole("tab", { name: /Shared servers/ }));
     await slot.findByText(`Unavailable — ${reason}`);
     expect(
       slot.queryByRole("button", { name: "Copy share URL for port 3000" }),
@@ -274,6 +286,7 @@ describe("connect settings section", () => {
       },
     );
 
+    fireEvent.click(await slot.findByRole("tab", { name: /Shared servers/ }));
     await slot.findByText("Sawyer Air");
     expect(slot.getAllByText("Workstation")).toHaveLength(1);
 
@@ -314,7 +327,8 @@ describe("connect settings section", () => {
       },
     );
 
-    await slot.findByText("Shared ports");
+    fireEvent.click(await slot.findByRole("tab", { name: /Shared servers/ }));
+    await slot.findByText("No shared servers yet.");
     expect(slot.queryByLabelText("Port to share")).toBeNull();
     fireEvent.click(slot.getByRole("button", { name: "Expose a port" }));
 

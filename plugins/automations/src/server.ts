@@ -30,7 +30,7 @@ export default async function plugin(bb: BbPluginApi) {
     serverUrl: resolveServerUrl(),
   });
 
-  bb.rpc.register(automationRpcContract, createRpcHandlers(service));
+  bb.rpc.register(automationRpcContract, createRpcHandlers(service, bb.sdk.cloudroom));
   registerAutomationCli({ bb, service });
 
   bb.events.on("thread.idle", ({ thread }) => {

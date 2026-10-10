@@ -39,7 +39,7 @@ function writeValue(
     .run();
 }
 
-export function getAppSettings(db: DbConnection): AppSettings {
+export function getAppSettings(db: DbQueryConnection): AppSettings {
   const values: Record<string, unknown> = { ...defaultAppSettings };
   const rows = db
     .select({ key: appSettingsValues.key, value: appSettingsValues.value })

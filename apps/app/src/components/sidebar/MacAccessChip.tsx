@@ -48,19 +48,23 @@ export function MacAccessMenu() {
     </Tooltip>
     <DropdownMenuContent side="top" align="end" sideOffset={6} mobileTitle="Mac access" className="w-72 p-1.5">
       <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Mac access</DropdownMenuLabel>
-      {MAC_ACCESS_LEVELS.map((level) => {
-        const selected = level === current;
-        return <DropdownMenuItem key={level.id} role="menuitemradio" aria-checked={selected} className={cn("items-start gap-2.5 py-2", selected && "bg-state-hover")} onSelect={() => select(level)}>
-          <Icon name={level.icon} className="mt-0.5 text-muted-foreground" aria-hidden />
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm text-foreground">{level.label}</span>
-            <span className="block text-xs text-muted-foreground">{level.description}</span>
-          </span>
-          {selected && <Icon name="Check" className="mt-0.5 text-foreground" aria-hidden />}
-        </DropdownMenuItem>;
-      })}
+      <MacAccessMenuItems current={current} select={select} />
     </DropdownMenuContent>
   </DropdownMenu>;
+}
+
+export function MacAccessMenuItems({ current, select }: Pick<ReturnType<typeof useMacAccessLevel>, "current" | "select">) {
+  return MAC_ACCESS_LEVELS.map((level) => {
+    const selected = level === current;
+    return <DropdownMenuItem key={level.id} role="menuitemradio" aria-checked={selected} className={cn("items-start gap-2.5 py-2", selected && "bg-state-hover")} onSelect={() => select(level)}>
+      <Icon name={level.icon} className="mt-0.5 text-muted-foreground" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm text-foreground">{level.label}</span>
+        <span className="block text-xs text-muted-foreground">{level.description}</span>
+      </span>
+      {selected && <Icon name="Check" className="mt-0.5 text-foreground" aria-hidden />}
+    </DropdownMenuItem>;
+  });
 }
 
 export function MacAccessChip() {

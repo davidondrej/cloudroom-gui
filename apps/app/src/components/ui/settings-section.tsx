@@ -62,6 +62,12 @@ export function SettingsSection({
   );
 }
 
+// Grouped list card (Machines page): rows split by hairlines, like an account page.
+export const SETTINGS_CARD_CLASS =
+  "divide-y divide-border overflow-hidden rounded-xl bg-surface-recessed";
+export const SETTINGS_CARD_ROW_CLASS =
+  "flex min-h-12 items-center gap-3 px-4 py-2.5 text-sm";
+
 interface SettingsRowListProps {
   children: ReactNode;
 }

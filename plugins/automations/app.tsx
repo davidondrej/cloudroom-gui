@@ -650,7 +650,7 @@ function AutomationsPanel({ subPath }: PluginNavPanelProps) {
   const navigate = useBbNavigate();
   const parsedRoute = useMemo(() => parseSubPath(subPath), [subPath]);
   const collectionMode: AutomationCollectionMode =
-    subPath === "browse" ? "browse" : "installed";
+    subPath === "browse" || subPath === "cloud" ? subPath : "installed";
   const openDetail = useCallback(
     (next: DetailRoute, options?: { editing?: boolean }) => {
       navigate.toPluginPanel(PANEL_PATH, {
@@ -667,7 +667,7 @@ function AutomationsPanel({ subPath }: PluginNavPanelProps) {
   const changeCollectionMode = useCallback(
     (mode: AutomationCollectionMode) => {
       navigate.toPluginPanel(PANEL_PATH, {
-        subPath: mode === "browse" ? "browse" : "",
+        subPath: mode === "installed" ? "" : mode,
       });
     },
     [navigate],

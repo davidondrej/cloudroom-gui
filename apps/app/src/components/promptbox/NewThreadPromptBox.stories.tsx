@@ -71,8 +71,8 @@ const baseProject: NewThreadProjectConfig = {
 };
 
 const permissionModeOptions: readonly PickerOption<PermissionMode>[] = [
-  { value: "accept-edits", label: "Accept Edits" },
-  { value: "auto", label: "Approve for me" },
+  { value: "accept-edits", label: "Manual" },
+  { value: "auto", label: "Auto" },
   { value: "full", label: "Full Access", tone: "warning" },
 ];
 

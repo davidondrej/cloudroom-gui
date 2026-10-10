@@ -47,7 +47,7 @@ function track(step: SetupStepId, action: "viewed" | "started" | "done" | "skipp
 const LATER = ["Your Cloudroom account", "Claude Code or Codex", "For private repos", "Last step"];
 const PALETTE = {
   "--ob-bg": "#faf7ef", "--ob-rail": "#f2ecde", "--ob-card": "#fffdf7", "--ob-line": "#e2dac6", "--ob-dash": "#c9bfa6",
-  "--ob-ink": "#29251e", "--ob-muted": "#7a7263", "--ob-lime": "#bfff00", "--ob-ok": "#4d6b00",
+  "--ob-ink": "#29251e", "--ob-muted": "#7a7263", "--ob-lime": "#bfff00", "--ob-ok": "#4d6b00", "--ob-green": "#17803f",
 } as CSSProperties;
 
 export function useSetupProgress() {
@@ -100,14 +100,31 @@ function Setup({ locked, close }: { locked: boolean; close: () => void }) {
     if (signedIn && !wasSignedIn.current && step === 0) setPicked(nextStep(done, 0));
     wasSignedIn.current = signedIn;
   }, [signedIn, step, done]);
-  // Stay on the agent step after one agent connects; only both connecting moves on by itself.
-  const bothAgents = progress.agents.claude && progress.agents.codex;
-  const hadBothAgents = useRef(bothAgents);
+  // Stay on the agent step after one agent connects; only both connecting moves on by itself, after a countdown.
+  const { claude, codex } = progress.agents;
+  const hadAgents = useRef({ claude, codex });
+  const [stamped, setStamped] = useState(false);
+  const [countdown, setCountdown] = useState<{ left: number; to: number } | null>(null);
   useEffect(() => {
     if (step === 1 && picked === null) setPicked(1);
-    if (bothAgents && !hadBothAgents.current && step === 1) setPicked(nextStep(done, 1));
-    hadBothAgents.current = bothAgents;
-  }, [bothAgents, step, picked, done]);
+    const had = hadAgents.current;
+    hadAgents.current = { claude, codex };
+    if (step !== 1) {
+      setStamped(false);
+      return setCountdown(null);
+    }
+    if ((claude && !had.claude) || (codex && !had.codex)) setStamped(true);
+    if (claude && codex && !(had.claude && had.codex)) setCountdown({ left: AGENT_COUNTDOWN, to: nextStep(done, 1) });
+  }, [claude, codex, step, picked, done]);
+  useEffect(() => {
+    if (!countdown) return;
+    const timer = setTimeout(() => {
+      if (countdown.left > 1) return setCountdown({ ...countdown, left: countdown.left - 1 });
+      setCountdown(null);
+      setPicked(countdown.to);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
   const viewed = useRef(new Set<number>());
   useEffect(() => {
     if (progress.checking || viewed.current.has(step)) return;
@@ -180,10 +197,10 @@ function Setup({ locked, close }: { locked: boolean; close: () => void }) {
             </button>
           )}
           <div key={step} className={cn("my-auto w-full duration-300 animate-in fade-in-0 slide-in-from-bottom-1", step === 3 ? "max-w-[860px]" : "max-w-[600px]")}>
-            <BbLogo className="mb-6 size-[72px] -rotate-[5deg]" />
+            {step === 1 && stamped ? <TickStamp key={`${claude}-${codex}`} /> : <BbLogo className="mb-6 size-[72px] -rotate-[5deg]" />}
             <p className="font-serif text-base text-(--ob-muted) italic">Step {step + 1} of 4</p>
             {step === 0 && <AccountStep email={account.data?.account?.email ?? null} signingIn={account.data?.signingIn === true} next={next} />}
-            {step === 1 && <AgentStep progress={progress} next={next} />}
+            {step === 1 && <AgentStep progress={progress} next={next} stamped={stamped} left={countdown?.left ?? null} />}
             {step === 2 && <GithubStep progress={progress} next={next} />}
             {step === 3 && <ProjectStep close={close} />}
           </div>
@@ -275,9 +292,27 @@ function Card({ on, isDefault, logo, name, detail, children }: { on?: boolean; i
 }
 
 const Connected = () => (
-  <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-(--ob-ok)">
-    <Icon name="Check" className="size-3" aria-hidden />
+  <span className="inline-flex items-center gap-2 text-[13.5px] font-semibold text-(--ob-green)">
+    <span className="grid size-[22px] place-items-center rounded-full bg-(--ob-green) duration-300 animate-in zoom-in-50">
+      <svg viewBox="0 0 24 24" className="size-[13px]" fill="none" stroke="#fff" strokeWidth={3.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M20 6 9 17l-5-5" />
+      </svg>
+    </span>
     Connected
+  </span>
+);
+
+const AGENT_COUNTDOWN = 3;
+const TickStamp = () => (
+  <span aria-hidden className="relative mb-6 block size-[72px]">
+    {[0, 60, 120, 180, 240, 300].map((turn) => (
+      <span key={turn} className="ob-burst absolute top-[29px] left-[34px] h-3.5 w-1 bg-(--ob-ink)" style={{ "--ob-turn": `${turn}deg` } as CSSProperties} />
+    ))}
+    <span className="ob-stamp absolute inset-0 grid place-items-center border-2 border-(--ob-ink) bg-(--ob-lime) shadow-[5px_5px_0_var(--ob-ink)]">
+      <svg viewBox="0 0 24 24" className="size-11" fill="none" stroke="#000" strokeWidth={3.2} strokeLinecap="square">
+        <path className="ob-draw" pathLength={1} d="M20 6 9 17l-5-5" />
+      </svg>
+    </span>
   </span>
 );
 
@@ -311,7 +346,7 @@ function AccountStep({ email, signingIn, next }: { email: string | null; signing
   );
 }
 
-function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupProgress>; next: () => void }) {
+function AgentStep({ progress, next, stamped, left }: { progress: ReturnType<typeof useSetupProgress>; next: () => void; stamped: boolean; left: number | null }) {
   const { account, agents, codex, ready, offline } = progress;
   const defaultAgent = useSystemConfig().data?.generalSettings.defaultProviderId;
   const { localHostId } = useHostDaemon();
@@ -357,10 +392,15 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
   const finish = useMutation({ mutationFn: saveChoices, onSuccess: () => { track("agent", "done", agents.claude && agents.codex ? "both" : agents.claude ? "claude" : "codex"); next(); }, meta: { showErrorToast: false }, onError: (error) => appToast.error(error.message) });
   const codexBrowser = codex.data?.state === "waiting" && !codex.data.user_code ? codex.data : null;
   const waiting = !account.data?.account ? "Log in first" : offline ? "Cloud unreachable" : !ready ? "Starting your cloud…" : null;
+  const connectedLead = agents.claude && agents.codex ? "Agents" : agents.claude ? "Claude Code" : "Codex";
   const action = (connected: boolean, button: ReactNode) => (connected ? <Connected /> : waiting ? <Note>{waiting}</Note> : button);
   return (
     <>
-      <Heading lead="Connect an" mark="agent" />
+      {stamped ? (
+        <div key={connectedLead} className="ob-sweep duration-300 animate-in fade-in-0 slide-in-from-bottom-2">
+          <Heading lead={connectedLead} mark="connected" />
+        </div>
+      ) : <Heading lead="Connect an" mark="agent" />}
       <div className="mt-8 flex flex-col gap-3">
         <Card on={agents.claude} isDefault={agents.claude && defaultAgent === "claude-code"} logo={<AgentLogo id="claude-code" className="bg-[#f4e4d6]" />} name="Claude Code" detail={claudeLocal.data?.state === "connected" ? "Found on this Mac" : "Uses your Claude plan"}>
           {action(agents.claude, <span onClickCapture={() => started("claude")}><ClaudeConnectionButton target="cloud" presentation="inline" className={CONNECT} /></span>)}
@@ -384,9 +424,20 @@ function AgentStep({ progress, next }: { progress: ReturnType<typeof useSetupPro
         </div>
       )}
       <div className="mt-8 flex items-center gap-5">
-        <Cta disabled={!(agents.claude || agents.codex) || finish.isPending} onClick={() => finish.mutate()}>Continue <Icon name="ArrowRight" aria-hidden /></Cta>
-        <Note>Add the other one later in Settings.</Note>
+        <Cta
+          disabled={!(agents.claude || agents.codex) || finish.isPending}
+          onClick={() => finish.mutate()}
+          className={cn(left !== null && "min-w-[220px] bg-(--ob-lime) text-black shadow-[4px_4px_0_var(--ob-ink)] transition-[background-color,box-shadow] duration-300")}
+        >
+          {left === null ? <>Continue <Icon name="ArrowRight" aria-hidden /></> : <>Next step in<span key={left} className="-ml-1 inline-block w-[0.6em] duration-200 animate-in fade-in-0 slide-in-from-bottom-2">{left}</span></>}
+        </Cta>
+        {left === null && <Note>Add the other one later in Settings.</Note>}
       </div>
+      {left !== null && (
+        <div className="mt-3.5 h-1.5 w-[360px] bg-(--ob-line)">
+          <span className="bb-hero-progress-fill block h-full bg-(--ob-ink)" style={{ "--bb-hero-slide-duration": `${AGENT_COUNTDOWN}s` } as CSSProperties} />
+        </div>
+      )}
     </>
   );
 }

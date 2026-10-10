@@ -105,7 +105,7 @@ describe("tasks storage", () => {
     }
   });
 
-  it("migrates retired preset permission modes to Accept Edits", async () => {
+  it("migrates retired preset permission modes to Manual", async () => {
     const { db, harness } = setup();
     try {
       db.exec(`

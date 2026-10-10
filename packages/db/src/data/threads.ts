@@ -1705,6 +1705,7 @@ export interface UpdateThreadInput {
   sectionId?: string | null;
   lastReadAt?: number | null;
   parentThreadId?: string | null;
+  providerId?: string;
   title?: string | null;
   visibility?: ThreadVisibility;
 }
@@ -1738,6 +1739,10 @@ export function updateThread(
   ) {
     changes.push("environment-changed");
   }
+  if ("providerId" in input && input.providerId !== existing.providerId) {
+    // "title-changed" also refreshes the thread list, which shows the harness icon.
+    changes.push("execution-options-changed", "title-changed");
+  }
 
   const set: Partial<typeof threads.$inferInsert> = { updatedAt: now };
   if ("title" in input) set.title = input.title;
@@ -1750,6 +1755,7 @@ export function updateThread(
   }
   if ("parentThreadId" in input) set.parentThreadId = input.parentThreadId;
   if ("visibility" in input) set.visibility = input.visibility;
+  if (input.providerId !== undefined) set.providerId = input.providerId;
 
   const updated = db
     .update(threads)

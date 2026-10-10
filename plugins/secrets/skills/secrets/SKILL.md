@@ -21,4 +21,4 @@ Always provide the exact `--write-env` destination, a concise purpose, and one s
 
 After success, trust the command's path and added/updated/unchanged counts. Never verify by running `cat`, `sed`, `env`, or another command that would reveal the completed file.
 
-If the command reports duplicate dotenv assignments, fix the file structure without reading values and rerun the request. If it reports repeated write conflicts, rerun the same request; do not ask the user to paste values. Under the workspace sandbox (Accept Edits / Approve for me), Claude's macOS sandbox permits the loopback access plugin CLI commands need; Linux and other provider sandboxes may still require escalation approval.
+If the command reports duplicate dotenv assignments, fix the file structure without reading values and rerun the request. If it reports repeated write conflicts, rerun the same request; do not ask the user to paste values. Under the workspace sandbox (Manual / Auto), Claude's macOS sandbox permits the loopback access plugin CLI commands need; Linux and other provider sandboxes may still require escalation approval.

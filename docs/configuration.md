@@ -286,6 +286,13 @@ the prefix is at most 64 characters. The prefix applies to branches bb creates
 after you change it; it does not rename an existing branch or worktree. Set it
 with `bb settings general managedBranchPrefix <prefix>`.
 
+Settings → General → Git → Delete archived worktrees after sets how long a
+worktree folder stays after its last thread is archived or deleted: 5 minutes,
+1 hour, 1 day, 7 days, 30 days (default), or never. The branch stays;
+uncommitted changes are lost. Changing it restarts the timer for worktrees
+already waiting. Set it with
+`room-cli settings general worktreeRetention <5m|1h|1d|7d|30d|never>`.
+
 Settings → Providers lists every registered agent provider in picker order.
 Move a provider up or down to change the order and choose the default for new
 threads. Both are persisted preferences: `providerOrder` is the list of ids
@@ -661,7 +668,7 @@ the top of this document.
 Each machine has a permission ceiling (`maxPermissionMode`, default `full`).
 The server resolves every thread on that machine down to the ceiling, so a
 paired sandbox machine can keep Full Access while a personal machine stays at
-Approve for me or Accept Edits. A provider that supports no mode under the
+Auto or Manual. A provider that supports no mode under the
 ceiling is refused on that machine. Only an owner session sets it, on the machine
 page (Settings → Machines → the machine, which also carries that machine's
 projects, provider CLIs, update state, and rename/remove); it is deliberately

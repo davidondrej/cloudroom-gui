@@ -7,7 +7,7 @@ import type {
 import { formatModelLabel } from "@/hooks/useThreadCreationOptions";
 import {
   ModelReasoningPicker,
-  type ModelReasoningPickerHandoff,
+  type ModelReasoningPickerSelection,
 } from "@/components/pickers/ModelReasoningPicker";
 import { type PickerOption } from "@/components/pickers/OptionPicker";
 import type { ModelPickerOption } from "@/components/pickers/model-picker-option";
@@ -58,7 +58,8 @@ export interface ExecutionControlsProps {
   model: ExecutionModelConfig;
   serviceTier?: ExecutionServiceTierConfig;
   reasoning: ExecutionReasoningConfig;
-  handoff?: ModelReasoningPickerHandoff;
+  // An existing thread's picker reports every pick with its provider (ADR 0211).
+  onSelectModel?: (selection: ModelReasoningPickerSelection) => void;
   // Switches provider and model in one step; used by /opus and /astra.
   selectModel?: (selection: { providerId: string; model: string }) => void;
   disabled?: boolean;
@@ -71,7 +72,7 @@ export const ExecutionControls = memo(function ExecutionControls({
   model,
   serviceTier,
   reasoning,
-  handoff,
+  onSelectModel,
   disabled,
   lockModelSelection,
 }: ExecutionControlsProps) {
@@ -90,7 +91,7 @@ export const ExecutionControls = memo(function ExecutionControls({
     model.options.length > 0 ||
     canSwitchProviders ||
     selectedProviderId.length > 0 ||
-    handoff !== undefined;
+    onSelectModel !== undefined;
 
   return (
     <>
@@ -122,7 +123,7 @@ export const ExecutionControls = memo(function ExecutionControls({
           muted
           disabled={disabled}
           lockModelSelection={lockModelSelection}
-          handoff={handoff}
+          onSelectModel={onSelectModel}
         />
       ) : null}
     </>

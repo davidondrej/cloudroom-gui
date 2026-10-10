@@ -94,6 +94,32 @@ export type CloudEnvironmentChange =
   | { action: "githubRepos" };
 export type AutoDeleteDays = 30 | 90 | 180 | 365 | null;
 
+/** An automation that runs in the cloud (ADR 0212): the website re-prompts a Cloud thread on a schedule. */
+export interface CloudAutomation {
+  id: string;
+  thread_id: string;
+  session_id: string | null;
+  name: string;
+  prompt: string;
+  cron: string | null;
+  timezone: string;
+  run_at: string | null;
+  enabled: boolean;
+  next_run_at: string | null;
+  last_run_at: string | null;
+  last_error: string | null;
+  failures: number;
+  runs: number;
+  origin: "app" | "agent";
+  created_at: string;
+}
+export type CloudAutomationFields = { name?: string; prompt?: string; cron?: string | null; timezone?: string; run_at?: string | null; enabled?: boolean };
+export type CloudAutomationRequest =
+  | { action: "list"; thread?: string }
+  | ({ action: "create"; thread: string } & CloudAutomationFields)
+  | ({ action: "update"; id: string } & CloudAutomationFields)
+  | { action: "run" | "delete"; id: string };
+
 /** A skill on this Mac. `cloud` means every new cloud thread gets it. */
 export interface CloudSkill {
   name: string;
@@ -148,6 +174,8 @@ export interface CloudroomArea {
   environment(signal?: AbortSignal): Promise<CloudEnvironment>;
   updateEnvironment(change: CloudEnvironmentChange): Promise<CloudEnvironment>;
   autoDelete(signal?: AbortSignal): Promise<{ days: AutoDeleteDays }>;
+  /** Lists, creates, changes, runs, or deletes cloud automations. */
+  automations(input: CloudAutomationRequest): Promise<{ automations?: CloudAutomation[]; automation?: CloudAutomation; ok?: boolean }>;
   setAutoDelete(days: AutoDeleteDays): Promise<{ days: AutoDeleteDays }>;
   /** Names of API keys and tokens set in this Mac's login shell, never their values. */
   macVariables(signal?: AbortSignal): Promise<{ names: string[] }>;
@@ -268,6 +296,7 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     environment: (signal) => transport.readJson(request("/environment", undefined, signal)) as Promise<CloudEnvironment>,
     updateEnvironment: (change) => transport.readJson(request("/environment", change)) as Promise<CloudEnvironment>,
     autoDelete: (signal) => transport.readJson(request("/auto-delete", undefined, signal)) as Promise<{ days: AutoDeleteDays }>,
+    automations: (input) => transport.readJson(request("/automations", input)) as Promise<{ automations?: CloudAutomation[]; automation?: CloudAutomation; ok?: boolean }>,
     setAutoDelete: (days) => transport.readJson(request("/auto-delete", { days })) as Promise<{ days: AutoDeleteDays }>,
     macVariables: (signal) => transport.readJson(request("/environment/mac", undefined, signal)) as Promise<{ names: string[] }>,
     importMacVariables: (names) => transport.readJson(request("/environment/mac", { names })) as Promise<CloudEnvironment>,

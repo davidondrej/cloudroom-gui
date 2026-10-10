@@ -8,6 +8,7 @@ import type {
 } from "@cloudroom/domain";
 import {
   THREAD_CONTEXT_CLEAR_OPERATION,
+  THREAD_HARNESS_SWITCH_OPERATION,
   isApprovalInteractionLifecycle,
   isUserQuestionInteractionLifecycle,
   ownershipChangeOperationMetadataSchema,
@@ -572,7 +573,8 @@ export function parseOperationMessage(
     if (
       decoded.operation === "plugin_interaction" ||
       decoded.operation === "edit_message" ||
-      decoded.operation === "checkpoint"
+      decoded.operation === "checkpoint" ||
+      decoded.operation === THREAD_HARNESS_SWITCH_OPERATION
     ) {
       return null;
     }

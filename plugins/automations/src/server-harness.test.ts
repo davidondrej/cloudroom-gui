@@ -33,6 +33,7 @@ const rpcMethods = [
   "automations_resume",
   "automations_run",
   "automations_runs",
+  "cloud_automations",
 ].sort();
 
 function project(projectId = PROJECT_ID) {

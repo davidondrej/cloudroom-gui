@@ -16,6 +16,17 @@ Pass `--project` explicitly for every automation command. Inside a thread, autom
 
 Personal supports automations with `--project proj_personal`. Use `room-cli project list --include-personal --json` to include it in discovery; an empty default project list does not mean Personal is unavailable.
 
+Local or cloud:
+
+Automations above run on this Mac, only while it is awake and Cloudroom is running. A cloud automation runs on Cloudroom's servers instead: it re-prompts one existing Cloud thread (its harness and model) on a schedule, even while the Mac is off. Use cloud when the work should keep going with the laptop closed. Cloud automations have no script mode; the prompt can tell the agent to run a script.
+
+```bash
+room-cli automation create --cloud --thread <cloudThreadId> --name "..." --prompt "..." (--cron "<expr>" --timezone <tz> | --at <datetime> | --in <duration>)
+room-cli automation list --cloud [--thread <cloudThreadId>]
+```
+
+`show`, `update`, `pause`, `resume`, `run`, and `delete` take a cloud automation's ID (a UUID) without `--project`. Each cloud run is a message in its thread. A missed run fires once; a run waits until the previous one ends; three failed runs in a row pause it. Inside a Cloud thread, use `cloudroom automation` instead.
+
 Choosing a mode:
 
 Use `script` when the output is fully determined by code: watchdogs, threshold alerts, health checks, heartbeats, and API pollers with a fixed output shape. Scripts run on the Cloudroom server, with cwd inside the plugin data directory's `scripts/` area. Script automations do not have an environment field and do not accept environment flags.

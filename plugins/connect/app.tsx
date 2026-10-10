@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   definePluginApp,
   UrlLink as UrlLink,
@@ -10,6 +10,7 @@ import QRCode from "qrcode";
 import { Button } from "@cloudroom/shared-ui/button";
 import { Icon } from "@cloudroom/shared-ui/icon";
 import { Input } from "@cloudroom/shared-ui/input";
+import { Switch } from "@cloudroom/shared-ui/switch";
 import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
   CONNECT_REALTIME_CHANNEL,
@@ -142,17 +143,6 @@ function StatusDot({ tone }: { tone: "ok" | "warn" | "muted" }) {
         tone === "muted" && "bg-muted-foreground/50",
       )}
     />
-  );
-}
-
-function StepNumber({ value }: { value: number }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="flex size-5 shrink-0 items-center justify-center rounded-full bg-surface-recessed text-xs font-medium text-muted-foreground"
-    >
-      {value}
-    </span>
   );
 }
 
@@ -382,15 +372,14 @@ function SharedPortsSection({
   return (
     <div
       className={cn(
-        "space-y-2.5 border-t border-border-seam pt-4",
+        "space-y-3",
         dimmed && "pointer-events-none opacity-60 saturate-[0.85]",
       )}
     >
-      <div className="flex items-center">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-subtle-foreground">
-          Shared ports
-        </h3>
-        <span className="flex-1" />
+      <div className="flex items-center gap-3">
+        <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+          Agents can share their dev servers too. Only your signed-in phones can open them.
+        </p>
         <Button
           type="button"
           variant="ghost"
@@ -404,7 +393,7 @@ function SharedPortsSection({
       </div>
 
       {shares.length > 0 ? (
-        <div className="space-y-2.5">
+        <div className="space-y-2.5 rounded-lg border border-border p-3">
           {groupSharesByHost(shares).map((group) => {
             const hostDown = group.shares.every((share) => share.url === "");
             return (
@@ -485,7 +474,11 @@ function SharedPortsSection({
             );
           })}
         </div>
-      ) : null}
+      ) : formOpen ? null : (
+        <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+          No shared servers yet.
+        </p>
+      )}
 
       {formOpen ? (
         <form
@@ -520,9 +513,6 @@ function SharedPortsSection({
         </form>
       ) : null}
 
-      <p className="text-xs text-subtle-foreground/75">
-        Agents can share their dev servers too. Only your signed-in phones can open them.
-      </p>
       {error !== null ? (
         <p className="text-xs text-destructive-text">{error}</p>
       ) : null}
@@ -530,7 +520,7 @@ function SharedPortsSection({
   );
 }
 
-function PhoneCodeCard({ connected }: { connected: boolean }) {
+function PhoneCodeCard() {
   const rpc = useRpc<typeof connectRpcContract>();
   const [code, setCode] = useState<PhoneCode | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -562,51 +552,149 @@ function PhoneCodeCard({ connected }: { connected: boolean }) {
   }, [code, refresh]);
 
   return (
-    <div className="space-y-3">
-      <div className="flex gap-3">
-        <StepNumber value={1} />
-        <p className="text-sm">
-          On your phone, open{" "}
-          <span className="font-medium text-foreground">cloudroom.dev/mobile</span>
+    <div className="flex items-center gap-8 rounded-lg border border-border p-6">
+      {code !== null ? (
+        <QrCodeImage
+          value={code.url}
+          alt="QR code to open Cloudroom on your phone"
+          className="size-48 shrink-0 p-2"
+        />
+      ) : (
+        <div className="size-48 shrink-0 rounded-md bg-surface-recessed" />
+      )}
+      <div className="min-w-0 flex-1 space-y-1">
+        <h3 className="text-base font-semibold text-foreground">Scan with your phone</h3>
+        <p className="text-sm text-muted-foreground">
+          Or open{" "}
+          <span className="font-medium text-foreground">cloudroom.dev/mobile</span>{" "}
+          and enter:
         </p>
-      </div>
-      <div className="flex gap-3">
-        <StepNumber value={2} />
-        <div className="min-w-0 flex-1 space-y-2">
-          <p className="text-sm">Enter this code:</p>
-          <div className="flex items-center gap-2">
-            <span className="rounded-md border border-border bg-surface-recessed px-3 py-1.5 font-mono text-lg font-semibold tracking-widest">
-              {code?.code ?? "····-····"}
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground"
-              disabled={loading}
-              onClick={refresh}
-            >
-              {loading ? <Icon name="Spinner" className="size-4 animate-spin" /> : null}
-              New code
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            It works once, for 10 minutes. Or scan the QR code with your phone&apos;s camera.
-          </p>
-          {error !== null ? (
-            <p className="text-xs text-destructive-text">{error}</p>
-          ) : null}
-          {code !== null ? (
-            <QrCodeImage value={code.url} alt="QR code to open Cloudroom on your phone" />
-          ) : null}
+        <p className="pt-3 font-mono text-4xl font-semibold tracking-widest text-foreground">
+          {code?.code ?? "····-····"}
+        </p>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground">Works once, for 10 minutes.</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            disabled={loading}
+            onClick={refresh}
+          >
+            {loading ? <Icon name="Spinner" className="size-4 animate-spin" /> : null}
+            New code
+          </Button>
         </div>
+        {error !== null ? (
+          <p className="text-xs text-destructive-text">{error}</p>
+        ) : null}
       </div>
-      <p className="text-xs text-muted-foreground">
-        Then keep it on your home screen. On iPhone, tap Share, then Add to Home
+    </div>
+  );
+}
+
+function PhoneTab({ status }: { status: ConnectStatus }) {
+  if (!status.signedIn) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Sign in to Cloudroom to use it on your phone.
+      </p>
+    );
+  }
+  if (!status.paired) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Your phone code appears here once Cloudroom Connect is ready.
+      </p>
+    );
+  }
+  const connected = status.state === "connected";
+  return (
+    <div className="space-y-3">
+      <PhoneCodeCard />
+      <p className="rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+        Tip: add it to your Home Screen. On iPhone, tap Share, then Add to Home
         Screen. On Android, open the browser menu and tap Install app.
         {connected ? "" : " Your phone reaches this Mac while Cloudroom is open and the Mac is awake."}
       </p>
+      {status.url !== null ? (
+        <div className="flex items-center gap-4 rounded-lg border border-border px-4 py-3">
+          <span className="shrink-0 text-sm font-medium text-foreground">Private address</span>
+          <div className="min-w-0 flex-1">
+            <UrlHero url={status.url} showOpen={connected} />
+          </div>
+        </div>
+      ) : null}
     </div>
+  );
+}
+
+function SettingRow({
+  title,
+  detail,
+  children,
+}: {
+  title: string;
+  detail: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="text-xs text-muted-foreground">{detail}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function RemoteInstructionsRow() {
+  const rpc = useRpc<typeof connectRpcContract>();
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    rpc.call("remoteInstructions", {}).then(
+      (result) => setEnabled(result.enabled),
+      (rpcError: unknown) => setError(errorText(rpcError)),
+    );
+  }, [rpc]);
+  const change = useCallback(
+    (next: boolean) => {
+      setPending(true);
+      setError(null);
+      setEnabled(next);
+      rpc.call("remoteInstructions", { enabled: next }).then(
+        (result) => {
+          setPending(false);
+          setEnabled(result.enabled);
+        },
+        (rpcError: unknown) => {
+          setPending(false);
+          setEnabled(!next);
+          setError(errorText(rpcError));
+        },
+      );
+    },
+    [rpc],
+  );
+  return (
+    <SettingRow
+      title="Tell agents about remote access"
+      detail={
+        error ??
+        "When you use Cloudroom remotely, agents share dev servers through Cloudroom Connect. Applies to new agent sessions."
+      }
+    >
+      <Switch
+        checked={enabled ?? false}
+        disabled={enabled === null || pending}
+        onCheckedChange={change}
+        aria-label="Tell agents about remote access"
+      />
+    </SettingRow>
   );
 }
 
@@ -628,11 +716,10 @@ function SignOutPhones() {
     );
   }, [rpc]);
   return (
-    <div className="-mx-4 mt-4 flex items-center gap-3 border-t border-border-seam px-4 pt-3">
-      <span className="min-w-0 text-xs text-muted-foreground">
-        {result ?? "Phones stay signed in until you sign them out here."}
-      </span>
-      <span className="flex-1" />
+    <SettingRow
+      title="Signed-in phones"
+      detail={result ?? "Phones stay signed in until you sign them out here."}
+    >
       {state === "confirm" ? (
         <Button type="button" variant="ghost" size="sm" onClick={() => setState("idle")}>
           Cancel
@@ -648,7 +735,7 @@ function SignOutPhones() {
       >
         {state === "confirm" ? "Sign out all phones?" : "Sign out all phones"}
       </Button>
-    </div>
+    </SettingRow>
   );
 }
 
@@ -656,11 +743,10 @@ function LegacyNote({ url }: { url: string }) {
   const rpc = useRpc<typeof connectRpcContract>();
   const [pending, setPending] = useState(false);
   return (
-    <div className="flex items-center gap-3 rounded-md border border-border bg-surface-recessed/50 px-3 py-2">
-      <span className="min-w-0 flex-1 text-xs text-muted-foreground">
-        Your old link <span className="font-mono">{hostOf(url)}</span> still works
-        until {LEGACY_UNTIL}. Use cloudroom.dev/mobile instead.
-      </span>
+    <SettingRow
+      title="Old link"
+      detail={`${hostOf(url)} still works until ${LEGACY_UNTIL}. Use cloudroom.dev/mobile instead.`}
+    >
       <Button
         type="button"
         variant="ghost"
@@ -674,54 +760,97 @@ function LegacyNote({ url }: { url: string }) {
       >
         Turn off old link
       </Button>
+    </SettingRow>
+  );
+}
+
+function SettingsTab({ status }: { status: ConnectStatus }) {
+  return (
+    <div className="divide-y divide-border-seam rounded-lg border border-border">
+      <RemoteInstructionsRow />
+      {status.paired ? <SignOutPhones /> : null}
+      {status.legacy !== null ? <LegacyNote url={status.legacy.url} /> : null}
     </div>
   );
 }
 
-function StatusLine({ status }: { status: ConnectStatus }) {
-  if (!status.signedIn) {
-    return (
-      <div className="flex items-center gap-2">
-        <StatusDot tone="muted" />
-        <span className="text-sm">Sign in to Cloudroom to use it on your phone.</span>
-      </div>
-    );
-  }
-  if (!status.paired) {
-    return (
-      <div className="flex items-center gap-2">
-        <StatusDot tone="warn" />
-        <span className="text-sm font-semibold">Setting up…</span>
-        {status.lastError !== null ? (
-          <span className="min-w-0 truncate text-xs text-muted-foreground">
-            {status.lastError}
-          </span>
-        ) : null}
-      </div>
-    );
-  }
-  if (status.state !== "connected") {
-    return (
-      <div className="flex items-center gap-2">
-        <StatusDot tone="warn" />
-        <span className="shrink-0 text-sm font-semibold text-warning-text">Reconnecting…</span>
-        <span className="min-w-0 truncate text-xs text-muted-foreground">
-          {[status.lastError, retryHint(status.nextRetryAt)]
-            .filter((part): part is string => Boolean(part))
-            .join(" · ")}
-        </span>
-      </div>
-    );
-  }
+function StatusBadge({ status }: { status: ConnectStatus }) {
+  const [tone, label, detail]: ["ok" | "warn" | "muted", string, string | null] =
+    !status.signedIn
+      ? ["muted", "Signed out", null]
+      : !status.paired
+        ? ["warn", "Setting up…", status.lastError]
+        : status.state !== "connected"
+          ? [
+              "warn",
+              "Reconnecting…",
+              [status.lastError, retryHint(status.nextRetryAt)]
+                .filter((part): part is string => Boolean(part))
+                .join(" · "),
+            ]
+          : [
+              "ok",
+              "Ready",
+              `since ${formatSince(status.since)}${
+                status.remoteClients > 0 ? ` · ${status.remoteClients} viewing remotely` : ""
+              }`,
+            ];
   return (
-    <div className="flex items-center gap-2">
-      <StatusDot tone="ok" />
-      <span className="text-sm font-semibold">Ready</span>
-      <span className="min-w-0 truncate text-xs text-muted-foreground">
-        since {formatSince(status.since)}
-        {status.remoteClients > 0 ? ` · ${status.remoteClients} viewing remotely` : ""}
+    <div className="flex min-w-0 items-center gap-2">
+      {detail ? (
+        <span className="min-w-0 truncate text-xs text-muted-foreground">{detail}</span>
+      ) : null}
+      <span
+        className={cn(
+          "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium",
+          tone === "ok" && "border-success/60 bg-success/10 text-foreground",
+          tone === "warn" && "border-warning/20 bg-warning/15 text-warning-text",
+          tone === "muted" && "border-border text-muted-foreground",
+        )}
+      >
+        <StatusDot tone={tone} />
+        {label}
       </span>
     </div>
+  );
+}
+
+type ConnectTab = "phone" | "servers" | "settings";
+
+function TabButton({
+  active,
+  icon,
+  label,
+  count,
+  onSelect,
+}: {
+  active: boolean;
+  icon: string;
+  label: string;
+  count?: number;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onSelect}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-colors",
+        active
+          ? "bg-background text-foreground shadow-xs"
+          : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      <Icon name={icon} className="size-3.5" />
+      {label}
+      {count !== undefined && count > 0 ? (
+        <span className="rounded-full bg-surface-recessed px-1.5 text-[11px] tabular-nums text-muted-foreground">
+          {count}
+        </span>
+      ) : null}
+    </button>
   );
 }
 
@@ -729,6 +858,7 @@ function ConnectSettingsSection() {
   const rpc = useRpc<typeof connectRpcContract>();
   const [status, setStatus] = useState<ConnectStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [tab, setTab] = useState<ConnectTab>("phone");
 
   useEffect(() => {
     rpc.call("status").then(
@@ -762,19 +892,39 @@ function ConnectSettingsSection() {
 
   return (
     <div className="space-y-4">
-      <StatusLine status={status} />
-      {status.paired ? <PhoneCodeCard connected={status.state === "connected"} /> : null}
-      {status.paired && status.url !== null ? (
-        <div className="space-y-1.5">
-          <p className="text-xs text-muted-foreground">Your private address</p>
-          <UrlHero url={status.url} showOpen={status.state === "connected"} />
+      <div className="flex items-center gap-4">
+        <div
+          role="tablist"
+          aria-label="Cloudroom Connect"
+          className="inline-flex shrink-0 items-center gap-0.5 rounded-lg bg-surface-recessed p-1"
+        >
+          <TabButton active={tab === "phone"} icon="Smartphone" label="Phone" onSelect={() => setTab("phone")} />
+          <TabButton
+            active={tab === "servers"}
+            icon="Globe"
+            label="Shared servers"
+            count={status.shares.length}
+            onSelect={() => setTab("servers")}
+          />
+          <TabButton active={tab === "settings"} icon="Settings" label="Settings" onSelect={() => setTab("settings")} />
         </div>
+        <span className="flex-1" />
+        <StatusBadge status={status} />
+      </div>
+      {tab === "phone" ? <PhoneTab status={status} /> : null}
+      {tab === "servers" ? (
+        status.paired || status.legacy !== null ? (
+          <SharedPortsSection
+            shares={status.shares}
+            dimmed={status.state !== "connected" && status.legacy?.state !== "connected"}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Shared servers work once Cloudroom Connect is ready.
+          </p>
+        )
       ) : null}
-      {status.legacy !== null ? <LegacyNote url={status.legacy.url} /> : null}
-      {status.paired || status.legacy !== null ? (
-        <SharedPortsSection shares={status.shares} dimmed={status.state !== "connected" && status.legacy?.state !== "connected"} />
-      ) : null}
-      {status.paired ? <SignOutPhones /> : null}
+      {tab === "settings" ? <SettingsTab status={status} /> : null}
     </div>
   );
 }
@@ -782,8 +932,6 @@ function ConnectSettingsSection() {
 export default definePluginApp((app) => {
   app.slots.settingsSection({
     id: "remote-access",
-    description:
-      "Open Cloudroom on your phone with one code at cloudroom.dev/mobile.",
     component: ConnectSettingsSection,
   });
   app.experimental_sidebarFooter.register({
