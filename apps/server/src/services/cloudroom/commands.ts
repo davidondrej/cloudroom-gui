@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { readFile, writeFile, mkdir, stat, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { and, desc, eq, gt, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { createThread, getAppSettings, getProject, getThread, getThreadExecutionOverride, setThreadExecutionOverride, updateThread, cloudroomThreads, cloudroomCommands, events, type DbConnection, type DbQueryConnection } from "@cloudroom/db";
 import { PERSONAL_PROJECT_ID, encodeClientTurnRequestIdNumber, isStandaloneBuiltinCompactCommand, promptInputSchema, reasoningLevelSchema, threadQueuedMessageSchema, type Thread, type PromptInput, type ThreadEventType, type ThreadEventTurnStatus, type ThreadChangeKind, type ReasoningLevel } from "@cloudroom/domain";
 import type { CreateThreadRequest, ForkThreadRequest, SendMessageRequest, SendMessageResponse } from "@cloudroom/server-contract";
@@ -14,8 +14,8 @@ import { mentionsOpenAISide401 } from "./codex-errors.js";
 import { codexOutage } from "./openai-status.js";
 import { buildThreadStatusChangeMetadata } from "../threads/thread-runtime-display.js";
 import { cloudroomSystemPrompt, prepareCloudInstructionInput, resolveCustomInstructions } from "../threads/custom-instructions.js";
-import { binding, bindings, command, commands, queuedPrompts, saveBinding, saveCommandState, saveStatus, effectivePrompt, projectCopyProgress, stampBindings, teleportBlocked, unstartedTurn, type Binding, type Command } from "./store.js";
-import { copyProject, FAILURE_NOTE, githubRepository, localProjectNote, planProjectCopy, type ProjectCopyJob } from "./project-copy.js";
+import { binding, bindings, command, commands, coreInUse, queuedPrompts, saveBinding, saveCommandState, saveStatus, effectivePrompt, projectCopyProgress, stampBindings, teleportBlocked, unstartedTurn, type Binding, type Command } from "./store.js";
+import { copyProject, githubRepository, localProjectNote, planProjectCopy, writeFilesState, type ProjectCopyJob } from "./project-copy.js";
 import { cloudForkOf, cloudForkPoint, FORK_HARNESSES, FORK_HINT, landForkCode, startCloudFork } from "./fork.js";
 import { copyForkSourceHistory } from "../threads/thread-fork-history.js";
 import { appendClientTurnEvent } from "../threads/thread-events.js";
@@ -135,8 +135,6 @@ export function cloudExecution(deps: Pick<AppDeps, "db">, threadId: string): "cl
   return sandboxThread(binding(deps.db, threadId)?.coreUrl ?? "") ? "cloud_sandbox" : "cloud_vm";
 }
 
-const copyLanded = (error?: string) => error ? `the project copy failed, read ${FAILURE_NOTE} and keep going` : "files are ready, keep going";
-
 /** The branch a new cloud thread starts from, saved on its first prompt. Validated by the create request schema. */
 function baseBranch(input: string | undefined): string | undefined {
   const branch: unknown = input ? JSON.parse(input).base_branch : undefined;
@@ -152,6 +150,8 @@ export function requireNativeThread(thread: Pick<Thread, "executionTarget">): vo
 }
 
 type PromptAttachment = { name: string; kind: "image" | "file"; localPath: string; id?: string; path?: string };
+/** Runs when a project copy ends, with the client that ran it: a sandbox that slept mid-copy has a new address. */
+type Landed = (error?: string, client?: CloudroomClient) => void;
 
 function cloudTextContent(content: unknown): unknown {
   return Array.isArray(content) ? content.filter(part => part?.type === "text") : content;
@@ -336,6 +336,15 @@ class CloudroomService {
     return this.client(saved, wake);
   }
   followTeleport(threadId: string): void { void this.deliver(threadId).catch(() => {}); }
+  private readonly leftParent = new Set<string>();
+  /** A top-level thread in another thread's sandbox was a child there. Before its next work, Core stops reporting it
+   *  to that former parent, which may be archived. Repeats are harmless, so a failure retries on the next delivery. */
+  private async leaveFormerParent(saved: Binding, client: CloudroomClient): Promise<void> {
+    const sandbox = sandboxThread(saved.coreUrl);
+    if (!saved.sessionId || !sandbox || sandbox === saved.threadId || this.leftParent.has(saved.threadId) || getThread(this.deps.db, saved.threadId)?.parentThreadId) return;
+    try { await client.detach(saved.sessionId); this.leftParent.add(saved.threadId); }
+    catch (error) { this.warn("A Cloud thread could not leave its former parent", error, { threadId: saved.threadId }); }
+  }
   detach(threadId: string): void {
     this.streams.get(threadId)?.abort();
     this.streams.delete(threadId);
@@ -359,8 +368,7 @@ class CloudroomService {
   private lastCapabilities: Capabilities | null = null;
   private claudeConnected: boolean | null = null;
   private readonly resumingStarts = new Set<string>();
-  private readonly filesReady = new Map<string, { after: number; text: string }>();
-  private readonly pausedCopies = new Map<string, { job: ProjectCopyJob; landed: (error?: string) => void; tries: number }>();
+  private readonly pausedCopies = new Map<string, { job: ProjectCopyJob; landed: Landed; tries: number }>();
   private readonly catchUps = new Map<string, number>();
   /** What sandboxes run, kept apart from a VM's: an account with both starts new threads in sandboxes. */
   private sandboxCapabilities: Capabilities | null = null;
@@ -490,7 +498,13 @@ class CloudroomService {
         const logins = this.syncLogins();
         if (!this.sandboxes.loginsCopied) await logins;
       }
-      const found = await this.sandboxes.connection(sandbox, this.sandboxProject(getThread(this.deps.db, sandbox)?.projectId), wake, trigger);
+      const project = this.sandboxProject(getThread(this.deps.db, sandbox)?.projectId);
+      // A sandbox archived while one of its threads is active (a missed or racing restore) comes back for it.
+      const found = await this.sandboxes.connection(sandbox, project, wake, trigger).catch(async (error: unknown) => {
+        if (!(error instanceof CloudroomError && error.code === "sandbox_archived") || !coreInUse(this.deps.db, SANDBOX_PREFIX + sandbox)) throw error;
+        await this.sandboxes.restore(sandbox);
+        return this.sandboxes.connection(sandbox, project, wake, trigger);
+      });
       if (!found) throw new SandboxAsleep();
       return found;
     }
@@ -905,7 +919,7 @@ class CloudroomService {
       if (action === "login") {
         if (await copyLogins(this.deps) !== true) {
           reportAgentConnect("codex", "failed", { code: "copy_logins_off" });
-          throw new ApiError(409, "codex_auth_unsupported", "Cloud sandboxes use this Mac's Codex login. Allow copying logins in Cloudroom's setup, then try again.");
+          throw new ApiError(409, "codex_auth_unsupported", "Cloud sandboxes use this Mac's Codex login. Turn on \"Auth my agents in the cloud automatically\" in Settings → Cloud, then try again.");
         }
         // Signed out or expired here: sign in on this Mac first, then the next status check copies the new login.
         if (await hasMacCodexLogin() && !await macCodexLoginExpired()) await this.sandboxes.copyMacLogins(true, await copyMacGithub(this.deps));
@@ -1299,9 +1313,9 @@ class CloudroomService {
     if (!saved) return;
     const sandbox = sandboxThread(saved.coreUrl);
     if (sandbox) {
-      // Archive always wins (ADR 0112): the website stops the sandbox even mid-task. Children share it.
+      // Archive always wins (ADR 0112): the website stops the sandbox even mid-task, once no other thread runs in it.
       this.detach(threadId);
-      if (sandbox === threadId) void this.sandboxes.archive(sandbox).catch(error => this.warn("The thread's sandbox could not be archived; it sleeps on its own", error, { threadId }));
+      if (!coreInUse(this.deps.db, saved.coreUrl)) void this.sandboxes.archive(sandbox).catch(error => this.warn("The thread's sandbox could not be archived; it sleeps on its own", error, { threadId }));
       return;
     }
     this.enqueue(threadId, randomUUID(), "stop", {});
@@ -1334,9 +1348,10 @@ class CloudroomService {
     } catch { /* A missing branch never blocks the agent; the next title change retries. */ }
   }
 
+  /** Restores the sandbox the thread runs in, which may be another thread's: an unarchived child keeps its parent's. */
   async restore(threadId: string): Promise<void> {
-    const saved = binding(this.deps.db, threadId);
-    if (saved && sandboxThread(saved.coreUrl) === threadId) await this.sandboxes.restore(threadId);
+    const sandbox = sandboxThread(binding(this.deps.db, threadId)?.coreUrl ?? "");
+    if (sandbox) await this.sandboxes.restore(sandbox);
   }
 
   private snapshotInstructions(thread: Pick<Thread, "id" | "projectId">, action: Command["command"], input: object): object {
@@ -1681,6 +1696,7 @@ class CloudroomService {
       if (saved.sessionId) {
         this.follow(saved, client);
         if (!commands(this.deps.db, threadId).some(c => c.state === "sending")) { this.setConnectionIssue(threadId, "delivery"); return; }
+        await this.leaveFormerParent(saved, client);
       }
       const sandbox = sandboxThread(saved.coreUrl);
       const known = sandbox ? await this.savedCapabilities() : null;
@@ -1726,22 +1742,27 @@ class CloudroomService {
         const files: StartStep[] = copying ? [{ key: "files", text: copying, status: "started" }] : [];
         const forkCode: StartStep[] = started.code ? [{ key: "fork", text: "Copying the source thread's code", status: "started" }] : [];
         this.progress(threadId, [{ key: "agent", status: "completed" }, ...files, ...forkCode], "completed");
-        const landed = (error?: string) => {
+        const firstSent = new Promise<void>(resolve => { releaseCopy = resolve; });
+        // `cloudroom files wait` holds the agent until the files, and a fork's code, have landed (ADR 0209).
+        const workspace = options.workspace && options.workspace !== ROOT_WORKSPACE && (files.length || started.code) ? options.workspace : null;
+        const marked = workspace ? firstSent.then(() => this.filesState(client, threadId, workspace, "copying")) : null;
+        const landed: Landed = (error, current = client) => {
           if (files.length) this.progress(threadId, [{ key: "files", status: error ? "failed" : "completed" }]);
-          const ready = (text: string) => this.filesLanded(threadId, text);
-          const text = copyLanded(error);
+          const finish = (failure?: string | null) => {
+            if (marked && workspace) void marked.then(() => this.filesState(current, threadId, workspace, failure ? `failed: ${failure}` : "ready"));
+          };
           if (!started.code) {
             void this.ensureBranch(threadId, true);
-            ready(text);
+            finish(error);
             return;
           }
           // A fork's branch then moves to its source's code, so the agent sees what the source saw.
           void this.ensureBranch(threadId, true).then(() => landForkCode(client, started)).then((failure) => {
             this.progress(threadId, [{ key: "fork", status: failure ? "failed" : "completed" }]);
-            ready(failure ? `${failure} Keep going.` : text);
+            finish(failure ?? error);
           });
         };
-        if (copy) this.copy(client, copy, landed, new Promise(resolve => { releaseCopy = resolve; }));
+        if (copy) this.copy(client, copy, landed, firstSent);
         else if (started.code) landed();
         else if (sandbox) void this.ensureBranch(threadId, true);
       }
@@ -1798,7 +1819,7 @@ class CloudroomService {
             let context = parsed.workspaceContext;
             if (context === undefined) {
               const copying = pending.id === `first_${threadId}` && ["cloning", "uploading", "waiting"].includes(projectCopyProgress(this.deps.db, threadId)?.phase ?? "");
-              const hint = fork ? FORK_HINT : copying ? "[Cloud workspace context]\nThis project is new on the VM. Cloudroom is copying its files into this folder right now: a GitHub clone or an upload from the user's Mac, plus uncommitted edits and .env files. If files or instructions such as AGENTS.md are missing, wait briefly and check again instead of recreating them." : null;
+              const hint = fork ? FORK_HINT : copying ? "[Cloud workspace context]\nThis project is new on the VM. Cloudroom is copying its files into this folder right now: a GitHub clone or an upload from the user's Mac, plus uncommitted edits and .env files. Run `cloudroom files wait` before you rely on them; it returns once they land, or says why they won't. Never recreate missing files or instructions such as AGENTS.md." : null;
               context = hint && Buffer.byteLength(`${enriched.text}\n\n${hint}`, "utf8") <= 32768 ? hint : null;
               this.deps.db.update(cloudroomCommands).set({ input: JSON.stringify({ ...JSON.parse(pending.input), workspaceContext: context }) }).where(eq(cloudroomCommands.id, pending.id)).run();
             }
@@ -1932,12 +1953,6 @@ class CloudroomService {
     return true;
   }
 
-  assertRestorable(thread: Thread): void {
-    const parent = thread.parentThreadId ? getThread(this.deps.db, thread.parentThreadId) : null;
-    if (!isCloudThread(thread) || !parent || !isCloudThread(parent) || binding(this.deps.db, thread.id)?.coreUrl === binding(this.deps.db, parent.id)?.coreUrl) return;
-    throw new ApiError(409, "cloudroom_parent_moved", "This Cloud child can't be restored: its Local parent moved to Cloud with Teleport, so the child could no longer report back to it. Start a new thread instead.");
-  }
-
   private follow(saved: Binding, client: CloudroomClient): void {
     if (this.streams.has(saved.threadId) || !saved.sessionId || this.stopped) return;
     // Once per app run and thread: backfills older threads and saves a new thread's session.
@@ -1991,7 +2006,6 @@ class CloudroomService {
           this.setConnectionIssue(saved.threadId, "replay");
           if (record.kind === "rewind") this.deps.hub.notifyThread(saved.threadId, ["history-rewritten"]);
           this.notify(saved.threadId, eventTypes, ["state", "receipt", "native_identity"].includes(record.kind));
-          this.nudgeAfterCopy(saved.threadId);
         }
         if (!controller.signal.aborted) {
           const ended = new CloudroomConnectionError("Cloudroom event stream ended");
@@ -2022,8 +2036,8 @@ class CloudroomService {
 
   /** Copies a new thread's project. If its sandbox sleeps or drops mid-copy (say, the usage cap paused it), the copy waits
    *  and restarts on the thread's next connection, up to 3 times, instead of failing. */
-  private copy(client: CloudroomClient, job: ProjectCopyJob, landed: (error?: string) => void, after?: Promise<void>, tries = 0): void {
-    copyProject(this.deps, client, job, landed, after, tries < 3 ? () => {
+  private copy(client: CloudroomClient, job: ProjectCopyJob, landed: Landed, after?: Promise<void>, tries = 0): void {
+    copyProject(this.deps, client, job, error => landed(error, client), after, tries < 3 ? () => {
       this.pausedCopies.set(job.threadId, { job, landed, tries: tries + 1 });
       // Reconnecting finds the sandbox's new address, or that it sleeps; the copy resumes once a stream connects.
       this.detach(job.threadId);
@@ -2040,14 +2054,16 @@ class CloudroomService {
     const sandbox = sandboxThread(saved.coreUrl);
     const job = await planProjectCopy(this.deps, client, threadId, workspace, { key: sandbox ? `${sandbox}:${workspace}` : workspace, branch: baseBranch(input) });
     if (!job) throw new ApiError(409, "cloudroom_no_project_copy", "Nothing is left to copy, or a copy is already running.");
-    this.copy(client, job, error => this.filesLanded(threadId, copyLanded(error)));
+    // A folder that already has files gets only its `.env` files again, so a copy cut short stays failed, never ready.
+    const full = job.clone || job.copyAll;
+    const marked = full ? this.filesState(client, threadId, workspace, "copying") : Promise.resolve();
+    this.copy(client, job, (error, current = client) => void marked.then(() => this.filesState(current, threadId, workspace,
+      error ? `failed: ${error}` : full ? "ready" : "failed: The project copy was cut short, so some files may be missing.", !full)));
   }
 
-  /** Tells an idle agent once its project files landed (or why not), unless it already moved on. */
-  private filesLanded(threadId: string, text: string): void {
-    const last = this.deps.db.select({ sequence: events.sequence }).from(events).where(eq(events.threadId, threadId)).orderBy(desc(events.sequence)).limit(1).get();
-    this.filesReady.set(threadId, { after: last?.sequence ?? 0, text });
-    this.nudgeAfterCopy(threadId);
+  private filesState(client: CloudroomClient, threadId: string, workspace: string, state: string, onlyIfCopying = false): Promise<void> {
+    return writeFilesState(client, workspace, state, onlyIfCopying)
+      .catch(error => this.warn("Could not save the project copy state for `cloudroom files wait`", error, { threadId }));
   }
 
   private resumeCopy(threadId: string, client: CloudroomClient): void {
@@ -2059,18 +2075,6 @@ class CloudroomService {
     }
     this.pausedCopies.delete(threadId);
     this.copy(client, paused.job, paused.landed, undefined, paused.tries);
-  }
-
-  private nudgeAfterCopy(threadId: string): void {
-    const ready = this.filesReady.get(threadId);
-    const thread = ready === undefined ? null : getThread(this.deps.db, threadId);
-    if (ready === undefined || (thread && ["pending", "starting", "active", "stopping"].includes(thread.status))) return;
-    this.filesReady.delete(threadId);
-    if (thread?.status !== "idle" || binding(this.deps.db, threadId)?.queuePaused || this.queue(threadId).length) return;
-    const usedFiles = this.deps.db.select({ id: events.id }).from(events).where(and(eq(events.threadId, threadId), eq(events.type, "item/started"), eq(events.itemKind, "toolCall"), gt(events.sequence, ready.after))).get();
-    if (usedFiles) return;
-    void this.send(thread, { input: [{ type: "text", text: ready.text, mentions: [] }], mode: "auto" })
-      .catch(error => this.warn("The agent could not be told its project files are ready", error, { threadId }));
   }
 
   private setConnectionIssue(threadId: string, phase: ConnectionPhase, error?: unknown): void {

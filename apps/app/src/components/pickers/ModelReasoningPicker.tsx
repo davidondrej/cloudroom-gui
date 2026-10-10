@@ -577,8 +577,9 @@ export function ModelReasoningPicker({
   }, []);
 
   const handleModelSelect = useCallback(
-    (model: string) => {
+    (model: string, close = true) => {
       if (previewSelectionBlocked || lockModelSelection) return;
+      if (close) setOpen(false);
       if (handoff !== undefined && handoffMode) {
         handoff.onSelect({
           providerId: activeProviderId,
@@ -778,7 +779,7 @@ export function ModelReasoningPicker({
           : previousCycleValue(options, value);
       if (next !== null) {
         if (handoffMode) {
-          handleModelSelect(next);
+          handleModelSelect(next, false);
         } else {
           onModelChange(next);
           setPreviewProviderId(null);

@@ -126,7 +126,7 @@ export default async function keepAwakePlugin(bb: BbPluginApi): Promise<void> {
 
   bb.cli.register({
     name: "keep-awake",
-    summary: "Configure macOS sleep prevention",
+    summary: "Configure sleep prevention",
     commands: [
       {
         name: "status",
@@ -249,7 +249,7 @@ export default async function keepAwakePlugin(bb: BbPluginApi): Promise<void> {
               if (!actual.supported) {
                 if (desired) {
                   bb.log.warn(
-                    `Keep Awake is enabled but host ${availableHost.id} is not macOS`,
+                    `Keep Awake is enabled but host ${availableHost.id} is not supported`,
                   );
                 }
                 return "settled";

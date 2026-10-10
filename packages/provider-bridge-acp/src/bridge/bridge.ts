@@ -39,7 +39,7 @@ import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { promises as fs, readFileSync } from "node:fs";
 import { createServer, type Server, type Socket } from "node:net";
-import { dirname, isAbsolute, basename, relative, resolve } from "node:path";
+import { dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
@@ -153,6 +153,7 @@ import {
   runAcpDynamicToolMcpServer,
   type AcpMcpServerConfig,
 } from "./tool-proxy-mcp.js";
+import { isPathInsideRoots } from "./workspace-path.js";
 
 interface AcpSessionPolicy {
   permissionMode: "accept-edits" | "full";
@@ -1499,17 +1500,6 @@ function handlePermissionRequest(
     });
 }
 
-function isPathInsideRoots(targetPath: string, roots: string[]): boolean {
-  const resolvedTarget = resolve(targetPath);
-  return roots.some((root) => {
-    const relativePath = relative(resolve(root), resolvedTarget);
-    return (
-      relativePath === "" ||
-      (!relativePath.startsWith("..") && !isAbsolute(relativePath))
-    );
-  });
-}
-
 function sliceFileContent(
   content: string,
   line: number | null | undefined,
@@ -1559,7 +1549,10 @@ async function handleFsWriteTextFile(
 
   if (
     session.policy.permissionMode === "accept-edits" &&
-    !isPathInsideRoots(parsed.data.path, session.policy.workspaceWriteRoots)
+    !(await isPathInsideRoots(
+      parsed.data.path,
+      session.policy.workspaceWriteRoots,
+    ))
   ) {
     responder.error(
       -32000,

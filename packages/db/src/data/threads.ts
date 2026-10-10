@@ -1929,7 +1929,7 @@ export function archiveThread(
 }
 
 export function unarchiveThread(
-  db: DbConnection,
+  db: ThreadWriteConnection,
   notifier: DbNotifier,
   id: string,
 ) {

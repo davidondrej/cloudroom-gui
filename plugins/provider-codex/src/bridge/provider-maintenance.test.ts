@@ -93,6 +93,24 @@ describe("Codex provider maintenance", () => {
       verification: { kind: "version_at_least", version: "1.1.0" },
     });
     expect(
+      __testing.buildProviderInstallationRun(
+        installationStatus(),
+        "update",
+        "/opt/homebrew",
+      ),
+    ).toMatchObject({
+      command: {
+        command: "npm",
+        args: [
+          "install",
+          "-g",
+          "--prefix",
+          "/opt/homebrew",
+          "@openai/codex@latest",
+        ],
+      },
+    });
+    expect(
       __testing.buildProviderInstallationRun(installationStatus(), "install"),
     ).toEqual({
       available: false,

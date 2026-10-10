@@ -8,7 +8,10 @@ import type { ApplicationMenuAccelerators } from "./desktop-menu-shortcuts.js";
 import type { ConnectServerSyncSkipReason } from "./connect-server-sync.js";
 import { BUILTIN_SERVER_NAME } from "./server-target.js";
 
-const SERVER_DAEMON_LOGS_MENU_LABEL = "Server & Daemon Logs";
+const SERVER_DAEMON_LOGS_MENU_LABEL =
+  process.platform === "linux"
+    ? "Server && Daemon Logs"
+    : "Server & Daemon Logs";
 const OPEN_NEW_TAB_MENU_LABEL = "New Tab";
 const REOPEN_CLOSED_TAB_MENU_LABEL = "Reopen Closed Tab";
 const NEW_THREAD_MENU_LABEL = "New Thread";

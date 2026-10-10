@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import {
   experimental_defineHostEntry,
   type ExperimentalHostWorkerLease,
@@ -6,6 +7,7 @@ import {
 import { keepAwakeHostContract } from "./contract.js";
 
 const CAFFEINATE_COMMAND = "/usr/bin/caffeinate";
+const SYSTEMD_INHIBIT_COMMAND = "/usr/bin/systemd-inhibit";
 const RESTART_DELAY_MS = 1_000;
 
 interface KeepAwakeChild {
@@ -16,6 +18,7 @@ interface KeepAwakeChild {
 interface KeepAwakeHostDependencies {
   readonly pid: number;
   readonly platform: NodeJS.Platform;
+  readonly hasSystemdInhibit?: boolean;
   spawn(
     command: string,
     args: readonly string[],
@@ -23,7 +26,33 @@ interface KeepAwakeHostDependencies {
   ): KeepAwakeChild;
 }
 
+function keepAwakeCommand(
+  deps: KeepAwakeHostDependencies,
+): readonly [string, readonly string[]] | null {
+  const pid = String(deps.pid);
+  if (deps.platform === "darwin") {
+    return [CAFFEINATE_COMMAND, ["-d", "-i", "-s", "-w", pid]];
+  }
+  if (deps.platform === "linux" && deps.hasSystemdInhibit === true) {
+    return [
+      SYSTEMD_INHIBIT_COMMAND,
+      [
+        "--what=idle:sleep",
+        "--who=Cloudroom",
+        "--why=Agents are running",
+        "--mode=block",
+        "tail",
+        `--pid=${pid}`,
+        "-f",
+        "/dev/null",
+      ],
+    ];
+  }
+  return null;
+}
+
 export function createKeepAwakeHostEntry(deps: KeepAwakeHostDependencies) {
+  const command = keepAwakeCommand(deps);
   let child: KeepAwakeChild | null = null;
   let lifecycleSignal: AbortSignal | null = null;
   let desiredEnabled = false;
@@ -67,16 +96,14 @@ export function createKeepAwakeHostEntry(deps: KeepAwakeHostDependencies) {
       child !== null ||
       restartTimer !== null ||
       !desiredEnabled ||
-      deps.platform !== "darwin" ||
+      command === null ||
       lifecycleSignal?.aborted === true
     ) {
       return;
     }
     let next: KeepAwakeChild;
     try {
-      next = deps.spawn(CAFFEINATE_COMMAND, ["-d", "-i", "-s", "-w", String(deps.pid)], {
-        stdio: "ignore",
-      });
+      next = deps.spawn(command[0], command[1], { stdio: "ignore" });
     } catch {
       scheduleRestart();
       return;
@@ -105,7 +132,7 @@ export function createKeepAwakeHostEntry(deps: KeepAwakeHostDependencies) {
   }
 
   function status(): { enabled: boolean; supported: boolean } {
-    return { enabled: child !== null, supported: deps.platform === "darwin" };
+    return { enabled: child !== null, supported: command !== null };
   }
 
   return experimental_defineHostEntry({
@@ -113,7 +140,7 @@ export function createKeepAwakeHostEntry(deps: KeepAwakeHostDependencies) {
     handlers: {
       setEnabled(input, context) {
         bindLifecycle(context.lifecycle.signal);
-        desiredEnabled = deps.platform === "darwin" && input.enabled;
+        desiredEnabled = command !== null && input.enabled;
         if (!desiredEnabled) {
           clearRestart();
           stop();
@@ -134,6 +161,8 @@ export function createKeepAwakeHostEntry(deps: KeepAwakeHostDependencies) {
 export default createKeepAwakeHostEntry({
   pid: process.pid,
   platform: process.platform,
+  hasSystemdInhibit:
+    process.platform === "linux" && existsSync(SYSTEMD_INHIBIT_COMMAND),
   spawn(command, args, options) {
     return spawn(command, [...args], options);
   },

@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
@@ -169,7 +169,8 @@ export async function openOnMac(deps: AppDeps, threadId: string, path: string): 
   let target = join(folder, name);
   for (let copy = 2; existsSync(target); copy++) target = join(folder, `${stem} ${copy}${extname(name)}`);
   await writeFile(target, data, { flag: "wx" });
-  await exec("open", VIEWABLE.test(target) ? [target] : ["-R", target]);
+  if (process.platform === "linux") spawn("xdg-open", [VIEWABLE.test(target) ? target : folder], { detached: true, stdio: "ignore" }).on("error", () => {}).unref();
+  else await exec("open", VIEWABLE.test(target) ? [target] : ["-R", target]);
   return { path: target };
 }
 

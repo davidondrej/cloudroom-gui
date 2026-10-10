@@ -22,7 +22,7 @@ export const cloudForkSchema = z.object({
 export type CloudFork = z.infer<typeof cloudForkSchema>;
 
 export const FORK_HARNESSES: readonly string[] = ["claude-code", "codex"];
-export const FORK_HINT = "[Cloud fork]\nThis conversation was forked from another Cloud thread and now runs in its own new sandbox. Cloudroom is copying that thread's code (its commits and uncommitted changes) into this folder. If files you worked on are missing or out of date, wait briefly and check again instead of recreating them.";
+export const FORK_HINT = "[Cloud fork]\nThis conversation was forked from another Cloud thread and now runs in its own new sandbox. Cloudroom is copying that thread's code (its commits and uncommitted changes) into this folder. Run `cloudroom files wait` before you read or change files; it returns once the code lands. Never recreate missing files.";
 // Core takes teleport uploads in 1 MB parts.
 const PART = 1024 * 1024;
 const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;

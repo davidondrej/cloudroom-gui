@@ -7,7 +7,7 @@ import { expect, it, vi } from "vitest";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
 import { createTestAppHarness } from "../helpers/test-app.js";
 import { seedHostSession, seedProjectWithSource } from "../helpers/seed.js";
-import { cloudroomThreads, getThread } from "@cloudroom/db";
+import { cloudroomThreads, createThread, getThread } from "@cloudroom/db";
 
 const listen = async (server: ReturnType<typeof createServer>) => {
   server.listen(0, "127.0.0.1"); await once(server, "listening");
@@ -102,6 +102,89 @@ it("gives each cloud thread its own sandbox, wakes it only for work, and archive
     // Archive goes to the website, which stops the sandbox even mid-task.
     expect((await harness.app.request(`/api/v1/threads/${thread.id}/archive-all`, { method: "POST" })).status).toBeLessThan(300);
     await waitFor(() => website.some(call => call.action === "archive" && call.thread === thread.id), "archive");
+  } finally {
+    service.stop();
+    coreServer.close(); websiteServer.close();
+  }
+});
+
+it("an unarchived Cloud child becomes top-level, keeps its parent's sandbox, and archives it as the last thread", async () => {
+  const harness = await createTestAppHarness();
+  const { host } = seedHostSession(harness.deps);
+  const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
+  const service = cloudroom(harness.deps);
+  const website: { action: string; thread?: string }[] = [];
+  const core: string[] = [];
+  let state: "asleep" | "awake" | "archived" = "asleep";
+  let restoreFails = true;
+  let coreUrl = "";
+  const coreServer = createServer(async (req, res) => {
+    const json = (value: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(value)); };
+    core.push(req.url!);
+    if (req.url === "/v1/health") return json({});
+    if (req.url === "/v1/ready") return json({ ready: true });
+    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code", stop: true, resume: true, launch_settings: true, workspaces: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: "codex", model: "test-model" }] });
+    if (req.url?.includes("/stream?")) { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.end(); return; }
+    const input = await body(req);
+    if (req.url === "/v1/sessions/cr_child/detach") return json({ detached: true }, 202);
+    if (req.url === "/v1/sessions/cr_child/prompts") return json({ session_id: "cr_child", receipt: { request_id: input.request_id, command: "prompt", input, state: "accepted" }, saving: {} }, 202);
+    return json({}, 404);
+  });
+  const websiteServer = createServer(async (req, res) => {
+    const json = (value: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(value)); };
+    const input = await body(req);
+    website.push({ action: input.action ?? input.name, thread: input.thread });
+    if (req.url === "/api/desktop/logins") return json({ claude: false, codex: false, pi: false, github: false });
+    if (input.action === "archive") state = "archived";
+    if (input.action === "restore") {
+      if (restoreFails) { restoreFails = false; return json({ error: "The website is down." }, 500); }
+      state = "asleep";
+    }
+    if (input.action === "wake") {
+      if (state === "archived") return json({ error: "This thread is archived. Restore it to continue.", code: "sandbox_archived" }, 409);
+      state = "awake";
+    }
+    const view = { thread: input.thread, state, generation: 1, issue: null };
+    return json(state === "awake" ? { ...view, origin: coreUrl, token: "t".repeat(64) } : view);
+  });
+  coreUrl = await listen(coreServer);
+  const websiteUrl = await listen(websiteServer);
+  const post = (path: string, value?: unknown) => harness.app.request(`/api/v1${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, ...(value === undefined ? {} : { body: JSON.stringify(value) }) });
+  const calls = (action: string) => website.filter(call => call.action === action).map(call => call.thread);
+  try {
+    await service.configure(null, { id: "11111111-1111-4111-8111-111111111111", email: "sandbox@example.com" }, undefined, websiteUrl, "a".repeat(64));
+    const parent = createThread(harness.deps.db, harness.deps.hub, { executionTarget: "cloud", projectId: project.id, providerId: "codex", status: "idle" });
+    const child = createThread(harness.deps.db, harness.deps.hub, { executionTarget: "cloud", projectId: project.id, providerId: "codex", parentThreadId: parent.id, status: "idle" });
+    harness.deps.db.insert(cloudroomThreads).values([
+      { threadId: parent.id, coreUrl: `sandbox:${parent.id}`, sessionId: "cr_parent", startRequestId: "parent", model: "test-model", reasoning: "medium" },
+      { threadId: child.id, coreUrl: `sandbox:${parent.id}`, sessionId: "cr_child", startRequestId: "child", model: "test-model", reasoning: "medium" },
+    ]).run();
+
+    // Archiving the parent archives its child, and the shared sandbox once, after its last thread.
+    expect((await post(`/threads/${parent.id}/archive-all`)).status).toBe(200);
+    await waitFor(() => calls("archive").length > 0, "sandbox archive");
+    expect(calls("archive")).toEqual([parent.id]);
+
+    // Unarchiving the child makes it a top-level thread and restores the sandbox it runs in: its former parent's.
+    expect((await post(`/threads/${child.id}/unarchive`)).status).toBe(200);
+    expect(getThread(harness.deps.db, child.id)).toMatchObject({ archivedAt: null, parentThreadId: null });
+    expect(getThread(harness.deps.db, parent.id)?.archivedAt).not.toBeNull();
+    await waitFor(() => calls("restore").length > 0, "restore");
+    expect(calls("restore")).toEqual([parent.id]);
+
+    // That restore failed, so the wake finds the sandbox archived, restores it, and delivers. Core first detaches the
+    // thread, so the archived parent hears nothing of its new work.
+    const sent = await post(`/threads/${child.id}/send`, { requestId: "follow-up", mode: "auto", input: [{ type: "text", text: "Continue", mentions: [] }] });
+    expect(sent.status, await sent.clone().text()).toBeLessThan(300);
+    await waitFor(() => core.includes("/v1/sessions/cr_child/prompts"), "prompt delivery");
+    expect(calls("restore")).toEqual([parent.id, parent.id]);
+    expect(core.indexOf("/v1/sessions/cr_child/detach")).toBeGreaterThan(-1);
+    expect(core.indexOf("/v1/sessions/cr_child/detach")).toBeLessThan(core.indexOf("/v1/sessions/cr_child/prompts"));
+
+    // Archiving its last active thread archives the sandbox again.
+    expect((await post(`/threads/${child.id}/archive-all`)).status).toBe(200);
+    await waitFor(() => calls("archive").length === 2, "second sandbox archive");
+    expect(calls("archive")).toEqual([parent.id, parent.id]);
   } finally {
     service.stop();
     coreServer.close(); websiteServer.close();

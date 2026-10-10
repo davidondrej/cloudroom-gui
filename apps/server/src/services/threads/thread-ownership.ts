@@ -1,8 +1,10 @@
 import {
   archiveThread,
+  getThread,
   listUnarchivedAssignedChildThreads,
   type DbNotifier,
   type DbTransaction,
+  unarchiveThread,
   updateThread,
 } from "@cloudroom/db";
 import type { PromptInput, SystemMessageSubject, Thread } from "@cloudroom/domain";
@@ -159,20 +161,53 @@ function releaseUnarchivedChildrenFromArchivedThreadInTransaction(
   });
 
   for (const childThread of childThreads) {
-    const updatedThread = updateThread(deps.db, deps.hub, childThread.id, {
-      parentThreadId: null,
-      sectionId: args.sectionId,
-    });
-    if (!updatedThread) {
-      continue;
-    }
-    appendThreadOwnershipChangeEventInTransaction(deps, {
-      threadId: updatedThread.id,
-      environmentId: updatedThread.environmentId,
-      previousParentThreadId: childThread.parentThreadId,
-      nextParentThreadId: updatedThread.parentThreadId,
-    });
+    releaseChildInTransaction(deps, childThread, args.sectionId);
   }
+}
+
+function releaseChildInTransaction(
+  deps: ThreadOwnershipTransactionDeps,
+  childThread: Thread,
+  sectionId: string | null,
+): Thread | null {
+  const updatedThread = updateThread(deps.db, deps.hub, childThread.id, {
+    parentThreadId: null,
+    sectionId,
+  });
+  if (!updatedThread) {
+    return null;
+  }
+  appendThreadOwnershipChangeEventInTransaction(deps, {
+    threadId: updatedThread.id,
+    environmentId: updatedThread.environmentId,
+    previousParentThreadId: childThread.parentThreadId,
+    nextParentThreadId: updatedThread.parentThreadId,
+  });
+  return updatedThread;
+}
+
+export function unarchiveThreadAsTopLevel(
+  deps: Pick<LoggedPendingInteractionWorkSessionDeps, "db" | "hub">,
+  threadId: string,
+): Thread | null {
+  const notificationBuffer = new NotificationBuffer();
+  const result = deps.db.transaction(
+    (tx) => {
+      const thread = unarchiveThread(tx, notificationBuffer, threadId);
+      if (!thread?.parentThreadId) {
+        return thread;
+      }
+      const parent = getThread(tx, thread.parentThreadId);
+      return releaseChildInTransaction(
+        { db: tx, hub: notificationBuffer },
+        thread,
+        parent?.sectionId ?? thread.sectionId,
+      );
+    },
+    { behavior: "immediate" },
+  );
+  notificationBuffer.flushInto(deps.hub);
+  return result;
 }
 
 export function archiveThreadAndReleaseChildren(

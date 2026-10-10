@@ -616,7 +616,8 @@ function createDesktopPathContext(): DesktopPathContext {
 
 function shouldEnableServerDaemonLogsMenu(): boolean {
   return (
-    process.platform === "darwin" && currentRuntime?.ownership === "spawned"
+    (process.platform === "darwin" || process.platform === "linux") &&
+    currentRuntime?.ownership === "spawned"
   );
 }
 
@@ -1034,6 +1035,12 @@ function startRemoteSystemConfigSync(serverUrl: string): void {
 }
 
 const pendingOpenLinks: string[] = [];
+
+function deliverLinuxShareLink(argv: readonly string[]): void {
+  if (process.platform !== "linux") return;
+  const url = argv.find((arg) => arg.startsWith("cloudroom://share/"));
+  if (url !== undefined) deliverOpenLink(url);
+}
 
 function deliverOpenLink(url: string): void {
   const browserWindow = getFocusedApplicationWindow();
@@ -2161,7 +2168,8 @@ async function runDesktopApp(): Promise<void> {
     return;
   }
 
-  app.on("second-instance", () => {
+  app.on("second-instance", (_event, argv) => {
+    deliverLinuxShareLink(argv);
     if (desktopWindowFactory?.focusFirstWindow() === true) {
       return;
     }
@@ -2176,6 +2184,7 @@ async function runDesktopApp(): Promise<void> {
     if (url.startsWith("cloudroom://share/")) deliverOpenLink(url);
     desktopWindowFactory?.focusFirstWindow();
   });
+  deliverLinuxShareLink(process.argv);
   app.on("before-quit", handleBeforeQuit);
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {

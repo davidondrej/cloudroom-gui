@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { definePluginApp } from "@get-bb/plugin-sdk/app";
 
 // A year of active minutes per day, drawn like GitHub's contribution graph. Settings → General shows it at the top.
@@ -29,11 +29,10 @@ function useTimeInApp(): TimeInApp | null {
   return time;
 }
 
-function Cell({ minutes, title }: { minutes: number; title: string }) {
+function Cell({ minutes }: { minutes: number }) {
   const shade = level(minutes);
   return (
     <span
-      title={title}
       className={shade === 0 ? "bg-muted" : "bg-primary"}
       style={{ aspectRatio: "1", borderRadius: 2, opacity: shade === 0 ? 1 : OPACITY[shade] }}
     />
@@ -42,7 +41,15 @@ function Cell({ minutes, title }: { minutes: number; title: string }) {
 
 function TimeHeatmap() {
   const time = useTimeInApp();
+  const gridRef = useRef<HTMLDivElement>(null);
+  // One shared hover tooltip, like GitHub's: shows instantly above the hovered day.
+  const [tip, setTip] = useState<{ text: string; x: number; y: number; week: number } | null>(null);
   if (!time) return null;
+  const showTip = (event: MouseEvent<HTMLElement>, text: string, week: number) => {
+    const cell = event.currentTarget.getBoundingClientRect();
+    const grid = gridRef.current!.getBoundingClientRect();
+    setTip({ text, x: cell.left + cell.width / 2 - grid.left, y: cell.top - grid.top, week });
+  };
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const start = new Date(today);
@@ -59,10 +66,11 @@ function TimeHeatmap() {
       if (date > today) continue;
       const minutes = time.days[dayKey(date)] ?? 0;
       total += minutes;
-      const label = date.toLocaleDateString(undefined, { month: "long", day: "numeric" });
+      const label = date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+      const text = minutes === 0 ? `No time on ${label}` : `${formatMinutes(minutes)} on ${label}`;
       cells.push(
-        <span key={`${week}-${weekday}`} style={{ gridColumn: week + 2, gridRow: weekday + 2, display: "grid" }}>
-          <Cell minutes={minutes} title={minutes === 0 ? `No time on ${label}` : `${formatMinutes(minutes)} on ${label}`} />
+        <span key={`${week}-${weekday}`} aria-label={text} onMouseEnter={(event) => showTip(event, text, week)} style={{ gridColumn: week + 2, gridRow: weekday + 2, display: "grid" }}>
+          <Cell minutes={minutes} />
         </span>,
       );
     }
@@ -77,18 +85,28 @@ function TimeHeatmap() {
         <span className="text-xs text-subtle-foreground">{formatMinutes(time.today)} today</span>
       </div>
       <div className="rounded-lg bg-surface-recessed px-4 py-3.5">
-        <div style={{ display: "grid", gridTemplateColumns: `28px repeat(${WEEKS}, minmax(0, 1fr))`, gap: 3 }}>
+        <div ref={gridRef} onMouseLeave={() => setTip(null)} style={{ position: "relative", display: "grid", gridTemplateColumns: `28px repeat(${WEEKS}, minmax(0, 1fr))`, gap: 3 }}>
           {[["Mon", 3], ["Wed", 5], ["Fri", 7]].map(([name, row]) => (
             <span key={name} className="text-2xs text-subtle-foreground" style={{ gridColumn: 1, gridRow: row, lineHeight: 1, alignSelf: "center" }}>{name}</span>
           ))}
           {cells}
+          {tip && (
+            <div
+              role="tooltip"
+              className="pointer-events-none absolute z-50 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-md"
+              // Centered above the day, but kept inside the card at the left and right edges.
+              style={{ left: tip.x, top: tip.y - 6, transform: `translate(${tip.week < 6 ? "-12px" : tip.week > WEEKS - 7 ? "calc(-100% + 12px)" : "-50%"}, -100%)` }}
+            >
+              {tip.text}
+            </div>
+          )}
         </div>
         <div className="mt-3 flex items-center justify-between gap-4 text-2xs text-subtle-foreground">
           <span>Counts minutes while Cloudroom is focused and you are active.</span>
           <span className="flex items-center gap-1">
             Less
             {OPACITY.map((_, shade) => (
-              <span key={shade} style={{ width: 10, display: "grid" }}><Cell minutes={[0, 30, 120, 240, 400][shade]!} title="" /></span>
+              <span key={shade} style={{ width: 10, display: "grid" }}><Cell minutes={[0, 30, 120, 240, 400][shade]!} /></span>
             ))}
             More
           </span>

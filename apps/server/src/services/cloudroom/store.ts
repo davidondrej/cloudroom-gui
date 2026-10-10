@@ -49,6 +49,12 @@ export function bindings(db: DbQueryConnection): Binding[] {
   return db.select().from(cloudroomThreads).all();
 }
 
+/** Whether a visible, unarchived thread still runs at this Core address. Hidden side chats never keep a sandbox. */
+export function coreInUse(db: DbQueryConnection, coreUrl: string): boolean {
+  return Boolean(db.select({ id: threads.id }).from(cloudroomThreads).innerJoin(threads, eq(threads.id, cloudroomThreads.threadId))
+    .where(and(eq(cloudroomThreads.coreUrl, coreUrl), eq(threads.visibility, "visible"), isNull(threads.archivedAt), isNull(threads.deletedAt))).get());
+}
+
 /** Unstamped cloud threads belong to the signed-in account. Before another account signs in, they are stamped with the old one. */
 export function stampBindings(db: DbQueryConnection, accountId: string): void {
   db.update(cloudroomThreads).set({ accountId }).where(isNull(cloudroomThreads.accountId)).run();

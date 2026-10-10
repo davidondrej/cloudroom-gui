@@ -241,7 +241,13 @@ function runInstall(job: ProviderCliInstallJob): void {
             break;
           case "output":
             if (event.text.length > 0) {
-              installLogChunks.push(event.text);
+              // The install runs in a terminal: drop color codes and npm's spinner.
+              installLogChunks.push(
+                event.text.replace(
+                  /\x1b\[[0-9;?]*[A-Za-z]|[\u2800-\u28ff]/gu,
+                  "",
+                ),
+              );
             }
             break;
           case "completed":

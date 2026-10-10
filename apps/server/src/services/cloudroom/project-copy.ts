@@ -143,6 +143,16 @@ async function writeFailureNote(client: CloudroomClient, job: ProjectCopyJob, me
   await vm(client, `mkdir -p -- ${quote(`${target}/.cloudroom`)} && cat > ${quote(`${target}/${FAILURE_NOTE}`)}`, Buffer.from(note));
 }
 
+/** What `cloudroom files wait` reads (ADR 0209): `copying`, then `ready` or `failed: REASON`, in a file next to the
+ *  project folder, so Git never sees it. With `onlyIfCopying`, it changes only a copy still marked `copying`. */
+export async function writeFilesState(client: CloudroomClient, workspace: string, state: string, onlyIfCopying = false): Promise<void> {
+  const target = (await client.workspace(workspace))?.path;
+  if (!target) return;
+  const file = `${target}.cloudroom-files`;
+  const write = `cat > ${quote(`${file}.tmp`)} && mv -f -- ${quote(`${file}.tmp`)} ${quote(file)}`;
+  await vm(client, onlyIfCopying ? `if [ "$(cat -- ${quote(file)} 2>/dev/null)" = copying ]; then ${write}; fi` : write, Buffer.from(state));
+}
+
 async function vm(client: CloudroomClient, command: string, bytes?: Buffer<ArrayBuffer>, raw = false): Promise<void> {
   const signal = bytes && AbortSignal.timeout(PIECE_TIMEOUT);
   const result = raw ? await client.runOnVm({ command }, signal, bytes) : await client.runOnVm({ command, stdin: bytes?.toString("hex") ?? "" }, signal);

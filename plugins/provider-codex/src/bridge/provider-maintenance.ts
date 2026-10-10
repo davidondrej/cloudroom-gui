@@ -1,4 +1,5 @@
 import { realpath } from "node:fs/promises";
+import { sep } from "node:path";
 import {
   type ProviderHealthResult,
   type ProviderInstallationRunResult,
@@ -11,6 +12,7 @@ import {
   experimental_compareVersions as compareVersions,
   experimental_findCliExecutable as findCliExecutable,
   experimental_formatCommand as formatCommand,
+  experimental_npmCommand as npmCommand,
   experimental_installationVerification as installationVerification,
   experimental_npmGlobalInstallCommand as npmGlobalInstallCommand,
   experimental_npmGlobalInstallSource as npmGlobalInstallSource,
@@ -79,11 +81,25 @@ export function codexExecutable(env: NodeJS.ProcessEnv = process.env): string {
   return findCliExecutable("codex", env) ?? "codex";
 }
 
-function codexUpdateCommand(command = "codex"): {
+function codexUpdateCommand(
+  command = "codex",
+  npmPrefix: string | null = null,
+): {
   command: string;
   args: string[];
   displayCommand: string;
 } {
+  if (npmPrefix !== null) {
+    const npm = npmCommand();
+    const args = [
+      "install",
+      "-g",
+      "--prefix",
+      npmPrefix,
+      `${CODEX_NPM_PACKAGE}@latest`,
+    ];
+    return { command: npm, args, displayCommand: formatCommand(npm, args) };
+  }
   const args = ["update"];
   return {
     command,
@@ -110,8 +126,9 @@ export async function getCodexProviderInstallationStatus(
   // The ChatGPT app ships its own Codex, which only updates with the app.
   const appBundled =
     resolvedExecutable !== null &&
-    (await realpath(resolvedExecutable).catch(() => resolvedExecutable))
-      .includes(".app/");
+    (
+      await realpath(resolvedExecutable).catch(() => resolvedExecutable)
+    ).includes(".app/");
   const needsUpdate =
     !appBundled &&
     installed &&
@@ -163,12 +180,28 @@ export async function getCodexProviderInstallationRun(
   action: "install" | "update",
 ): Promise<ProviderInstallationRunResult> {
   const status = await getCodexProviderInstallationStatus();
-  return buildCodexProviderInstallationRun(status, action);
+  return buildCodexProviderInstallationRun(
+    status,
+    action,
+    await npmPrefixOf(status.executablePath),
+  );
+}
+
+// `codex update` uses the npm on PATH. With two Node installs, that updates a different copy
+// than the one Cloudroom runs, so update the npm prefix that owns this executable.
+async function npmPrefixOf(executable: string | null): Promise<string | null> {
+  if (executable === null) return null;
+  const real = await realpath(executable).catch(() => executable);
+  const index = real.indexOf(
+    `${sep}lib${sep}node_modules${sep}@openai${sep}codex${sep}`,
+  );
+  return index > 0 ? real.slice(0, index) : null;
 }
 
 function buildCodexProviderInstallationRun(
   status: ProviderInstallationStatus,
   action: "install" | "update",
+  npmPrefix: string | null = null,
 ): ProviderInstallationRunResult {
   if (status.installAction?.kind !== action) {
     return {
@@ -181,7 +214,7 @@ function buildCodexProviderInstallationRun(
     command:
       action === "install"
         ? npmGlobalInstallCommand(CODEX_NPM_PACKAGE)
-        : codexUpdateCommand(status.executablePath ?? "codex"),
+        : codexUpdateCommand(status.executablePath ?? "codex", npmPrefix),
     verification: installationVerification(status, action),
   };
 }

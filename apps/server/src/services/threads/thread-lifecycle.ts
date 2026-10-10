@@ -24,6 +24,7 @@ import {
   getThread,
   listThreadIdsWithLatestHostDaemonRestartInterruption,
   listThreadTurnInterruptionEventStates,
+  markThreadDeleted,
   markThreadStorageDeleted,
   threads,
   type DbNotifier,
@@ -101,6 +102,7 @@ import {
   getThreadProvisionContext,
 } from "./thread-startup-store.js";
 import { cancelAbandonedProviderCreations } from "./thread-environment-providers.js";
+import { emitPluginThreadDeleted } from "../plugins/plugin-thread-events.js";
 import { scheduleThreadProvisioningAdvance } from "./thread-provisioning.js";
 import { isPreStartThreadStatus } from "./thread-status.js";
 import { settleDanglingBackgroundTasksForStoppedThreadInTransaction } from "./background-task-reconciliation.js";
@@ -1066,6 +1068,20 @@ export function requestThreadStorageDeletion(
     .finally(() => {
       inFlightThreadRpcGuard.release(thread.id, "thread.storage.delete");
     });
+}
+
+export function deleteThreadOnMac(deps: AppDeps, thread: Thread): void {
+  const deleted = markThreadDeleted(deps.db, deps.hub, { threadId: thread.id });
+  if (deleted) emitPluginThreadDeleted(deleted);
+  cancelAbandonedProviderCreations(deps, thread.id);
+  deps.terminalSessions.closeDeletedThreadTerminals({ threadId: thread.id });
+  requestThreadStorageDeletion(
+    deps,
+    thread,
+    thread.environmentId === null
+      ? null
+      : getEnvironment(deps.db, thread.environmentId),
+  );
 }
 
 /**

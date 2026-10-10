@@ -282,6 +282,14 @@ export function useImportSessions() {
   });
 }
 
+export function useExportableChats() {
+  return useQuery({ queryKey: ["cloudroom-exportable-chats"], queryFn: ({ signal }) => sdk.cloudroom.exportableChats(signal), retry: false, staleTime: 30_000 });
+}
+
+export function useExportChats() {
+  return useMutation({ mutationFn: (input: Parameters<typeof sdk.cloudroom.exportChats>[0]) => sdk.cloudroom.exportChats(input) });
+}
+
 export function useRetryProjectCopy(threadId: string) {
   return useMutation({
     mutationFn: () => sdk.cloudroom.retryCopy(threadId),

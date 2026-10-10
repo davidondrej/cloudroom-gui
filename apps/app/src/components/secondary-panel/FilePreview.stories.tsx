@@ -166,6 +166,7 @@ export function Overview() {
             path={README_PATH}
             copyPath={copyPathFor(README_PATH)}
             onOpenInEditor={noopOpenInEditor}
+            onRevealInFinder={noopOpenInEditor}
             state={{
               kind: "ready",
               lineRange: null,
@@ -184,6 +185,7 @@ export function Overview() {
             path={DIAGRAM_PATH}
             copyPath={copyPathFor(DIAGRAM_PATH)}
             onOpenInEditor={noopOpenInEditor}
+            onRevealInFinder={noopOpenInEditor}
             state={{
               kind: "ready",
               lineRange: null,
@@ -202,6 +204,7 @@ export function Overview() {
             path={METRICS_PATH}
             copyPath={copyPathFor(METRICS_PATH)}
             onOpenInEditor={noopOpenInEditor}
+            onRevealInFinder={noopOpenInEditor}
             state={{
               kind: "ready",
               lineRange: null,
@@ -220,6 +223,7 @@ export function Overview() {
             path={BUTTON_PATH}
             copyPath={copyPathFor(BUTTON_PATH)}
             onOpenInEditor={noopOpenInEditor}
+            onRevealInFinder={noopOpenInEditor}
             state={{
               kind: "ready",
               lineRange: null,
@@ -241,6 +245,7 @@ export function Overview() {
             path="src/generated/large.ts"
             copyPath={copyPathFor("src/generated/large.ts")}
             onOpenInEditor={noopOpenInEditor}
+            onRevealInFinder={noopOpenInEditor}
             state={{
               kind: "ready",
               lineRange: null,
@@ -263,6 +268,7 @@ export function Overview() {
             path="src/generated/large.ts"
             copyPath={copyPathFor("src/generated/large.ts")}
             onOpenInEditor={noopOpenInEditor}
+            onRevealInFinder={noopOpenInEditor}
             state={{
               kind: "ready",
               lineRange: {
@@ -313,6 +319,7 @@ export function Overview() {
             path={DELETED_BUTTON_PATH}
             copyPath={copyPathFor(DELETED_BUTTON_PATH)}
             onOpenInEditor={noopOpenInEditor}
+            onRevealInFinder={noopOpenInEditor}
             statusLabel="deleted"
             state={{
               kind: "ready",
@@ -335,6 +342,7 @@ export function Overview() {
             path={SCREENSHOT_PATH}
             copyPath={copyPathFor(SCREENSHOT_PATH)}
             onOpenInEditor={noopOpenInEditor}
+            onRevealInFinder={noopOpenInEditor}
             state={{ kind: "image", url: SAMPLE_IMAGE_URL }}
           />
         </PreviewStage>
@@ -348,6 +356,7 @@ export function Overview() {
             path={README_PATH}
             copyPath={copyPathFor(README_PATH)}
             onOpenInEditor={noopOpenInEditor}
+            onRevealInFinder={noopOpenInEditor}
             state={{ kind: "empty" }}
           />
         </PreviewStage>
@@ -361,6 +370,7 @@ export function Overview() {
             path={README_PATH}
             copyPath={copyPathFor(README_PATH)}
             onOpenInEditor={noopOpenInEditor}
+            onRevealInFinder={noopOpenInEditor}
             state={{ kind: "not-found" }}
           />
         </PreviewStage>
@@ -374,6 +384,7 @@ export function Overview() {
             path={README_PATH}
             copyPath={copyPathFor(README_PATH)}
             onOpenInEditor={noopOpenInEditor}
+            onRevealInFinder={noopOpenInEditor}
             state={{ kind: "error" }}
           />
         </PreviewStage>
@@ -387,6 +398,7 @@ export function Overview() {
             path={README_PATH}
             copyPath={copyPathFor(README_PATH)}
             onOpenInEditor={noopOpenInEditor}
+            onRevealInFinder={noopOpenInEditor}
             state={{ kind: "loading" }}
           />
         </PreviewStage>

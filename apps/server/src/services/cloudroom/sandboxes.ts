@@ -145,14 +145,21 @@ async function macOpencodeLogin(): Promise<string | null> {
   try { const parsed: unknown = value && JSON.parse(value); return parsed && (!Array.isArray(parsed) || parsed.length) ? value : null; } catch { return null; }
 }
 
-/** This Mac's Cursor CLI login in the file shape the CLI keeps on Linux, or null when Cursor is signed out here.
- *  The CLI stores it in the Keychain through /usr/bin/security, so reading it the same way shows no macOS prompt. */
+/** This computer's Cursor CLI login in the file shape the CLI keeps on Linux, or null when Cursor is signed out here.
+ *  On macOS the CLI stores it in the Keychain through /usr/bin/security, so reading it the same way shows no macOS prompt. */
 export async function macCursorLogin(): Promise<string | null> {
+  const login = (accessToken: unknown, refreshToken: unknown) =>
+    typeof accessToken === "string" && accessToken && typeof refreshToken === "string" && refreshToken ? JSON.stringify({ accessToken, refreshToken }, null, 2) : null;
+  if (process.platform === "linux") {
+    const file = join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "cursor", "auth.json");
+    const saved = await readFile(file, "utf8").then(text => JSON.parse(text) as { accessToken?: unknown; refreshToken?: unknown } | null, () => null);
+    return login(saved?.accessToken, saved?.refreshToken);
+  }
   if (process.platform !== "darwin") return null;
   const read = (service: string) => promisify(execFile)("/usr/bin/security", ["find-generic-password", "-a", "cursor-user", "-s", service, "-w"], { timeout: 10_000 })
     .then(result => result.stdout.trim(), () => "");
   const [accessToken, refreshToken] = await Promise.all([read("cursor-access-token"), read("cursor-refresh-token")]);
-  return accessToken && refreshToken ? JSON.stringify({ accessToken, refreshToken }, null, 2) : null;
+  return login(accessToken, refreshToken);
 }
 
 const output = (command: string, args: string[]) => promisify(execFile)(command, args, { timeout: 10_000 }).then(result => result.stdout.trim(), () => "");
@@ -335,7 +342,8 @@ export class SandboxDirectory {
   /** The member's friend invite codes. `create` makes one more, up to 3 for life (ADR 0169). `waiting` is the waitlist size, or null. */
   async invites(action: "list" | "create") {
     const value = await this.call({ action }, "invites");
-    return z.object({ codes: z.array(z.object({ code: z.string(), used: z.boolean(), url: z.string().optional() })), left: z.number(), created: z.string().nullable(), waiting: z.number().nullable().default(null) }).parse(value);
+    const joined = z.object({ name: z.string().nullable(), at: z.string() }).optional();
+    return z.object({ codes: z.array(z.object({ code: z.string(), used: z.boolean(), url: z.string().optional(), joined })), left: z.number(), created: z.string().nullable(), waiting: z.number().nullable().default(null) }).parse(value);
   }
 
   /** Whether to remind this member to book an onboarding call, and the booking link (docs/scopes/onboarding-calls.md). */
@@ -492,6 +500,7 @@ export class SandboxDirectory {
   /** An unarchive right after an archive finds the sandbox busy until the archive ends (up to ~60 s), so keep trying. */
   async restore(thread: string): Promise<void> {
     this.forget(thread);
+    this.backoff.delete(thread);
     for (let tries = 1; ; tries++) {
       try { return void await this.call({ action: "restore", thread }); }
       catch (error) { if (!(error instanceof CloudroomConnectionError) || tries >= 30) throw error; }
@@ -513,6 +522,10 @@ export class SandboxDirectory {
     const environment = environmentSchema.parse(await this.call(request, "environment"));
     this.mcpNames = environment.mcp;
     return environment;
+  }
+
+  async autoDelete(body: { action: "get" | "deleted" } | { action: "set"; days: number | null }): Promise<unknown> {
+    return this.call(body, "auto-delete");
   }
 
   /** MCP servers in the cloud, as of the last Cloud environment answer. */

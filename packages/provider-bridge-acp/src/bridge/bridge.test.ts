@@ -5,6 +5,7 @@ import {
   readFileSync,
   rmSync,
   symlinkSync,
+  writeFileSync,
 } from "node:fs";
 import { createConnection } from "node:net";
 import { tmpdir } from "node:os";
@@ -2317,6 +2318,31 @@ describe("acp bridge", () => {
 
       expect(agentMessageTexts()).toContain("write:denied");
       expect(existsSync(targetPath)).toBe(false);
+    } finally {
+      rmSync(outsideDir, { recursive: true, force: true });
+    }
+  });
+
+  it("denies accept-edits writes through a workspace symlink that points outside", async () => {
+    const outsideDir = mkdtempSync(join(tmpdir(), "bb-acp-outside-"));
+    const outsideFile = join(outsideDir, "outside.txt");
+    const linkPath = join(workspaceDir, "notes.md");
+    writeFileSync(outsideFile, "original\n");
+    symlinkSync(outsideFile, linkPath);
+    try {
+      const { providerThreadId } = await startThread({
+        permissionMode: "accept-edits",
+        permissionEscalation: "ask",
+        envVars: { FAKE_ACP_WRITE_PATH: linkPath },
+      });
+      const turnId = sendTurnRequest("turn/start", providerThreadId, {
+        input: [{ type: "text", text: "write-file", mentions: [] }],
+      });
+      await waitForResponse(turnId);
+      await waitForTurnCompleted();
+
+      expect(agentMessageTexts()).toContain("write:denied");
+      expect(readFileSync(outsideFile, "utf8")).toBe("original\n");
     } finally {
       rmSync(outsideDir, { recursive: true, force: true });
     }

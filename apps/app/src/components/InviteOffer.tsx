@@ -17,10 +17,22 @@ const seenAtom = atomWithStorage("cloudroom.invites.explainerSeen", false, boole
 const startedAtom = atomWithStorage<number | null>("cloudroom.invites.startedAt", null,
   createJsonLocalStorage<number | null>((value): value is number => typeof value === "number"), { getOnInit: true });
 
+// Codes whose link was copied on this Mac. They stay "sent" until a friend accepts one.
+const sentAtom = atomWithStorage<string[]>("cloudroom.invites.sent", [],
+  createJsonLocalStorage<string[]>((value): value is string[] => Array.isArray(value) && value.every((item) => typeof item === "string")), { getOnInit: true });
+
 const invitesSchema = z.object({
-  codes: z.array(z.object({ code: z.string(), used: z.boolean(), url: z.string().optional() })), left: z.number(), created: z.string().nullable(), waiting: z.number().nullable().optional(),
+  codes: z.array(z.object({ code: z.string(), used: z.boolean(), url: z.string().optional(), joined: z.object({ name: z.string().nullable(), at: z.string() }).optional() })),
+  left: z.number(), created: z.string().nullable(), waiting: z.number().nullable().optional(),
 });
 type Invites = z.infer<typeof invitesSchema>;
+type Code = Invites["codes"][number];
+type Status = "joined" | "sent" | "ready";
+const NEW = "new";
+const STAMPS: Record<Status, { text: string; ink?: boolean; sent?: boolean }> = { joined: { text: "JOINED", ink: true }, sent: { text: "SENT", sent: true }, ready: { text: "READY" } };
+const DOTS: Record<Status, string> = { joined: "#8d8676", sent: "#e0a21b", ready: "#8fbf00" };
+const day = (at: string) => new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const pad = (number: number) => String(number).padStart(2, "0");
 async function invites(method: "GET" | "POST", signal?: AbortSignal) {
   const response = await fetchWithAppSurface("/api/v1/cloudroom/account/invites", {
     method, signal, ...(method === "POST" ? { headers: { "Content-Type": "application/json" }, body: "{}" } : {}),
@@ -111,26 +123,58 @@ const ROOT: CSSProperties = {
 
 function InviteTickets({ data, startStep, finish }: { data: Invites; startStep: number; finish: () => void }) {
   const [step, setStep] = useState(startStep);
-  const [created, setCreated] = useState<Invites["codes"][number] | null>(null);
+  const [sent, setSent] = useAtom(sentAtom);
+  // The ticket the member clicked in the stub rail, or NEW for a ticket not made yet. Null shows the next one to send.
+  const [picked, setPicked] = useState<string | null>(null);
+  const status = (item: Code): Status => item.used ? "joined" : sent.includes(item.code) ? "sent" : "ready";
   const client = useQueryClient();
   const create = useMutation({
     mutationFn: () => invites("POST"),
     onSuccess: (result) => {
-      setCreated(result.codes.find((item) => item.code === result.created) ?? result.codes.find((item) => !item.used) ?? null);
-      void client.invalidateQueries({ queryKey: INVITES_KEY });
+      client.setQueryData(INVITES_KEY, { ...result, waiting: data.waiting });
+      setPicked(result.created ?? result.codes.find((item) => status(item) === "ready")?.code ?? null);
     },
   });
-  const ticket = created ?? data.codes.find((item) => !item.used) ?? null;
-  const code = ticket?.code ?? null;
+  const ticket = data.codes.find((item) => item.code === picked) ?? (picked === NEW ? null
+    : data.codes.find((item) => status(item) === "ready") ?? (data.left > 0 ? null : data.codes.find((item) => status(item) === "sent") ?? null));
+  const state = ticket ? status(ticket) : null;
   // The link opens the website's invite page (web/app/i/[code]). Older websites send no link, so copy the code.
+  // Copying marks the ticket sent on this Mac. The website only knows when a friend accepts it.
   const copy = () => {
-    if (ticket) void copyToClipboardWithToast(ticket.url ?? format(ticket.code), { successMessage: ticket.url ? "Invite link copied" : "Invite code copied" });
+    if (!ticket) return;
+    void copyToClipboardWithToast(ticket.url ?? format(ticket.code), { successMessage: ticket.url ? "Invite link copied" : "Invite code copied" });
+    setPicked(ticket.code);
+    if (state === "ready") setSent([...sent, ticket.code]);
   };
-  const usedAny = data.codes.some((item) => item.used);
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => { root.current?.focus(); }, []);
   const next = () => setStep((value) => value + 1);
   const waiting = data.waiting ?? null;
+  // Admins have unlimited codes, so the rail shows their newest 2 and one to make.
+  const member = data.left + data.codes.length <= 3;
+  const number = ticket ? data.codes.indexOf(ticket) + 1 : data.codes.length + 1;
+  const blanks = Math.min(data.left, 3 - Math.min(data.codes.length, 2));
+  const shown = blanks >= 3 ? [] : data.codes.slice(blanks - 3);
+  const done = <button type="button" onClick={finish} className="h-[50px] border border-[#3a372f] px-6 text-[15px] font-semibold text-[#d8d0bd] transition-transform hover:scale-105 hover:border-[#5a564b]">Done</button>;
+  const send = {
+    title: <>Your {number === 1 ? "first" : member && number === 3 ? "last" : "next"}<br /><em>ticket</em>.</>,
+    lede: "Send it to a friend who builds with agents.",
+  };
+  const final = state === "joined" ? {
+    title: <>{ticket!.joined?.name ?? "Your friend"}<br />is <em>in</em>.</>,
+    lede: ticket!.joined ? `They joined with this ticket on ${day(ticket!.joined.at)}.` : "They joined with this ticket.",
+    actions: done,
+  } : state === "sent" ? {
+    title: <>Ticket<br /><em>sent</em>.</>,
+    lede: "It counts once your friend accepts it. Until then, the link still works.",
+    actions: <><Primary onClick={copy}><CopyIcon />Copy link again</Primary>{done}</>,
+  } : state === "ready" ? { ...send, actions: <><Primary onClick={copy}><CopyIcon />Copy link</Primary>{done}</> } : {
+    ...send,
+    actions: <>
+      <Primary disabled={create.isPending} onClick={() => create.mutate()}>Create my ticket</Primary>
+      <button type="button" onClick={finish} className="text-sm text-[#8d8676] underline underline-offset-4 hover:text-[#d8d0bd]">Later</button>
+    </>,
+  };
 
   const steps: { title: ReactNode; lede: string; actions: ReactNode; art: ReactNode }[] = [
     {
@@ -150,33 +194,36 @@ function InviteTickets({ data, startStep, finish }: { data: Invites; startStep: 
         const made = data.codes[index];
         return (
           <Ticket key={index} style={TRIO[index]} number={`0${index + 1}`} label={`NO. ${index + 1} OF 3`} title={index === 0 ? <Highlight>Invite</Highlight> : "Invite"}
-            sub="Lets one friend in." foot={made && !made.used ? format(made.code) : "••••-••••"}
-            stamp={!made ? { text: "UNUSED" } : made.used ? { text: "USED", ink: true } : { text: "READY" }} />
+            sub="Lets one friend in." foot={made && !made.used ? format(made.code) : "••••-••••"} used={made?.used}
+            stamp={made ? STAMPS[status(made)] : { text: "UNUSED" }} />
         );
       }),
     },
     {
-      title: <>Your {usedAny ? "next" : "first"}<br /><em>ticket</em>.</>,
-      lede: "Send it to a friend who builds with agents.",
-      actions: code
-        ? <>
-            <Primary onClick={copy}><CopyIcon />Copy link</Primary>
-            <button type="button" onClick={finish} className="h-[50px] border border-[#3a372f] px-6 text-[15px] font-semibold text-[#d8d0bd] transition-transform hover:scale-105 hover:border-[#5a564b]">Done</button>
-          </>
-        : <>
-            <Primary disabled={create.isPending} onClick={() => create.mutate()}>Create my ticket</Primary>
-            <button type="button" onClick={finish} className="text-sm text-[#8d8676] underline underline-offset-4 hover:text-[#d8d0bd]">Later</button>
-          </>,
-      art: (() => {
-        const index = code ? data.codes.findIndex((item) => item.code === code) : -1;
-        const number = index >= 0 ? index + 1 : data.codes.length + 1;
-        return <>
+      ...final,
+      art: <>
+        {!data.codes.length && <>
           <Ticket dim style={{ left: 150, top: 110, transform: "rotate(7deg) scale(.9)" }} number="" label="" title="Invite" foot="••••-••••" />
           <Ticket dim style={{ left: 120, top: 170, transform: "rotate(3deg) scale(.95)" }} number="" label="" title="Invite" foot="••••-••••" />
-          <Ticket style={{ left: 80, top: 250, transform: "rotate(-4deg) scale(1.2)" }} number={String(number).padStart(2, "0")} label={number <= 3 ? `NO. ${number} OF 3` : `NO. ${number}`}
-            title={<Highlight>Invite</Highlight>} sub="One click lets them in." foot={code ? format(code) : "••••-••••"} live={Boolean(code)} stamp={{ text: code ? "READY" : "UNUSED" }} />
-        </>;
-      })(),
+        </>}
+        <Ticket style={data.codes.length ? { left: 60, top: 140, transform: "rotate(-4deg) scale(1.15)" } : { left: 80, top: 250, transform: "rotate(-4deg) scale(1.2)" }}
+          number={pad(number)} label={number <= 3 ? `NO. ${number} OF 3` : `NO. ${number}`} title={state === "joined" ? "Invite" : <Highlight>Invite</Highlight>}
+          sub={state === "joined" ? (ticket!.joined ? `${ticket!.joined.name ?? "A friend"} joined · ${day(ticket!.joined.at)}` : "Used") : state === "sent" ? "Sent · not accepted yet" : "One click lets them in."}
+          foot={ticket ? format(ticket.code) : "••••-••••"} live={Boolean(ticket)} used={state === "joined"} stamp={state ? STAMPS[state] : { text: "UNUSED" }} />
+        {data.codes.length > 0 && (
+          <div className="absolute top-[480px] left-9 flex gap-4">
+            <p className="absolute -top-[30px] left-0 font-mono text-[11px] tracking-[0.2em] whitespace-nowrap text-[#8d8676] uppercase">Your tickets</p>
+            {shown.map((item) => {
+              const itemState = status(item);
+              return <Stub key={item.code} number={pad(data.codes.indexOf(item) + 1)} code={format(item.code)} state={itemState} on={item === ticket} onClick={() => setPicked(item.code)}
+                line={itemState === "joined" ? (item.joined?.name ? `${item.joined.name} joined` : "Joined") : itemState === "sent" ? "Sent · waiting" : "Ready to send"} />;
+            })}
+            {Array.from({ length: blanks }, (_, index) => (
+              <Stub key={index} number={pad(data.codes.length + index + 1)} code={null} line="Not made yet" on={!ticket && index === 0} onClick={() => setPicked(NEW)} />
+            ))}
+          </div>
+        )}
+      </>,
     },
   ];
   const current = steps[step]!;
@@ -218,25 +265,26 @@ const TRIO: CSSProperties[] = [
 const NOTCHED = "radial-gradient(circle at 100px 0, transparent 13px, #000 13.5px) top/100% 51% no-repeat, radial-gradient(circle at 100px 100%, transparent 13px, #000 13.5px) bottom/100% 51% no-repeat";
 const PAPER: CSSProperties = { backgroundColor: "#f3ecdb", backgroundImage: "repeating-linear-gradient(90deg, transparent 0 22px, rgba(120,100,60,.05) 22px 23px)" };
 
-function Ticket({ style, number, label, kicker = "Cloudroom · admit one", title, sub, foot, live, stamp, dim }: {
-  style: CSSProperties; number: string; label: string; kicker?: string; title: ReactNode; sub?: string; foot: string; live?: boolean; stamp?: { text: string; ink?: boolean }; dim?: boolean;
+function Ticket({ style, number, label, kicker = "Cloudroom · admit one", title, sub, foot, live, used, stamp, dim }: {
+  style: CSSProperties; number: string; label: string; kicker?: string; title: ReactNode; sub?: string; foot: string; live?: boolean; used?: boolean; stamp?: { text: string; ink?: boolean; sent?: boolean }; dim?: boolean;
 }) {
   return (
     <div className="absolute" style={{ ...style, filter: dim ? "brightness(.3) drop-shadow(0 20px 30px rgba(0,0,0,.5))" : "drop-shadow(0 30px 40px rgba(0,0,0,.55))" }}>
       <div className="flex h-[188px] w-[440px] text-[#1c1a15]" style={{ mask: NOTCHED }}>
-        <div className="flex w-[100px] shrink-0 flex-col items-center justify-center gap-2 border-r-2 border-dashed border-[#b9ad8f] bg-[#e9dfc6]">
+        <div className={cn("flex w-[100px] shrink-0 flex-col items-center justify-center gap-2 border-r-2 border-dashed border-[#b9ad8f]", used ? "bg-[#d3c9b0]" : "bg-[#e9dfc6]")}>
           <b className="font-serif text-[26px] leading-none font-semibold">{number}</b>
           <span className="rotate-180 font-mono text-[11px] font-semibold tracking-[0.18em] text-[#6f6655] [writing-mode:vertical-rl]">{label}</span>
         </div>
-        <div className="relative flex-1 px-6 py-5" style={PAPER}>
+        <div className="relative flex-1 px-6 py-5" style={used ? { ...PAPER, backgroundColor: "#ddd4bf" } : PAPER}>
           <p className="font-mono text-[10.5px] font-semibold tracking-[0.22em] text-[#7d735f] uppercase">{kicker}</p>
           <p className="mt-3 font-serif text-[40px] leading-none tracking-[-0.02em]">{title}</p>
           {sub && <p className="mt-2 text-[13px] text-[#6f6655]">{sub}</p>}
-          <p className={cn("absolute left-6 font-mono font-semibold", live ? "bottom-5 text-2xl tracking-[0.22em] text-[#1c1a15]" : "bottom-[18px] text-[15px] tracking-[0.28em] text-[#a99d82]")}>{foot}</p>
+          <p className={cn("absolute left-6 font-mono font-semibold", live ? "bottom-5 text-2xl tracking-[0.22em] text-[#1c1a15]" : "bottom-[18px] text-[15px] tracking-[0.28em] text-[#a99d82]", used && "text-[#8d8270] line-through decoration-2")}>{foot}</p>
           {stamp && (
             <div className={cn("absolute grid place-items-center rounded-full text-center font-mono font-bold whitespace-pre-line",
               stamp.ink
                 ? "top-10 right-6 size-24 -rotate-[18deg] border-[2.5px] border-[#1c1a15]/55 text-[11px] tracking-[0.14em] text-[#1c1a15]/60"
+                : stamp.sent ? "right-5 bottom-4 size-20 -rotate-[10deg] border-2 border-dashed border-[#1c1a15] bg-[#f3ecdb] text-[10px] tracking-[0.12em]"
                 : "right-5 bottom-4 size-[76px] -rotate-[14deg] border-2 border-[#1c1a15] bg-[#bfff00] text-[10px] leading-tight tracking-[0.12em]")}>
               {stamp.text === "UNUSED" ? "UN\nUSED" : stamp.text}
             </div>
@@ -244,6 +292,27 @@ function Ticket({ style, number, label, kicker = "Cloudroom · admit one", title
         </div>
       </div>
     </div>
+  );
+}
+
+const STUB_NOTCHED = "radial-gradient(circle at 44px 0, transparent 8px, #000 8.5px) top/100% 51% no-repeat, radial-gradient(circle at 44px 100%, transparent 8px, #000 8.5px) bottom/100% 51% no-repeat";
+
+// A small ticket in step 3's rail. Clicking it shows that ticket in full.
+function Stub({ number, code, state, line, on, onClick }: { number: string; code: string | null; state?: Status; line: string; on: boolean; onClick: () => void }) {
+  const used = state === "joined";
+  return (
+    <button type="button" onClick={onClick} aria-pressed={on}
+      className={cn("pointer-events-auto text-left drop-shadow-[0_14px_20px_rgba(0,0,0,.5)] transition-transform hover:-translate-y-0.5", on && "outline-2 outline-offset-4 outline-[#bfff00]")}>
+      <div className="flex h-[92px] w-[172px] text-[#1c1a15]" style={{ mask: STUB_NOTCHED }}>
+        <div className={cn("grid w-11 shrink-0 place-items-center border-r-[1.5px] border-dashed border-[#b9ad8f] font-serif text-[17px] font-semibold", used ? "bg-[#c7bda3]" : "bg-[#e9dfc6]")}>{number}</div>
+        <div className={cn("flex min-w-0 flex-1 flex-col justify-between p-3", used ? "bg-[#d3c9b0]" : "bg-[#f3ecdb]")}>
+          <span className={cn("font-mono text-[13px] font-semibold tracking-[0.12em]", used && "text-[#7d735f] line-through", !code && "text-[#a99d82]")}>{code ?? "••••-••••"}</span>
+          <span className="flex items-center gap-1.5 truncate text-[11.5px] font-semibold text-[#6f6655]">
+            <i className="size-[7px] shrink-0 rounded-full" style={{ background: state ? DOTS[state] : "#c9bd9f" }} />{line}
+          </span>
+        </div>
+      </div>
+    </button>
   );
 }
 

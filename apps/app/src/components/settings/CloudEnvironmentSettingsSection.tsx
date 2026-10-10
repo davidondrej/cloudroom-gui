@@ -8,6 +8,7 @@ import { Input } from "@cloudroom/shared-ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@cloudroom/shared-ui/popover";
 import { Switch } from "@cloudroom/shared-ui/switch";
 import { Textarea } from "@cloudroom/shared-ui/textarea";
+import { useCloudroomAccount, useSetCopyLogins } from "@/hooks/queries/cloudroom-queries";
 import { sdk } from "@/lib/sdk";
 import { copyToClipboardWithToast } from "@/lib/clipboard";
 import { openUrlInExternalBrowser } from "@/lib/url-open-routing";
@@ -22,7 +23,7 @@ const PREINSTALLED = "Node.js · Git · GitHub CLI · Claude Code · Codex · Pi
 const DIM_PLACEHOLDER = "placeholder:text-subtle-foreground/60";
 const SCRIPT_PLACEHOLDER = "# Runs once in each new cloud sandbox, as the agent. sudo works.\nnpm install -g vercel";
 
-const errorText = (error: unknown) => (error instanceof Error ? error.message : error ? String(error) : null);
+export const errorText = (error: unknown) => (error instanceof Error ? error.message : error ? String(error) : null);
 
 export function CloudEnvironmentSettingsSection() {
   const queryClient = useQueryClient();
@@ -58,6 +59,7 @@ export function CloudEnvironmentSettingsSection() {
         </div>
       ) : (
         <>
+          <CopyLoginsCard />
           <GithubCard />
           <SkillsCard />
           <McpCard inCloud={data.mcp} onSaved={saved} />
@@ -75,7 +77,7 @@ export function CloudEnvironmentSettingsSection() {
   );
 }
 
-function Card({ icon, title, description, action, children }: { icon: string; title: string; description: string; action?: ReactNode; children: ReactNode }) {
+export function Card({ icon, title, description, action, children }: { icon: string; title: string; description?: string; action?: ReactNode; children?: ReactNode }) {
   return (
     <section className="overflow-hidden rounded-lg bg-surface-recessed">
       <div className="flex items-center justify-between gap-3 px-4 py-3">
@@ -85,13 +87,29 @@ function Card({ icon, title, description, action, children }: { icon: string; ti
           </span>
           <div className="min-w-0">
             <h3 className="text-sm font-medium text-foreground">{title}</h3>
-            <p className="text-xs text-subtle-foreground">{description}</p>
+            {description && <p className="text-xs text-subtle-foreground">{description}</p>}
           </div>
         </div>
         {action}
       </div>
       {children}
     </section>
+  );
+}
+
+function CopyLoginsCard() {
+  const account = useCloudroomAccount();
+  const setCopyLogins = useSetCopyLogins();
+  const enabled = setCopyLogins.isPending ? setCopyLogins.variables : account.data?.copyLogins === true;
+  return (
+    <Card
+      icon="Key"
+      title="Auth my agents in the cloud automatically"
+      description="Cloud threads will use this computer's auth for inference providers"
+      action={<Switch aria-label="Auth my agents in the cloud automatically" checked={enabled} disabled={!account.data || setCopyLogins.isPending} onCheckedChange={(on) => setCopyLogins.mutate(on)} />}
+    >
+      {setCopyLogins.error && <p role="alert" className="border-t border-border px-4 py-3 text-xs text-destructive-text">{errorText(setCopyLogins.error)}</p>}
+    </Card>
   );
 }
 

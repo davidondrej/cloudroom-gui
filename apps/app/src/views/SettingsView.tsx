@@ -1,3 +1,4 @@
+import { AutoDeleteSettingsSection } from "@/components/settings/AutoDeleteSettingsSection";
 import { CloudEnvironmentSettingsSection } from "@/components/settings/CloudEnvironmentSettingsSection";
 import { DefaultsSettingsSection } from "@/components/settings/DefaultsSettingsSection";
 import { MachineEnvironmentSettings } from "@/components/settings/MachineEnvironmentSettings";
@@ -88,6 +89,7 @@ import { InviteSettingsCard } from "@/components/InviteOffer";
 import { ProjectsSettingsSection } from "@/components/settings/ProjectsSettingsSection";
 import { ArchivedThreadsSettingsSection } from "@/components/settings/ArchivedThreadsSettingsSection";
 import { ImportChatsSettingsSection } from "@/components/settings/ImportChats";
+import { ExportChatsSettingsSection } from "@/components/settings/ExportChats";
 import { CliSkillsSettingsSection } from "@/components/settings/CliSkillsSettingsSection";
 import { MarketplacesSettingsSection } from "@/components/settings/MarketplacesSettingsSection";
 import {
@@ -1246,6 +1248,8 @@ export function SettingsView() {
     content = <DefaultsSettingsSection />;
   } else if (activeSection === "cloud-environment") {
     content = <CloudEnvironmentSettingsSection />;
+  } else if (activeSection === "auto-delete") {
+    content = <AutoDeleteSettingsSection />;
   } else if (activeSection === "providers") {
     content = (
       <ProvidersSettingsSection
@@ -1409,6 +1413,8 @@ export function SettingsView() {
     content = <ArchivedThreadsSettingsSection />;
   } else if (activeSection === "import") {
     content = <ImportChatsSettingsSection />;
+  } else if (activeSection === "export") {
+    content = <ExportChatsSettingsSection />;
   } else {
     content = (
       <>

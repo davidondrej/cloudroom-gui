@@ -14,8 +14,10 @@ import { binding, teleportBlocked, teleportProgress } from "./store.js";
 import { browserRequestProblem } from "../../browser-request-guard.js";
 import { cancelClaudeToken, claudePlan, ensureClaudeCli, isClaudeApiKey, startClaudeToken, withClaudeTokenRun } from "./claude-token.js";
 import { startClaudeVersionSync } from "./harness-versions.js";
+import { autoDeleteDaysSchema, readAutoDelete, saveAutoDelete, startAutoDeleteSync } from "./auto-delete.js";
 import { importBbThreads } from "./bb-import.js";
 import { importNativeSessions, listNativeSessions } from "./session-import.js";
+import { exportableChats, exportChats } from "./chat-export.js";
 import { copyToMac, openOnMac, teleportingToLocal, teleportToLocal } from "./teleport-local.js";
 import { cloudEnvironmentRequestSchema, macMcpServers, macSkills, macVariables, sandboxThread, type CloudEnvironmentRequest } from "./sandboxes.js";
 import { CloudroomError } from "./client.js";
@@ -42,6 +44,7 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   };
   cloudroom(deps).childTurnEnded = (child, turnStatus) => void queueChildThreadTurnNotificationBestEffort(deps, { childThread: child, parentThreadId: child.parentThreadId, turnStatus });
   startClaudeVersionSync(deps, () => cloudroom(deps).teleportClient());
+  startAutoDeleteSync(deps);
   const localOnly: MiddlewareHandler = async (context, next) => {
     const problem = browserRequestProblem(context, deps, { requireJsonForMutation: true });
     if (problem) return context.json({ message: "Use the local Cloudroom app or CLI." }, problem.status);
@@ -96,6 +99,15 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
       sessions: z.array(z.object({ harness: z.enum(["claude-code", "codex"]), id: z.string().min(1) }).strict()).min(1).max(2000),
     }).strict().parse(await context.req.json());
     return context.json(await importNativeSessions(deps, input.hostId, input.sessions));
+  });
+  app.get("/api/v1/cloudroom/export", context => context.json({ threads: exportableChats(deps) }));
+  app.post("/api/v1/cloudroom/export", async context => {
+    const input = z.object({
+      scope: z.enum(["all", "local", "cloud"]),
+      days: z.number().int().positive().nullable(),
+      format: z.enum(["markdown", "json"]),
+    }).strict().parse(await context.req.json());
+    return context.json(await exportChats(deps, input));
   });
   app.post("/api/v1/cloudroom/account/project", async (context) => {
     const input = z.object({ projectId: z.string().min(1) }).strict().parse(await context.req.json());
@@ -177,6 +189,14 @@ export function installCloudroomRoutes(app: Hono, deps: AppDeps): void {
   // Cloud environment settings live on the website, so the app and the dashboard always show the same values.
   app.get("/api/v1/cloudroom/account/environment", async (context) => context.json(await environment({ action: "get" })));
   app.post("/api/v1/cloudroom/account/environment", async (context) => context.json(await environment(cloudEnvironmentRequestSchema.parse(await context.req.json()))));
+  const autoDelete = <T>(work: Promise<T>) => work.catch((error: unknown) => {
+    throw new ApiError(error instanceof CloudroomError && error.status ? 400 : 503, "cloud_auto_delete", error instanceof Error ? error.message : String(error));
+  });
+  app.get("/api/v1/cloudroom/account/auto-delete", async (context) => context.json(await autoDelete(readAutoDelete(deps))));
+  app.post("/api/v1/cloudroom/account/auto-delete", async (context) => {
+    const { days } = z.object({ days: autoDeleteDaysSchema }).strict().parse(await context.req.json());
+    return context.json(await autoDelete(saveAutoDelete(deps, days)));
+  });
   // Import from this Mac: the list shows names only, and values go straight to the website.
   app.get("/api/v1/cloudroom/account/environment/mac", async (context) => context.json({ names: Object.keys(await macVariables()).sort() }));
   app.post("/api/v1/cloudroom/account/environment/mac", async (context) => {

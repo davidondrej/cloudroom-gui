@@ -1,4 +1,3 @@
-import { cancelAbandonedProviderCreations } from "../../services/threads/thread-environment-providers.js";
 import {
   THREAD_SEARCH_LIMIT_PER_GROUP_DEFAULT,
   THREAD_SEARCH_LIMIT_PER_GROUP_MAX,
@@ -9,7 +8,6 @@ import {
   getThreadSectionById,
   listThreadMentionRowsByIds,
   listThreadsWithPendingInteractionState,
-  markThreadDeleted,
   searchThreadsWithPendingInteractionState,
   updateThread,
   type ThreadSearchResultGroup as DbThreadSearchResultGroup,
@@ -47,7 +45,7 @@ import {
 } from "../../services/lib/entity-lookup.js";
 import { listRunningThreadsWithIntendedHosts } from "../../services/threads/dispatch-attempt.js";
 import { dispatchThreadRenameCommand } from "../../services/threads/thread-commands.js";
-import { requestThreadStorageDeletion } from "../../services/threads/thread-lifecycle.js";
+import { deleteThreadOnMac } from "../../services/threads/thread-lifecycle.js";
 import { listThreadWithDescendants } from "../../services/threads/thread-archive.js";
 import { createThreadFromRequest } from "../../services/threads/thread-create.js";
 import { cancelThreadTitleRetry } from "../../services/threads/thread-metadata-inference.js";
@@ -62,7 +60,6 @@ import { assertValidParentThread } from "../../services/threads/thread-parent.js
 import { handleThreadOwnershipChange } from "../../services/threads/thread-ownership.js";
 import { applyThreadExecutionOverride } from "../../services/threads/thread-execution-override.js";
 import { cloudroom, isCloudThread } from "../../services/cloudroom/commands.js";
-import { emitPluginThreadDeleted } from "../../services/plugins/plugin-thread-events.js";
 
 function parseThreadIncludes(query: ThreadGetQuery): Set<ThreadIncludeOption> {
   const includes = new Set<ThreadIncludeOption>();
@@ -491,19 +488,7 @@ export function registerThreadBaseRoutes(app: Hono, deps: AppDeps): void {
     });
     // Delete child threads and hidden forks too, the same set archive covers.
     for (const target of listThreadWithDescendants(deps, thread)) {
-      const deletedThread = markThreadDeleted(deps.db, deps.hub, {
-        threadId: target.id,
-      });
-      if (deletedThread) emitPluginThreadDeleted(deletedThread);
-      cancelAbandonedProviderCreations(deps, target.id);
-      deps.terminalSessions.closeDeletedThreadTerminals({
-        threadId: target.id,
-      });
-      const environment =
-        target.environmentId === null
-          ? null
-          : getEnvironment(deps.db, target.environmentId);
-      requestThreadStorageDeletion(deps, target, environment);
+      deleteThreadOnMac(deps, target);
     }
     return context.json({ ok: true });
   });

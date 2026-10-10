@@ -3,12 +3,10 @@ import {
   deleteQueuedThreadMessage,
   getEnvironment,
   getQueuedThreadMessage,
-  getThread,
   listActiveVisiblePinnedThreadRootsWithPendingInteractionState,
   pinThread,
   reorderPinnedThread,
   reorderQueuedThreadMessage,
-  unarchiveThread,
   unpinThread,
   updateQueuedThreadMessage,
   updateThread,
@@ -68,6 +66,7 @@ import {
   toThreadResponseFromThread,
 } from "../../services/threads/thread-runtime-display.js";
 import { archiveThreadAndChildren } from "../../services/threads/thread-archive.js";
+import { unarchiveThreadAsTopLevel } from "../../services/threads/thread-ownership.js";
 import { cloudroom, isCloudThread } from "../../services/cloudroom/commands.js";
 import { teleports } from "../../services/cloudroom/teleport.js";
 import { teleportToLocal } from "../../services/cloudroom/teleport-local.js";
@@ -546,9 +545,7 @@ export function registerThreadActionRoutes(app: Hono, deps: AppDeps): void {
   post(routes.unarchive, (context) => {
     const thread = requirePublicThread(deps.db, context.req.param("id"));
     const providerThreadId = getLastProviderThreadId(deps, thread.id);
-    cloudroom(deps).assertRestorable(thread);
-    unarchiveThread(deps.db, deps.hub, thread.id);
-    const unarchivedThread = getThread(deps.db, thread.id);
+    const unarchivedThread = unarchiveThreadAsTopLevel(deps, thread.id);
     if (unarchivedThread !== null) {
       if (isCloudThread(unarchivedThread)) void cloudroom(deps).restore(unarchivedThread.id).catch((error: unknown) => deps.logger.warn({ threadId: unarchivedThread.id, error: error instanceof Error ? error.message : String(error) }, "The thread's sandbox could not be restored"));
       if (!isCloudThread(unarchivedThread) && unarchivedThread.environmentId !== null)

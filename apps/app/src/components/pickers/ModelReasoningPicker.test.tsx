@@ -578,7 +578,7 @@ describe("ModelReasoningPicker", () => {
     expect(onSelectedProviderChange).toHaveBeenCalledWith("cursor");
   });
 
-  it("stays open while changing both the model and reasoning effort", () => {
+  it("stays open after changing reasoning and closes after picking a model", () => {
     const { onModelChange, onReasoningChange } = renderPicker({
       modelOptions: [...codexModels, { value: "gpt-5.2", label: "GPT-5.2" }],
     });
@@ -586,16 +586,16 @@ describe("ModelReasoningPicker", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Provider, model and reasoning" }),
     );
-    fireEvent.click(screen.getByText("5.2"));
-
-    expect(onModelChange).toHaveBeenCalledWith("gpt-5.2");
-    expect(screen.getByRole("dialog")).not.toBeNull();
-
     fireEvent.click(screen.getByRole("button", { name: "Reasoning: Medium" }));
     fireEvent.click(screen.getByText("High"));
 
     expect(onReasoningChange).toHaveBeenCalledWith("high");
     expect(screen.getByRole("dialog")).not.toBeNull();
+
+    fireEvent.click(screen.getByText("5.2"));
+
+    expect(onModelChange).toHaveBeenCalledWith("gpt-5.2");
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("marks the portaled picker as native no-drag content", () => {
@@ -699,14 +699,18 @@ describe("ModelReasoningPicker", () => {
       screen.getByRole("button", { name: "Handoff to new thread" }),
     );
     expect(onStart).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "Exit handoff" }));
+    expect(onExit).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("button", { name: "Exit handoff" })).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Handoff to new thread" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "5.5" }));
     expect(onSelect).toHaveBeenCalledWith(
       expect.objectContaining({ providerId: "codex" }),
     );
     expect(onModelChange).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Exit handoff" }));
-    expect(onExit).toHaveBeenCalledOnce();
-    expect(screen.queryByRole("button", { name: "Exit handoff" })).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it.each([

@@ -79,7 +79,7 @@ builtin plugin: use its autosaving page under Settings → Installed plugins or 
 `room-cli keep-awake enable` or `room-cli keep-awake disable`. Choose every host with `room-cli
 keep-awake hosts all`, or name individual host ids after `room-cli keep-awake hosts`.
 On macOS it prevents system idle sleep while Cloudroom is running; closing the lid or
-choosing Sleep still sleeps the Mac.
+choosing Sleep still sleeps the Mac. On Linux it uses `systemd-inhibit`.
 
 Settings → Keyboard also includes `showKeyboardHints`, which defaults to true.
 Turn it off to hide the delayed shortcut badges shown while holding Command or

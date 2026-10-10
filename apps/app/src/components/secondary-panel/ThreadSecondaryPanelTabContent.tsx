@@ -66,6 +66,7 @@ interface WorkspaceFilePreviewTabContentProps {
   markdownLinkRouting?: MarkdownLinkRouting;
   onSelectionAddToChat?: (text: string) => void;
   onOpenInEditor?: (path: string) => void;
+  onRevealInFinder?: (path: string) => void;
   source: EnvironmentFilePreviewSource | null;
   statusLabel: WorkspaceFilePreviewStatusLabel | null;
   threadId?: string | null;
@@ -81,6 +82,7 @@ interface ProjectFilePreviewTabContentProps {
   markdownLinkRouting?: MarkdownLinkRouting;
   onSelectionAddToChat?: (text: string) => void;
   onOpenInEditor?: (path: string) => void;
+  onRevealInFinder?: (path: string) => void;
   projectId: string;
   rootPath?: string | null;
   threadId?: string | null;
@@ -95,6 +97,7 @@ interface HostFilePreviewTabContentProps {
   markdownLinkRouting?: MarkdownLinkRouting;
   onSelectionAddToChat?: (text: string) => void;
   onOpenInEditor?: (path: string) => void;
+  onRevealInFinder?: (path: string) => void;
   threadId: string;
 }
 
@@ -104,6 +107,7 @@ interface HostScopedFilePreviewTabContentProps {
   isPanelOpen: boolean;
   lineRange: FilePreviewLineRange | null;
   onOpenInEditor?: (path: string) => void;
+  onRevealInFinder?: (path: string) => void;
 }
 
 interface ThreadStorageFilePreviewTabContentProps {
@@ -114,6 +118,7 @@ interface ThreadStorageFilePreviewTabContentProps {
   markdownLinkRouting?: MarkdownLinkRouting;
   onSelectionAddToChat?: (text: string) => void;
   onOpenInEditor?: (path: string) => void;
+  onRevealInFinder?: (path: string) => void;
   threadId: string;
 }
 
@@ -320,6 +325,7 @@ export function WorkspaceFilePreviewTabContent({
   markdownLinkRouting,
   onSelectionAddToChat,
   onOpenInEditor,
+  onRevealInFinder,
   source,
   statusLabel,
   threadId,
@@ -388,6 +394,7 @@ export function WorkspaceFilePreviewTabContent({
       markdownLinkRouting={resolvedMarkdownLinkRouting}
       onSelectionAddToChat={onSelectionAddToChat}
       onOpenInEditor={onOpenInEditor}
+      onRevealInFinder={onRevealInFinder}
       statusLabel={statusLabel}
     />
   );
@@ -403,6 +410,7 @@ export function ProjectFilePreviewTabContent({
   markdownLinkRouting,
   onSelectionAddToChat,
   onOpenInEditor,
+  onRevealInFinder,
   projectId,
   rootPath = null,
   threadId = null,
@@ -447,6 +455,7 @@ export function ProjectFilePreviewTabContent({
       markdownLinkRouting={resolvedMarkdownLinkRouting}
       onSelectionAddToChat={onSelectionAddToChat}
       onOpenInEditor={onOpenInEditor}
+      onRevealInFinder={onRevealInFinder}
       statusLabel={null}
     />
   );
@@ -461,6 +470,7 @@ export function HostFilePreviewTabContent({
   markdownLinkRouting,
   onSelectionAddToChat,
   onOpenInEditor,
+  onRevealInFinder,
   threadId,
 }: HostFilePreviewTabContentProps) {
   const hostFilePreviewQuery = useThreadHostFilePreview(
@@ -492,6 +502,7 @@ export function HostFilePreviewTabContent({
       markdownLinkRouting={resolvedMarkdownLinkRouting}
       onSelectionAddToChat={onSelectionAddToChat}
       onOpenInEditor={onOpenInEditor}
+      onRevealInFinder={onRevealInFinder}
       statusLabel={null}
     />
   );
@@ -503,6 +514,7 @@ export function HostScopedFilePreviewTabContent({
   isPanelOpen,
   lineRange,
   onOpenInEditor,
+  onRevealInFinder,
 }: HostScopedFilePreviewTabContentProps) {
   const hostFilePreviewQuery = useHostFilePreview(hostId, activePath, {
     enabled: isPanelOpen,
@@ -524,6 +536,7 @@ export function HostScopedFilePreviewTabContent({
       lineRange={lineRange}
       markdownLinkRouting={markdownLinkRouting}
       onOpenInEditor={onOpenInEditor}
+      onRevealInFinder={onRevealInFinder}
       statusLabel={null}
     />
   );
@@ -537,6 +550,7 @@ export function ThreadStorageFilePreviewTabContent({
   markdownLinkRouting,
   onSelectionAddToChat,
   onOpenInEditor,
+  onRevealInFinder,
   threadId,
 }: ThreadStorageFilePreviewTabContentProps) {
   const threadStorageFilePreviewQuery = useThreadStorageFilePreview(
@@ -565,6 +579,7 @@ export function ThreadStorageFilePreviewTabContent({
       markdownLinkRouting={resolvedMarkdownLinkRouting}
       onSelectionAddToChat={onSelectionAddToChat}
       onOpenInEditor={onOpenInEditor}
+      onRevealInFinder={onRevealInFinder}
       statusLabel={null}
     />
   );

@@ -295,23 +295,31 @@ export function ThreadActionsProvider({
 
   const archiveThreadAndChildrenAction = useCallback(
     (thread: Thread) => {
+      const sectionTargets = getSidebarThreadNavigationTargets(
+        document
+          .querySelector(`a[data-sidebar-thread-id="${thread.id}"]`)
+          ?.closest<HTMLElement>("[data-sidebar-sticky-group]") ?? null,
+      );
       archiveThreadAndChildrenMutateAsync({ id: thread.id }).then(
         (response) => {
           const navigateAwayIfArchived = () => {
             const viewed = viewedThreadIdRef.current;
             if (!viewed || !response.archivedThreadIds.includes(viewed)) return;
-            // Land on the bottom thread of the same project, in sidebar order.
-            const fallback = getSidebarThreadNavigationTargets(document.body)
-              .filter(
+            const index = sectionTargets.findIndex(
+              (target) => target.threadId === thread.id,
+            );
+            const remaining = (targets: typeof sectionTargets) =>
+              targets.filter(
                 (target) =>
-                  target.projectId === thread.projectId &&
                   !response.archivedThreadIds.includes(target.threadId),
-              )
-              .at(-1);
+              );
+            const fallback =
+              remaining(sectionTargets.slice(index + 1))[0] ??
+              remaining(sectionTargets.slice(0, Math.max(index, 0))).at(-1);
             navigate(
               fallback
                 ? getThreadRoutePath({
-                    projectId: thread.projectId,
+                    projectId: fallback.projectId ?? thread.projectId,
                     threadId: fallback.threadId,
                   })
                 : getRootComposeRoutePath(),

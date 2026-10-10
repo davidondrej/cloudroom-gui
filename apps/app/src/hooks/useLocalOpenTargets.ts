@@ -54,6 +54,7 @@ interface OpenPathInAvailableTargetArgs extends OpenLocalPathRequest {
 interface UseLocalOpenTargetsResult {
   canOpenPreferredDirectoryTarget: boolean;
   canOpenPreferredFileTarget: boolean;
+  canRevealInFinder: boolean;
   directoryOpenTargets: WorkspaceOpenTarget[];
   fileOpenTargets: WorkspaceOpenTarget[];
   isLoading: boolean;
@@ -69,6 +70,7 @@ interface UseLocalOpenTargetsResult {
   ) => Promise<boolean>;
   preferredDirectoryTarget: WorkspaceOpenTarget | null;
   preferredFileTarget: WorkspaceOpenTarget | null;
+  revealPathInFinder: (args: OpenLocalPathRequest) => Promise<boolean>;
 }
 
 type OpenUnavailableTargetKind = "file-open-target" | "directory-open-target";
@@ -441,9 +443,23 @@ export function useLocalOpenTargets(
     ],
   );
 
+  const canRevealInFinder = fileOpenTargets.some(
+    (target) => target.id === "finder",
+  );
+  const revealPathInFinder = useCallback(
+    (request: OpenLocalPathRequest) =>
+      openPathInFileTarget({
+        ...request,
+        rememberTarget: false,
+        targetId: "finder",
+      }),
+    [openPathInFileTarget],
+  );
+
   return {
     canOpenPreferredDirectoryTarget: preferredDirectoryTarget !== null,
     canOpenPreferredFileTarget: preferredFileTarget !== null,
+    canRevealInFinder,
     directoryOpenTargets,
     fileOpenTargets,
     isLoading,
@@ -453,5 +469,6 @@ export function useLocalOpenTargets(
     openPathInPreferredFileTarget,
     preferredDirectoryTarget,
     preferredFileTarget,
+    revealPathInFinder,
   };
 }

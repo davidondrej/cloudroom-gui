@@ -1,4 +1,4 @@
-Stop your Mac from going to sleep while Cloudroom runs long agent work. Enable the plugin once, and Cloudroom keeps the selected machines awake for as long as the app is running.
+Stop your computer from going to sleep while Cloudroom runs long agent work. Enable the plugin once, and Cloudroom keeps the selected machines awake for as long as the app is running.
 
 ## What you get
 
@@ -8,7 +8,7 @@ Stop your Mac from going to sleep while Cloudroom runs long agent work. Enable t
 
 ## How it works
 
-The plugin runs on each selected host and keeps the Mac and its display awake while Cloudroom is running. On power, it also blocks system sleep. When Cloudroom stops, this stops with it. Closing the lid or choosing Sleep still puts the Mac to sleep.
+The plugin runs on each selected host and keeps the Mac and its display awake while Cloudroom is running. On power, it also blocks system sleep. When Cloudroom stops, this stops with it. Closing the lid or choosing Sleep still puts the Mac to sleep. On Linux, it uses `systemd-inhibit` to block idle and system sleep.
 
 Use the settings page or the CLI to manage the plugin:
 
@@ -20,4 +20,4 @@ Add `--json` to any command for machine-readable output.
 
 ## Requirements
 
-Only macOS hosts are supported. On a Linux or Windows host, the plugin does nothing and writes a warning to the log.
+macOS hosts and Linux hosts with systemd are supported. On other hosts, the plugin does nothing and writes a warning to the log.

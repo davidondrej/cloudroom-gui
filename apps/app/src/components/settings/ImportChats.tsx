@@ -8,16 +8,18 @@ import { useSystemProviders } from "@/hooks/queries/system-queries";
 import { useHostDaemon } from "@/hooks/useHostDaemon";
 import { getProviderIconInfo, getProviderIconTintStyle } from "@/lib/provider-icon";
 
-const DAY_MS = 86_400_000;
+export const DAY_MS = 86_400_000;
 const APPS = [["claude-code", "Claude Code"], ["codex", "Codex"]] as const;
-const RANGES = [["last 7 days", 7], ["last 30 days", 30], ["all time", null]] as const;
-const PALETTE = {
+export const RANGES = [["last 7 days", 7], ["last 30 days", 30], ["all time", null]] as const;
+export const PALETTE = {
   "--ic-ink": "var(--ob-ink, var(--foreground))",
   "--ic-card": "var(--ob-card, var(--card))",
   "--ic-muted": "var(--ob-muted, var(--muted-foreground))",
   "--ic-lime": "var(--ob-lime, var(--primary))",
   "--ic-bg": "var(--ob-bg, var(--background))",
 } as CSSProperties;
+export const CARD = "border-[1.5px] border-(--ic-ink) bg-(--ic-card) px-6 py-5 text-(--ic-ink) shadow-[6px_6px_0_var(--ic-lime)]";
+export const BUTTON = "inline-flex h-[46px] items-center justify-center gap-2 bg-(--ic-ink) px-6 text-[15px] font-semibold whitespace-nowrap text-(--ic-bg) transition-opacity hover:opacity-90 disabled:opacity-40";
 const CHIP = "mx-0.5 my-1 inline-flex items-center gap-2 border-[1.5px] border-(--ic-ink) bg-(--ic-card) px-3 py-0.5 align-middle font-semibold whitespace-nowrap shadow-[inset_0_-5px_0_var(--ic-lime)] hover:bg-(--ic-bg)";
 
 type Harness = (typeof APPS)[number][0];
@@ -28,7 +30,7 @@ function AppLogo({ id }: { id: Harness }) {
   return <span className="flex shrink-0" style={provider && getProviderIconTintStyle(provider)}><Logo className="size-5" /></span>;
 }
 
-function Chip({ children, menu }: { children: ReactNode; menu: ReactNode }) {
+export function Chip({ children, menu }: { children: ReactNode; menu: ReactNode }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -89,7 +91,7 @@ export function ImportChats({ onDone }: { onDone?: () => void }) {
   };
 
   return (
-    <div style={PALETTE} className="border-[1.5px] border-(--ic-ink) bg-(--ic-card) px-6 py-5 text-(--ic-ink) shadow-[6px_6px_0_var(--ic-lime)]">
+    <div style={PALETTE} className={CARD}>
       <p className="text-[21px] leading-[1.85] font-medium">
         Import my{" "}
         {picked.map(([id, name], index) => (
@@ -107,7 +109,7 @@ export function ImportChats({ onDone }: { onDone?: () => void }) {
           type="button"
           disabled={!chosen.length || importSessions.isPending}
           onClick={start}
-          className="inline-flex h-[46px] items-center justify-center gap-2 bg-(--ic-ink) px-6 text-[15px] font-semibold whitespace-nowrap text-(--ic-bg) transition-opacity hover:opacity-90 disabled:opacity-40"
+          className={BUTTON}
         >
           {importSessions.isPending && <Icon name="Loading" className="size-4 animate-spin" aria-hidden />}
           {importSessions.isPending ? `Importing ${chosen.length} chats…` : `Import ${chosen.length} chat${chosen.length === 1 ? "" : "s"}`}

@@ -10,8 +10,10 @@ export const SETTINGS_NAV_SECTIONS = [
   { icon: "Settings", id: "general", label: "General" },
   { icon: "Star", id: "defaults", label: "Defaults" },
   { icon: "Cloud", id: "cloud-environment", label: "Cloud environment" },
+  { icon: "Clock", id: "auto-delete", label: "Auto-delete" },
   { icon: "Bot", id: "providers", label: "Providers" },
   { icon: "Download", id: "import", label: "Import chats" },
+  { icon: "FolderOpen", id: "export", label: "Export chats" },
   { icon: "Palette", id: "appearance", label: "Appearance" },
   { icon: "SlidersHorizontal", id: "keyboard", label: "Keyboard" },
   { icon: "Browser", id: "browser", label: "Browser" },
@@ -119,7 +121,7 @@ export const SETTINGS_NAV_GROUPS: readonly SettingsNavGroup[] = [
     icon: "Cloud",
     id: "cloud",
     label: "Cloud",
-    members: [section("cloud-environment")],
+    members: [section("cloud-environment"), section("auto-delete")],
   },
   {
     icon: "Laptop",
@@ -131,7 +133,7 @@ export const SETTINGS_NAV_GROUPS: readonly SettingsNavGroup[] = [
     icon: "FolderGit",
     id: "projects",
     label: "Projects",
-    members: [section("projects"), section("import"), section("archived")],
+    members: [section("projects"), section("import"), section("export"), section("archived")],
   },
   {
     icon: "Palette",

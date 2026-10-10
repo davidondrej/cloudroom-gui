@@ -2,6 +2,18 @@
 
 Also on [cloudroom.dev/changelog](https://www.cloudroom.dev/changelog).
 
+## 98
+
+Chat export and Cloud fixes (2026-10-09)
+
+### Changes
+
+- Export your chats from Settings, and auto-delete unused Cloud threads after a set time.
+- Cloud Codex threads no longer freeze, and Cloudroom Connect setup works again.
+- The model picker closes after you pick a model, and file previews open in Finder.
+- Linux: room-cli works without Node, plus share links, keep awake, and Cursor sign-in.
+- Security fixes.
+
 ## 97
 
 Better search and tables (2026-10-09)

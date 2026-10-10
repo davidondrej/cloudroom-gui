@@ -382,7 +382,8 @@ export function projectRecord(db: DbConnection, threadId: string, record: Sessio
       const parsed = nativeFrame.safeParse(JSON.parse(record.native));
       if (parsed.success && saved.nativeId && saved.turnId) {
         const { method, params = {} } = parsed.data;
-        if (!params.threadId || params.threadId === saved.nativeId) {
+        const late = method !== "turn/started" && method !== "error" && !method.startsWith("thread/goal/") && !turnStarted(tx, threadId, saved.turnId);
+        if ((!params.threadId || params.threadId === saved.nativeId) && !late) {
           const base = { threadId, providerThreadId: saved.nativeId, scope: turnScope(saved.turnId) };
           const itemId = (id: unknown) => `${saved.turnId}:${z.string().parse(id)}`;
           if (method === "turn/started") {

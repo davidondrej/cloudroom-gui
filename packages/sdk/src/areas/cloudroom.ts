@@ -92,6 +92,7 @@ export type CloudEnvironmentChange =
   | { action: "addRepo"; repo: string }
   | { action: "removeRepo"; repo: string }
   | { action: "githubRepos" };
+export type AutoDeleteDays = 30 | 90 | 180 | 365 | null;
 
 /** A skill on this Mac. `cloud` means every new cloud thread gets it. */
 export interface CloudSkill {
@@ -146,6 +147,8 @@ export interface CloudroomArea {
   setCopyLogins(enabled: boolean): Promise<void>;
   environment(signal?: AbortSignal): Promise<CloudEnvironment>;
   updateEnvironment(change: CloudEnvironmentChange): Promise<CloudEnvironment>;
+  autoDelete(signal?: AbortSignal): Promise<{ days: AutoDeleteDays }>;
+  setAutoDelete(days: AutoDeleteDays): Promise<{ days: AutoDeleteDays }>;
   /** Names of API keys and tokens set in this Mac's login shell, never their values. */
   macVariables(signal?: AbortSignal): Promise<{ names: string[] }>;
   /** Copies the named variables from this Mac's login shell into the Cloud environment. */
@@ -185,6 +188,10 @@ export interface CloudroomArea {
   nativeSessions(signal?: AbortSignal): Promise<{ sessions: NativeSession[] }>;
   /** Copies chosen chats into idle Local threads by forking their native sessions. Sends no prompts. */
   importSessions(hostId: string, sessions: { harness: NativeSession["harness"]; id: string }[]): Promise<SessionImportResult>;
+  /** Every Local and Cloud thread that can be exported, with when it last changed. */
+  exportableChats(signal?: AbortSignal): Promise<{ threads: { target: "local" | "cloud"; updatedAt: number }[] }>;
+  /** Writes chats as Markdown or JSON files into a new folder in ~/Downloads and opens it. */
+  exportChats(input: { scope: "all" | "local" | "cloud"; days: number | null; format: "markdown" | "json" }): Promise<{ folder: string; count: number }>;
   /** Sends a Local agent's Cloudroom bug report. `sent` is false while bug reports are off in Settings. */
   reportBug(input: { message: string; threadId?: string }): Promise<{ sent: boolean }>;
   /** The thread's read-only share link, or null when it is not shared. */
@@ -260,6 +267,8 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     setCopyLogins: (enabled) => transport.readVoid(request("/copy-logins", { enabled })),
     environment: (signal) => transport.readJson(request("/environment", undefined, signal)) as Promise<CloudEnvironment>,
     updateEnvironment: (change) => transport.readJson(request("/environment", change)) as Promise<CloudEnvironment>,
+    autoDelete: (signal) => transport.readJson(request("/auto-delete", undefined, signal)) as Promise<{ days: AutoDeleteDays }>,
+    setAutoDelete: (days) => transport.readJson(request("/auto-delete", { days })) as Promise<{ days: AutoDeleteDays }>,
     macVariables: (signal) => transport.readJson(request("/environment/mac", undefined, signal)) as Promise<{ names: string[] }>,
     importMacVariables: (names) => transport.readJson(request("/environment/mac", { names })) as Promise<CloudEnvironment>,
     cloudSkills: (signal) => transport.readJson(request("/skills", undefined, signal)) as Promise<CloudSkills>,
@@ -279,6 +288,8 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     importBb: (hostId) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/import/bb`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hostId }) })) as Promise<BbImportResult>,
     nativeSessions: (signal) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/import/sessions`, { signal })) as Promise<{ sessions: NativeSession[] }>,
     importSessions: (hostId, sessions) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/import/sessions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hostId, sessions }) })) as Promise<SessionImportResult>,
+    exportableChats: (signal) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/export`, { signal })) as Promise<{ threads: { target: "local" | "cloud"; updatedAt: number }[] }>,
+    exportChats: (input) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/export`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })) as Promise<{ folder: string; count: number }>,
     reportBug: (input) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/bug-reports`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) })) as Promise<{ sent: boolean }>,
     retryCopy: (threadId) => transport.readVoid(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/retry-copy`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })),
     threadShare: (threadId, signal) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/share`, { signal })) as Promise<ThreadShare | null>,
@@ -286,7 +297,7 @@ export function createCloudroomArea({ transport }: CreateSdkAreaArgs): Cloudroom
     stopSharingThread: (threadId) => transport.readVoid(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/share`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "stop" }) })),
     continueShare: (link) => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/shares/continue`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ link }) })) as Promise<{ threadId: string; projectId: string }>,
     connectAccount: () => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/connect`)) as Promise<{ accountId: string | null }>,
-    connectRegister: () => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/connect`, { method: "POST" })) as Promise<CloudroomConnectRegistration>,
+    connectRegister: () => transport.readJson(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/connect`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })) as Promise<CloudroomConnectRegistration>,
     retryStart: (threadId) => transport.readVoid(transport.fetch(`${transport.baseUrl}/api/v1/cloudroom/threads/${encodeURIComponent(threadId)}/retry-start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })),
   };
 }

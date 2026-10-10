@@ -138,11 +138,15 @@ const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     ["GitHub repos", "clone repositories sandbox"],
     ["Setup script", "install sandbox startup"],
   ]),
+  ...entries("auto-delete", "Auto-delete", [
+    ["Delete unused cloud threads", "retention delete old cloud threads sessions history days year never"],
+  ]),
   ...entries("projects", undefined, [
     ["Projects", "repos folders rename delete"],
     ["Hidden projects", "hide unhide restore sidebar removed"],
   ]),
   ...entries("import", undefined, [["Import chats", "history migrate"]]),
+  ...entries("export", undefined, [["Export chats", "history backup download markdown json"]]),
   ...entries("archived", undefined, [["Archived threads", "restore unarchive"]]),
   ...entries("machines", undefined, [
     ["Cloudroom account", "sign in login email account sign out"],

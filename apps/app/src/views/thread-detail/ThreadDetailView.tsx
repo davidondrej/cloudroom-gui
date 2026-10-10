@@ -1912,6 +1912,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
   const {
     canOpenPreferredDirectoryTarget,
     canOpenPreferredFileTarget,
+    canRevealInFinder,
     directoryOpenTargets,
     fileOpenTargets,
     openPathInDirectoryTarget,
@@ -1919,6 +1920,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     openPathInPreferredDirectoryTarget,
     openPathInPreferredFileTarget,
     preferredDirectoryTarget,
+    revealPathInFinder,
   } = useLocalOpenTargets({
     enabled: threadOpenContext !== null,
     ...(threadOpenContext ? { openContext: threadOpenContext } : {}),
@@ -2280,6 +2282,10 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
     openCloudFile,
     openPathInPreferredFileTarget,
   ]);
+  const handleRevealInFinder =
+    !isCloudThread && canRevealInFinder
+      ? (path: string) => void revealPathInFinder({ lineNumber: null, path })
+      : undefined;
   const workspaceOpenPath = resolveThreadWorkspaceOpenPath({
     canOpenWorkspace: canOpenPreferredDirectoryTarget,
     environment,
@@ -2703,6 +2709,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
               rootPath: workspacePreviewRootPath,
             })}
             onOpenInEditor={handleOpenFileInEditor}
+            onRevealInFinder={handleRevealInFinder}
             onSelectionAddToChat={handleSelectionAddToChat}
             source={tab.source}
             statusLabel={tab.statusLabel}
@@ -2730,6 +2737,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
               }),
             })}
             onOpenInEditor={handleOpenHostFileInEditor}
+            onRevealInFinder={handleRevealInFinder}
             onSelectionAddToChat={handleSelectionAddToChat}
             threadId={thread.id}
           />
@@ -2755,6 +2763,7 @@ function ThreadDetailViewInternal(props: ThreadRoutePathArgs) {
               rootPath: threadStorageRootPath,
             })}
             onOpenInEditor={handleOpenStorageFileInEditor}
+            onRevealInFinder={handleRevealInFinder}
             onSelectionAddToChat={handleSelectionAddToChat}
             threadId={thread.id}
           />
