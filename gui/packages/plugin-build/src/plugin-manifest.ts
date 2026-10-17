@@ -1,5 +1,5 @@
 import { readFile, realpath, stat } from "node:fs/promises";
-import { isAbsolute, resolve } from "node:path";
+import { isAbsolute, resolve, sep } from "node:path";
 import {
   isPluginOwnedIconPath,
   pluginPackageJsonSchema,
@@ -40,7 +40,9 @@ export function resolveManifestPath(
     throw new Error(`manifest ${label} must be relative, got "${entry}"`);
   }
   const resolved = resolve(rootDir, entry);
-  if (resolved !== rootDir && !resolved.startsWith(rootDir + "/")) {
+  // Use the platform separator: on win32 resolve() returns backslash paths,
+  // so a "/"-suffixed prefix never matches and every entry "escapes".
+  if (resolved !== rootDir && !resolved.startsWith(rootDir + sep)) {
     throw new Error(
       `manifest ${label} escapes the plugin directory: "${entry}"`,
     );

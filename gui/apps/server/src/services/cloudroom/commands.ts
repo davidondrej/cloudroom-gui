@@ -517,7 +517,9 @@ class CloudroomService {
   private async savedConnection() {
     try {
       const info = await stat(this.path);
-      if ((info.mode & 0o077) !== 0) throw new Error("permissions");
+      // win32: NTFS has no POSIX mode bits; stat.mode reports group/other bits
+      // on every file, so the 0o077 check rejects all files. ACLs govern there.
+      if (process.platform !== "win32" && (info.mode & 0o077) !== 0) throw new Error("permissions");
       return savedConnectionSchema.parse(JSON.parse(await readFile(this.path, "utf8")));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
