@@ -10,6 +10,7 @@ import { ClaudeConnectionButton, useClaudeConnection } from "@/components/Claude
 import { openCodexConnection } from "@/components/CodexConnectionPanel";
 import { selectCloudForNewThreads } from "@/components/promptbox/NewThreadComposer";
 import { ImportChats } from "@/components/settings/ImportChats";
+import { SelfHostedCoreForm } from "@/components/settings/SelfHostedCoreForm";
 import { BbLogo } from "@/components/ui/bb-logo";
 import { appToast } from "@/components/ui/app-toast";
 import { useCreateProject } from "@/hooks/mutations/project-mutations";
@@ -17,6 +18,7 @@ import { useUpdateGeneralSettings } from "@/hooks/mutations/settings-mutations";
 import { cloudCanRunHarness, useCloudroomAccount, useCloudroomSignIn, useImportBb, useMacAgents, useNativeSessions, useProjectSuggestions, useSetCopyLogins, useSetMacAccess } from "@/hooks/queries/cloudroom-queries";
 import { useSidebarNavigation } from "@/hooks/queries/sidebar-navigation-query";
 import { useHostDaemon } from "@/hooks/useHostDaemon";
+import { useCloudLocked } from "@/hooks/useCloudLocked";
 import { usePathPickerHost } from "@/hooks/useLocalPathPicker";
 import { useQuickCreateProjectController } from "@/hooks/useQuickCreateProject";
 import { usePromptBoxProviderPreference } from "@/hooks/thread-creation-options/persisted-selection-fields";
@@ -85,8 +87,7 @@ export function Onboarding() {
   const [dismissed, setDismissed] = useAtom(dismissedAtom);
   const [open, setOpen] = useAtom(openAtom);
   const projects = useSidebarNavigation().data?.projects;
-  const account = useCloudroomAccount();
-  const locked = account.isSuccess && !account.data.account;
+  const locked = useCloudLocked();
   const visible = locked || open || (!dismissed && projects !== undefined && projects.length === 0);
   if (!visible) return null;
   return <Setup locked={locked} close={() => { setDismissed(true); setOpen(false); }} />;
@@ -344,6 +345,7 @@ const TickStamp = () => (
 );
 
 function AccountStep({ email, signingIn, next }: { email: string | null; signingIn: boolean; next: () => void }) {
+  const account = useCloudroomAccount();
   const signIn = useCloudroomSignIn();
   const busy = signingIn || signIn.isPending;
   const start = () => { track("account", "started"); signIn.mutate("signIn"); };
@@ -366,6 +368,9 @@ function AccountStep({ email, signingIn, next }: { email: string | null; signing
           <div className="mt-8 flex flex-col items-start gap-4">
             <Cta onClick={start}>Sign in with browser <Icon name="ArrowRight" aria-hidden /></Cta>
             <Note>Already signed in there? You come right back.</Note>
+          </div>
+          <div className="mt-8 text-sm">
+            <SelfHostedCoreForm connected={account.data?.selfHosted === true} ready={account.data?.ready === true} error={account.data?.error ?? null} />
           </div>
         </>
       )}
