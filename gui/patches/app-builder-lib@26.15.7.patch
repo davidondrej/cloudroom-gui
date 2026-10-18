@@ -22,3 +22,82 @@ index 9a69042fd48f4759a1c697bf23fa5b44f2da2366..637cc19f525c6ee3479b377cac4c6c78
      }
      return {
          keychainFile,
+diff --git a/out/targets/appimage/appImageUtil.js b/out/targets/appimage/appImageUtil.js
+index 12f078abd42700857b239b0e53cd568c1b1836b7..b8ca5a5320627145b1fc6d1dc4e83994cff5ee16 100644
+--- a/out/targets/appimage/appImageUtil.js
++++ b/out/targets/appimage/appImageUtil.js
+@@ -224,14 +224,72 @@ if [ $HAVE_NO_SANDBOX -eq 0 ] && ! unshare -Ur true 2>/dev/null ; then
+   NO_SANDBOX=(--no-sandbox)
+ fi
+ 
++reap_appdir_processes()
++{
++  # Helper processes (zygote, GPU, crashpad) can briefly outlive the app.
++  # The AppImage runtime unmounts this AppDir as soon as AppRun exits, and any
++  # process still executing from the mount then dies with SIGBUS. Sweep them
++  # first so teardown is clean no matter how the app exited.
++  set +e
++  local round pid_path exe victims
++  for round in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 ; do
++    victims=""
++    for pid_path in /proc/[0-9]* ; do
++      exe=$(readlink "$pid_path/exe" 2>/dev/null) || continue
++      case "$exe" in
++        "$APPDIR"/*) victims="$victims \${pid_path#/proc/}" ;;
++      esac
++    done
++    if [ -z "$victims" ] ; then
++      return 0
++    fi
++    kill -KILL $victims 2>/dev/null
++    sleep 0.1
++  done
++  return 0
++}
++
+ atexit()
+ {
+   if [ $isEulaAccepted == 1 ] ; then
++    if [ -n "$BB_DESKTOP_APPIMAGE_BRIDGE_RELATIVE_PATH" ] ; then
++      # Backend re-exec: the Node supervisor is spawned detached and signals
++      # its own process group, so keep exec and let it stay the group leader.
++      if [ $NUMBER_OF_ARGS -eq 0 ] ; then
++        exec "$BIN" "\${NO_SANDBOX[@]}"
++      else
++        exec "$BIN" "\${NO_SANDBOX[@]}" "\${args[@]}"
++      fi
++    fi
++    set +e
+     if [ $NUMBER_OF_ARGS -eq 0 ] ; then
+-      exec "$BIN" "\${NO_SANDBOX[@]}"
++      ( trap - INT QUIT ; exec "$BIN" "\${NO_SANDBOX[@]}" ) &
+     else
+-      exec "$BIN" "\${NO_SANDBOX[@]}" "\${args[@]}"
++      ( trap - INT QUIT ; exec "$BIN" "\${NO_SANDBOX[@]}" "\${args[@]}" ) &
+     fi
++    app_pid=$!
++    trap 'kill -TERM "$app_pid" 2>/dev/null' TERM
++    trap 'kill -INT "$app_pid" 2>/dev/null' INT
++    trap 'kill -HUP "$app_pid" 2>/dev/null' HUP
++    trap 'kill -QUIT "$app_pid" 2>/dev/null' QUIT
++    wait "$app_pid"
++    app_status=$?
++    while [ $app_status -gt 128 ] ; do
++      if kill -0 "$app_pid" 2>/dev/null ; then
++        wait "$app_pid"
++        app_status=$?
++      else
++        wait "$app_pid" 2>/dev/null
++        cached_status=$?
++        if [ $cached_status -ne 127 ] ; then
++          app_status=$cached_status
++        fi
++        break
++      fi
++    done
++    trap - TERM INT HUP QUIT
++    reap_appdir_processes
++    exit $app_status
+   fi
+ }
+ 
