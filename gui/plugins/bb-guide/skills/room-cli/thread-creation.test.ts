@@ -5,74 +5,101 @@ const read = (path: string) =>
   readFileSync(new URL(path, import.meta.url), "utf8").replace(/\s+/g, " ");
 const sentences = (text: string) => text.split(/(?<=[.!?])\s+(?=[A-Z`(])/);
 
-const guide = read("./references/thread-creation.md");
-const skill = read("./SKILL.md");
-const guideSentences = sentences(guide);
-const parentSandbox = /parent'?s sandbox/i;
-const explicitShare = /--shared-sandbox/;
+const docs = {
+  guide: sentences(read("./references/thread-creation.md")),
+  skill: sentences(read("./SKILL.md")),
+  index: sentences(read("./references/command-index.md")),
+};
+const all = Object.values(docs).flat();
+const parentSandbox = /parent'?s sandbox|shares? (their|its|the) parent'?s\b/i;
 const noAnswer = /(doesn't|does not|didn't|did not) answer/i;
-const conditional = /\b(if|only|unless|instead)\b/i;
-const find = (...patterns: RegExp[]) =>
-  guideSentences.filter((sentence) =>
+const find = (list: string[], ...patterns: RegExp[]) =>
+  list.filter((sentence) =>
     patterns.every((pattern) => pattern.test(sentence)),
   );
 
-describe("Cloud child sandbox in the thread-creation guide", () => {
-  it("mentions the parent's sandbox only as the --shared-sandbox or no-answer case", () => {
-    expect(
-      find(parentSandbox).filter(
-        (sentence) =>
-          !(
-            conditional.test(sentence) &&
-            (explicitShare.test(sentence) || noAnswer.test(sentence))
-          ),
-      ),
-    ).toEqual([]);
-    expect(find(/\b(by default|normally|usually)\b/i, parentSandbox)).toEqual(
-      [],
-    );
-  });
-
-  it("says a Cloud parent's child gets its own sandbox with a copy of the parent's code", () => {
+describe("Cloud child sandbox in the bundled room-cli guide", () => {
+  it("describes the managed default: own sandbox, a copy of the parent's code, its own branch", () => {
+    for (const list of [docs.guide, docs.skill]) {
+      expect(
+        find(
+          list,
+          /per-thread Cloud sandboxes/i,
+          /Cloud parent/i,
+          /own sandbox/i,
+          /cop(y|ies) of the parent'?s code/i,
+        ),
+      ).not.toEqual([]);
+    }
     expect(
       find(
-        /Cloud parent/i,
-        /own sandbox/i,
-        /cop(y|ies) of the parent'?s code/i,
+        docs.guide,
+        /commits and uncommitted changes/i,
+        /on its own branch/i,
       ),
     ).not.toEqual([]);
   });
 
-  it("says the child does not see the parent's later edits", () => {
-    expect(guide).toMatch(
-      /(doesn't|does not) see (the parent'?s )?later edits/i,
-    );
+  it("says the copy is not kept in sync with the parent's later edits", () => {
+    const fresh = find(docs.guide, /later edits/i);
+    expect(fresh).not.toEqual([]);
+    for (const sentence of fresh) {
+      expect(sentence).toMatch(
+        /(doesn't|does not) see the parent'?s later edits(?=[;,.])/i,
+      );
+      expect(sentence).not.toMatch(
+        /\b(mirror|sync|live|until|unless|except|before they)/i,
+      );
+    }
   });
 
-  it("scopes --shared-sandbox to a Cloud agent's own room-cli", () => {
-    expect(
-      find(explicitShare, /Cloud agent|Core/i, parentSandbox, conditional),
-    ).not.toEqual([]);
-  });
-
-  it("falls back to the parent's sandbox only when the app does not answer", () => {
-    expect(find(noAnswer, parentSandbox, conditional)).not.toEqual([]);
-  });
-
-  it("says an error from the app fails the spawn instead of falling back", () => {
+  it("puts a child in the parent's sandbox only with --shared-sandbox or when the app does not answer", () => {
+    for (const sentence of find(
+      all,
+      /\b(child|children|subagents?)\b/i,
+      parentSandbox,
+    )) {
+      expect(/--shared-sandbox/.test(sentence) || noAnswer.test(sentence)).toBe(
+        true,
+      );
+      expect(sentence).not.toMatch(/\b(by default|normally|usually)\b/i);
+      expect(sentence).not.toMatch(
+        /(without|omit\w*|unless)[^.;]*--shared-sandbox/i,
+      );
+    }
     expect(
       find(
-        /\berror\b/i,
-        /\bapp\b/i,
-        /\b(child|spawn)\b/i,
-        /\b(fails|is refused|(doesn't|does not|never) fall back|instead of falling back)\b/i,
+        docs.guide,
+        /Cloud agent|Core/i,
+        /parent'?s sandbox[^.]*\bonly if\b[^.]*--shared-sandbox/i,
+        noAnswer,
       ),
     ).not.toEqual([]);
+    expect(find(all, /--shared-sandbox[^.;]*own sandbox/i)).toEqual([]);
   });
 
-  it("agrees with its parent skill that a Cloud parent's child gets its own sandbox", () => {
-    const ownSandbox = /Cloud parent[^.]*own sandbox/i;
-    expect(skill).toMatch(ownSandbox);
-    expect(guide).toMatch(ownSandbox);
+  it("treats an app error as a failed spawn, not a fallback", () => {
+    const errors = find(docs.guide, /\berror\b/i, /\bapp\b/i, /\bspawn\b/i);
+    expect(errors).not.toEqual([]);
+    for (const sentence of errors) {
+      expect(sentence).toMatch(/\bfails\b/i);
+      expect(sentence).not.toMatch(
+        /parent'?s sandbox|retr(y|ies)|runs? (it|the child)/i,
+      );
+    }
+  });
+
+  it("says the parent hears about each finished child turn", () => {
+    const notices = find(all, /messages the parent/i);
+    expect(notices).not.toEqual([]);
+    for (const sentence of notices) {
+      expect(sentence).toMatch(/each time the child finishes a turn/i);
+    }
+  });
+
+  it("routes vm --thread to a subagent's own sandbox unless it shares its parent's", () => {
+    const vm = find(docs.index, /--thread ID/, /subagent/i);
+    expect(vm).not.toEqual([]);
+    for (const sentence of vm) expect(sentence).toMatch(/its own sandbox/i);
   });
 });

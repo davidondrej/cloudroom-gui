@@ -46,7 +46,7 @@ This index lists every command path that the core CLI registers. Read the task-s
 - `room-cli vm pull`
 - `room-cli vm push`
 
-`room-cli vm run 'COMMAND' [--thread ID] [--cwd DIR] [--stdin]`, `vm pull VM_PATH [LOCAL_FOLDER] [--thread ID]`, and `vm push LOCAL_PATH [VM_FOLDER] [--thread ID]` run commands and copy files as the agent account, in the agent home by default. `--thread ID` targets that Cloud thread's sandbox and wakes it; subagent threads share their parent's. Without it, they target the signed-in VM, and accounts without a VM must pass `--thread`. Find a thread's repository folder with `room-cli cloud thread-workspace ID`. `run` exits with the command's code. Copies are tar archives, limited to 16 MiB compressed. `~` means the VM agent home.
+`room-cli vm run 'COMMAND' [--thread ID] [--cwd DIR] [--stdin]`, `vm pull VM_PATH [LOCAL_FOLDER] [--thread ID]`, and `vm push LOCAL_PATH [VM_FOLDER] [--thread ID]` run commands and copy files as the agent account, in the agent home by default. `--thread ID` targets that Cloud thread's sandbox and wakes it; a subagent's ID reaches its own sandbox, or its parent's when it shares that one (`--shared-sandbox`, or the app didn't answer). Without it, they target the signed-in VM, and accounts without a VM must pass `--thread`. Find a thread's repository folder with `room-cli cloud thread-workspace ID`. `run` exits with the command's code. Copies are tar archives, limited to 16 MiB compressed. `~` means the VM agent home.
 
 ## import
 
