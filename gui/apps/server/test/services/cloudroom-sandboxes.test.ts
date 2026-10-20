@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { once } from "node:events";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it, vi } from "vitest";
@@ -256,6 +256,47 @@ it("moving back to the VM: new threads start on the VM while sandbox threads sta
     // Only VM threads can move into a sandbox, and only while sandboxes are on.
     expect((await request(`/cloudroom/threads/${inSandbox.threadId}/teleport`, { action: "move" })).status).toBe(409);
     expect((await request(`/cloudroom/threads/${onVm.threadId}/teleport`, { action: "move" })).status).toBe(409);
+  } finally {
+    service.stop();
+    coreServer.close(); websiteServer.close();
+  }
+});
+
+it("signing in keeps a self-hosted Core, so the account only adds phone access and sandboxes", async () => {
+  const harness = await createTestAppHarness();
+  const { host } = seedHostSession(harness.deps);
+  const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
+  const service = cloudroom(harness.deps);
+  const coreServer = createServer(async (req, res) => {
+    const json = (value: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(value)); };
+    if (req.url === "/v1/health") return json({});
+    if (req.url === "/v1/ready") return json({ ready: true });
+    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code", stop: true, resume: true, launch_settings: true, workspaces: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: "codex", model: "test-model" }] });
+    if (req.url?.includes("/stream?")) { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.end(); return; }
+    const input = await body(req);
+    if (req.url === "/v1/sessions") return json({ session_id: `cr_${input.request_id}`, receipt: { request_id: input.request_id, command: "start", input, state: "accepted" }, saving: {} }, 202);
+    return json({}, 404);
+  });
+  const coreUrl = await listen(coreServer);
+  const websiteServer = createServer(async (req, res) => {
+    const input = await body(req);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    if (req.url === "/api/desktop/logins") return res.end(JSON.stringify({ claude: false, codex: false, pi: false, github: false }));
+    // Not invited to hosted sandboxes: new threads stay on the user's own Core.
+    if (input.action === "mode") return res.end(JSON.stringify({ sandboxes: false }));
+    res.end(JSON.stringify({}));
+  });
+  const websiteUrl = await listen(websiteServer);
+  try {
+    await service.configure({ url: coreUrl, token: "o".repeat(64) });
+    expect(await service.status()).toMatchObject({ selfHosted: true, account: null });
+    const account = { id: "11111111-1111-4111-8111-111111111111", email: "own@example.com" };
+    await service.configure(null, account, undefined, websiteUrl, "a".repeat(64));
+    expect(JSON.parse(await readFile(join(harness.deps.config.dataDir, "cloudroom.json"), "utf8"))).toMatchObject({ url: coreUrl, token: "o".repeat(64), account, sandboxToken: "a".repeat(64) });
+    expect(await service.sandboxes.account()).toMatchObject({ userId: account.id });
+    const created = await harness.app.request("/api/v1/threads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ executionTarget: "cloud", requestId: "own-core", projectId: project.id, providerId: "codex", origin: "app", model: "test-model", reasoningLevel: "medium", environment: { type: "project-default" }, input: [{ type: "text", text: "Hi", mentions: [] }] }) });
+    expect(created.status, await created.clone().text()).toBe(201);
+    expect(harness.deps.db.select().from(cloudroomThreads).get()?.coreUrl).toBe(coreUrl);
   } finally {
     service.stop();
     coreServer.close(); websiteServer.close();

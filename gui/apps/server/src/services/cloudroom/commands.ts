@@ -647,6 +647,10 @@ class CloudroomService {
       if (connection) connection.url = new URL(connection.url).href.replace(/\/$/, "");
       if (connection?.projectId && !getProject(this.deps.db, connection.projectId)) throw new ApiError(404, "project_not_found", "Project not found");
       const existing = await this.savedConnection();
+      // Signing in without a hosted VM keeps a self-hosted Core, so the account can add Connect (phone) and sharing.
+      const ownCore = !connection && account && existing?.url && existing.token && (!existing.account || existing.account.id === account.id)
+        ? { url: existing.url, token: existing.token, ...(existing.gateToken ? { gateToken: existing.gateToken } : {}), ...(existing.projectId ? { projectId: existing.projectId } : {}) }
+        : null;
       const previousAccount = existing?.account && existing.account.id !== account?.id ? existing.account.id : null;
       const savedBindings = bindings(this.deps.db).filter((saved) => !sandboxThread(saved.coreUrl) && (saved.accountId ? saved.accountId === account?.id : !previousAccount));
       if (connection && savedBindings.some((saved) => saved.coreUrl !== connection.url)) throw new ApiError(409, "cloudroom_connection_in_use", "Existing cloud threads belong to another core. Use a separate app profile; history has not been changed.");
@@ -663,7 +667,7 @@ class CloudroomService {
         this.sandboxes.reset();
       }
       await this.saveConnection({
-        ...(connection ?? {}), ...(account ? { account: accountSchema.parse(account) } : {}),
+        ...(connection ?? ownCore ?? {}), ...(account ? { account: accountSchema.parse(account) } : {}),
         ...(websiteUrl ? { websiteUrl: websiteSchema.parse(websiteUrl) } : {}),
         ...(sandboxToken ? { sandboxToken } : {}),
         ...(account && existing?.account?.id === account.id && existing.url === connection?.url ? { onboarding: existing.onboarding } : {}),
