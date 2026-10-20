@@ -19,13 +19,23 @@ const find = (list: string[], ...patterns: RegExp[]) =>
   );
 
 describe("Cloud child sandbox in the bundled room-cli guide", () => {
-  it("never says a child keeps receiving the parent's future changes", () => {
+  it("never says a child in its own sandbox keeps receiving the parent's future changes", () => {
+    const future =
+      /\b(future|later|new|every|subsequent|ongoing)\b[^.;]*\b(commits?|edits?|changes?|files?|saves?)\b/i;
     for (const sentence of find(
       all,
       /\b(child|children|subagents?)\b/i,
-      /\b(future|later|new|every|subsequent|ongoing)\b[^.;]*\b(commits?|edits?|changes?|files?|saves?)\b/i,
+      future,
     )) {
-      expect(sentence).toMatch(/\b(doesn't|does not|don't|never|not)\b/i);
+      if (
+        /\bshar(e|es|ed|ing)\b[^.;]*\bparent'?s (sandbox|folder)\b|--shared-sandbox/i.test(
+          sentence,
+        )
+      )
+        continue;
+      expect(sentence).toMatch(
+        /\b(doesn't|does not|don't|do not|never)\s+(see|get|receive)s?\b[^.;]*\b(future|later|new|every|subsequent|ongoing)\b/i,
+      );
     }
   });
 
@@ -37,14 +47,25 @@ describe("Cloud child sandbox in the bundled room-cli guide", () => {
     }
   });
 
-  it("says a Local parent's Cloud child starts from the project, not the parent's uncommitted work", () => {
-    const start = find(all, /\bstarts? from\b/i, /GitHub/);
-    expect(start).not.toEqual([]);
-    for (const sentence of start) {
-      expect(sentence).not.toMatch(/not local files/i);
-      expect(sentence).toMatch(/small project/i);
-      expect(sentence).toMatch(/uncommitted/i);
+  it("says a Local parent's Cloud child starts from pushed GitHub work, or a small project's current files", () => {
+    const github = find(all, /pushed GitHub branch/i);
+    expect(github.length).toBeGreaterThanOrEqual(2);
+    for (const sentence of github) {
+      expect(sentence).toMatch(
+        /pushed GitHub branch,? without uncommitted work/i,
+      );
     }
+    const small = find(all, /small project that isn't on GitHub/i);
+    expect(small.length).toBeGreaterThanOrEqual(2);
+    for (const sentence of small) {
+      expect(sentence).toMatch(/copied from its folder on the Mac/i);
+      expect(sentence).toMatch(/as the files are now/i);
+    }
+    for (const sentence of find(all, /uncommitted work/i)) {
+      expect(sentence).toMatch(/without uncommitted work/i);
+      expect(sentence).not.toMatch(/\binclud\w*/i);
+    }
+    expect(find(all, /starts? from GitHub, not local files/i)).toEqual([]);
   });
 
   it("describes the managed default: own sandbox, a copy of the parent's code, its own branch", () => {
@@ -69,7 +90,12 @@ describe("Cloud child sandbox in the bundled room-cli guide", () => {
   });
 
   it("says the copy is not kept in sync with the parent's later edits", () => {
-    const fresh = find(docs.guide, /later edits/i);
+    const fresh = find(docs.guide, /later edits/i).filter(
+      (sentence) =>
+        !/\bshar(e|es|ed|ing)\b[^.;]*\bparent'?s (sandbox|folder)\b|--shared-sandbox/i.test(
+          sentence,
+        ),
+    );
     expect(fresh).not.toEqual([]);
     for (const sentence of fresh) {
       expect(sentence).toMatch(
@@ -114,37 +140,47 @@ describe("Cloud child sandbox in the bundled room-cli guide", () => {
     }
   });
 
-  it("does not call Cloud forks disabled outright", () => {
-    for (const sentence of find(
-      all,
-      /\bforks?\b/i,
-      /\bnot (enabled|supported)\b|\bunsupported\b/i,
-    )) {
+  it("keeps Cloud forks to Claude Code and Codex on a core that supports them", () => {
+    expect(find(docs.guide, /Cloud forks/i)).not.toEqual([]);
+    expect(find(docs.skill, /Cloud forks/i)).not.toEqual([]);
+    for (const sentence of find(all, /Cloud forks?/i)) {
+      expect(sentence).toMatch(/Claude Code and Codex/);
+      expect(sentence).toMatch(/when the connected core supports them/i);
       expect(sentence).not.toMatch(
-        /\bCloud forks?\b[^.;]*\bnot enabled\b|\bForks are not enabled\b/i,
+        /\b(every|any|all|regardless|even when|refuse\w*|lacks?|unsupported|not supported)\b/i,
       );
     }
-    expect(
-      find(docs.guide, /Cloud forks/i, /Claude Code/, /Codex/),
-    ).not.toEqual([]);
-    expect(
-      find(docs.skill, /Cloud forks/i, /Claude Code/, /Codex/),
-    ).not.toEqual([]);
+    for (const sentence of find(all, /\bCloud\b/, /\bforks?\b/i)) {
+      expect(sentence).not.toMatch(/\b(no|not|without)\b[^.;]*\bforks?\b/i);
+    }
+    for (const sentence of find(all, /\bforks?\b/i, /\bcores?\b/i)) {
+      expect(sentence).not.toMatch(
+        /\b(refuse\w*|never|even when|regardless|lacks?)\b/i,
+      );
+    }
   });
 
-  it("says a Cloud child's controls and turn reports reach it through the website once started", () => {
+  it("says the website carries a started child's controls only when its parent has a sandbox of its own", () => {
     expect(
       find(docs.skill, /through the GUI backend while it is running/i),
     ).toEqual([]);
-    expect(
-      find(
-        docs.skill,
-        /\bwebsite\b/i,
-        /\b(tell|stop|archive)\b/,
-        /turn reports?/i,
-        /app is closed|Mac is off/i,
-      ),
-    ).not.toEqual([]);
+    const relay = find(
+      docs.skill,
+      /\bwebsite\b/i,
+      /\b(tell|stop|archive)\b/,
+      /turn reports?/i,
+    );
+    expect(relay).not.toEqual([]);
+    for (const sentence of relay) {
+      expect(sentence).toMatch(/parent has a sandbox of its own/i);
+      expect(sentence).toMatch(/app is closed|Mac is off/i);
+      expect(sentence).toMatch(
+        /shares? another thread'?s sandbox[^.]*\bapp\b/i,
+      );
+      expect(sentence).not.toMatch(
+        /website (never|doesn't|does not|won't|cannot|can't)\b/i,
+      );
+    }
   });
 
   it("treats an app error as a failed spawn, not a fallback", () => {
