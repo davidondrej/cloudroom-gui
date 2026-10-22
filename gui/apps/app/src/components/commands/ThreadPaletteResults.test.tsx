@@ -375,6 +375,50 @@ describe("ThreadPaletteResults", () => {
     },
   );
 
+  it.each([
+    { query: "oord", showsName: true },
+    { query: "coord", showsName: true },
+    { query: "co", showsName: true },
+    { query: "oo", showsName: false },
+  ])(
+    "matches $query in thread names like the server search",
+    ({ query, showsName }) => {
+      const title = "CloudRoom UI — design evolution · coordinator";
+      const thread = createThreadListEntry({ id: "thr_coordinator", title });
+      mockThreadSearch({
+        data: createSearchResponse(thread, [
+          {
+            sourceKind: "title",
+            sourceSeq: null,
+            text: title,
+            highlightRanges: [],
+          },
+          {
+            sourceKind: "user_message",
+            sourceSeq: 3,
+            text: "Coordinator notes",
+            highlightRanges: [],
+          },
+        ]),
+        debouncedQuery: query,
+        hasSearchableQuery: true,
+        isDebouncing: false,
+        isError: false,
+        isFetching: false,
+        isLoading: false,
+      });
+
+      renderResults({ query });
+
+      expect(
+        screen.queryByRole("group", { name: "Thread names" }) !== null,
+      ).toBe(showsName);
+      expect(
+        screen.getByRole("group", { name: "Conversation content" }),
+      ).not.toBeNull();
+    },
+  );
+
   it("shows an archived overflow count", () => {
     const archivedThread = createThreadListEntry({
       id: "thr_archived",

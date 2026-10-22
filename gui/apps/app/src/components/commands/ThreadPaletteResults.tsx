@@ -214,7 +214,11 @@ export function ThreadPaletteResults({
         const fullNameMatch =
           queryWords.length > 0 &&
           queryWords.every((word) =>
-            nameWords.some((nameWord) => nameWord.startsWith(word)),
+            nameWords.some((nameWord) =>
+              [...word].length >= 3
+                ? nameWord.includes(word)
+                : nameWord.startsWith(word),
+            ),
           );
         const snippetMatch = getSnippetMatch(matches);
         if (fullNameMatch && (titleMatch || !snippetMatch)) {
