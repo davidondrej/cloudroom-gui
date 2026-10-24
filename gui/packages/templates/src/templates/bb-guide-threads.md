@@ -55,7 +55,8 @@ Spawning:
 
   Cloud requires --provider codex or pi and --model. It uses the project's
   cloud folder and full permissions. Sends queue in the core. Stop pauses the
-  queue; sending its first queued message explicitly resumes it. Inspect
+  queue; sending its first queued message explicitly resumes it. A thread
+  stopped before starting waits until you send it a message. Inspect
   room-cli cloud status --json for core/harness support for steering,
   attachments, compaction, message editing, queue changes, and fast service tier.
   --base-branch BRANCH starts it from that pushed GitHub branch. Native

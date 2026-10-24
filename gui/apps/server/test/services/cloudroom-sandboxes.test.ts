@@ -5,10 +5,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it, vi } from "vitest";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
-import { saveStatus } from "../../src/services/cloudroom/store.js";
+import { command, saveCommandState, saveStatus } from "../../src/services/cloudroom/store.js";
 import { createTestAppHarness } from "../helpers/test-app.js";
 import { seedHostSession, seedProjectWithSource } from "../helpers/seed.js";
-import { cloudroomThreads, createThread, getThread } from "@cloudroom/db";
+import { cloudroomCommands, cloudroomThreads, createThread, getThread } from "@cloudroom/db";
 
 // The Cursor key check runs this computer's Cursor CLI, which rejects the tests' fake keys.
 vi.mock("../../src/services/cloudroom/sandboxes.js", async (original) => ({ ...await original<object>(), cursorKeyRejected: async () => false }));
@@ -390,5 +390,146 @@ it("sleeping cloud threads share one awake-list check per app, and a thread woke
   } finally {
     service.stop();
     coreServer.close(); websiteServer.close();
+  }
+}, 20_000);
+
+const admissionFixture = async () => {
+  const harness = await createTestAppHarness();
+  const { host } = seedHostSession(harness.deps);
+  const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
+  const service = cloudroom(harness.deps);
+  const fixture = { admitted: false, wakeFails: false, wakeGate: null as Promise<void> | null, startGate: null as Promise<void> | null, wakes: [] as string[], core: [] as { path: string; text?: string }[] };
+  let coreUrl = "";
+  const coreServer = createServer(async (req, res) => {
+    const json = (value: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(value)); };
+    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code", stop: true, resume: true, launch_settings: true, workspaces: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: "codex", model: "test-model" }] });
+    if (req.url?.includes("/stream?")) { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.end(); return; }
+    if (req.method !== "POST") return json({}, 404);
+    const input = await body(req);
+    if (req.url!.startsWith("/v1/sessions")) fixture.core.push({ path: req.url!, text: input.text });
+    if (req.url === "/v1/sessions") await fixture.startGate;
+    const name = req.url === "/v1/sessions" ? "start" : req.url!.split("/").at(-1) === "prompts" ? "prompt" : req.url!.split("/").at(-1);
+    const session = name === "start" ? `cr_${fixture.core.filter(call => call.path === "/v1/sessions").length}` : req.url!.split("/")[3];
+    json({ session_id: session, receipt: { request_id: input.request_id, command: name, input, state: "accepted" }, saving: {} }, 202);
+  });
+  const websiteServer = createServer(async (req, res) => {
+    const json = (value: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(value)); };
+    const input = await body(req);
+    if (req.url === "/api/desktop/logins") return json({ claude: false, codex: false, pi: false, github: false });
+    if (input.action === "awake") return json({ sandboxes: [] });
+    if (input.action !== "wake") return json({ thread: input.thread, state: "asleep", generation: 0, issue: null });
+    fixture.wakes.push(input.thread);
+    if (!fixture.admitted) return json({ error: "You're in the cloud queue.", code: "cloud_queue" }, 409);
+    await fixture.wakeGate;
+    if (fixture.wakeFails) return json({ error: "The website is down." }, 500);
+    json({ thread: input.thread, state: "awake", generation: 1, issue: null, origin: coreUrl, token: "t".repeat(64) });
+  });
+  coreUrl = await listen(coreServer);
+  await service.configure(null, { id: "11111111-1111-4111-8111-111111111111", email: "sandbox@example.com" }, undefined, await listen(websiteServer), "a".repeat(64));
+  const request = (path: string, value?: unknown) => harness.app.request(`/api/v1${path}`, { method: value === undefined ? "GET" : "POST", headers: { "Content-Type": "application/json" }, ...(value === undefined ? {} : { body: JSON.stringify(value) }) });
+  const create = async (requestId: string) => {
+    const created = await request("/threads", { executionTarget: "cloud", requestId, projectId: project.id, providerId: "codex", origin: "app", model: "test-model", reasoningLevel: "medium", environment: { type: "project-default" }, input: [{ type: "text", text: requestId, mentions: [] }] });
+    expect(created.status).toBe(201);
+    return ((await created.json()) as { id: string }).id;
+  };
+  return { harness, project, service, fixture, request, create, close: () => { service.stop(); coreServer.close(); websiteServer.close(); } };
+};
+
+it("Stop holds a Cloud thread waiting for admission, so it never starts on its own, and a new message starts it", async () => {
+  const { harness, project, service, fixture, request, create, close } = await admissionFixture();
+  const commands = () => harness.deps.db.select().from(cloudroomCommands).all();
+  try {
+    const thread = await create("queued-start");
+    await waitFor(() => fixture.wakes.length > 0, "refused wake");
+    expect(getThread(harness.deps.db, thread)?.status).toBe("pending");
+    const queued = commands().length;
+
+    const stopped = await request(`/threads/${thread}/stop`, {});
+    expect(stopped.status, await stopped.clone().text()).toBe(200);
+    expect((await request(`/threads/${thread}/stop`, {})).status).toBe(200);
+    expect(fixture.wakes).toHaveLength(1);
+    expect(commands()).toHaveLength(queued);
+    expect(command(harness.deps.db, `first_${thread}`)?.state).toBe("sending");
+    expect(getThread(harness.deps.db, thread)).toMatchObject({ status: "idle", archivedAt: null });
+    expect(service.threadStatus(thread)).toMatchObject({ paused: true, starting: false, failedStart: false, error: null });
+
+    const follow = { requestId: "after-stop", mode: "auto", input: [{ type: "text", text: "Now start", mentions: [] }] };
+    expect((await request(`/threads/${thread}/send`, follow)).status).toBe(503);
+    expect(command(harness.deps.db, "after-stop")).toBeNull();
+    const refused = fixture.wakes.length;
+
+    fixture.admitted = true;
+    await new Promise(resolve => setTimeout(resolve, 3200));
+    service.stop();
+    service.start();
+    expect(await create("queued-start")).toBe(thread);
+    expect((await request(`/cloudroom/threads/${thread}/retry-start`, {})).status).toBe(200);
+    await new Promise(resolve => setTimeout(resolve, 1600));
+    expect(fixture.wakes).toHaveLength(refused);
+    expect(fixture.core).toEqual([]);
+    expect(getThread(harness.deps.db, thread)?.status).toBe("idle");
+
+    await expect.poll(async () => (await request(`/threads/${thread}/send`, follow)).status, { timeout: 15_000, interval: 500 }).toBe(200);
+    await waitFor(() => fixture.core.filter(call => call.path.endsWith("/prompts")).length === 2, "saved and new messages");
+    expect(fixture.core.filter(call => call.path === "/v1/sessions")).toHaveLength(1);
+    expect(fixture.core.filter(call => call.path.endsWith("/prompts")).map(call => call.text?.split("\n")[0])).toEqual(["queued-start", "Now start"]);
+    expect(service.threadStatus(thread)?.sessionId).toBe("cr_1");
+
+    expect((await request(`/threads/${thread}/stop`, {})).status).toBe(200);
+    expect(fixture.core.map(call => call.path)).toContain("/v1/sessions/cr_1/stop");
+
+    fixture.wakeFails = true;
+    service.sandboxes.forget(thread);
+    const failed = await request(`/threads/${thread}/stop`, {});
+    expect(failed.status).toBe(500);
+    expect(await failed.json()).toMatchObject({ code: "internal_error" });
+
+    const unbound = createThread(harness.deps.db, harness.deps.hub, { executionTarget: "cloud", projectId: project.id, providerId: "codex", status: "pending" });
+    const missing = await request(`/threads/${unbound.id}/stop`, {});
+    expect(missing.status).toBe(409);
+    expect(await missing.json()).toMatchObject({ code: "cloudroom_missing_binding" });
+  } finally {
+    close();
+  }
+}, 40_000);
+
+it("Stop during a Cloud thread's wake keeps it from starting, and Stop during its start stops the new session", async () => {
+  const { harness, fixture, request, create, close } = await admissionFixture();
+  try {
+    fixture.admitted = true;
+    let releaseWake!: () => void;
+    fixture.wakeGate = new Promise(resolve => { releaseWake = resolve; });
+    const waking = await create("stop-while-waking");
+    await waitFor(() => fixture.wakes.includes(waking), "wake in flight");
+    const stopWhileWaking = request(`/threads/${waking}/stop`, {});
+    await new Promise(resolve => setTimeout(resolve, 100));
+    releaseWake();
+    expect((await stopWhileWaking).status).toBe(200);
+    await new Promise(resolve => setTimeout(resolve, 1600));
+    expect(fixture.core).toEqual([]);
+    expect(getThread(harness.deps.db, waking)?.status).toBe("idle");
+
+    let releaseStart!: () => void;
+    fixture.startGate = new Promise(resolve => { releaseStart = resolve; });
+    const starting = await create("stop-while-starting");
+    await waitFor(() => fixture.core.some(call => call.path === "/v1/sessions"), "start in flight");
+    const stopWhileStarting = request(`/threads/${starting}/stop`, {});
+    await new Promise(resolve => setTimeout(resolve, 100));
+    releaseStart();
+    expect((await stopWhileStarting).status).toBe(200);
+    expect(fixture.core.map(call => call.path)).toEqual(["/v1/sessions", "/v1/sessions/cr_1/prompts", "/v1/sessions/cr_1/stop"]);
+
+    saveCommandState(harness.deps.db, waking, `first_${waking}`, "failed");
+    saveStatus(harness.deps.db, waking, "error");
+    expect((await request(`/threads/${waking}/stop`, {})).status).toBe(200);
+    expect((await request(`/cloudroom/threads/${waking}/retry-start`, {})).status).toBe(200);
+    await waitFor(() => fixture.core.some(call => call.path === "/v1/sessions/cr_2/prompts"), "retried start after Stop");
+
+    expect((await request(`/threads/${starting}/archive-all`, {})).status).toBe(200);
+    const wakes = fixture.wakes.length;
+    expect((await request(`/threads/${starting}/stop`, {})).status).toBe(200);
+    expect(fixture.wakes).toHaveLength(wakes);
+  } finally {
+    close();
   }
 }, 20_000);

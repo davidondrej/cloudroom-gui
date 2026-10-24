@@ -1619,7 +1619,8 @@ class CloudroomService {
       const jumpQueue = saved.queuePaused && this.queue(thread.id).length > 0 && feature(await live(), "queue_reorder");
       this.enqueue(thread.id, id, "prompt", stored);
       if (jumpQueue) this.enqueue(thread.id, randomUUID(), "reorder", { order: [id] });
-      if (saved.queuePaused) this.enqueue(thread.id, randomUUID(), "resume", {});
+      if (saved.queuePaused && saved.sessionId) this.enqueue(thread.id, randomUUID(), "resume", {});
+      else if (saved.queuePaused) this.pauseStart(thread.id, false);
       const sticky = getThreadExecutionOverride(this.deps.db, thread.id)?.reasoningLevelOverride;
       if (payload.reasoningLevel && sticky && sticky !== payload.reasoningLevel) setThreadExecutionOverride(this.deps.db, { threadId: thread.id, reasoningLevelOverride: payload.reasoningLevel });
       if (this.deps.db.transaction(tx => projectFollowUp(tx, thread.id, id))) this.notify(thread.id, ["client/turn/requested"]);
@@ -1641,9 +1642,25 @@ class CloudroomService {
     const saved = binding(this.deps.db, threadId);
     if (!saved) throw new ApiError(409, "cloudroom_missing_binding", "Cloud session is unavailable");
     if (action === "stop" && getThread(this.deps.db, threadId)?.archivedAt) return;
+    if (action === "stop" && !saved.sessionId) {
+      await this.requireOwnThread(saved);
+      this.pauseStart(threadId, true);
+      await this.deliveries.get(threadId)?.catch(() => {});
+      if (!binding(this.deps.db, threadId)?.sessionId) return;
+    }
     await this.client(saved);
     this.enqueue(threadId, randomUUID(), action, {});
     await this.deliver(threadId);
+  }
+
+  private pauseStart(threadId: string, paused: boolean): void {
+    const status = getThread(this.deps.db, threadId)?.status ?? "";
+    this.deps.db.transaction((tx) => {
+      saveBinding(tx, threadId, { queuePaused: paused });
+      if (paused ? ["pending", "starting"].includes(status) : status === "idle") saveStatus(tx, threadId, paused ? "idle" : "pending");
+    });
+    this.setConnectionIssue(threadId, "delivery");
+    this.notify(threadId);
   }
 
   archive(threadId: string): void {
@@ -1934,7 +1951,7 @@ class CloudroomService {
     if (command(this.deps.db, `first_${threadId}`)?.state !== "failed") return;
     this.deps.db.transaction((tx) => {
       saveCommandState(tx, threadId, `first_${threadId}`, "sending");
-      saveBinding(tx, threadId, { error: null });
+      saveBinding(tx, threadId, { error: null, queuePaused: false });
       saveStatus(tx, threadId, "pending");
       appendStartProgress(tx, threadId, [cloudStep(Boolean(sandboxThread(saved.coreUrl)))], "active", true);
     });
@@ -1972,12 +1989,12 @@ class CloudroomService {
     }
   }
 
-  /** An archived thread never starts, even when archived while its sandbox wakes, and a Cloud parent's child
-   *  waits until the parent's Core confirms it (ADR 0229). */
+  /** An archived or stopped thread never starts, even when archived or stopped while its sandbox wakes, and a Cloud
+   *  parent's child waits until the parent's Core confirms it (ADR 0229). */
   private mustNotStart(threadId: string): boolean {
     const thread = getThread(this.deps.db, threadId);
     const initial = command(this.deps.db, `first_${threadId}`);
-    return !thread || Boolean(thread.archivedAt || thread.deletedAt) || (initial !== null && JSON.parse(initial.input).awaiting_core === true);
+    return !thread || Boolean(thread.archivedAt || thread.deletedAt || binding(this.deps.db, threadId)?.queuePaused) || (initial !== null && JSON.parse(initial.input).awaiting_core === true);
   }
 
   start(): void {
