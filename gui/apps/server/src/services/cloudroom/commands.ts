@@ -1645,7 +1645,9 @@ class CloudroomService {
     if (!saved) throw new ApiError(409, "cloudroom_missing_binding", "Cloud session is unavailable");
     if (action === "stop" && getThread(this.deps.db, threadId)?.archivedAt) return;
     if (!saved.sessionId) {
+      const stops = this.stops.get(threadId);
       await this.requireOwnThread(saved);
+      if (action === "resume" && this.stops.get(threadId) !== stops) return;
       this.pauseStart(threadId, action === "stop");
       if (action === "resume") return void this.deliver(threadId).catch(() => {});
       await this.deliveries.get(threadId)?.catch(() => {});

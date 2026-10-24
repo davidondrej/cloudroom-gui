@@ -513,7 +513,7 @@ it("Stop during a Cloud thread's start stops the new session, and Stop during it
     const starting = await create("stop-while-starting");
     await waitFor(() => paths().includes("/v1/sessions"), "start in flight");
     const stopWhileStarting = request(`/threads/${starting}/stop`, {});
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await waitFor(() => service.threadStatus(starting)?.paused === true, "Stop held");
     releaseStart();
     expect((await stopWhileStarting).status).toBe(200);
     expect(paths()).toEqual(["/v1/sessions", "/v1/sessions/cr_1/prompts", "/v1/sessions/cr_1/stop"]);
@@ -525,7 +525,7 @@ it("Stop during a Cloud thread's start stops the new session, and Stop during it
     const queued = await request(`/threads/${waking}/send`, { requestId: "queued-while-waking", mode: "auto", input: [{ type: "text", text: "Queued while waking", mentions: [] }] });
     expect(queued.status, await queued.clone().text()).toBe(200);
     const stopWhileWaking = request(`/threads/${waking}/stop`, {});
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await waitFor(() => service.threadStatus(waking)?.paused === true, "Stop held");
     releaseWake();
     expect((await stopWhileWaking).status).toBe(200);
     await new Promise(resolve => setTimeout(resolve, 1600));
