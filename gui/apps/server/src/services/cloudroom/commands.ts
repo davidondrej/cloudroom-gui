@@ -1660,6 +1660,7 @@ class CloudroomService {
 
   private pauseStart(threadId: string, paused: boolean): void {
     if (paused) this.stops.set(threadId, (this.stops.get(threadId) ?? 0) + 1);
+    else if (binding(this.deps.db, threadId)?.sessionId) return;
     saveBinding(this.deps.db, threadId, { queuePaused: paused });
     this.setConnectionIssue(threadId, "delivery");
     this.notify(threadId);
