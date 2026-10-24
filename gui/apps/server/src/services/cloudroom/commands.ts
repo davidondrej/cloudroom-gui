@@ -402,6 +402,7 @@ class CloudroomService {
   /** Threads whose cloud disk is full or low, from Core's storage records. The composer shows one live card for it. */
   private readonly disk = new Map<string, { paused: boolean; reason: "disk_capacity" | "measurement_unavailable"; usedBytes: number | null; totalBytes: number | null }>();
   private readonly deliveries = new Map<string, Promise<void>>();
+  private readonly stops = new Map<string, number>();
   private timer: ReturnType<typeof setInterval> | null = null;
   private stopped = false;
   private epoch = 0;
@@ -1571,6 +1572,7 @@ class CloudroomService {
   private async sendNow(thread: Thread, payload: SendMessageRequest): Promise<SendMessageResponse> {
     if (teleportBlocked(this.deps.db, thread.id)) throw new ApiError(409, "teleport_in_progress", "Messages are disabled until Teleport finishes.");
     const saved = binding(this.deps.db, thread.id);
+    const stops = this.stops.get(thread.id);
     if (!saved) throw new ApiError(409, "cloudroom_missing_binding", "Cloud thread has no core binding; native execution is blocked");
     await this.requireOwnThread(saved);
     if (!saved.sessionId && command(this.deps.db, `first_${thread.id}`)?.state === "failed") throw new ApiError(409, "cloudroom_start_failed", "Retry the rejected cloud start before sending more messages. Your original prompt is saved.");
@@ -1620,7 +1622,7 @@ class CloudroomService {
       this.enqueue(thread.id, id, "prompt", stored);
       if (jumpQueue) this.enqueue(thread.id, randomUUID(), "reorder", { order: [id] });
       if (saved.queuePaused && saved.sessionId) this.enqueue(thread.id, randomUUID(), "resume", {});
-      else if (saved.queuePaused) this.pauseStart(thread.id, false);
+      else if (saved.queuePaused && this.stops.get(thread.id) === stops) this.pauseStart(thread.id, false);
       const sticky = getThreadExecutionOverride(this.deps.db, thread.id)?.reasoningLevelOverride;
       if (payload.reasoningLevel && sticky && sticky !== payload.reasoningLevel) setThreadExecutionOverride(this.deps.db, { threadId: thread.id, reasoningLevelOverride: payload.reasoningLevel });
       if (this.deps.db.transaction(tx => projectFollowUp(tx, thread.id, id))) this.notify(thread.id, ["client/turn/requested"]);
@@ -1655,6 +1657,7 @@ class CloudroomService {
   }
 
   private pauseStart(threadId: string, paused: boolean): void {
+    if (paused) this.stops.set(threadId, (this.stops.get(threadId) ?? 0) + 1);
     saveBinding(this.deps.db, threadId, { queuePaused: paused });
     this.setConnectionIssue(threadId, "delivery");
     this.notify(threadId);
@@ -1931,7 +1934,7 @@ class CloudroomService {
   }
 
   async retryStart(threadId: string, explicit = false): Promise<void> {
-    const held = binding(this.deps.db, threadId)?.queuePaused;
+    const stops = this.stops.get(threadId);
     await this.deliveries.get(threadId)?.catch(() => {});
     this.holdRejectedStart(threadId);
     const saved = binding(this.deps.db, threadId);
@@ -1939,24 +1942,18 @@ class CloudroomService {
     const first = command(this.deps.db, `first_${threadId}`)?.state;
     if (saved && !saved.sessionId && (first === "sending" || first === "accepted")) return;
     if (!saved || !thread || thread.archivedAt || thread.deletedAt || saved.sessionId || first !== "failed") throw new ApiError(409, "cloudroom_retry", "Only a rejected cloud start can be retried here.");
-    if (saved.queuePaused && !(explicit && held)) return;
-    if (saved.queuePaused) saveBinding(this.deps.db, threadId, { queuePaused: false });
-    try {
-      const client = await this.client(saved);
-      const capabilities = await this.capabilities(client);
-      const harness = thread.providerId;
-      if (!isCloudProvider(harness)) throw new ApiError(400, "cloudroom_harness", "Unsupported cloud harness.");
-      validateReasoning(harness, coreModel(harness, saved.model, capabilities).model, saved.reasoning, capabilities);
-      if (harness === "codex" && sandboxThread(saved.coreUrl) && authRequiredMessages.has(saved.error ?? "")) await this.sandboxes.refreshCodex(threadId).catch(error => this.warn("Cloud Codex login could not be refreshed before the retry", error, { threadId }));
-    } catch (error) {
-      if (saved.queuePaused) saveBinding(this.deps.db, threadId, { queuePaused: true });
-      throw error;
-    }
+    if (saved.queuePaused && !explicit) return;
+    const client = await this.client(saved);
+    const capabilities = await this.capabilities(client);
+    const harness = thread.providerId;
+    if (!isCloudProvider(harness)) throw new ApiError(400, "cloudroom_harness", "Unsupported cloud harness.");
+    validateReasoning(harness, coreModel(harness, saved.model, capabilities).model, saved.reasoning, capabilities);
+    if (harness === "codex" && sandboxThread(saved.coreUrl) && authRequiredMessages.has(saved.error ?? "")) await this.sandboxes.refreshCodex(threadId).catch(error => this.warn("Cloud Codex login could not be refreshed before the retry", error, { threadId }));
     // A retry can start from the sign-in resume and a click at once; only the first one past the awaits sends.
-    if (command(this.deps.db, `first_${threadId}`)?.state !== "failed" || binding(this.deps.db, threadId)?.queuePaused) return;
+    if (command(this.deps.db, `first_${threadId}`)?.state !== "failed" || this.stops.get(threadId) !== stops) return;
     this.deps.db.transaction((tx) => {
       saveCommandState(tx, threadId, `first_${threadId}`, "sending");
-      saveBinding(tx, threadId, { error: null });
+      saveBinding(tx, threadId, { error: null, queuePaused: false });
       saveStatus(tx, threadId, "pending");
       appendStartProgress(tx, threadId, [cloudStep(Boolean(sandboxThread(saved.coreUrl)))], "active", true);
     });
@@ -2116,6 +2113,7 @@ class CloudroomService {
         if (options.workspace === ROOT_WORKSPACE && !capabilities.root_workspace) throw new ApiError(503, "cloudroom_update", "Update the cloud core to start agents outside a project. Your message is saved.");
         if (harness === "codex" && capabilities.codex_auth_import && !sandbox) await importCodexLogin(this.deps);
         if (harness === "pi") await this.copyPiSetup(client, Boolean(sandbox));
+        if (this.mustNotStart(threadId)) return;
         const fork = cloudForkOf(initial?.input);
         const sideChat = initial?.command === "side_chat" ? z.object({ side_chat: z.string() }).parse(JSON.parse(initial.input)).side_chat : null;
         const codeFrom = initial ? z.object({ code_from: z.string().optional() }).parse(JSON.parse(initial.input)).code_from : undefined;

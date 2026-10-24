@@ -469,10 +469,20 @@ it("Stop holds a Cloud thread waiting for admission, so it never starts on its o
     expect(fixture.core).toEqual([]);
     expect(service.threadStatus(thread)).toMatchObject({ paused: true, starting: false });
 
-    expect((await request(`/threads/${thread}/send`, follow)).status).toBe(200);
-    await waitFor(() => fixture.core.filter(call => call.path.endsWith("/prompts")).length === 2, "saved and new messages");
+    let releaseWake!: () => void;
+    fixture.wakeGate = new Promise(resolve => { releaseWake = resolve; });
+    const sending = request(`/threads/${thread}/send`, follow);
+    await waitFor(() => fixture.wakes.length > refused, "send's wake in flight");
+    expect((await request(`/threads/${thread}/stop`, {})).status).toBe(200);
+    releaseWake();
+    expect((await sending).status).toBe(200);
+    await new Promise(resolve => setTimeout(resolve, 1600));
+    expect(fixture.core).toEqual([]);
+
+    expect((await request(`/threads/${thread}/send`, { ...follow, requestId: "after-second-stop", input: [{ type: "text", text: "Start now", mentions: [] }] })).status).toBe(200);
+    await waitFor(() => fixture.core.filter(call => call.path.endsWith("/prompts")).length === 3, "saved and new messages");
     expect(fixture.core.filter(call => call.path === "/v1/sessions")).toHaveLength(1);
-    expect(fixture.core.filter(call => call.path.endsWith("/prompts")).map(call => call.text?.split("\n")[0])).toEqual(["queued-start", "Now start"]);
+    expect(fixture.core.filter(call => call.path.endsWith("/prompts")).map(call => call.text?.split("\n")[0])).toEqual(["queued-start", "Now start", "Start now"]);
     expect(service.threadStatus(thread)?.sessionId).toBe("cr_1");
 
     expect((await request(`/threads/${thread}/stop`, {})).status).toBe(200);
