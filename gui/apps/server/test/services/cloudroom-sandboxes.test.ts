@@ -420,8 +420,8 @@ const admissionFixture = async () => {
     if (input.action === "awake") return json({ sandboxes: [] });
     if (input.action !== "wake") return json({ thread: input.thread, state: "asleep", generation: 0, issue: null });
     fixture.wakes.push(input.thread);
-    if (!fixture.admitted) return json({ error: "You're in the cloud queue.", code: "cloud_queue" }, 409);
     await fixture.wakeGate;
+    if (!fixture.admitted) return json({ error: "You're in the cloud queue.", code: "cloud_queue" }, 409);
     if (fixture.wakeFails) return json({ error: "The website is down." }, 500);
     json({ thread: input.thread, state: "awake", generation: 1, issue: null, origin: coreUrl, token: "t".repeat(64) });
   });
@@ -503,10 +503,21 @@ it("Stop holds a Cloud thread waiting for admission, so it never starts on its o
   }
 }, 40_000);
 
-it("Stop during a Cloud thread's start stops the new session, and Stop during its wake holds it with its queue until Send now", async () => {
+it("Stop during a Cloud thread's refused or admitted wake holds it with its queue until Send now, and Stop during its start stops it", async () => {
   const { service, fixture, request, create, close } = await admissionFixture();
   const paths = () => fixture.core.map(call => call.path);
   try {
+    let releaseRefusal!: () => void;
+    fixture.wakeGate = new Promise(resolve => { releaseRefusal = resolve; });
+    const refused = await create("stop-while-refused");
+    await waitFor(() => fixture.wakes.includes(refused), "refused wake in flight");
+    const stopWhileRefused = request(`/threads/${refused}/stop`, {});
+    await waitFor(() => service.threadStatus(refused)?.paused === true, "Stop held");
+    releaseRefusal();
+    const stoppedWhileRefused = await stopWhileRefused;
+    expect(stoppedWhileRefused.status, await stoppedWhileRefused.clone().text()).toBe(200);
+    expect(service.threadStatus(refused)).toMatchObject({ paused: true, error: null });
+
     fixture.admitted = true;
     let releaseStart!: () => void;
     fixture.startGate = new Promise(resolve => { releaseStart = resolve; });

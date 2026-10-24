@@ -1651,7 +1651,7 @@ class CloudroomService {
       this.pauseStart(threadId, action === "stop");
       if (action === "resume") return void this.deliver(threadId).catch(() => {});
       await this.deliveries.get(threadId)?.catch(() => {});
-      if (!binding(this.deps.db, threadId)?.sessionId) return;
+      if (!binding(this.deps.db, threadId)?.sessionId) return this.setConnectionIssue(threadId, "delivery");
     }
     await this.client(saved);
     this.enqueue(threadId, randomUUID(), action, {});
