@@ -1645,7 +1645,7 @@ class CloudroomService {
     if (!saved.sessionId) {
       await this.requireOwnThread(saved);
       this.pauseStart(threadId, action === "stop");
-      if (action === "resume") return this.deliver(threadId);
+      if (action === "resume") return void this.deliver(threadId).catch(() => {});
       await this.deliveries.get(threadId)?.catch(() => {});
       if (!binding(this.deps.db, threadId)?.sessionId) return;
     }
@@ -1931,6 +1931,7 @@ class CloudroomService {
   }
 
   async retryStart(threadId: string, explicit = false): Promise<void> {
+    const held = binding(this.deps.db, threadId)?.queuePaused;
     await this.deliveries.get(threadId)?.catch(() => {});
     this.holdRejectedStart(threadId);
     const saved = binding(this.deps.db, threadId);
@@ -1938,14 +1939,19 @@ class CloudroomService {
     const first = command(this.deps.db, `first_${threadId}`)?.state;
     if (saved && !saved.sessionId && (first === "sending" || first === "accepted")) return;
     if (!saved || !thread || thread.archivedAt || thread.deletedAt || saved.sessionId || first !== "failed") throw new ApiError(409, "cloudroom_retry", "Only a rejected cloud start can be retried here.");
-    if (saved.queuePaused && !explicit) return;
+    if (saved.queuePaused && !(explicit && held)) return;
     if (saved.queuePaused) saveBinding(this.deps.db, threadId, { queuePaused: false });
-    const client = await this.client(saved);
-    const capabilities = await this.capabilities(client);
-    const harness = thread.providerId;
-    if (!isCloudProvider(harness)) throw new ApiError(400, "cloudroom_harness", "Unsupported cloud harness.");
-    validateReasoning(harness, coreModel(harness, saved.model, capabilities).model, saved.reasoning, capabilities);
-    if (harness === "codex" && sandboxThread(saved.coreUrl) && authRequiredMessages.has(saved.error ?? "")) await this.sandboxes.refreshCodex(threadId).catch(error => this.warn("Cloud Codex login could not be refreshed before the retry", error, { threadId }));
+    try {
+      const client = await this.client(saved);
+      const capabilities = await this.capabilities(client);
+      const harness = thread.providerId;
+      if (!isCloudProvider(harness)) throw new ApiError(400, "cloudroom_harness", "Unsupported cloud harness.");
+      validateReasoning(harness, coreModel(harness, saved.model, capabilities).model, saved.reasoning, capabilities);
+      if (harness === "codex" && sandboxThread(saved.coreUrl) && authRequiredMessages.has(saved.error ?? "")) await this.sandboxes.refreshCodex(threadId).catch(error => this.warn("Cloud Codex login could not be refreshed before the retry", error, { threadId }));
+    } catch (error) {
+      if (saved.queuePaused) saveBinding(this.deps.db, threadId, { queuePaused: true });
+      throw error;
+    }
     // A retry can start from the sign-in resume and a click at once; only the first one past the awaits sends.
     if (command(this.deps.db, `first_${threadId}`)?.state !== "failed" || binding(this.deps.db, threadId)?.queuePaused) return;
     this.deps.db.transaction((tx) => {

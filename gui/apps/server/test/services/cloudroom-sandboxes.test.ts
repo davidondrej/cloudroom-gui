@@ -398,11 +398,11 @@ const admissionFixture = async () => {
   const { host } = seedHostSession(harness.deps);
   const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
   const service = cloudroom(harness.deps);
-  const fixture = { admitted: false, wakeFails: false, startFails: false, wakeGate: null as Promise<void> | null, startGate: null as Promise<void> | null, wakes: [] as string[], core: [] as { path: string; text?: string }[] };
+  const fixture = { admitted: false, wakeFails: false, startFails: false, capabilitiesFail: false, wakeGate: null as Promise<void> | null, startGate: null as Promise<void> | null, wakes: [] as string[], core: [] as { path: string; text?: string }[] };
   let coreUrl = "";
   const coreServer = createServer(async (req, res) => {
     const json = (value: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(value)); };
-    if (req.url === "/v1/capabilities") return json({ version: 1, repository: "/code", stop: true, resume: true, launch_settings: true, workspaces: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: "codex", model: "test-model" }] });
+    if (req.url === "/v1/capabilities") return fixture.capabilitiesFail ? json({}, 503) : json({ version: 1, repository: "/code", stop: true, resume: true, launch_settings: true, workspaces: true, direct_workspaces: true, command_guard: true, harnesses: [{ id: "codex", model: "test-model" }] });
     if (req.url?.includes("/stream?")) { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.end(); return; }
     if (req.method !== "POST") return json({}, 404);
     const input = await body(req);
@@ -562,6 +562,11 @@ it("only an explicit Retry restarts a rejected Cloud start after Stop, and a Sto
     expect(starts()).toBe(1);
     expect(service.threadStatus(thread)).toMatchObject({ paused: true, failedStart: true });
 
+    fixture.capabilitiesFail = true;
+    expect((await request(`/cloudroom/threads/${thread}/retry-start`, {})).status).toBe(500);
+    expect(await create("rejected-start")).toBe(thread);
+    expect(service.threadStatus(thread)).toMatchObject({ paused: true, failedStart: true });
+    fixture.capabilitiesFail = false;
     expect((await request(`/cloudroom/threads/${thread}/retry-start`, {})).status).toBe(200);
     await waitFor(() => fixture.core.some(call => call.path === "/v1/sessions/cr_2/prompts"), "explicit retry");
     expect(starts()).toBe(2);
