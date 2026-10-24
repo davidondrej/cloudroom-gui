@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it, vi } from "vitest";
 import { cloudroom } from "../../src/services/cloudroom/commands.js";
-import { command, saveCommandState, saveStatus } from "../../src/services/cloudroom/store.js";
+import { command, saveStatus } from "../../src/services/cloudroom/store.js";
 import { createTestAppHarness } from "../helpers/test-app.js";
 import { seedHostSession, seedProjectWithSource } from "../helpers/seed.js";
 import { cloudroomCommands, cloudroomThreads, createThread, getThread } from "@cloudroom/db";
@@ -398,7 +398,7 @@ const admissionFixture = async () => {
   const { host } = seedHostSession(harness.deps);
   const { project } = seedProjectWithSource(harness.deps, { hostId: host.id });
   const service = cloudroom(harness.deps);
-  const fixture = { admitted: false, wakeFails: false, wakeGate: null as Promise<void> | null, startGate: null as Promise<void> | null, wakes: [] as string[], core: [] as { path: string; text?: string }[] };
+  const fixture = { admitted: false, wakeFails: false, startFails: false, wakeGate: null as Promise<void> | null, startGate: null as Promise<void> | null, wakes: [] as string[], core: [] as { path: string; text?: string }[] };
   let coreUrl = "";
   const coreServer = createServer(async (req, res) => {
     const json = (value: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(value)); };
@@ -408,6 +408,7 @@ const admissionFixture = async () => {
     const input = await body(req);
     if (req.url!.startsWith("/v1/sessions")) fixture.core.push({ path: req.url!, text: input.text });
     if (req.url === "/v1/sessions") await fixture.startGate;
+    if (req.url === "/v1/sessions" && fixture.startFails) return json({ error: "Rejected start." }, 400);
     const name = req.url === "/v1/sessions" ? "start" : req.url!.split("/").at(-1) === "prompts" ? "prompt" : req.url!.split("/").at(-1);
     const session = name === "start" ? `cr_${fixture.core.filter(call => call.path === "/v1/sessions").length}` : req.url!.split("/")[3];
     json({ session_id: session, receipt: { request_id: input.request_id, command: name, input, state: "accepted" }, saving: {} }, 202);
@@ -441,7 +442,6 @@ it("Stop holds a Cloud thread waiting for admission, so it never starts on its o
   try {
     const thread = await create("queued-start");
     await waitFor(() => fixture.wakes.length > 0, "refused wake");
-    expect(getThread(harness.deps.db, thread)?.status).toBe("pending");
     const queued = commands().length;
 
     const stopped = await request(`/threads/${thread}/stop`, {});
@@ -450,7 +450,7 @@ it("Stop holds a Cloud thread waiting for admission, so it never starts on its o
     expect(fixture.wakes).toHaveLength(1);
     expect(commands()).toHaveLength(queued);
     expect(command(harness.deps.db, `first_${thread}`)?.state).toBe("sending");
-    expect(getThread(harness.deps.db, thread)).toMatchObject({ status: "idle", archivedAt: null });
+    expect(getThread(harness.deps.db, thread)).toMatchObject({ status: "pending", archivedAt: null });
     expect(service.threadStatus(thread)).toMatchObject({ paused: true, starting: false, failedStart: false, error: null });
 
     const follow = { requestId: "after-stop", mode: "auto", input: [{ type: "text", text: "Now start", mentions: [] }] };
@@ -464,12 +464,12 @@ it("Stop holds a Cloud thread waiting for admission, so it never starts on its o
     service.start();
     expect(await create("queued-start")).toBe(thread);
     expect((await request(`/cloudroom/threads/${thread}/retry-start`, {})).status).toBe(200);
-    await new Promise(resolve => setTimeout(resolve, 1600));
+    await new Promise(resolve => setTimeout(resolve, 4000));
     expect(fixture.wakes).toHaveLength(refused);
     expect(fixture.core).toEqual([]);
-    expect(getThread(harness.deps.db, thread)?.status).toBe("idle");
+    expect(service.threadStatus(thread)).toMatchObject({ paused: true, starting: false });
 
-    await expect.poll(async () => (await request(`/threads/${thread}/send`, follow)).status, { timeout: 15_000, interval: 500 }).toBe(200);
+    expect((await request(`/threads/${thread}/send`, follow)).status).toBe(200);
     await waitFor(() => fixture.core.filter(call => call.path.endsWith("/prompts")).length === 2, "saved and new messages");
     expect(fixture.core.filter(call => call.path === "/v1/sessions")).toHaveLength(1);
     expect(fixture.core.filter(call => call.path.endsWith("/prompts")).map(call => call.text?.split("\n")[0])).toEqual(["queued-start", "Now start"]);
@@ -493,42 +493,78 @@ it("Stop holds a Cloud thread waiting for admission, so it never starts on its o
   }
 }, 40_000);
 
-it("Stop during a Cloud thread's wake keeps it from starting, and Stop during its start stops the new session", async () => {
-  const { harness, fixture, request, create, close } = await admissionFixture();
+it("Stop during a Cloud thread's start stops the new session, and Stop during its wake holds it with its queue until Send now", async () => {
+  const { service, fixture, request, create, close } = await admissionFixture();
+  const paths = () => fixture.core.map(call => call.path);
   try {
     fixture.admitted = true;
+    let releaseStart!: () => void;
+    fixture.startGate = new Promise(resolve => { releaseStart = resolve; });
+    const starting = await create("stop-while-starting");
+    await waitFor(() => paths().includes("/v1/sessions"), "start in flight");
+    const stopWhileStarting = request(`/threads/${starting}/stop`, {});
+    await new Promise(resolve => setTimeout(resolve, 100));
+    releaseStart();
+    expect((await stopWhileStarting).status).toBe(200);
+    expect(paths()).toEqual(["/v1/sessions", "/v1/sessions/cr_1/prompts", "/v1/sessions/cr_1/stop"]);
+
     let releaseWake!: () => void;
     fixture.wakeGate = new Promise(resolve => { releaseWake = resolve; });
     const waking = await create("stop-while-waking");
     await waitFor(() => fixture.wakes.includes(waking), "wake in flight");
+    const queued = await request(`/threads/${waking}/send`, { requestId: "queued-while-waking", mode: "auto", input: [{ type: "text", text: "Queued while waking", mentions: [] }] });
+    expect(queued.status, await queued.clone().text()).toBe(200);
     const stopWhileWaking = request(`/threads/${waking}/stop`, {});
     await new Promise(resolve => setTimeout(resolve, 100));
     releaseWake();
     expect((await stopWhileWaking).status).toBe(200);
     await new Promise(resolve => setTimeout(resolve, 1600));
-    expect(fixture.core).toEqual([]);
-    expect(getThread(harness.deps.db, waking)?.status).toBe("idle");
+    expect(paths()).toHaveLength(3);
+    expect(service.threadStatus(waking)).toMatchObject({ paused: true, starting: false });
+    expect(service.queue(waking).map(message => message.id)).toEqual(["queued-while-waking"]);
 
-    let releaseStart!: () => void;
-    fixture.startGate = new Promise(resolve => { releaseStart = resolve; });
-    const starting = await create("stop-while-starting");
-    await waitFor(() => fixture.core.some(call => call.path === "/v1/sessions"), "start in flight");
-    const stopWhileStarting = request(`/threads/${starting}/stop`, {});
-    await new Promise(resolve => setTimeout(resolve, 100));
-    releaseStart();
-    expect((await stopWhileStarting).status).toBe(200);
-    expect(fixture.core.map(call => call.path)).toEqual(["/v1/sessions", "/v1/sessions/cr_1/prompts", "/v1/sessions/cr_1/stop"]);
-
-    saveCommandState(harness.deps.db, waking, `first_${waking}`, "failed");
-    saveStatus(harness.deps.db, waking, "error");
-    expect((await request(`/threads/${waking}/stop`, {})).status).toBe(200);
-    expect((await request(`/cloudroom/threads/${waking}/retry-start`, {})).status).toBe(200);
-    await waitFor(() => fixture.core.some(call => call.path === "/v1/sessions/cr_2/prompts"), "retried start after Stop");
+    expect((await request(`/threads/${waking}/queued-messages/queued-while-waking/send`, {})).status).toBe(200);
+    await waitFor(() => fixture.core.filter(call => call.path === "/v1/sessions/cr_2/prompts").length === 2, "held start and queued message");
+    expect(fixture.core.filter(call => call.path === "/v1/sessions/cr_2/prompts").map(call => call.text?.split("\n")[0])).toEqual(["stop-while-waking", "Queued while waking"]);
 
     expect((await request(`/threads/${starting}/archive-all`, {})).status).toBe(200);
     const wakes = fixture.wakes.length;
     expect((await request(`/threads/${starting}/stop`, {})).status).toBe(200);
     expect(fixture.wakes).toHaveLength(wakes);
+  } finally {
+    close();
+  }
+}, 20_000);
+
+it("only an explicit Retry restarts a rejected Cloud start after Stop, and a Stop during that Retry wins", async () => {
+  const { service, fixture, request, create, close } = await admissionFixture();
+  const starts = () => fixture.core.filter(call => call.path === "/v1/sessions").length;
+  try {
+    fixture.admitted = true;
+    fixture.startFails = true;
+    const thread = await create("rejected-start");
+    await waitFor(() => service.threadStatus(thread)?.failedStart === true, "rejected start");
+    expect((await request(`/threads/${thread}/stop`, {})).status).toBe(200);
+    fixture.startFails = false;
+    expect(await create("rejected-start")).toBe(thread);
+    expect(starts()).toBe(1);
+
+    let releaseWake!: () => void;
+    fixture.wakeGate = new Promise(resolve => { releaseWake = resolve; });
+    service.sandboxes.forget(thread);
+    const wakes = fixture.wakes.length;
+    const retry = request(`/cloudroom/threads/${thread}/retry-start`, {});
+    await waitFor(() => fixture.wakes.length > wakes, "retry wake in flight");
+    expect((await request(`/threads/${thread}/stop`, {})).status).toBe(200);
+    releaseWake();
+    expect((await retry).status).toBe(200);
+    await new Promise(resolve => setTimeout(resolve, 1600));
+    expect(starts()).toBe(1);
+    expect(service.threadStatus(thread)).toMatchObject({ paused: true, failedStart: true });
+
+    expect((await request(`/cloudroom/threads/${thread}/retry-start`, {})).status).toBe(200);
+    await waitFor(() => fixture.core.some(call => call.path === "/v1/sessions/cr_2/prompts"), "explicit retry");
+    expect(starts()).toBe(2);
   } finally {
     close();
   }

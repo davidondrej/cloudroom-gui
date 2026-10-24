@@ -1642,9 +1642,10 @@ class CloudroomService {
     const saved = binding(this.deps.db, threadId);
     if (!saved) throw new ApiError(409, "cloudroom_missing_binding", "Cloud session is unavailable");
     if (action === "stop" && getThread(this.deps.db, threadId)?.archivedAt) return;
-    if (action === "stop" && !saved.sessionId) {
+    if (!saved.sessionId) {
       await this.requireOwnThread(saved);
-      this.pauseStart(threadId, true);
+      this.pauseStart(threadId, action === "stop");
+      if (action === "resume") return this.deliver(threadId);
       await this.deliveries.get(threadId)?.catch(() => {});
       if (!binding(this.deps.db, threadId)?.sessionId) return;
     }
@@ -1654,11 +1655,7 @@ class CloudroomService {
   }
 
   private pauseStart(threadId: string, paused: boolean): void {
-    const status = getThread(this.deps.db, threadId)?.status ?? "";
-    this.deps.db.transaction((tx) => {
-      saveBinding(tx, threadId, { queuePaused: paused });
-      if (paused ? ["pending", "starting"].includes(status) : status === "idle") saveStatus(tx, threadId, paused ? "idle" : "pending");
-    });
+    saveBinding(this.deps.db, threadId, { queuePaused: paused });
     this.setConnectionIssue(threadId, "delivery");
     this.notify(threadId);
   }
@@ -1933,7 +1930,7 @@ class CloudroomService {
     return { ok: true, operationId: payload.operationId, requestSequence: payload.expectedRequestSequence ?? 0 };
   }
 
-  async retryStart(threadId: string): Promise<void> {
+  async retryStart(threadId: string, explicit = false): Promise<void> {
     await this.deliveries.get(threadId)?.catch(() => {});
     this.holdRejectedStart(threadId);
     const saved = binding(this.deps.db, threadId);
@@ -1941,6 +1938,8 @@ class CloudroomService {
     const first = command(this.deps.db, `first_${threadId}`)?.state;
     if (saved && !saved.sessionId && (first === "sending" || first === "accepted")) return;
     if (!saved || !thread || thread.archivedAt || thread.deletedAt || saved.sessionId || first !== "failed") throw new ApiError(409, "cloudroom_retry", "Only a rejected cloud start can be retried here.");
+    if (saved.queuePaused && !explicit) return;
+    if (saved.queuePaused) saveBinding(this.deps.db, threadId, { queuePaused: false });
     const client = await this.client(saved);
     const capabilities = await this.capabilities(client);
     const harness = thread.providerId;
@@ -1948,10 +1947,10 @@ class CloudroomService {
     validateReasoning(harness, coreModel(harness, saved.model, capabilities).model, saved.reasoning, capabilities);
     if (harness === "codex" && sandboxThread(saved.coreUrl) && authRequiredMessages.has(saved.error ?? "")) await this.sandboxes.refreshCodex(threadId).catch(error => this.warn("Cloud Codex login could not be refreshed before the retry", error, { threadId }));
     // A retry can start from the sign-in resume and a click at once; only the first one past the awaits sends.
-    if (command(this.deps.db, `first_${threadId}`)?.state !== "failed") return;
+    if (command(this.deps.db, `first_${threadId}`)?.state !== "failed" || binding(this.deps.db, threadId)?.queuePaused) return;
     this.deps.db.transaction((tx) => {
       saveCommandState(tx, threadId, `first_${threadId}`, "sending");
-      saveBinding(tx, threadId, { error: null, queuePaused: false });
+      saveBinding(tx, threadId, { error: null });
       saveStatus(tx, threadId, "pending");
       appendStartProgress(tx, threadId, [cloudStep(Boolean(sandboxThread(saved.coreUrl)))], "active", true);
     });
@@ -1989,8 +1988,8 @@ class CloudroomService {
     }
   }
 
-  /** An archived or stopped thread never starts, even when archived or stopped while its sandbox wakes, and a Cloud
-   *  parent's child waits until the parent's Core confirms it (ADR 0229). */
+  /** An archived thread never starts, even when archived while its sandbox wakes, and a Cloud parent's child
+   *  waits until the parent's Core confirms it (ADR 0229). */
   private mustNotStart(threadId: string): boolean {
     const thread = getThread(this.deps.db, threadId);
     const initial = command(this.deps.db, `first_${threadId}`);
