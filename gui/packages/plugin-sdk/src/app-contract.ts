@@ -908,11 +908,6 @@ export interface PluginSidebarFooterActionRegistration {
 export interface ExperimentalSidebarFooterActionContext {
   /** Navigate to this plugin's detail page in Tools. */
   openPluginDetails(): void;
-  /**
-   * Navigate to a built-in Settings section by id, e.g. `"machines"`.
-   * Experimental: see `docs/api_to_audit.md`.
-   */
-  openSettingsSection(sectionId: string): void;
 }
 
 /** Fields shared by both experimental sidebar-footer item behaviors. */

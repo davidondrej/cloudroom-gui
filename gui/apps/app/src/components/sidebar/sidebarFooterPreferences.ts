@@ -12,6 +12,9 @@ export const sidebarFooterOrderAtom = createSyncedPreferenceAtom(
 export const sidebarFooterHiddenAtom = createSyncedPreferenceAtom(
   "sidebar.hiddenFooterItems",
 );
+export const connectFooterTargetAtom = createSyncedPreferenceAtom(
+  "sidebar.connectFooterTarget",
+);
 export const SIDEBAR_FOOTER_MORE_ID = "sidebar-footer-more";
 
 export type BuiltinFooterId = "settings" | "report-bug";
@@ -24,6 +27,15 @@ export function footerPreferenceKey(item: {
   id: string;
 }): string {
   return `plugin:${encodeURIComponent(item.pluginId)}/${encodeURIComponent(item.id)}`;
+}
+
+export function isConnectFooterItem(item: FooterItem): boolean {
+  return (
+    item.kind === "plugin" &&
+    item.slot.source === "experimental_sidebarFooter" &&
+    item.slot.pluginId === "connect" &&
+    item.slot.id === "remote-access"
+  );
 }
 
 export function useSidebarFooterPreferences() {

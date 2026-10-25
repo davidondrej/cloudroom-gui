@@ -2183,9 +2183,6 @@ through the host's shared active-item coordinator, so opening one plugin's
 disclosure replaces another and a stale scoped `close` cannot dismiss a sibling.
 `setAlert(message)` puts a red dot on the item's icon and announces `message`;
 `null` clears it. Provider usage uses it while an account bills usage credits.
-An action's `onActivate` receives `openPluginDetails()` and
-`openSettingsSection(sectionId)`; Cloudroom Connect uses the latter so its
-phone button can open Settings → Machines when the user picks that.
 The existing `app.slots.sidebarFooterAction` remains a compatibility surface and
 renders in the same footer row.
 
@@ -2213,9 +2210,6 @@ renders in the same footer row.
    open across desktop and compact sidebar layouts.
 8. **Alerts.** Decide whether alerts need tones or counts, and how an alert on
    an item hidden in More should show.
-9. **Settings navigation.** `openSettingsSection` takes any section id string.
-   Decide whether to publish the built-in section ids as a typed union, and
-   what an unknown id should do (today it routes to `/settings/<id>`).
 
 ## `app.slots.experimental_sidebarNavigation` (`@get-bb/plugin-sdk/app`)
 

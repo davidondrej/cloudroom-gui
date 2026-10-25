@@ -218,8 +218,7 @@ target? })`. Inside the fixed-tab component,
 - `experimental_sidebarFooter.register` → managed host-rendered icon items in
   the app sidebar footer. Both variants take `{ id, label, icon }`. An action
   adds `{ kind: "action", onActivate }`; its callback receives
-  `openPluginDetails()` and `openSettingsSection(sectionId)`, which opens a
-  built-in Settings section such as `"machines"`. A disclosure adds
+  `openPluginDetails()`. A disclosure adds
   `{ kind: "disclosure", component }`; cloudroom toggles that component above the
   row and passes it only `{ dismiss }`. A disclosure registration returns a
   controller that requests `open`, `close`, or `toggle`; an action registration

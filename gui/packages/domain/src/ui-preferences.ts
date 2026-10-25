@@ -66,6 +66,7 @@ export const UI_PREFERENCE_KEYS = [
   "sidebar.collapsedHarnesses",
   "sidebar.footerOrder",
   "sidebar.hiddenFooterItems",
+  "sidebar.connectFooterTarget",
   "sidebar.pluginPanelOrder",
   "sidebar.visiblePluginPanels",
   "sidebar.navigationProvider",
@@ -187,6 +188,11 @@ export const uiPreferenceDefinitions = {
     uiPreferenceStringListSchema,
     [],
     "Sidebar footer actions moved into the More menu.",
+  ),
+  "sidebar.connectFooterTarget": defineUiPreference(
+    z.enum(["connect", "machines"]),
+    "connect",
+    "Where the Cloudroom Connect phone button in the sidebar footer opens: its own settings page, or Settings → Machines.",
   ),
   "sidebar.pluginPanelOrder": defineUiPreference(
     uiPreferenceStringListSchema,

@@ -9,6 +9,7 @@ import {
 } from "@testing-library/react";
 import { Provider, createStore } from "jotai";
 import {
+  connectFooterTargetAtom,
   sidebarFooterOrderAtom,
   sidebarFooterHiddenAtom,
 } from "@/components/sidebar/sidebarFooterPreferences";
@@ -233,30 +234,6 @@ describe("PluginSidebarFooterItems", () => {
     expect(onActivate).toHaveBeenCalledOnce();
     expect(screen.getByLabelText("Current path").textContent).toBe(
       "/settings/plugins/connect",
-    );
-  });
-
-  it("lets a unified footer action open a built-in Settings section", () => {
-    const definition = definePluginApp((app) => {
-      app.experimental_sidebarFooter.register({
-        kind: "action",
-        id: "remote",
-        label: "Remote access",
-        icon: "Smartphone",
-        onActivate: ({ openSettingsSection }) =>
-          openSettingsSection("machines"),
-      });
-    });
-    setPluginSlotRegistrations(
-      "connect",
-      collectPluginAppRegistrations(definition),
-    );
-
-    renderWithProviders(<FooterHarness />);
-    fireEvent.click(screen.getByRole("button", { name: "Remote access" }));
-
-    expect(screen.getByLabelText("Current path").textContent).toBe(
-      "/settings/machines",
     );
   });
 
@@ -600,5 +577,127 @@ describe("PluginSidebarFooterItems", () => {
     );
     fireEvent.click(await screen.findByRole("menuitem", { name: "Settings" }));
     expect(run).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Cloudroom Connect footer target", () => {
+  function registerFooterActions() {
+    const connectActivate = vi.fn(
+      ({ openPluginDetails }: ExperimentalSidebarFooterActionContext) =>
+        openPluginDetails(),
+    );
+    const otherActivate = vi.fn(
+      ({ openPluginDetails }: ExperimentalSidebarFooterActionContext) =>
+        openPluginDetails(),
+    );
+    setPluginSlotRegistrations(
+      "connect",
+      collectPluginAppRegistrations(
+        definePluginApp((app) => {
+          app.experimental_sidebarFooter.register({
+            kind: "action",
+            id: "remote-access",
+            label: "Cloudroom Connect",
+            icon: "Smartphone",
+            onActivate: connectActivate,
+          });
+        }),
+      ),
+    );
+    setPluginSlotRegistrations(
+      "other",
+      collectPluginAppRegistrations(
+        definePluginApp((app) => {
+          app.experimental_sidebarFooter.register({
+            kind: "action",
+            id: "remote-access",
+            label: "Other action",
+            icon: "Zap",
+            onActivate: otherActivate,
+          });
+        }),
+      ),
+    );
+    return { connectActivate, otherActivate };
+  }
+
+  function currentPath() {
+    return screen.getByLabelText("Current path").textContent;
+  }
+
+  it("opens Cloudroom Connect by default", () => {
+    const { connectActivate } = registerFooterActions();
+    renderWithProviders(<FooterHarness />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Cloudroom Connect" }));
+
+    expect(connectActivate).toHaveBeenCalledOnce();
+    expect(currentPath()).toBe("/settings/plugins/connect");
+  });
+
+  it("opens Machines from the footer button when the preference says so, and leaves other plugins alone", () => {
+    const { connectActivate, otherActivate } = registerFooterActions();
+    const store = createStore();
+    store.set(connectFooterTargetAtom, "machines");
+    renderWithProviders(<FooterHarness />, store);
+
+    fireEvent.click(screen.getByRole("button", { name: "Cloudroom Connect" }));
+    expect(connectActivate).not.toHaveBeenCalled();
+    expect(currentPath()).toBe("/settings/machines");
+
+    fireEvent.click(screen.getByRole("button", { name: "Other action" }));
+    expect(otherActivate).toHaveBeenCalledOnce();
+    expect(currentPath()).toBe("/settings/plugins/other");
+  });
+
+  it("opens Machines from the More menu when the button is hidden", async () => {
+    const { connectActivate } = registerFooterActions();
+    const store = createStore();
+    store.set(connectFooterTargetAtom, "machines");
+    store.set(sidebarFooterHiddenAtom, ["plugin:connect/remote-access"]);
+    renderWithProviders(<FooterHarness />, store);
+
+    fireEvent.pointerDown(
+      screen.getByRole("button", { name: "More footer actions" }),
+      { button: 0, ctrlKey: false, pointerType: "mouse" },
+    );
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Cloudroom Connect" }),
+    );
+
+    expect(connectActivate).not.toHaveBeenCalled();
+    expect(currentPath()).toBe("/settings/machines");
+  });
+
+  it("sets the target from the right-click menu, only on the Connect button", async () => {
+    registerFooterActions();
+    const store = createStore();
+    renderWithProviders(<FooterHarness />, store);
+
+    fireEvent.contextMenu(screen.getByRole("button", { name: "Other action" }));
+    await screen.findByRole("menuitem", { name: "Hide" });
+    expect(screen.queryByText("Opens to")).toBeNull();
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: "Escape",
+    });
+    await waitFor(() =>
+      expect(screen.queryByRole("menuitem", { name: "Hide" })).toBeNull(),
+    );
+
+    fireEvent.contextMenu(
+      screen.getByRole("button", { name: "Cloudroom Connect" }),
+    );
+    expect(await screen.findByText("Opens to")).toBeDefined();
+    expect(
+      screen
+        .getByRole("menuitemradio", { name: "Cloudroom Connect" })
+        .getAttribute("aria-checked"),
+    ).toBe("true");
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Machines" }));
+
+    expect(store.get(connectFooterTargetAtom)).toBe("machines");
+    await waitFor(() => expect(screen.queryByRole("menuitemradio")).toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: "Cloudroom Connect" }));
+    expect(currentPath()).toBe("/settings/machines");
   });
 });

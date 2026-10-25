@@ -733,6 +733,7 @@ client wrote first, so a stale window cannot silently clobber a newer value.
 | `sidebar.collapsedHarnesses`      | Collapsed harness provider ids                      |
 | `sidebar.footerOrder`             | Footer action order                                 |
 | `sidebar.hiddenFooterItems`       | Footer actions moved into More                      |
+| `sidebar.connectFooterTarget`     | Phone button: `connect` (default) or `machines`     |
 | `sidebar.pluginPanelOrder`        | Navigation entry order                              |
 | `sidebar.visiblePluginPanels`     | Navigation entries shown, or `null` for every entry |
 | `sidebar.navigationProvider`      | Plugin key, `__automatic__`, or `__builtin__`       |
@@ -799,6 +800,9 @@ Settings → Appearance → Sidebar footer lets users reorder and hide built-in 
 registered plugin actions. Right-click an action and choose Hide to move it into
 More. More appears only when registered actions are hidden; they remain usable.
 Hiding an open disclosure closes it; selecting it from More opens it again.
+Right-click Cloudroom Connect's phone button and choose Opens to → Machines to
+make it open Settings → Machines instead of Cloudroom Connect
+(`sidebar.connectFooterTarget`, `connect` by default).
 
 The UI preferences `sidebar.footerOrder` and `sidebar.hiddenFooterItems` contain
 stable IDs: `builtin:settings`, `builtin:report-bug`, and

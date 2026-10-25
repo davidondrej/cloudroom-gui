@@ -9,13 +9,6 @@ import type { connectRpcContract } from "./src/rpc.js";
 import { Button } from "@cloudroom/shared-ui/button";
 import { Icon } from "@cloudroom/shared-ui/icon";
 import { Input } from "@cloudroom/shared-ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@cloudroom/shared-ui/select";
 import { Switch } from "@cloudroom/shared-ui/switch";
 import { cn } from "@cloudroom/shared-ui/lib/utils";
 import {
@@ -614,46 +607,6 @@ function RemoteInstructionsRow() {
   );
 }
 
-const FOOTER_TARGET_KEY = "bb-plugin-connect:footerTarget";
-type FooterTarget = "connect" | "machines";
-
-function readFooterTarget(): FooterTarget {
-  try {
-    return window.localStorage.getItem(FOOTER_TARGET_KEY) === "machines"
-      ? "machines"
-      : "connect";
-  } catch {
-    return "connect";
-  }
-}
-
-function FooterTargetRow() {
-  const [target, setTarget] = useState(readFooterTarget);
-  const change = useCallback((next: string) => {
-    const value: FooterTarget = next === "machines" ? "machines" : "connect";
-    setTarget(value);
-    try {
-      window.localStorage.setItem(FOOTER_TARGET_KEY, value);
-    } catch {}
-  }, []);
-  return (
-    <SettingRow
-      title="Phone button opens"
-      detail="Where the phone button in the sidebar footer takes you."
-    >
-      <Select value={target} onValueChange={change}>
-        <SelectTrigger className="h-8 w-44 text-sm" aria-label="Phone button opens">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="connect">Cloudroom Connect</SelectItem>
-          <SelectItem value="machines">Machines</SelectItem>
-        </SelectContent>
-      </Select>
-    </SettingRow>
-  );
-}
-
 function SignOutPhones() {
   const rpc = useRpc<typeof connectRpcContract>();
   const [state, setState] = useState<"idle" | "confirm" | "pending">("idle");
@@ -699,7 +652,6 @@ function SettingsTab({ status }: { status: ConnectStatus }) {
   return (
     <div className="divide-y divide-border-seam rounded-lg border border-border">
       <RemoteInstructionsRow />
-      <FooterTargetRow />
       {status.paired ? <SignOutPhones /> : null}
     </div>
   );
@@ -870,9 +822,8 @@ export default definePluginApp((app) => {
     id: "remote-access",
     label: "Cloudroom Connect",
     icon: "Smartphone",
-    onActivate({ openPluginDetails, openSettingsSection }) {
-      if (readFooterTarget() === "machines") openSettingsSection("machines");
-      else openPluginDetails();
+    onActivate({ openPluginDetails }) {
+      openPluginDetails();
     },
   });
 });

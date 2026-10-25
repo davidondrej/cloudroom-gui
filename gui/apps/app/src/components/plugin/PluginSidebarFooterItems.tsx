@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAtom } from "jotai";
 import type { ExperimentalSidebarFooterCommandKind } from "@get-bb/plugin-sdk/internal/plugin-app-collector";
 import { cn } from "@cloudroom/shared-ui/lib/utils";
 import { Icon } from "@cloudroom/shared-ui/icon";
@@ -27,6 +28,10 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@cloudroom/shared-ui/context-menu";
 import {
@@ -37,6 +42,8 @@ import {
   DropdownMenuTrigger,
 } from "@cloudroom/shared-ui/dropdown-menu";
 import {
+  connectFooterTargetAtom,
+  isConnectFooterItem,
   useSidebarFooterPreferences,
   SIDEBAR_FOOTER_MORE_ID,
   type FooterItem,
@@ -204,6 +211,7 @@ export function PluginSidebarFooterItems({
 }) {
   const navigate = useNavigate();
   const preferences = useSidebarFooterPreferences();
+  const [connectTarget, setConnectTarget] = useAtom(connectFooterTargetAtom);
   const previousHidden = useRef(preferences.hidden);
   const items = preferences.items.filter(
     (item) =>
@@ -236,6 +244,10 @@ export function PluginSidebarFooterItems({
       return;
     }
     onNavigate?.();
+    if (connectTarget === "machines" && isConnectFooterItem(item)) {
+      void navigate(getSettingsRoutePath("machines"));
+      return;
+    }
     runContainedFooterCallback(
       slot.pluginId,
       slot.source === "sidebarFooterAction"
@@ -247,9 +259,6 @@ export function PluginSidebarFooterItems({
             void navigate(
               getPluginConfigurationRoutePath({ pluginId: slot.pluginId }),
             );
-          },
-          openSettingsSection: (sectionId) => {
-            void navigate(getSettingsRoutePath(sectionId));
           },
         }),
     );
@@ -351,6 +360,27 @@ export function PluginSidebarFooterItems({
                 <ContextMenuItem onSelect={customize}>
                   Customize footer
                 </ContextMenuItem>
+                {isConnectFooterItem(item) ? (
+                  <>
+                    <ContextMenuSeparator />
+                    <ContextMenuLabel>Opens to</ContextMenuLabel>
+                    <ContextMenuRadioGroup
+                      value={connectTarget}
+                      onValueChange={(value) =>
+                        setConnectTarget(
+                          value === "machines" ? "machines" : "connect",
+                        )
+                      }
+                    >
+                      <ContextMenuRadioItem value="connect">
+                        Cloudroom Connect
+                      </ContextMenuRadioItem>
+                      <ContextMenuRadioItem value="machines">
+                        Machines
+                      </ContextMenuRadioItem>
+                    </ContextMenuRadioGroup>
+                  </>
+                ) : null}
               </ContextMenuContent>
             </ContextMenu>
           );

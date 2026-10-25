@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadPluginApp, renderSlot } from "@get-bb/plugin-sdk/testing/app";
 import { CONNECT_REALTIME_CHANNEL, type ConnectStatus } from "@/src/types";
@@ -303,70 +303,4 @@ describe("connect settings section", () => {
     await slot.findByText(/Cloudroom Connect is still setting up/);
   });
 
-});
-
-describe("connect sidebar footer action", () => {
-  beforeEach(() => {
-    window.localStorage.clear();
-    Object.assign(HTMLElement.prototype, {
-      scrollIntoView: () => {},
-      hasPointerCapture: () => false,
-      setPointerCapture: () => {},
-      releasePointerCapture: () => {},
-    });
-  });
-
-  function activateFooter() {
-    const item = app.experimentalSidebarFooterItems.find(
-      (entry) => entry.id === "remote-access",
-    );
-    if (item?.kind !== "action") throw new Error("expected footer action");
-    const context = {
-      openPluginDetails: vi.fn(),
-      openSettingsSection: vi.fn(),
-    };
-    void item.onActivate(context);
-    return context;
-  }
-
-  it("opens Cloudroom Connect by default", () => {
-    const context = activateFooter();
-    expect(context.openPluginDetails).toHaveBeenCalledOnce();
-    expect(context.openSettingsSection).not.toHaveBeenCalled();
-  });
-
-  it("opens Machines after the user picks it in Settings, and remembers it", async () => {
-    const render = () =>
-      renderSlot(
-        app.settingsSections[0]!,
-        {},
-        {
-          rpc: {
-            status: () => connected(),
-            remoteInstructions: () => ({ enabled: true }),
-          },
-        },
-      );
-    const slot = render();
-    fireEvent.click(await slot.findByRole("tab", { name: /Settings/ }));
-    const control = await slot.findByRole("combobox", {
-      name: "Phone button opens",
-    });
-    expect(control.textContent).toContain("Cloudroom Connect");
-    fireEvent.click(control);
-    fireEvent.click(await screen.findByRole("option", { name: "Machines" }));
-    await waitFor(() => expect(control.textContent).toContain("Machines"));
-
-    const context = activateFooter();
-    expect(context.openSettingsSection).toHaveBeenCalledWith("machines");
-    expect(context.openPluginDetails).not.toHaveBeenCalled();
-
-    cleanup();
-    const reopened = render();
-    fireEvent.click(await reopened.findByRole("tab", { name: /Settings/ }));
-    const restored = await reopened.findByRole("combobox", {
-      name: "Phone button opens",
-    });
-    expect(restored.textContent).toContain("Machines");
-  });
 });
