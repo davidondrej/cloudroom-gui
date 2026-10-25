@@ -301,6 +301,12 @@ are visible by default. Example:
   room-cli settings ui set sidebar.hiddenFooterItems '["plugin:provider-usage/usage"]'
   room-cli settings ui reset sidebar.hiddenFooterItems
 
+`sidebar.connectFooterTarget` sets where Cloudroom Connect's phone button opens:
+`connect` (default, the Cloudroom Connect page) or `machines` (Settings → Machines).
+Right-click the button and pick Opens to for the same choice. Example:
+
+  room-cli settings ui set sidebar.connectFooterTarget machines
+
 Client-local UI preferences
 
 Some Settings values live only in the current browser/client. Sidebar width

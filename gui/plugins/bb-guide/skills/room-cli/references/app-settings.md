@@ -214,6 +214,10 @@ Right-click Hide moves an action into More; Settings → Appearance → Sidebar 
 restores visibility and drag-reorders actions. CLI example:
 `room-cli settings ui set sidebar.hiddenFooterItems '["plugin:provider-usage/usage"]'`.
 Use `room-cli settings ui reset sidebar.hiddenFooterItems` to show everything again.
+`sidebar.connectFooterTarget` sets where Cloudroom Connect's phone button opens:
+`connect` (default, the Cloudroom Connect page) or `machines` (Settings → Machines).
+It is shared across clients; the button's right-click menu has the same Opens to
+choice. CLI example: `room-cli settings ui set sidebar.connectFooterTarget machines`.
 
 Disable usage telemetry with `room-cli settings general telemetryEnabled false`
 or Settings → General → Privacy & diagnostics → Share usage data and setup errors. This server-wide preference
