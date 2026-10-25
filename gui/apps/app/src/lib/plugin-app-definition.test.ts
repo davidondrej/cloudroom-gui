@@ -295,7 +295,10 @@ describe("collectPluginAppRegistrations — experimental_sidebarFooter", () => {
     expect(compatibilityItem?.kind).toBe("action");
     if (compatibilityItem?.kind !== "action")
       throw new Error("expected action");
-    compatibilityItem.onActivate({ openPluginDetails });
+    compatibilityItem.onActivate({
+      openPluginDetails,
+      openSettingsSection: vi.fn(),
+    });
     expect(legacyRun).toHaveBeenCalledOnce();
     expect(openPluginDetails).toHaveBeenCalledOnce();
 

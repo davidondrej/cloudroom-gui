@@ -248,6 +248,9 @@ export function PluginSidebarFooterItems({
               getPluginConfigurationRoutePath({ pluginId: slot.pluginId }),
             );
           },
+          openSettingsSection: (sectionId) => {
+            void navigate(getSettingsRoutePath(sectionId));
+          },
         }),
     );
   }

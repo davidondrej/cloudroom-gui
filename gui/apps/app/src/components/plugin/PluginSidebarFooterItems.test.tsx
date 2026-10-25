@@ -236,6 +236,30 @@ describe("PluginSidebarFooterItems", () => {
     );
   });
 
+  it("lets a unified footer action open a built-in Settings section", () => {
+    const definition = definePluginApp((app) => {
+      app.experimental_sidebarFooter.register({
+        kind: "action",
+        id: "remote",
+        label: "Remote access",
+        icon: "Smartphone",
+        onActivate: ({ openSettingsSection }) =>
+          openSettingsSection("machines"),
+      });
+    });
+    setPluginSlotRegistrations(
+      "connect",
+      collectPluginAppRegistrations(definition),
+    );
+
+    renderWithProviders(<FooterHarness />);
+    fireEvent.click(screen.getByRole("button", { name: "Remote access" }));
+
+    expect(screen.getByLabelText("Current path").textContent).toBe(
+      "/settings/machines",
+    );
+  });
+
   it("toggles and dismisses a disclosure accessibly", () => {
     let footer: { setAlert(message: string | null): void } | undefined;
     const definition = definePluginApp((app) => {
