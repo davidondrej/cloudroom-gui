@@ -50,6 +50,7 @@ import {
   type BuiltinFooterId,
 } from "@/components/sidebar/sidebarFooterPreferences";
 import { SIDEBAR_FOOTER_ACTION_CLASS } from "@/components/sidebar/sidebarRowClasses";
+import { useUiPreferencesReady } from "@/lib/ui-preferences/UiPreferencesSync";
 
 function footerItemKey(item: PluginSidebarFooterItemSlot): string {
   return `${item.pluginId}/${item.id}/${item.generation}`;
@@ -212,6 +213,7 @@ export function PluginSidebarFooterItems({
   const navigate = useNavigate();
   const preferences = useSidebarFooterPreferences();
   const [connectTarget, setConnectTarget] = useAtom(connectFooterTargetAtom);
+  const uiPreferencesReady = useUiPreferencesReady();
   const previousHidden = useRef(preferences.hidden);
   const items = preferences.items.filter(
     (item) =>
@@ -243,8 +245,10 @@ export function PluginSidebarFooterItems({
       onDisclosureCommand(footerItemKey(slot), "toggle");
       return;
     }
+    const isConnect = isConnectFooterItem(item);
+    if (isConnect && !uiPreferencesReady) return;
     onNavigate?.();
-    if (connectTarget === "machines" && isConnectFooterItem(item)) {
+    if (isConnect && connectTarget === "machines") {
       void navigate(getSettingsRoutePath("machines"));
       return;
     }
@@ -365,6 +369,7 @@ export function PluginSidebarFooterItems({
                     <ContextMenuSeparator />
                     <ContextMenuLabel>Opens to</ContextMenuLabel>
                     <ContextMenuRadioGroup
+                      aria-label="Opens to"
                       value={connectTarget}
                       onValueChange={(value) =>
                         setConnectTarget(

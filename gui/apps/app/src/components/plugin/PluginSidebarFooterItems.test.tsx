@@ -43,6 +43,12 @@ import {
   definePluginApp,
 } from "@/lib/plugin-app-definition";
 
+const uiPreferences = vi.hoisted(() => ({ ready: true }));
+
+vi.mock("@/lib/ui-preferences/UiPreferencesSync", () => ({
+  useUiPreferencesReady: () => uiPreferences.ready,
+}));
+
 function registrationSet(
   overrides: Partial<PluginRegistrationSet>,
 ): PluginRegistrationSet {
@@ -68,8 +74,8 @@ function LocationProbe() {
   );
 }
 
-function renderWithProviders(ui: ReactNode, store = createStore()) {
-  return render(
+function withProviders(ui: ReactNode, store: ReturnType<typeof createStore>) {
+  return (
     <Provider store={store}>
       <MemoryRouter>
         <TooltipProvider delayDuration={0}>
@@ -79,8 +85,12 @@ function renderWithProviders(ui: ReactNode, store = createStore()) {
           </SidebarProvider>
         </TooltipProvider>
       </MemoryRouter>
-    </Provider>,
+    </Provider>
   );
+}
+
+function renderWithProviders(ui: ReactNode, store = createStore()) {
+  return render(withProviders(ui, store));
 }
 
 function FooterHarness() {
@@ -117,6 +127,7 @@ afterEach(() => {
   resetPluginSlotStoreForTest();
   resetPluginLogoStoreForTest();
   vi.restoreAllMocks();
+  uiPreferences.ready = true;
 });
 
 describe("PluginSidebarFooterItems", () => {
@@ -650,6 +661,28 @@ describe("Cloudroom Connect footer target", () => {
     expect(currentPath()).toBe("/settings/plugins/other");
   });
 
+  it("ignores the Connect button until UI preferences load, but not other items", () => {
+    uiPreferences.ready = false;
+    const { connectActivate, otherActivate } = registerFooterActions();
+    const store = createStore();
+    store.set(connectFooterTargetAtom, "machines");
+    const { rerender } = renderWithProviders(<FooterHarness />, store);
+
+    fireEvent.click(screen.getByRole("button", { name: "Cloudroom Connect" }));
+    expect(connectActivate).not.toHaveBeenCalled();
+    expect(currentPath()).toBe("/");
+
+    fireEvent.click(screen.getByRole("button", { name: "Other action" }));
+    expect(otherActivate).toHaveBeenCalledOnce();
+    expect(currentPath()).toBe("/settings/plugins/other");
+
+    uiPreferences.ready = true;
+    rerender(withProviders(<FooterHarness />, store));
+    fireEvent.click(screen.getByRole("button", { name: "Cloudroom Connect" }));
+    expect(connectActivate).not.toHaveBeenCalled();
+    expect(currentPath()).toBe("/settings/machines");
+  });
+
   it("opens Machines from the More menu when the button is hidden", async () => {
     const { connectActivate } = registerFooterActions();
     const store = createStore();
@@ -688,6 +721,7 @@ describe("Cloudroom Connect footer target", () => {
       screen.getByRole("button", { name: "Cloudroom Connect" }),
     );
     expect(await screen.findByText("Opens to")).toBeDefined();
+    expect(screen.getByRole("group", { name: "Opens to" })).toBeDefined();
     expect(
       screen
         .getByRole("menuitemradio", { name: "Cloudroom Connect" })
