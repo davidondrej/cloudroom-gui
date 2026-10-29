@@ -1,25 +1,16 @@
-# Cloudroom
+# Cloudroom moved to [davidondrej/cloudroom](https://github.com/davidondrej/cloudroom)
 
-Start an agent on your Mac. Move it to the cloud mid-task.
+The app now lives in one open-source repo with the core and skills. Its code is still in `gui/`. This repo is archived and read-only.
 
-[Download](https://www.cloudroom.dev/download) · [Website](https://www.cloudroom.dev) · [Changelog](https://www.cloudroom.dev/changelog) · [Self-host the core](https://github.com/davidondrej/cloudroom-core)
+- **Download:** [cloudroom.dev/download](https://www.cloudroom.dev/download). Apps up to v128 update through this repo's releases, which stay up.
+- **Issues:** open issues moved to the new repo. Their old links redirect.
+- **Forks and pull requests:** the new repo includes this repo's full history, so your commits carry over:
 
-![Teleport moves a running agent from your Mac to the cloud and back, with the same chat, model, and effort.](.github/teleport.png)
+    ```bash
+    git remote add cloudroom https://github.com/davidondrej/cloudroom.git   # or point your upstream remote there
+    git fetch cloudroom
+    git switch -c my-change cloudroom/main
+    git cherry-pick <your commits>
+    ```
 
-Cloudroom is a desktop app for Claude Code, Codex, and Pi. Your agents run on your Mac or in the cloud, on your own subscriptions.
-
-- **Teleport.** Move a running thread to the cloud and back. Same chat, model, and effort.
-- **Local and Cloud, side by side.** Each Cloud thread gets its own sandbox and Git branch.
-- **Mac access.** Cloud agents can reach your Mac. You pick Off, Read-only, Ask first, or Full.
-- **Multiple Claude accounts.** Switch between them in one click.
-- **Computer use.** Every agent can see and control apps, on your Mac and in the cloud.
-
-Local agents are free and need no account. Cloud is invite-only for now, so [join the waitlist](https://www.cloudroom.dev/#waitlist).
-
-Runs on Apple Silicon Macs with macOS 13+. A Linux x64 alpha is on [Releases](https://github.com/davidondrej/cloudroom-gui/releases).
-
-## Source
-
-The app's code is in [gui/](gui/). To build it, see [gui/README.md](gui/README.md). Found a bug? [Open an issue](https://github.com/davidondrej/cloudroom-gui/issues).
-
-Built on [BB](https://github.com/get-bb/bb). Licensed under [Apache 2.0](LICENSE). BB's MIT notice is in [NOTICE](NOTICE).
+    Then [fork davidondrej/cloudroom](https://github.com/davidondrej/cloudroom/fork), push the branch there, and open the PR. A fork of this repo can't open PRs on the new one.
